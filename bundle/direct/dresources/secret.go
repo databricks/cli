@@ -28,6 +28,7 @@ type SecretRemote struct {
 
 	// SecretValue mirrors EffectiveValue and is populated by DoRead when include_value=true.
 	// It uses the same field name as SecretState.SecretValue so RemapState can copy it directly.
+	// bundle:"sensitive" makes GetStructDiff include it despite json:"-", enabling drift detection.
 	SecretValue string `json:"-" bundle:"sensitive"`
 }
 

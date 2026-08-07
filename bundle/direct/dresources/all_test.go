@@ -1019,11 +1019,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	// RemoteType is included verbatim in the JSON plan's "remote_state" field,
 	// so it must survive a JSON round-trip without losing fields.
-	// Secrets are excluded: SecretValue (json:"-") is intentionally not serialized
-	// since the sensitive value must not be written to the plan file.
-	if group != "secrets" {
-		assertJSONRoundTrip(t, reflect.ValueOf(remote).Elem().Interface(), "RemoteType "+group)
-	}
+	assertJSONRoundTrip(t, reflect.ValueOf(remote).Elem().Interface(), "RemoteType "+group)
 
 	remappedState, err := adapter.RemapState(remote)
 	require.NoError(t, err)

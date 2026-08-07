@@ -391,8 +391,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		// backend-managed/input-only), or absent from RemoteType (a guaranteed-nil
 		// placeholder, since RemapState is a dumb copy). Otherwise a coincidental
 		// new == remote (both nil, say) wrongly skips a real local change.
-		isMissingInRemote := isFieldMissingInRemote(adapter, path)
-		if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && !isMissingInRemote {
+		if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && !isFieldMissingInRemote(adapter, path) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
 		} else if allEmpty(ch.Old, ch.New, ch.Remote) {
@@ -422,7 +421,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkipNormalized(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
-		} else if isMissingInRemote && structdiff.IsEqual(ch.Old, ch.New) {
+		} else if isFieldMissingInRemote(adapter, path) && structdiff.IsEqual(ch.Old, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonMissingInRemote
 		} else if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {

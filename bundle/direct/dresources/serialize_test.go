@@ -49,11 +49,17 @@ func assertJSONRoundTrip(t *testing.T, v any, label string) {
 
 	// Diff the Go values rather than the JSON: a wrapper that drops fields keeps
 	// them populated in v but loses them in back, so structdiff flags it even
-	// though both marshal to the same (already-truncated) JSON. structdiff skips
-	// ForceSendFields and json:"-" fields, which are intentionally not serialized.
+	// though both marshal to the same (already-truncated) JSON.
+	// Compare against a second unmarshal of the same JSON (not the original v) so
+	// that json:"-" fields (intentionally not serialized, including bundle:"sensitive"
+	// ones) start at their zero value on both sides and never appear as differences.
 	// Free-form any fields must be populated with []any/map[string]any (as JSON
 	// decoding yields) so they round-trip to the same concrete type.
-	changes, err := structdiff.GetStructDiff(v, back, nil)
+	baseline := reflect.New(reflect.TypeOf(v)).Interface()
+	err = json.Unmarshal(data, baseline)
+	require.NoError(t, err, "%s: second Unmarshal failed", label)
+
+	changes, err := structdiff.GetStructDiff(reflect.ValueOf(baseline).Elem().Interface(), back, nil)
 	require.NoError(t, err)
 	require.Empty(t, changes, "%s lost %d field(s) in JSON round-trip:%s", label, len(changes), formatChanges(changes))
 }
@@ -96,19 +102,12 @@ func TestRoundtripFixtureStateType(t *testing.T) {
 // independent of which fields a realistic value would populate. StateType and
 // RemoteType are validated as pointer-to-struct by the adapter, so typeOf always
 // returns a pointer here.
-func testRoundtripAllFields(t *testing.T, label string, typeOf func(*Adapter) reflect.Type, skipResources ...string) {
-	skipSet := make(map[string]bool, len(skipResources))
-	for _, r := range skipResources {
-		skipSet[r] = true
-	}
+func testRoundtripAllFields(t *testing.T, label string, typeOf func(*Adapter) reflect.Type) {
 	for resourceType, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
 		t.Run(resourceType, func(t *testing.T) {
-			if skipSet[resourceType] {
-				t.Skip("skipped: resource has intentionally non-serializable fields")
-			}
 			v := reflect.New(typeOf(adapter).Elem())
 			fillNonZero(v.Elem(), 0)
 			assertJSONRoundTrip(t, v.Interface(), label+" "+resourceType)
@@ -126,11 +125,8 @@ func TestRoundtripAllFieldsStateType(t *testing.T) {
 // with every field populated. RemoteType is emitted in the plan's "remote_state"
 // field, so a wrapper embedding an SDK type with its own MarshalJSON must define
 // its own or its extra fields vanish.
-//
-// Secrets are excluded: SecretRemote.SecretValue uses json:"-" and is intentionally
-// not written to the plan file since it is sensitive.
 func TestRoundtripAllFieldsRemoteType(t *testing.T) {
-	testRoundtripAllFields(t, "RemoteType", (*Adapter).RemoteType, "secrets")
+	testRoundtripAllFields(t, "RemoteType", (*Adapter).RemoteType)
 }
 
 // fillNonZero recursively populates v with non-zero values so that every
