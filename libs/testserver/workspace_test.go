@@ -52,6 +52,24 @@ func TestWorkspaceImportRejectsMissingParent(t *testing.T) {
 	assert.Equal(t, 200, importFile(t, server.URL, "/test-dir/file.py", "content"))
 }
 
+// format=AUTO matches the extension case-insensitively, so ".R" — the
+// conventional spelling for R sources — is detected as a notebook just like
+// ".r". Notebooks are stored with the extension stripped.
+func TestWorkspaceImportDetectsNotebookExtensionCaseInsensitively(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	mkdirs(t, server.URL, "/test-dir")
+
+	for _, name := range []string{"lower.r", "upper.R"} {
+		require.Equal(t, 200, importFile(t, server.URL, "/test-dir/"+name, "# Databricks notebook source\n"), name)
+	}
+
+	// Both land at the extension-stripped path, which only happens for notebooks.
+	assert.Equal(t, 200, getStatus(t, server.URL, "/test-dir/lower"))
+	assert.Equal(t, 200, getStatus(t, server.URL, "/test-dir/upper"))
+}
+
 // mkdirs creates all intermediate directories, matching "mkdir -p".
 func TestWorkspaceMkdirsRecursive(t *testing.T) {
 	server := testserver.New(t)

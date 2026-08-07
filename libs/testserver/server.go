@@ -372,7 +372,7 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 
 	var resp EncodedResponse
 
-	if rule := s.faults.Check(r.Method, r.URL.Path, token); rule != nil {
+	if rule := s.faults.Check(r.Method, r.URL.Path, token, request.Body); rule != nil {
 		resp = EncodedResponse{
 			StatusCode: rule.StatusCode,
 			Body:       []byte(rule.Body),

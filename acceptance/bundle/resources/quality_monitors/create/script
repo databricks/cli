@@ -21,7 +21,7 @@ trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm out.requests.txt
 trace $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
-trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' > out.deploy.requests.json
+trace print_requests.py '^//workspace/' '^//telemetry-ext' > out.deploy.requests.json
 
 # store state to ensure we have table_name there
 print_state.py | grep name > out.state.$DATABRICKS_BUNDLE_ENGINE.txt

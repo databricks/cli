@@ -11,6 +11,6 @@ title "Check that the job libraries are uploaded and the path is correct in the 
 trace cat out.requests.txt | jq 'select(.path == "/api/2.2/jobs/create")' | jq '.body.tasks[0].libraries'
 trace cat out.requests.txt | jq 'select(.path == "/api/2.2/jobs/create")' | jq '.body.environments[0].spec.dependencies'
 trace cat out.requests.txt | jq 'select(.path == "/api/2.0/pipelines" and .method == "POST")' | jq '.body.environment.dependencies'
-trace cat out.requests.txt | jq 'select(.path | test("/api/2.0/workspace-files/import-file/Workspace/Users/.*/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"))'
+trace cat out.requests.txt | jq 'select(.path == "/api/2.0/workspace/import" and (.body.multipart_form.path // "" | test("/Workspace/Users/.*/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl")))' | jq 'del(.body.multipart_form.content)'
 
 rm out.requests.txt

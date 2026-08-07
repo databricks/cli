@@ -7,9 +7,9 @@ View at: [DATABRICKS_URL]/jobs/runs/555
 Tip: use --watch to stream logs until the run completes.
 
 === only config + command are uploaded; no requirements.yaml
->>> print_requests.py //api/2.0/workspace-files/import-file --oneline --sort --unique --keep
-{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/command.sh", "q": {"overwrite": "true"}, "raw_body": "python train.py"}
-{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/training_config.yaml", "q": {"overwrite": "true"}, "raw_body": "experiment_name: deps-smoke\ncommand: python train.py\ncompute:\n  accelerator_type: GPU_1xH100\n  num_accelerators: 1\nenvironment:\n  version: 5\n  dependencies:\n    - numpy\n    - torch==2.3.0\n"}
+>>> print_requests.py //api/2.0/workspace/import --oneline --sort --unique --keep
+{"method": "POST", "path": "/api/2.0/workspace/import", "body": {"multipart_form": {"content": "experiment_name: deps-smoke\ncommand: python train.py\ncompute:\n  accelerator_type: GPU_1xH100\n  num_accelerators: 1\nenvironment:\n  version: 5\n  dependencies:\n    - numpy\n    - torch==2.3.0\n", "format": "AUTO", "overwrite": "true", "path": "/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/training_config.yaml"}}}
+{"method": "POST", "path": "/api/2.0/workspace/import", "body": {"multipart_form": {"content": "python train.py", "format": "AUTO", "overwrite": "true", "path": "/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/command.sh"}}}
 
 === declared deps ride on environments[].spec.dependencies
 >>> print_requests.py //api/2.2/jobs/runs/submit
@@ -63,9 +63,9 @@ View at: [DATABRICKS_URL]/jobs/runs/555
 Tip: use --watch to stream logs until the run completes.
 
 === file-form deps: the requirements file is not uploaded either
->>> print_requests.py //api/2.0/workspace-files/import-file --oneline --sort --unique --keep
-{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/deps-file-smoke/deps-file-smoke_[RUN_ID]/command.sh", "q": {"overwrite": "true"}, "raw_body": "python train.py"}
-{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/deps-file-smoke/deps-file-smoke_[RUN_ID]/training_config.yaml", "q": {"overwrite": "true"}, "raw_body": "experiment_name: deps-file-smoke\ncommand: python train.py\ncompute:\n  accelerator_type: GPU_1xH100\n  num_accelerators: 1\nenvironment:\n  dependencies: ./reqs.yaml\n"}
+>>> print_requests.py //api/2.0/workspace/import --oneline --sort --unique --keep
+{"method": "POST", "path": "/api/2.0/workspace/import", "body": {"multipart_form": {"content": "experiment_name: deps-file-smoke\ncommand: python train.py\ncompute:\n  accelerator_type: GPU_1xH100\n  num_accelerators: 1\nenvironment:\n  dependencies: ./reqs.yaml\n", "format": "AUTO", "overwrite": "true", "path": "/Workspace/Users/[USERNAME]/.air/cli_launch/deps-file-smoke/deps-file-smoke_[RUN_ID]/training_config.yaml"}}}
+{"method": "POST", "path": "/api/2.0/workspace/import", "body": {"multipart_form": {"content": "python train.py", "format": "AUTO", "overwrite": "true", "path": "/Workspace/Users/[USERNAME]/.air/cli_launch/deps-file-smoke/deps-file-smoke_[RUN_ID]/command.sh"}}}
 
 === file-form deps ride on environments[].spec.dependencies
 >>> print_requests.py //api/2.2/jobs/runs/submit

@@ -6,11 +6,11 @@ add_repl.py $NEW_PIPELINE_ID NEW_PIPELINE_ID
 
 rm -f out.requests.txt
 trace musterr $CLI bundle deployment bind foo $NEW_PIPELINE_ID &> out.bind-fail.$DATABRICKS_BUNDLE_ENGINE.txt
-print_requests.py '^//import-file/' '^//workspace/'
+print_requests.py '^//workspace/'
 
 rm -f out.requests.txt
 trace $CLI bundle deployment bind foo $NEW_PIPELINE_ID --auto-approve &> out.bind-success.$DATABRICKS_BUNDLE_ENGINE.txt
-trace print_requests.py '^//import-file/' '^//workspace/'
+trace print_requests.py '^//workspace/'
 
 trace $CLI bundle summary -o json | jq .resources > out.summary.json
 trace $CLI bundle plan
@@ -19,4 +19,4 @@ trace musterr $CLI bundle deploy
 
 rm -f out.requests.txt
 trace $CLI bundle deploy --auto-approve
-trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' > out.deploy.requests.json
+trace print_requests.py '^//workspace/' '^//telemetry-ext' > out.deploy.requests.json
