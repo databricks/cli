@@ -2,14 +2,11 @@ package mutator
 
 import (
 	"context"
-	"errors"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dms"
-	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -46,23 +43,19 @@ func (m *initializeDeploymentHistory) Apply(ctx context.Context, b *bundle.Bundl
 		return nil
 	}
 
-	history := &config.DeploymentHistory{DeploymentID: deploymentID}
-
-	// The deployment's record is created by its first version, so a resolved ID can
-	// name a deployment that has none yet (a deploy that registered the deployment
-	// and then failed). Report the ID without a version rather than failing summary.
+	// The ID came from a BUNDLE_DEPLOYMENT node that get-status returned, and by
+	// design the service has a deployment for every such node, so this get does not
+	// have a not-found case. last_version_id is empty until the first version.
 	dep, err := w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
 		Name: "deployments/" + deploymentID,
 	})
-	switch {
-	case err == nil:
-		history.LatestVersionID = dep.LastVersionId
-	case errors.Is(err, apierr.ErrNotFound), errors.Is(err, apierr.ErrResourceDoesNotExist):
-		log.Debugf(ctx, "No deployment record for %s yet; reporting the ID without a version", deploymentID)
-	default:
+	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	b.Config.Bundle.Deployment.History = history
+	b.Config.Bundle.Deployment.History = &config.DeploymentHistory{
+		DeploymentID:    deploymentID,
+		LatestVersionID: dep.LastVersionId,
+	}
 	return nil
 }

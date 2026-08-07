@@ -67,15 +67,20 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 		},
 	}
 
-	// Only the node is created here. The deployment record itself is created by the
-	// first CreateVersion, so a client that creates a deployment and then fails
-	// before recording a version leaves no record behind - just the node, which
-	// names the ID that first version will be created under.
+	// The record is created together with the node, so a get on it always resolves
+	// for a node that exists. It carries no version yet: last_version_id stays empty
+	// until the first CreateVersion, which is how a client that registers a
+	// deployment and then fails leaves a record with no versions.
 	deploymentID := strconv.FormatInt(objectID, 10)
 	s.dmsDeploymentNodes[deploymentID] = nodePath
 
 	dep.Name = "deployments/" + deploymentID
 	dep.Status = bundledeployments.DeploymentStatusDeploymentStatusActive
+	s.dmsDeployments[deploymentID] = &dmsDeployment{
+		deployment: dep,
+		versions:   map[string]*bundledeployments.Version{},
+		resources:  map[string]bundledeployments.Resource{},
+	}
 	return Response{Body: dep}
 }
 
@@ -154,22 +159,7 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 
 	d, ok := s.dmsDeployments[deploymentID]
 	if !ok {
-		// The deployment record is created by its first version, not by
-		// CreateDeployment. That call only registered the workspace node, so the node
-		// existing is what makes this ID valid.
-		if _, known := s.dmsDeploymentNodes[deploymentID]; !known {
-			return dmsNotFound("deployment " + deploymentID)
-		}
-		d = &dmsDeployment{
-			deployment: bundledeployments.Deployment{
-				Name:       "deployments/" + deploymentID,
-				Status:     bundledeployments.DeploymentStatusDeploymentStatusActive,
-				TargetName: version.TargetName,
-			},
-			versions:  map[string]*bundledeployments.Version{},
-			resources: map[string]bundledeployments.Resource{},
-		}
-		s.dmsDeployments[deploymentID] = d
+		return dmsNotFound("deployment " + deploymentID)
 	}
 
 	// Mirror the server-side checks: version_id must be numerically greater than

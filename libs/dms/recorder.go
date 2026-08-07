@@ -94,10 +94,8 @@ type Recorder struct {
 	versions     versionCreator
 	deploymentID string
 	statePath    string
-	targetName   string
-	displayName  string
 	versionType  VersionType
-	provenance   Provenance
+	metadata     Metadata
 
 	// populated by CreateVersion
 	versionNum    int64
@@ -121,17 +119,19 @@ type RecorderOptions struct {
 	// StatePath is the bundle's remote state directory, under which DMS registers
 	// the deployment node.
 	StatePath   string
-	TargetName  string
-	DisplayName string
 	VersionType VersionType
-	// Provenance records where the deployed source came from; see Provenance.
-	Provenance Provenance
+	// Metadata is what the version records about the deploy; see Metadata.
+	Metadata Metadata
 }
 
-// Provenance is what a version records about the source it deployed and where it
-// landed. The service denormalizes these onto the deployment, so they describe the
-// deployment as of its most recent version.
-type Provenance struct {
+// Metadata is what a version records about the bundle it deployed, the source it
+// came from, and where it landed. The service denormalizes these onto the
+// deployment, so they describe the deployment as of its most recent version.
+type Metadata struct {
+	// DisplayName is the bundle's name, which the deployment is listed under.
+	DisplayName string
+	// TargetName is the bundle target that was deployed.
+	TargetName string
 	// Mode is the bundle target's mode, empty when the target sets none.
 	Mode      bundledeployments.DeploymentMode
 	Git       *bundledeployments.GitInfo
@@ -145,10 +145,8 @@ func NewRecorder(opts RecorderOptions) *Recorder {
 		versions:     opts.Versions,
 		deploymentID: opts.DeploymentID,
 		statePath:    opts.StatePath,
-		targetName:   opts.TargetName,
-		displayName:  opts.DisplayName,
 		versionType:  opts.VersionType,
-		provenance:   opts.Provenance,
+		metadata:     opts.Metadata,
 	}
 }
 
@@ -246,30 +244,28 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 	// deployment's first version.
 	var previousVersionID string
 	if r.deploymentID != "" {
-		// A resolved node names the deployment, but its record is created by the
-		// first version, so there may be none yet: a deploy that registered the
-		// deployment and then failed before recording a version. Start at version 1
-		// under the ID the node already names, rather than creating a second
-		// deployment, which would collide on the same node path.
+		// The ID came from a BUNDLE_DEPLOYMENT node that get-status returned, and by
+		// design the service has a deployment for every such node, so a not-found
+		// here means that invariant is broken rather than anything the user did.
 		dep, getErr := r.svc.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
 			Name: "deployments/" + r.deploymentID,
 		})
 		switch {
-		case getErr == nil && dep.LastVersionId == "":
+		case errors.Is(getErr, apierr.ErrNotFound), errors.Is(getErr, apierr.ErrResourceDoesNotExist):
+			return "", fmt.Errorf("internal error: no deployment found for the file with object id %s: %w", r.deploymentID, getErr)
+		case getErr != nil:
+			return "", fmt.Errorf("failed to get deployment: %w", getErr)
+		case dep.LastVersionId == "":
 			// The record exists but carries no version: a deploy whose first version was
 			// rejected still leaves the record behind. Retry at version 1.
 			versionID = "1"
-		case getErr == nil:
+		default:
 			lastVersion, parseErr := strconv.ParseInt(dep.LastVersionId, 10, 64)
 			if parseErr != nil {
 				return "", fmt.Errorf("failed to parse last_version_id %q: %w", dep.LastVersionId, parseErr)
 			}
 			versionID = strconv.FormatInt(lastVersion+1, 10)
 			previousVersionID = dep.LastVersionId
-		case errors.Is(getErr, apierr.ErrNotFound), errors.Is(getErr, apierr.ErrResourceDoesNotExist):
-			versionID = "1"
-		default:
-			return "", fmt.Errorf("failed to get deployment: %w", getErr)
 		}
 	} else {
 		// First deploy: create the deployment so the server assigns an ID.
@@ -281,7 +277,7 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 		dep, createErr := r.svc.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{
 			Deployment: bundledeployments.Deployment{
 				InitialParentPath: r.statePath,
-				TargetName:        r.targetName,
+				TargetName:        r.metadata.TargetName,
 			},
 		})
 		if createErr != nil {
@@ -301,12 +297,12 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 	version, versionErr := r.versions.CreateVersion(ctx, r.deploymentID, versionID, createVersionRequest{
 		CliVersion:        build.GetInfo().Version,
 		VersionType:       r.versionType,
-		TargetName:        r.targetName,
-		DisplayName:       r.displayName,
+		TargetName:        r.metadata.TargetName,
+		DisplayName:       r.metadata.DisplayName,
 		PreviousVersionId: previousVersionID,
-		DeploymentMode:    r.provenance.Mode,
-		GitInfo:           r.provenance.Git,
-		WorkspaceInfo:     r.provenance.Workspace,
+		DeploymentMode:    r.metadata.Mode,
+		GitInfo:           r.metadata.Git,
+		WorkspaceInfo:     r.metadata.Workspace,
 	})
 	if versionErr != nil {
 		return "", fmt.Errorf("failed to create deployment version: %w", versionErr)

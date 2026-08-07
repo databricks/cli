@@ -51,10 +51,8 @@ func newDeploymentRecorder(ctx context.Context, b *bundle.Bundle, eng engine.Eng
 		Versions:     dms.NewAPIVersionCreator(apiClient),
 		DeploymentID: deploymentID,
 		StatePath:    statePath,
-		TargetName:   b.Config.Bundle.Target,
-		DisplayName:  b.Config.Bundle.Name,
 		VersionType:  versionType,
-		Provenance:   deploymentProvenance(b),
+		Metadata:     deploymentMetadata(b),
 	}), nil
 }
 
@@ -81,10 +79,14 @@ func logDeploymentHistory(ctx context.Context, b *bundle.Bundle, recorder *dms.R
 	cmdio.LogString(ctx, "Deployment history: "+workspaceurls.DeploymentURL(*baseURL, recorder.DeploymentID(), recorder.Version()))
 }
 
-// deploymentProvenance describes the source this deploy came from and where it
+// deploymentMetadata describes the bundle this deploy came from and where it
 // landed, mirroring what bundle/deploy/metadata computes for the metadata file.
-func deploymentProvenance(b *bundle.Bundle) dms.Provenance {
-	p := dms.Provenance{Mode: deploymentModeToSDK(b.Config.Bundle.Mode)}
+func deploymentMetadata(b *bundle.Bundle) dms.Metadata {
+	p := dms.Metadata{
+		DisplayName: b.Config.Bundle.Name,
+		TargetName:  b.Config.Bundle.Target,
+		Mode:        deploymentModeToSDK(b.Config.Bundle.Mode),
+	}
 
 	git := b.Config.Bundle.Git
 	if git.Branch != "" || git.Commit != "" || git.OriginURL != "" {

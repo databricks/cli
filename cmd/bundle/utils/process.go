@@ -56,6 +56,12 @@ type ProcessOptions struct {
 	// Implies ReadState
 	InitIDs bool
 
+	// If true, calls InitializeDeploymentHistory() to look up the bundle's recorded
+	// deployment. Separate from InitIDs because it costs its own API calls and only
+	// 'bundle summary' reports the result.
+	// Implies InitIDs
+	InitDeploymentHistory bool
+
 	// if true, pass ErrorOnEmptyState to statemgmt.Load
 	// Implies ReadState
 	ErrorOnEmptyState bool
@@ -89,6 +95,11 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 
 func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle, stateDesc *statemgmt.StateDesc, retErr error) {
 	var err error
+	// The deployment history is looked up alongside the resource IDs, so asking for
+	// it implies them. Normalized here so the options below only test InitIDs.
+	if opts.InitDeploymentHistory {
+		opts.InitIDs = true
+	}
 	ctx := cmd.Context()
 	if opts.SkipInitContext {
 		if !logdiag.IsSetup(ctx) {
@@ -258,9 +269,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				statemgmt.Load(state, modes...),
 			}
 			// InitializeURLs makes an extra API call; only run it when URLs are needed.
-			// InitializeDeploymentHistory likewise, and only for bundles that record it.
 			if opts.InitIDs {
-				mutators = append(mutators, mutator.InitializeURLs(), mutator.InitializeDeploymentHistory())
+				mutators = append(mutators, mutator.InitializeURLs())
+			}
+			// Same for InitializeDeploymentHistory, which only 'bundle summary' reports.
+			if opts.InitDeploymentHistory {
+				mutators = append(mutators, mutator.InitializeDeploymentHistory())
 			}
 			bundle.ApplySeqContext(ctx, b, mutators...)
 			if logdiag.HasError(ctx) {
