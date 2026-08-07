@@ -1,5 +1,3 @@
-Local = true
-
 #
 # On June 18 2025 it was taking:
 # - 160-180 seconds to start an application in this test

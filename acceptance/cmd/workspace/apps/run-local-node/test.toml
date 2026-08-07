@@ -1,5 +1,4 @@
 Cloud = false
-Local = true
 RecordRequests = false
 
 # npm install writes package-lock.json even with nothing to install, and older npm versions

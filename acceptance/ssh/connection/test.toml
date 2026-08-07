@@ -1,4 +1,3 @@
-Local = true
 Cloud = false
 
 # On cloud this needs a real dedicated single-user cluster; locally the default
