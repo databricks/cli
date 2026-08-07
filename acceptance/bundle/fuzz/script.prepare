@@ -15,7 +15,8 @@ invariant_render() {
     # Stage the fixtures the mutator's file_path/source_code_path fields point at.
     cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
 
-    emit_fuzz_config.py > databricks.yml 2>LOG.gen.err
+    mutate_fuzz_config.py > databricks.yml 2>LOG.gen.err
+
     cp databricks.yml LOG.config
 
     trace $CLI bundle validate &> LOG.validate

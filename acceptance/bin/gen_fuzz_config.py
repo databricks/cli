@@ -8,7 +8,6 @@ field's value. Free-form scalars are sometimes replaced with dangerous values
 A seed is tied to schema iteration order, so adding a field moves every later draw.
 """
 
-import json
 import os
 import sys
 
@@ -32,7 +31,7 @@ DEFAULT_SCHEMA = "default"
 # "account users" exists on every workspace. A random principal or a privilege that does not apply
 # to the securable deploys on the fake server but fails on UC.
 DEFAULT_PRINCIPAL = "account users"
-# Only types in emit_fuzz_config.MUTATE_BASES that declare grants.
+# Only types in mutate_fuzz_config.MUTATE_BASES that declare grants.
 GRANT_PRIVILEGE = {
     "catalogs": "USE_CATALOG",
     "schemas": "USE_SCHEMA",
@@ -43,7 +42,7 @@ GRANT_PRIVILEGE = {
 
 # Permissions take no variable refs: a concrete principal and a level valid for the resource type.
 DEFAULT_PERMISSION_GROUP = "users"
-# Only types in emit_fuzz_config.MUTATE_BASES that declare permissions.
+# Only types in mutate_fuzz_config.MUTATE_BASES that declare permissions.
 PERMISSION_LEVEL = {
     "jobs": "CAN_VIEW",
     "model_serving_endpoints": "CAN_VIEW",
@@ -289,42 +288,3 @@ def resource_element(gen, type_schema):
     # Each type is a map; the element schema is the object branch's additionalProperties.
     map_schema = gen.resolve(type_schema)
     return object_branch(map_schema, "resource type map")["additionalProperties"]
-
-
-def to_yaml(obj, indent=0, list_item=False):
-    pad = "  " * indent
-    if isinstance(obj, dict):
-        if not obj:
-            return f"{pad}{{}}\n" if not list_item else f"{pad}- {{}}\n"
-        out = ""
-        first = True
-        for k, v in obj.items():
-            prefix = pad + "- " if list_item and first else (pad + "  " if list_item else pad)
-            child_indent = indent + 2 if list_item else indent + 1
-            if isinstance(v, (dict, list)) and v:
-                out += f"{prefix}{k}:\n" + to_yaml(v, child_indent)
-            else:
-                out += f"{prefix}{k}: {dump_scalar(v)}\n"
-            first = False
-        return out
-    if isinstance(obj, list):
-        if not obj:
-            return f"{pad}- []\n" if list_item else f"{pad}[]\n"
-        # A list inside a list: the marker needs its own line, else the two flatten into one.
-        if list_item:
-            return f"{pad}-\n" + to_yaml(obj, indent + 1)
-        out = ""
-        for item in obj:
-            if isinstance(item, (dict, list)):
-                out += to_yaml(item, indent, list_item=True)
-            else:
-                out += f"{pad}- {dump_scalar(item)}\n"
-        return out
-    return f"{pad}{dump_scalar(obj)}\n"
-
-
-def dump_scalar(v):
-    # ensure_ascii=False keeps non-ASCII literal: the default escapes astral chars into surrogate
-    # pairs that YAML rejects, killing the config before it reaches bundle logic. Control chars
-    # stay escaped by json.dumps, which YAML accepts.
-    return json.dumps(v, ensure_ascii=False)
