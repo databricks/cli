@@ -1,0 +1,11 @@
+bundle:
+  name: remote_file_path
+
+targets:
+  ok:
+    default: true
+    workspace:
+      file_path: /Workspace/tmp/remote_file_path/dir
+  bad:
+    workspace:
+      file_path: /Workspace/tmp/remote_file_path/file
