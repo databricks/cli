@@ -190,6 +190,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// points to a Terraform-only field with no DABs equivalent.
 		validate.TFOnlyReferences(),
 
+		// Reads (typed): resources.jobs.*.tasks (task parameters lists)
+		// Warns (TF engine only) when a task parameter is an empty string, because the
+		// Terraform provider reads it back as nil and job creation panics.
+		validate.EmptyTaskParameters(),
+
 		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)
 		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)
 		// Provides diagnostic recommendations if the current deployment identity isn't explicitly granted CAN_MANAGE permissions

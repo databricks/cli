@@ -1,0 +1,15 @@
+
+>>> errcode [CLI] bundle validate
+Warning: empty parameter in spark_python_task fails deploys that use the Terraform engine
+  at resources.jobs.demo_job.tasks[0].spark_python_task.parameters[1]
+  in databricks.yml:19:17
+
+The Terraform provider reads an empty string element in a parameters list back as nil, and creating the job panics with "parameters[<nil>] is not a string". Remove the empty element or make its value non-empty. The direct engine (bundle.engine: direct) deploys empty parameters correctly.
+
+Name: empty-in-task-params
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/empty-in-task-params/default
+
+Found 1 warning
