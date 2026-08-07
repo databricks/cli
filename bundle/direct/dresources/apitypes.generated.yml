@@ -54,6 +54,8 @@ schemas: catalog.CreateSchema
 
 secret_scopes: workspace.CreateScope
 
+secrets: catalog.Secret
+
 sql_warehouses: sql.EditWarehouseRequest
 
 synced_database_tables: database.SyncedDatabaseTable

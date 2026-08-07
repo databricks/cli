@@ -49,7 +49,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 		_, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Force = force
-				b.Config.Bundle.Deployment.Lock.Force = forceLock
+				utils.SetForceLock(cmd, b, forceLock)
 				b.AutoApprove = autoApprove
 				b.Select = selectResources
 

@@ -1,0 +1,30 @@
+RecordRequests = true
+
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# The image is not yet registered, so :get returns NOT_FOUND. Registration then
+# always re-registers via POST regardless of any prior state.
+[[Server]]
+Pattern = "GET /api/2.0/ai-compute-manager/images:get"
+Response.StatusCode = 404
+Response.Body = '''
+{"error_code": "NOT_FOUND", "message": "image not registered"}
+'''
+
+# POST registers the image and returns its digest.
+[[Server]]
+Pattern = "POST /api/2.0/ai-compute-manager/images"
+Response.Body = '''
+{"image": {"docker_image_url": "docker.io/library/my-image:latest", "state": "AVAILABLE", "manifest_sha256": "f9e8d7c6b5a4f3e2newnewnewnew"}}
+'''
+
+# The private image is not publicly pullable, so credential discovery proceeds.
+[[Server]]
+Pattern = "GET /api/2.0/ai-compute-manager/images:checkImageAccess"
+Response.Body = '''
+{"publicly_accessible": false}
+'''

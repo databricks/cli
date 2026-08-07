@@ -63,7 +63,7 @@ func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 	m.bin = bin
 
 	// Use --version (not "version") to avoid project-scoped sub-command that requires pyproject.toml.
-	version, err := process.Background(ctx, []string{m.bin, "--version"})
+	version, err := process.Background(ctx, []string{m.bin, "--version"}, process.WithProcessGroup())
 	if err != nil {
 		return "", uvFailure(ErrUvMissing, err, "uv version check")
 	}
@@ -75,12 +75,15 @@ func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 // (process.WithDir("") is a no-op). The index-url is injected only when
 // resolveIndexURL returns non-empty; it returns "" when UV_INDEX_URL is already
 // set, so an explicit value in the environment is never clobbered.
+// WithProcessGroup is applied because uv fans out to its own subprocesses
+// (Python, build backends); on SIGINT/SIGTERM they must be reaped as a group
+// rather than left as orphans holding locks over a half-written .venv.
 func (m *uvManager) runUv(ctx context.Context, args []string, dir string) error {
 	if indexURL := m.resolveIndexURL(ctx); indexURL != "" {
-		_, err := process.Background(ctx, args, process.WithDir(dir), process.WithEnv("UV_INDEX_URL", indexURL))
+		_, err := process.Background(ctx, args, process.WithDir(dir), process.WithEnv("UV_INDEX_URL", indexURL), process.WithProcessGroup())
 		return err
 	}
-	_, err := process.Background(ctx, args, process.WithDir(dir))
+	_, err := process.Background(ctx, args, process.WithDir(dir), process.WithProcessGroup())
 	return err
 }
 
@@ -155,6 +158,7 @@ except importlib.metadata.PackageNotFoundError:
 	out, err := process.Background(ctx,
 		[]string{venvPython(projectDir), "-c", pyCode},
 		process.WithDir(projectDir),
+		process.WithProcessGroup(),
 	)
 	if err != nil {
 		return "", "", uvFailure(ErrValidate, err, "venv python validation")
@@ -361,7 +365,10 @@ func installUv(ctx context.Context) error {
 	// (~/.local/bin), so record exactly what ran before it fires — visible under
 	// --debug for anyone auditing where uv came from.
 	log.Debugf(ctx, "uv: not found; running installer: %s", strings.Join(cmd, " "))
-	_, err := process.Background(ctx, cmd)
+	// The installer is a shell/PowerShell pipeline that spawns curl and the
+	// downloaded script; reap the whole group on cancellation so an interrupted
+	// install leaves no orphaned downloader behind.
+	_, err := process.Background(ctx, cmd, process.WithProcessGroup())
 	return err
 }
 

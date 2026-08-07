@@ -1398,150 +1398,71 @@ resources:
                 PLACEHOLDER
     "postgres_branches":
       "description": |-
-        PLACEHOLDER
+        The Postgres branch definitions for the bundle, where each key is the name of the branch. Each entry defines a branch of a Lakebase Autoscaling project, holding its own copy of the project's databases and roles.
       "$fields":
         "branch_id":
           "description": |-
-            PLACEHOLDER
-        "expire_time":
-          "description": |-
-            PLACEHOLDER
-        "is_protected":
-          "description": |-
-            PLACEHOLDER
+            The ID to use for the branch; becomes the final component of the branch's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `development` becomes `projects/my-app/branches/development`.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "no_expiry":
-          "description": |-
-            PLACEHOLDER
         "parent":
           "description": |-
-            PLACEHOLDER
+            The project containing this branch (API resource hierarchy). Format: projects/{project_id}
+
+            This field indicates where the branch exists in the resource hierarchy. For point-in-time branching from another branch, see `source_branch`.
         "purge_on_delete":
           "description": |-
-            PLACEHOLDER
+            When true, permanently delete the branch when the bundle is destroyed. When false or unset, the branch is soft deleted and can be restored within its retention window.
         "replace_existing":
           "description": |-
-            PLACEHOLDER
-        "source_branch":
-          "description": |-
-            PLACEHOLDER
-        "source_branch_lsn":
-          "description": |-
-            PLACEHOLDER
-        "source_branch_time":
-          "description": |-
-            PLACEHOLDER
-        "ttl":
-          "description": |-
-            PLACEHOLDER
+            When true, take over an existing branch with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring a branch that already exists on the project (for example, the production branch created with the project) under bundle management. Only takes effect when the branch is created.
     "postgres_catalogs":
       "description": |-
         The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.
       "$fields":
-        "branch":
-          "description": |-
-            PLACEHOLDER
         "catalog_id":
           "description": |-
-            PLACEHOLDER
-        "create_database_if_missing":
-          "description": |-
-            PLACEHOLDER
+            The ID of the catalog in Unity Catalog; becomes the full resource name. For example, `my_catalog` becomes `catalogs/my_catalog`.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "postgres_database":
-          "description": |-
-            PLACEHOLDER
     "postgres_databases":
       "description": |-
-        PLACEHOLDER
+        The Postgres database definitions for the bundle, where each key is the name of the database. Each entry defines a database on a Lakebase Autoscaling branch.
       "$fields":
         "database_id":
           "description": |-
-            PLACEHOLDER
+            The ID to use for the database; becomes the final component of the database's resource name and the database name in Postgres. Must be 4-63 characters and use only characters available in DNS names, as defined by RFC 1123. If not specified, it is generated automatically.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "parent":
           "description": |-
-            PLACEHOLDER
-        "postgres_database":
-          "description": |-
-            PLACEHOLDER
+            The branch containing this database. Format: projects/{project_id}/branches/{branch_id}
         "replace_existing":
           "description": |-
             When true, take over an existing database with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring a database that already exists on the branch under bundle management. Only takes effect when the database is created.
-        "role":
-          "description": |-
-            PLACEHOLDER
     "postgres_endpoints":
       "description": |-
-        PLACEHOLDER
+        The Postgres endpoint definitions for the bundle, where each key is the name of the endpoint. Each entry defines a compute endpoint that serves queries for a Lakebase Autoscaling branch.
       "$fields":
-        "autoscaling_limit_max_cu":
-          "description": |-
-            PLACEHOLDER
-        "autoscaling_limit_min_cu":
-          "description": |-
-            PLACEHOLDER
-        "disabled":
-          "description": |-
-            PLACEHOLDER
         "endpoint_id":
           "description": |-
-            PLACEHOLDER
-        "endpoint_type":
-          "description": |-
-            PLACEHOLDER
-        "group":
-          "description": |-
-            PLACEHOLDER
+            The ID to use for the endpoint; becomes the final component of the endpoint's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `primary` becomes `projects/my-app/branches/development/endpoints/primary`.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "no_suspension":
-          "description": |-
-            PLACEHOLDER
         "parent":
           "description": |-
-            PLACEHOLDER
+            The branch containing this endpoint (API resource hierarchy). Format: projects/{project_id}/branches/{branch_id}
         "replace_existing":
           "description": |-
-            PLACEHOLDER
-        "settings":
-          "description": |-
-            PLACEHOLDER
-        "suspend_timeout_duration":
-          "description": |-
-            PLACEHOLDER
+            When true, take over an existing endpoint with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring an endpoint that already exists on the branch (for example, the primary read-write endpoint created with the branch) under bundle management. Only takes effect when the endpoint is created.
     "postgres_projects":
       "description": |-
-        PLACEHOLDER
+        The Postgres project definitions for the bundle, where each key is the name of the project. Each entry defines a Lakebase Autoscaling project, the top-level container for branches, endpoints, databases, and roles.
       "$fields":
-        "budget_policy_id":
-          "description": |-
-            PLACEHOLDER
-        "custom_tags":
-          "description": |-
-            PLACEHOLDER
-        "default_branch":
-          "description": |-
-            PLACEHOLDER
-        "default_endpoint_settings":
-          "description": |-
-            PLACEHOLDER
-        "display_name":
-          "description": |-
-            PLACEHOLDER
-        "enable_pg_native_login":
-          "description": |-
-            PLACEHOLDER
-        "history_retention_duration":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -1562,18 +1483,15 @@ resources:
               - level: CAN_RUN
                 service_principal_name: 123456-abcdef
             ```
-        "pg_version":
-          "description": |-
-            PLACEHOLDER
         "project_id":
           "description": |-
-            PLACEHOLDER
+            The ID to use for the project; becomes the final component of the project's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `my-app` becomes `projects/my-app`.
         "purge_on_delete":
           "description": |-
-            PLACEHOLDER
+            When true, permanently delete the project when the bundle is destroyed. When false or unset, the project is soft deleted and can be restored within its retention window.
     "postgres_roles":
       "description": |-
-        PLACEHOLDER
+        The Postgres role definitions for the bundle, where each key is the name of the role. Each entry defines a role on a Lakebase Autoscaling branch, optionally backed by a Databricks identity.
       "$fields":
         "attributes":
           "description": |-
@@ -1581,13 +1499,13 @@ resources:
           "$fields":
             "bypassrls":
               "description": |-
-                PLACEHOLDER
+                Grants the Postgres `BYPASSRLS` attribute, which lets the role bypass every row-level security policy.
             "createdb":
               "description": |-
-                PLACEHOLDER
+                Grants the Postgres `CREATEDB` attribute, which lets the role create databases.
             "createrole":
               "description": |-
-                PLACEHOLDER
+                Grants the Postgres `CREATEROLE` attribute, which lets the role create, alter, and drop other roles.
         "auth_method":
           "description": |-
             How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.
@@ -1616,48 +1534,14 @@ resources:
       "description": |-
         The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.
       "$fields":
-        "accelerated_sync":
-          "description": |-
-            PLACEHOLDER
-        "branch":
-          "description": |-
-            PLACEHOLDER
-        "create_database_objects_if_missing":
-          "description": |-
-            PLACEHOLDER
-        "existing_pipeline_id":
-          "description": |-
-            PLACEHOLDER
-        "extra_columns":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "new_pipeline_spec":
-          "description": |-
-            PLACEHOLDER
-        "postgres_database":
-          "description": |-
-            PLACEHOLDER
-        "primary_key_columns":
-          "description": |-
-            PLACEHOLDER
-        "scheduling_policy":
-          "description": |-
-            PLACEHOLDER
-        "source_table_full_name":
-          "description": |-
-            PLACEHOLDER
         "synced_table_id":
           "description": |-
-            PLACEHOLDER
-        "timeseries_key":
-          "description": |-
-            PLACEHOLDER
-        "type_overrides":
-          "description": |-
-            PLACEHOLDER
+            The ID to use for the synced table; becomes the final component of the synced table's resource name. It is the synced table name, a `{catalog}.{schema}.{table}` tuple of Unity Catalog entity names.
+
+            It names both an online view in Unity Catalog, accessible through Lakehouse Federation, and a Postgres table named `{table}` in schema `{schema}` in the connected Postgres database.
     "quality_monitors":
       "description": |-
         The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
@@ -1865,6 +1749,36 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level. This field translates to a `principal` field in secret scope ACL.
+    "secrets":
+      "description": |-
+        The Unity Catalog secret definitions for the bundle, where each key is the name of the secret.
+      "markdown_description": |-
+        The Unity Catalog secret definitions for the bundle, where each key is the name of the secret. See [\_](/dev-tools/bundles/resources.md#secrets).
+      "$fields":
+        "catalog_name":
+          "description": |-
+            The name of the catalog where the schema and the secret reside.
+        "comment":
+          "description": |-
+            User-provided free-form text description of the secret.
+        "expire_time":
+          "description": |-
+            User-provided expiration time of the secret. Purely informational; does not trigger automatic actions.
+        "grants":
+          "description": |-
+            The grants to apply on this secret.
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "name":
+          "description": |-
+            The name of the secret, relative to its parent schema.
+        "schema_name":
+          "description": |-
+            The name of the schema where the secret resides.
+        "value":
+          "description": |-
+            The secret value to store. Must be a variable reference (e.g. ${var.my_secret}) to prevent plain-text secrets in configuration files.
     "sql_warehouses":
       "description": |-
         The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.

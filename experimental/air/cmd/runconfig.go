@@ -31,6 +31,11 @@ var taskKeyRe = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 // exec args). Only safe ref characters are allowed.
 var gitRefRe = regexp.MustCompile(`^[\w./-]+$`)
 
+// Canonical UUID (8-4-4-4-12 hex). Usage policy ids are server-generated UUIDs,
+// so an obviously-wrong value (e.g. a policy name pasted into usage_policy_id)
+// is rejected up front with a hint pointing at usage_policy_name.
+var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
 // runConfig is the top-level run YAML schema: experiment_name + compute /
 // environment / code_source plus the command and run options.
 type runConfig struct {
@@ -164,8 +169,14 @@ func (c *runConfig) validate() error {
 			return fmt.Errorf("usage_policy_name must be at most 127 characters, got %d", len(v))
 		}
 	}
-	if c.UsagePolicyID != nil && strings.TrimSpace(*c.UsagePolicyID) == "" {
-		return errors.New("usage_policy_id must not be empty")
+	if c.UsagePolicyID != nil {
+		v := strings.TrimSpace(*c.UsagePolicyID)
+		if v == "" {
+			return errors.New("usage_policy_id must not be empty")
+		}
+		if !uuidRe.MatchString(v) {
+			return fmt.Errorf("usage_policy_id must be a UUID (for example, '12345678-90ab-cdef-1234-567890abcdef'), got: %s. To assign a policy by name instead, use usage_policy_name", v)
+		}
 	}
 
 	return nil

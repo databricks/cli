@@ -1,0 +1,10 @@
+
+=== upload a stale lock file held by another user
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-bundle-force-lock/default/state/deploy.lock --format AUTO --file ./deploy.lock
+
+=== bundle.deployment.lock.force is set in databricks.yml, so the stale lock is overridden
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-force-lock/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

@@ -240,6 +240,15 @@ func TestResourcesBindSupport(t *testing.T) {
 				Name: "0",
 			},
 		},
+		Secrets: map[string]*resources.Secret{
+			"my_secret": {
+				Secret: catalog.Secret{
+					CatalogName: "main",
+					SchemaName:  "default",
+					Name:        "my_secret",
+				},
+			},
+		},
 		SqlWarehouses: map[string]*resources.SqlWarehouse{
 			"my_sql_warehouse": {
 				CreateWarehouseRequest: sql.CreateWarehouseRequest{},
@@ -381,6 +390,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockSecretsUcAPI().EXPECT().GetSecret(mock.Anything, mock.Anything).Return(&catalog.Secret{FullName: "0"}, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {

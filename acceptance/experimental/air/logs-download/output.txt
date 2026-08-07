@@ -1,0 +1,16 @@
+
+=== download-to reports no logs when none are available
+>>> [CLI] experimental air logs 123 --download-to dl-logs
+No logs available for run 123. Run terminated in state SUCCESS
+
+=== download-to with an out-of-range node is rejected
+>>> [CLI] experimental air logs 123 --download-to dl-logs --node 5
+Error: invalid --node 5: run has 2 node(s), indexed 0 to 1
+
+Exit code: 1
+
+=== download-to cannot be combined with --lines
+>>> [CLI] experimental air logs 123 --download-to dl-logs --lines 50
+Error: --download-to writes complete logs, so it cannot be combined with --lines or --minutes
+
+Exit code: 1

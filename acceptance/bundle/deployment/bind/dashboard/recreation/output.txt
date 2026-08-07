@@ -11,8 +11,6 @@ Run 'bundle deploy' to deploy changes to your workspace
 recreate dashboards.dashboard1
 
 Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
-
->>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 
 This action will result in the deletion or recreation of the following dashboards.
@@ -27,8 +25,6 @@ Exit code: 1
 
 >>> [CLI] bundle deployment unbind dashboard1
 Updating deployment state...
-
->>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...

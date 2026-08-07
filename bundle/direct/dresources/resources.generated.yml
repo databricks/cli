@@ -354,6 +354,39 @@ resources:
 
   # secret_scopes: no api field behaviors
 
+  secrets:
+
+    recreate_on_changes:
+      - field: catalog_name
+        reason: spec:immutable
+      - field: name
+        reason: spec:immutable
+      - field: schema_name
+        reason: spec:immutable
+
+    ignore_remote_changes:
+      - field: owner
+        reason: spec:input_only
+      - field: value
+        reason: spec:input_only
+
+      - field: create_time
+        reason: spec:output_only
+      - field: created_by
+        reason: spec:output_only
+      - field: effective_owner
+        reason: spec:output_only
+      - field: effective_value
+        reason: spec:output_only
+      - field: full_name
+        reason: spec:output_only
+      - field: metastore_id
+        reason: spec:output_only
+      - field: update_time
+        reason: spec:output_only
+      - field: updated_by
+        reason: spec:output_only
+
   # sql_warehouses: no api field behaviors
 
   synced_database_tables:
