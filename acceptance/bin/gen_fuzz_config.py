@@ -1,14 +1,12 @@
 """
-Generate a random bundle config from the bundle JSON schema.
+Schema-driven helpers for the invariant fuzzer: walk `databricks bundle schema` (resolving $ref,
+picking concrete oneOf/anyOf branches) and emit random field values. Free-form scalars are
+sometimes replaced with dangerous values (DANGEROUS_STRINGS/INTS) to probe input handling.
 
-Walks `databricks bundle schema` (resolving $ref, picking concrete oneOf/anyOf branches) and emits
-one random resource, seeded by the caller. Free-form scalars are sometimes replaced with dangerous
-values (DANGEROUS_STRINGS/INTS) to probe input handling. The harness drops configs the CLI
-rejects, so output may be structurally random but invalid.
+mutate_fuzz_config.py uses Generator to value optional fields it injects into curated configs.
+gen_config builds a whole resource from the schema and is exercised by the selftest.
 
 A seed is tied to schema iteration order, so adding a field moves every later draw.
-
-Used as a library by emit_fuzz_config.py and mutate_fuzz_config.py.
 """
 
 import json

@@ -44,7 +44,7 @@ invariant_deploy() {
     trace "$@" &> "$logfile"
     cat "$logfile" | contains.py '!panic:' '!internal error' > /dev/null
 
-    # Tells the fuzzer the generated config was valid; failures after this count as bugs.
+    # Tells the fuzzer the config was accepted; failures after this count as bugs.
     echo INPUT_CONFIG_OK
 }
 
