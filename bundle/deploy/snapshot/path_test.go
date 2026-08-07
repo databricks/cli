@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
+	libsnapshot "github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
@@ -93,26 +94,6 @@ func TestBundleZipRespectsExcludes(t *testing.T) {
 	assert.Less(t, len(zipExcl), len(zipAll))
 }
 
-func TestIDFromContent(t *testing.T) {
-	id := snapshot.IDFromContent([]byte("hello"))
-	// SHA-256 of "hello"
-	assert.Equal(t, "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824", id)
-	assert.Len(t, id, 64, "SHA-256 hex must be 64 characters")
-}
-
-func TestSnapshotIDMatchesBundleZipHash(t *testing.T) {
-	b := makeBundleWithFiles(t, map[string]string{"task.py": "x = 1"})
-
-	zipContent, _, err := snapshot.BundleZip(t.Context(), b)
-	require.NoError(t, err)
-	expectedID := snapshot.IDFromContent(zipContent)
-
-	id, err := snapshot.SnapshotID(t.Context(), b)
-	require.NoError(t, err)
-
-	assert.Equal(t, expectedID, id)
-}
-
 func zipEntryNames(t *testing.T, zipContent []byte) []string {
 	t.Helper()
 	r, err := zip.NewReader(bytes.NewReader(zipContent), int64(len(zipContent)))
@@ -166,6 +147,6 @@ func TestBundleZipChangesWithPermissions(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NotEqual(t, zipNoPerms, zipWithPerms, "adding top-level permissions must produce a different snapshot zip")
-	assert.NotEqual(t, snapshot.IDFromContent(zipNoPerms), snapshot.IDFromContent(zipWithPerms),
+	assert.NotEqual(t, libsnapshot.HashFromContent(zipNoPerms), libsnapshot.HashFromContent(zipWithPerms),
 		"snapshot IDs must differ when top-level permissions change")
 }

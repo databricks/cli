@@ -26,7 +26,11 @@ func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundl
 	}
 
 	if b.Config.Workspace.FilePath == "" {
-		b.Config.Workspace.FilePath = path.Join(root, "files")
+		if b.IsImmutableFolder() {
+			b.Config.Workspace.FilePath = "${resources.internal_immutable_snapshots.immutable.full_path}/files"
+		} else {
+			b.Config.Workspace.FilePath = path.Join(root, "files")
+		}
 	}
 
 	if b.Config.Workspace.ResourcePath == "" {
@@ -34,7 +38,11 @@ func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundl
 	}
 
 	if b.Config.Workspace.ArtifactPath == "" {
-		b.Config.Workspace.ArtifactPath = path.Join(root, "artifacts")
+		if b.IsImmutableFolder() {
+			b.Config.Workspace.ArtifactPath = "${resources.internal_immutable_snapshots.immutable.full_path}/artifacts"
+		} else {
+			b.Config.Workspace.ArtifactPath = path.Join(root, "artifacts")
+		}
 	}
 
 	if b.Config.Workspace.StatePath == "" {

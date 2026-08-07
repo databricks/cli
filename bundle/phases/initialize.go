@@ -27,6 +27,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: initialize")
 
 	bundle.ApplySeqContext(ctx, b,
+		// Reads (dynamic): resources.internal_immutable_snapshots (and other internal keys)
+		// Warns and removes any internal resource fields set by the user.
+		mutator.RejectInternalResources(),
+
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),

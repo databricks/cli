@@ -8,20 +8,113 @@ Workspace:
 
 Validation OK!
 
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan["resources.jobs.my_job"].new_state.value.tasks plan.json
+[
+  {
+    "notebook_task": {
+      "base_parameters": {
+        "path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/some_path"
+      },
+      "notebook_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
+    },
+    "task_key": "notebook_task"
+  },
+  {
+    "environment_key": "env",
+    "spark_python_task": {
+      "python_file": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
+    },
+    "task_key": "spark_python_task"
+  }
+]
+
+>>> jq .plan["resources.internal_immutable_snapshots.immutable"] plan.json
+{
+  "action": "create",
+  "new_state": {
+    "value": {
+      "remote_root": "/Workspace/Users/[UUID]/.snapshots",
+      "relative_path": "[UUID]/[SNAPSHOT_HASH]",
+      "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
+      "bundle_id": "[UUID]",
+      "acl": [
+        {
+          "user_name": "[USERNAME]",
+          "permission_level": "CAN_READ"
+        }
+      ]
+    }
+  }
+}
+
 >>> [CLI] bundle deploy
-Uploading immutable bundle snapshot...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] jobs get [NUMID]
+>>> jq .settings.tasks job.json
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
 
->>> [CLI] jobs get [NUMID]
+>>> jq .settings.tasks job.json
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
 
->>> [CLI] jobs get [NUMID]
+>>> jq .settings.tasks job.json
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/some_path"
+
+>>> title Check snapshot plan after deploy: 
+
+=== Check snapshot plan after deploy: 
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan["resources.internal_immutable_snapshots.immutable"] plan.json
+{
+  "action": "skip",
+  "remote_state": {
+    "relative_path": "[UUID]/[SNAPSHOT_HASH]",
+    "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]"
+  },
+  "changes": {
+    "acl": {
+      "action": "skip",
+      "reason": "missing_in_remote",
+      "old": [
+        {
+          "user_name": "[USERNAME]",
+          "permission_level": "CAN_READ"
+        }
+      ],
+      "new": [
+        {
+          "user_name": "[USERNAME]",
+          "permission_level": "CAN_READ"
+        }
+      ],
+      "remote": null
+    },
+    "bundle_id": {
+      "action": "skip",
+      "reason": "missing_in_remote",
+      "old": "[UUID]",
+      "new": "[UUID]",
+      "remote": ""
+    },
+    "remote_root": {
+      "action": "skip",
+      "reason": "missing_in_remote",
+      "old": "/Workspace/Users/[UUID]/.snapshots",
+      "new": "/Workspace/Users/[UUID]/.snapshots",
+      "remote": ""
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+Snapshot did not change as expected
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

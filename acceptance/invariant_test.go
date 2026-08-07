@@ -22,9 +22,10 @@ const invariantConfigsDir = "bundle/invariant/configs"
 // for permissions/grants coverage. Add a config and remove the entry to close a gap;
 // the test fails if an entry here is actually covered, so the list only shrinks.
 var LackingInvariantTest = map[string]bool{
-	"quality_monitors": true,
-	"secrets":          true,
-	"secrets.grants":   true,
+	"quality_monitors":             true,
+	"internal_immutable_snapshots": true,
+	"secrets":                      true,
+	"secrets.grants":               true,
 }
 
 // TestInvariantConfigsCoverage ensures that the invariant test configs in

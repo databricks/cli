@@ -3,6 +3,7 @@ package snapshot
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,16 +13,25 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/vfs"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type mockUploader struct{ path string }
-
-func (m *mockUploader) Upload(_ context.Context, _, _ string, _ []ACLEntry, _ []byte) (*SnapshotInfo, error) {
-	return &SnapshotInfo{Path: m.path}, nil
+func setupTestClient(t *testing.T) *databricks.WorkspaceClient {
+	t.Helper()
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:               server.URL,
+		Token:              "testtoken",
+		RateLimitPerSecond: math.MaxInt,
+	})
+	require.NoError(t, err)
+	return client
 }
 
 func makeBundle(t *testing.T, nFiles int) *bundle.Bundle {
@@ -59,19 +69,20 @@ func testContext(t *testing.T) context.Context {
 
 func TestUploadWarnsAboveFileLimit(t *testing.T) {
 	b := makeBundle(t, fileLimitWarning+1)
-	m := &snapshotUpload{uploader: &mockUploader{path: "/snapshots/test"}}
+	b.SetWorkpaceClient(setupTestClient(t))
+	m := &snapshotUpload{}
 
 	diags := m.Apply(testContext(t), b)
 
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	assert.Contains(t, diags[0].Summary, fmt.Sprintf("%d files", fileLimitWarning+1))
-	assert.Equal(t, "/snapshots/test", b.Config.Workspace.SnapshotPath)
 }
 
 func TestUploadNoWarningBelowFileLimit(t *testing.T) {
 	b := makeBundle(t, 5)
-	m := &snapshotUpload{uploader: &mockUploader{path: "/snapshots/test"}}
+	b.SetWorkpaceClient(setupTestClient(t))
+	m := &snapshotUpload{}
 
 	diags := m.Apply(testContext(t), b)
 

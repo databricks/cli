@@ -803,3 +803,7 @@ resources:
     backend_defaults:
       # The Vector Search API assigns index_subtype when the config omits it
       - field: index_subtype
+
+  internal_immutable_snapshots:
+    recreate_on_changes:
+      - reason: immutable

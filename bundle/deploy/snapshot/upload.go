@@ -3,27 +3,26 @@ package snapshot
 import (
 	"context"
 	"fmt"
-	"path"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/snapshot"
+	"github.com/google/uuid"
 )
 
 // fileLimitWarning is the file count above which immutable folder deployments may fail.
 const fileLimitWarning = 1000
 
 type snapshotUpload struct {
-	// uploader allows test injection of a custom SnapshotUploader.
-	uploader SnapshotUploader
+	skipZip bool
 }
 
-// Upload returns a mutator that builds the bundle zip, uploads it via
-// /api/2.0/repos/snapshots, and updates workspace.file_path and
-// workspace.artifact_path to the content-addressed location returned by the API.
-func Upload() bundle.Mutator {
-	return &snapshotUpload{}
+// PlanUpload returns a mutator that builds the bundle zip, uploads it via
+// /api/2.0/repos/snapshots, and registers the snapshot as an internal resource.
+func PlanUpload(skipZip bool) bundle.Mutator {
+	return &snapshotUpload{skipZip: skipZip}
 }
 
 func (m *snapshotUpload) Name() string {
@@ -31,63 +30,88 @@ func (m *snapshotUpload) Name() string {
 }
 
 func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	uploader := m.uploader
-	if uploader == nil {
-		var err error
-		uploader, err = NewSnapshotUploader(b.WorkspaceClient(ctx))
-		if err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
-	cmdio.LogString(ctx, "Uploading immutable bundle snapshot...")
-
-	zipContent, fileCount, err := BundleZip(ctx, b)
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to build snapshot zip: %w", err))
-	}
-	var diags diag.Diagnostics
-	if fileCount > fileLimitWarning {
-		diags = append(diags, diag.Warningf(
-			"immutable folder deployment may not work correctly: bundle contains %d files (limit is %d)",
-			fileCount, fileLimitWarning,
-		)...)
-	}
-	snapshotID := IDFromContent(zipContent)
-	log.Debugf(ctx, "snapshot.Upload: snapshotID=%s zip=%d bytes", snapshotID, len(zipContent))
-
-	acl := BuildACL(b)
-	// Use the deployment lineage UUID as bundle_id so the snapshot directory is
-	// keyed to this specific deployment (not to the bundle name, which can be
-	// reused across unrelated deployments).
-	bundleID := b.DeploymentBundle.StateDB.GetOrInitLineage()
-	info, err := uploader.Upload(ctx, bundleID, snapshotID, acl, zipContent)
+	uploader, err := snapshot.NewSnapshotClient(b.WorkspaceClient(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	log.Infof(ctx, "Snapshot uploaded to %s", info.Path)
+	remoteRoot, err := uploader.GetSnapshotRootPath(ctx)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
-	b.Config.Workspace.SnapshotPath = info.Path
-	b.Config.Workspace.FilePath = path.Join(info.Path, "files")
-	// Only set artifact_path when artifacts are present; with no artifacts the
-	// zip has no "artifacts" directory and a get-status on it would 404.
-	if len(b.Config.Artifacts) > 0 {
-		b.Config.Workspace.ArtifactPath = path.Join(info.Path, "artifacts")
+	if b.Config.Resources.Snapshots == nil {
+		b.Config.Resources.Snapshots = make(map[string]*resources.Snapshot)
+	}
+	if _, ok := b.Config.Resources.Snapshots["immutable"]; !ok {
+		b.Config.Resources.Snapshots["immutable"] = &resources.Snapshot{
+			BundleID:   BundleID(b),
+			ACL:        BuildACL(b),
+			RemoteRoot: remoteRoot,
+		}
+	}
+
+	var diags diag.Diagnostics
+	if !m.skipZip {
+		zipContent, fileCount, err := BundleZip(ctx, b)
+		if err != nil {
+			return diag.FromErr(fmt.Errorf("failed to build snapshot zip: %w", err))
+		}
+
+		if fileCount > fileLimitWarning {
+			diags = append(diags, diag.Warningf(
+				"immutable folder deployment may not work correctly: bundle contains %d files (limit is %d)",
+				fileCount, fileLimitWarning,
+			)...)
+		}
+
+		b.Config.Resources.Snapshots["immutable"].ZipContent = string(zipContent)
 	}
 
 	return diags
 }
 
+// SyncZipContent copies the zip content from b.Config.Resources.Snapshots["immutable"]
+// into the in-memory state cache entry for the snapshot resource. This is needed when
+// deploying from a plan file: the plan JSON omits ZipContent (json:"-"), so InitForApply
+// leaves it empty, causing DoCreate to upload an empty zip and derive a wrong snapshot ID.
+func SyncZipContent(b *bundle.Bundle) {
+	snap := b.Config.Resources.Snapshots["immutable"]
+	if snap == nil || snap.ZipContent == "" {
+		return
+	}
+	sv, ok := b.DeploymentBundle.StateCache.Load("resources.internal_immutable_snapshots.immutable")
+	if !ok {
+		return
+	}
+	state, ok := sv.Value.(*dresources.SnapshotState)
+	if !ok {
+		return
+	}
+	state.ZipContent = snap.ZipContent
+}
+
+// bundleIDNamespace is the UUID namespace used to derive the bundle ID.
+var bundleIDNamespace = uuid.MustParse("4b4e4b5a-3c3d-4e4f-8b8c-9d9e9f0a0b0c")
+
+// BundleID returns a stable UUID that identifies the bundle deployment.
+// It is derived deterministically from the bundle name, target, and workspace host
+// so that every CLI invocation for the same deployment produces the same value.
+// This is used as the path prefix for immutable snapshots in the workspace.
+func BundleID(b *bundle.Bundle) string {
+	key := b.Config.Bundle.Name + "/" + b.Config.Bundle.Target + "/" + b.Config.Workspace.Host
+	return uuid.NewSHA1(bundleIDNamespace, []byte(key)).String()
+}
+
 // BuildACL constructs the access_control_list for the snapshot upload.
 // It grants CAN_READ to the current user and to every principal listed in the
 // top-level permissions section of the bundle config.
-func BuildACL(b *bundle.Bundle) []ACLEntry {
-	acl := []ACLEntry{
+func BuildACL(b *bundle.Bundle) []snapshot.ACLEntry {
+	acl := []snapshot.ACLEntry{
 		{UserName: b.Config.Workspace.CurrentUser.UserName, PermissionLevel: "CAN_READ"},
 	}
 	for _, p := range b.Config.Permissions {
-		acl = append(acl, ACLEntry{
+		acl = append(acl, snapshot.ACLEntry{
 			UserName:             p.UserName,
 			GroupName:            p.GroupName,
 			ServicePrincipalName: p.ServicePrincipalName,
