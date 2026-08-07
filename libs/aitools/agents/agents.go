@@ -109,6 +109,11 @@ const (
 	NameOpenCode    = "opencode"
 	NameCopilot     = "copilot"
 	NameAntigravity = "antigravity"
+	// NameAgents is the vendor-neutral ".agents/skills" destination rather than a
+	// coding agent. It has no CLI binary and no plugin: skill files placed in
+	// ~/.agents/skills (global) or <root>/.agents/skills (project) are read
+	// directly by any tool that follows the AGENTS.md/.agents convention.
+	NameAgents = "agents"
 )
 
 // Databricks plugin identity, shared across the agents that ship a plugin.
@@ -203,6 +208,15 @@ var Registry = []*Agent{
 		ConfigDir:    homeSubdir(".gemini", "antigravity"),
 		SkillsSubdir: "global_skills",
 		// Antigravity is IDE-only with no CLI binary, so it has no plugin path.
+	},
+	{
+		Name:                 NameAgents,
+		DisplayName:          "Portable (.agents/skills)",
+		ConfigDir:            homeSubdir(".agents"),
+		SupportsProjectScope: true,
+		ProjectConfigDir:     ".agents",
+		// A destination convention, not a coding agent: no CLI binary and no
+		// plugin, so raw skill files are its only delivery.
 	},
 }
 

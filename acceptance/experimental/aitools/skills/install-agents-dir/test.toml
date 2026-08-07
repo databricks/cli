@@ -1,0 +1,30 @@
+Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
+Env.DATABRICKS_SKILLS_REF = "test-ref"
+
+Ignore = [
+    "home",
+    "proj",
+]
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+[[Server]]
+Pattern = "GET /test-ref/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "skills": {
+    "test-stable-a": {"version": "1.0.0", "files": ["SKILL.md"], "repo_dir": "skills"}
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /test-ref/skills/test-stable-a/SKILL.md"
+Response.Body = '''---
+name: test-stable-a
+---
+
+# A
+'''

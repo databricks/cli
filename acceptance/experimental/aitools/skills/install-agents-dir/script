@@ -1,0 +1,19 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+
+title "install to the global .agents/skills destination"
+trace $CLI experimental aitools install --agents agents --scope=global
+
+title "a single global agent gets a real copied file under ~/.agents/skills"
+withdir "${USERPROFILE:-$HOME}" trace find.py '.agents/skills/test-stable-a/SKILL.md' --expect 1
+withdir "${USERPROFILE:-$HOME}" trace cat .agents/skills/test-stable-a/SKILL.md
+
+title "install to the project .agents/skills destination (cwd)"
+mkdir -p proj
+withdir proj trace $CLI experimental aitools install --agents agents --scope=project
+
+title "project scope writes the real file to the canonical dir"
+withdir proj trace find.py '.databricks/aitools/skills/test-stable-a/SKILL.md' --expect 1
+
+title "and .agents/skills exposes the same content (symlinked into canonical)"
+withdir proj trace cat .agents/skills/test-stable-a/SKILL.md
