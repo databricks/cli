@@ -1,1 +1,1 @@
-direct: the experimental `job_runs` resource now sends an idempotency token with every run-now request, so a request that is resent after its response was lost returns the run that already started instead of triggering a second one. `idempotency_token` is set by the CLI and is now rejected in bundle configuration.
+direct: experimental `job_runs` now sends a CLI-managed idempotency token on every run-now, so an SDK retry after a lost response returns the same run. Configured `idempotency_token` values are rejected.

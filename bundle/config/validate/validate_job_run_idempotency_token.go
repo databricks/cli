@@ -30,10 +30,8 @@ func (v *validateJobRunIdempotencyToken) Apply(_ context.Context, b *bundle.Bund
 		if jobRun == nil || jobRun.IdempotencyToken == "" {
 			continue
 		}
-		// The CLI sets a token of its own on every run-now, so a configured one would
-		// be overwritten. It would also outlive the run it triggered: the Jobs API
-		// keeps a token reserved once its run is deleted, which recreate and destroy
-		// both do, and rejects the next run-now that carries it.
+		// The CLI mints the token; a configured one would also remain reserved after
+		// the run is deleted and break the next deploy.
 		path := "resources.job_runs." + name + ".idempotency_token"
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,

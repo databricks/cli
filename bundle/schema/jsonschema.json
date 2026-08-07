@@ -1178,10 +1178,6 @@
                         "doNotSuggest": true,
                         "deprecated": true
                       },
-                      "idempotency_token": {
-                        "description": "An optional token to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly one run\nis launched with that idempotency token.\n\nThis token must have at most 64 characters.\n\nFor more information, see [How to ensure idempotency for jobs](https://kb.databricks.com/jobs/jobs-idempotency.html).",
-                        "$ref": "#/$defs/string"
-                      },
                       "jar_params": {
                         "description": "[Private Preview] A list of parameters for jobs with Spark JAR tasks, for example `\"jar_params\": [\"john doe\", \"35\"]`.\nThe parameters are used to invoke the main function of the main class specified in the Spark JAR task.\nIf not specified upon `run-now`, it defaults to an empty list.\njar_params cannot be specified in conjunction with notebook_params.\nThe JSON representation of this field (for example `{\"jar_params\":[\"john doe\",\"35\"]}`) cannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
                         "$ref": "#/$defs/slice/string",
