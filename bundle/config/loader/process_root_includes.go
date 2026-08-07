@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 type processRootIncludes struct{}
@@ -130,13 +131,35 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		}
 	}
 
-	// Swap out the original includes list with the expanded globs.
-	b.Config.Include = files
+	// Swap out the original includes list with the expanded globs. This goes through
+	// Mutate so the dynamic tree is updated too: the includes below are applied without
+	// their own mutator scope, so nothing converts the typed field back into the dynamic
+	// tree afterwards, and the next ToTyped would otherwise restore the raw patterns.
+	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		// Include is omitempty in the typed configuration, so an empty list must stay
+		// absent from the dynamic tree rather than be written as [].
+		if len(files) == 0 {
+			return dyn.DropKeys(root, []string{"include"})
+		}
+
+		includeValues := make([]dyn.Value, 0, len(files))
+		for _, file := range files {
+			includeValues = append(includeValues, dyn.V(file))
+		}
+		return dyn.Set(root, "include", dyn.NewValue(includeValues, root.Get("include").Locations()))
+	})
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	// Track number of bundle YAML (or JSON) files in the configuration. The +1 is there
 	// to account for the root databricks.yaml file.
 	b.Metrics.ConfigurationFileCount = int64(len(files)) + 1
 
-	bundle.ApplySeqContext(ctx, b, out...)
+	// ProcessInclude merges into the configuration via [config.Root.Merge], so it does
+	// not need its own mutator scope. Giving each included file one would re-convert the
+	// whole accumulated configuration per file, making load quadratic in the number of
+	// included files (~20 minutes for 6000 files).
+	bundle.ApplySeqInScopeContext(ctx, b, out...)
 	return nil
 }
