@@ -37,13 +37,9 @@ func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.Se
 
 // applyTelemetryConfig mirrors the backend: table_names is consumed to create a profile and
 // never echoed back, so GET returns the profile ID and the caller's inference_table_config.
-// A config naming neither table_names nor telemetry_profile_id is discarded, reporting success.
-func applyTelemetryConfig(previous, config *serving.TelemetryConfig) *serving.TelemetryConfig {
+func applyTelemetryConfig(config *serving.TelemetryConfig) *serving.TelemetryConfig {
 	if config == nil {
 		return nil
-	}
-	if config.TableNames == nil && config.TelemetryProfileId == "" {
-		return previous
 	}
 
 	applied := serving.TelemetryConfig{TelemetryProfileId: config.TelemetryProfileId}
@@ -253,7 +249,7 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		PermissionLevel:      serving.ServingEndpointDetailedPermissionLevelCanManage,
 		RouteOptimized:       createReq.RouteOptimized,
 		Tags:                 createReq.Tags,
-		TelemetryConfig:      applyTelemetryConfig(nil, createReq.TelemetryConfig),
+		TelemetryConfig:      applyTelemetryConfig(createReq.TelemetryConfig),
 		State: &serving.EndpointState{
 			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
 			Ready:        serving.EndpointStateReadyNotReady,
@@ -462,7 +458,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTelemetryConfig(req Request, name st
 	}
 
 	// An omitted telemetry_config removes the configuration from the endpoint.
-	endpoint.TelemetryConfig = applyTelemetryConfig(endpoint.TelemetryConfig, patchReq.TelemetryConfig)
+	endpoint.TelemetryConfig = applyTelemetryConfig(patchReq.TelemetryConfig)
 	endpoint.LastUpdatedTimestamp = nowMilli()
 	s.ServingEndpoints[name] = endpoint
 

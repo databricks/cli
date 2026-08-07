@@ -3,12 +3,9 @@ echo "*" > .gitignore
 title "Initial deployment"
 trace $CLI bundle deploy
 
-title "Change config and telemetry_config in the same deploy"
+title "Change config and telemetry_config; deploy waits for the config update to settle before patching telemetry"
 update_file.py databricks.yml "workload_size: Small" "workload_size: Medium"
 update_file.py databricks.yml "sampling_fraction: 0.5" "sampling_fraction: 0.9"
-trace $CLI bundle plan --output json | jq '.plan[].changes | keys'
-
-title "Deploy waits for the config update to settle before patching telemetry"
 trace $CLI bundle deploy
 
 title "Plan converges"

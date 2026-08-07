@@ -12,7 +12,3 @@ resources:
             entity_version: "1"
             workload_size: Small
             scale_to_zero_enabled: true
-        traffic_config:
-          routes:
-            - served_model_name: prod
-              traffic_percentage: 100
