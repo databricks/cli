@@ -183,6 +183,41 @@ func TestJobsGetRun_TaskWithoutCodeDoesNotFailTheRun(t *testing.T) {
 	assert.Equal(t, jobs.RunResultStateSuccess, getRun(t, workspace, runID).State.ResultState)
 }
 
+func TestJobsRunNow_RepeatedTokenReturnsTheSameRun(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	jobID := createJob(t, workspace, jobs.Task{TaskKey: "main"})
+	request := jobs.RunNow{JobId: jobID, IdempotencyToken: "token"}
+
+	first := runNow(t, workspace, request).Body.(jobs.RunNowResponse).RunId
+	second := runNow(t, workspace, request).Body.(jobs.RunNowResponse).RunId
+
+	assert.Equal(t, first, second)
+	assert.Len(t, workspace.JobRuns, 1)
+}
+
+func TestJobsRunNow_DifferentTokensStartDifferentRuns(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	jobID := createJob(t, workspace, jobs.Task{TaskKey: "main"})
+
+	first := runNow(t, workspace, jobs.RunNow{JobId: jobID, IdempotencyToken: "one"}).Body.(jobs.RunNowResponse).RunId
+	second := runNow(t, workspace, jobs.RunNow{JobId: jobID, IdempotencyToken: "two"}).Body.(jobs.RunNowResponse).RunId
+
+	assert.NotEqual(t, first, second)
+	assert.Len(t, workspace.JobRuns, 2)
+}
+
+// `bundle run` and `jobs run-now` send no token, and two such requests are two runs.
+func TestJobsRunNow_WithoutATokenIsNeverDeduped(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	jobID := createJob(t, workspace, jobs.Task{TaskKey: "main"})
+
+	first := runNow(t, workspace, jobs.RunNow{JobId: jobID}).Body.(jobs.RunNowResponse).RunId
+	second := runNow(t, workspace, jobs.RunNow{JobId: jobID}).Body.(jobs.RunNowResponse).RunId
+
+	assert.NotEqual(t, first, second)
+	assert.Len(t, workspace.JobRuns, 2)
+}
+
 // An interrupted deploy leaves the run going, and the CLI cancels it before
 // deleting it, since jobs/runs/delete rejects an active run.
 func TestJobsCancelRun_SettlesAnActiveRun(t *testing.T) {

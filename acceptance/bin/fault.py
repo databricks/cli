@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Set up a fault rule on the testserver for the current test token.
 
-Usage: fault.py PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]
+Usage: fault.py [--after-handler] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]
 
+  --after-handler  let the handler run and keep the state change it makes,
+                   replacing only its response; models a response lost on the
+                   way back from a request the backend already carried out
   PATTERN     HTTP method and path, supports trailing * wildcard,
               e.g. "PUT /api/2.0/permissions/pipelines/*"
   STATUS_CODE HTTP status code to return, e.g. 504
@@ -27,12 +30,17 @@ if not host:
     print("DATABRICKS_HOST not set", file=sys.stderr)
     sys.exit(1)
 
-if len(sys.argv) not in (5, 6):
-    print(f"usage: {sys.argv[0]} PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]", file=sys.stderr)
+args = sys.argv[1:]
+after_handler = "--after-handler" in args
+if after_handler:
+    args.remove("--after-handler")
+
+if len(args) not in (4, 5):
+    print(f"usage: {sys.argv[0]} [--after-handler] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]", file=sys.stderr)
     sys.exit(1)
 
-pattern, status_code, offset, times = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])
-error_code = sys.argv[5] if len(sys.argv) == 6 else "INJECTED"
+pattern, status_code, offset, times = args[0], int(args[1]), int(args[2]), int(args[3])
+error_code = args[4] if len(args) == 5 else "INJECTED"
 body = json.dumps({"error_code": error_code, "message": "Fault injected by test."})
 
 data = json.dumps(
@@ -42,6 +50,7 @@ data = json.dumps(
         "body": body,
         "offset": offset,
         "times": times,
+        "after_handler": after_handler,
     }
 ).encode()
 
