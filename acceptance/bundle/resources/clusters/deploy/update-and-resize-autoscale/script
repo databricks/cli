@@ -7,7 +7,7 @@ cleanup() {
 trap cleanup EXIT
 
 $CLI bundle plan > out.plan_.$DATABRICKS_BUNDLE_ENGINE.txt
-$CLI bundle plan -o json > out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 
 title "Cluster should exist with num_workers after bundle deployment:\n"
