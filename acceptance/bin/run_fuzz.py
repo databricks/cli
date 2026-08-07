@@ -8,13 +8,13 @@ FUZZ_TARGET, and classifies each outcome:
   rejected - the CLI refused the config before deploying it; the common case, not a bug
   gap      - the config needs a route the testserver does not model
   hang     - the seed outlived FUZZ_SEED_TIMEOUT
-  bug      - a panic, an internal error, a generator failure, or a config that deployed and then
+  bug      - a panic, an internal error, a mutator failure, or a config that deployed and then
              broke the invariant or failed a later command
 
 Every seed adds a line to LOG.summary. A bug or a hang also writes a ready-to-run repro to
 LOG.repro and exits non-zero. Nothing is written to stdout: the committed run asserts empty output.
 
-FUZZ_TARGET and FUZZ_MODE come from the test.toml matrix; FUZZ_SEED_START, FUZZ_SEED_COUNT,
+FUZZ_TARGET comes from the test.toml matrix; FUZZ_SEED_START, FUZZ_SEED_COUNT,
 FUZZ_SEED_TIMEOUT and FUZZ_TIME_BUDGET are optional knobs the caller sets (see task test-fuzz).
 FUZZ_CHECK_DRIFT is read only to name the oracle in the repro; script.prepare acts on it.
 """
@@ -44,7 +44,6 @@ QUIT_GRACE = 10
 CLEANUP_LOG = "LOG.destroy"
 
 TARGET = os.environ["FUZZ_TARGET"]
-MODE = os.environ["FUZZ_MODE"]
 
 # Which no-drift oracle script.prepare installed, and part of the repro because the two disagree:
 # 0 is the plan-determinism diff, 1 the exact check that task test-fuzz defaults to.
@@ -121,12 +120,12 @@ def oracle_verdict(seed_dir):
 
 def classify(seed_dir):
     """Classify a seed that exited non-zero. Returns its kind and, for a failure, the reason."""
-    # The generator only writes to stderr when it fails: our bug, not a rejected config.
+    # emit_fuzz_config only writes to stderr when it fails: our bug, not a rejected config.
     gen_err = read(seed_dir / "LOG.gen.err").strip()
     if gen_err:
         # Last line: a traceback's first one is always "Traceback (most recent call last):".
         last_line = gen_err.splitlines()[-1].decode(errors="replace")
-        return "bug", f"could not be generated: {last_line}"
+        return "bug", f"could not be mutated: {last_line}"
 
     # A panic or internal error anywhere is a bug even if the CLI then rejects the config.
     logs = concat_logs(seed_dir)
@@ -159,16 +158,16 @@ def resource_type(seed_dir):
 def record(kind, seed, seed_dir):
     """One machine-readable line per seed. To a file, not stdout, so empty output still holds."""
     with open("LOG.summary", "a") as f:
-        f.write(f"{kind} seed={seed} target={TARGET} mode={MODE} type={resource_type(seed_dir)}\n")
+        f.write(f"{kind} seed={seed} target={TARGET} type={resource_type(seed_dir)}\n")
 
 
 def fail(seed, seed_dir, kind, reason, prefix=""):
     record(kind, seed, seed_dir)
-    # To a file, because the harness rewrites env-var values in stdout. Target and mode go through
-    # ENVFILTER: as EnvMatrix keys, plain env vars would be overridden and re-run every variant.
+    # To a file, because the harness rewrites env-var values in stdout. Target goes through
+    # ENVFILTER: as an EnvMatrix key, a plain env var would be overridden and re-run every variant.
     Path("LOG.repro").write_text(
         f"fuzz: seed {seed} {reason}, reproduce with: {prefix}"
-        f"ENVFILTER=FUZZ_TARGET={TARGET},FUZZ_MODE={MODE} FUZZ_SEED_START={seed} "
+        f"ENVFILTER=FUZZ_TARGET={TARGET} FUZZ_SEED_START={seed} "
         f"FUZZ_SEED_COUNT=1 FUZZ_CHECK_DRIFT={CHECK_DRIFT} task test-fuzz\n"
     )
     sys.exit(1)
@@ -224,10 +223,10 @@ def main():
 
     kinds = totals()
 
-    # Nothing deploying is not a pass: a broken schema, generator or fixture looks exactly like the
+    # Nothing deploying is not a pass: a broken schema, mutator or fixture looks exactly like the
     # CLI correctly rejecting random input. A single-seed replay is exempt.
     if count > 1 and not kinds["deployed"]:
-        sys.exit("fuzz: no seed deployed; the schema, generator or fixtures are broken")
+        sys.exit("fuzz: no seed deployed; the schema, mutator or fixtures are broken")
 
 
 if __name__ == "__main__":

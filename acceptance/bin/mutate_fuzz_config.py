@@ -1,15 +1,15 @@
 """
 Mutate a known-good bundle config by deleting, perturbing, and adding random fields.
 
-Complements gen_fuzz_config.py: instead of building from the schema, this perturbs a curated
-invariant config that already deploys, so it reaches a much higher deploy rate.
+Perturbs a curated invariant config that already deploys, so it reaches a much higher deploy rate
+than building from the schema alone.
 
 Two mutation kinds, chosen per step:
 
 - destructive (always): delete a field or replace it with a token, a dangerous value, or an empty
   container. Stays within the base's fields, so it finds only reject/panic bugs.
 - additive (with a schema): inject a valid optional field the base omits, valued by the schema
-  generator. This is what reaches reconcile/drift bugs.
+  generator in gen_fuzz_config.py. This is what reaches reconcile/drift bugs.
 
 The harness only asserts no-panic on fuzzed configs, so an invalid mutation is fine: the CLI must
 reject it cleanly, not crash.

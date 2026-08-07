@@ -1,7 +1,6 @@
 Local = true
 Cloud = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-EnvMatrix.FUZZ_MODE = ["generate", "mutate"]
 EnvMatrix.FUZZ_TARGET = [
   "no_drift",
   "migrate",

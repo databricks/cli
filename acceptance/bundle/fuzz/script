@@ -1,5 +1,5 @@
-# Invariant fuzzing: generate a random config per seed and run a real invariant target from
-# ../invariant, which reaches the generator through the helper overrides in script.prepare.
+# Invariant fuzzing: mutate a curated config per seed and run a real invariant target from
+# ../invariant, which reaches the mutator through the helper overrides in script.prepare.
 # run_fuzz.py owns the seed loop and the outcome classification; see README.md.
 
 # no_drift/script reads READPLAN via readplanarg; the fuzzer skips the saved-plan matrix.
@@ -11,7 +11,7 @@ grep '^Pattern = ' "$INVARIANT_DIR/test.toml" | while read -r stub; do
     grep -qxF -- "$stub" "$TESTDIR/test.toml" || echo "stub missing from fuzz/test.toml: $stub"
 done | contains.py '!stub missing' > /dev/null
 
-# Emit the schema from the CLI under test so the generator always matches it.
+# Emit the schema from the CLI under test so the mutator always matches it.
 $CLI bundle schema > schema.json 2>LOG.schema.err
 cat LOG.schema.err | contains.py '!panic:' '!internal error' > /dev/null
 
@@ -20,7 +20,7 @@ cat LOG.schema.err | contains.py '!panic:' '!internal error' > /dev/null
 seed_body() {
     cd "$1"
     # Seeds share one long-lived workspace, so scope the name to the seed, or state one leaves
-    # behind reads back as drift in the next. Here, not in the generator, so targets see it too.
+    # behind reads back as drift in the next. Here, not in the mutator, so targets see it too.
     export UNIQUE_NAME="$UNIQUE_NAME-$2"
     export FUZZ_SEED="$2"
     export FUZZ_SCHEMA="../schema.json"

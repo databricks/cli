@@ -4,15 +4,15 @@
 export INVARIANT_DIR="$TESTDIR/../invariant"
 
 # The targets select their config with INPUT_CONFIG, which this test's matrix leaves unset, and
-# scripts run under set -u. Empty is accurate: a generated config matches no curated name.
+# scripts run under set -u. Empty is accurate: a mutated config matches no curated name.
 export INPUT_CONFIG=""
 
 source "$INVARIANT_DIR/script.prepare"
 
-# The config comes from the generator rather than configs/, so there is nothing to render. validate
+# The config comes from the mutator rather than configs/, so there is nothing to render. validate
 # runs here as an isolated panic surface, and rejects an invalid config before the target's deploy.
 invariant_render() {
-    # Stage the fixtures the generator's file_path/source_code_path fields point at.
+    # Stage the fixtures the mutator's file_path/source_code_path fields point at.
     cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
 
     emit_fuzz_config.py > databricks.yml 2>LOG.gen.err
@@ -22,7 +22,7 @@ invariant_render() {
     cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
 }
 
-# A generated config can deploy and still differ from the fake server, which does not round-trip
+# A mutated config can deploy and still differ from the fake server, which does not round-trip
 # every field, so the exact check false-positives. Substitute the one oracle independent of server
 # fidelity: two consecutive plans of the same state must be byte-identical.
 #
