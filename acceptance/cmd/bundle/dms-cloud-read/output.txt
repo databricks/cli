@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle-deployments list-deployments
+"array"
+
+>>> errcode [CLI] bundle-deployments get-deployment deployments/[NUMID]
+Error: deployment 1 in workspace [NUMID] not found
+
+Exit code: 1
+
+>>> errcode [CLI] bundle-deployments list-versions deployments/[NUMID]
+Error: deployment 1 in workspace [NUMID] not found
+
+Exit code: 1
+
+>>> errcode [CLI] bundle-deployments list-resources deployments/[NUMID]
+Error: deployment 1 in workspace [NUMID] not found
+
+Exit code: 1
+
+>>> errcode [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/1
+Error: deployment 1 in workspace [NUMID] not found
+
+Exit code: 1
