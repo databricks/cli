@@ -1,4 +1,3 @@
-Local = true
 RecordRequests = true
 
 # Starting warehouses is slow, so run on cloud nightly (CloudSlow) instead of every PR

@@ -1,5 +1,4 @@
 Cloud = false
-Local = true
 RecordRequests = true
 
 Ignore = ["tmp.plan.json"]
