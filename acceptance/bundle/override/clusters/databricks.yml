@@ -31,3 +31,10 @@ targets:
           spark_conf:
             "spark.executor.memory": "4g"
             "spark.executor.memory2": "4g"
+
+  # Setting autoscale to null in a target drops the inherited autoscale block.
+  no_autoscale:
+    resources:
+      clusters:
+        foo:
+          autoscale: null
