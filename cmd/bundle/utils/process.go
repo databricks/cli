@@ -234,8 +234,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
 				dmsSource = &dstate.DMSSource{
-					Client:       w.BundleDeployments,
-					DeploymentID: deploymentID,
+					Client:                 w.BundleDeployments,
+					DeploymentID:           deploymentID,
+					AllowExistingResources: env.DMSAllowExistingResources(ctx),
 				}
 
 				// Stamp the deployment onto the resources before anything diffs them.

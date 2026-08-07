@@ -61,6 +61,23 @@ func TestFetchDeploymentResourcesUnwrapsEnvelope(t *testing.T) {
 	}, got)
 }
 
+func TestFetchDeploymentResourcesSkipsResourceWithoutID(t *testing.T) {
+	// A failed create is recorded with its error and nothing else, so the resource has
+	// no id. Keeping it would make the resource look tracked while referring to nothing,
+	// and a later destroy fails with "missing in state" instead of skipping it.
+	f := &fakeResourceLister{resources: []bundledeployments.Resource{
+		{ResourceKey: "jobs.created", ResourceId: "123"},
+		{ResourceKey: "jobs.failed"},
+	}}
+
+	got, err := fetchDeploymentResources(t.Context(), f, "dep-1")
+	require.NoError(t, err)
+
+	assert.Equal(t, map[string]ResourceEntry{
+		"resources.jobs.created": {ID: "123"},
+	}, got)
+}
+
 func TestFetchDeploymentResourcesRejectsMalformedState(t *testing.T) {
 	recorded := json.RawMessage(`not json`)
 	f := &fakeResourceLister{resources: []bundledeployments.Resource{

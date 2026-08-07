@@ -18,4 +18,4 @@ $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm out.requests.txt
 # XXX READPLAN
 trace $CLI bundle deploy
-trace print_requests.py //jobs
+trace print_requests.py //jobs --del-body deployment.deployment_id,deployment.version_id

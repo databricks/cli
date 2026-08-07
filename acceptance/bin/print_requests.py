@@ -178,6 +178,17 @@ def filter_requests(requests, path_filters, include_get, should_sort, unique=Fal
     return filtered_requests
 
 
+def del_path(body, field):
+    """Delete field from body. A dotted field descends into nested objects, e.g.
+    deployment.version_id removes only that key from the deployment block."""
+    *parents, leaf = field.split(".")
+    for name in parents:
+        body = body.get(name)
+        if not isinstance(body, dict):
+            return
+    body.pop(leaf, None)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("path_filters", nargs="*", help="Path substring filters")
@@ -238,7 +249,7 @@ def main():
         body = req.get("body")
         if isinstance(body, dict):
             for field in del_body_fields:
-                body.pop(field, None)
+                del_path(body, field)
         for field in del_fields:
             req.pop(field, None)
     if args.verbose:

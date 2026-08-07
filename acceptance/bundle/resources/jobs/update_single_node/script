@@ -4,14 +4,14 @@ $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 $CLI bundle plan -o json > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
 
-trace print_requests.py //jobs > out.create.requests.txt
+trace print_requests.py //jobs > out.create.requests.txt --del-body deployment.deployment_id,deployment.version_id
 
 title "Update trigger.periodic.unit and re-deploy"
 trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle plan
 $CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py //jobs > out.update.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py //jobs > out.update.requests.$DATABRICKS_BUNDLE_ENGINE.json --del-body deployment.deployment_id,deployment.version_id
 
 trace $CLI bundle plan
 
@@ -24,7 +24,7 @@ rm out.requests.txt
 
 title "Destroy the job and verify that it's removed from the state and from remote"
 trace $CLI bundle destroy --auto-approve
-trace print_requests.py //jobs
+trace print_requests.py //jobs --del-body deployment.deployment_id,deployment.version_id
 
 trace musterr $CLI jobs get $ppid
 rm out.requests.txt

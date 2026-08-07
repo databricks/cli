@@ -23,3 +23,15 @@ func DMS(ctx context.Context) bool {
 func RecordsDeploymentHistory(ctx context.Context, configured bool) bool {
 	return configured || DMS(ctx)
 }
+
+// DMSAllowExistingResourcesVariable names the environment variable that lets a bundle
+// with resources already in its state file be recorded, which is otherwise refused
+// (see dstate.DMSSource.AllowExistingResources for what that costs).
+const DMSAllowExistingResourcesVariable = "DATABRICKS_BUNDLE_DMS_ALLOW_EXISTING_RESOURCES"
+
+// DMSAllowExistingResources reports whether the environment allows recording a bundle
+// that already tracks resources.
+func DMSAllowExistingResources(ctx context.Context) bool {
+	value, ok := get(ctx, []string{DMSAllowExistingResourcesVariable})
+	return ok && value != "" && value != "0" && value != "false"
+}
