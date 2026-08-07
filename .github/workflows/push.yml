@@ -412,8 +412,8 @@ jobs:
     needs:
       - cleanups
 
-    # Wide rotating seed window with drift on: too slow for every PR, so nightly only and
-    # not part of test-result. The committed acceptance test still checks no-panic per PR.
+    # Fill FUZZ_TIME_BUDGET with drift on: too slow for every PR, so nightly only and not
+    # part of test-result. The committed acceptance test still checks no-panic per PR.
     if: ${{ github.event_name == 'schedule' }}
     name: "task test-fuzz"
     runs-on:
@@ -439,9 +439,10 @@ jobs:
 
       - name: Run tests
         env:
-          FUZZ_SEED_COUNT: "25"
+          # Ceiling only: run_fuzz.py stops at FUZZ_TIME_BUDGET (900s). Stride = COUNT so a
+          # fast night cannot collide with the next run's window.
+          FUZZ_SEED_COUNT: "10000"
         run: |
-          # Non-overlapping windows, so CI explores new configs every run.
           export FUZZ_SEED_START=$(( GITHUB_RUN_NUMBER * FUZZ_SEED_COUNT ))
           go tool -modfile=tools/task/go.mod task test-fuzz
 

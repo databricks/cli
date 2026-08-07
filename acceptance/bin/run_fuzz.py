@@ -32,8 +32,9 @@ from pathlib import Path
 # Per-seed cap: a seed past this budget is stuck, not slow. Set FUZZ_SEED_TIMEOUT=0 to disable.
 SEED_TIMEOUT = float(os.environ.get("FUZZ_SEED_TIMEOUT", "180"))
 
-# Overall budget (seconds): stop starting seeds past it, so a slow but progressing variant exits
-# cleanly instead of being force-killed at the 20m test.toml Timeout. 0 disables.
+# Overall budget (seconds): the real stop for nightly / task test-fuzz (seed count is only a
+# ceiling). Stop starting seeds past it so a slow but progressing variant exits cleanly instead
+# of being force-killed at the 20m test.toml Timeout. 0 disables.
 BUDGET = float(os.environ.get("FUZZ_TIME_BUDGET", "900"))
 
 # Seconds between SIGQUIT and the SIGKILL backstop.
@@ -191,7 +192,9 @@ def totals():
 def main():
     start = time.monotonic()
     seed_start = int(os.environ.get("FUZZ_SEED_START", "0"))
-    count = int(os.environ.get("FUZZ_SEED_COUNT", "5"))
+    # 25 keeps the committed PR smoke under ~1m/variant at current testserver speeds; nightly
+    # and task test-fuzz override this with a high ceiling and stop on FUZZ_TIME_BUDGET instead.
+    count = int(os.environ.get("FUZZ_SEED_COUNT", "25"))
 
     for offset in range(count):
         # A clean stop, not a failure, so log to a file.

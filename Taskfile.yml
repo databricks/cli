@@ -738,8 +738,9 @@ tasks:
     # No `sources:` fingerprint: the window depends on FUZZ_* env vars Task can't see.
     cmds:
       - |
-        # Wider window than the committed run, with drift on; a repro narrows it via FUZZ_SEED_*.
-        export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-200}"
+        # Same ceiling as the nightly job: FUZZ_TIME_BUDGET (900s) is the real stop. Drift on;
+        # a repro narrows via FUZZ_SEED_*.
+        export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-10000}"
         export FUZZ_CHECK_DRIFT="${FUZZ_CHECK_DRIFT:-1}"
         # -count=1: only the script reads FUZZ_*, so the cache would serve another window's result.
         {{.GO_TOOL}} gotestsum \
