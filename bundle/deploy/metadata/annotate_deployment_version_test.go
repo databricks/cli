@@ -34,7 +34,7 @@ func TestAnnotateDeploymentVersion(t *testing.T) {
 		},
 	}
 
-	diags := bundle.ApplySeq(t.Context(), b, AnnotateDeploymentVersion("dep-123", 7))
+	diags := bundle.ApplySeq(t.Context(), b, AnnotateDeployment("dep-123"), AnnotateDeploymentVersion(7))
 	require.NoError(t, diags.Error())
 
 	job := b.Config.Resources.Jobs["my-job"].Deployment

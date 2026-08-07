@@ -198,10 +198,9 @@ func TestOperationQueueReturnsUploadError(t *testing.T) {
 	assert.Contains(t, err.Error(), "resources.jobs.foo")
 }
 
-func TestOperationQueueRecordFailsAfterUploadError(t *testing.T) {
-	// An upload failure stops the deploy at the next resource instead of surfacing
-	// only at close, so the apply workers do not keep creating resources that DMS
-	// has no record of.
+func TestOperationQueueKeepsRecordingAfterUploadError(t *testing.T) {
+	// A failed upload must not stop the ones behind it: every applied resource is
+	// recorded best effort, so DMS ends up as close to reality as it can get.
 	uploadErr := errors.New("boom")
 	f := &fakeUploader{err: uploadErr, done: make(chan string, 1)}
 	q := newOperationQueue(t.Context(), f)
@@ -211,22 +210,22 @@ func TestOperationQueueRecordFailsAfterUploadError(t *testing.T) {
 	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", map[string]string{"name": "v1"}, nil))
 	assert.Equal(t, "resources.jobs.foo", <-f.done)
 
-	// The next resource an apply worker tries to record is refused, with the upload
-	// error that caused it.
-	err := q.record(t.Context(), "resources.jobs.bar", deployplan.Create, "id-2", map[string]string{"name": "v1"}, nil)
-	require.Error(t, err)
-	assert.ErrorIs(t, err, uploadErr)
+	// The next resource is still accepted, even though the first upload failed.
+	require.NoError(t, q.record(t.Context(), "resources.jobs.bar", deployplan.Create, "id-2", map[string]string{"name": "v1"}, nil))
 
-	// The refused resource was not queued, and close still reports the failure.
+	// Both were attempted, and close still reports the failure so the deploy fails.
 	require.ErrorIs(t, q.close(), uploadErr)
-	assert.Equal(t, []string{`resources.jobs.foo={"state":{"name":"v1"}}`}, f.recorded())
+	assert.ElementsMatch(t, []string{
+		`resources.jobs.foo={"state":{"name":"v1"}}`,
+		`resources.jobs.bar={"state":{"name":"v1"}}`,
+	}, f.recorded())
 	assert.Empty(t, q.pending)
 	assert.Empty(t, q.queuedOrUploading)
 }
 
 func TestOperationQueueDrainsQueuedOperationsAfterUploadError(t *testing.T) {
-	// A failure refuses new work but does not discard work already recorded: the
-	// records DMS ends up with have to match the resources that were applied.
+	// A failure does not discard work already recorded: the records DMS ends up with
+	// have to match the resources that were applied.
 	uploadErr := errors.New("boom")
 	f := &fakeUploader{err: uploadErr, block: make(chan struct{}), started: make(chan string, 1)}
 	q := newOperationQueue(t.Context(), f)

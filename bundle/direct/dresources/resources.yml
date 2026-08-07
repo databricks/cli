@@ -26,16 +26,10 @@ resources:
     # it changes constantly. Ignoring it as a local and remote change keeps that
     # churn from driving an update or showing as drift on its own; when the job is
     # updated for any other reason, DoUpdate sends the full config via Reset, so
-    # the current version_id is still recorded.
-    #
-    # deployment_id is ignored as a local change for a different reason: only the
-    # deploy phase stamps it (it is not known until the version is claimed), so
-    # during a plain `bundle plan` the local config has none while the state and the
-    # workspace both do, and the absence would show as drift on an untouched job.
+    # the current version_id is still recorded. deployment_id is intentionally
+    # left out: it is stable across versions, so a change to it is worth showing.
     ignore_local_changes:
       - field: deployment.version_id
-        reason: managed by the deployment metadata service
-      - field: deployment.deployment_id
         reason: managed by the deployment metadata service
 
     ignore_remote_changes:
@@ -174,8 +168,8 @@ resources:
       - field: ingestion_definition.ingest_from_uc_foreign_catalog
         reason: immutable
 
-    # See jobs above: version_id is set on every deploy, and deployment_id is only
-    # stamped by the deploy phase, so both are ignored as local changes.
+    # See jobs above: version_id is set on every deploy, so it is ignored as a
+    # local/remote change. deployment_id is left out so a change to it still shows.
     ignore_remote_changes:
       - field: deployment.version_id
         reason: managed by the deployment metadata service
@@ -184,13 +178,21 @@ resources:
       # Thus it shows up as a remote change since we don't set on the object.
       - field: id
         reason: "!drop"
+      # QQQ should this be here? When run_as is explicitly set, the GET response echoes it back
+      # as a structured run_as.user_name (verified on e2-dogfood with a real user), so it may not
+      # be truly input-only. The explicit-set case could not be confirmed on aws-cli, azure-cli,
+      # or gcp-cli: those envs authenticate as a service principal that lacks servicePrincipal.user
+      # on itself, so it can't self-bind run_as. In the default (unset) case on all three clouds,
+      # GET returns only the flat run_as_user_name and no structured run_as.
       - field: run_as
+        reason: input_only
+      # Carried by CreatePipeline/EditPipeline but never returned by GET, so remote
+      # always reads back false and a config value of true never converges.
+      - field: allow_duplicate_names
         reason: input_only
 
     ignore_local_changes:
       - field: deployment.version_id
-        reason: managed by the deployment metadata service
-      - field: deployment.deployment_id
         reason: managed by the deployment metadata service
       # "id" is output-only, providing it in config would be a mistake
       - field: id

@@ -229,17 +229,21 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	// Create the version before planning: the plan snapshots the resource config,
-	// so the deployment and version have to be stamped onto the resources before it
-	// is computed or the applied resources would not carry them. A cancelled deploy
-	// therefore leaves a version behind, completed as a failure by the deferred
-	// CompleteVersion.
+	// Create the version before planning: the plan snapshots the resource config, so
+	// the version has to be stamped on before it is computed or the applied resources
+	// would not carry it. A cancelled deploy therefore leaves a version behind,
+	// completed as a failure by the deferred CompleteVersion.
 	if err := recorder.CreateVersion(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 	if recorder != nil {
-		bundle.ApplyContext(ctx, b, metadata.AnnotateDeploymentVersion(recorder.DeploymentID(), recorder.Version()))
+		// The deployment ID is stamped earlier, when the state is opened; only the
+		// version is new here. A first deploy has no ID until now, so stamp both.
+		bundle.ApplySeqContext(ctx, b,
+			metadata.AnnotateDeployment(recorder.DeploymentID()),
+			metadata.AnnotateDeploymentVersion(recorder.Version()),
+		)
 		if logdiag.HasError(ctx) {
 			return
 		}

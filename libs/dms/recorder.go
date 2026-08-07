@@ -29,19 +29,15 @@ const (
 	VersionTypeDestroy VersionType = bundledeployments.VersionTypeVersionTypeDestroy
 )
 
-// createVersionRequest is the CreateVersion request body.
-//
-// The CLI builds the body itself instead of using bundledeployments.Version
-// because the generated struct has no previous_version_id field, which the
-// service requires as its concurrency check. Without it every deploy after the
-// first is rejected.
+// createVersionRequest is the CreateVersion request body. Hand-written because the
+// generated struct has no previous_version_id, which the service needs as its
+// concurrency check - without it every deploy after the first is rejected.
 type createVersionRequest struct {
 	CliVersion  string      `json:"cli_version"`
 	VersionType VersionType `json:"version_type"`
 	TargetName  string      `json:"target_name,omitempty"`
-	// DisplayName names the deployment in the UI. The service copies it onto the
-	// deployment's workspace node, which is where GetDeployment reads it from, so
-	// a version that omits it leaves the deployment unnamed.
+	// DisplayName names the deployment in the UI. The service keeps it on the
+	// deployment's node, so a version that omits it leaves the deployment unnamed.
 	DisplayName string `json:"display_name,omitempty"`
 	// PreviousVersionId is the deployment's most recent version, unset for a
 	// deployment's first version.
@@ -83,12 +79,10 @@ func (a *apiVersionCreator) CreateVersion(ctx context.Context, deploymentID, ver
 	return &version, nil
 }
 
-// Recorder records a single deploy/destroy as a version with DMS.
-//
-// The server assigns the deployment ID on the first deploy, i.e. when the ID
-// resolved from the workspace is empty (see ResolveDeploymentID). Later deploys
-// resolve the same ID and reuse the record; a destroy deletes the record and its
-// node, so the next deploy starts over from empty.
+// Recorder records a single deploy/destroy as a version with DMS. The server
+// assigns the deployment ID on the first deploy and later deploys reuse it; a
+// destroy deletes the record, so the next deploy starts over (see
+// ResolveDeploymentID).
 type Recorder struct {
 	svc          bundledeployments.BundleDeploymentsInterface
 	versions     versionCreator
@@ -112,9 +106,8 @@ type RecorderOptions struct {
 	Service bundledeployments.BundleDeploymentsInterface
 	// Versions handles CreateVersion; see versionCreator.
 	Versions versionCreator
-	// DeploymentID is the ID resolved from the deployment's workspace node, or
-	// empty if this bundle has not recorded a deployment yet (the server assigns
-	// one during CreateVersion).
+	// DeploymentID is resolved from the deployment's workspace node, empty until the
+	// first recorded deploy (CreateVersion assigns one then).
 	DeploymentID string
 	// StatePath is the bundle's remote state directory, under which DMS registers
 	// the deployment node.
@@ -124,9 +117,9 @@ type RecorderOptions struct {
 	Metadata Metadata
 }
 
-// Metadata is what a version records about the bundle it deployed, the source it
-// came from, and where it landed. The service denormalizes these onto the
-// deployment, so they describe the deployment as of its most recent version.
+// Metadata is what a version records about the bundle, its source and where it
+// landed. The service copies these onto the deployment, so they describe it as of
+// its most recent version.
 type Metadata struct {
 	// DisplayName is the bundle's name, which the deployment is listed under.
 	DisplayName string
@@ -191,11 +184,9 @@ func (r *Recorder) CreateVersion(ctx context.Context) error {
 	return nil
 }
 
-// CompleteVersion finalizes the version created by CreateVersion. A nil
-// Recorder, or one whose CreateVersion never ran or failed, is a no-op: there is
-// no version on the server to complete. Callers defer it unconditionally, so this
-// is the check that keeps a cancelled or failed deploy from completing a version
-// that was never created.
+// CompleteVersion finalizes the version created by CreateVersion. It is a no-op
+// when CreateVersion never ran, which is what lets callers defer it and still not
+// complete a version a cancelled deploy never created.
 func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
 	if r == nil || r.versionNum == 0 || r.completed {
 		return nil
@@ -235,10 +226,9 @@ func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
 	return nil
 }
 
-// createDeploymentVersion ensures the deployment record exists, then creates a
-// new version under it. With no deployment ID it creates the deployment and lets
-// the server assign the ID; otherwise it reads the existing deployment to
-// compute the next version number.
+// createDeploymentVersion ensures the deployment record exists, then creates a new
+// version under it: with no ID it creates the deployment, otherwise it reads the
+// existing one for the next version number.
 func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID string, err error) {
 	// The version this one supersedes, sent as the concurrency check. Empty for a
 	// deployment's first version.
@@ -269,11 +259,8 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 		}
 	} else {
 		// First deploy: create the deployment so the server assigns an ID.
-		//
-		// initial_parent_path is required. The service creates the deployment node
-		// under it, and that node's ID is the deployment ID ResolveDeploymentID reads
-		// back later. The folder already exists by now: the deployment lock lives in
-		// the same directory.
+		// initial_parent_path is required - the node the service creates under it is
+		// what ResolveDeploymentID reads back later.
 		dep, createErr := r.svc.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{
 			Deployment: bundledeployments.Deployment{
 				InitialParentPath: r.statePath,

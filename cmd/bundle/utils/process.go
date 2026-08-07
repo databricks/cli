@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -240,6 +241,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				dmsSource = &dstate.DMSSource{
 					Client:       w.BundleDeployments,
 					DeploymentID: deploymentID,
+				}
+
+				// Stamp the deployment onto the resources before anything diffs them.
+				// The workspace has it, so a plan that left it unset would report drift
+				// on a resource nobody touched. The version is stamped by the deploy
+				// phase instead, once it claims one.
+				bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(deploymentID))
+				if logdiag.HasError(ctx) {
+					return b, stateDesc, root.ErrAlreadyPrinted
 				}
 			}
 			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dmsSource); err != nil {

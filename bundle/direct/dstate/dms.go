@@ -3,48 +3,29 @@ package dstate
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// RecordedState is what the CLI serializes into the DMS Operation.State field.
-//
-// It is an envelope rather than the bare resource config, because depends_on has
-// to survive the round trip: DMS has no field for dependency edges, and they
-// cannot be recomputed from the config once it is recorded (references are
-// resolved to literals before serialization). Nesting depends_on inside the
-// config instead would collide with resource fields of the same name, e.g.
-// jobs.Task.depends_on.
-//
-// The shape deliberately matches the local ResourceEntry so both sides of the
-// state round trip look the same.
+// RecordedState is what the CLI serializes into the DMS Operation.State field. It
+// wraps the config rather than being it, so depends_on survives the round trip: DMS
+// has no field for dependency edges, and they cannot be recomputed once references
+// are resolved to literals. Nesting them in the config would collide with resource
+// fields of the same name (e.g. jobs.Task.depends_on).
 type RecordedState struct {
 	State     json.RawMessage             `json:"state"`
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
-// readDMSState replaces the file-derived resource state with the state recorded
-// in DMS. Recording is only enabled for net-new deployments, so once a
-// deployment exists DMS owns its resource set outright - including when that set
-// is empty, which is a successful deploy of nothing rather than missing data.
-// The caller holds db.mu.
+// readDMSState replaces the file-derived resource state with the state recorded in
+// DMS. Recording is only enabled for net-new deployments, so once a deployment
+// exists DMS owns its resource set outright - an empty set means a successful deploy
+// of nothing, not missing data. The caller holds db.mu.
 func (db *DeploymentState) readDMSState(ctx context.Context, src *DMSSource) error {
 	resources, err := fetchDeploymentResources(ctx, src.Client, src.DeploymentID)
 	if err != nil {
-		// The deployment's record is created by its first version, so a node can
-		// resolve to an ID that has none yet: a deploy that registered the deployment
-		// and then failed before recording a version. There is nothing to read, and
-		// the file's resources are still empty, so carry on and let this deploy record
-		// the first version.
-		if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
-			log.Debugf(ctx, "No deployment record for %s yet; keeping local state", src.DeploymentID)
-			return nil
-		}
 		return err
 	}
 
