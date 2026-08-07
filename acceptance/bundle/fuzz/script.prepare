@@ -40,15 +40,16 @@ if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
         cat LOG.plan2.err | contains.py '!panic:' '!internal error' > /dev/null
 
         if [ "$plan1_rc" -ne 0 ] || [ "$plan2_rc" -ne 0 ]; then
-            # An unmodeled route can fail one plan and not the other, leaving nothing to compare;
-            # any other failure is a plan the deploy just broke. stderr is copied in because the
-            # *.err ignore pattern keeps it out of the test log.
+            # There is no plan to compare, so the seed cannot pass: fail it either way and let
+            # run_fuzz.py file it as a gap when an unmodeled route is what broke the plan, and as
+            # a bug otherwise. Succeeding here would instead record the seed as deployed and hide
+            # that the invariant never ran. stderr is copied in because the *.err ignore pattern
+            # keeps it out of the test log.
             if ! grep -q TESTSERVER_GAP LOG.plan1.err LOG.plan2.err; then
                 echo "bundle plan exited $plan1_rc and $plan2_rc" > LOG.plan.failed
                 cat LOG.plan1.err LOG.plan2.err >> LOG.plan.failed
-                return 1
             fi
-            return 0
+            return 1
         fi
 
         # diff exits non-zero on any difference; under set -e that fails the seed as a bug.
