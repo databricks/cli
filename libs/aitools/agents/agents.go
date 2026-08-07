@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/databricks/cli/libs/env"
 )
@@ -223,6 +224,16 @@ var Registry = []*Agent{
 // See getAgentDir in @earendil-works/pi-coding-agent (config.ts).
 func piConfigDir(ctx context.Context) (string, error) {
 	if dir := env.Get(ctx, "PI_CODING_AGENT_DIR"); dir != "" {
+		if dir == "~" || strings.HasPrefix(dir, "~/") || (runtime.GOOS == "windows" && strings.HasPrefix(dir, `~\`)) {
+			home, err := env.UserHomeDir(ctx)
+			if err != nil {
+				return "", err
+			}
+			if dir == "~" {
+				return home, nil
+			}
+			return filepath.Join(home, dir[2:]), nil
+		}
 		return dir, nil
 	}
 	home, err := env.UserHomeDir(ctx)

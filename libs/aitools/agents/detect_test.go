@@ -78,6 +78,37 @@ func TestPiConfigDir(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, override, dir)
 	})
+
+	t.Run("expands home in PI_CODING_AGENT_DIR override", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "~/custom-agent")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, "custom-agent"), dir)
+	})
+
+	t.Run("expands bare home in PI_CODING_AGENT_DIR override", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "~")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, home, dir)
+	})
+
+	t.Run("expands Windows home separator", func(t *testing.T) {
+		if runtime.GOOS != "windows" {
+			t.Skip("Windows-only path form")
+		}
+		t.Setenv("PI_CODING_AGENT_DIR", `~\custom-agent`)
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, "custom-agent"), dir)
+	})
+
+	t.Run("preserves other tilde prefixes", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "~other/custom-agent")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, "~other/custom-agent", dir)
+	})
 }
 
 func TestHasBinary(t *testing.T) {
