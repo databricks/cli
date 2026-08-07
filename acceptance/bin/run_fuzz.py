@@ -120,7 +120,7 @@ def oracle_verdict(seed_dir):
 
 def classify(seed_dir):
     """Classify a seed that exited non-zero. Returns its kind and, for a failure, the reason."""
-    # emit_fuzz_config only writes to stderr when it fails: our bug, not a rejected config.
+    # mutate_fuzz_config only writes to stderr when it fails: our bug, not a rejected config.
     gen_err = read(seed_dir / "LOG.gen.err").strip()
     if gen_err:
         # Last line: a traceback's first one is always "Traceback (most recent call last):".

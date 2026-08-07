@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Mutate a known-good bundle config by deleting, perturbing, and adding random fields.
 
@@ -11,18 +12,20 @@ Two mutation kinds, chosen per step:
 - additive (with a schema): inject a valid optional field the base omits, valued by the schema
   generator in gen_fuzz_config.py. This is what reaches reconcile/drift bugs.
 
-The harness only asserts no-panic on fuzzed configs, so an invalid mutation is fine: the CLI must
-reject it cleanly, not crash.
+As a script, emits one mutated databricks.yml on stdout for the current seed (see main).
 
-Used as a library by emit_fuzz_config.py.
+YAML I/O is stdlib-only (acceptance python has no PyYAML): dump uses JSON scalars so dangerous
+probes stay one line; load understands that dialect plus the curated bases' block style.
 """
 
+import json
 import os
 import random
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from envsubst import substitute_variables
 from gen_fuzz_config import (
     DANGEROUS_INTS,
     DANGEROUS_STRINGS,
@@ -37,6 +40,61 @@ DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
 # Biased high: injection is the path to drift bugs, and destructive coverage is already dense.
 ADD_PROB = 0.6
+
+# Curated single-resource configs that deploy standalone (only $UNIQUE_NAME, no init script). All
+# are in the invariant INPUT_CONFIG matrix, so they stay deploy-verified.
+MUTATE_BASES = [
+    "catalog",
+    "external_location",
+    "job",
+    "model",
+    "model_serving_endpoint",
+    "pipeline",
+    "registered_model",
+    "schema",
+    "secret_scope",
+    "sql_warehouse",
+    "volume",
+]
+
+
+def dump_scalar(v):
+    # ensure_ascii=False keeps non-ASCII literal: the default escapes astral chars into surrogate
+    # pairs that YAML rejects, killing the config before it reaches bundle logic. Control chars
+    # stay escaped by json.dumps, which YAML accepts.
+    return json.dumps(v, ensure_ascii=False)
+
+
+def dump_yaml(obj, indent=0, list_item=False):
+    pad = "  " * indent
+    if isinstance(obj, dict):
+        if not obj:
+            return f"{pad}{{}}\n" if not list_item else f"{pad}- {{}}\n"
+        out = ""
+        first = True
+        for k, v in obj.items():
+            prefix = pad + "- " if list_item and first else (pad + "  " if list_item else pad)
+            child_indent = indent + 2 if list_item else indent + 1
+            if isinstance(v, (dict, list)) and v:
+                out += f"{prefix}{k}:\n" + dump_yaml(v, child_indent)
+            else:
+                out += f"{prefix}{k}: {dump_scalar(v)}\n"
+            first = False
+        return out
+    if isinstance(obj, list):
+        if not obj:
+            return f"{pad}- []\n" if list_item else f"{pad}[]\n"
+        # A list inside a list: the marker needs its own line, else the two flatten into one.
+        if list_item:
+            return f"{pad}-\n" + dump_yaml(obj, indent + 1)
+        out = ""
+        for item in obj:
+            if isinstance(item, (dict, list)):
+                out += dump_yaml(item, indent, list_item=True)
+            else:
+                out += f"{pad}- {dump_scalar(item)}\n"
+        return out
+    return f"{pad}{dump_scalar(obj)}\n"
 
 
 def tokenize(text):
@@ -53,13 +111,13 @@ def tokenize(text):
 def scalar(text):
     if text in ("", "null", "~"):
         return None
-    # to_yaml emits empty containers in flow form; read them back so load -> emit -> load holds.
+    # dump_yaml emits empty containers in flow form; read them back so load -> dump -> load holds.
     if text == "[]":
         return []
     if text == "{}":
         return {}
     # The one shape this loader cannot represent: "[id]" reads back as the string "[id]", turning a
-    # list into a scalar, and load -> emit -> load stays a fixed point, so the round-trip check
+    # list into a scalar, and load -> dump -> load stays a fixed point, so the round-trip check
     # cannot see it either. Exit, so a new MUTATE_BASES entry fails the selftest instead.
     if text[0] in "[{":
         sys.exit(f"mutate_fuzz_config: flow-style value is not supported: {text!r}")
@@ -88,7 +146,6 @@ def parse_block(tokens, i, indent):
         return parse_seq(tokens, i, indent)
     if ": " in first or first.endswith(":"):
         return parse_map(tokens, i, indent)
-    # Bare scalar: the whole block is a single value (e.g. a list scalar item).
     return scalar(first), i + 1
 
 
@@ -120,7 +177,6 @@ def parse_seq(tokens, i, indent):
     while i < len(tokens) and tokens[i][0] == indent and (tokens[i][1].startswith("- ") or tokens[i][1] == "-"):
         after = tokens[i][1][2:] if tokens[i][1].startswith("- ") else ""
         child_indent = indent + 2
-        # The item is its own block: the inline remainder plus its deeper continuation lines.
         item = []
         if after:
             item.append((child_indent, after))
@@ -256,3 +312,23 @@ def mutate(config, seed, schema=None, unique="fuzz"):
             mutate_once(rng, roots)
 
     return config
+
+
+def main():
+    # dump_yaml emits non-ASCII literally, so this redirect must be UTF-8: on Windows it would
+    # default to the ANSI code page and the astral-plane probe would raise UnicodeEncodeError.
+    sys.stdout.reconfigure(encoding="utf-8")
+
+    seed = int(os.environ["FUZZ_SEED"])
+    name = MUTATE_BASES[seed % len(MUTATE_BASES)]
+    path = os.path.join(os.environ["INVARIANT_DIR"], "configs", name + ".yml.tmpl")
+    unique = os.environ["UNIQUE_NAME"]
+    with open(path) as f:
+        config = load_yaml(substitute_variables(f.read()))
+    with open(os.environ["FUZZ_SCHEMA"]) as f:
+        schema = json.load(f)
+    sys.stdout.write(dump_yaml(mutate(config, seed, schema=schema, unique=unique)))
+
+
+if __name__ == "__main__":
+    main()

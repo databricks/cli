@@ -11,7 +11,7 @@ deployed / rejected / gap / hang / bug. The target is matrixed in test.toml:
 - `delete_idempotent` -- deploy, delete by emptying the config, then re-run the delete on restored state
 - `destroy_idempotent` -- deploy, destroy, then destroy again on restored state
 
-Each seed perturbs one of the curated configs in MUTATE_BASES (see emit_fuzz_config.py): delete or
+Each seed perturbs one of the curated configs in MUTATE_BASES (see mutate_fuzz_config.py): delete or
 replace existing fields, and (via the live `databricks bundle schema`) inject valid optional fields
 the base omits. Free-form scalars are occasionally replaced with dangerous / near-range-end values
 (empty, whitespace, over-long, control characters, int32/int64 boundaries) to probe the CLI's input
