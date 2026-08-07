@@ -1,0 +1,15 @@
+title "Deploy: the state write records the resource"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle
+
+title "Recreate writes state twice - the entry is dropped, then the new resource is saved"
+# Only the save is recorded. The service keeps one operation per resource per version
+# and rejects a succeeded recreate that carries no state, so the intermediate drop
+# cannot be its own event; the save that follows reports the recreate instead.
+trace update_file.py databricks.yml "catalog_name: main" "catalog_name: other"
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py //api/2.0/bundle
+
+title "Destroy: the delete is recorded with the id and no state"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //api/2.0/bundle

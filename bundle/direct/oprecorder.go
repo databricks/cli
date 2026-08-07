@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -43,39 +45,25 @@ type recordedOperation struct {
 	state json.RawMessage
 }
 
-// newRecordedOperation serializes an applied operation for upload. state is the
-// local config after the operation and must be nil for delete operations. It
-// errors when the serialized state exceeds maxOperationStateSize.
-func newRecordedOperation(action deployplan.ActionType, resourceID string, state any, dependsOn []deployplan.DependsOnEntry) (recordedOperation, error) {
+// newStateOperation describes a state write for upload. state is the serialized
+// RecordedState envelope the state DB just persisted, and nil for a delete, where
+// the resource is gone. It errors when the state exceeds maxOperationStateSize.
+func newStateOperation(action deployplan.ActionType, resourceID string, state json.RawMessage) (recordedOperation, error) {
 	actionType, err := deployActionToSDK(action)
 	if err != nil {
 		return recordedOperation{}, err
 	}
 
-	op := recordedOperation{
+	if len(state) > maxOperationStateSize {
+		return recordedOperation{}, fmt.Errorf("serialized state is %d bytes, which exceeds the %d byte limit for recording deployment history", len(state), maxOperationStateSize)
+	}
+
+	return recordedOperation{
 		action:     actionType,
 		resourceID: resourceID,
 		status:     bundledeployments.OperationStatusOperationStatusSucceeded,
-	}
-
-	// Operation.State carries the serialized state, which DMS serves back as
-	// resource state. Unset for delete: the resource is gone.
-	if state != nil {
-		config, err := json.Marshal(state)
-		if err != nil {
-			return recordedOperation{}, fmt.Errorf("serializing state: %w", err)
-		}
-		raw, err := json.Marshal(dstate.RecordedState{State: config, DependsOn: dependsOn})
-		if err != nil {
-			return recordedOperation{}, fmt.Errorf("serializing state: %w", err)
-		}
-		if len(raw) > maxOperationStateSize {
-			return recordedOperation{}, fmt.Errorf("serialized state is %d bytes, which exceeds the %d byte limit for recording deployment history", len(raw), maxOperationStateSize)
-		}
-		op.state = raw
-	}
-
-	return op, nil
+		state:      state,
+	}, nil
 }
 
 // newFailedOperation records an operation that did not apply, so the deployment
@@ -135,23 +123,44 @@ type operationUploader interface {
 	upload(ctx context.Context, resourceKey string, op recordedOperation) error
 }
 
-// operationRecorder uploads operations via the DMS CreateOperation API.
+// operationRecorder uploads operations via the DMS operations API.
 type operationRecorder struct {
-	client bundledeployments.BundleDeploymentsInterface
+	ops operationClient
 	// parent is the version the operations are recorded under, formatted as
 	// "deployments/{deployment_id}/versions/{version_id}".
 	parent string
+
+	// mu guards sequenceIDs.
+	mu sync.Mutex
+
+	// sequenceIDs holds the last sequence_id the service returned per resource key,
+	// which is how a resource already recorded in this version is recognised. The
+	// service names operations "operations/{resource_key}", so it keeps one per
+	// resource per version: the second write for a resource has to update that
+	// operation, and echo this value as the concurrency precondition.
+	sequenceIDs map[string]string
 }
 
-// NewOperationRecorder returns an operationUploader backed by the DMS
-// CreateOperation API. deploymentID and version identify the deployment version
-// assigned by DMS that the operations are recorded under.
-func NewOperationRecorder(client bundledeployments.BundleDeploymentsInterface, deploymentID string, version int64) operationUploader {
+// NewOperationRecorder returns an operationUploader backed by the DMS operations
+// API. deploymentID and version identify the deployment version assigned by DMS
+// that the operations are recorded under.
+func NewOperationRecorder(apiClient *client.DatabricksClient, deploymentID string, version int64) operationUploader {
+	return newOperationRecorder(newAPIOperationClient(apiClient), deploymentID, version)
+}
+
+// newOperationRecorder is the internal constructor, so tests can supply their own
+// operationClient.
+func newOperationRecorder(ops operationClient, deploymentID string, version int64) operationUploader {
 	return &operationRecorder{
-		client: client,
-		parent: fmt.Sprintf("deployments/%s/versions/%d", deploymentID, version),
+		ops:         ops,
+		parent:      fmt.Sprintf("deployments/%s/versions/%d", deploymentID, version),
+		sequenceIDs: make(map[string]string),
 	}
 }
+
+// updatableFields are the operation fields a later write for the same resource can
+// change. resource_id is included because a recreate learns a new one.
+var updatableFields = []string{"state", "error_message", "resource_id", "status"}
 
 func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op recordedOperation) error {
 	// DMS resource keys are unprefixed (e.g. "jobs.foo"), while the CLI's state
@@ -179,12 +188,36 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 		operation.State = &raw
 	}
 
-	_, err := r.client.CreateOperation(ctx, bundledeployments.CreateOperationRequest{
-		Parent:      r.parent,
-		ResourceKey: dmsKey,
-		Operation:   operation,
-	})
-	return err
+	r.mu.Lock()
+	sequenceID, recorded := r.sequenceIDs[dmsKey]
+	r.mu.Unlock()
+
+	var result operationResponse
+	var err error
+	if recorded {
+		// Only the masked fields and sequence_id are read on an update; action_type
+		// stays as the operation was created, so sending it would just be misleading.
+		result, err = r.ops.UpdateOperation(ctx, r.parent, dmsKey, updateOperationRequest{
+			State:        operation.State,
+			ErrorMessage: operation.ErrorMessage,
+			ResourceId:   operation.ResourceId,
+			Status:       operation.Status,
+			SequenceId:   sequenceID,
+		})
+	} else {
+		result, err = r.ops.CreateOperation(ctx, r.parent, dmsKey, operation)
+	}
+	if err != nil {
+		return err
+	}
+
+	// Remember the sequence the service assigned, so the next write for this
+	// resource updates rather than re-creates.
+	r.mu.Lock()
+	r.sequenceIDs[dmsKey] = result.SequenceId
+	r.mu.Unlock()
+
+	return nil
 }
 
 // deployActionToSDK maps a deployplan action to its DMS operation action type.

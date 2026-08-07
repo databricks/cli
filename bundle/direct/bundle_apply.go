@@ -37,7 +37,15 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	// Operations are recorded with DMS from background workers so a resource's
 	// deploy is not held up by the CreateOperation round trip. The queue is
 	// drained below, once every apply worker has finished recording.
+	//
+	// The state DB records through it, so every state write becomes an operation and
+	// DMS mirrors the WAL.
 	opQueue := newOperationQueue(ctx, b.OpRec)
+	if opQueue != nil {
+		// Assigned only when non-nil: a nil *operationQueue in an interface is not a
+		// nil interface, so the state DB's nil check would not see it.
+		b.StateDB.SetOperationSink(opQueue)
+	}
 
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		entry, err := plan.WriteLockEntry(resourceKey)
@@ -88,24 +96,19 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		if action == deployplan.Delete {
-			// Read the ID before the delete removes it from state; DMS requires it to
-			// identify which resource the delete operation refers to.
+			// Read the ID before the delete removes it from state; recording a failure
+			// below needs it to say which resource the operation refers to.
 			deletedID := b.StateDB.GetResourceID(resourceKey)
 			if entry.Gone {
 				// Planning confirmed the resource is already deleted remotely; only
 				// remove it from the state, without calling the delete API.
-				err = b.StateDB.DeleteState(resourceKey)
+				err = b.StateDB.DeleteState(ctx, resourceKey, action)
 			} else {
 				err = d.Destroy(ctx, &b.StateDB)
 			}
 			if err != nil {
 				_, priorState := priorRecord(&b.StateDB, resourceKey)
 				opQueue.recordFailure(ctx, resourceKey, action, deletedID, priorState, err)
-				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-				return false
-			}
-			// Record the delete with DMS. State is nil: the resource is gone.
-			if err := opQueue.record(ctx, resourceKey, action, deletedID, nil, nil); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -132,21 +135,15 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			}
 
 			// TODO: redo calcDiff to downgrade planned action if possible (?)
+			//
+			// Success is recorded by the state writes inside Deploy, so a resource that
+			// writes state more than once (a recreate) reports each step.
 			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			if err != nil {
 				// Both are empty for a create that never got an ID, which is what the
 				// service expects for a failed create.
 				priorID, priorState := priorRecord(&b.StateDB, resourceKey)
 				opQueue.recordFailure(ctx, resourceKey, action, priorID, priorState, err)
-				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-				return false
-			}
-
-			// Record the operation with DMS. The resource ID and applied config
-			// (sv.Value) come from the write just performed; GetResourceID reads
-			// the ID assigned by Deploy. depends_on is recorded alongside the config
-			// because it cannot be recomputed from it (see dstate.RecordedState).
-			if err := opQueue.record(ctx, resourceKey, action, b.StateDB.GetResourceID(resourceKey), sv.Value, d.DependsOn); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}

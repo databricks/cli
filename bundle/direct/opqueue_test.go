@@ -2,6 +2,7 @@ package direct
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,9 +77,17 @@ func (f *fakeUploader) resourceIDFor(resourceKey string) string {
 	return f.resourceIDs[resourceKey]
 }
 
+// envelope builds the serialized RecordedState the state DB hands the queue.
+func envelope(t *testing.T, name string) json.RawMessage {
+	t.Helper()
+	raw, err := json.Marshal(dstate.RecordedState{State: json.RawMessage(`{"name":"` + name + `"}`)})
+	require.NoError(t, err)
+	return raw
+}
+
 func recordState(t *testing.T, q *operationQueue, resourceKey, name string) {
 	t.Helper()
-	require.NoError(t, q.record(t.Context(), resourceKey, deployplan.Update, "id-1", map[string]string{"name": name}, nil))
+	q.RecordOperation(t.Context(), resourceKey, deployplan.Update, "id-1", envelope(t, name))
 }
 
 func TestOperationQueueUploadsEachOperation(t *testing.T) {
@@ -92,10 +102,14 @@ func TestOperationQueueUploadsEachOperation(t *testing.T) {
 	assert.Len(t, f.recorded(), 20)
 }
 
-func TestOperationQueueCoalescesQueuedOperationsForSameResource(t *testing.T) {
-	// Hold the first upload so later operations for the same resource pile up in
-	// the queue and are collapsed into one.
-	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 1)}
+func TestOperationQueueUploadsEveryWriteForSameResource(t *testing.T) {
+	// Hold the first upload so the writes behind it queue up. Each one is its own
+	// event, so all three are uploaded, oldest first - a resource can legitimately
+	// write state several times in one deploy (see Recreate).
+	//
+	// started is buffered for all three: every write now uploads, and a worker
+	// blocking on an unread send would deadlock the drain below.
+	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 3)}
 	q := newOperationQueue(t.Context(), f)
 
 	recordState(t, q, "resources.jobs.foo", "v1")
@@ -109,17 +123,20 @@ func TestOperationQueueCoalescesQueuedOperationsForSameResource(t *testing.T) {
 	close(f.block)
 	require.NoError(t, q.close())
 
-	// Two uploads, not three: v2 was superseded by v3 while both were queued, and
-	// the last recorded state is the one the service ends up with.
 	assert.Equal(t, []string{
 		`resources.jobs.foo={"state":{"name":"v1"}}`,
+		`resources.jobs.foo={"state":{"name":"v2"}}`,
 		`resources.jobs.foo={"state":{"name":"v3"}}`,
 	}, f.recorded())
 }
 
-func TestOperationQueueCoalescingKeepsLatestOperation(t *testing.T) {
-	// Hold the first upload so the operations below stay queued and coalesce.
-	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 1)}
+func TestOperationQueueUploadsQueuedWritesWhileWorkersAreBusy(t *testing.T) {
+	// Every worker is parked mid-upload, so the writes below sit in pending rather
+	// than being picked up. Both still go out, in order, once a worker frees up.
+	//
+	// started is buffered for the two foo writes as well: nothing reads it after the
+	// loop below, and a worker blocking on the send would deadlock the drain.
+	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, operationUploadWorkers+2)}
 	q := newOperationQueue(t.Context(), f)
 
 	recordState(t, q, "resources.jobs.hold", "v1")
@@ -131,27 +148,26 @@ func TestOperationQueueCoalescingKeepsLatestOperation(t *testing.T) {
 		assert.Equal(t, "resources.jobs.hold"+strconv.Itoa(i), <-f.started)
 	}
 
-	// A resource whose ID is only known after it was created: the first operation
-	// has no ID, the second fills it in.
-	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "", map[string]string{"name": "created"}, nil))
-	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", map[string]string{"name": "updated"}, nil))
+	// A resource whose ID is only known after it was created: the first write has no
+	// ID, the second fills it in.
+	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "", envelope(t, "created"))
+	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", envelope(t, "updated"))
 
 	close(f.block)
 	require.NoError(t, q.close())
 
-	// One upload, not two: the second operation replaced the first while every
-	// worker was busy, so the extra CreateOperation round trip never happens.
-	var uploadsForFoo int
+	var uploadsForFoo []string
 	for _, u := range f.recorded() {
 		if strings.HasPrefix(u, "resources.jobs.foo=") {
-			uploadsForFoo++
+			uploadsForFoo = append(uploadsForFoo, u)
 		}
 	}
-	assert.Equal(t, 1, uploadsForFoo, "the two operations should coalesce into one upload")
+	assert.Equal(t, []string{
+		`resources.jobs.foo={"state":{"name":"created"}}`,
+		`resources.jobs.foo={"state":{"name":"updated"}}`,
+	}, uploadsForFoo)
 
-	// Everything comes from the newest operation: it carries the resource's full
-	// state, and the ID it learned after the create.
-	assert.Contains(t, f.recorded(), `resources.jobs.foo={"state":{"name":"updated"}}`)
+	// The ID recorded last is the one the create learned.
 	assert.Equal(t, "id-1", f.resourceIDFor("resources.jobs.foo"))
 	assert.Equal(t,
 		bundledeployments.OperationActionTypeOperationActionTypeCreate,
@@ -165,11 +181,11 @@ func TestOperationQueueRecordDuringUploadIsStillUploaded(t *testing.T) {
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 1)}
 	q := newOperationQueue(t.Context(), f)
 
-	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "", map[string]string{"name": "v1"}, nil))
+	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "", envelope(t, "v1"))
 	assert.Equal(t, "resources.jobs.foo", <-f.started)
 
 	// The worker has taken the key off the queue and is uploading v1 right now.
-	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", map[string]string{"name": "v2"}, nil))
+	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", envelope(t, "v2"))
 
 	close(f.block)
 	require.NoError(t, q.close())
@@ -207,11 +223,11 @@ func TestOperationQueueKeepsRecordingAfterUploadError(t *testing.T) {
 
 	// Wait for the failing upload to finish, so the error is stored before the next
 	// record rather than racing it.
-	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", map[string]string{"name": "v1"}, nil))
+	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", envelope(t, "v1"))
 	assert.Equal(t, "resources.jobs.foo", <-f.done)
 
 	// The next resource is still accepted, even though the first upload failed.
-	require.NoError(t, q.record(t.Context(), "resources.jobs.bar", deployplan.Create, "id-2", map[string]string{"name": "v1"}, nil))
+	q.RecordOperation(t.Context(), "resources.jobs.bar", deployplan.Create, "id-2", envelope(t, "v1"))
 
 	// Both were attempted, and close still reports the failure so the deploy fails.
 	require.ErrorIs(t, q.close(), uploadErr)
@@ -232,10 +248,10 @@ func TestOperationQueueDrainsQueuedOperationsAfterUploadError(t *testing.T) {
 
 	// Every worker is parked mid-upload, so these stay queued.
 	for i := range operationUploadWorkers {
-		require.NoError(t, q.record(t.Context(), "resources.jobs.hold"+strconv.Itoa(i), deployplan.Create, "id-1", map[string]string{"name": "v1"}, nil))
+		q.RecordOperation(t.Context(), "resources.jobs.hold"+strconv.Itoa(i), deployplan.Create, "id-1", envelope(t, "v1"))
 		assert.Equal(t, "resources.jobs.hold"+strconv.Itoa(i), <-f.started)
 	}
-	require.NoError(t, q.record(t.Context(), "resources.jobs.queued", deployplan.Create, "id-2", map[string]string{"name": "v1"}, nil))
+	q.RecordOperation(t.Context(), "resources.jobs.queued", deployplan.Create, "id-2", envelope(t, "v1"))
 
 	close(f.block)
 	require.ErrorIs(t, q.close(), uploadErr)
@@ -245,26 +261,23 @@ func TestOperationQueueDrainsQueuedOperationsAfterUploadError(t *testing.T) {
 	assert.Len(t, f.recorded(), operationUploadWorkers+1)
 }
 
-func TestOperationQueueRecordRejectsUnsupportedAction(t *testing.T) {
+func TestOperationQueueRecordDropsUnsupportedAction(t *testing.T) {
 	f := &fakeUploader{}
 	q := newOperationQueue(t.Context(), f)
 
-	// Serialization failures surface at record time, on the resource that caused
-	// them, rather than from the drain at the end of apply.
-	err := q.record(t.Context(), "resources.jobs.foo", deployplan.Skip, "id-1", nil, nil)
-	require.Error(t, err)
+	// The state write already succeeded, so an operation that cannot be described is
+	// dropped with a warning rather than failing the deploy.
+	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Skip, "id-1", nil)
 
 	require.NoError(t, q.close())
 	assert.Empty(t, f.recorded())
 }
 
-func TestOperationQueueRecordRejectsOversizedState(t *testing.T) {
+func TestOperationQueueRecordDropsOversizedState(t *testing.T) {
 	f := &fakeUploader{}
 	q := newOperationQueue(t.Context(), f)
 
-	big := map[string]string{"name": strings.Repeat("x", maxOperationStateSize)}
-	err := q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", big, nil)
-	require.ErrorContains(t, err, "exceeds the 65536 byte limit")
+	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", envelope(t, strings.Repeat("x", maxOperationStateSize)))
 
 	require.NoError(t, q.close())
 	assert.Empty(t, f.recorded())
@@ -328,23 +341,23 @@ func TestOperationQueueUploadsOneResourceAtATime(t *testing.T) {
 		u := &serialUploader{live: map[string]bool{}, last: map[string]string{}}
 		q := newOperationQueue(ctx, u)
 
-		// Collect record errors instead of asserting inside the goroutines: testify
-		// assertions may only run on the goroutine running the test function.
-		errs := make(chan error, workers*perWorker)
+		// The envelopes are built up front: json.Marshal is fine on many goroutines,
+		// but the helper takes *testing.T, which is not.
+		states := make([]json.RawMessage, workers)
+		for w := range workers {
+			states[w] = envelope(t, strconv.Itoa(w))
+		}
+
 		var wg sync.WaitGroup
 		for w := range workers {
 			wg.Go(func() {
 				for i := range perWorker {
 					key := "resources.jobs.job" + strconv.Itoa((w*perWorker+i)%distinctKeyMod)
-					errs <- q.record(ctx, key, deployplan.Update, "id-1", map[string]string{"name": strconv.Itoa(w)}, nil)
+					q.RecordOperation(ctx, key, deployplan.Update, "id-1", states[w])
 				}
 			})
 		}
 		wg.Wait()
-		close(errs)
-		for err := range errs {
-			require.NoError(t, err)
-		}
 		require.NoError(t, q.close())
 
 		require.False(t, u.uneven, "two uploads overlapped for the same resource key")
@@ -360,6 +373,6 @@ func TestNilOperationQueueIsNoOp(t *testing.T) {
 	// no-op, so Apply does not have to branch.
 	q := newOperationQueue(t.Context(), nil)
 	require.Nil(t, q)
-	require.NoError(t, q.record(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", nil, nil))
+	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", nil)
 	require.NoError(t, q.close())
 }

@@ -14,78 +14,118 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type fakeOpClient struct {
-	bundledeployments.BundleDeploymentsInterface
-
-	mu       sync.Mutex
-	requests []bundledeployments.CreateOperationRequest
+// fakeOpCall is one recorded call to the operations API.
+type fakeOpCall struct {
+	method      string
+	parent      string
+	resourceKey string
+	op          bundledeployments.Operation
+	update      updateOperationRequest
 }
 
-func (f *fakeOpClient) CreateOperation(ctx context.Context, req bundledeployments.CreateOperationRequest) (*bundledeployments.Operation, error) {
+type fakeOpClient struct {
+	mu    sync.Mutex
+	calls []fakeOpCall
+	// sequence is what the service reports back; a string, as the service sends it.
+	sequence string
+}
+
+func (f *fakeOpClient) CreateOperation(ctx context.Context, parent, resourceKey string, op bundledeployments.Operation) (operationResponse, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.requests = append(f.requests, req)
-	return &bundledeployments.Operation{}, nil
+	f.calls = append(f.calls, fakeOpCall{method: "create", parent: parent, resourceKey: resourceKey, op: op})
+	return operationResponse{SequenceId: f.sequence}, nil
+}
+
+func (f *fakeOpClient) UpdateOperation(ctx context.Context, parent, resourceKey string, body updateOperationRequest) (operationResponse, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls = append(f.calls, fakeOpCall{method: "update", parent: parent, resourceKey: resourceKey, update: body})
+	return operationResponse{SequenceId: f.sequence}, nil
 }
 
 // uploadOne records a single operation through the given uploader, mirroring what
 // an operationQueue worker does.
-func uploadOne(t *testing.T, u operationUploader, resourceKey string, action deployplan.ActionType, resourceID string, state any) {
+func uploadOne(t *testing.T, u operationUploader, resourceKey string, action deployplan.ActionType, resourceID string, state json.RawMessage) {
 	t.Helper()
-	op, err := newRecordedOperation(action, resourceID, state, nil)
+	op, err := newStateOperation(action, resourceID, state)
 	require.NoError(t, err)
 	require.NoError(t, u.upload(t.Context(), resourceKey, op))
 }
 
 func TestOperationRecorderStripsResourcePrefix(t *testing.T) {
-	f := &fakeOpClient{}
-	r := NewOperationRecorder(f, "dep-1", 2)
+	f := &fakeOpClient{sequence: "1"}
+	r := newOperationRecorder(f, "dep-1", 2)
 
-	uploadOne(t, r, "resources.jobs.foo", deployplan.Create, "job-123", map[string]string{"name": "foo"})
+	uploadOne(t, r, "resources.jobs.foo", deployplan.Create, "job-123", envelope(t, "foo"))
 
-	require.Len(t, f.requests, 1)
-	req := f.requests[0]
+	require.Len(t, f.calls, 1)
+	c := f.calls[0]
 	// The wire key drops the CLI-internal "resources." prefix, both in the query
 	// param and the operation body.
-	assert.Equal(t, "jobs.foo", req.ResourceKey)
-	assert.Equal(t, "jobs.foo", req.Operation.ResourceKey)
-	assert.Equal(t, "deployments/dep-1/versions/2", req.Parent)
-	assert.Equal(t, bundledeployments.OperationActionTypeOperationActionTypeCreate, req.Operation.ActionType)
-	assert.Equal(t, "job-123", req.Operation.ResourceId)
-	require.NotNil(t, req.Operation.State)
+	assert.Equal(t, "create", c.method)
+	assert.Equal(t, "jobs.foo", c.resourceKey)
+	assert.Equal(t, "jobs.foo", c.op.ResourceKey)
+	assert.Equal(t, "deployments/dep-1/versions/2", c.parent)
+	assert.Equal(t, bundledeployments.OperationActionTypeOperationActionTypeCreate, c.op.ActionType)
+	assert.Equal(t, "job-123", c.op.ResourceId)
+	require.NotNil(t, c.op.State)
 }
 
-func TestNewRecordedOperationRecordsStateAsIs(t *testing.T) {
-	state := struct {
-		Name  string `json:"name"`
-		Token string `json:"token" bundle:"sensitive"`
-	}{Name: "foo", Token: "super-secret"}
+func TestOperationRecorderUpdatesSecondWriteForSameResource(t *testing.T) {
+	// One operation per resource per version: the second write has to update the
+	// first, echoing the sequence_id the service returned as its precondition.
+	f := &fakeOpClient{sequence: "7"}
+	r := newOperationRecorder(f, "dep-1", 2)
 
-	op, err := newRecordedOperation(deployplan.Create, "job-123", state, nil)
+	uploadOne(t, r, "resources.jobs.foo", deployplan.Recreate, "", nil)
+	uploadOne(t, r, "resources.jobs.foo", deployplan.Recreate, "job-456", envelope(t, "new"))
+
+	require.Len(t, f.calls, 2)
+	assert.Equal(t, "create", f.calls[0].method)
+
+	assert.Equal(t, "update", f.calls[1].method)
+	assert.Equal(t, "jobs.foo", f.calls[1].resourceKey)
+	assert.Equal(t, "7", f.calls[1].update.SequenceId)
+	assert.Equal(t, "job-456", f.calls[1].update.ResourceId)
+	require.NotNil(t, f.calls[1].update.State)
+}
+
+func TestOperationRecorderTracksSequencePerResource(t *testing.T) {
+	// A different resource has its own operation, so its first write creates.
+	f := &fakeOpClient{sequence: "1"}
+	r := newOperationRecorder(f, "dep-1", 2)
+
+	uploadOne(t, r, "resources.jobs.foo", deployplan.Create, "id-1", envelope(t, "foo"))
+	uploadOne(t, r, "resources.jobs.bar", deployplan.Create, "id-2", envelope(t, "bar"))
+
+	require.Len(t, f.calls, 2)
+	assert.Equal(t, "create", f.calls[0].method)
+	assert.Equal(t, "create", f.calls[1].method)
+}
+
+func TestNewStateOperationRecordsEnvelopeAsIs(t *testing.T) {
+	// The state DB serializes the envelope (see dstate.SaveState); the operation
+	// carries it through untouched, sensitive fields and all.
+	state := json.RawMessage(`{"state":{"name":"foo","token":"super-secret"}}`)
+
+	op, err := newStateOperation(deployplan.Create, "job-123", state)
 	require.NoError(t, err)
 
-	// The state is serialized as-is, including fields tagged bundle:"sensitive".
-	assert.JSONEq(t,
-		`{"state":{"name":"foo","token":"super-secret"}}`,
-		string(op.state))
+	assert.JSONEq(t, string(state), string(op.state))
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusSucceeded, op.status)
 }
 
-func TestNewRecordedOperationRecordsDependsOn(t *testing.T) {
-	// depends_on rides in an envelope alongside the config: it cannot be
-	// recomputed from the config, whose references are already resolved.
-	dependsOn := []deployplan.DependsOnEntry{{Node: "resources.jobs.bar", Label: "${resources.jobs.bar.id}"}}
-
-	op, err := newRecordedOperation(deployplan.Create, "job-123", map[string]string{"name": "foo"}, dependsOn)
-	require.NoError(t, err)
-
-	assert.JSONEq(t,
-		`{"state":{"name":"foo"},"depends_on":[{"node":"resources.jobs.bar","label":"${resources.jobs.bar.id}"}]}`,
-		string(op.state))
-}
-
-func TestNewRecordedOperationRejectsUnsupportedAction(t *testing.T) {
-	_, err := newRecordedOperation(deployplan.Skip, "job-123", nil, nil)
+func TestNewStateOperationRejectsUnsupportedAction(t *testing.T) {
+	_, err := newStateOperation(deployplan.Skip, "job-123", nil)
 	assert.Error(t, err)
+}
+
+func TestNewStateOperationRejectsOversizedState(t *testing.T) {
+	big := json.RawMessage(strings.Repeat("x", maxOperationStateSize+1))
+
+	_, err := newStateOperation(deployplan.Create, "job-123", big)
+	assert.ErrorContains(t, err, "exceeds the 65536 byte limit")
 }
 
 func TestNewFailedOperationRecordsError(t *testing.T) {

@@ -29,6 +29,10 @@ type dmsDeployment struct {
 	// resources is the latest resource state per resource key, updated as
 	// operations are recorded.
 	resources map[string]bundledeployments.Resource
+	// operations holds the recorded operations by resource name. The service keeps
+	// one per resource per version, so a resource written twice in a version updates
+	// its operation rather than adding another.
+	operations map[string]*bundledeployments.Operation
 	// lastSuccessfulVersionID is the highest version that completed
 	// successfully. The server advances last_successful_version_id only on
 	// success (unlike last_version_id), and the read path treats a non-empty
@@ -80,6 +84,7 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 		deployment: dep,
 		versions:   map[string]*bundledeployments.Version{},
 		resources:  map[string]bundledeployments.Resource{},
+		operations: map[string]*bundledeployments.Operation{},
 	}
 	return Response{Body: dep}
 }
@@ -259,8 +264,29 @@ func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID str
 		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED")
 	}
 
-	op.Name = "deployments/" + deploymentID + "/versions/" + versionID + "/operations/" + resourceKey
+	// The service names operations after the resource key, so it keeps one per
+	// resource per version: creating a second one for the same resource conflicts,
+	// and the caller has to use UpdateOperation instead.
+	opName := "deployments/" + deploymentID + "/versions/" + versionID + "/operations/" + resourceKey
+	if _, exists := d.operations[opName]; exists {
+		return Response{
+			StatusCode: 409,
+			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": "operation for " + resourceKey + " already exists in this version"},
+		}
+	}
+
+	op.Name = opName
 	op.ResourceKey = resourceKey
+	op.SequenceId = 1
+	d.operations[opName] = &op
+
+	// The service sends sequence_id as a JSON string (proto3 encodes 64-bit ints
+	// that way) while the SDK struct types it as an int64, so the response is built
+	// by hand to match the wire format the CLI actually parses.
+	body, err := operationBody(&op)
+	if err != nil {
+		return Response{StatusCode: 500, Body: map[string]string{"message": err.Error()}}
+	}
 
 	// Reflect the operation onto the deployment-level resource set the way the
 	// backend does: a delete removes the resource, anything else upserts it.
@@ -283,7 +309,100 @@ func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID str
 			State:          op.State,
 		}
 	}
-	return Response{Body: op}
+	return Response{Body: body}
+}
+
+// operationBody renders an operation the way the service does: sequence_id as a
+// JSON string, which the SDK struct cannot express (it types the field int64).
+func operationBody(op *bundledeployments.Operation) (map[string]any, error) {
+	raw, err := json.Marshal(op)
+	if err != nil {
+		return nil, err
+	}
+
+	var body map[string]any
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	if err := dec.Decode(&body); err != nil {
+		return nil, err
+	}
+
+	body["sequence_id"] = strconv.FormatInt(op.SequenceId, 10)
+	return body, nil
+}
+
+// UpdateOperation applies a later write for a resource already recorded in this
+// version. sequence_id is the concurrency precondition and increments on success.
+func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, resourceKey string) Response {
+	// sequence_id arrives as a string, which the SDK struct cannot hold (it types the
+	// field int64), so read the body twice: once for the typed fields and once for the
+	// precondition.
+	var op bundledeployments.Operation
+	if err := json.Unmarshal(req.Body, &op); err != nil {
+		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
+	}
+	var precondition struct {
+		SequenceId string `json:"sequence_id"`
+	}
+	if err := json.Unmarshal(req.Body, &precondition); err != nil {
+		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
+	}
+
+	updateMask := req.URL.Query().Get("update_mask")
+	if updateMask == "" {
+		return dmsInvalidArgument("update_mask is required")
+	}
+
+	defer s.LockUnlock()()
+
+	d, ok := s.dmsDeployments[deploymentID]
+	if !ok {
+		return dmsNotFound("deployment " + deploymentID)
+	}
+
+	opName := "deployments/" + deploymentID + "/versions/" + versionID + "/operations/" + resourceKey
+	existing, ok := d.operations[opName]
+	if !ok {
+		return dmsNotFound("operation " + opName)
+	}
+	if precondition.SequenceId != strconv.FormatInt(existing.SequenceId, 10) {
+		return dmsAborted("sequence_id is outdated; the operation is at " + strconv.FormatInt(existing.SequenceId, 10))
+	}
+
+	failed := op.Status == bundledeployments.OperationStatusOperationStatusFailed
+	if !failed && op.ErrorMessage != "" {
+		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED")
+	}
+
+	// Only the mutable fields change; action_type and resource_key stay as created.
+	existing.State = op.State
+	existing.ErrorMessage = op.ErrorMessage
+	existing.ResourceId = op.ResourceId
+	existing.Status = op.Status
+	existing.SequenceId++
+
+	body, err := operationBody(existing)
+	if err != nil {
+		return Response{StatusCode: 500, Body: map[string]string{"message": err.Error()}}
+	}
+
+	// Mirror onto the resource set the same way CreateOperation does, so the read
+	// path reflects the newest write.
+	if existing.ActionType == bundledeployments.OperationActionTypeOperationActionTypeDelete && !failed {
+		delete(d.resources, resourceKey)
+	} else {
+		d.resources[resourceKey] = bundledeployments.Resource{
+			Name:           "deployments/" + deploymentID + "/resources/" + resourceKey,
+			ResourceKey:    resourceKey,
+			ResourceId:     existing.ResourceId,
+			ResourceType:   existing.ResourceType,
+			LastActionType: existing.ActionType,
+			LastVersionId:  versionID,
+			State:          existing.State,
+		}
+	}
+
+	return Response{Body: body}
 }
 
 func (s *FakeWorkspace) ListResources(deploymentID string) Response {

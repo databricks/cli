@@ -75,7 +75,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
+	err = db.SaveState(ctx, d.ResourceKey, newID, newState, d.DependsOn, deployplan.Create)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -116,7 +116,11 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// Drop the state entry so a subsequent failure of Create or WaitAfterDelete
 	// leaves no malformed (empty-ID) entry behind. The next plan will see "no
 	// state" and retry as Create.
-	err = db.DeleteState(d.ResourceKey)
+	//
+	// Recorded as a recreate, not a delete: if the create below fails, this is the
+	// operation DMS is left with, and it says the resource is mid-recreate rather
+	// than deliberately removed.
+	err = db.DeleteState(ctx, d.ResourceKey, deployplan.Recreate)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
@@ -158,12 +162,12 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		// The update emptied the resource out (e.g. all grants revoked). Keeping an entry
 		// would report the node as tracked-and-unchanged forever, while a fresh deploy of
 		// the same config plans no node at all; drop it so the two agree.
-		err = db.DeleteState(d.ResourceKey)
+		err = db.DeleteState(ctx, d.ResourceKey, deployplan.Update)
 		if err != nil {
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
 	} else {
-		err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
+		err = db.SaveState(ctx, d.ResourceKey, id, newState, d.DependsOn, deployplan.Update)
 		if err != nil {
 			return fmt.Errorf("saving state id=%s: %w", id, err)
 		}
@@ -208,7 +212,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
+	err = db.SaveState(ctx, d.ResourceKey, newID, newState, d.DependsOn, deployplan.UpdateWithID)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -250,7 +254,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 		}
 	}
 
-	err = db.DeleteState(d.ResourceKey)
+	err = db.DeleteState(ctx, d.ResourceKey, deployplan.Delete)
 	if err != nil {
 		return fmt.Errorf("deleting state id=%s: %w", oldID, err)
 	}
@@ -291,7 +295,7 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
+	err = db.SaveState(ctx, d.ResourceKey, id, newState, d.DependsOn, deployplan.Resize)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}

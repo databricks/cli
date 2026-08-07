@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -295,15 +294,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 	if haveApproval {
-		if recorder != nil {
-			// Record operations under the version created before planning, so DMS holds
-			// the deployed resource state.
-			b.DeploymentBundle.OpRec = direct.NewOperationRecorder(
-				b.WorkspaceClient(ctx).BundleDeployments,
-				recorder.DeploymentID(),
-				recorder.Version(),
-			)
-		}
+		// Record operations under the version created before planning, so DMS holds
+		// the deployed resource state.
+		setOperationRecorder(ctx, b, recorder)
 		deployCore(ctx, b, plan, stateEngine, requestedEngine, recorder)
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")

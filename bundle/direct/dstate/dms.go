@@ -19,6 +19,16 @@ type RecordedState struct {
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
+// OperationSink records one resource operation with the deployment metadata service.
+// SaveState and DeleteState call it for every state write, so what DMS holds mirrors
+// the WAL - including the intermediate writes of a recreate.
+//
+// It does not return an error: the upload happens on a background worker, and the
+// deploy learns about a failure when the queue is drained.
+type OperationSink interface {
+	RecordOperation(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state json.RawMessage)
+}
+
 // readDMSState replaces the file-derived resource state with the state recorded in
 // DMS. Recording is only enabled for net-new deployments, so once a deployment
 // exists DMS owns its resource set outright - an empty set means a successful deploy

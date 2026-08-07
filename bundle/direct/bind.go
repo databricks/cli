@@ -93,7 +93,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Save state with ID and empty state (like migrate does)
-	err = b.StateDB.SaveState(resourceKey, resourceID, struct{}{}, nil)
+	err = b.StateDB.SaveState(ctx, resourceKey, resourceID, struct{}{}, nil, deployplan.Create)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -151,7 +151,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			return nil, err
 		}
 
-		err = b.StateDB.SaveState(resourceKey, resourceID, sv.Value, dependsOn)
+		err = b.StateDB.SaveState(ctx, resourceKey, resourceID, sv.Value, dependsOn, deployplan.Create)
 		if err != nil {
 			os.Remove(tmpStatePath)
 			return nil, err
@@ -221,7 +221,7 @@ func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey st
 	}
 
 	// Delete the main resource
-	err = b.StateDB.DeleteState(resourceKey)
+	err = b.StateDB.DeleteState(ctx, resourceKey, deployplan.Delete)
 	if err != nil {
 		return err
 	}
@@ -235,7 +235,7 @@ func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey st
 
 	for key := range b.StateDB.Data.State {
 		if key == permissionsKey || key == grantsKey || strings.HasPrefix(key, resourceKey+".") {
-			err = b.StateDB.DeleteState(key)
+			err = b.StateDB.DeleteState(ctx, key, deployplan.Delete)
 			if err != nil {
 				return err
 			}

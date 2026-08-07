@@ -71,6 +71,18 @@ type DeploymentState struct {
 
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
+
+	// sink records each state write with DMS. Nil unless the bundle records
+	// deployment history, in which case SetOperationSink installs it.
+	sink OperationSink
+}
+
+// SetOperationSink makes every subsequent state write also record an operation with
+// DMS. It is set after the version is created, which is why it is not an Open option.
+func (db *DeploymentState) SetOperationSink(sink OperationSink) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.sink = sink
 }
 
 type Header struct {
@@ -119,7 +131,10 @@ func NewDatabase(lineage string, serial int) Database {
 	}
 }
 
-func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
+// SaveState records the resource's state after action was applied to it. action is
+// what the deployment metadata service reports for the write; it is ignored when the
+// bundle does not record deployment history.
+func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry, action deployplan.ActionType) error {
 	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -140,13 +155,27 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 	}
 
 	err = appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
-	if err == nil {
-		db.stateIDs[key] = newID
+	if err != nil {
+		return err
 	}
-	return err
+	db.stateIDs[key] = newID
+
+	// Recorded after the WAL write, so DMS never reports a state the deploy failed to
+	// persist locally.
+	if db.sink != nil {
+		recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
+		if err != nil {
+			return err
+		}
+		db.sink.RecordOperation(ctx, key, action, newID, recorded)
+	}
+
+	return nil
 }
 
-func (db *DeploymentState) DeleteState(key string) error {
+// DeleteState drops the resource's state entry. action distinguishes a real delete
+// from the intermediate drop a recreate performs, both of which are recorded.
+func (db *DeploymentState) DeleteState(ctx context.Context, key string, action deployplan.ActionType) error {
 	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -155,11 +184,28 @@ func (db *DeploymentState) DeleteState(key string) error {
 		return nil
 	}
 
+	// Read before the delete: DMS needs the id to say which resource went away.
+	deletedID := db.stateIDs[key]
+
 	err := appendJSONLine(db.walFile, WALEntry{Key: key})
-	if err == nil {
-		delete(db.stateIDs, key)
+	if err != nil {
+		return err
 	}
-	return err
+	delete(db.stateIDs, key)
+
+	// State is nil: the resource no longer exists.
+	//
+	// A recreate is the exception. It drops the entry and then saves the new
+	// resource, but the service keeps one operation per resource per version whose
+	// action_type is fixed at creation, and it rejects a succeeded recreate that
+	// carries no state ("it leaves a resource that exists"). So the intermediate drop
+	// cannot be recorded as its own event; the save that follows reports the recreate,
+	// and if that save never happens the failure path reports it instead.
+	if db.sink != nil && action != deployplan.Recreate {
+		db.sink.RecordOperation(ctx, key, action, deletedID, nil)
+	}
+
+	return nil
 }
 
 func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {

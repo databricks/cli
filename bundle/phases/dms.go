@@ -9,9 +9,11 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
@@ -54,6 +56,23 @@ func newDeploymentRecorder(ctx context.Context, b *bundle.Bundle, eng engine.Eng
 		VersionType:  versionType,
 		Metadata:     deploymentMetadata(b),
 	}), nil
+}
+
+// setOperationRecorder points the deployment at the version the recorder claimed, so
+// the state writes during apply are recorded under it. A nil recorder means recording
+// is off and leaves the deployment's uploader unset.
+func setOperationRecorder(ctx context.Context, b *bundle.Bundle, recorder *dms.Recorder) {
+	if recorder == nil {
+		return
+	}
+
+	apiClient, err := client.New(b.WorkspaceClient(ctx).Config)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+
+	b.DeploymentBundle.OpRec = direct.NewOperationRecorder(apiClient, recorder.DeploymentID(), recorder.Version())
 }
 
 // logDeploymentHistory links to the deployment this deploy was recorded under, so

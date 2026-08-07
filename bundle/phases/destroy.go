@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dms"
@@ -217,13 +216,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			logdiag.LogError(ctx, err)
 			return
 		}
-		if recorder != nil {
-			b.DeploymentBundle.OpRec = direct.NewOperationRecorder(
-				b.WorkspaceClient(ctx).BundleDeployments,
-				recorder.DeploymentID(),
-				recorder.Version(),
-			)
-		}
+		setOperationRecorder(ctx, b, recorder)
 		destroyCore(ctx, b, plan, engine, recorder)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")

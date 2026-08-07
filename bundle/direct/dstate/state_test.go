@@ -1,11 +1,14 @@
 package dstate
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,13 +19,75 @@ func mustFinalize(t *testing.T, db *DeploymentState) {
 	require.NoError(t, err)
 }
 
+// fakeSink captures what the state writes report to DMS.
+type fakeSink struct {
+	ops []string
+}
+
+func (f *fakeSink) RecordOperation(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state json.RawMessage) {
+	f.ops = append(f.ops, fmt.Sprintf("%s %s id=%s state=%s", action, resourceKey, resourceID, string(state)))
+}
+
+func TestStateWritesRecordOperations(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	sink := &fakeSink{}
+
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
+	db.SetOperationSink(sink)
+
+	// A recreate: the old entry is dropped, then the new resource is saved.
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "old"}, nil, deployplan.Create))
+	require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job", deployplan.Recreate))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "456", map[string]string{"key": "new"}, nil, deployplan.Recreate))
+	mustFinalize(t, &db)
+
+	// The recreate's intermediate drop is not reported: the service keeps one
+	// operation per resource per version and rejects a succeeded recreate carrying no
+	// state, so the save that follows is what reports it.
+	assert.Equal(t, []string{
+		`create jobs.my_job id=123 state={"state":{"key":"old"}}`,
+		`recreate jobs.my_job id=456 state={"state":{"key":"new"}}`,
+	}, sink.ops)
+}
+
+func TestDeleteStateRecordsRealDelete(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	sink := &fakeSink{}
+
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
+	db.SetOperationSink(sink)
+
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, deployplan.Create))
+	require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job", deployplan.Delete))
+	mustFinalize(t, &db)
+
+	// A real delete reports the id it had and no state: the resource is gone.
+	assert.Equal(t, []string{
+		`create jobs.my_job id=123 state={"state":{}}`,
+		`delete jobs.my_job id=123 state=`,
+	}, sink.ops)
+}
+
+func TestStateWritesRecordNothingWithoutSink(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	// No sink: recording is off, and the writes still succeed.
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, deployplan.Create))
+	require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job", deployplan.Delete))
+	mustFinalize(t, &db)
+}
+
 func TestOpenSaveFinalizeRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
 	var db DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
 
-	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{"key": "val"}, nil))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "val"}, nil, deployplan.Create))
 	mustFinalize(t, &db)
 
 	// Re-open and verify persisted data.
@@ -108,7 +173,7 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 	// Commit serial 1 with one resource.
 	var db DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
-	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{}, nil))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, deployplan.Create))
 	mustFinalize(t, &db)
 
 	var committed DeploymentState
@@ -172,12 +237,12 @@ func TestDeleteState(t *testing.T) {
 
 	var db DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
-	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{}, nil))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, deployplan.Create))
 	mustFinalize(t, &db)
 
 	var db2 DeploymentState
 	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
-	require.NoError(t, db2.DeleteState("jobs.my_job"))
+	require.NoError(t, db2.DeleteState(t.Context(), "jobs.my_job", deployplan.Delete))
 	mustFinalize(t, &db2)
 
 	var db3 DeploymentState
@@ -205,7 +270,7 @@ func TestGetOrInitLineageReadableBeforeWriteAndPersisted(t *testing.T) {
 	// Upgrading to write reuses the same lineage (it goes into the WAL header),
 	// and a write makes it durable.
 	require.NoError(t, db.UpgradeToWrite())
-	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{}, nil))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, deployplan.Create))
 	mustFinalize(t, &db)
 
 	// Re-open: the persisted lineage matches the one read before the write.
