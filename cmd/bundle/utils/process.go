@@ -283,7 +283,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 	if opts.FastValidate {
 		t1 := time.Now()
-		bundle.ApplyContext(ctx, b, validate.FastValidate())
+		bundle.ApplyContext(ctx, b, validate.FastValidate(requiredEngine.Type))
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "validate.FastValidate",
 			Value: time.Since(t1).Milliseconds(),
@@ -303,7 +303,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	if opts.Validate {
-		validate.Validate(ctx, b)
+		validate.Validate(ctx, b, requiredEngine.Type)
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
