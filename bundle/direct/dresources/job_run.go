@@ -162,10 +162,8 @@ func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 }
 
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
-	// The SDK resends a request whose response was lost, by which time the run may
-	// already have started; the token makes the resend return that run rather than
-	// trigger a second one. It goes on a copy, since a token recorded in the state
-	// would differ from the empty one in the config and plan a recreate.
+	// Mint a token so an SDK retry of a lost response returns the same run. Set it
+	// on a copy: recording it in state would drift from the empty config and recreate.
 	req := config.RunNow
 	req.IdempotencyToken = uuid.NewString()
 	// RunNow returns only the new run id, so we return a nil remote and let the

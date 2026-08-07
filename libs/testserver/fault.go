@@ -15,12 +15,8 @@ type faultRuleKey struct {
 type FaultRule struct {
 	StatusCode int
 	Body       string
-	// AfterHandler runs the handler and keeps the state change it makes, replacing
-	// only its response. That is what a client sees when the response to a request
-	// the backend already carried out is lost on the way back.
-	AfterHandler bool
-	offset       int
-	times        int
+	offset     int
+	times      int
 }
 
 // FaultRules holds the active fault injection rules for a test server.
@@ -35,15 +31,14 @@ func NewFaultRules() *FaultRules {
 }
 
 // Set registers or replaces a fault rule for the given token and pattern.
-func (fr *FaultRules) Set(token, pattern string, statusCode int, body string, offset, times int, afterHandler bool) {
+func (fr *FaultRules) Set(token, pattern string, statusCode int, body string, offset, times int) {
 	fr.mu.Lock()
 	defer fr.mu.Unlock()
 	fr.rules[faultRuleKey{token: token, pattern: pattern}] = &FaultRule{
-		StatusCode:   statusCode,
-		Body:         body,
-		AfterHandler: afterHandler,
-		offset:       offset,
-		times:        times,
+		StatusCode: statusCode,
+		Body:       body,
+		offset:     offset,
+		times:      times,
 	}
 }
 
@@ -92,17 +87,16 @@ func (fr *FaultRules) Check(method, path, token string) *FaultRule {
 func faultEndpointHandler(fr *FaultRules) HandlerFunc {
 	return func(req Request) any {
 		var body struct {
-			Pattern      string `json:"pattern"`
-			StatusCode   int    `json:"status_code"`
-			Body         string `json:"body"`
-			Offset       int    `json:"offset"`
-			Times        int    `json:"times"`
-			AfterHandler bool   `json:"after_handler"`
+			Pattern    string `json:"pattern"`
+			StatusCode int    `json:"status_code"`
+			Body       string `json:"body"`
+			Offset     int    `json:"offset"`
+			Times      int    `json:"times"`
 		}
 		if err := json.Unmarshal(req.Body, &body); err != nil {
 			return Response{StatusCode: 400, Body: map[string]string{"error": err.Error()}}
 		}
-		fr.Set(req.Token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times, body.AfterHandler)
+		fr.Set(req.Token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times)
 		return Response{StatusCode: 200}
 	}
 }
