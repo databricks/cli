@@ -1,0 +1,39 @@
+
+=== install to the global .agents/skills destination
+>>> [CLI] experimental aitools install --agents agents --scope=global
+Command "install" is deprecated, use "databricks aitools install" instead.
+Installing Databricks skills for Portable (.agents/skills)...
+Using skills version test-ref
+Fetching skills manifest...
+Installed 1 skill.
+
+=== a single global agent gets a real copied file under ~/.agents/skills
+>>> find.py .agents/skills/test-stable-a/SKILL.md --expect 1
+.agents/skills/test-stable-a/SKILL.md
+
+>>> cat .agents/skills/test-stable-a/SKILL.md
+---
+name: test-stable-a
+---
+
+# A
+
+=== install to the project .agents/skills destination (cwd)
+>>> [CLI] experimental aitools install --agents agents --scope=project
+Command "install" is deprecated, use "databricks aitools install" instead.
+Installing Databricks skills for Portable (.agents/skills)...
+Using skills version test-ref
+Fetching skills manifest...
+Installed 1 skill.
+
+=== project scope writes the real file to the canonical dir
+>>> find.py .databricks/aitools/skills/test-stable-a/SKILL.md --expect 1
+.databricks/aitools/skills/test-stable-a/SKILL.md
+
+=== and .agents/skills exposes the same content (symlinked into canonical)
+>>> cat .agents/skills/test-stable-a/SKILL.md
+---
+name: test-stable-a
+---
+
+# A

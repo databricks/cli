@@ -1,0 +1,1 @@
+`databricks aitools install` can now install skills into the vendor-neutral `.agents/skills/` location (`~/.agents/skills` globally, `<root>/.agents/skills` for project scope) via `--agents agents` or the interactive picker.
