@@ -379,6 +379,15 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
+	// A resent request carries the token of the one it repeats, and the Jobs API
+	// answers it with the run that one started rather than starting another. Only a
+	// non-empty token is recorded below, so a request without one is never deduped.
+	// The API also keeps a token reserved once its run is deleted and rejects it from
+	// then on, which nothing here exercises.
+	if runId, ok := s.JobRunIdempotency[request.IdempotencyToken]; ok {
+		return Response{Body: jobs.RunNowResponse{RunId: runId}}
+	}
+
 	runId := nextID()
 	runName := "run-name"
 	if job.Settings != nil && job.Settings.Name != "" {
@@ -448,6 +457,10 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		Tasks:                tasks,
 		JobParameters:        runJobParameters(job.Settings, request.JobParameters),
 		OverridingParameters: runOverridingParameters(request),
+	}
+
+	if request.IdempotencyToken != "" {
+		s.JobRunIdempotency[request.IdempotencyToken] = runId
 	}
 
 	return Response{Body: jobs.RunNowResponse{RunId: runId}}
