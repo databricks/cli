@@ -1,17 +1,17 @@
 echo "*" > .gitignore
 trace $CLI bundle plan
-$CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-$CLI bundle plan -o json > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
 
-trace print_requests.py //jobs > out.create.requests.txt --del-body deployment.deployment_id,deployment.version_id
+trace print_requests.py //jobs > out.create.requests.txt --del-body deployment.deployment_id,deployment.version_id,new_settings.deployment.deployment_id,new_settings.deployment.version_id
 
 title "Update trigger.periodic.unit and re-deploy"
 trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle plan
-$CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py //jobs > out.update.requests.$DATABRICKS_BUNDLE_ENGINE.json --del-body deployment.deployment_id,deployment.version_id
+trace print_requests.py //jobs > out.update.requests.$DATABRICKS_BUNDLE_ENGINE.json --del-body deployment.deployment_id,deployment.version_id,new_settings.deployment.deployment_id,new_settings.deployment.version_id
 
 trace $CLI bundle plan
 
@@ -19,12 +19,12 @@ title "Fetch job ID and verify remote state"
 
 ppid=`read_id.py foo`
 
-trace $CLI jobs get $ppid | jq 'del(.settings.run_as)'
+trace $CLI jobs get $ppid | jq 'del(.settings.run_as, .settings.deployment.deployment_id, .settings.deployment.version_id)'
 rm out.requests.txt
 
 title "Destroy the job and verify that it's removed from the state and from remote"
 trace $CLI bundle destroy --auto-approve
-trace print_requests.py //jobs --del-body deployment.deployment_id,deployment.version_id
+trace print_requests.py //jobs --del-body deployment.deployment_id,deployment.version_id,new_settings.deployment.deployment_id,new_settings.deployment.version_id
 
 trace musterr $CLI jobs get $ppid
 rm out.requests.txt

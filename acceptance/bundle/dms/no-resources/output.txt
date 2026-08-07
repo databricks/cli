@@ -4,7 +4,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/files...
 Deploying resources...
 Deployment complete!
-Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=1
 
 >>> print_requests.py //api/2.0/bundle --get
 {
@@ -51,7 +50,6 @@ Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=1
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/files...
 Deploying resources...
 Deployment complete!
-Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=2
 
 >>> print_requests.py //api/2.0/bundle --get
 {

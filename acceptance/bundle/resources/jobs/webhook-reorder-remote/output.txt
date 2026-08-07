@@ -16,7 +16,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> print_requests.py //jobs --del-body deployment.deployment_id,deployment.version_id
+>>> print_requests.py //jobs --del-body deployment.deployment_id,deployment.version_id,new_settings.deployment.deployment_id,new_settings.deployment.version_id
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",

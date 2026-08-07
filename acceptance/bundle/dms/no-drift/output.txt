@@ -5,7 +5,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift/defau
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=1
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -16,7 +15,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift/defau
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=2
 
 >>> print_requests.py //api/2.2/jobs //api/2.0/pipelines --sort
 {

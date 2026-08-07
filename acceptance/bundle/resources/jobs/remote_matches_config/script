@@ -13,9 +13,9 @@ r["max_concurrent_runs"] = 2
 EOF
 
 trace $CLI bundle plan
-$CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm out.requests.txt
 # XXX READPLAN
 trace $CLI bundle deploy
-trace print_requests.py //jobs --del-body deployment.deployment_id,deployment.version_id
+trace print_requests.py //jobs --del-body deployment.deployment_id,deployment.version_id,new_settings.deployment.deployment_id,new_settings.deployment.version_id

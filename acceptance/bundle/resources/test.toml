@@ -1,34 +1,27 @@
 RecordRequests = true
 
-# Recording adds two things to a deploy's output, and both are normalized away so the
-# DMS run asserts the same goldens as the engine runs. That is the point of the run:
-# every test then checks that recording does not change what a deploy does, rather than
-# needing a second copy of 600-odd output files. They live here rather than in the parent so
-# bundle/dms, which asserts the recording itself, does not inherit them.
+# These normalize what deployment history recording adds to a deploy's output, so a test
+# asserts the same golden files whether or not recording is on - that is the point of the
+# DMS run, rather than keeping a second copy of 600-odd output files. They live here
+# rather than in the parent so bundle/dms, which asserts the recording itself, does not
+# inherit them.
 #
-# The link printed after a deploy:
+# The stamp on jobs and pipelines, which the plan reports as a change of its own. It shows
+# up at whatever depth the enclosing object sits at, so the indent is matched loosely; the
+# body lines are matched as `"key": value` pairs rather than `.*` so the match stops at the
+# entry's own closing brace instead of running into its siblings. (Go's regexp is RE2, so
+# the indent cannot be captured and back-referenced.)
 [[Repls]]
-Old = '(?m)^Deployment history: .*\n'
+Old = '(?m)^ *"deployment\.(deployment_id|version_id)": \{\n(?: *"[a-z_]+": .*\n)+ *\},\n'
 New = ''
 
-# And the stamp on jobs and pipelines, which the plan reports as a change of its own.
-# Matched with the trailing comma and without, since it can be the only entry - in which
-# case the whole "changes" object exists only because of recording, and goes too.
+# Same entry when it is the last one in the object, so the comma is on the line before.
 [[Repls]]
-Old = '(?m)^ *"changes": \{\n *"deployment\.(deployment_id|version_id)": \{\n(?: *.*\n)*? *\}\n *\},?\n'
-New = ''
+Old = '(?m),\n *"deployment\.(deployment_id|version_id)": \{\n(?: *"[a-z_]+": .*\n)+ *\}\n'
+New = '''
+'''
 
+# And when it is the only entry, the whole "changes" object exists because of recording.
 [[Repls]]
-Old = '(?m)^ *"deployment\.(deployment_id|version_id)": \{\n(?: *.*\n)*? *\},\n'
-New = ''
-
-# The stamp itself, where it appears inside a serialized deployment block (plan JSON,
-# state dumps). Both orderings are covered: the pair can sit before or after the fields
-# that stay, so the comma may be on this line or the one before.
-[[Repls]]
-Old = '(?m)^( *)"(deployment_id|version_id)": "[^"]*",\n'
-New = ''
-
-[[Repls]]
-Old = ',(\n *"(deployment_id|version_id)": "[^"]*")+'
+Old = '(?m)^ *"changes": \{\n *"deployment\.(deployment_id|version_id)": \{\n(?: *"[a-z_]+": .*\n)+ *\}\n *\},?\n'
 New = ''

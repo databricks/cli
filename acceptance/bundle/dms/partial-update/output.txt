@@ -5,7 +5,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-partial-update
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=1
 
 >>> print_requests.py //api/2.0/bundle
 {
@@ -66,7 +65,6 @@ This action will result in the deletion or recreation of the following UC schema
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Deployment history: [DATABRICKS_URL]/deployments/[NUMID]?version=2
 
 >>> print_requests.py //api/2.0/bundle
 {
