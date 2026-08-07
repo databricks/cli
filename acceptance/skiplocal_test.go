@@ -9,15 +9,15 @@ import (
 	"testing"
 )
 
-// DATABRICKS_TEST_SKIPLOCAL controls skipping of Local acceptance tests.
+// DATABRICKS_TEST_SKIPLOCAL skips acceptance tests on cloud runs. All tests already
+// run locally against the testserver; withchanged re-enables tests this branch touches.
 const (
 	SkipLocalEnvVar = "DATABRICKS_TEST_SKIPLOCAL"
 
-	// SkipLocalAll skips every test with Local = true.
+	// SkipLocalAll skips every acceptance test.
 	SkipLocalAll = "true"
-	// SkipLocalWithChanged skips Local tests except those added or changed on this
-	// branch (relative to the merge base with origin/main), so a cloud run still
-	// exercises the tests this branch touches.
+	// SkipLocalWithChanged skips acceptance tests except those added or changed
+	// relative to origin/main.
 	SkipLocalWithChanged = "withchanged"
 
 	// maxChangedLocalTests caps how many changed tests SkipLocalWithChanged re-enables,
