@@ -1,9 +1,10 @@
 # Cloud read-path test for the `databricks bundle-deployments` (DMS) commands.
 #
-# DMS is placed on DEV and STAGING shards only, so this test is enabled solely
-# for the staging cloud env. On a prod control plane the routes do not exist and
-# every request 404s at the API proxy, which is why the CLI's usual
-# aws-prod-ucws env cannot cover this service.
+# DMS is placed on DEV and STAGING shards only; on a prod control plane the
+# routes do not exist and every request 404s at the API proxy. CLOUD_ENV cannot
+# express that split (the staging and prod aws envs both set CLOUD_ENV=aws), so
+# `script` gates on the workspace host instead and skips off staging. Drop that
+# guard once DMS reaches prod, and this becomes a plain aws cloud test.
 Cloud = true
 Local = false
 CloudEnvs = {aws = true, azure = false, gcp = false}
