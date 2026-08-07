@@ -18,6 +18,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// stubValidateConfig registers an OK ValidateConfig response so submitWorkload's
+// pre-flight passes. Register before AddDefaultHandlers (the router is first-wins).
+func stubValidateConfig(server *testserver.Server) {
+	server.Handle("POST", "/api/2.0/ai-training/config:validate", func(req testserver.Request) any {
+		return validateConfigResponse{}
+	})
+}
+
 func TestDlRuntimeImage(t *testing.T) {
 	ctx := t.Context()
 	// A config runtime version wins and is used bare.
@@ -216,6 +224,7 @@ func TestSubmitWorkload(t *testing.T) {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 777}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
@@ -260,6 +269,7 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 777}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -290,6 +300,7 @@ func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 555}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -331,6 +342,7 @@ func TestSubmitWorkloadWithGitPinnedCodeSource(t *testing.T) {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 555}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -380,6 +392,7 @@ func TestSubmitWorkloadPlainTarNameIsUnique(t *testing.T) {
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		return jobs.SubmitRunResponse{RunId: 555}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -431,6 +444,7 @@ func TestSubmitWorkloadGitArchiveCaching(t *testing.T) {
 		}
 		return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -474,6 +488,7 @@ func TestSubmitWorkloadUploadsGitSidecars(t *testing.T) {
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		return jobs.SubmitRunResponse{RunId: 555}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -531,6 +546,7 @@ func TestSubmitWorkloadWithRemoteVolumeCodeSource(t *testing.T) {
 	server.Handle("PUT", "/api/2.0/fs/files/Volumes/{path...}", func(req testserver.Request) any {
 		return testserver.Response{StatusCode: 204}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -578,6 +594,7 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 			paths = append(paths, req.URL.Path)
 			return testserver.Response{StatusCode: 200}
 		})
+		stubValidateConfig(server)
 		testserver.AddDefaultHandlers(server)
 		pw, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 		require.NoError(t, err)
@@ -599,6 +616,7 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 			uploaded = true
 			return nil
 		})
+		stubValidateConfig(server)
 		testserver.AddDefaultHandlers(server)
 		tw, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 		require.NoError(t, err)
@@ -627,6 +645,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		server.Handle("GET", "/api/2.0/serverless-policies", func(req testserver.Request) any {
 			return usagePoliciesResponse{Policies: []usagePolicy{{PolicyID: policyID, PolicyName: "team-a"}}}
 		})
+		stubValidateConfig(server)
 		testserver.AddDefaultHandlers(server)
 		w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 		require.NoError(t, err)
