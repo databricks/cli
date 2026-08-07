@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/google/uuid"
 )
 
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
@@ -153,9 +154,13 @@ func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 }
 
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
+	// Mint a token so an SDK retry of a lost response returns the same run. Set it
+	// on a copy: recording it in state would drift from the empty config and recreate.
+	req := config.RunNow
+	req.IdempotencyToken = uuid.NewString()
 	// RunNow returns only the new run id, so we return a nil remote and let the
 	// framework read it back via DoRead.
-	wait, err := r.client.Jobs.RunNow(ctx, config.RunNow)
+	wait, err := r.client.Jobs.RunNow(ctx, req)
 	if err != nil {
 		return "", nil, err
 	}
