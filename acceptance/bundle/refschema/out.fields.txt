@@ -2431,6 +2431,7 @@ resources.models.*.permissions[*].service_principal_name	string	ALL
 resources.models.*.permissions[*].user_name	string	ALL
 resources.pipelines.*.allow_duplicate_names	bool	ALL
 resources.pipelines.*.budget_policy_id	string	ALL
+resources.pipelines.*.cascade_on_destroy	*bool	INPUT	STATE
 resources.pipelines.*.catalog	string	ALL
 resources.pipelines.*.cause	string	REMOTE
 resources.pipelines.*.channel	string	ALL
