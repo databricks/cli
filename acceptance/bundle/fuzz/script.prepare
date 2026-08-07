@@ -21,6 +21,14 @@ invariant_render() {
 
     trace $CLI bundle validate &> LOG.validate
     cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
+
+    # A destructive mutation can delete a field the schema marks required. validate only warns, so
+    # such a config still deploys under terraform while the direct engine refuses it -- a difference
+    # in strictness on input the CLI already called incomplete, not a bug. Reject the seed here,
+    # while it still counts as rejected, rather than let the target deploy it and mark it accepted.
+    if grep -q 'required field .* is not set' LOG.validate; then
+        return 1
+    fi
 }
 
 # A mutated config can deploy and still differ from the fake server, which does not round-trip
