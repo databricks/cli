@@ -1,4 +1,5 @@
 Cloud = true
+# Deploys a pipeline and job; pipelines run on classic compute
 RequiresClassic = true
 
 RecordRequests = true

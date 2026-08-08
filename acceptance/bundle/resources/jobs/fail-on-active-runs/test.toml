@@ -1,5 +1,6 @@
 Local = true
 Cloud = true
+# Deploys a job with a job cluster to test active run prevention
 RequiresClassic = true
 RecordRequests = false
 RunsOnDbr = true

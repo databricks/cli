@@ -1,5 +1,6 @@
 Local = true
 Cloud = true
+# Deploys a job with a job cluster to Shared workspace path
 RequiresClassic = true
 RecordRequests = false
 RunsOnDbr = true

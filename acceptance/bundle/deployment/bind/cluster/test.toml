@@ -1,4 +1,5 @@
 Local = true
 Cloud = true
 RequiresCluster = true
+# Tests bind an all-purpose cluster to a bundle
 RequiresClassic = true

@@ -1,5 +1,6 @@
 Local = true
 Cloud = true
+# Deploys jobs with job clusters
 RequiresClassic = true
 RecordRequests = false
 RunsOnDbr = true

@@ -3,6 +3,7 @@ Ignore = [".databricks/.gitignore"]
 
 Local = true
 Cloud = true
+# Deploys a job with a job cluster and run_as configuration
 RequiresClassic = true
 RecordRequests = true
 

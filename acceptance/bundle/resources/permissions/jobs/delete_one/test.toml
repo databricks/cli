@@ -2,4 +2,5 @@ Local = true
 Cloud = true
 IsServicePrincipal = true
 RequiresUnityCatalog = true
+# Deploys a job with a notebook_task, which runs on a cluster.
 RequiresClassic = true

@@ -1,4 +1,5 @@
 Cloud = true
+# Tests bind a pipeline to a bundle; pipelines run on classic compute
 RequiresClassic = true
 RecordRequests = true
 Ignore = [".databricks", "pipeline.json"]

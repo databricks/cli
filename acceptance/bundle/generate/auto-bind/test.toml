@@ -1,5 +1,6 @@
 Local = true
 Cloud = true
+# Generates and binds a job with a job cluster
 RequiresClassic = true
 
 Ignore = [

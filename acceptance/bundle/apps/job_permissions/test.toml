@@ -1,6 +1,7 @@
 Cloud = true
 RequiresUnityCatalog = true
 RecordRequests = false
+# Deploys a job with a spark_python_task, which runs on a cluster.
 RequiresClassic = true
 
 [EnvMatrix]

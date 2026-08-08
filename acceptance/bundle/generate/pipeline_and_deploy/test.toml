@@ -1,5 +1,6 @@
 Local = true
 Cloud = true
+# Generates from a pipeline and deploys it; pipelines run on classic compute
 RequiresClassic = true
 
 Ignore = [

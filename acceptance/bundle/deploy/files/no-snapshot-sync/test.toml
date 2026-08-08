@@ -1,5 +1,6 @@
 Local = true
 Cloud = true
+# Deploys a job with a job cluster (new_cluster)
 RequiresClassic = true
 
 Ignore = [
