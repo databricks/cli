@@ -1,5 +1,6 @@
 Local = true
 CloudSlow = true
+RequiresClassic = true
 RecordRequests = false
 RunsOnDbr = true
 

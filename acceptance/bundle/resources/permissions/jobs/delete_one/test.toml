@@ -2,3 +2,4 @@ Local = true
 Cloud = true
 IsServicePrincipal = true
 RequiresUnityCatalog = true
+RequiresClassic = true

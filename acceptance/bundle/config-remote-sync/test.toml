@@ -1,3 +1,8 @@
+# These tests sync job config that defines a job cluster, so they need an
+# environment where classic compute can be created. dashboard_etag overrides
+# this back to false: it syncs a dashboard bound to a SQL warehouse.
+RequiresClassic = true
+
 # Disable Windows tests for config-remote-sync tests
 [GOOS]
 windows = false

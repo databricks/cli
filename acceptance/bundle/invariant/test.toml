@@ -1,6 +1,7 @@
 Local = true
 Cloud = true
 RequiresUnityCatalog = true
+RequiresClassic = true
 Timeout = '10m'
 
 Ignore = [

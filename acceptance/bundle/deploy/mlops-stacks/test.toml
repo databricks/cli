@@ -1,5 +1,6 @@
 Cloud=true
 Local=true
+RequiresClassic = true
 
 # The MLOps Stacks template registers the model in Unity Catalog and runs its
 # jobs on serverless compute, so this test only works on a UC-enabled workspace

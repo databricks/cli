@@ -3,6 +3,7 @@ Cloud = true
 RecordRequests = false
 RunsOnDbr = true
 RequiresUnityCatalog = true
+RequiresClassic = true
 
 Ignore = [
     ".databricks",

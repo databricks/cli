@@ -58,6 +58,12 @@ type TestConfig struct {
 	// If true and Cloud=true, run this test only if a default test cluster is available in the cloud environment
 	RequiresCluster *bool
 
+	// If true and Cloud=true, run this test only where classic compute can be
+	// created. Set it on any test that deploys an all-purpose cluster, a job
+	// cluster, or an instance pool. Serverless-only test environments export
+	// DATABRICKS_TEST_NO_CLASSIC=true, which skips these.
+	RequiresClassic *bool
+
 	// If true and Cloud=true, run this test only if a default warehouse is available in the cloud environment
 	RequiresWarehouse *bool
 

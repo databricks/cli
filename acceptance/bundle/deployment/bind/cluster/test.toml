@@ -1,3 +1,4 @@
 Local = true
 Cloud = true
 RequiresCluster = true
+RequiresClassic = true

@@ -1,2 +1,3 @@
 Cloud = true
 RequiresUnityCatalog = true
+RequiresClassic = true

@@ -3,6 +3,7 @@ Ignore = [".databricks/.gitignore"]
 
 Local = true
 Cloud = true
+RequiresClassic = true
 RecordRequests = true
 
 [EnvMatrix]

@@ -1,0 +1,2 @@
+# Cloud tests require classic compute to deploy Databricks SQL pipelines
+RequiresClassic = true

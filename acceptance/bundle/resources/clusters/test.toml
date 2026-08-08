@@ -1,0 +1,2 @@
+# Cloud tests deploy all-purpose and job clusters (classic compute resources)
+RequiresClassic = true

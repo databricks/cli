@@ -1,4 +1,5 @@
 Cloud = true
+RequiresClassic = true
 
 RecordRequests = true
 

@@ -1,6 +1,10 @@
 Cloud = true
 RequiresWarehouse = true
 
+# Unlike its siblings this test syncs a dashboard, not a job cluster, so it runs
+# in serverless-only environments.
+RequiresClassic = false
+
 RecordRequests = false
 
 Ignore = [".databricks", "databricks.yml", "databricks.yml.backup"]

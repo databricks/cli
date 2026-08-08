@@ -103,6 +103,10 @@ const (
 	// The tests the don't set SERVERLESS variable or set to empty string will also be run.
 	EnvFilterVar = "ENVFILTER"
 
+	// Set to "true" by test environments that cannot create classic compute, so
+	// tests marked RequiresClassic are skipped there.
+	EnvNoClassic = "DATABRICKS_TEST_NO_CLASSIC"
+
 	// File where scripts can output custom replacements
 	// export $job_id=100200300
 	// $ echo "$job_id:MY_JOB" >> ACC_REPLS  # This will replace 100200300 with [MY_JOB] in the output
@@ -719,6 +723,10 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 
 		if isTruePtr(config.RequiresCluster) && os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
 			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID is empty)", configPath)
+		}
+
+		if isTruePtr(config.RequiresClassic) && os.Getenv(EnvNoClassic) == "true" {
+			return fmt.Sprintf("Disabled via RequiresClassic setting in %s (%s=true)", configPath, EnvNoClassic)
 		}
 
 	} else {
