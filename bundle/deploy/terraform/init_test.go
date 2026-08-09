@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/hashicorp/go-version"
@@ -237,8 +238,9 @@ func TestSetUserAgentExtra_Python(t *testing.T) {
 	env := make(map[string]string, 0)
 	err := setUserAgentExtraEnvVar(env, b)
 	require.NoError(t, err)
+	// The CLI version is the test binary's own, which is the not-injected default.
 	assert.Equal(t, map[string]string{
-		"DATABRICKS_USER_AGENT_EXTRA": "cli/0.0.0-dev databricks-pydabs/0.7.0",
+		"DATABRICKS_USER_AGENT_EXTRA": "cli/" + build.DefaultSemver + " databricks-pydabs/0.7.0",
 	}, env)
 }
 
