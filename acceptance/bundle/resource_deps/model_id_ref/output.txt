@@ -13,7 +13,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py //mlflow/registered-models/create //jobs/create --sort
+>>> print_requests.py --nostamp //mlflow/registered-models/create //jobs/create --sort
 {
   "method": "POST",
   "path": "/api/2.0/mlflow/registered-models/create",

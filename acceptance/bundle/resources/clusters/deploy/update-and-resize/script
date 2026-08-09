@@ -7,11 +7,11 @@ cleanup() {
 trap cleanup EXIT
 
 $CLI bundle plan > out.plan_.$DATABRICKS_BUNDLE_ENGINE.txt
-$CLI bundle plan -o json | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 
 title "Cluster should exist after bundle deployment:\n"
-CLUSTER_ID=$($CLI bundle summary -o json | jq -r '.resources.clusters.test_cluster.id')
+CLUSTER_ID=$($CLI bundle summary -o json | nostamp | jq -r '.resources.clusters.test_cluster.id')
 echo "$CLUSTER_ID:CLUSTER_ID" >> ACC_REPLS
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers}'
 

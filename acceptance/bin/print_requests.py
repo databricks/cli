@@ -90,6 +90,15 @@ from pathlib import Path
 ADD_PREFIX = "/"
 NEGATE_PREFIX = "^/"
 
+# What --nostamp deletes. A job create sends the deployment block at the top level, an
+# update nests it under new_settings.
+STAMP_FIELDS = [
+    "deployment.deployment_id",
+    "deployment.version_id",
+    "new_settings.deployment.deployment_id",
+    "new_settings.deployment.version_id",
+]
+
 
 def read_json_many(s):
     result = []
@@ -221,10 +230,19 @@ def main():
         "--del-body, which edits the parsed JSON body, this drops a field of the request "
         "record itself, e.g. raw_body for a binary upload payload.",
     )
+    parser.add_argument(
+        "--nostamp",
+        action="store_true",
+        help="Drop the deployment stamp (deployment_id, version_id) from job and pipeline "
+        "bodies, so a test asserts the same requests whether or not deployment history "
+        "recording is on. Shorthand for the --del-body fields it implies.",
+    )
     parser.add_argument("--fname", default="out.requests.txt")
     args = parser.parse_args()
 
     del_body_fields = [field for group in args.del_body for field in group.split(",")]
+    if args.nostamp:
+        del_body_fields += STAMP_FIELDS
     del_fields = [field for group in args.del_field for field in group.split(",")]
 
     test_tmp_dir = os.environ.get("TEST_TMP_DIR")

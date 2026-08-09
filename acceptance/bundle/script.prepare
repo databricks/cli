@@ -1,0 +1,18 @@
+nostamp() {
+    # Drop the deployment stamp (deployment_id / version_id) that history recording adds to
+    # every job and pipeline, so a test asserts the same JSON with recording on or off. Pipe
+    # a plan, a state dump, or a resource payload through this. See DATABRICKS_BUNDLE_DMS in
+    # bundle/test.toml; bundle/dms asserts the stamp and does not use this.
+    #
+    # Only inside a block that also has "kind" and "metadata_file_path", so an unrelated
+    # deployment_id survives. An empty value survives too: a terraform state dump carries
+    # "version_id": "" for a job it never stamped.
+    #
+    # A plan reports the stamp as its own change entry, keyed by field path, so those go as
+    # well - and with them a "changes" object left empty, which recording alone created.
+    jq '((.. | objects | select(has("kind") and has("metadata_file_path")))
+         |= with_entries(select((.key | IN("deployment_id", "version_id")) == false or .value == "")))
+        | ((.. | objects | .changes? | objects)
+           |= with_entries(select(.key | IN("deployment.deployment_id", "deployment.version_id") | not)))
+        | del(.. | objects | select(.changes == {}) | .changes)'
+}

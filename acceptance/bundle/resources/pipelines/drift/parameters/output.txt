@@ -17,7 +17,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py //api/2.0/pipelines
+>>> print_requests.py --nostamp //api/2.0/pipelines
 json.method = "POST";
 json.path = "/api/2.0/pipelines";
 json.body.channel = "CURRENT";

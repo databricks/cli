@@ -10,4 +10,4 @@ trace $CLI bundle deploy
 model_id=$($CLI model-registry get-model my-model | jq -r '.registered_model_databricks.id')
 add_repl.py "$model_id" MY_MODEL_ID
 
-trace print_requests.py //mlflow/registered-models/create //jobs/create --sort
+trace print_requests.py --nostamp //mlflow/registered-models/create //jobs/create --sort

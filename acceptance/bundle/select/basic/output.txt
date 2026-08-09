@@ -31,7 +31,7 @@ Deployment complete!
 === Telemetry:
 select_used true
 
->>> print_requests.py --sort //jobs
+>>> print_requests.py --nostamp --sort //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
@@ -105,7 +105,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --sort //jobs
+>>> print_requests.py --nostamp --sort //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",

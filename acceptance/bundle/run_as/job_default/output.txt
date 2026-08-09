@@ -6,7 +6,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
@@ -58,7 +58,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/reset",
