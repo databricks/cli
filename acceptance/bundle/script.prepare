@@ -1,15 +1,33 @@
 nostamp() {
-    # Drop the deployment stamp (deployment_id / version_id) that history recording adds to
-    # every job and pipeline, so a test asserts the same JSON with recording on or off. Pipe
-    # a plan, a state dump, or a resource payload through this. See DATABRICKS_BUNDLE_DMS in
-    # bundle/test.toml; bundle/dms asserts the stamp and does not use this.
+    # Reads JSON on stdin, writes it back with the deployment stamp removed.
     #
-    # Only inside a block that also has "kind" and "metadata_file_path", so an unrelated
-    # deployment_id survives. An empty value survives too: a terraform state dump carries
-    # "version_id": "" for a job it never stamped.
+    # Deployment history recording adds deployment_id and version_id to every job and
+    # pipeline. Acceptance tests compare output byte for byte, so those two extra fields
+    # would fail every test in the DATABRICKS_BUNDLE_DMS=true run (see bundle/test.toml).
+    # Pipe a plan, a state dump, or a resource payload through this and the test asserts one
+    # golden file either way. Tests under bundle/dms assert the stamp itself and must not.
     #
-    # A plan reports the stamp as its own change entry, keyed by field path, so those go as
-    # well - and with them a "changes" object left empty, which recording alone created.
+    # Three passes, because the stamp shows up in three shapes:
+    #
+    #   1. Nested in a deployment block, as printed by `jobs get` / `pipelines get`:
+    #        "deployment": {"deployment_id": "87..", "kind": "BUNDLE",
+    #                       "metadata_file_path": "/x", "version_id": "1"}
+    #      -> both keys dropped, "kind" and "metadata_file_path" kept.
+    #
+    #   2. Flat in a plan's "changes", keyed by field path:
+    #        "changes": {"deployment.version_id": {"action": "skip", ...}, "name": {...}}
+    #      -> the stamp entries dropped, real changes kept.
+    #
+    #   3. A "changes" object that pass 2 emptied to {} - it existed only because of
+    #      recording, so the key goes too.
+    #
+    # Two things it deliberately keeps:
+    #
+    #   - A deployment_id anywhere else. Pass 1 requires "kind" and "metadata_file_path" as
+    #     neighbours, a pair unique to the deployment block, so an unrelated field of the
+    #     same name is untouched.
+    #   - "version_id": "". A terraform state dump carries that for a job it never stamped,
+    #     and it is the test's own expected output, so `.value == ""` keeps it.
     jq '((.. | objects | select(has("kind") and has("metadata_file_path")))
          |= with_entries(select((.key | IN("deployment_id", "version_id")) == false or .value == "")))
         | ((.. | objects | .changes? | objects)
