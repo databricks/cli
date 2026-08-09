@@ -5,10 +5,17 @@
 // the value, which could then drift from this one.
 package nextchanges
 
-import _ "embed"
+import (
+	_ "embed"
+	"strings"
+)
 
-// Version is the next release version, e.g. "1.12.0\n". Callers must trim it.
-// The release tooling bumps the embedded file after each release; see README.md.
+// versionFile is the raw contents of the version file. It has a trailing newline
+// (the whitespace linter requires one), so it is not exported directly.
 //
 //go:embed version
-var Version string
+var versionFile string
+
+// Version is the next release version, e.g. "1.12.0". The release tooling bumps
+// the embedded file after each release; see README.md.
+var Version = strings.TrimSpace(versionFile)

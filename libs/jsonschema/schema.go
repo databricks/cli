@@ -159,10 +159,6 @@ const (
 	IntegerType Type = "integer"
 )
 
-// devPrerelease is the prerelease identifier of a development build; see
-// build.Info.IsDevelopment.
-const devPrerelease = "-dev"
-
 // Validate property types are all valid JSON schema types.
 func (s *Schema) validateSchemaPropertyTypes() error {
 	for _, v := range s.Properties {
@@ -276,7 +272,7 @@ func (s *Schema) validateSchemaMinimumCliVersion(currentVersion string) func() e
 
 		// Ignore this validation rule for development builds, which are built from
 		// main and may already carry the change the schema requires.
-		if semver.Prerelease(currentVersion) == devPrerelease {
+		if build.IsDevelopmentVersion(currentVersion) {
 			return nil
 		}
 

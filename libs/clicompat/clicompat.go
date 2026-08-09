@@ -47,12 +47,6 @@ const (
 	// localManifestFile is the filename for the locally cached manifest.
 	localManifestFile = "compat-manifest.json"
 
-	// devPrerelease identifies dev builds, which are treated as bleeding-edge and
-	// resolve to the highest versioned entry. A dev build's semver sits between
-	// the last release and the release it will become, so it would otherwise
-	// resolve to the entry for the previous release.
-	devPrerelease = "-dev"
-
 	maxFetchAttempts  = 3
 	fetchRetryBackoff = 300 * time.Millisecond
 )
@@ -229,7 +223,7 @@ func Resolve(m Manifest, cliVersion string) (Entry, error) {
 	// version has, so resolving them by semver would pick the entry for the
 	// previous release. Use the highest versioned entry instead, since dev
 	// builds represent the bleeding edge.
-	if semver.Prerelease("v"+cliVersion) == devPrerelease {
+	if build.IsDevelopmentVersion(cliVersion) {
 		return m[versions[0]], nil
 	}
 

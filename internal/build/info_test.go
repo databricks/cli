@@ -37,10 +37,73 @@ func TestIsDevelopment(t *testing.T) {
 	}
 }
 
-// TestDefaultSemverSortsAboveLastRelease pins the invariant this version scheme
-// exists for: a local build reports a version that sorts ABOVE the most recent
-// release (it is built from main, so it is newer) and BELOW the release it will
-// become. A bare "0.0.0-dev" sorted below every release instead.
+func TestIsDevelopmentVersion(t *testing.T) {
+	tests := []struct {
+		version string
+		want    bool
+	}{
+		{"1.12.0-dev+abc123", true},
+		{"1.12.0-dev", true},
+		// Accepted with or without a leading "v", since callers hold versions in
+		// both forms (the schema's minimum version is v-prefixed).
+		{"v1.12.0-dev", true},
+		{"1.12.0", false},
+		{"v1.12.0", false},
+		{"1.12.0-rc.1", false},
+		{"not-a-version", false},
+		{"", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.version, func(t *testing.T) {
+			assert.Equal(t, tt.want, IsDevelopmentVersion(tt.version))
+		})
+	}
+}
+
+// TestVersionOrdering pins the full ordering model this version scheme exists
+// for. A dev build is built from main, so it must sort ABOVE the release it
+// followed and BELOW the release it will become. The old "0.0.0-dev" scheme
+// violated this: it sorted below every release, including bare "0.0.0".
+//
+// The list is in strictly ascending order; the test asserts every pair, so it
+// covers both the neighbouring steps and the transitive relationships.
+func TestVersionOrdering(t *testing.T) {
+	ascending := []string{
+		"0.0.0-dev",
+		"0.0.0",
+		"1.11.0-dev",
+		"1.11.0",
+		// Build metadata is not part of precedence, so this is EQUAL to the
+		// bare 1.12.0-dev below and must sit between 1.11.0 and 1.12.0.
+		"1.12.0-dev+abc123",
+		"1.12.0-rc.1",
+		"1.12.0",
+		"1.12.1-dev",
+		"1.12.1",
+		"2.0.0-dev",
+		"2.0.0",
+	}
+
+	// Build metadata is ignored for precedence, so this pair compares equal.
+	require.Zero(t, semver.Compare("v1.12.0-dev+abc123", "v1.12.0-dev"))
+
+	for i, lower := range ascending {
+		require.True(t, semver.IsValid("v"+lower), "%q must be valid semver", lower)
+		assert.Zero(t, semver.Compare("v"+lower, "v"+lower), "%q must equal itself", lower)
+
+		for _, higher := range ascending[i+1:] {
+			// 1.12.0-dev+abc123 and 1.12.0-rc.1 are adjacent in the list but
+			// -dev sorts below -rc alphabetically, so they are still ordered.
+			assert.Negative(t, semver.Compare("v"+lower, "v"+higher), "%q must sort below %q", lower, higher)
+			assert.Positive(t, semver.Compare("v"+higher, "v"+lower), "%q must sort above %q", higher, lower)
+		}
+	}
+}
+
+// TestDefaultSemverSortsAboveLastRelease applies the ordering above to the
+// version an actual local build reports, which TestVersionOrdering cannot do
+// because DefaultSemver tracks .nextchanges/version.
 func TestDefaultSemverSortsAboveLastRelease(t *testing.T) {
 	v := "v" + DefaultSemver
 	require.True(t, semver.IsValid(v), "DefaultSemver %q must be valid semver", DefaultSemver)

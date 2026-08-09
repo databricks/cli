@@ -58,14 +58,24 @@ const devPrerelease = "-dev"
 // though a local build is built from main and is therefore newer than the
 // latest release. This matches what goreleaser produces for snapshot builds
 // (see snapshot.version_template in .goreleaser.yaml).
-var DefaultSemver = strings.TrimSpace(nextchanges.Version) + devPrerelease
+var DefaultSemver = nextchanges.Version + devPrerelease
+
+// IsDevelopmentVersion reports whether a version string is a development build's.
+// It keys off the -dev prerelease rather than a specific version number, so it
+// keeps working as the next release version changes. The version may be given
+// with or without a leading "v".
+//
+// Prefer Info.IsDevelopment when you have the running build's Info; this is for
+// callers holding only a version string (e.g. one read from a file or a
+// parameter), so the definition of "development build" lives in one place.
+func IsDevelopmentVersion(version string) bool {
+	return semver.Prerelease("v"+strings.TrimPrefix(version, "v")) == devPrerelease
+}
 
 // IsDevelopment reports whether this binary was built from a development or
-// snapshot build rather than a release tag. It keys off the -dev prerelease
-// rather than a specific version number, so it keeps working as the next
-// release version changes.
+// snapshot build rather than a release tag.
 func (i Info) IsDevelopment() bool {
-	return i.IsSnapshot || semver.Prerelease("v"+i.Version) == devPrerelease
+	return i.IsSnapshot || IsDevelopmentVersion(i.Version)
 }
 
 // getDefaultBuildVersion uses build information stored by Go itself
