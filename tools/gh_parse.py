@@ -43,6 +43,9 @@ ACTIONS_WITH_ICON = (*INTERESTING_ACTIONS, PASS, SKIP)
 # Minimum elapsed time for test to be in slowest tests table.
 SLOWEST_MIN_MINUTES = 2
 
+# If fewer than this many tests pass SLOWEST_MIN_MINUTES, show this many of the slowest tests regardless of duration.
+SLOWEST_MIN_ENTRIES = 20
+
 # Maximum number of tests in slowest tests table
 SLOWEST_MAX_ENTRIES = 50
 
@@ -546,16 +549,20 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
     if table_txt:
         print(table_txt)
 
-    # Generate slowest tests table (tests slower than 10 minutes)
+    # Generate slowest tests table
     all_durations = []  # [(env, package, testname, duration), ...]
     for env, env_durations in durations_by_env.items():
         for test_key, duration in env_durations.items():
             package_name, testname = test_key
-            if duration >= SLOWEST_MIN_MINUTES * 60:
-                all_durations.append((env, package_name, testname, duration))
+            all_durations.append((env, package_name, testname, duration))
 
     all_durations.sort(key=lambda x: x[3], reverse=True)
-    top_slowest = all_durations[:SLOWEST_MAX_ENTRIES]
+    # Only a handful of tests take minutes, so a strict threshold gave a table of 3 rows:
+    # https://github.com/databricks/cli/pull/6189#issuecomment-5204577107
+    # Pad up to SLOWEST_MIN_ENTRIES with quicker tests when that happens.
+    count = len([x for x in all_durations if x[3] >= SLOWEST_MIN_MINUTES * 60])
+    count = min(max(count, SLOWEST_MIN_ENTRIES), SLOWEST_MAX_ENTRIES)
+    top_slowest = all_durations[:count]
 
     if top_slowest:
         slowest_table = []
@@ -563,9 +570,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
             slowest_table.append({"duration": format_duration(duration), "env": env, "testname": testname})
 
         slowest_table_txt = format_table(slowest_table, columns=["duration", "env", "testname"], markdown=markdown)
-        slowest_table_txt = wrap_in_details(
-            slowest_table_txt, f"Top {len(top_slowest)} slowest tests (at least {SLOWEST_MIN_MINUTES} minutes):"
-        )
+        slowest_table_txt = wrap_in_details(slowest_table_txt, f"Top {len(top_slowest)} slowest tests:")
         print(slowest_table_txt)
 
     if show_output:
