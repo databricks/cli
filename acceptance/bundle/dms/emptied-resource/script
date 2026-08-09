@@ -1,0 +1,16 @@
+title "Deploy a schema with one grant, then revoke it so the grants node empties out"
+trace $CLI bundle deploy
+trace update_file.py databricks.yml 'grants: [{ principal: someone@example.com, privileges: [USE_SCHEMA] }]' 'grants: []'
+trace $CLI bundle deploy
+
+# The emptied node is recorded as a delete, not as the update that emptied it: the service
+# drops a resource from the deployment only on a delete. Recorded as an update it stayed
+# listed with an id but no state, and reading it back failed the next plan with
+# "unexpected end of JSON input".
+trace print_requests.py //api/2.0/bundle --sort
+
+title "Plan again: reading state back from the service works and reports no work"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete" "!unexpected end of JSON input"
+
+trace $CLI bundle destroy --auto-approve
+rm -f out.requests.txt
