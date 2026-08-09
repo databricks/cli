@@ -264,6 +264,14 @@ func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID str
 		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED")
 	}
 
+	// State describes a resource that exists, so an operation with state must identify
+	// which resource via resource_id. This applies to both succeeded and failed
+	// operations: a failed operation reports prior state to document what existed
+	// before the attempt failed.
+	if op.State != nil && op.ResourceId == "" {
+		return dmsInvalidArgument("resource_id is required for an operation that records state")
+	}
+
 	// The service names operations after the resource key, so it keeps one per
 	// resource per version: creating a second one for the same resource conflicts,
 	// and the caller has to use UpdateOperation instead.
@@ -372,6 +380,14 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 	failed := op.Status == bundledeployments.OperationStatusOperationStatusFailed
 	if !failed && op.ErrorMessage != "" {
 		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED")
+	}
+
+	// State describes a resource that exists, so an operation with state must identify
+	// which resource via resource_id. This applies to both succeeded and failed
+	// operations: a failed operation reports prior state to document what existed
+	// before the attempt failed.
+	if op.State != nil && op.ResourceId == "" {
+		return dmsInvalidArgument("resource_id is required for an operation that records state")
 	}
 
 	// Only the mutable fields change; action_type and resource_key stay as created.

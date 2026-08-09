@@ -276,9 +276,11 @@ type DMSSource struct {
 	// touch are absent from DMS and a later deploy plans them as creates.
 	//
 	// It exists for the CLI's own acceptance tests, which run the whole bundle suite
-	// with recording on. Most of those tests seed a state fixture, and they assert the
-	// output of a single deploy rather than reading state back, so the duplication the
-	// refusal prevents cannot bite them.
+	// with recording on. The guard trips on any non-empty state, so it catches every
+	// test that has already deployed once in its script, not only the five that commit
+	// a resources.json fixture - without this the DMS run fails 154 of them. They
+	// assert what one deploy does rather than reading state back, so the duplication
+	// the refusal prevents cannot bite them.
 	AllowExistingResources bool
 }
 
