@@ -3,6 +3,15 @@ trace $CLI bundle deploy
 trace print_requests.py //versions/1/operations --sort
 
 title "Wipe the local state, then destroy: depends_on comes back from DMS, so the child is still deleted before the parent it references"
+
+# Name both ids while state still exists, so the delete order below is readable. Without
+# this both render as [NUMID] and the golden cannot show which job went first.
+read_id.py parent > /dev/null
+read_id.py child > /dev/null
+
 rm -rf .databricks
 trace $CLI bundle destroy --auto-approve
+
+# Not --sort: the order is the assertion. The child references the parent, so it has to be
+# deleted first, and the golden shows [CHILD_ID] before [PARENT_ID].
 trace print_requests.py //jobs --oneline
