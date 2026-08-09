@@ -47,9 +47,14 @@ func TestIsDevelopmentVersion(t *testing.T) {
 		// Accepted with or without a leading "v", since callers hold versions in
 		// both forms (the schema's minimum version is v-prefixed).
 		{"v1.12.0-dev", true},
+		// A dev build on a prerelease release track; see devVersion.
+		{"1.13.0-rc.2.dev", true},
 		{"1.12.0", false},
 		{"v1.12.0", false},
 		{"1.12.0-rc.1", false},
+		// "rc.2-dev" is a single identifier that merely ends in "dev", not a dev
+		// marker. This is what naively appending "-dev" to a prerelease produced.
+		{"1.13.0-rc.2-dev", false},
 		{"not-a-version", false},
 		{"", false},
 	}
@@ -78,6 +83,10 @@ func TestVersionOrdering(t *testing.T) {
 		// bare 1.12.0-dev below and must sit between 1.11.0 and 1.12.0.
 		"1.12.0-dev+abc123",
 		"1.12.0-rc.1",
+		// A dev build off a prerelease sorts after the rc it follows and before
+		// the final release; see devVersion for why this shape exists.
+		"1.12.0-rc.1.dev",
+		"1.12.0-rc.2",
 		"1.12.0",
 		"1.12.1-dev",
 		"1.12.1",
@@ -101,18 +110,55 @@ func TestVersionOrdering(t *testing.T) {
 	}
 }
 
+// TestDevVersion covers both shapes .nextchanges/version can take. The
+// prerelease case is for completeness with next_release_version() in
+// internal/genkit/tagging.py, which bumps a prerelease when the file carries
+// one; this repo has never published a prerelease.
+func TestDevVersion(t *testing.T) {
+	tests := []struct {
+		next string
+		want string
+		// finalRelease is the release the dev build must sort below: the version
+		// itself on a stable track, or the release the prerelease leads up to.
+		finalRelease string
+	}{
+		{"1.12.0", "1.12.0-dev", "1.12.0"},
+		{"2.0.0", "2.0.0-dev", "2.0.0"},
+		// Appending "-dev" here would yield the prerelease "rc.2-dev", which is
+		// not a dev marker, so IsDevelopmentVersion would report false and every
+		// dev-build exemption would silently switch off.
+		{"1.13.0-rc.2", "1.13.0-rc.2.dev", "1.13.0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.next, func(t *testing.T) {
+			got := devVersion(tt.next)
+			assert.Equal(t, tt.want, got)
+			require.True(t, semver.IsValid("v"+got), "%q must be valid semver", got)
+			assert.True(t, IsDevelopmentVersion(got), "%q must be recognized as a dev build", got)
+			// The dev build sits below the release it will become, and above the
+			// prerelease it already contains, if any.
+			assert.Negative(t, semver.Compare("v"+got, "v"+tt.finalRelease), "%q must sort below %q", got, tt.finalRelease)
+			if tt.next != tt.finalRelease {
+				assert.Positive(t, semver.Compare("v"+got, "v"+tt.next), "%q must sort above %q", got, tt.next)
+			}
+		})
+	}
+}
+
 // TestDefaultSemverSortsAboveLastRelease applies the ordering above to the
 // version an actual local build reports, which TestVersionOrdering cannot do
 // because DefaultSemver tracks .nextchanges/version.
 func TestDefaultSemverSortsAboveLastRelease(t *testing.T) {
 	v := "v" + DefaultSemver
 	require.True(t, semver.IsValid(v), "DefaultSemver %q must be valid semver", DefaultSemver)
-	require.Equal(t, devPrerelease, semver.Prerelease(v))
+	require.True(t, IsDevelopmentVersion(DefaultSemver))
+	assert.True(t, Info{Version: DefaultSemver}.IsDevelopment())
 
 	// The release this dev build will become, e.g. v1.12.0 for 1.12.0-dev.
-	next := strings.TrimSuffix(v, devPrerelease)
+	next := "v" + strings.TrimSuffix(strings.TrimSuffix(DefaultSemver, "-"+devIdentifier), "."+devIdentifier)
+	require.NotEqual(t, v, next, "DefaultSemver must end with the dev identifier")
 	assert.Positive(t, semver.Compare(next, v), "the upcoming release must sort above the dev build")
-	assert.True(t, Info{Version: DefaultSemver}.IsDevelopment())
 }
 
 func TestGetSanitizedVersion(t *testing.T) {
