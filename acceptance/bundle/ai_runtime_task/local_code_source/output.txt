@@ -3,9 +3,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.train
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === each task's tarball holds only synced files (both under the repo root .air_snapshots)
 
@@ -110,9 +110,9 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated jobs.train
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py --sort --del-field raw_body //.air_snapshots/
 {
@@ -131,5 +131,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

@@ -5,6 +5,6 @@
 === bundle.deployment.lock.force is set in databricks.yml, so the stale lock is overridden
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-force-lock/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.foo
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.

@@ -14,7 +14,10 @@ trace $CLI grants get schema main.schema_remove_all_$UNIQUE_NAME | gron.py --noi
 # DoDelete silently keeps the grant.
 update_file.py databricks.yml 'grants: [{ principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] }]' 'grants: []'
 
-trace $CLI bundle deploy
+# The engines classify emptying the grants list differently: terraform reports the
+# grants node as deleted, direct as updated. Drop the per-resource line and summary
+# to keep this output engine-stable; the grants read below is what this asserts.
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
 trace $CLI grants get schema main.schema_remove_all_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py '!deco-test-user@databricks.com'
 
 # The revoking deploy drops the emptied grants node from state, so from here on both

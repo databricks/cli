@@ -1,7 +1,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.ambiguous_single_block_job
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Rename alpha -> zzz and beta -> aaa, and point gamma at the new keys
 === Sync
@@ -81,5 +81,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.
