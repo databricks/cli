@@ -88,6 +88,14 @@ func (q *operationQueue) RecordOperation(ctx context.Context, resourceKey string
 		return
 	}
 
+	// A recreate drops the state entry before creating the replacement. Recorded as
+	// in-progress, so an interrupted recreate does not leave the resource described as
+	// the one it just deleted; the create that follows updates it to succeeded.
+	if action == deployplan.Recreate && state == nil {
+		q.enqueue(ctx, resourceKey, newInProgressOperation())
+		return
+	}
+
 	op, err := newStateOperation(action, resourceID, state)
 	if err != nil {
 		// The deploy already persisted this write locally, so failing it here would

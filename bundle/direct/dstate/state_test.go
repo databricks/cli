@@ -42,11 +42,13 @@ func TestStateWritesRecordOperations(t *testing.T) {
 	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "456", map[string]string{"key": "new"}, nil, deployplan.Recreate))
 	mustFinalize(t, &db)
 
-	// The recreate's intermediate drop is not reported: the service keeps one
-	// operation per resource per version and rejects a succeeded recreate carrying no
-	// state, so the save that follows is what reports it.
+	// Both of the recreate's writes are reported. The service keeps one operation per
+	// resource per version, so the drop opens it (no state: the old resource is gone and
+	// the new one does not exist yet) and the save completes it. A deploy that stops in
+	// between leaves the resource described as mid-recreate.
 	assert.Equal(t, []string{
 		`create jobs.my_job id=123 state={"state":{"key":"old"}}`,
+		`recreate jobs.my_job id=123 state=`,
 		`recreate jobs.my_job id=456 state={"state":{"key":"new"}}`,
 	}, sink.ops)
 }

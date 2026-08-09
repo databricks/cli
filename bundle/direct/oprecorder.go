@@ -24,6 +24,14 @@ const maxOperationStateSize = 64 * 1024
 // failing and masking the error we are trying to report.
 const maxOperationErrorMessageSize = 16 * 1024
 
+// operationStatusInProgress marks an operation whose writes are not finished. A
+// recreate opens one after its delete and updates it to succeeded once the create
+// lands, so an interrupted recreate is not left describing the resource it deleted.
+//
+// Declared here rather than used from the SDK: the enum value is generated from the
+// OpenAPI spec, which trails the service proto (databricks-eng/universe#2394529).
+const operationStatusInProgress bundledeployments.OperationStatus = "OPERATION_STATUS_IN_PROGRESS"
+
 // recordedOperation is an applied resource operation, serialized and waiting to be
 // uploaded to the deployment metadata service (DMS).
 //
@@ -64,6 +72,16 @@ func newStateOperation(action deployplan.ActionType, resourceID string, state js
 		status:     bundledeployments.OperationStatusOperationStatusSucceeded,
 		state:      state,
 	}, nil
+}
+
+// newInProgressOperation opens a recreate before its create half has run. It carries
+// no state: the old resource is deleted and the new one does not exist yet, so there
+// is nothing that exists to describe.
+func newInProgressOperation() recordedOperation {
+	return recordedOperation{
+		action: bundledeployments.OperationActionTypeOperationActionTypeRecreate,
+		status: operationStatusInProgress,
+	}
 }
 
 // newFailedOperation records an operation that did not apply, so the deployment

@@ -7,7 +7,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --nostamp //pipeline
+>>> print_requests.py --nostamp //pipeline ^//api/2.0/bundle
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -59,7 +59,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --nostamp //pipeline
+>>> print_requests.py --nostamp //pipeline ^//api/2.0/bundle
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -74,7 +74,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --nostamp //pipeline
+>>> print_requests.py --nostamp //pipeline ^//api/2.0/bundle
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -98,7 +98,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --nostamp //pipeline --sort
+>>> print_requests.py --nostamp //pipeline ^//api/2.0/bundle --sort
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
@@ -113,7 +113,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --nostamp //pipeline
+>>> print_requests.py --nostamp //pipeline ^//api/2.0/bundle
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged

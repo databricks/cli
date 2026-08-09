@@ -343,16 +343,25 @@ func operationBody(op *bundledeployments.Operation) (map[string]any, error) {
 // version. sequence_id is the concurrency precondition and increments on success.
 func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, resourceKey string) Response {
 	// sequence_id arrives as a string, which the SDK struct cannot hold (it types the
-	// field int64), so read the body twice: once for the typed fields and once for the
-	// precondition.
-	var op bundledeployments.Operation
-	if err := json.Unmarshal(req.Body, &op); err != nil {
+	// field int64), so read the body twice: once for the typed fields with that key
+	// removed, and once for the precondition alone.
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(req.Body, &raw); err != nil {
 		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
 	}
 	var precondition struct {
 		SequenceId string `json:"sequence_id"`
 	}
 	if err := json.Unmarshal(req.Body, &precondition); err != nil {
+		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
+	}
+	delete(raw, "sequence_id")
+	typedBody, err := json.Marshal(raw)
+	if err != nil {
+		return Response{StatusCode: 500, Body: map[string]string{"message": err.Error()}}
+	}
+	var op bundledeployments.Operation
+	if err := json.Unmarshal(typedBody, &op); err != nil {
 		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
 	}
 

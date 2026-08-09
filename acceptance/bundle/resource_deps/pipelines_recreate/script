@@ -3,7 +3,7 @@ echo "*" > .gitignore
 trace $CLI bundle plan
 $CLI bundle plan -o json | nostamp > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py --nostamp //jobs //pipelines > out.create.requests.json
+trace print_requests.py --nostamp //jobs //pipelines '^//api/2.0/bundle' > out.create.requests.json
 
 foo_id=`read_id.py foo`
 
@@ -16,7 +16,7 @@ trace update_file.py databricks.yml "storage: dbfs:/my-storage" "storage: dbfs:/
 trace $CLI bundle plan
 $CLI bundle plan -o json | nostamp > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy --auto-approve
-trace print_requests.py --nostamp //jobs //pipelines > out.update.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --nostamp //jobs //pipelines '^//api/2.0/bundle' > out.update.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 foo_id_2=`read_id.py foo`
 
@@ -31,10 +31,10 @@ title "Follow up plan & deploy do nothing"
 trace $CLI bundle plan
 $CLI bundle plan -o json | nostamp > out.plan_noop.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py --nostamp //jobs //pipelines
+trace print_requests.py --nostamp //jobs //pipelines '^//api/2.0/bundle'
 
 trace $CLI bundle destroy --auto-approve
-trace print_requests.py --nostamp //jobs //pipelines
+trace print_requests.py --nostamp //jobs //pipelines '^//api/2.0/bundle'
 
 trace musterr $CLI pipelines get $foo_id
 trace musterr $CLI pipelines get $foo_id_2

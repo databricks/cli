@@ -92,11 +92,22 @@ Deployment complete!
     "resource_key": "schemas.foo"
   },
   "body": {
-    "action_type": "OPERATION_ACTION_TYPE_CREATE",
-    "resource_id": "other.dms_partial_update_schema",
+    "action_type": "OPERATION_ACTION_TYPE_RECREATE",
     "resource_key": "schemas.foo",
+    "status": "OPERATION_STATUS_IN_PROGRESS"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
     "state": "{\"state\":{\"catalog_name\":\"other\",\"comment\":\"v1\",\"name\":\"dms_partial_update_schema\"}}",
-    "status": "OPERATION_STATUS_SUCCEEDED"
+    "resource_id": "other.dms_partial_update_schema",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "1"
   }
 }
 {

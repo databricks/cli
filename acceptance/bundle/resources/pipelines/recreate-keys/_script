@@ -8,7 +8,9 @@ trace $CLI bundle deploy
 ppid1=`read_id.py my`
 
 print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt | nostamp
+    # Excludes /api/2.0/bundle: a DMS operation path embeds the resource key, so it also
+    # contains "/pipelines".
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")) and (.path | contains("/api/2.0/bundle") | not))' < out.requests.txt | nostamp
     rm -f out.requests.txt
 }
 

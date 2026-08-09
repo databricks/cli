@@ -195,13 +195,11 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, action d
 
 	// State is nil: the resource no longer exists.
 	//
-	// A recreate is the exception. It drops the entry and then saves the new
-	// resource, but the service keeps one operation per resource per version whose
-	// action_type is fixed at creation, and it rejects a succeeded recreate that
-	// carries no state ("it leaves a resource that exists"). So the intermediate drop
-	// cannot be recorded as its own event; the save that follows reports the recreate,
-	// and if that save never happens the failure path reports it instead.
-	if db.sink != nil && action != deployplan.Recreate {
+	// A recreate drops the entry and then saves the replacement. The service keeps one
+	// operation per resource per version, so the sink opens that one operation as
+	// in-progress here and the save that follows completes it - leaving an interrupted
+	// recreate described as mid-recreate rather than as the resource it deleted.
+	if db.sink != nil {
 		db.sink.RecordOperation(ctx, key, action, deletedID, nil)
 	}
 
