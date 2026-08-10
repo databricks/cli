@@ -1,0 +1,13 @@
+RecordRequests = true
+
+Ignore = [
+    '.databricks',
+    'databricks.yml',
+]
+
+# The archive is content-addressed: <dir>_<sha256[:16]>.tar.gz. Collapse the hash to a
+# token so the test does not pin a specific digest (git's gzip output is also not
+# byte-identical across git versions).
+[[Repls]]
+Old = 'src_[0-9a-f]{16}\.tar\.gz'
+New = 'src_[SNAPSHOT].tar.gz'

@@ -1,0 +1,181 @@
+
+=== root_path form packages ./src like a bare code_source_path
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-block/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> list_code_snapshot.py
+# .air_snapshots/src_[SNAPSHOT].tar.gz
+src/command.sh
+src/configs/model.yaml
+src/drop/ignored.py
+src/keep/command.sh
+src/keep/train.py
+src/train.py
+
+>>> print_requests.py --sort --del-field raw_body //.air_snapshots/ //jobs/create
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-block/default/files/.air_snapshots/src_[SNAPSHOT].tar.gz",
+  "q": {
+    "overwrite": "true"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-block/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "environments": [
+      {
+        "environment_key": "default",
+        "spec": {
+          "dependencies": [
+            "torch>=2.0.0"
+          ],
+          "environment_version": "5"
+        }
+      }
+    ],
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "[default] AI Runtime training",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "ai_runtime_task": {
+          "code_source_path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-block/default/files/.air_snapshots/src_[SNAPSHOT].tar.gz",
+          "deployments": [
+            {
+              "command_path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-block/default/files/src/command.sh",
+              "compute": {
+                "accelerator_count": 8,
+                "accelerator_type": "GPU_8xH100"
+              }
+            }
+          ],
+          "experiment": "my-training"
+        },
+        "environment_key": "default",
+        "task_key": "train"
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.train
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/ai-runtime-block/default
+
+Deleting files...
+Destroy complete!
+
+=== include_paths narrows the archive to keep/ and configs/ (drop/ excluded)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-includes/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> list_code_snapshot.py
+# .air_snapshots/src_[SNAPSHOT].tar.gz
+src/configs/model.yaml
+src/keep/command.sh
+src/keep/train.py
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.train
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/ai-runtime-includes/default
+
+Deleting files...
+Destroy complete!
+
+=== git.commit archives the pinned revision via git archive
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-git/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> list_code_snapshot.py
+# .air_snapshots/src_[SNAPSHOT].tar.gz
+src
+src/command.sh
+src/configs
+src/configs/model.yaml
+src/drop
+src/drop/ignored.py
+src/keep
+src/keep/command.sh
+src/keep/train.py
+src/train.py
+
+>>> print_requests.py --sort --del-field raw_body //jobs/create
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-git/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "environments": [
+      {
+        "environment_key": "default",
+        "spec": {
+          "environment_version": "5"
+        }
+      }
+    ],
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "[default] AI Runtime training",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "ai_runtime_task": {
+          "code_source_path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-git/default/files/.air_snapshots/src_[SNAPSHOT].tar.gz",
+          "deployments": [
+            {
+              "command_path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-git/default/files/src/command.sh",
+              "compute": {
+                "accelerator_count": 1,
+                "accelerator_type": "GPU_1xA10"
+              }
+            }
+          ],
+          "experiment": "my-training"
+        },
+        "environment_key": "default",
+        "task_key": "train"
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.train
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/ai-runtime-git/default
+
+Deleting files...
+Destroy complete!

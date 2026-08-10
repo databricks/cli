@@ -1,0 +1,38 @@
+# The DABs-native ai_runtime_task.code_source block, exercised end-to-end in three
+# forms against a shared ./src tree. Each fixture is copied to databricks.yml, deployed
+# (packaging + upload + code_source_path rewrite), inspected, then destroyed. The git
+# form runs last because it needs a git repo; the working-tree forms must run before
+# git-repo-init so they exercise the non-git filesystem walk.
+
+title "root_path form packages ./src like a bare code_source_path\n"
+cp block.yml databricks.yml
+trace $CLI bundle deploy
+trace list_code_snapshot.py
+trace print_requests.py --sort --del-field raw_body '//.air_snapshots/' '//jobs/create'
+trace $CLI bundle destroy --auto-approve
+rm out.requests.txt
+
+title "include_paths narrows the archive to keep/ and configs/ (drop/ excluded)\n"
+cp include_paths.yml databricks.yml
+trace $CLI bundle deploy
+trace list_code_snapshot.py
+trace $CLI bundle destroy --auto-approve
+rm out.requests.txt
+
+title "git.commit archives the pinned revision via git archive\n"
+# Pinned commit dates keep the resolved HEAD SHA stable across runs.
+export GIT_AUTHOR_DATE="2020-01-01T00:00:00Z"
+export GIT_COMMITTER_DATE="2020-01-01T00:00:00Z"
+git-repo-init
+git add src
+git commit -qm 'Add src'
+# git.commit tolerates a dirty working tree (the pinned revision is archived), which
+# matters here because the harness writes output.txt into the working dir as it runs.
+cp git.yml databricks.yml
+update_file.py databricks.yml COMMIT_SHA "$(git rev-parse HEAD)"
+trace $CLI bundle deploy
+trace list_code_snapshot.py
+trace print_requests.py --sort --del-field raw_body '//jobs/create'
+trace $CLI bundle destroy --auto-approve
+
+rm -fr .git out.requests.txt databricks.yml

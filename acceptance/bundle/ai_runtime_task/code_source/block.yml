@@ -6,10 +6,9 @@ resources:
     train:
       name: "[${bundle.target}] AI Runtime training"
       tasks:
-        # The DABs-native code_source block (root_path form). At deploy it packages
-        # ./src into a content-addressed tarball under .air_snapshots and rewrites
-        # ai_runtime_task.code_source_path to the uploaded workspace path — the same
-        # result as writing code_source_path: ./src directly.
+        # code_source block, root_path form: packages ./src exactly like a bare
+        # code_source_path (content-addressed tarball under .air_snapshots, uploaded by
+        # file sync, code_source_path rewritten to the uploaded workspace path).
         - task_key: train
           environment_key: default
           ai_runtime_task:

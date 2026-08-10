@@ -1,24 +1,24 @@
 bundle:
-  name: ai-runtime-includes
+  name: ai-runtime-git
 
 resources:
   jobs:
     train:
       name: "[${bundle.target}] AI Runtime training"
       tasks:
-        # include_paths narrows the packaged archive to a subset of root_path: only
-        # files under keep/ and configs/ are archived; drop/ is left out.
+        # code_source.git pins the snapshot to a committed revision: the archive is
+        # produced with `git archive` of that commit, not the working tree. COMMIT_SHA
+        # is substituted with the repo HEAD by the script.
         - task_key: train
           environment_key: default
           ai_runtime_task:
             experiment: my-training
             code_source:
               root_path: ./src
-              include_paths:
-                - keep
-                - configs
+              git:
+                commit: COMMIT_SHA
             deployments:
-              - command_path: src/keep/command.sh
+              - command_path: src/command.sh
                 compute:
                   accelerator_type: GPU_1xA10
                   accelerator_count: 1
