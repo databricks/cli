@@ -5,8 +5,8 @@ Mutate a curated, deploy-verified bundle config for the invariant fuzzer.
 Destructive: delete a field, or replace it with a token, dangerous value, or empty container.
 Additive: inject one optional from INJECT that the base omits (deploy-proven shapes).
 
-Emits one mutated databricks.yml on stdout. YAML I/O is stdlib-only (no PyYAML in acceptance):
-dump uses JSON scalars; load understands that dialect plus the curated bases' block style.
+Emits one mutated databricks.yml on stdout. YAML I/O is stdlib-only: dump uses JSON scalars;
+load understands that dialect plus the curated bases' block style.
 """
 
 import json
@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from envsubst import substitute_variables
 
-# Prefer inject: that is how reconcile/drift bugs are reached.
+# Weight toward inject: that is how reconcile/drift bugs are reached.
 ADD_PROB = 0.6
 
 # Hostile free-form scalars; the CLI must reject or round-trip without panicking.
@@ -43,7 +43,7 @@ DANGEROUS_INTS = [
 ]
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
-# Single-resource invariant configs (no init script). data/ fixtures are staged by script.prepare.
+# Single-resource invariant configs. data/ fixtures are staged by script.prepare.
 MUTATE_BASES = [
     "app",
     "catalog",
@@ -196,7 +196,7 @@ def dump_yaml(obj, indent=0, list_item=False):
 
 
 def tokenize(text):
-    # Full-line comments only; curated bases never use trailing "#".
+    # Skip empty and full-line "# ..." comments; curated bases use that style.
     out = []
     for raw in text.splitlines():
         stripped = raw.lstrip(" ")

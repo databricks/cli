@@ -8,7 +8,7 @@ invariant_cleanup() {
     trace $CLI bundle destroy --auto-approve &> LOG.destroy
     cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
 
-    # Fuzzer sets INPUT_CONFIG empty (no curated cleanup script).
+    # Optional curated cleanup when INPUT_CONFIG names configs/$INPUT_CONFIG-cleanup.sh.
     if [ -n "$INPUT_CONFIG" ] && [ -f "$INVARIANT_DIR/configs/$INPUT_CONFIG-cleanup.sh" ]; then
         source "$INVARIANT_DIR/configs/$INPUT_CONFIG-cleanup.sh" &> LOG.cleanup
     fi

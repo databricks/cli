@@ -31,7 +31,7 @@ Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"col
 Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"
 Response.Body = '{"status": "OK"}'
 
-# Unmodeled routes → TESTSERVER_GAP. No HEAD: ServeMux maps HEAD to GET and would panic.
+# Unmodeled routes → TESTSERVER_GAP. HEAD shares the GET catch-all (ServeMux maps HEAD to GET).
 [[Server]]
 Pattern = "GET /{path...}"
 Response.StatusCode = 501

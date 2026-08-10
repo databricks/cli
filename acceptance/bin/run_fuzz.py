@@ -42,7 +42,7 @@ CHECK_DRIFT = os.environ.get("FUZZ_CHECK_DRIFT", "0")
 
 POSIX = os.name == "posix"
 
-# PATH lookup: on Windows CreateProcess prefers System32\\bash.exe (WSL stub) over Git bash.
+# Resolved path: Windows CreateProcess otherwise picks System32\\bash.exe (WSL stub).
 BASH = shutil.which("bash")
 
 
@@ -94,7 +94,7 @@ def run_seed(seed_dir, seed):
 
 def oracle_verdict(seed_dir):
     """Drift oracle wording if it fired; empty if it never ran or was happy."""
-    # Prefer oracle text over a concurrent TESTSERVER_GAP.
+    # Oracle check runs before the TESTSERVER_GAP scan; both can fire on one seed.
     if b"Unexpected action=" in read(seed_dir / "LOG.check"):
         return "planned a change after deploy"
     if read(seed_dir / "LOG.plan.determinism.diff").strip():
@@ -108,7 +108,7 @@ def classify(seed_dir):
     """Kind and, for a failure, the reason."""
     gen_err = read(seed_dir / "LOG.gen.err").strip()
     if gen_err:
-        # Last line: first line of a traceback is always "Traceback (most recent call last):".
+        # Last line carries the exception type/message.
         last_line = gen_err.splitlines()[-1].decode(errors="replace")
         return "bug", f"could not be mutated: {last_line}"
 
@@ -142,7 +142,7 @@ def record(kind, seed, seed_dir):
 
 def fail(seed, seed_dir, kind, reason, prefix=""):
     record(kind, seed, seed_dir)
-    # File, not stdout: harness rewrites env values in stdout. ENVFILTER for matrix keys.
+    # LOG.repro: harness rewrites env values in stdout. ENVFILTER for matrix keys.
     Path("LOG.repro").write_text(
         f"fuzz: seed {seed} {reason}, reproduce with: {prefix}"
         f"ENVFILTER=FUZZ_TARGET={TARGET} FUZZ_SEED_START={seed} "
@@ -196,7 +196,7 @@ def main():
 
     kinds = totals()
 
-    # All-rejected (not all-gap) means the mutator/fixtures are broken; single-seed exempt.
+    # Every seed rejected means the mutator/fixtures are broken; single-seed exempt.
     if count > 1 and not kinds:
         sys.exit("fuzz: no seeds ran")
     if count > 1 and kinds["rejected"] == sum(kinds.values()):

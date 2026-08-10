@@ -1,6 +1,6 @@
 # Mutate a curated config per seed and run ../invariant/$FUZZ_TARGET. Loop: run_fuzz.py (see README).
 
-# no_drift reads READPLAN via readplanarg; fuzz skips the saved-plan matrix.
+# Empty READPLAN: the saved-plan matrix is out of scope for fuzz.
 export READPLAN=""
 
 # Fail if ../invariant/test.toml gained a stub that was not copied here.

@@ -2,7 +2,7 @@
 # (test.toml / script.prepare only merge along the directory chain).
 export INVARIANT_DIR="$TESTDIR/../invariant"
 
-# Empty: mutated configs match no curated name; scripts run under set -u.
+# Empty INPUT_CONFIG satisfies set -u; mutated configs are unnamed.
 export INPUT_CONFIG=""
 
 source "$INVARIANT_DIR/script.prepare"
