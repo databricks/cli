@@ -1,5 +1,4 @@
 # Test that git_repository and git_source fields are properly configured for apps
-Local = true
 # Temporary disable cloud tests because it fails with "Git repository cannot be defined in this workspace. Please try again later."
 Cloud = false
 RecordRequests = false

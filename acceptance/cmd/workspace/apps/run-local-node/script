@@ -1,52 +1,45 @@
 cd app
 
-# We first run the command with different entry point which starts unblocking script
-# so we don't need to start it in background. It will install the dependencies as part of the command
-trace $CLI apps run-local --prepare-environment --entry-point test.yml 2>&1 | grep -w "Hello, world"
+# Ports are allocated per run so that tests in parallel worktrees do not collide.
+read -r APP_PORT PROXY_PORT DEBUG_PORT PREPARE_PORT <<< "$(free_port.py 4)"
+add_repl.py "$PROXY_PORT" PROXY_PORT
+add_repl.py "$DEBUG_PORT" DEBUG_PORT
 
-read -r PORT DEBUG_PORT PROXY_PORT <<< "$(free_port.py 3)"
+# The app and the proxy start asynchronously; allow up to 15s for them to come up.
+export RETRY_MAX_ATTEMPTS=30
+
+title "Prepare environment runs the build script, and the entry point overrides app.yml\n"
+# npm reaches no registry here: nothing to install, and app/.npmrc turns off its update check.
+# The build script runs only if the install succeeded, so the first grep covers both halves.
+trace $CLI apps run-local --prepare-environment --entry-point test.yml --port "$PREPARE_PORT" &> ../LOG.prepare
+trace grep -x "Build script ran" ../LOG.prepare
+trace grep -x "Running command: node -e console.log('Hello, world')" ../LOG.prepare
+trace grep -x "Hello, world" ../LOG.prepare
 
 cleanup() {
-    # Kill any still running processes on these ports when the script exits
-    kill_port.py $PORT $DEBUG_PORT $PROXY_PORT
+    local status=$?
+    # Reap by port rather than by $PID, and only on failure, for the reasons in
+    # ../run-local/script. The debug port is here too because node binds the inspector before
+    # it runs app.js, so it is the only handle on an app that died before it listened.
+    [ "$status" -eq 0 ] || kill_port.py "$APP_PORT" "$PROXY_PORT" "$DEBUG_PORT"
 }
 
-trap cleanup EXIT
-
-title "Starting the app in background..."
-trace $CLI apps run-local --prepare-environment --debug --port "$PROXY_PORT" --debug-port "$DEBUG_PORT" --app-port "$PORT" > ../out.run.txt 2>&1 &
+# app/package.json selects the CLI's Node code path (runlocal.NewApp); without it the app is
+# treated as Python and --debug no longer sets NODE_OPTIONS.
+trace $CLI apps run-local --debug --port "$PROXY_PORT" --debug-port "$DEBUG_PORT" --app-port "$APP_PORT" &> ../LOG.run &
 PID=$!
-# Ensure background process is killed on script exit
-trap '(kill $PID >/dev/null 2>&1) 2>/dev/null || true' EXIT
+trap cleanup EXIT
 cd ..
 
-title Waiting for the app to start...
-# Use a loop to check for the startup message instead of tail/sed which can be unreliable on Windows
-# due to file locking, buffering issues, and different text processing behavior across Windows versions.
-# A simple grep loop is more robust across platforms.
-while [ -z "$(grep -o "Server is running on port " out.run.txt 2>/dev/null)" ]; do
-    sleep 1
-done
+title "Proxy forwards to the app\n"
+trace retry --until "Hello From App" curl -sS "http://127.0.0.1:$PROXY_PORT"
 
-# Make sure the proxy is ready to serve requests
-while [ -z "$(grep -o "To access your app go to " out.run.txt 2>/dev/null)" ]; do
-    sleep 1
-done
+title "Debug mode reports the debugger port, and node listens on it\n"
+# The CLI prints this only after the proxy accepts connections, so the curl above can beat it.
+# node's line below needs no retry: it is written before the app listens, so the curl proves it.
+trace retry grep -x "To debug your app, attach a debugger to port $DEBUG_PORT" LOG.run
+trace grep "Debugger listening on ws://127.0.0.1:$DEBUG_PORT/" LOG.run
 
-title "Checking app is running..."
-trace curl -s -o - http://127.0.0.1:$PROXY_PORT | grep -w "Hello From App"
-
-title "Sending shutdown request..."
-trace curl -s -o /dev/null  http://127.0.0.1:$PROXY_PORT/shutdown || true
-
-# We need to wait for the app to shutdown before we can exit the test meaning wait until the
-# server is closed. We need to poll because the server is closed asynchronously.
-while [ -z "$(grep -o "Server closed" out.run.txt 2>/dev/null)" ]; do
-    sleep 1
-done
-
-# Wait for the background process to actually terminate
-wait $PID 2>/dev/null || true
-echo "Process terminated"
-
-rm out.run.txt
+title "Shutting the app down\n"
+trace curl -sS -o /dev/null "http://127.0.0.1:$PROXY_PORT/shutdown"
+wait $PID

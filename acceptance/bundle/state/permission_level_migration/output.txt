@@ -13,7 +13,7 @@ Deployment complete!
 >>> print_state.py
 {
  "state_version": 2,
- "cli_version": "[CLI_VERSION]",
+ "cli_version": "0.0.0-test",
  "lineage": "test-lineage",
  "serial": 2,
  "state": {

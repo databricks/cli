@@ -63,7 +63,7 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 	opts := utils.ProcessOptions{
 		InitFunc: func(b *bundle.Bundle) {
 			// If `--force-lock` is specified, force acquisition of the deployment lock.
-			b.Config.Bundle.Deployment.Lock.Force = forceDestroy
+			utils.SetForceLock(cmd, b, forceDestroy)
 
 			// If `--auto-approve`` is specified, we skip confirmation checks
 			b.AutoApprove = autoApprove
