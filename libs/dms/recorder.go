@@ -188,6 +188,22 @@ func (r *Recorder) CreateVersion(ctx context.Context) error {
 // when CreateVersion never ran, which is what lets callers defer it and still not
 // complete a version a cancelled deploy never created.
 func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
+	reason := bundledeployments.VersionCompleteVersionCompleteSuccess
+	if !success {
+		reason = bundledeployments.VersionCompleteVersionCompleteFailure
+	}
+	return r.completeVersion(ctx, reason)
+}
+
+// AbortVersion completes the version as aborted, for a deploy the user declined at
+// the approval prompt. The version has to exist by then - it is stamped onto the
+// resources the plan is computed from - so this says nothing was applied rather than
+// leaving a version that reads like a deploy that failed.
+func (r *Recorder) AbortVersion(ctx context.Context) error {
+	return r.completeVersion(ctx, bundledeployments.VersionCompleteVersionCompleteForceAbort)
+}
+
+func (r *Recorder) completeVersion(ctx context.Context, reason bundledeployments.VersionComplete) error {
 	if r == nil || r.versionNum == 0 || r.completed {
 		return nil
 	}
@@ -197,11 +213,6 @@ func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
 
 	versionIDStr := strconv.FormatInt(r.versionNum, 10)
 	versionName := fmt.Sprintf("deployments/%s/versions/%s", r.deploymentID, versionIDStr)
-
-	reason := bundledeployments.VersionCompleteVersionCompleteSuccess
-	if !success {
-		reason = bundledeployments.VersionCompleteVersionCompleteFailure
-	}
 
 	_, err := r.svc.CompleteVersion(ctx, bundledeployments.CompleteVersionRequest{
 		Name:             versionName,
@@ -214,7 +225,7 @@ func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
 
 	// For destroy operations, delete the deployment record after the version
 	// completes successfully.
-	if success && r.versionType == VersionTypeDestroy {
+	if reason == bundledeployments.VersionCompleteVersionCompleteSuccess && r.versionType == VersionTypeDestroy {
 		err = r.svc.DeleteDeployment(ctx, bundledeployments.DeleteDeploymentRequest{
 			Name: "deployments/" + r.deploymentID,
 		})

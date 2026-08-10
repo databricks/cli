@@ -233,8 +233,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	// Create the version before planning: the plan snapshots the resource config, so
 	// the version has to be stamped on before it is computed or the applied resources
-	// would not carry it. A cancelled deploy therefore leaves a version behind,
-	// completed as a failure by the deferred CompleteVersion.
+	// would not carry it.
+	//
+	// Creating it is also what takes the deployment's lock server-side, so a deploy
+	// that loses a race pays for the upload above before being turned away. Moving it
+	// earlier does not work: on a first deploy the deployment record is registered
+	// under the state directory, which the upload is what creates.
 	if err := recorder.CreateVersion(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -288,20 +292,31 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	haveApproval, err := approvalForDeploy(ctx, b, plan)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-	if haveApproval {
-		// Record operations under the version created before planning, so DMS holds
-		// the deployed resource state.
-		setOperationRecorder(ctx, b, recorder)
-		deployCore(ctx, b, plan, stateEngine, requestedEngine, recorder)
-	} else {
+	haveApproval, approvalErr := approvalForDeploy(ctx, b, plan)
+	if !haveApproval {
+		// Nothing was applied, so the version records an abort rather than a failure.
+		// It cannot simply be left uncreated: it is stamped onto the resources the plan
+		// is computed from, so it has to exist before the prompt. Aborting first also
+		// makes the deferred CompleteVersion a no-op.
+		//
+		// Both outcomes land here - the user declining, and a console that cannot
+		// prompt at all, which returns an error instead.
+		if err := recorder.AbortVersion(ctx); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		if approvalErr != nil {
+			logdiag.LogError(ctx, approvalErr)
+			return
+		}
 		cmdio.LogString(ctx, "Deployment cancelled!")
 		return
 	}
+
+	// Record operations under the version created before planning, so DMS holds
+	// the deployed resource state.
+	setOperationRecorder(ctx, b, recorder)
+	deployCore(ctx, b, plan, stateEngine, requestedEngine, recorder)
 
 	if logdiag.HasError(ctx) {
 		return
