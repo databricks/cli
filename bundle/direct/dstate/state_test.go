@@ -29,47 +29,56 @@ func (f *fakeSink) RecordOperation(ctx context.Context, resourceKey string, acti
 }
 
 func TestStateWritesRecordOperations(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "state.json")
-	sink := &fakeSink{}
+	tests := []struct {
+		name  string
+		write func(t *testing.T, db *DeploymentState)
+		want  []string
+	}{
+		{
+			// The service keeps one operation per resource per version, so the drop
+			// opens it (no state: the old resource is gone and the new one does not
+			// exist yet) and the save completes it. A deploy that stops in between
+			// leaves the resource described as mid-recreate.
+			name: "recreate reports both of its writes",
+			write: func(t *testing.T, db *DeploymentState) {
+				require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "old"}, nil, deployplan.Create))
+				require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job", deployplan.Recreate))
+				require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "456", map[string]string{"key": "new"}, nil, deployplan.Recreate))
+			},
+			want: []string{
+				`create jobs.my_job id=123 state={"state":{"key":"old"}}`,
+				`recreate jobs.my_job id=123 state=`,
+				`recreate jobs.my_job id=456 state={"state":{"key":"new"}}`,
+			},
+		},
+		{
+			name: "real delete reports the id it had and no state",
+			write: func(t *testing.T, db *DeploymentState) {
+				require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, deployplan.Create))
+				require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job", deployplan.Delete))
+			},
+			want: []string{
+				`create jobs.my_job id=123 state={"state":{}}`,
+				`delete jobs.my_job id=123 state=`,
+			},
+		},
+	}
 
-	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
-	db.SetOperationSink(sink)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "state.json")
+			sink := &fakeSink{}
 
-	// A recreate: the old entry is dropped, then the new resource is saved.
-	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "old"}, nil, deployplan.Create))
-	require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job", deployplan.Recreate))
-	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "456", map[string]string{"key": "new"}, nil, deployplan.Recreate))
-	mustFinalize(t, &db)
+			var db DeploymentState
+			require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
+			db.SetOperationSink(sink)
 
-	// Both of the recreate's writes are reported. The service keeps one operation per
-	// resource per version, so the drop opens it (no state: the old resource is gone and
-	// the new one does not exist yet) and the save completes it. A deploy that stops in
-	// between leaves the resource described as mid-recreate.
-	assert.Equal(t, []string{
-		`create jobs.my_job id=123 state={"state":{"key":"old"}}`,
-		`recreate jobs.my_job id=123 state=`,
-		`recreate jobs.my_job id=456 state={"state":{"key":"new"}}`,
-	}, sink.ops)
-}
+			tt.write(t, &db)
+			mustFinalize(t, &db)
 
-func TestDeleteStateRecordsRealDelete(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "state.json")
-	sink := &fakeSink{}
-
-	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
-	db.SetOperationSink(sink)
-
-	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, deployplan.Create))
-	require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job", deployplan.Delete))
-	mustFinalize(t, &db)
-
-	// A real delete reports the id it had and no state: the resource is gone.
-	assert.Equal(t, []string{
-		`create jobs.my_job id=123 state={"state":{}}`,
-		`delete jobs.my_job id=123 state=`,
-	}, sink.ops)
+			assert.Equal(t, tt.want, sink.ops)
+		})
+	}
 }
 
 func TestStateWritesRecordNothingWithoutSink(t *testing.T) {

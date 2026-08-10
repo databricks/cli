@@ -341,7 +341,7 @@ To record this bundle's history, start it over as a new deployment:
   2. run "databricks bundle destroy" to delete the existing resources
   3. add experimental.record_deployment_history back and deploy again
 
-To keep the existing resources instead, leave experimental.record_deployment_history out`, path)
+To keep the existing resources instead, unset experimental.record_deployment_history`, path)
 		}
 		if dmsSource.DeploymentID != "" {
 			if err := db.readDMSState(ctx, dmsSource); err != nil {
