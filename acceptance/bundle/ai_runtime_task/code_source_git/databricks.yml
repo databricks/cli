@@ -1,0 +1,29 @@
+bundle:
+  name: ai-runtime-git
+
+resources:
+  jobs:
+    train:
+      name: "[${bundle.target}] AI Runtime training"
+      tasks:
+        # code_source.git pins the snapshot to a committed revision: the archive is
+        # produced with `git archive` of that commit, so uncommitted working-tree
+        # changes are NOT included. COMMIT_SHA is substituted with the repo HEAD by
+        # the script.
+        - task_key: train
+          environment_key: default
+          ai_runtime_task:
+            experiment: my-training
+            code_source:
+              root_path: ./src
+              git:
+                commit: COMMIT_SHA
+            deployments:
+              - command_path: src/command.sh
+                compute:
+                  accelerator_type: GPU_1xA10
+                  accelerator_count: 1
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"

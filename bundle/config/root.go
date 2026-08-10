@@ -5,8 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -89,6 +91,14 @@ type Root struct { //nolint:recvcheck // value receivers for read-only accessors
 	// information for every path in the configuration tree.
 	Locations *dynloc.Locations `json:"__locations,omitempty" bundle:"internal"`
 
+	// AiRuntimeExtras holds ai_runtime_task authoring sugar (currently the
+	// DABs-native code_source block) that has no field on the SDK jobs.AiRuntimeTask.
+	// rewriteAiRuntimeCodeSource extracts it before normalization — which would
+	// otherwise drop it as an unknown field — keyed by job name then task_key, so it
+	// survives task reordering (MergeJobTasks sorts by task_key) and target/include
+	// merges. Internal: not user-set directly, not in the JSON schema.
+	AiRuntimeExtras map[string]map[string]AiRuntimeTaskExtras `json:"__ai_runtime_task_extras,omitempty" bundle:"internal"`
+
 	Scripts map[string]Script `json:"scripts,omitempty"`
 
 	// Python configures loading of Python code defined with 'databricks-bundles' package.
@@ -126,6 +136,13 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 
 	// Rewrite configuration tree where necessary.
 	v, err = rewriteShorthands(v)
+	if err != nil {
+		return nil, diag.Errorf("failed to rewrite %s: %v", path, err)
+	}
+
+	// Extract ai_runtime_task.code_source blocks before normalization would drop them
+	// as unknown fields on the SDK jobs.AiRuntimeTask.
+	v, err = rewriteAiRuntimeCodeSource(v)
 	if err != nil {
 		return nil, diag.Errorf("failed to rewrite %s: %v", path, err)
 	}
@@ -549,6 +566,123 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 			}
 		}))
 	}))
+}
+
+// aiRuntimeCodeSourceKey is the DABs-native block nested under ai_runtime_task that
+// rewriteAiRuntimeCodeSource extracts; it is not a field on the SDK jobs.AiRuntimeTask.
+const aiRuntimeCodeSourceKey = "code_source"
+
+// aiRuntimeExtrasKey is the internal top-level key the extracted blocks are stashed
+// under; it maps to Root.AiRuntimeExtras.
+const aiRuntimeExtrasKey = "__ai_runtime_task_extras"
+
+// rewriteAiRuntimeCodeSource moves each `ai_runtime_task.code_source` block out of the
+// SDK-typed task tree into the internal __ai_runtime_task_extras stash, keyed by job
+// name then task_key, and removes the code_source key from under ai_runtime_task.
+//
+// It must run before convert.Normalize: code_source is not a field on the SDK
+// jobs.AiRuntimeTask, so normalization would drop it (with an "unknown field" warning)
+// from both the typed config and the stored dynamic tree. Keying by task_key (not
+// position) keeps the stash aligned with the task after MergeJobTasks reorders tasks
+// by sorted task_key. The stash is a real (internal) config field, so it rides the
+// normal per-file merge and ToTyped without extra wiring.
+//
+// A code_source block under a targets.* override is rejected: the (job, task_key) key
+// cannot represent a per-target override without collision, and this rewrite runs
+// before target selection.
+func rewriteAiRuntimeCodeSource(v dyn.Value) (dyn.Value, error) {
+	if v.Kind() != dyn.KindMap {
+		return v, nil
+	}
+
+	// Reject a code_source authored inside a target override, before extracting the
+	// top-level ones (so the error fires regardless of whether a top-level block exists).
+	targetPattern := dyn.NewPattern(
+		dyn.Key("targets"), dyn.AnyKey(),
+		dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),
+		dyn.Key("tasks"), dyn.AnyIndex(),
+		dyn.Key("ai_runtime_task"),
+	)
+	var targetErr error
+	_, err := dyn.MapByPattern(v, targetPattern, func(p dyn.Path, task dyn.Value) (dyn.Value, error) {
+		if cs := task.Get(aiRuntimeCodeSourceKey); cs.Kind() != dyn.KindInvalid {
+			targetErr = fmt.Errorf("ai_runtime_task.code_source at %s is not supported inside a target override; move it to the task's base definition under resources.jobs", cs.Location())
+		}
+		return task, nil
+	})
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+	if targetErr != nil {
+		return dyn.InvalidValue, targetErr
+	}
+
+	// extracted[jobName][taskKey] = the code_source block value.
+	extracted := map[string]map[string]dyn.Value{}
+
+	taskPattern := dyn.NewPattern(
+		dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),
+		dyn.Key("tasks"), dyn.AnyIndex(),
+	)
+	out, err := dyn.MapByPattern(v, taskPattern, func(p dyn.Path, task dyn.Value) (dyn.Value, error) {
+		airt := task.Get("ai_runtime_task")
+		if airt.Kind() != dyn.KindMap {
+			return task, nil
+		}
+		cs := airt.Get(aiRuntimeCodeSourceKey)
+		if cs.Kind() == dyn.KindInvalid {
+			return task, nil
+		}
+
+		// A task with a code_source block must have a string task_key so the stash can
+		// be keyed by it (and stay aligned after MergeJobTasks reorders by task_key).
+		taskKey, ok := task.Get("task_key").AsString()
+		if !ok || taskKey == "" {
+			return dyn.InvalidValue, fmt.Errorf("ai_runtime_task.code_source at %s requires the task to set a task_key", cs.Location())
+		}
+
+		// p is resources.jobs.<jobName>.tasks[<i>]; the job name is component 2.
+		jobName := p[2].Key()
+		if extracted[jobName] == nil {
+			extracted[jobName] = map[string]dyn.Value{}
+		}
+		if _, dup := extracted[jobName][taskKey]; dup {
+			return dyn.InvalidValue, fmt.Errorf("duplicate task_key %q in job %q with an ai_runtime_task.code_source block", taskKey, jobName)
+		}
+		extracted[jobName][taskKey] = cs
+
+		// Drop the code_source key from ai_runtime_task so normalization sees only real
+		// SDK fields (no "unknown field" warning). Rebuild the mapping without it.
+		newAirt := dyn.NewMapping()
+		for _, pair := range airt.MustMap().Pairs() {
+			if pair.Key.MustString() == aiRuntimeCodeSourceKey {
+				continue
+			}
+			newAirt.SetLoc(pair.Key.MustString(), pair.Key.Locations(), pair.Value)
+		}
+		return dyn.Set(task, "ai_runtime_task", dyn.NewValue(newAirt, airt.Locations()))
+	})
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+	if len(extracted) == 0 {
+		return out, nil
+	}
+
+	// Build the stash tree __ai_runtime_task_extras.<job>.<taskKey>.code_source and set
+	// it on the root. Deterministic key order keeps the dynamic tree stable.
+	jobsMapping := dyn.NewMapping()
+	for _, jobName := range slices.Sorted(maps.Keys(extracted)) {
+		tasksMapping := dyn.NewMapping()
+		for _, taskKey := range slices.Sorted(maps.Keys(extracted[jobName])) {
+			cs := extracted[jobName][taskKey]
+			extras := dyn.NewMapping()
+			extras.SetLoc(aiRuntimeCodeSourceKey, cs.Locations(), cs)
+			tasksMapping.SetLoc(taskKey, cs.Locations(), dyn.NewValue(extras, cs.Locations()))
+		}
+		jobsMapping.SetLoc(jobName, nil, dyn.NewValue(tasksMapping, nil))
+	}
+	return dyn.Set(out, aiRuntimeExtrasKey, dyn.NewValue(jobsMapping, nil))
 }
 
 // validateVariableOverrides checks that all variables specified

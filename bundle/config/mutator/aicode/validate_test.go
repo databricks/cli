@@ -179,3 +179,107 @@ func TestValidateSnapshotGuardsSkippedWithoutLocalCodeSource(t *testing.T) {
 	b.Config.Sync.Exclude = []string{".air_snapshots/*"}
 	assert.Empty(t, Validate().Apply(t.Context(), b))
 }
+
+// setCodeSourceBlock attaches a DABs-native code_source block to the "train" task,
+// as rewriteAiRuntimeCodeSource would have done at load.
+func setCodeSourceBlock(b *bundle.Bundle, block config.CodeSourceOptions) {
+	b.Config.AiRuntimeExtras = map[string]map[string]config.AiRuntimeTaskExtras{
+		"train": {"train": {CodeSource: &block}},
+	}
+}
+
+func TestValidateCodeSourceBlock(t *testing.T) {
+	tests := []struct {
+		name  string
+		block config.CodeSourceOptions
+		// codeSourcePath, when set, is also placed on the task to test the conflict.
+		codeSourcePath string
+		wantErr        string // "" means no error expected
+	}{
+		{
+			name:  "valid working tree",
+			block: config.CodeSourceOptions{RootPath: "src"},
+		},
+		{
+			name:  "valid include_paths",
+			block: config.CodeSourceOptions{RootPath: "src", IncludePaths: []string{"a", "b/c"}},
+		},
+		{
+			name:  "valid git commit",
+			block: config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{Commit: "abc123"}},
+		},
+		{
+			name:           "conflict with code_source_path",
+			block:          config.CodeSourceOptions{RootPath: "src"},
+			codeSourcePath: "src",
+			wantErr:        "both code_source and code_source_path",
+		},
+		{
+			name:    "empty root_path",
+			block:   config.CodeSourceOptions{RootPath: ""},
+			wantErr: "root_path is required",
+		},
+		{
+			name:    "root_path outside bundle",
+			block:   config.CodeSourceOptions{RootPath: "../escape"},
+			wantErr: "outside the bundle root",
+		},
+		{
+			name:    "include_paths absolute",
+			block:   config.CodeSourceOptions{RootPath: "src", IncludePaths: []string{"/abs"}},
+			wantErr: "must be relative paths",
+		},
+		{
+			name:    "include_paths traversal",
+			block:   config.CodeSourceOptions{RootPath: "src", IncludePaths: []string{"a/../b"}},
+			wantErr: "'..' traversal",
+		},
+		{
+			name:    "remote_volume not supported",
+			block:   config.CodeSourceOptions{RootPath: "src", RemoteVolume: "/Volumes/main/x"},
+			wantErr: "remote_volume is not yet supported",
+		},
+		{
+			name:    "git branch and commit both set",
+			block:   config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{Branch: "main", Commit: "abc"}},
+			wantErr: "mutually exclusive",
+		},
+		{
+			name:    "git neither branch nor commit",
+			block:   config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{}},
+			wantErr: "requires either 'branch' or 'commit'",
+		},
+		{
+			name:    "git invalid branch",
+			block:   config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{Branch: "bad;rm -rf"}},
+			wantErr: "invalid code_source.git.branch",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := bundleForValidate(t, tt.codeSourcePath, nil)
+			mkCodeDir(t, b, "src")
+			setCodeSourceBlock(b, tt.block)
+
+			diags := Validate().Apply(t.Context(), b)
+			if tt.wantErr == "" {
+				assert.Empty(t, diags)
+				return
+			}
+			require.True(t, diags.HasError(), "expected an error")
+			assert.Contains(t, diags[0].Summary+" "+diags[0].Detail, tt.wantErr)
+		})
+	}
+}
+
+// A code_source.git ref combined with the job's git_source is rejected: the deploy
+// engine would fetch task files from git_source and ignore the packaged snapshot.
+func TestValidateCodeSourceBlockGitSourceConflict(t *testing.T) {
+	b := bundleForValidate(t, "", &jobs.GitSource{GitUrl: "https://example.invalid/repo"})
+	mkCodeDir(t, b, "src")
+	setCodeSourceBlock(b, config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{Commit: "abc123"}})
+	diags := Validate().Apply(t.Context(), b)
+	require.True(t, diags.HasError())
+	assert.Contains(t, diags[0].Summary, "cannot be combined with the job's git_source")
+}

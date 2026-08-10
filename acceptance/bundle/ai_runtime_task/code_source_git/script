@@ -1,0 +1,29 @@
+# code_source.git pins the snapshot to a committed revision: the archive is produced
+# with `git archive` of that commit (not the working tree). This exercises the git
+# packaging path end-to-end: resolve the commit, archive it, upload it, and rewrite
+# code_source_path. The git-archive-vs-working-tree semantics are unit-tested in
+# aicode (resolveGitCommit); here we assert the deploy pipeline integration.
+
+# Pinned commit dates keep the resolved HEAD SHA stable across runs.
+export GIT_AUTHOR_DATE="2020-01-01T00:00:00Z"
+export GIT_COMMITTER_DATE="2020-01-01T00:00:00Z"
+git-repo-init
+git add src
+git commit -qm 'Add src'
+
+# Pin the config to the committed HEAD. git.commit tolerates a dirty working tree
+# (the pinned revision is what gets archived), which matters here because the harness
+# writes output.txt into the working dir as the script runs.
+update_file.py databricks.yml COMMIT_SHA "$(git rev-parse HEAD)"
+
+title "deploy packages the committed revision via git archive\n"
+trace $CLI bundle deploy
+
+title "the snapshot holds the committed src (git archive of the pinned commit)\n"
+trace list_code_snapshot.py
+
+title "the ai_runtime_task carries the rewritten code_source_path\n"
+trace print_requests.py --sort --del-field raw_body '//jobs/create'
+
+trace $CLI bundle destroy --auto-approve
+rm -fr .git out.requests.txt

@@ -116,6 +116,48 @@ func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	return s
 }
 
+// addAiRuntimeCodeSource injects the DABs-native `code_source` block into the
+// jobs.AiRuntimeTask schema. code_source is not a field on the SDK type — it is
+// extracted from the config tree before normalization (see
+// rewriteAiRuntimeCodeSource) and lowered into code_source_path at deploy — so it
+// would otherwise be rejected by the type's additionalProperties: false. The schema is
+// hand-authored (mirrors config.CodeSourceOptions) so editors document and validate it.
+func addAiRuntimeCodeSource(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	if typ != reflect.TypeFor[jobs.AiRuntimeTask]() {
+		return s
+	}
+	if s.Properties == nil {
+		s.Properties = map[string]*jsonschema.Schema{}
+	}
+	strSchema := func(desc string) *jsonschema.Schema {
+		return &jsonschema.Schema{Type: jsonschema.StringType, Description: desc}
+	}
+	s.Properties["code_source"] = &jsonschema.Schema{
+		Type:                 jsonschema.ObjectType,
+		Description:          "DABs-native code source for this task. At deploy the CLI packages the directory (honoring .gitignore and sync include/exclude, plus git ref and include_paths when set), uploads it, and sets code_source_path. Mutually exclusive with code_source_path.",
+		AdditionalProperties: false,
+		Required:             []string{"root_path"},
+		Properties: map[string]*jsonschema.Schema{
+			"root_path": strSchema("Local directory to package, relative to the bundle sync root."),
+			"include_paths": {
+				Type:        jsonschema.ArrayType,
+				Description: "Package only these subtrees of root_path (relative paths, no \"..\") instead of the whole directory.",
+				Items:       strSchema(""),
+			},
+			"git": {
+				Type:                 jsonschema.ObjectType,
+				Description:          "Pin the snapshot to a committed git revision instead of the working tree. Specify exactly one of branch or commit.",
+				AdditionalProperties: false,
+				Properties: map[string]*jsonschema.Schema{
+					"branch": strSchema("Package the local HEAD of this branch. Requires a clean working tree."),
+					"commit": strSchema("Package this commit (must exist locally)."),
+				},
+			},
+		},
+	}
+	return s
+}
+
 func removePipelineFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	switch typ {
 	case reflect.TypeFor[resources.Pipeline]():
@@ -282,6 +324,7 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		removePipelineFields,
 		removeDeploymentFields,
 		makeVolumeTypeOptional,
+		addAiRuntimeCodeSource,
 		a.addAnnotations,
 		removeOutputOnlyFields,
 	}

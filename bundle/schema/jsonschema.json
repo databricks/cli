@@ -6977,6 +6977,42 @@
                   "type": "object",
                   "description": "AiRuntimeTask: multi-node GPU compute task definition for Databricks AI\nRuntime workloads.\n\nJobs-framework-level concepts (retries, per-task timeout, idempotency\ntoken, usage/budget policy, permissions) live on the surrounding\nTaskSettings / run-submit request and are intentionally NOT duplicated\nhere. Users compose `ai_runtime_task` with the standard Jobs/DABs task\nwrapper to get those.",
                   "properties": {
+                    "code_source": {
+                      "type": "object",
+                      "description": "DABs-native code source for this task. At deploy the CLI packages the directory (honoring .gitignore and sync include/exclude, plus git ref and include_paths when set), uploads it, and sets code_source_path. Mutually exclusive with code_source_path.",
+                      "properties": {
+                        "git": {
+                          "type": "object",
+                          "description": "Pin the snapshot to a committed git revision instead of the working tree. Specify exactly one of branch or commit.",
+                          "properties": {
+                            "branch": {
+                              "type": "string",
+                              "description": "Package the local HEAD of this branch. Requires a clean working tree."
+                            },
+                            "commit": {
+                              "type": "string",
+                              "description": "Package this commit (must exist locally)."
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "include_paths": {
+                          "type": "array",
+                          "description": "Package only these subtrees of root_path (relative paths, no \"..\") instead of the whole directory.",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "root_path": {
+                          "type": "string",
+                          "description": "Local directory to package, relative to the bundle sync root."
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "root_path"
+                      ]
+                    },
                     "code_source_path": {
                       "description": "[Private Preview] Workspace or UC volume path of the code-source archive, unpacked on\neach node and exposed through `$CODE_SOURCE`. Set by first-party\ntooling; not for direct callers.",
                       "$ref": "#/$defs/string",

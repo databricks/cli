@@ -1,0 +1,25 @@
+bundle:
+  name: ai-runtime-remote-volume
+
+resources:
+  jobs:
+    train:
+      tasks:
+        - task_key: train
+          environment_key: default
+          ai_runtime_task:
+            experiment: my-training
+            code_source:
+              root_path: ./src
+              # remote_volume is not yet supported (deploy-phase Volume upload + no
+              # bundle-destroy cleanup are unresolved). Rejected at validate.
+              remote_volume: /Volumes/main/default/code
+            deployments:
+              - command_path: src/command.sh
+                compute:
+                  accelerator_type: GPU_1xA10
+                  accelerator_count: 1
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"

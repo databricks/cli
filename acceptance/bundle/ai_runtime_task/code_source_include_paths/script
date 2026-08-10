@@ -1,0 +1,11 @@
+# include_paths narrows the packaged archive to a subset of root_path. Only files
+# under keep/ and configs/ are archived; src/drop/ignored.py is left out.
+
+title "deploy packages only the included subtrees\n"
+trace $CLI bundle deploy
+
+title "the tarball holds only keep/ and configs/ (drop/ excluded)\n"
+trace list_code_snapshot.py
+
+trace $CLI bundle destroy --auto-approve
+rm out.requests.txt

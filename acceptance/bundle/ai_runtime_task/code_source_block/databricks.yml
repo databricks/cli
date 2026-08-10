@@ -1,0 +1,29 @@
+bundle:
+  name: ai-runtime-block
+
+resources:
+  jobs:
+    train:
+      name: "[${bundle.target}] AI Runtime training"
+      tasks:
+        # The DABs-native code_source block (root_path form). At deploy it packages
+        # ./src into a content-addressed tarball under .air_snapshots and rewrites
+        # ai_runtime_task.code_source_path to the uploaded workspace path — the same
+        # result as writing code_source_path: ./src directly.
+        - task_key: train
+          environment_key: default
+          ai_runtime_task:
+            experiment: my-training
+            code_source:
+              root_path: ./src
+            deployments:
+              - command_path: src/command.sh
+                compute:
+                  accelerator_type: GPU_8xH100
+                  accelerator_count: 8
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - torch>=2.0.0

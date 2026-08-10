@@ -31,6 +31,92 @@ func TestRootLoad(t *testing.T) {
 	assert.Equal(t, "basic", root.Bundle.Name)
 }
 
+func TestRewriteAiRuntimeCodeSourceExtractsBlock(t *testing.T) {
+	yml := []byte(`
+resources:
+  jobs:
+    train:
+      tasks:
+        - task_key: t1
+          ai_runtime_task:
+            experiment: my-exp
+            code_source:
+              root_path: ./src
+              include_paths: [src, configs]
+              git:
+                commit: abc123
+`)
+	root, diags := LoadFromBytes("databricks.yml", yml)
+	require.NoError(t, diags.Error())
+
+	// The block is stashed keyed by (job, task_key).
+	extras, ok := root.AiRuntimeExtras["train"]["t1"]
+	require.True(t, ok, "expected code_source stashed under train/t1")
+	require.NotNil(t, extras.CodeSource)
+	assert.Equal(t, "./src", extras.CodeSource.RootPath)
+	assert.Equal(t, []string{"src", "configs"}, extras.CodeSource.IncludePaths)
+	require.NotNil(t, extras.CodeSource.Git)
+	assert.Equal(t, "abc123", extras.CodeSource.Git.Commit)
+
+	// The code_source key is removed from the task, and no unknown-field warning fired.
+	task := root.Resources.Jobs["train"].Tasks[0]
+	require.NotNil(t, task.AiRuntimeTask)
+	assert.Equal(t, "my-exp", task.AiRuntimeTask.Experiment)
+	assert.Empty(t, diags, "expected no diagnostics (no unknown-field warning)")
+}
+
+func TestRewriteAiRuntimeCodeSourceLeavesCodeSourcePathAlone(t *testing.T) {
+	yml := []byte(`
+resources:
+  jobs:
+    train:
+      tasks:
+        - task_key: t1
+          ai_runtime_task:
+            experiment: my-exp
+            code_source_path: ./src
+`)
+	root, diags := LoadFromBytes("databricks.yml", yml)
+	require.NoError(t, diags.Error())
+	assert.Nil(t, root.AiRuntimeExtras)
+	assert.Equal(t, "./src", root.Resources.Jobs["train"].Tasks[0].AiRuntimeTask.CodeSourcePath)
+}
+
+func TestRewriteAiRuntimeCodeSourceRejectsMissingTaskKey(t *testing.T) {
+	yml := []byte(`
+resources:
+  jobs:
+    train:
+      tasks:
+        - ai_runtime_task:
+            experiment: my-exp
+            code_source:
+              root_path: ./src
+`)
+	_, diags := LoadFromBytes("databricks.yml", yml)
+	require.Error(t, diags.Error())
+	assert.Contains(t, diags.Error().Error(), "requires the task to set a task_key")
+}
+
+func TestRewriteAiRuntimeCodeSourceRejectsTargetOverride(t *testing.T) {
+	yml := []byte(`
+targets:
+  dev:
+    resources:
+      jobs:
+        train:
+          tasks:
+            - task_key: t1
+              ai_runtime_task:
+                experiment: my-exp
+                code_source:
+                  root_path: ./src
+`)
+	_, diags := LoadFromBytes("databricks.yml", yml)
+	require.Error(t, diags.Error())
+	assert.Contains(t, diags.Error().Error(), "not supported inside a target override")
+}
+
 func TestInitializeVariables(t *testing.T) {
 	fooDefault := "abc"
 	root := &Root{

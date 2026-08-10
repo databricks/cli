@@ -1,0 +1,9 @@
+RecordRequests = true
+
+Ignore = [
+    '.databricks',
+]
+
+[[Repls]]
+Old = 'src_[0-9a-f]{16}\.tar\.gz'
+New = 'src_[SNAPSHOT].tar.gz'

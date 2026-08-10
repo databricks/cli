@@ -1,0 +1,17 @@
+# The DABs-native ai_runtime_task.code_source block (root_path form) packages the
+# local directory exactly like a bare code_source_path: a content-addressed tarball
+# under .air_snapshots, uploaded by normal file sync, with code_source_path rewritten
+# to the uploaded workspace path.
+
+title "deploy packages and uploads the code_source block\n"
+trace $CLI bundle deploy
+
+title "the tarball holds the synced files under the repo root .air_snapshots\n"
+trace list_code_snapshot.py
+
+title "code_source_path rewritten to the uploaded snapshot, command_path rewritten\n"
+trace print_requests.py --sort --del-field raw_body '//.air_snapshots/' '//jobs/create'
+
+title "destroy removes the deployed bundle\n"
+trace $CLI bundle destroy --auto-approve
+rm out.requests.txt

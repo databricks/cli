@@ -1,0 +1,28 @@
+bundle:
+  name: ai-runtime-includes
+
+resources:
+  jobs:
+    train:
+      name: "[${bundle.target}] AI Runtime training"
+      tasks:
+        # include_paths narrows the packaged archive to a subset of root_path: only
+        # files under keep/ and configs/ are archived; drop/ is left out.
+        - task_key: train
+          environment_key: default
+          ai_runtime_task:
+            experiment: my-training
+            code_source:
+              root_path: ./src
+              include_paths:
+                - keep
+                - configs
+            deployments:
+              - command_path: src/keep/command.sh
+                compute:
+                  accelerator_type: GPU_1xA10
+                  accelerator_count: 1
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"

@@ -1,0 +1,17 @@
+# Error cases for the DABs-native ai_runtime_task.code_source block. Each fixture is
+# copied to databricks.yml and validated; every one must fail with an actionable
+# message (musterr fails the test if validate unexpectedly succeeds).
+
+title "code_source and code_source_path on the same task are mutually exclusive\n"
+cp conflict.yml databricks.yml
+musterr trace $CLI bundle validate
+
+title "remote_volume is not yet supported\n"
+cp remote_volume.yml databricks.yml
+musterr trace $CLI bundle validate
+
+title "code_source under a target override is rejected at load\n"
+cp target_override.yml databricks.yml
+musterr trace $CLI bundle validate -t dev
+
+rm databricks.yml
