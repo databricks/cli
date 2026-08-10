@@ -47,11 +47,6 @@ const (
 	// localManifestFile is the filename for the locally cached manifest.
 	localManifestFile = "compat-manifest.json"
 
-	// devVersionPrefix identifies dev builds whose semver (0.0.0) is lower than
-	// all real CLI versions. These are treated as bleeding-edge and resolve to
-	// the highest versioned entry.
-	devVersionPrefix = "0.0.0-dev"
-
 	maxFetchAttempts  = 3
 	fetchRetryBackoff = 300 * time.Millisecond
 )
@@ -208,7 +203,7 @@ func IsNotFoundError(err error) bool {
 // and all versions above it, up to (but not including) the next entry.
 //
 // Resolution order:
-//  1. Dev builds (version starts with "0.0.0-dev") use the highest versioned entry.
+//  1. Dev builds (a -dev prerelease) use the highest versioned entry.
 //  2. Exact match on CLI version.
 //  3. Nearest lower version (semver-sorted). This also handles CLI versions
 //     newer than all entries, returning the highest known entry.
@@ -224,10 +219,11 @@ func Resolve(m Manifest, cliVersion string) (Entry, error) {
 		return Entry{}, errors.New("compatibility manifest has no versioned entries")
 	}
 
-	// Dev builds (0.0.0-dev*) have semver lower than all real CLI versions,
-	// so they would incorrectly resolve to the lowest entry. Use the highest
-	// versioned entry instead, since dev builds represent the bleeding edge.
-	if strings.HasPrefix(cliVersion, devVersionPrefix) {
+	// Dev builds are built from main and may carry changes that no released
+	// version has, so resolving them by semver would pick the entry for the
+	// previous release. Use the highest versioned entry instead, since dev
+	// builds represent the bleeding edge.
+	if build.IsDevelopmentVersion(cliVersion) {
 		return m[versions[0]], nil
 	}
 
