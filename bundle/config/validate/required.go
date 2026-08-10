@@ -83,8 +83,14 @@ func sortDiagnostics(diags diag.Diagnostics) {
 			return n
 		}
 
-		// Finally sort by locations as a tie breaker if summaries are the same.
-		return cmp.Compare(fmt.Sprintf("%v", a.Locations), fmt.Sprintf("%v", b.Locations))
+		// Then sort by locations as a tie breaker if summaries are the same.
+		if n := cmp.Compare(fmt.Sprintf("%v", a.Locations), fmt.Sprintf("%v", b.Locations)); n != 0 {
+			return n
+		}
+
+		// Diagnostics for sibling entries of one resource share a location, so fall back to
+		// the path to keep the order stable.
+		return cmp.Compare(fmt.Sprintf("%v", a.Paths), fmt.Sprintf("%v", b.Paths))
 	})
 }
 
@@ -184,6 +190,53 @@ func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	return diags
 }
 
+// errorForInvalidSecretScopePermissions errors for secret scope permissions that name no
+// principal. The backend rejects a secret ACL without one, but nothing rejects the input:
+// the direct engine only fails later while collapsing permissions, and Terraform creates
+// the scope before the ACL call fails, leaving a partial deploy.
+func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+
+	_, err := dyn.MapByPattern(
+		b.Config.Value(),
+		dyn.NewPattern(dyn.Key("resources"), dyn.Key("secret_scopes"), dyn.AnyKey(), dyn.Key("permissions"), dyn.AnyIndex()),
+		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			if hasSecretScopePrincipal(v) {
+				return v, nil
+			}
+			// ApplyBundlePermissions rebuilds the permissions sequence through
+			// convert.FromTyped, which drops the entries' locations, so point at the scope.
+			diags = diags.Append(diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "secret scope permission principal is required",
+				Detail:    "Set one of user_name, group_name or service_principal_name",
+				Locations: b.Config.GetLocations("resources.secret_scopes." + p[2].Key()),
+				Paths:     []dyn.Path{slices.Clone(p)},
+			})
+			return v, nil
+		},
+	)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	sortDiagnostics(diags)
+
+	return diags
+}
+
+// hasSecretScopePrincipal reports whether the permission names a principal. A value of the
+// wrong type counts as missing: normalization only warns and drops it, so the permission
+// would still reach the backend without a principal.
+func hasSecretScopePrincipal(v dyn.Value) bool {
+	for _, field := range []string{"user_name", "group_name", "service_principal_name"} {
+		if s, ok := v.Get(field).AsString(); ok && s != "" {
+			return true
+		}
+	}
+	return false
+}
+
 // isMissingOrEmptyString reports whether v is unset, null, or an empty string.
 func isMissingOrEmptyString(v dyn.Value) bool {
 	switch v.Kind() {
@@ -211,6 +264,7 @@ func isMissingOrEmptySequence(v dyn.Value) bool {
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := errorForMissingFields(ctx, b)
 	diags = diags.Extend(errorForInvalidGrants(ctx, b))
+	diags = diags.Extend(errorForInvalidSecretScopePermissions(ctx, b))
 	if diags.HasError() {
 		return diags
 	}

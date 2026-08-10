@@ -1,0 +1,27 @@
+bundle:
+  name: test-bundle
+
+resources:
+  secret_scopes:
+    no_principal:
+      name: test-scope-no-principal
+      permissions:
+        # Missing principal: rejected.
+        - level: READ
+    empty_principal:
+      name: test-scope-empty-principal
+      permissions:
+        # Empty principal: rejected.
+        - level: READ
+          group_name: ""
+    wrong_type_principal:
+      name: test-scope-wrong-type-principal
+      permissions:
+        # Normalization only warns and drops the value, leaving no principal: rejected.
+        - level: READ
+          group_name: []
+    valid:
+      name: test-scope-valid
+      permissions:
+        - level: READ
+          group_name: users
