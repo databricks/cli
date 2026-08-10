@@ -11,7 +11,9 @@ name: nextchanges PR link
 # render_nextchanges in internal/genkit/release_tagging.py).
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    # ready_for_review so a fragment added while the PR was a draft gets linked
+    # as soon as it's marked ready, rather than waiting for the next push.
+    types: [opened, reopened, synchronize, ready_for_review]
     paths:
       - ".nextchanges/*/*.md"
 
@@ -32,11 +34,14 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
-    # Forks: the head branch lives in the contributor's repository and is not
-    # ours to push to, so those PRs are left to review. The label is the escape
-    # hatch for an author who wants the fragment left exactly as written
-    # (mirrors 'override-changelog-guard' in changelog-guard.yml).
+    # Drafts are left alone until they're marked ready (mirrors the
+    # !draft gate in maintainer-approval.yml). Forks: the head branch lives in
+    # the contributor's repository and is not ours to push to, so those PRs are
+    # left to review. The label is the escape hatch for an author who wants the
+    # fragment left exactly as written (mirrors 'override-changelog-guard' in
+    # changelog-guard.yml).
     if: >-
+      !github.event.pull_request.draft &&
       !github.event.pull_request.head.repo.fork &&
       !contains(github.event.pull_request.labels.*.name, 'skip-nextchanges-pr-link')
 
