@@ -4,11 +4,20 @@
 # ///
 """Unit tests for add_pr_links. Run with ``uv run tools/add_pr_links_test.py``."""
 
+import doctest
 import pathlib
 import tempfile
 import unittest
 
+import add_pr_links
 from add_pr_links import annotate_text, append_reference, entry_ranges, process_file
+
+
+def load_tests(loader, tests, ignore):
+    """Fold add_pr_links' doctests into this suite so one run covers both."""
+    tests.addTests(doctest.DocTestSuite(add_pr_links))
+    return tests
+
 
 PR = 6177
 # The link add_pr_links writes and update_github_links later expands.

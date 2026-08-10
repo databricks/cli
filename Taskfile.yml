@@ -292,6 +292,14 @@ tasks:
     cmds:
       - "./tools/validate_nextchanges.py"
 
+  test-tools:
+    desc: Run unit tests and doctests for the tools/ Python scripts
+    # dir: the tests import their target module directly (e.g. `import
+    # add_pr_links`), so discovery must run from tools/ where those modules live.
+    dir: tools
+    cmds:
+      - "uv run python -m unittest discover -p '*_test.py'"
+
   changelog-preview:
     desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
     cmds:
@@ -318,7 +326,7 @@ tasks:
       - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
   checks:
-    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, lockfiles)
+    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, lockfiles, tools tests)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
     # touching more paths should not race with whitespace/link scanners.
     cmds:
@@ -328,6 +336,7 @@ tasks:
       - task: deadcode
       - task: check-changelog
       - task: check-lockfiles
+      - task: test-tools
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
