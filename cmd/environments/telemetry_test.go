@@ -70,3 +70,48 @@ func TestBuildSetupLocalEvent(t *testing.T) {
 		assert.Equal(t, protos.SetupLocalErrorCodeNoTarget, got.ErrorCode)
 	})
 }
+
+// TestErrorCodeCoversLocalenv fails when a new localenv.ErrorCode is added
+// without a matching telemetry enum in errorCodeType. Keep this list in sync
+// with the const block in libs/localenv/result.go.
+func TestErrorCodeCoversLocalenv(t *testing.T) {
+	all := []libslocalenv.ErrorCode{
+		libslocalenv.ErrUsage,
+		libslocalenv.ErrManagerUnsupported,
+		libslocalenv.ErrNotWritable,
+		libslocalenv.ErrUvMissing,
+		libslocalenv.ErrNoTarget,
+		libslocalenv.ErrResolve,
+		libslocalenv.ErrEnvUnsupported,
+		libslocalenv.ErrFetch,
+		libslocalenv.ErrWrite,
+		libslocalenv.ErrMerge,
+		libslocalenv.ErrPythonInstall,
+		libslocalenv.ErrProvision,
+		libslocalenv.ErrValidate,
+		libslocalenv.ErrCanceled,
+	}
+	for _, code := range all {
+		assert.NotEqualf(t, protos.SetupLocalErrorCodeUnspecified, errorCodeType(code),
+			"error code %q has no telemetry enum: add a case to errorCodeType and a "+
+				"value to SetupLocalErrorCode (setup_local.go + universe proto)", code)
+	}
+}
+
+// TestPhaseCoversLocalenv fails when a new localenv.PhaseName is added without a
+// matching telemetry enum in phaseType.
+func TestPhaseCoversLocalenv(t *testing.T) {
+	all := []libslocalenv.PhaseName{
+		libslocalenv.PhasePreflight,
+		libslocalenv.PhaseResolve,
+		libslocalenv.PhaseFetch,
+		libslocalenv.PhaseMerge,
+		libslocalenv.PhaseProvision,
+		libslocalenv.PhaseValidate,
+	}
+	for _, phase := range all {
+		assert.NotEqualf(t, protos.SetupLocalPhaseUnspecified, phaseType(phase),
+			"phase %q has no telemetry enum: add a case to phaseType and a value to "+
+				"SetupLocalPhase (setup_local.go + universe proto)", phase)
+	}
+}
