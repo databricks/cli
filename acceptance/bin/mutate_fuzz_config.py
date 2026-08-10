@@ -5,8 +5,9 @@ Mutate a curated, deploy-verified bundle config for the invariant fuzzer.
 Destructive: delete a field, or replace it with a token, dangerous value, or empty container.
 Additive: inject one optional from INJECT that the base omits (deploy-proven shapes).
 
-Emits one mutated databricks.yml on stdout. YAML I/O is stdlib-only: dump uses JSON scalars;
-load understands that dialect plus the curated bases' block style.
+Emits one mutated databricks.yml on stdout as JSON: JSON is valid YAML 1.2 and the bundle loader
+accepts flow style, so no YAML writer is needed. Reading the bases does need one, since the
+harness python is stdlib-only (no PyYAML): load_yaml covers their block style.
 """
 
 import json
@@ -83,7 +84,7 @@ INJECT = {
         ("properties", {"fuzz_key": "fuzz_val"}),
     ],
     "experiments": [
-        ("description", "fuzz-experiment"),
+        ("artifact_location", "dbfs:/databricks/mlflow-tracking/fuzz"),
         ("tags", [{"key": "fuzz", "value": "1"}]),
     ],
     "external_locations": [
@@ -142,7 +143,6 @@ INJECT = {
         ("comment", "fuzz-schema"),
         ("properties", {"fuzz_key": "fuzz_val"}),
     ],
-    "secret_scopes": [],
     "sql_warehouses": [
         ("enable_photon", True),
         ("lifecycle", {"started": False}),
@@ -153,46 +153,20 @@ INJECT = {
     ],
 }
 
+# Base types with nothing left to inject, and why. Explicit so that a type missing from INJECT by
+# accident is not mistaken for one that was audited and came up empty.
+NO_INJECT = {
+    "secret_scopes": "only keyvault_metadata remains: Azure-only, conflicts with backend_type DATABRICKS",
+}
+
 
 def token(rng):
     return "fuzz_" + "".join(rng.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(8))
 
 
-def dump_scalar(v):
+def dump_config(config):
     # Literal non-ASCII: default escapes make invalid YAML surrogates before bundle sees them.
-    return json.dumps(v, ensure_ascii=False)
-
-
-def dump_yaml(obj, indent=0, list_item=False):
-    pad = "  " * indent
-    if isinstance(obj, dict):
-        if not obj:
-            return f"{pad}{{}}\n" if not list_item else f"{pad}- {{}}\n"
-        out = ""
-        first = True
-        for k, v in obj.items():
-            prefix = pad + "- " if list_item and first else (pad + "  " if list_item else pad)
-            child_indent = indent + 2 if list_item else indent + 1
-            if isinstance(v, (dict, list)) and v:
-                out += f"{prefix}{k}:\n" + dump_yaml(v, child_indent)
-            else:
-                out += f"{prefix}{k}: {dump_scalar(v)}\n"
-            first = False
-        return out
-    if isinstance(obj, list):
-        if not obj:
-            return f"{pad}- []\n" if list_item else f"{pad}[]\n"
-        # Nested list needs its own "-" line or the two levels flatten.
-        if list_item:
-            return f"{pad}-\n" + dump_yaml(obj, indent + 1)
-        out = ""
-        for item in obj:
-            if isinstance(item, (dict, list)):
-                out += dump_yaml(item, indent, list_item=True)
-            else:
-                out += f"{pad}- {dump_scalar(item)}\n"
-        return out
-    return f"{pad}{dump_scalar(obj)}\n"
+    return json.dumps(config, indent=2, ensure_ascii=False) + "\n"
 
 
 def tokenize(text):
@@ -362,7 +336,7 @@ def main():
     path = os.path.join(os.environ["INVARIANT_DIR"], "configs", name + ".yml.tmpl")
     with open(path) as f:
         config = load_yaml(substitute_variables(f.read()))
-    sys.stdout.write(dump_yaml(mutate(config, seed)))
+    sys.stdout.write(dump_config(mutate(config, seed)))
 
 
 if __name__ == "__main__":

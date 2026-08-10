@@ -15,8 +15,8 @@ Knobs: FUZZ_TARGET (matrix), FUZZ_SEED_*, FUZZ_TIME_BUDGET, FUZZ_CHECK_DRIFT (re
 script.prepare acts on the latter).
 """
 
+import json
 import os
-import re
 import shutil
 import signal
 import subprocess
@@ -131,8 +131,12 @@ def classify(seed_dir):
 
 
 def resource_type(seed_dir):
-    match = re.search(rb"^resources:\n  (\S+):", read(seed_dir / "LOG.config"), re.MULTILINE)
-    return match.group(1).decode() if match else "unknown"
+    # Absent/empty only when the mutator itself failed, which classify() already reports as a bug.
+    raw = read(seed_dir / "LOG.config")
+    if not raw:
+        return "unknown"
+    (rtype,) = json.loads(raw)["resources"]
+    return rtype
 
 
 def record(kind, seed, seed_dir):

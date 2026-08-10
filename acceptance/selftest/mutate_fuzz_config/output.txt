@@ -1,35 +1,60 @@
 === volume seed=0 ===
-bundle:
-  name: "test-bundle-check"
-resources:
-  volumes:
-    foo:
-      name: "test-volume-check"
-      catalog_name: "main"
-      schema_name: "default"
-      grants:
-        - principal: "account users"
-      comment: "fuzz-volume"
+{
+  "bundle": {
+    "name": "test-bundle-check"
+  },
+  "resources": {
+    "volumes": {
+      "foo": {
+        "name": "test-volume-check",
+        "catalog_name": "main",
+        "schema_name": "default",
+        "grants": [
+          {
+            "principal": "account users"
+          }
+        ],
+        "comment": "fuzz-volume"
+      }
+    }
+  }
+}
 === volume seed=1 ===
-bundle:
-  name: "test-bundle-check"
-resources:
-  volumes:
-    foo:
-      name: "test-volume-check"
-      catalog_name: "main"
-      schema_name: "default"
-      grants:
-        - principal: "account users"
-          privileges:
-            - "READ_VOLUME"
-      comment: "fuzz-volume"
+{
+  "bundle": {
+    "name": "test-bundle-check"
+  },
+  "resources": {
+    "volumes": {
+      "foo": {
+        "name": "test-volume-check",
+        "catalog_name": "main",
+        "schema_name": "default",
+        "grants": [
+          {
+            "principal": "account users",
+            "privileges": [
+              "READ_VOLUME"
+            ]
+          }
+        ],
+        "comment": "fuzz-volume"
+      }
+    }
+  }
+}
 === volume seed=5 ===
-bundle:
-  name: "test-bundle-check"
-resources:
-  volumes:
-    foo:
-      name: "test-volume-check"
-      catalog_name: "main"
-      schema_name: "default"
+{
+  "bundle": {
+    "name": "test-bundle-check"
+  },
+  "resources": {
+    "volumes": {
+      "foo": {
+        "name": "test-volume-check",
+        "catalog_name": "main",
+        "schema_name": "default"
+      }
+    }
+  }
+}

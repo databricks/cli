@@ -3,7 +3,9 @@
 Contract checks for mutate_fuzz_config. Failures go to stderr; stdout is a few mutated configs
 so an algorithm change shows up as an acceptance output diff.
 
-- load -> dump -> load is a fixed point for every MUTATE_BASES entry
+- every MUTATE_BASES entry parses to a config with a non-empty resource instance
+- every base type has INJECT entries or a NO_INJECT reason, never both or neither
+- every INJECT field is a settable input in the committed reference schema
 - mutate(seed) is deterministic
 - sample volume seeds stay pairwise distinct (so output.txt catches algorithm drift)
 - INJECT eventually lands on a sparse base (registered_model)
@@ -15,9 +17,11 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from envsubst import substitute_variables
-from mutate_fuzz_config import INJECT, MUTATE_BASES, dump_yaml, load_yaml, mutate
+from mutate_fuzz_config import INJECT, MUTATE_BASES, NO_INJECT, dump_config, load_yaml, mutate
 
-CONFIGS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bundle", "invariant", "configs")
+BIN = os.path.dirname(os.path.abspath(__file__))
+CONFIGS = os.path.join(BIN, "..", "bundle", "invariant", "configs")
+FIELDS = os.path.join(BIN, "..", "bundle", "refschema", "out.fields.txt")
 
 
 def render(name):
@@ -40,6 +44,17 @@ def resource_type(config):
     return rtype
 
 
+def field_flags():
+    """Map field path -> flags. A path repeats once per Go type behind it, so union the flags."""
+    flags = {}
+    with open(FIELDS) as f:
+        for line in f:
+            path, _, rest = line.rstrip("\n").partition("\t")
+            if path:
+                flags.setdefault(path, set()).update(rest.split("\t")[1:])
+    return flags
+
+
 def main():
     # Stable printed configs regardless of the harness UNIQUE_NAME.
     os.environ["UNIQUE_NAME"] = "check"
@@ -52,17 +67,31 @@ def main():
             sys.stderr.write(f"{name}: base did not parse to a config with resources\n")
             failed = True
             continue
-        if load_yaml(dump_yaml(parsed)) != parsed:
-            sys.stderr.write(f"{name}: loader is not a round-trip fixed point\n")
+        # A mis-parse can still yield a dict, so require the instance to have kept its fields.
+        if not instance(parsed):
+            sys.stderr.write(f"{name}: base parsed to an empty resource instance\n")
             failed = True
         rtype = resource_type(parsed)
-        if rtype not in INJECT:
-            sys.stderr.write(f"{name}: resources.{rtype} has no INJECT entry\n")
+        if bool(INJECT.get(rtype)) == (rtype in NO_INJECT):
+            sys.stderr.write(
+                f"{name}: resources.{rtype} needs INJECT entries or a NO_INJECT reason, not both or neither\n"
+            )
             failed = True
 
+    # Catches a typo in a field or resource-type key, and a field dropped by a schema regen. An
+    # unknown field is only a warning, so the seed still deploys and the additive mutation is a
+    # silent no-op that the deployed/rejected tally cannot show.
+    flags = field_flags()
+    for rtype, fields in INJECT.items():
+        for field, _ in fields:
+            path = f"resources.{rtype}.*.{field}"
+            if not flags.get(path, set()) & {"INPUT", "ALL"}:
+                sys.stderr.write(f"INJECT[{rtype}]: {path} is not a settable input field\n")
+                failed = True
+
     for seed in range(5):
-        a = dump_yaml(mutate(load("volume"), seed))
-        b = dump_yaml(mutate(load("volume"), seed))
+        a = dump_config(mutate(load("volume"), seed))
+        b = dump_config(mutate(load("volume"), seed))
         if a != b:
             sys.stderr.write(f"seed {seed}: mutation is not deterministic\n")
             failed = True
@@ -71,7 +100,7 @@ def main():
     samples = [0, 1, 5]
     dumps = []
     for seed in samples:
-        out = dump_yaml(mutate(load("volume"), seed))
+        out = dump_config(mutate(load("volume"), seed))
         dumps.append(out)
         sys.stdout.write(f"=== volume seed={seed} ===\n")
         sys.stdout.write(out)
