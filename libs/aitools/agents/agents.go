@@ -130,12 +130,6 @@ const (
 	NameGemini      = "gemini"
 )
 
-// geminiDetectFile is the project registry Gemini CLI writes at ~/.gemini/projects.json
-// on real use. Detection keys on it, not the bare ~/.gemini directory, because
-// Antigravity's ~/.gemini/antigravity subtree makes ~/.gemini exist without Gemini
-// CLI being installed. (installation_id is not reliably present.)
-const geminiDetectFile = "projects.json"
-
 // Databricks plugin identity, shared across the agents that ship a plugin.
 // The verified install commands are e.g.
 //
@@ -248,7 +242,9 @@ var Registry = []*Agent{
 		Binary:               "gemini",
 		// Gemini CLI reads agent skills (SKILL.md) but has no databricks plugin, so
 		// it is skills-only (Plugin nil).
-		MandatoryFile: geminiDetectFile,
+		// Gemini writes projects.json after real use. Antigravity shares ~/.gemini,
+		// and installation_id is not reliable, so detection uses this Gemini-only file.
+		MandatoryFile: "projects.json",
 	},
 }
 

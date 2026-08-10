@@ -75,7 +75,7 @@ func TestDetected(t *testing.T) {
 
 		gemini := ByName(NameGemini)
 		require.NotNil(t, gemini)
-		assert.NoFileExists(t, filepath.Join(home, ".gemini", geminiDetectFile))
+		assert.NoFileExists(t, filepath.Join(home, ".gemini", "projects.json"))
 		assert.True(t, gemini.Detected(ctx))
 	})
 
@@ -95,7 +95,7 @@ func TestDetected(t *testing.T) {
 		assert.False(t, gemini.Detected(ctx), "Gemini must not be detected from Antigravity's shared ~/.gemini")
 
 		// Once Gemini writes its own marker, it is detected.
-		require.NoError(t, os.WriteFile(filepath.Join(home, ".gemini", geminiDetectFile), []byte("id"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(home, ".gemini", "projects.json"), []byte("id"), 0o644))
 		assert.True(t, gemini.Detected(ctx))
 	})
 }
