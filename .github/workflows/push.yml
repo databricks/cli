@@ -195,6 +195,56 @@ jobs:
             exit 1
           fi
 
+  # Go picks its cryptographic module at build time via GOFIPS140, so the module
+  # a binary uses is a property of the build and not of the code. The regular
+  # test job builds without it, which leaves the FIPS module unexercised: FIPS
+  # mode narrows the cipher suites the TLS client offers, and nothing else here
+  # would notice if that broke a handshake or a hashing call. Build the CLI with
+  # the validated module and run the acceptance suite against it.
+  #
+  # Linux only: the module is platform-independent, so a second OS would spend
+  # the wall-clock time to re-test the same crypto.
+  test-fips:
+    needs:
+      - cleanups
+      - testmask
+
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
+    name: "task test (linux, fips)"
+    runs-on:
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-fips
+
+      - name: Run tests
+        env:
+          # Pinned to a frozen module version that has completed CMVP validation.
+          # "latest" also enables FIPS mode, but tracks the in-tree source and so
+          # moves with every Go release, leaving no fixed artifact to cite.
+          GOFIPS140: v1.0.0
+          ENVFILTER: DATABRICKS_BUNDLE_ENGINE=direct
+        run: go tool -modfile=tools/task/go.mod task test
+
+      - name: Summarize failed tests
+        if: ${{ failure() }}
+        run: uv run tools/summarize_failed_tests.py test-output.json | tee -a "$GITHUB_STEP_SUMMARY"
+
   test-exp-aitools:
     needs:
       - cleanups
