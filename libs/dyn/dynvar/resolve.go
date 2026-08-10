@@ -215,7 +215,9 @@ func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
 	v, err := r.fn(p)
 	if err != nil {
 		if dyn.IsNoSuchKeyError(err) {
-			err = fmt.Errorf("reference does not exist: ${%s}", key)
+			// The not-found message from dyn is discarded here, so re-attach the
+			// key suggestions it computed before we lose the original error.
+			err = fmt.Errorf("reference does not exist: ${%s}%s", key, dyn.DidYouMeanSuffix(err))
 		}
 
 		// Cache the return value and return to the caller.

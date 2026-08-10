@@ -29,16 +29,29 @@ func IsCannotTraverseNilError(err error) bool {
 }
 
 type noSuchKeyError struct {
-	p Path
+	p           Path
+	suggestions []string
 }
 
 func (e noSuchKeyError) Error() string {
-	return fmt.Sprintf("key not found at %q", e.p)
+	return fmt.Sprintf("key not found at %q%s", e.p, didYouMean(e.suggestions))
 }
 
 func IsNoSuchKeyError(err error) bool {
 	_, ok := errors.AsType[noSuchKeyError](err)
 	return ok
+}
+
+// DidYouMeanSuffix returns the "did you mean" clause for a noSuchKeyError, or an
+// empty string for any other error. Callers that rewrite the not-found message
+// (e.g. variable interpolation in libs/dyn/dynvar) use this to preserve the key
+// suggestions that would otherwise be lost when the original error is discarded.
+func DidYouMeanSuffix(err error) string {
+	e, ok := errors.AsType[noSuchKeyError](err)
+	if !ok {
+		return ""
+	}
+	return didYouMean(e.suggestions)
 }
 
 type indexOutOfBoundsError struct {
@@ -124,7 +137,7 @@ func (c pathComponent) visit(v Value, prefix Path, suffix Pattern, opts visitOpt
 		// Lookup current value in the map.
 		ev, ok := m.GetByString(c.key)
 		if !ok {
-			return InvalidValue, noSuchKeyError{path}
+			return InvalidValue, noSuchKeyError{p: path, suggestions: suggestKeys(m, c.key)}
 		}
 
 		// Recursively transform the value.
