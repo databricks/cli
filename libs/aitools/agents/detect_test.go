@@ -57,9 +57,9 @@ func TestDetected(t *testing.T) {
 		assert.False(t, a.Detected(ctx))
 	})
 
-	t.Run("DetectFile requires the marker, not just the dir", func(t *testing.T) {
+	t.Run("MandatoryFile requires the marker, not just the dir", func(t *testing.T) {
 		dir := t.TempDir()
-		a := &Agent{ConfigDir: func(context.Context) (string, error) { return dir, nil }, DetectFile: "marker"}
+		a := &Agent{ConfigDir: func(context.Context) (string, error) { return dir, nil }, MandatoryFile: "marker"}
 		// Directory exists but the marker does not: not detected.
 		assert.False(t, a.Detected(ctx))
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "marker"), []byte("x"), 0o644))
