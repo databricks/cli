@@ -221,7 +221,7 @@ var Registry = []*Agent{
 // piConfigDir returns Pi's agent config directory: PI_CODING_AGENT_DIR when set,
 // else ~/.pi/agent. Mirroring Pi's own override keeps skills where Pi reads them
 // when a launcher (e.g. ucode) relocates its home.
-// See getAgentDir in @earendil-works/pi-coding-agent (config.ts).
+// See https://github.com/earendil-works/pi/blob/31b513e316ab2b5ec736268350635511297fa3c1/packages/coding-agent/src/config.ts#L494-L520.
 func piConfigDir(ctx context.Context) (string, error) {
 	if dir := env.Get(ctx, "PI_CODING_AGENT_DIR"); dir != "" {
 		if dir == "~" || strings.HasPrefix(dir, "~/") || (runtime.GOOS == "windows" && strings.HasPrefix(dir, `~\`)) {
