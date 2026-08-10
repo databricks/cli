@@ -64,7 +64,7 @@ Response.Body = '''
   "versions": [
     {
       "name": "deployments/abc/versions/v1",
-      "cli_version": "0.0.0-dev",
+      "cli_version": "0.0.0-test",
       "status": "VERSION_STATUS_COMPLETED"
     }
   ]
@@ -76,7 +76,7 @@ Pattern = "GET /api/2.0/bundle/deployments/abc/versions/v1"
 Response.Body = '''
 {
   "name": "deployments/abc/versions/v1",
-  "cli_version": "0.0.0-dev",
+  "cli_version": "0.0.0-test",
   "status": "VERSION_STATUS_COMPLETED",
   "git_info": {
     "branch": "main",
