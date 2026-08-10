@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
 """
-Seed loop for the invariant fuzzer. Calls the seed_body bash function that
-acceptance/bundle/fuzz/script exports (which sources the FUZZ_TARGET invariant), and
-classifies each outcome:
+Seed loop for the invariant fuzzer. Invokes seed_body from fuzz/script and classifies each seed:
 
-  deployed - the config deployed and the invariant held
-  rejected - the CLI refused the config before deploying it
-  gap      - the config needs a route the testserver does not model
-  hang     - the seed outlived FUZZ_SEED_TIMEOUT
-  bug      - a panic, an internal error, a mutator failure, or a config that deployed and then
-             broke the invariant or failed a later command
+  deployed - deployed and the invariant held
+  rejected - CLI refused the config before deploy
+  gap      - needs a route the testserver does not model
+  hang     - exceeded FUZZ_SEED_TIMEOUT
+  bug      - panic, internal error, mutator failure, or failure after deploy
 
-Every seed adds a line to LOG.summary. A bug or a hang also writes a ready-to-run repro to
-LOG.repro and exits non-zero. Stdout stays empty: the committed run asserts empty output.
+Writes LOG.summary per seed; on bug/hang writes LOG.repro and exits non-zero.
+Stdout stays empty (committed run asserts that).
 
-FUZZ_TARGET comes from the test.toml matrix; FUZZ_SEED_START, FUZZ_SEED_COUNT,
-FUZZ_SEED_TIMEOUT and FUZZ_TIME_BUDGET are optional knobs the caller sets (see task test-fuzz).
-FUZZ_CHECK_DRIFT is read only to name the oracle in the repro; script.prepare acts on it.
+Knobs: FUZZ_TARGET (matrix), FUZZ_SEED_*, FUZZ_TIME_BUDGET, FUZZ_CHECK_DRIFT (repro only;
+script.prepare acts on the latter).
 """
 
 import os
@@ -29,35 +25,29 @@ import time
 from collections import Counter
 from pathlib import Path
 
-# Per-seed cap: a seed past this budget is stuck. Set FUZZ_SEED_TIMEOUT=0 to disable.
+# Stuck-seed cap; FUZZ_SEED_TIMEOUT=0 disables.
 SEED_TIMEOUT = float(os.environ.get("FUZZ_SEED_TIMEOUT", "180"))
 
-# Overall budget (seconds): the real stop for nightly / task test-fuzz (seed count is only a
-# ceiling). Stop starting seeds past it so a slow but progressing variant exits cleanly under the
-# 20m test.toml Timeout. 0 disables.
+# Nightly/task stop; seed count is only a ceiling. 0 disables. Keeps runs under test.toml Timeout.
 BUDGET = float(os.environ.get("FUZZ_TIME_BUDGET", "900"))
 
-# Seconds between SIGQUIT and the SIGKILL backstop.
-QUIT_GRACE = 10
+QUIT_GRACE = 10  # seconds between SIGQUIT and SIGKILL
 
-# Log of the destroy in invariant_cleanup, which every target runs from an EXIT trap.
-CLEANUP_LOG = "LOG.destroy"
+CLEANUP_LOG = "LOG.destroy"  # EXIT-trap destroy; every target writes this
 
 TARGET = os.environ["FUZZ_TARGET"]
 
-# Which no-drift oracle script.prepare installed, and part of the repro because the two disagree:
-# 0 is the plan-determinism diff, 1 the exact check that task test-fuzz defaults to.
+# Part of the repro: 0 = plan-determinism, 1 = exact no_drift (task test-fuzz default).
 CHECK_DRIFT = os.environ.get("FUZZ_CHECK_DRIFT", "0")
 
 POSIX = os.name == "posix"
 
-# Resolve against PATH: on Windows CreateProcess finds the System32 WSL stub first, which exits
-# non-zero with no distribution installed and makes every seed read as rejected.
+# PATH lookup: on Windows CreateProcess prefers System32\\bash.exe (WSL stub) over Git bash.
 BASH = shutil.which("bash")
 
 
 def read(path):
-    """Log contents as bytes; a fuzzed config can put arbitrary bytes in there. Empty if absent."""
+    """Bytes from a log; fuzzed configs can put arbitrary bytes there. Empty if absent."""
     return path.read_bytes() if path.exists() else b""
 
 
@@ -69,16 +59,15 @@ def killpg(proc, sig):
     try:
         os.killpg(proc.pid, sig)
     except ProcessLookupError:
-        # The seed can exit on its own between the timeout and the signal; it is still a hang.
+        # Exited between timeout and signal; still report as hang.
         pass
 
 
 def kill_seed(proc):
     if not POSIX:
-        # Windows has neither SIGQUIT nor process groups.
         proc.kill()
         return
-    # SIGQUIT first for Go's goroutine dump, then SIGKILL as a backstop.
+    # SIGQUIT for Go's goroutine dump, then SIGKILL.
     killpg(proc, signal.SIGQUIT)
     try:
         proc.wait(timeout=QUIT_GRACE)
@@ -87,13 +76,13 @@ def kill_seed(proc):
 
 
 def run_seed(seed_dir, seed):
-    """Run one seed in a fresh bash. Returns its exit code and whether it had to be killed."""
+    """Exit code and whether the seed was killed for timeout."""
     with open(seed_dir / "LOG.check", "wb") as log:
         proc = subprocess.Popen(
             [BASH, "-euo", "pipefail", "-c", 'seed_body "$@"', "_", str(seed_dir), str(seed)],
             stdout=log,
             stderr=subprocess.STDOUT,
-            # Own process group, so killing a hung seed also takes down the CLI it is waiting on.
+            # Own process group so a hung CLI dies with the seed.
             start_new_session=POSIX,
         )
         try:
@@ -104,26 +93,22 @@ def run_seed(seed_dir, seed):
 
 
 def oracle_verdict(seed_dir):
-    """The no-drift oracle's own verdict, if it reached one. Empty if it never ran or was happy."""
-    # Each oracle reports in a form only it produces, so a drift verdict survives a testserver gap.
+    """Drift oracle wording if it fired; empty if it never ran or was happy."""
+    # Prefer oracle text over a concurrent TESTSERVER_GAP.
     if b"Unexpected action=" in read(seed_dir / "LOG.check"):
-        # verify_no_drift.py, the exact check shared with the curated invariant targets.
         return "planned a change after deploy"
     if read(seed_dir / "LOG.plan.determinism.diff").strip():
-        # The plan-determinism diff script.prepare substitutes when FUZZ_CHECK_DRIFT is 0.
         return "planned differently on two consecutive runs"
     if read(seed_dir / "LOG.plan.failed").strip():
-        # Plan failed outright (LOG.plan.failed was written).
         return "could not be planned after deploy"
     return ""
 
 
 def classify(seed_dir):
-    """Classify a seed that exited non-zero. Returns its kind and, for a failure, the reason."""
-    # mutate_fuzz_config only writes to stderr when it fails.
+    """Kind and, for a failure, the reason."""
     gen_err = read(seed_dir / "LOG.gen.err").strip()
     if gen_err:
-        # Last line: a traceback's first one is always "Traceback (most recent call last):".
+        # Last line: first line of a traceback is always "Traceback (most recent call last):".
         last_line = gen_err.splitlines()[-1].decode(errors="replace")
         return "bug", f"could not be mutated: {last_line}"
 
@@ -131,17 +116,14 @@ def classify(seed_dir):
     if b"panic:" in logs or b"internal error" in logs:
         return "bug", "panicked or hit an internal error"
 
-    # Drift before gap: a seed can carry both, and the drift verdict is the more specific.
     verdict = oracle_verdict(seed_dir)
     if verdict:
         return "bug", verdict
 
-    # Marker from the catch-all stubs in fuzz/test.toml. Precedes INPUT_CONFIG_OK so a post-deploy
-    # gap still files as a gap. Skip the cleanup log: it only runs after a failure.
+    # Skip cleanup: destroy runs after failure and must not mask the real cause.
     if b"TESTSERVER_GAP" in concat_logs(seed_dir, skip={CLEANUP_LOG}):
         return "gap", ""
 
-    # Past the marker the CLI had accepted the config.
     if b"INPUT_CONFIG_OK" in read(seed_dir / "LOG.check"):
         return "bug", "failed after deploying; see the seed's LOG.* files"
 
@@ -149,21 +131,18 @@ def classify(seed_dir):
 
 
 def resource_type(seed_dir):
-    """The resource type the seed's config declares, so a window shows which types it covered."""
     match = re.search(rb"^resources:\n  (\S+):", read(seed_dir / "LOG.config"), re.MULTILINE)
     return match.group(1).decode() if match else "unknown"
 
 
 def record(kind, seed, seed_dir):
-    """One machine-readable line per seed. Written to a file so empty stdout still holds."""
     with open("LOG.summary", "a") as f:
         f.write(f"{kind} seed={seed} target={TARGET} type={resource_type(seed_dir)}\n")
 
 
 def fail(seed, seed_dir, kind, reason, prefix=""):
     record(kind, seed, seed_dir)
-    # To a file, because the harness rewrites env-var values in stdout. Target goes through
-    # ENVFILTER: as an EnvMatrix key, a plain env var would be overridden and re-run every variant.
+    # File, not stdout: harness rewrites env values in stdout. ENVFILTER for matrix keys.
     Path("LOG.repro").write_text(
         f"fuzz: seed {seed} {reason}, reproduce with: {prefix}"
         f"ENVFILTER=FUZZ_TARGET={TARGET} FUZZ_SEED_START={seed} "
@@ -173,12 +152,10 @@ def fail(seed, seed_dir, kind, reason, prefix=""):
 
 
 def totals():
-    """Per-variant tally for triage. Reached only on a clean run; a bug or hang exits above."""
     summary = Path("LOG.summary")
     if not summary.exists():
         return Counter()
 
-    # Count before appending the header, else it would count itself.
     kinds = Counter(line.split()[0] for line in summary.read_text().splitlines())
     with summary.open("a") as f:
         f.write("--- totals ---\n")
@@ -190,12 +167,10 @@ def totals():
 def main():
     start = time.monotonic()
     seed_start = int(os.environ.get("FUZZ_SEED_START", "0"))
-    # 25 keeps the committed PR smoke under ~1m/variant at current testserver speeds; nightly
-    # and task test-fuzz override this with a high ceiling and stop on FUZZ_TIME_BUDGET instead.
+    # PR smoke default; nightly/task raise the ceiling and stop on FUZZ_TIME_BUDGET.
     count = int(os.environ.get("FUZZ_SEED_COUNT", "25"))
 
     for offset in range(count):
-        # Budget stop: log and exit cleanly.
         if BUDGET and time.monotonic() - start >= BUDGET:
             Path("LOG.budget").write_text(
                 f"fuzz: stopping after {offset}/{count} seeds; hit FUZZ_TIME_BUDGET={BUDGET:g}s\n"
@@ -221,8 +196,7 @@ def main():
 
     kinds = totals()
 
-    # Require at least one deploy: a broken mutator or fixture looks like every seed
-    # being rejected. A single-seed replay is exempt.
+    # All-rejected means the mutator/fixtures are broken; single-seed replay is exempt.
     if count > 1 and not kinds["deployed"]:
         sys.exit("fuzz: no seed deployed; the mutator or fixtures are broken")
 

@@ -1,20 +1,12 @@
 #!/usr/bin/env python3
 """
-Mutate a known-good bundle config by deleting, perturbing, and adding curated fields.
+Mutate a curated, deploy-verified bundle config for the invariant fuzzer.
 
-Perturbs a curated invariant config that already deploys.
+Destructive: delete a field, or replace it with a token, dangerous value, or empty container.
+Additive: inject one optional from INJECT that the base omits (deploy-proven shapes).
 
-Two mutation kinds, chosen per step:
-
-- destructive (always): delete a field or replace it with a token, a dangerous value, or an empty
-  container.
-- additive: inject one optional field from INJECT that the base omits. Values are hand-curated to
-  deploy (and to cover fields that previously reached reconcile/drift bugs).
-
-As a script, emits one mutated databricks.yml on stdout for the current seed (see main).
-
-YAML I/O is stdlib-only (acceptance python has no PyYAML): dump uses JSON scalars so dangerous
-probes stay one line; load understands that dialect plus the curated bases' block style.
+Emits one mutated databricks.yml on stdout. YAML I/O is stdlib-only (no PyYAML in acceptance):
+dump uses JSON scalars; load understands that dialect plus the curated bases' block style.
 """
 
 import json
@@ -26,10 +18,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from envsubst import substitute_variables
 
-# Biased high: injection is the path to drift bugs.
+# Prefer inject: that is how reconcile/drift bugs are reached.
 ADD_PROB = 0.6
 
-# Probes for free-form scalars: the CLI must reject or round-trip these without panicking.
+# Hostile free-form scalars; the CLI must reject or round-trip without panicking.
 DANGEROUS_STRINGS = [
     "",
     " ",
@@ -51,9 +43,7 @@ DANGEROUS_INTS = [
 ]
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
-# Curated single-resource configs that deploy standalone (no init script). All are in the invariant
-# INPUT_CONFIG matrix, so they stay deploy-verified. Fixture files (data/app, data/pipeline.py)
-# are staged by fuzz/script.prepare.
+# Single-resource invariant configs (no init script). data/ fixtures are staged by script.prepare.
 MUTATE_BASES = [
     "app",
     "catalog",
@@ -70,8 +60,7 @@ MUTATE_BASES = [
     "volume",
 ]
 
-# Optional fields absent from the corresponding base, keyed by resources.<type>. Only injected when
-# missing. Shapes are taken from acceptance fixtures that already deploy / reproduce known drift.
+# Absences keyed by resources.<type>. Values from acceptance fixtures that deploy / showed drift.
 INJECT = {
     "apps": [
         ("description", "fuzz-app-description"),
@@ -170,9 +159,7 @@ def token(rng):
 
 
 def dump_scalar(v):
-    # ensure_ascii=False keeps non-ASCII literal: the default escapes astral chars into surrogate
-    # pairs that YAML rejects, killing the config before it reaches bundle logic. Control chars
-    # stay escaped by json.dumps, which YAML accepts.
+    # Literal non-ASCII: default escapes make invalid YAML surrogates before bundle sees them.
     return json.dumps(v, ensure_ascii=False)
 
 
@@ -195,7 +182,7 @@ def dump_yaml(obj, indent=0, list_item=False):
     if isinstance(obj, list):
         if not obj:
             return f"{pad}- []\n" if list_item else f"{pad}[]\n"
-        # A list inside a list: the marker needs its own line, else the two flatten into one.
+        # Nested list needs its own "-" line or the two levels flatten.
         if list_item:
             return f"{pad}-\n" + dump_yaml(obj, indent + 1)
         out = ""
@@ -209,7 +196,7 @@ def dump_yaml(obj, indent=0, list_item=False):
 
 
 def tokenize(text):
-    # (indent, content) per line. Only full-line comments: no curated base has a trailing "#".
+    # Full-line comments only; curated bases never use trailing "#".
     out = []
     for raw in text.splitlines():
         stripped = raw.lstrip(" ")
@@ -222,14 +209,11 @@ def tokenize(text):
 def scalar(text):
     if text in ("", "null", "~"):
         return None
-    # dump_yaml emits empty containers in flow form; read them back so load -> dump -> load holds.
     if text == "[]":
         return []
     if text == "{}":
         return {}
-    # The one shape this loader cannot represent: "[id]" reads back as the string "[id]", turning a
-    # list into a scalar, and load -> dump -> load stays a fixed point. Exit so a new MUTATE_BASES
-    # entry fails the selftest.
+    # Flow sequences like [id] round-trip as the string "[id]"; fail loud so a new base is caught.
     if text[0] in "[{":
         sys.exit(f"mutate_fuzz_config: flow-style value is not supported: {text!r}")
     if text == "true":
@@ -306,7 +290,6 @@ def load_yaml(text):
 
 
 def collect(node, out):
-    # (container, key) per child, so a mutation can delete or replace it in place.
     if isinstance(node, dict):
         for k, v in node.items():
             out.append((node, k))
@@ -336,7 +319,6 @@ def mutate_once(rng, roots):
 
 
 def resource_instances(config):
-    """Yield (resource_type, instance_dict) for each resource in the config."""
     for rtype, instances in config.get("resources", {}).items():
         if isinstance(instances, dict):
             for instance in instances.values():
@@ -345,7 +327,6 @@ def resource_instances(config):
 
 
 def add_field(rng, config):
-    # Inject one curated optional that the instance still lacks.
     candidates = []
     for rtype, instance in resource_instances(config):
         for name, value in INJECT.get(rtype, []):
@@ -354,14 +335,13 @@ def add_field(rng, config):
     if not candidates:
         return
     instance, name, value = rng.choice(candidates)
-    # Copy so later destructive steps cannot mutate the shared catalog value in place.
+    # Deep copy: later destructive steps must not mutate the shared catalog entry.
     instance[name] = json.loads(json.dumps(value))
 
 
 def mutate(config, seed):
     rng = random.Random(seed)
-
-    # Only inside resource instances, so the bundle/resources skeleton survives.
+    # Stay inside resource instances so the bundle/resources skeleton survives.
     roots = [instance for _, instance in resource_instances(config)]
 
     for _ in range(rng.randint(1, 3)):
@@ -374,8 +354,7 @@ def mutate(config, seed):
 
 
 def main():
-    # dump_yaml emits non-ASCII literally, so this redirect must be UTF-8: on Windows it would
-    # default to the ANSI code page and the astral-plane probe would raise UnicodeEncodeError.
+    # Windows stdout defaults to the ANSI code page; literal UTF-8 probes need UTF-8.
     sys.stdout.reconfigure(encoding="utf-8")
 
     seed = int(os.environ["FUZZ_SEED"])

@@ -1,27 +1,23 @@
-# Invariant fuzzing: mutate a curated config per seed and run a real invariant target from
-# ../invariant via the helper overrides in script.prepare. run_fuzz.py owns the seed loop; see
-# README.md.
+# Mutate a curated config per seed and run ../invariant/$FUZZ_TARGET. Loop: run_fuzz.py (see README).
 
-# no_drift/script reads READPLAN via readplanarg; the fuzzer skips the saved-plan matrix.
+# no_drift reads READPLAN via readplanarg; fuzz skips the saved-plan matrix.
 export READPLAN=""
 
-# Fail if a stub was added to ../invariant/test.toml and not copied here.
+# Fail if ../invariant/test.toml gained a stub that was not copied here.
 grep '^Pattern = ' "$INVARIANT_DIR/test.toml" | while read -r stub; do
     grep -qxF -- "$stub" "$TESTDIR/test.toml" || echo "stub missing from fuzz/test.toml: $stub"
 done | contains.py '!stub missing' > /dev/null
 
-# run_fuzz.py calls this once per seed. It has to be a bash function so the target script it
-# sources sees the invariant helpers that script.prepare defined.
+# Must be a function: the sourced target needs helpers from script.prepare in this shell.
 seed_body() {
     cd "$1"
-    # Seeds share one long-lived workspace, so scope the name to the seed, or state one leaves
-    # behind reads back as drift in the next. Set here so targets see it too.
+    # Per-seed names: seeds share one workspace, so leftover state otherwise looks like drift.
     export UNIQUE_NAME="$UNIQUE_NAME-$2"
     export FUZZ_SEED="$2"
     source "$INVARIANT_DIR/$FUZZ_TARGET/script"
 }
 
-# run_fuzz.py spawns a fresh bash per seed, so export seed_body and the helpers it calls (trace).
+# Fresh bash per seed, so export seed_body and helpers it calls (trace).
 export -f $(compgen -A function)
 
 run_fuzz.py

@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """
-Contract check for mutate_fuzz_config (the harness diffs stdout; a non-zero exit marks a
-violation on stderr):
+Contract checks for mutate_fuzz_config. Failures go to stderr; stdout is a few mutated configs
+so an algorithm change shows up as an acceptance output diff.
 
-- The loader round-trips every curated base: load -> dump -> load is a fixed point.
-- Mutation is deterministic for a fixed seed (reproducible repros).
-- Additive inject eventually lands a curated optional on a sparse base.
-
-It also prints a few mutated configs so an algorithm change shows up as an output diff.
+- load -> dump -> load is a fixed point for every MUTATE_BASES entry
+- mutate(seed) is deterministic
+- INJECT eventually lands on a sparse base (registered_model)
 """
 
 import os
@@ -31,7 +29,6 @@ def load(name):
 
 
 def instance(config):
-    # The curated bases are single-resource; return that one resource instance.
     (instances,) = config["resources"].values()
     (value,) = instances.values()
     return value
@@ -43,7 +40,7 @@ def resource_type(config):
 
 
 def main():
-    # Fixed so the printed configs are stable regardless of the harness's unique name.
+    # Stable printed configs regardless of the harness UNIQUE_NAME.
     os.environ["UNIQUE_NAME"] = "check"
     os.environ.setdefault("CURRENT_USER_NAME", "check-user")
     failed = False
@@ -73,7 +70,7 @@ def main():
         sys.stdout.write(f"=== volume seed={seed} ===\n")
         sys.stdout.write(dump_yaml(mutate(load("volume"), seed)))
 
-    # registered_model sets few optionals, so an added field must come from INJECT.
+    # Sparse base: any new field must come from INJECT.
     base_fields = set(instance(load("registered_model")))
     inject_names = {name for name, _ in INJECT["registered_models"]}
     injected = False

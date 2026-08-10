@@ -412,7 +412,7 @@ jobs:
     needs:
       - cleanups
 
-    # Nightly: fill FUZZ_TIME_BUDGET with drift on. The committed acceptance test covers PRs.
+    # Nightly drift-on exploration; PR coverage is the committed acceptance/bundle/fuzz test.
     if: ${{ github.event_name == 'schedule' }}
     name: "task test-fuzz"
     runs-on:
@@ -438,8 +438,7 @@ jobs:
 
       - name: Run tests
         env:
-          # Ceiling only: run_fuzz.py stops at FUZZ_TIME_BUDGET (900s). Day-of-epoch * COUNT
-          # gives disjoint nightly windows without gaps from PR/push runs of this workflow.
+          # Ceiling; run_fuzz.py stops at FUZZ_TIME_BUDGET. Day-of-epoch avoids PR-run gaps.
           FUZZ_SEED_COUNT: "10000"
         run: |
           export FUZZ_SEED_START=$(( $(date -u +%s) / 86400 * FUZZ_SEED_COUNT ))

@@ -1,13 +1,10 @@
-# Local only: against a real workspace each seed's deploy/migrate/plan/destroy takes minutes and
-# trips SEED_TIMEOUT.
+# Local only: cloud round-trips are minutes per seed and trip SEED_TIMEOUT.
 Cloud = false
 
-# Room for the nightly FUZZ_TIME_BUDGET (run_fuzz.py) plus the last seed's tail.
+# Nightly FUZZ_TIME_BUDGET plus the last seed's tail.
 Timeout = '20m'
 
-# test.toml only merges along the directory chain, so the engine pin, ignore patterns and per-route
-# [[Server]] stubs below are copied from ../invariant/test.toml. fuzz/script fails the test if a
-# stub is added there and not here.
+# Copied from ../invariant/test.toml (merge is directory-chain only); script asserts stub parity.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 Ignore = [
@@ -19,7 +16,7 @@ Ignore = [
     "*.json",
     "*.err",
     "app",
-    # Snapshot of pre-delete state the idempotency targets keep; may linger if a seed fails.
+    # Idempotency targets' pre-delete snapshot; may linger if a seed fails.
     ".databricks.backup",
 ]
 
@@ -34,10 +31,7 @@ Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"col
 Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"
 Response.Body = '{"status": "OK"}'
 
-# Catch-alls, one per method. An unmodeled route is a coverage gap; these answer with a marker
-# run_fuzz.py files as a gap. Wildcards go to ServeMux (most-specific-first); exact paths are
-# looked up before it (see the Router type doc). No HEAD: ServeMux matches a GET pattern for HEAD
-# too, so "HEAD /{path...}" would conflict with every GET wildcard and panic at startup.
+# Unmodeled routes → TESTSERVER_GAP. No HEAD: ServeMux maps HEAD to GET and would panic.
 [[Server]]
 Pattern = "GET /{path...}"
 Response.StatusCode = 501
