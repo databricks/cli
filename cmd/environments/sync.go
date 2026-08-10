@@ -39,6 +39,8 @@ env-owned sections are refreshed, user-owned content is preserved).`,
 	// auth configuration in the shared PreRunE so a malformed databricks.yml (e.g.
 	// two targets marked default) can't fail the command before it runs; the fallback
 	// bundle read in bundleTarget swallows such errors and falls through to E_NO_TARGET.
+	// As a consequence auth resolves from profile/env only: the bundle's
+	// workspace.host/profile no longer feed the workspace client for this command.
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
 		return root.MustWorkspaceClient(cmd, args)
