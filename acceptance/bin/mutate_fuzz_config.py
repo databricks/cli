@@ -5,7 +5,7 @@ Mutate a curated, deploy-verified bundle config for the invariant fuzzer.
 Destructive: delete/replace a field (token, dangerous scalar, or empty container).
 Additive: inject one optional from INJECT that the base omits (deploy-proven shapes).
 
-Emits JSON on stdout (valid YAML 1.2; no PyYAML in the harness). load_yaml covers the
+Emits JSON on stdout, which the bundle reads as YAML 1.2. load_yaml covers the
 bases' block style only.
 """
 
