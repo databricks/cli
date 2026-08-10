@@ -36,6 +36,13 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 
 		valueStr, ok := val.AsString()
 		if !ok {
+			diags = append(diags, diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "Secret value must be a string",
+				Detail:    fmt.Sprintf(`The secret value for "%s" must be a string.`, key),
+				Locations: val.Locations(),
+				Paths:     []dyn.Path{p},
+			})
 			continue
 		}
 
