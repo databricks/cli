@@ -171,10 +171,10 @@ func runPipeline(cmd *cobra.Command) error {
 	// thing on stdout must be the JSON object; the spinner writes to stderr and
 	// no-ops when non-interactive, but we still skip it entirely for JSON so the
 	// pipeline stays silent for machine consumers.
+	var rep *spinnerReporter
 	var progress libslocalenv.Reporter
 	if root.OutputType(cmd) != flags.OutputJSON {
-		rep := newSpinnerReporter(ctx)
-		defer rep.Close()
+		rep = newSpinnerReporter(ctx)
 		progress = rep
 	}
 
@@ -192,6 +192,9 @@ func runPipeline(cmd *cobra.Command) error {
 	}
 
 	res, pipelineErr := p.Run(ctx)
+	if rep != nil {
+		rep.Close()
+	}
 	return renderResult(ctx, cmd, res, pipelineErr)
 }
 

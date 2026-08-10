@@ -20,8 +20,8 @@ var phaseMessages = map[libslocalenv.PhaseName]string{
 }
 
 // spinnerReporter renders live per-phase progress on a cmdio spinner. The spinner
-// degrades to a no-op in non-interactive terminals (CI, --output json consumers,
-// acceptance tests), so this writes nothing there.
+// degrades to a no-op in non-interactive terminals (CI, acceptance tests), so
+// this writes nothing there.
 type spinnerReporter struct {
 	sp interface {
 		Update(string)

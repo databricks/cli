@@ -57,6 +57,7 @@ func TestRenderSuccessConstraintsOnlyOmitsDBConnect(t *testing.T) {
 	res.VenvPath = ".venv"
 
 	out := renderText(t, res, nil)
+	// renderSuccess omits the row when DBConnectVersion is empty — which is how constraints-only mode leaves it.
 	assert.NotContains(t, out, "databricks-connect")
 }
 
