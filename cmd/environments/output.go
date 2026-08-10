@@ -81,6 +81,10 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libslocalenv.Res
 }
 
 // renderSuccess prints the friendly post-provision summary (DECO-27977).
+//
+// It runs only on a non-dry-run success (renderResult returns earlier for JSON,
+// failures, and dry runs), so res.VenvPath is always set: the validate phase — the
+// last thing a successful run does — assigns it unconditionally (see Pipeline.validate).
 func renderSuccess(ctx context.Context, res *libslocalenv.Result) {
 	cmdio.LogString(ctx, "✔ Local environment ready")
 	cmdio.LogString(ctx, "")
@@ -94,9 +98,7 @@ func renderSuccess(ctx context.Context, res *libslocalenv.Result) {
 			cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "databricks-connect", res.Resolved.DBConnectVersion))
 		}
 	}
-	if res.VenvPath != "" {
-		cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "Virtual env", res.VenvPath))
-	}
+	cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "Virtual env", res.VenvPath))
 	// pyproject.toml was created (greenfield) or updated in place (with a backup).
 	pyprojectDetail := "updated"
 	if res.Greenfield {
@@ -108,12 +110,8 @@ func renderSuccess(ctx context.Context, res *libslocalenv.Result) {
 
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "Next steps:")
-	if res.VenvPath != "" {
-		cmdio.LogString(ctx, "  • Activate it:  "+activateHint(res.VenvPath))
-		cmdio.LogString(ctx, "  • Or select "+res.VenvPath+" as the Python interpreter in VS Code / Cursor")
-	} else {
-		cmdio.LogString(ctx, "  • Activate the .venv it created and select it as your interpreter")
-	}
+	cmdio.LogString(ctx, "  • Activate it:  "+activateHint(res.VenvPath))
+	cmdio.LogString(ctx, "  • Or select "+res.VenvPath+" as the Python interpreter in VS Code / Cursor")
 }
 
 // activateHint returns the shell command to activate the virtual environment,
