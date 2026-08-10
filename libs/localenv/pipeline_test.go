@@ -912,8 +912,8 @@ func TestPipelineReportsPhaseStarts(t *testing.T) {
 	p := &Pipeline{
 		Mode: ModeDefault, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:    ComputeFlags{Serverless: "v4"},
-		Compute:  stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
 		Progress: rep,
 	}
 	_, err := p.Run(t.Context())
