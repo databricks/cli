@@ -82,6 +82,12 @@ Resources:
       "old": "dev",
       "new": "prod",
       "remote": "dev"
+    },
+    "result_state": {
+      "action": "skip",
+      "reason": "remote_already_set",
+      "new": "SUCCESS",
+      "remote": "SUCCESS"
     }
   }
 }
