@@ -734,20 +734,21 @@ tasks:
           -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/cmd/sandbox"
 
   test-fuzz:
-    desc: Run schema fuzz invariant tests (random configs, direct engine)
+    desc: Run schema fuzz invariant tests (mutated configs, direct engine)
     # No `sources:` fingerprint: the window depends on FUZZ_* env vars Task can't see.
     cmds:
       - |
-        # FUZZ_TIME_BUDGET (900s) stops the run; seed count is a ceiling. Drift on by default;
-        # a repro narrows via FUZZ_SEED_*.
+        # FUZZ_TIME_BUDGET (900s) stops each variant; seed count is a ceiling. Drift on by
+        # default; a repro narrows via FUZZ_SEED_*. Timeout covers 4 targets × budget.
         export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-10000}"
         export FUZZ_CHECK_DRIFT="${FUZZ_CHECK_DRIFT:-1}"
+        export FUZZ_TIME_BUDGET="${FUZZ_TIME_BUDGET:-900}"
         # -count=1: only the script reads FUZZ_*, so the cache would serve another window's result.
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -count=1 -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/bundle/fuzz"
+          -- -count=1 -timeout=${LOCAL_TIMEOUT:-90m} -run "TestAccept/bundle/fuzz"
 
   # --- Integration tests ---
 

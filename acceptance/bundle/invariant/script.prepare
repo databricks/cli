@@ -38,11 +38,19 @@ invariant_setup() {
 }
 
 # Goes through trace, so callers can prefix the command with VAR=val.
+# set -e is lifted around the deploy so the panic scan still runs when it fails: a config
+# the CLI rejects must not panic on the way out. A clean failure exits with the deploy's code.
 invariant_deploy() {
     local logfile="$1"
     shift
+    set +e
     trace "$@" &> "$logfile"
+    local rc=$?
+    set -e
     cat "$logfile" | contains.py '!panic:' '!internal error' > /dev/null
+    if [ "$rc" -ne 0 ]; then
+        exit "$rc"
+    fi
 
     # Tells the fuzzer the config was accepted; failures after this count as bugs.
     echo INPUT_CONFIG_OK

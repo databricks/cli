@@ -438,11 +438,11 @@ jobs:
 
       - name: Run tests
         env:
-          # Ceiling only: run_fuzz.py stops at FUZZ_TIME_BUDGET (900s). Stride = COUNT so
-          # consecutive nights cover disjoint windows.
+          # Ceiling only: run_fuzz.py stops at FUZZ_TIME_BUDGET (900s). Day-of-epoch * COUNT
+          # gives disjoint nightly windows without gaps from PR/push runs of this workflow.
           FUZZ_SEED_COUNT: "10000"
         run: |
-          export FUZZ_SEED_START=$(( GITHUB_RUN_NUMBER * FUZZ_SEED_COUNT ))
+          export FUZZ_SEED_START=$(( $(date -u +%s) / 86400 * FUZZ_SEED_COUNT ))
           go tool -modfile=tools/task/go.mod task test-fuzz
 
   # This job groups the result of all the above test jobs.
