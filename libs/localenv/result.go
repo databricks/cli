@@ -171,8 +171,9 @@ type ComputeInfo struct {
 }
 
 // Label returns a short, human-readable name for the resolved compute target,
-// for display in the text summary (e.g. "serverless 4", "cluster 0101-abc").
-// The precise environment key is still available in --output json and --debug.
+// for display in the text summary (e.g. "serverless 4", "cluster 0101-abc",
+// "DBR 15.4.x-scala2.12"). The precise environment key is still available in
+// --output json and --debug.
 func (c *ComputeInfo) Label() string {
 	switch {
 	case c.ServerlessVersion != "":
@@ -180,6 +181,12 @@ func (c *ComputeInfo) Label() string {
 		return "serverless " + strings.TrimPrefix(c.ServerlessVersion, "v")
 	case c.ClusterID != "":
 		return "cluster " + c.ClusterID
+	case c.SparkVersion != "":
+		// Classic compute resolved from a --job-task carries no ClusterID (only the
+		// task's runtime), so without this case Label would fall through and print
+		// the internal "dbr/..." env key — exactly the detail the summary hides.
+		// Show the runtime instead, matching the "DBR <version>" phrasing used in help.
+		return "DBR " + c.SparkVersion
 	default:
 		return c.EnvKey
 	}

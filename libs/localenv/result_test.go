@@ -53,6 +53,9 @@ func TestComputeInfoLabel(t *testing.T) {
 		{"serverless", ComputeInfo{Source: "serverless", ServerlessVersion: "v4", EnvKey: "serverless/serverless-v4"}, "serverless 4"},
 		{"job serverless", ComputeInfo{Source: "job", ServerlessVersion: "v5", EnvKey: "serverless/serverless-v5"}, "serverless 5"},
 		{"cluster", ComputeInfo{Source: "cluster", ClusterID: "0101-abc", EnvKey: "dbr/15.4.x-scala2.12"}, "cluster 0101-abc"},
+		// A --job-task bound to classic compute carries only SparkVersion (no
+		// ClusterID), so it must render the runtime rather than leak the env key.
+		{"job classic", ComputeInfo{Source: "job", SparkVersion: "15.4.x-scala2.12", EnvKey: "dbr/15.4.x-scala2.12"}, "DBR 15.4.x-scala2.12"},
 		{"fallback", ComputeInfo{Source: "bundle", EnvKey: "dbr/15.4.x-scala2.12"}, "dbr/15.4.x-scala2.12"},
 	}
 	for _, tc := range cases {

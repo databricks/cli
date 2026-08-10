@@ -1,6 +1,7 @@
 package environments
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -94,4 +95,17 @@ func TestRenderDryRun(t *testing.T) {
 	out := renderText(t, res, nil)
 	assert.Contains(t, out, "requires-python")
 	assert.Contains(t, out, "No files were modified")
+}
+
+func TestActivateHint(t *testing.T) {
+	hint := activateHint(".venv")
+	if runtime.GOOS == "windows" {
+		// Windows: uv lays the venv out under Scripts\, and "source" is not a
+		// cmd/PowerShell builtin, so the hint must not suggest it.
+		assert.Equal(t, `.venv\Scripts\activate`, hint)
+		assert.NotContains(t, hint, "source ")
+		assert.NotContains(t, hint, "/bin/")
+	} else {
+		assert.Equal(t, "source .venv/bin/activate", hint)
+	}
 }

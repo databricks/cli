@@ -3,6 +3,7 @@ package environments
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
@@ -108,11 +109,24 @@ func renderSuccess(ctx context.Context, res *libslocalenv.Result) {
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "Next steps:")
 	if res.VenvPath != "" {
-		cmdio.LogString(ctx, "  • Activate it:  source "+res.VenvPath+"/bin/activate")
+		cmdio.LogString(ctx, "  • Activate it:  "+activateHint(res.VenvPath))
 		cmdio.LogString(ctx, "  • Or select "+res.VenvPath+" as the Python interpreter in VS Code / Cursor")
 	} else {
 		cmdio.LogString(ctx, "  • Activate the .venv it created and select it as your interpreter")
 	}
+}
+
+// activateHint returns the shell command to activate the virtual environment,
+// matching the running OS. uv lays the venv out as Scripts\activate on Windows
+// and bin/activate on Unix (see venvPython in libs/localenv/uv.go, which branches
+// the same way); "source" is a POSIX-shell builtin, so Windows gets the bare
+// path instead. Printing the Unix form on Windows would hand the user a command
+// that fails with "source is not recognized" and a path that does not exist.
+func activateHint(venvPath string) string {
+	if runtime.GOOS == "windows" {
+		return venvPath + `\Scripts\activate`
+	}
+	return "source " + venvPath + "/bin/activate"
 }
 
 // failureClause maps the failing phase to a human clause for the failure line,
