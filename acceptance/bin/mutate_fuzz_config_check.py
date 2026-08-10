@@ -3,10 +3,10 @@
 Contract checks for mutate_fuzz_config. Failures go to stderr; stdout samples mutated
 configs so an algorithm change shows up as an acceptance output diff.
 
-- every MUTATE_BASES entry parses to a non-empty resource instance
+- every MUTATE_BASES entry stays in the loader dialect and parses to one non-empty instance
 - every base type has INJECT entries or a NO_INJECT reason, never both or neither
 - every INJECT field is a settable input in the committed reference schema
-- mutate(seed) is deterministic
+- mutate(seed) is deterministic for every base
 - sample volume seeds stay pairwise distinct (so output.txt catches algorithm drift)
 - INJECT eventually lands on a sparse base (registered_model)
 """
@@ -39,11 +39,6 @@ def instance(config):
     return value
 
 
-def resource_type(config):
-    (rtype,) = config["resources"]
-    return rtype
-
-
 def field_flags():
     """Map field path -> flags. A path can repeat (one Go type each), so union them."""
     flags = {}
@@ -55,6 +50,29 @@ def field_flags():
     return flags
 
 
+def dialect_ok(name, text):
+    """Bases must stay in the subset load_yaml understands (block style, full-line # only)."""
+    ok = True
+    for lineno, raw in enumerate(text.splitlines(), 1):
+        stripped = raw.lstrip(" ")
+        if not stripped or stripped.startswith("#"):
+            continue
+        if "#" in stripped:
+            sys.stderr.write(f"{name}:{lineno}: trailing comment is not supported by load_yaml\n")
+            ok = False
+        if ": " in stripped:
+            rest = stripped.partition(": ")[2]
+        elif stripped.startswith("- "):
+            rest = stripped[2:]
+        else:
+            rest = ""
+        # "" in "[{" is True; require a real opener.
+        if rest[:1] in ("{", "["):
+            sys.stderr.write(f"{name}:{lineno}: flow-style value is not supported by load_yaml\n")
+            ok = False
+    return ok
+
+
 def main():
     # Pin UNIQUE_NAME so printed configs are stable across harness runs.
     os.environ["UNIQUE_NAME"] = "check"
@@ -62,16 +80,29 @@ def main():
     failed = False
 
     for name in MUTATE_BASES:
-        parsed = load(name)
+        text = render(name)
+        if not dialect_ok(name, text):
+            failed = True
+        parsed = load_yaml(text)
         if not isinstance(parsed, dict) or "resources" not in parsed:
             sys.stderr.write(f"{name}: base did not parse to a config with resources\n")
             failed = True
             continue
+        resources = parsed["resources"]
+        if len(resources) != 1:
+            sys.stderr.write(f"{name}: expected one resource type, got {sorted(resources)}\n")
+            failed = True
+            continue
+        instances = next(iter(resources.values()))
+        if not isinstance(instances, dict) or len(instances) != 1:
+            sys.stderr.write(f"{name}: expected one resource instance\n")
+            failed = True
+            continue
         # A mis-parse can still yield a dict; empty instance means the loader dropped fields.
-        if not instance(parsed):
+        if not next(iter(instances.values())):
             sys.stderr.write(f"{name}: base parsed to an empty resource instance\n")
             failed = True
-        rtype = resource_type(parsed)
+        rtype = next(iter(resources))
         if bool(INJECT.get(rtype)) == (rtype in NO_INJECT):
             sys.stderr.write(
                 f"{name}: resources.{rtype} needs INJECT entries or a NO_INJECT reason, not both or neither\n"
@@ -87,12 +118,13 @@ def main():
                 sys.stderr.write(f"INJECT[{rtype}]: {path} is not a settable input field\n")
                 failed = True
 
-    for seed in range(5):
-        a = dump_config(mutate(load("volume"), seed))
-        b = dump_config(mutate(load("volume"), seed))
-        if a != b:
-            sys.stderr.write(f"seed {seed}: mutation is not deterministic\n")
-            failed = True
+    for name in MUTATE_BASES:
+        for seed in range(5):
+            a = dump_config(mutate(load(name), seed))
+            b = dump_config(mutate(load(name), seed))
+            if a != b:
+                sys.stderr.write(f"{name} seed {seed}: mutation is not deterministic\n")
+                failed = True
 
     # Distinct dumps: colliding samples hide algorithm changes in output.txt.
     samples = [0, 1, 5]

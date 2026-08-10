@@ -6,15 +6,17 @@
   "resources": {
     "volumes": {
       "foo": {
-        "name": "test-volume-check",
+        "name": "../../etc/passwd",
         "catalog_name": "main",
         "schema_name": "default",
         "grants": [
           {
-            "principal": "account users"
+            "principal": "account users",
+            "privileges": [
+              []
+            ]
           }
-        ],
-        "comment": "fuzz-volume"
+        ]
       }
     }
   }
@@ -53,7 +55,10 @@
       "foo": {
         "name": "test-volume-check",
         "catalog_name": "main",
-        "schema_name": "default"
+        "schema_name": "default",
+        "grants": [
+          {}
+        ]
       }
     }
   }

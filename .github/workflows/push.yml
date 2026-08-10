@@ -459,7 +459,27 @@ jobs:
             echo '```'
             echo
             echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            # -keeptmp workdirs; paste the real LOG.repro.
+            echo
+            while IFS= read -r repro; do
+              echo
+              echo "### \`${repro}\`"
+              echo
+              echo '```'
+              cat "$repro"
+              echo '```'
+            done < <(find "${TMPDIR:-/tmp}/acceptance" -name LOG.repro 2>/dev/null | sort)
           } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload fuzz triage logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-triage-logs
+          # -keeptmp workdirs on Linux runners.
+          path: /tmp/acceptance/**/LOG.*
+          if-no-files-found: warn
+          retention-days: 14
 
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.

@@ -44,6 +44,8 @@ POSIX = os.name == "posix"
 
 # Resolved path: Windows CreateProcess otherwise picks System32\bash.exe (WSL stub).
 BASH = shutil.which("bash")
+if not BASH:
+    sys.exit("fuzz: bash not found on PATH")
 
 
 def read(path):
@@ -111,7 +113,9 @@ def classify(seed_dir):
         last_line = gen_err.splitlines()[-1].decode(errors="replace")
         return "bug", f"could not be mutated: {last_line}"
 
-    logs = concat_logs(seed_dir)
+    # Mutated config text must not count as a CLI panic/gap.
+    skip_input = {"LOG.config"}
+    logs = concat_logs(seed_dir, skip=skip_input)
     if b"panic:" in logs or b"internal error" in logs:
         return "bug", "panicked or hit an internal error"
 
@@ -120,7 +124,7 @@ def classify(seed_dir):
         return "bug", verdict
 
     # Skip cleanup: destroy after failure must not mask the real cause.
-    if b"TESTSERVER_GAP" in concat_logs(seed_dir, skip={CLEANUP_LOG}):
+    if b"TESTSERVER_GAP" in concat_logs(seed_dir, skip=skip_input | {CLEANUP_LOG}):
         return "gap", ""
 
     if b"INPUT_CONFIG_OK" in read(seed_dir / "LOG.check"):

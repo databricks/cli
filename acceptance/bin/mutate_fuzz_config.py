@@ -3,7 +3,8 @@
 Mutate a curated, deploy-verified bundle config for the invariant fuzzer.
 
 Destructive: delete/replace a field (token, dangerous scalar, or empty container).
-Additive: inject one optional from INJECT that the base omits (deploy-proven shapes).
+Additive: inject one optional from INJECT that the base omits.
+Each seed picks exactly one mode so an additive finding maps to one catalog entry.
 
 Emits JSON on stdout, which the bundle reads as YAML 1.2. load_yaml covers the
 bases' block style only.
@@ -60,7 +61,7 @@ MUTATE_BASES = [
     "volume",
 ]
 
-# Optional absences keyed by resources.<type>; shapes that deploy or showed drift.
+# Schema-valid optionals from past drift/reconcile findings (may still fail to deploy).
 INJECT = {
     "apps": [
         ("description", "fuzz-app-description"),
@@ -307,7 +308,7 @@ def add_field(rng, config):
     if not candidates:
         return
     instance, name, value = rng.choice(candidates)
-    # Deep copy so later destructive steps do not mutate the shared catalog entry.
+    # Copy: INJECT values are shared across seeds.
     instance[name] = json.loads(json.dumps(value))
 
 
@@ -316,10 +317,10 @@ def mutate(config, seed):
     # Resource instances only: keep the bundle/resources skeleton intact.
     roots = [instance for _, instance in resource_instances(config)]
 
-    for _ in range(rng.randint(1, 3)):
-        if rng.random() < ADD_PROB:
-            add_field(rng, config)
-        else:
+    if rng.random() < ADD_PROB:
+        add_field(rng, config)
+    else:
+        for _ in range(rng.randint(1, 3)):
             mutate_once(rng, roots)
 
     return config
