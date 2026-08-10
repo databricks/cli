@@ -516,33 +516,43 @@ type configField struct {
 	typeName string
 	required string
 	help     string
+	// freeForm marks a map whose keys are user-defined (parameters, secrets,
+	// env_variables). It has no children, but a sub-path into it is still valid.
+	freeForm bool
 	// children is non-empty for an object, whose sub-fields are listed instead
 	// of a type/description pair.
 	children []configField
+}
+
+// configSchema describes the whole run YAML schema as a tree of configFields.
+// It is the single reflection walk over runConfig; both `-h config.<field>` and
+// --override path validation resolve against it.
+func configSchema() configField {
+	return configField{
+		path:     configHelpRoot,
+		help:     "The run YAML schema. Pass a field path for details, e.g. " + configHelpRoot + ".compute.accelerator_type.",
+		children: describeStruct(reflect.TypeFor[runConfig](), configHelpRoot),
+	}
 }
 
 // resolveConfigField resolves a dotted YAML path against the run config schema.
 // The leading "config." is optional; an empty path describes the whole schema.
 func resolveConfigField(path string) (configField, error) {
 	trimmed := strings.TrimPrefix(strings.TrimPrefix(path, configHelpRoot), ".")
-	root := configField{
-		path:     configHelpRoot,
-		help:     "The run YAML schema. Pass a field path for details, e.g. " + configHelpRoot + ".compute.accelerator_type.",
-		children: describeStruct(reflect.TypeFor[runConfig](), configHelpRoot),
-	}
+	root := configSchema()
 	if trimmed == "" {
 		return root, nil
 	}
 
 	current := root
 	for i, part := range strings.Split(trimmed, ".") {
-		if len(current.children) == 0 {
+		if current.freeForm {
 			// A free-form map's keys are chosen by the user, so the map itself is
 			// the most specific thing the schema can describe. Say so, rather
 			// than implying the key is misspelled.
-			if freeFormConfigFields[configLeafName(current.path)] {
-				return configField{}, fmt.Errorf("%q holds user-defined keys, so %q is not part of the schema; see %q instead", current.path, part, current.path)
-			}
+			return configField{}, fmt.Errorf("%q holds user-defined keys, so %q is not part of the schema; see %q instead", current.path, part, current.path)
+		}
+		if len(current.children) == 0 {
 			return configField{}, fmt.Errorf("%q is not an object, so it has no field %q", current.path, part)
 		}
 		child, ok := findConfigChild(current.children, part)
@@ -655,8 +665,9 @@ func describeStruct(t reflect.Type, prefix string) []configField {
 			typeName: configTypeName(f.Type),
 			required: f.Tag.Get("required"),
 			help:     f.Tag.Get("help"),
+			freeForm: freeFormConfigFields[name],
 		}
-		if nested := underlyingConfigStruct(f.Type); nested != nil && !freeFormConfigFields[name] {
+		if nested := underlyingConfigStruct(f.Type); nested != nil && !field.freeForm {
 			field.children = describeStruct(nested, field.path)
 		}
 		out = append(out, field)

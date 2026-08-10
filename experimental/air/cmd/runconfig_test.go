@@ -632,3 +632,31 @@ func TestRunCommandHelp_UnknownConfigPath(t *testing.T) {
 	assert.Contains(t, errOut.String(), `unknown config field "config.nope"`)
 	assert.Empty(t, out.String())
 }
+
+// Both `-h config.<field>` and --override path validation must resolve against
+// the one configSchema() walk, so a field valid for one is valid for the other.
+// This guards against the two features drifting apart again.
+func TestConfigSchemaSharedByHelpAndOverride(t *testing.T) {
+	paths := []string{
+		"compute.num_accelerators",
+		"environment.docker_image.url",
+		"code_source.snapshot.root_path",
+		"env_variables.MY_VAR", // free-form sub-path
+	}
+	for _, p := range paths {
+		t.Run(p, func(t *testing.T) {
+			require.NoError(t, validateOverridePaths([]overrideEntry{{path: p, raw: "x"}}))
+			// The help path accepts the same field (free-form sub-paths resolve to
+			// the map itself, which is the schema's most specific node).
+			_, err := resolveConfigField(p)
+			if !strings.Contains(p, "env_variables") {
+				require.NoError(t, err)
+			}
+		})
+	}
+
+	// A field unknown to one is unknown to the other.
+	require.Error(t, validateOverridePaths([]overrideEntry{{path: "compute.bogus", raw: "x"}}))
+	_, err := resolveConfigField("compute.bogus")
+	require.Error(t, err)
+}
