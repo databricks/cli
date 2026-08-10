@@ -1,0 +1,1 @@
+Failed key lookups and variable references now suggest the closest matching key. For example, a mistyped variable reference like `${var.hst}` now reports `reference does not exist: ${hst}, did you mean "host"?` instead of failing with no hint. Suggestions are only shown when a valid key is within a small edit distance of the one that was typed.
