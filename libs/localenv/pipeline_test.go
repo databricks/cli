@@ -895,3 +895,29 @@ func phaseStatus(res *Result, name PhaseName) string {
 	}
 	return ""
 }
+
+// recordingReporter captures PhaseStarted calls for assertions.
+type recordingReporter struct{ started []PhaseName }
+
+func (r *recordingReporter) PhaseStarted(name PhaseName) {
+	r.started = append(r.started, name)
+}
+
+func TestPipelineReportsPhaseStarts(t *testing.T) {
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	rep := &recordingReporter{}
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+		Progress: rep,
+	}
+	_, err := p.Run(t.Context())
+	require.NoError(t, err)
+	// A full successful run enters every phase exactly once in canonical order.
+	assert.Equal(t, allPhases, rep.started)
+}

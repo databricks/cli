@@ -54,6 +54,10 @@ type Pipeline struct {
 	Compute           ComputeClient
 	PM                PackageManager
 
+	// Progress, when non-nil, receives a PhaseStarted call as each phase begins.
+	// Left nil by callers that don't render progress (e.g. --output json).
+	Progress Reporter
+
 	// res accumulates phase statuses and result fields as the run progresses.
 	res *Result
 }
@@ -136,6 +140,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// before any other work so the failure flows through the phase/JSON reporting
 	// (a plain Cobra mutual-exclusion error would print no command JSON object,
 	// which the --output json consumer needs).
+	p.report(ctx, PhasePreflight)
 	if err := ValidateComputeFlags(p.Flags); err != nil {
 		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "invalid compute target flags"))
 	}
@@ -164,12 +169,14 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 
 	// Phase: resolve — compute target → environment key.
+	p.report(ctx, PhaseResolve)
 	compute, err := p.resolve(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Phase: fetch — constraint artifact for the resolved env key.
+	p.report(ctx, PhaseFetch)
 	c, err := p.fetch(ctx, compute)
 	if err != nil {
 		return err
@@ -198,6 +205,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 
 	// Phase: merge — compute the merged pyproject.toml (in-memory, no writes yet).
+	p.report(ctx, PhaseMerge)
 	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, dbcPin)
 	if err != nil {
 		return err
@@ -219,11 +227,13 @@ func (p *Pipeline) run(ctx context.Context) error {
 	p.markOK(PhaseMerge, "")
 
 	// Phase: provision — ensure Python, run uv sync, seed pip.
+	p.report(ctx, PhaseProvision)
 	if err := p.provision(ctx, pyMinor); err != nil {
 		return err
 	}
 
 	// Phase: validate — assert the venv matches the target.
+	p.report(ctx, PhaseValidate)
 	return p.validate(ctx, pyMinor, dbcPin)
 }
 
@@ -490,6 +500,15 @@ func initialPhases() []PhaseStatus {
 		phases[i] = PhaseStatus{Phase: name, Status: StatusPending}
 	}
 	return phases
+}
+
+// report announces entry into a phase to the Progress reporter, if one is set,
+// and logs the transition at debug level so --debug keeps a phase-by-phase trail.
+func (p *Pipeline) report(ctx context.Context, name PhaseName) {
+	if p.Progress != nil {
+		p.Progress.PhaseStarted(name)
+	}
+	log.Debugf(ctx, CommandName+": entering phase %s", name)
 }
 
 // markOK marks a phase ok with an optional human-readable detail.
