@@ -20,7 +20,7 @@ func renderText(t *testing.T, res *libslocalenv.Result, pipelineErr error) strin
 	cmd.SetContext(ctx)
 	// Register the output flag as *flags.Output (text default) so root.OutputType
 	// finds a *flags.Output value and returns OutputText without panicking.
-	var output flags.Output = flags.OutputText
+	output := flags.OutputText
 	cmd.PersistentFlags().VarP(&output, "output", "o", "output type: text or json")
 	_ = renderResult(ctx, cmd, res, pipelineErr)
 	return buf.String()
