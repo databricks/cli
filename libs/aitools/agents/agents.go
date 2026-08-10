@@ -45,10 +45,11 @@ type Agent struct {
 	// plugin-capability detection and as the program for the plugin probe.
 	// Empty for agents with no CLI binary (Antigravity is IDE-only).
 	Binary string
-	// DetectFile, when set, is a marker file under ConfigDir that must exist for the
-	// agent to count as installed, instead of the bare config directory (used when
-	// the config dir is shared with another product; see geminiDetectFile).
-	DetectFile string
+	// MandatoryFile is a marker file required to confirm installation. It is a
+	// relative filename in ConfigDir. Use it when the presence of ConfigDir is not
+	// enough to determine if the agent is installed, such as when ConfigDir is
+	// shared with other products.
+	MandatoryFile string
 	// Plugin describes the databricks plugin for this agent, or nil when the
 	// agent has no plugin and skills files are its native delivery.
 	Plugin *PluginSpec
@@ -61,21 +62,21 @@ type Agent struct {
 }
 
 // Detected reports whether the agent is installed: its config directory exists,
-// or its DetectFile marker or installed Databricks skills exist when one is set.
+// or its mandatory file or installed Databricks skills exist when one is set.
 func (a *Agent) Detected(ctx context.Context) bool {
 	dir, err := a.ConfigDir(ctx)
 	if err != nil {
 		return false
 	}
 	target := dir
-	if a.DetectFile != "" {
-		target = filepath.Join(dir, a.DetectFile)
+	if a.MandatoryFile != "" {
+		target = filepath.Join(dir, a.MandatoryFile)
 	}
 	if _, err = os.Stat(target); err == nil {
 		return true
 	}
-	if a.DetectFile == "" {
-		return false
+	if a.MandatoryFile == "" {
+		return false // ConfigDir does not exist
 	}
 	skillsDir, err := a.SkillsDir(ctx)
 	return err == nil && HasDatabricksSkillsIn(skillsDir)
@@ -248,7 +249,7 @@ var Registry = []*Agent{
 		Binary:               "gemini",
 		// Gemini CLI reads agent skills (SKILL.md) but has no databricks plugin, so
 		// it is skills-only (Plugin nil).
-		DetectFile: geminiDetectFile,
+		MandatoryFile: geminiDetectFile,
 	},
 	{
 		Name:                 NameGoose,
