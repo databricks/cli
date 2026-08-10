@@ -36,7 +36,7 @@ Updating deployment state...
     "result_state": "FAILED",
     "run_id": [MY_RUN_ID],
     "run_name": "test-job-[UNIQUE_NAME]",
-    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]",
+    "run_page_url": "[RUN_URL]",
     "run_type": "JOB_RUN",
     "state": {
       "life_cycle_state": "INTERNAL_ERROR",

@@ -122,9 +122,19 @@ func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 		ResultState: run.State.ResultState,
 		RunId:       run.RunId,
 		RunName:     run.RunName,
-		State:       run.State,
-		RunPageUrl:  workspaceurls.ModernizeJobRunPageURL(run.RunPageUrl),
-		RunType:     run.RunType,
+		// Rebuilt, not copied: the SDK records explicitly-sent fields in
+		// ForceSendFields, which makes zero values workspace-dependent.
+		State: &jobs.RunState{
+			LifeCycleState: run.State.LifeCycleState,
+			ResultState:    run.State.ResultState,
+			StateMessage:   run.State.StateMessage,
+			// Nothing reads these; listed so exhaustruct flags any new SDK field.
+			QueueReason:             "",
+			UserCancelledOrTimedout: false,
+			ForceSendFields:         nil,
+		},
+		RunPageUrl: workspaceurls.ModernizeJobRunPageURL(run.RunPageUrl),
+		RunType:    run.RunType,
 	}
 }
 

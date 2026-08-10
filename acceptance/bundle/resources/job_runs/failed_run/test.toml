@@ -23,3 +23,9 @@ New = 'Run URL: [RUN_URL]'
 [[Repls]]
 Old = 'run page: .*'
 New = 'run page: [RUN_URL]'
+
+# [DATABRICKS_URL] is the recording proxy's host, not the workspace host the Jobs
+# API reports here.
+[[Repls]]
+Old = '"run_page_url": ".*"'
+New = '"run_page_url": "[RUN_URL]"'
