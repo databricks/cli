@@ -1,6 +1,6 @@
 Cloud = true
-EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
 EnvMatrix.UV_PYTHON = [
   "3.9",
   "3.10",

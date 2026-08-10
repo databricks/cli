@@ -3,5 +3,5 @@ EnvMatrix.READPLAN = ["", "1"]
 # is written before the deployment version exists, so the deployment stamp never reaches
 # the applied resource and the next plan reports it as a change. Recording is skipped here
 # until the stamp is written into the saved plan too.
-EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
 

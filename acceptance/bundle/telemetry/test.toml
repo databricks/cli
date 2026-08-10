@@ -3,7 +3,7 @@ IncludeRequestHeaders = ["User-Agent"]
 
 # Telemetry reports the byte size of the serialized state, which the deployment stamp
 # legitimately grows. The number is the assertion here, so there is nothing to normalize.
-EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
 
 [Env]
 DATABRICKS_CACHE_ENABLED = 'false'

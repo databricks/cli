@@ -12,4 +12,4 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 # direct-engine feature, so the resources the terraform half creates are recorded nowhere
 # and the migration reads state the service does not have. Migrating a deployment onto the
 # service is a story of its own; these tests are not it.
-EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]

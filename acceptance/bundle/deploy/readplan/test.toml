@@ -3,4 +3,4 @@
 # leaves the field unset and applying it plans an update the next time. Same reason as
 # EnvMatrixExclude.dms_no_readplan in acceptance/bundle/test.toml, which only covers the
 # tests that take the saved-plan path through the READPLAN matrix variable.
-EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]

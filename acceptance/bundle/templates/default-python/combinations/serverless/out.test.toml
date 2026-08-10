@@ -1,6 +1,6 @@
 Cloud = true
-EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
 EnvMatrix.DLT = ["yes", "no"]
 EnvMatrix.NBOOK = ["yes", "no"]
 EnvMatrix.PY = ["yes", "no"]

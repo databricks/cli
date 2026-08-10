@@ -3,7 +3,8 @@ nostamp() {
     #
     # Deployment history recording adds deployment_id and version_id to every job and
     # pipeline. Acceptance tests compare output byte for byte, so those two extra fields
-    # would fail every test in the DATABRICKS_BUNDLE_DMS=true run (see bundle/test.toml).
+    # would fail every test in the DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true run
+    # (see bundle/test.toml).
     # Pipe a plan, a state dump, or a resource payload through this and the test asserts one
     # golden file either way. Tests under bundle/dms assert the stamp itself and must not.
     #

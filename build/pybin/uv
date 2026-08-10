@@ -1,0 +1,9 @@
+#!/bin/bash
+# Wrapper to provide uv python find functionality
+if [[ "$1" == "python" && "$2" == "find" ]]; then
+    # Return the direct path to python3
+    echo "/home/shreyas.goenka/.pyenv/versions/3.11.11/bin/python3"
+else
+    # For other uv commands, try the real uv
+    /home/shreyas.goenka/.local/bin/uv "$@"
+fi

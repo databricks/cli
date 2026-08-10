@@ -5,8 +5,9 @@ Cloud = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # These tests enable recording through experimental.record_deployment_history, so the
-# DATABRICKS_BUNDLE_DMS variant the rest of the suite adds would just duplicate them.
-EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
+# DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY variant the rest of the suite adds would
+# just duplicate them.
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
 
 RecordRequests = true
 

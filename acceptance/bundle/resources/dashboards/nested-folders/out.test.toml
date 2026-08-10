@@ -1,6 +1,6 @@
 Cloud = true
 RequiresWarehouse = true
 RunsOnDbr = true
-EnvMatrix.DATABRICKS_BUNDLE_DMS = ["", "true"]
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = ["", "true"]
 EnvMatrix.READPLAN = ["", "1"]

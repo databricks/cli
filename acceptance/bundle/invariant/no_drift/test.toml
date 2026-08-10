@@ -4,4 +4,4 @@ EnvMatrix.READPLAN = ["", "1"]
 # deployment metadata service accepts. Recording skips the resource with a warning, so it
 # is absent from the state the service reports and the next plan wants to create it again.
 # Raising the limit or splitting the state is a service-side decision.
-EnvMatrixExclude.dms_state_too_large = ["DATABRICKS_BUNDLE_DMS=true", "INPUT_CONFIG=job_pydabs_1000_tasks.yml.tmpl"]
+EnvMatrixExclude.dms_state_too_large = ["DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true", "INPUT_CONFIG=job_pydabs_1000_tasks.yml.tmpl"]

@@ -2,7 +2,7 @@
 # wipes the remote path the deployment record lives under, so recording refuses it.
 # TODO(DMS): drop this once existing state can be handed over to the service (see
 # the TODO in dstate.Open).
-EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
 
 EnvMatrix.READPLAN = ["", "1"]
 

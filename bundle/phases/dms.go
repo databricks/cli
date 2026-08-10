@@ -60,7 +60,8 @@ func newDeploymentRecorder(ctx context.Context, b *bundle.Bundle, eng engine.Eng
 }
 
 // recordsDeploymentHistory reports whether this bundle records deployment history,
-// from experimental.record_deployment_history or DATABRICKS_BUNDLE_DMS.
+// from experimental.record_deployment_history or
+// DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY.
 func recordsDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
 	configured := b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory
 	return env.RecordsDeploymentHistory(ctx, configured)

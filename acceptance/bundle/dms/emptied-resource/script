@@ -1,6 +1,6 @@
 title "Deploy a schema with one grant, then revoke it so the grants node empties out"
 trace $CLI bundle deploy
-trace update_file.py databricks.yml 'grants: [{ principal: someone@example.com, privileges: [USE_SCHEMA] }]' 'grants: []'
+trace update_file.py databricks.yml 'grants: [{principal: someone@example.com, privileges: [USE_SCHEMA]}]' 'grants: []'
 trace $CLI bundle deploy
 
 # The emptied node is recorded as a delete, not as the update that emptied it: the service

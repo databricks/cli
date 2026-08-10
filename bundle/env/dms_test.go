@@ -7,24 +7,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDMS(t *testing.T) {
+func TestRecordDeploymentHistoryEnv(t *testing.T) {
 	for _, tc := range []struct {
 		value string
 		want  bool
 	}{
 		{"true", true},
-		{"1", true},
 		{"", false},
 		{"0", false},
 		{"false", false},
+		// Only "true" counts, so a near miss leaves recording off.
+		{"1", false},
+		{"TRUE", false},
+		{"yes", false},
 	} {
-		ctx := env.Set(t.Context(), DMSVariable, tc.value)
-		assert.Equal(t, tc.want, DMS(ctx), "value %q", tc.value)
+		ctx := env.Set(t.Context(), RecordDeploymentHistoryVariable, tc.value)
+		assert.Equal(t, tc.want, recordDeploymentHistoryEnv(ctx), "value %q", tc.value)
 	}
 }
 
-func TestDMSUnset(t *testing.T) {
-	assert.False(t, DMS(t.Context()))
+func TestRecordDeploymentHistoryEnvUnset(t *testing.T) {
+	assert.False(t, recordDeploymentHistoryEnv(t.Context()))
 }
 
 func TestRecordsDeploymentHistory(t *testing.T) {
@@ -33,6 +36,6 @@ func TestRecordsDeploymentHistory(t *testing.T) {
 	assert.True(t, RecordsDeploymentHistory(t.Context(), true))
 	assert.False(t, RecordsDeploymentHistory(t.Context(), false))
 
-	ctx := env.Set(t.Context(), DMSVariable, "true")
+	ctx := env.Set(t.Context(), RecordDeploymentHistoryVariable, "true")
 	assert.True(t, RecordsDeploymentHistory(ctx, false))
 }

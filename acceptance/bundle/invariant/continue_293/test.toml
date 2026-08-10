@@ -2,7 +2,7 @@
 # service, so the resources it creates are recorded nowhere. Reading state from the
 # service then finds none and plans a create on top of them. Adopting resources a
 # pre-DMS CLI deployed is a migration story of its own, not something this test covers.
-EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
 
 # $resources references to permissions and grants are not supported on v0.293.0
 EnvMatrixExclude.no_permission_ref = ["INPUT_CONFIG=job_permission_ref.yml.tmpl"]

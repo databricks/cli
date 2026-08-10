@@ -2,5 +2,5 @@ Cloud = false
 RequiresUnityCatalog = true
 CloudEnvs.azure = false
 CloudEnvs.gcp = false
-EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
