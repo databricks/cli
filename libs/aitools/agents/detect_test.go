@@ -158,6 +158,7 @@ func TestGooseConfigDir(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
+	t.Setenv("APPDATA", "")
 
 	t.Run("GOOSE_PATH_ROOT override wins and appends config", func(t *testing.T) {
 		root := t.TempDir()

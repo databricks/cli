@@ -3,6 +3,7 @@ package agents
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
@@ -15,6 +16,12 @@ func TestSkillAgentRegistryPaths(t *testing.T) {
 	cwd := t.TempDir()
 	ctx := env.WithUserHomeDir(t.Context(), home)
 	ctx = env.Set(ctx, "XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	ctx = env.Set(ctx, "APPDATA", "")
+
+	gooseGlobalDir := filepath.Join(home, ".config", "goose", "skills")
+	if runtime.GOOS == "windows" {
+		gooseGlobalDir = filepath.Join(home, "AppData", "Roaming", "Block", "goose", "config", "skills")
+	}
 
 	tests := []struct {
 		name        string
@@ -25,7 +32,7 @@ func TestSkillAgentRegistryPaths(t *testing.T) {
 	}{
 		{NamePi, "pi", "Pi", filepath.Join(home, ".pi", "agent", "skills"), filepath.Join(cwd, ".pi", "skills")},
 		{NameGemini, "gemini", "Gemini CLI", filepath.Join(home, ".gemini", "skills"), filepath.Join(cwd, ".gemini", "skills")},
-		{NameGoose, "goose", "Goose", filepath.Join(home, ".config", "goose", "skills"), filepath.Join(cwd, ".goose", "skills")},
+		{NameGoose, "goose", "Goose", gooseGlobalDir, filepath.Join(cwd, ".goose", "skills")},
 	}
 
 	for _, tc := range tests {
