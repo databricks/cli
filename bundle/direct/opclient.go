@@ -18,6 +18,10 @@ import (
 // that way), so unmarshalling a CreateOperation response fails with
 // "invalid character '1' after top-level value". The write itself succeeds - the
 // status is 200 - so only the response parse is affected.
+//
+// TODO(DMS): this whole file goes away once the SDK types sequence_id as a string.
+// The fix belongs in the OpenAPI spec the SDK is generated from, not here; until then
+// every other DMS call still goes through the SDK, so keep the bypass to operations.
 
 // operationResponse is the part of an operation response the CLI reads back.
 type operationResponse struct {
