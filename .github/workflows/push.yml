@@ -448,6 +448,9 @@ jobs:
       - name: Summarize failure for triage
         if: ${{ failure() }}
         run: |
+          # Resolve once and hand it to the upload step: -keeptmp writes under os.TempDir().
+          fuzz_tmp_dir="${TMPDIR:-/tmp}/acceptance"
+          echo "FUZZ_TMP_DIR=$fuzz_tmp_dir" >> "$GITHUB_ENV"
           {
             echo "## Fuzz nightly failed"
             echo
@@ -468,7 +471,7 @@ jobs:
               echo '```'
               cat "$repro"
               echo '```'
-            done < <(find "${TMPDIR:-/tmp}/acceptance" -name LOG.repro 2>/dev/null | sort)
+            done < <(find "$fuzz_tmp_dir" -name LOG.repro 2>/dev/null | sort)
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Upload fuzz triage logs
@@ -476,8 +479,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: fuzz-triage-logs
-          # -keeptmp workdirs on Linux runners.
-          path: /tmp/acceptance/**/LOG.*
+          # Same workdir root the summary step listed; path is not shell-expanded.
+          path: ${{ env.FUZZ_TMP_DIR }}/**/LOG.*
           if-no-files-found: warn
           retention-days: 14
 

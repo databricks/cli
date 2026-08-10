@@ -18,8 +18,9 @@ invariant_render() {
     trace $CLI bundle validate &> LOG.validate
     cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
 
-    # validate only warns on missing required fields; reject here so the seed counts as rejected.
-    if grep -q 'required field .* is not set' LOG.validate; then
+    # validate only warns on these; reject so the seed counts as rejected instead of
+    # deploying and failing mid-migrate/destroy (e.g. group_name: []).
+    if grep -qE 'required field .* is not set|expected (string|map|sequence|bool|number), found ' LOG.validate; then
         return 1
     fi
 }
