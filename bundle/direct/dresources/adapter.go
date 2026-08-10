@@ -413,6 +413,17 @@ func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
 	return a.generatedResourceConfig
 }
 
+// IsSensitive reports whether any path in v that has this path as a prefix should
+// be treated as sensitive (redacted from plan output and deployment state).
+func (a *Adapter) IsSensitive(path *structpath.PathNode) bool {
+	for _, r := range a.resourceConfig.SensitiveFields {
+		if path.HasPatternPrefix(r.Field) {
+			return true
+		}
+	}
+	return false
+}
+
 // FieldTriggersRecreate reports whether a local change to the field forces a
 // delete + create. Both recreate_on_changes and provided_id_fields do this, so a
 // caller that knows the ID is preserved can conclude the field is unchanged.

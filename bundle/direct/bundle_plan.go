@@ -320,6 +320,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 	}
 
+	for resourceKey, entry := range plan.Plan {
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return nil, fmt.Errorf("redacting plan entry %s: %w", resourceKey, err)
+		}
+		if err := redactPlanEntry(adapter, entry); err != nil {
+			return nil, fmt.Errorf("redacting plan entry %s: %w", resourceKey, err)
+		}
+	}
+
 	return plan, nil
 }
 

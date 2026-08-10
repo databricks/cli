@@ -75,7 +75,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
+	err = d.saveStateRedacted(db, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -163,7 +163,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
 	} else {
-		err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
+		err = d.saveStateRedacted(db, id, newState, d.DependsOn)
 		if err != nil {
 			return fmt.Errorf("saving state id=%s: %w", id, err)
 		}
@@ -208,7 +208,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
+	err = d.saveStateRedacted(db, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -291,12 +291,33 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
+	err = d.saveStateRedacted(db, id, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
 	return nil
+}
+
+// saveStateRedacted saves a copy of state to the deployment state file with
+// sensitive fields replaced by a placeholder value so secrets are never written
+// to disk in plaintext.
+func (d *DeploymentUnit) saveStateRedacted(db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
+	// Round-trip through JSON to get an independent copy so the original struct
+	// (still held in memory for post-deploy use) is not modified.
+	data, err := json.Marshal(state)
+	if err != nil {
+		return fmt.Errorf("marshaling state for redaction: %w", err)
+	}
+	stateType := d.Adapter.StateType()
+	ptr := reflect.New(stateType.Elem()).Interface()
+	if err := json.Unmarshal(data, ptr); err != nil {
+		return fmt.Errorf("unmarshaling state copy for redaction: %w", err)
+	}
+	if err := redactStruct(d.Adapter, ptr); err != nil {
+		return fmt.Errorf("redacting state: %w", err)
+	}
+	return db.SaveState(d.ResourceKey, newID, ptr, dependsOn)
 }
 
 func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {
