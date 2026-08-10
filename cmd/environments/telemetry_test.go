@@ -77,9 +77,11 @@ func TestBuildSetupLocalEvent(t *testing.T) {
 	})
 }
 
-// TestErrorCodeCoversLocalenv fails when a new localenv.ErrorCode is added
-// without a matching telemetry enum in errorCodeType. Keep this list in sync
-// with the const block in libs/localenv/result.go.
+// TestErrorCodeCoversLocalenv asserts every localenv.ErrorCode maps to a
+// non-unspecified telemetry enum. Completeness of the switch itself is enforced
+// by the exhaustive linter (errorCodeType has no default); this test additionally
+// catches a case that maps to UNSPECIFIED by mistake. Keep this list in sync with
+// the const block in libs/localenv/result.go.
 func TestErrorCodeCoversLocalenv(t *testing.T) {
 	all := []libslocalenv.ErrorCode{
 		libslocalenv.ErrUsage,
@@ -104,8 +106,10 @@ func TestErrorCodeCoversLocalenv(t *testing.T) {
 	}
 }
 
-// TestPhaseCoversLocalenv fails when a new localenv.PhaseName is added without a
-// matching telemetry enum in phaseType.
+// TestPhaseCoversLocalenv asserts every localenv.PhaseName maps to a
+// non-unspecified telemetry enum. As with TestErrorCodeCoversLocalenv, switch
+// completeness is enforced by the exhaustive linter; this guards against a case
+// mapping to UNSPECIFIED by mistake.
 func TestPhaseCoversLocalenv(t *testing.T) {
 	all := []libslocalenv.PhaseName{
 		libslocalenv.PhasePreflight,

@@ -74,9 +74,11 @@ func modeType(mode string) protos.SetupLocalMode {
 	}
 }
 
-// errorCodeType maps a pipeline ErrorCode to its telemetry enum. Every
-// localenv.ErrorCode must have a case here; TestErrorCodeCoversLocalenv fails if
-// one is missing, guarding against silently logging a new code as UNSPECIFIED.
+// errorCodeType maps a pipeline ErrorCode to its telemetry enum. The switch has
+// no default, so the exhaustive linter fails the build if a new
+// localenv.ErrorCode is added without a case here, guarding against silently
+// logging a new code as UNSPECIFIED. The trailing return handles a value outside
+// the declared set (a newer localenv than this mapping).
 func errorCodeType(code libslocalenv.ErrorCode) protos.SetupLocalErrorCode {
 	switch code {
 	case libslocalenv.ErrUsage:
@@ -107,14 +109,13 @@ func errorCodeType(code libslocalenv.ErrorCode) protos.SetupLocalErrorCode {
 		return protos.SetupLocalErrorCodeValidate
 	case libslocalenv.ErrCanceled:
 		return protos.SetupLocalErrorCodeCanceled
-	default:
-		return protos.SetupLocalErrorCodeUnspecified
 	}
+	return protos.SetupLocalErrorCodeUnspecified
 }
 
-// phaseType maps a pipeline PhaseName to its telemetry enum. Every
-// localenv.PhaseName must have a case here; TestPhaseCoversLocalenv fails if one
-// is missing.
+// phaseType maps a pipeline PhaseName to its telemetry enum. As with
+// errorCodeType, the switch has no default so the exhaustive linter fails the
+// build if a new localenv.PhaseName is added without a case here.
 func phaseType(phase libslocalenv.PhaseName) protos.SetupLocalPhase {
 	switch phase {
 	case libslocalenv.PhasePreflight:
@@ -129,7 +130,6 @@ func phaseType(phase libslocalenv.PhaseName) protos.SetupLocalPhase {
 		return protos.SetupLocalPhaseProvision
 	case libslocalenv.PhaseValidate:
 		return protos.SetupLocalPhaseValidate
-	default:
-		return protos.SetupLocalPhaseUnspecified
 	}
+	return protos.SetupLocalPhaseUnspecified
 }

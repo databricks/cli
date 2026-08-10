@@ -51,12 +51,12 @@ type SetupLocalPhase string
 
 const (
 	SetupLocalPhaseUnspecified SetupLocalPhase = "TYPE_UNSPECIFIED"
-	SetupLocalPhasePreflight   SetupLocalPhase = "preflight"
-	SetupLocalPhaseResolve     SetupLocalPhase = "resolve"
-	SetupLocalPhaseFetch       SetupLocalPhase = "fetch"
-	SetupLocalPhaseMerge       SetupLocalPhase = "merge"
-	SetupLocalPhaseProvision   SetupLocalPhase = "provision"
-	SetupLocalPhaseValidate    SetupLocalPhase = "validate"
+	SetupLocalPhasePreflight   SetupLocalPhase = "PREFLIGHT"
+	SetupLocalPhaseResolve     SetupLocalPhase = "RESOLVE"
+	SetupLocalPhaseFetch       SetupLocalPhase = "FETCH"
+	SetupLocalPhaseMerge       SetupLocalPhase = "MERGE"
+	SetupLocalPhaseProvision   SetupLocalPhase = "PROVISION"
+	SetupLocalPhaseValidate    SetupLocalPhase = "VALIDATE"
 )
 
 // SetupLocalEvent is emitted on every real (non-dry-run) execution of the
