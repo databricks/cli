@@ -251,10 +251,9 @@ type Result struct {
 	Warnings      []Warning      `json:"warnings"`
 	Error         *PipelineError `json:"error"`
 	BackupPath    string         `json:"backupPath,omitempty"`
-	// DurationMs is part of the §6 contract but reserved for now: the pipeline
-	// does not measure wall time (a real clock would make acceptance goldens
-	// non-deterministic), so it is always emitted as 0 until timing is wired
-	// through a clock the tests can control.
+	// DurationMs is the pipeline's wall time in milliseconds (spec §6). It covers the
+	// CLI pipeline only; the extension measures its own end-to-end latency (process
+	// spawn, interpreter adoption) separately.
 	DurationMs int64 `json:"durationMs"`
 }
 

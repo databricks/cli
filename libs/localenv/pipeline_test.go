@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
@@ -20,6 +21,11 @@ import (
 // real resolver diagnostic — the thing the cancellation reclassification must not
 // drop when it races with a Ctrl-C.
 const cancelPMStderr = "error: no solution found: databricks-connect==17.2 conflicts with pyspark==3.5"
+
+// fetchDelay is injected into the constraint fetch by the duration tests. It gives
+// each run a known minimum wall time, so the reported duration can be bounded from
+// below — a plain ">= 0" assertion would also hold for the unset field.
+const fetchDelay = 25 * time.Millisecond
 
 type fakePM struct{ py, dbc string }
 
@@ -191,6 +197,66 @@ func TestPipelineGreenfieldHasNoWarnings(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, res.Warnings)
 	assert.True(t, res.Greenfield)
+}
+
+// newSlowServer serves the constraint artifact after fetchDelay, replying with
+// status so a caller can turn the fetch into a delayed failure.
+func newSlowServer(t *testing.T, status int) *httptest.Server {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(fetchDelay)
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(sampleToml))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestPipelineReportsDuration(t *testing.T) {
+	// durationMs used to be hardcoded to 0, so a ">= 0" assertion would pass against
+	// the old behavior and prove nothing. Delay the constraint fetch instead: every
+	// run performs it, so the measured duration must exceed that delay while still
+	// fitting inside the wall time observed here.
+	dir := writeProject(t)
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: newSlowServer(t, http.StatusOK).URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	before := time.Now()
+	res, err := p.Run(t.Context())
+	elapsed := time.Since(before)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, res.DurationMs, fetchDelay.Milliseconds(),
+		"duration must cover the delayed fetch, not report 0")
+	assert.LessOrEqual(t, res.DurationMs, elapsed.Milliseconds(),
+		"duration must not exceed the run's observed wall time")
+}
+
+func TestPipelineReportsDurationOnFailure(t *testing.T) {
+	// The defer must cover the error paths too, so the --json consumer gets a
+	// duration even for a failed run. Fail *after* the delayed fetch rather than at
+	// preflight: a preflight error returns near-instantly, so its duration truncates
+	// to 0 and only a trivially-true bound would hold. A 500 with an empty cache is
+	// E_FETCH, which keeps a real lower bound on the failing path.
+	dir := writeProject(t)
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: newSlowServer(t, http.StatusInternalServerError).URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	before := time.Now()
+	res, err := p.Run(t.Context())
+	elapsed := time.Since(before)
+
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	require.Equal(t, ErrFetch, pe.Code)
+	assert.GreaterOrEqual(t, res.DurationMs, fetchDelay.Milliseconds(),
+		"a failed run must still measure the work it did before failing, not report 0")
+	assert.LessOrEqual(t, res.DurationMs, elapsed.Milliseconds(),
+		"duration must not exceed the run's observed wall time")
 }
 
 func TestPipelineReportsCancellationNotProvisionFailure(t *testing.T) {

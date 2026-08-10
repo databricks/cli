@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/hexops/gotextdiff"
@@ -80,6 +81,11 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 	p.res.DryRun = p.Check
 	// Phases start as pending and flip to ok/error as the run progresses.
 	p.res.Phases = initialPhases()
+
+	// Stamp wall time from a defer so every exit path is covered — success, a phase
+	// failure, and the cancellation reclassification below all return through it.
+	start := time.Now()
+	defer func() { p.res.DurationMs = time.Since(start).Milliseconds() }()
 
 	if err := p.run(ctx); err != nil {
 		// A cancelled context means the user or parent interrupted us (SIGINT/
