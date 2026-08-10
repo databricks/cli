@@ -57,9 +57,9 @@ func TestDetected(t *testing.T) {
 		assert.False(t, a.Detected(ctx))
 	})
 
-	t.Run("DetectFile requires the marker, not just the dir", func(t *testing.T) {
+	t.Run("MandatoryFile requires the marker, not just the dir", func(t *testing.T) {
 		dir := t.TempDir()
-		a := &Agent{ConfigDir: func(context.Context) (string, error) { return dir, nil }, DetectFile: "marker"}
+		a := &Agent{ConfigDir: func(context.Context) (string, error) { return dir, nil }, MandatoryFile: "marker"}
 		// Directory exists but the marker does not: not detected.
 		assert.False(t, a.Detected(ctx))
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "marker"), []byte("x"), 0o644))
@@ -75,7 +75,7 @@ func TestDetected(t *testing.T) {
 
 		gemini := ByName(NameGemini)
 		require.NotNil(t, gemini)
-		assert.NoFileExists(t, filepath.Join(home, ".gemini", geminiDetectFile))
+		assert.NoFileExists(t, filepath.Join(home, ".gemini", "projects.json"))
 		assert.True(t, gemini.Detected(ctx))
 	})
 
@@ -95,7 +95,7 @@ func TestDetected(t *testing.T) {
 		assert.False(t, gemini.Detected(ctx), "Gemini must not be detected from Antigravity's shared ~/.gemini")
 
 		// Once Gemini writes its own marker, it is detected.
-		require.NoError(t, os.WriteFile(filepath.Join(home, ".gemini", geminiDetectFile), []byte("id"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(home, ".gemini", "projects.json"), []byte("id"), 0o644))
 		assert.True(t, gemini.Detected(ctx))
 	})
 }
