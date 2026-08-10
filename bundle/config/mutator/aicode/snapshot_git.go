@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
@@ -139,8 +140,11 @@ func shortSHA(sha string) string {
 // committed HEAD would not include the uncommitted changes.
 func resolveGitCommit(ctx context.Context, repoPath string, git *config.CodeSourceGit, includePaths []string) (string, error) {
 	repo := newGitRepo(repoPath)
+	// Forward-slash the path in user-facing messages so output is identical across
+	// operating systems (matches the repo's path-output convention).
+	displayPath := filepath.ToSlash(repoPath)
 	if !repo.isRepository(ctx) {
-		return "", fmt.Errorf("code_source.git is set but %s is not a git repository", repoPath)
+		return "", fmt.Errorf("code_source.git is set but %s is not a git repository", displayPath)
 	}
 
 	var commit string
@@ -156,7 +160,7 @@ func resolveGitCommit(ctx context.Context, repoPath string, git *config.CodeSour
 			return "", err
 		}
 		if dirty {
-			return "", fmt.Errorf("uncommitted changes under %s would not be included: code_source.git.branch deploys the committed HEAD of %q. Commit your changes, or use git.commit to pin a specific revision", repoPath, git.Branch)
+			return "", fmt.Errorf("uncommitted changes under %s would not be included: code_source.git.branch deploys the committed HEAD of %q. Commit your changes, or use git.commit to pin a specific revision", displayPath, git.Branch)
 		}
 		sha, err := repo.resolveLocalBranchSHA(ctx, git.Branch)
 		if err != nil {

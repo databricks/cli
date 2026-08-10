@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
@@ -576,6 +577,14 @@ const aiRuntimeCodeSourceKey = "code_source"
 // under; it maps to Root.AiRuntimeExtras.
 const aiRuntimeExtrasKey = "__ai_runtime_task_extras"
 
+// slashLocation renders a dyn.Location with a forward-slash file path so error
+// messages are identical across operating systems (acceptance output is stable on
+// Windows). dyn.Location.String() emits the OS-native path verbatim.
+func slashLocation(l dyn.Location) string {
+	l.File = filepath.ToSlash(l.File)
+	return l.String()
+}
+
 // rewriteAiRuntimeCodeSource moves each `ai_runtime_task.code_source` block out of the
 // SDK-typed task tree into the internal __ai_runtime_task_extras stash, keyed by job
 // name then task_key, and removes the code_source key from under ai_runtime_task.
@@ -606,7 +615,7 @@ func rewriteAiRuntimeCodeSource(v dyn.Value) (dyn.Value, error) {
 	var targetErr error
 	_, err := dyn.MapByPattern(v, targetPattern, func(p dyn.Path, task dyn.Value) (dyn.Value, error) {
 		if cs := task.Get(aiRuntimeCodeSourceKey); cs.Kind() != dyn.KindInvalid {
-			targetErr = fmt.Errorf("ai_runtime_task.code_source at %s is not supported inside a target override; move it to the task's base definition under resources.jobs", cs.Location())
+			targetErr = fmt.Errorf("ai_runtime_task.code_source at %s is not supported inside a target override; move it to the task's base definition under resources.jobs", slashLocation(cs.Location()))
 		}
 		return task, nil
 	})
@@ -638,7 +647,7 @@ func rewriteAiRuntimeCodeSource(v dyn.Value) (dyn.Value, error) {
 		// be keyed by it (and stay aligned after MergeJobTasks reorders by task_key).
 		taskKey, ok := task.Get("task_key").AsString()
 		if !ok || taskKey == "" {
-			return dyn.InvalidValue, fmt.Errorf("ai_runtime_task.code_source at %s requires the task to set a task_key", cs.Location())
+			return dyn.InvalidValue, fmt.Errorf("ai_runtime_task.code_source at %s requires the task to set a task_key", slashLocation(cs.Location()))
 		}
 
 		// p is resources.jobs.<jobName>.tasks[<i>]; the job name is component 2.
