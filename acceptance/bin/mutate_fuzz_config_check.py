@@ -5,22 +5,20 @@ violation on stderr):
 
 - The loader round-trips every curated base: load -> dump -> load is a fixed point.
 - Mutation is deterministic for a fixed seed (reproducible repros).
+- Additive inject eventually lands a curated optional on a sparse base.
 
 It also prints a few mutated configs so an algorithm change shows up as an output diff.
 """
 
-import json
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from envsubst import substitute_variables
-from gen_fuzz_config import SKIP_PROPERTY_NAMES
-from mutate_fuzz_config import MUTATE_BASES, dump_yaml, load_yaml, mutate
+from mutate_fuzz_config import INJECT, MUTATE_BASES, dump_yaml, load_yaml, mutate
 
 CONFIGS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bundle", "invariant", "configs")
-SCHEMA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "bundle", "schema", "jsonschema.json")
 
 
 def render(name):
@@ -39,9 +37,15 @@ def instance(config):
     return value
 
 
+def resource_type(config):
+    (rtype,) = config["resources"]
+    return rtype
+
+
 def main():
     # Fixed so the printed configs are stable regardless of the harness's unique name.
     os.environ["UNIQUE_NAME"] = "check"
+    os.environ.setdefault("CURRENT_USER_NAME", "check-user")
     failed = False
 
     for name in MUTATE_BASES:
@@ -52,6 +56,10 @@ def main():
             continue
         if load_yaml(dump_yaml(parsed)) != parsed:
             sys.stderr.write(f"{name}: loader is not a round-trip fixed point\n")
+            failed = True
+        rtype = resource_type(parsed)
+        if rtype not in INJECT:
+            sys.stderr.write(f"{name}: resources.{rtype} has no INJECT entry\n")
             failed = True
 
     for seed in range(5):
@@ -65,32 +73,21 @@ def main():
         sys.stdout.write(f"=== volume seed={seed} ===\n")
         sys.stdout.write(dump_yaml(mutate(load("volume"), seed)))
 
-    # Assert-only (no stdout) so printed output stays stable as the schema grows. The
-    # registered_model base sets no optional fields, so any added field must have been injected.
-    with open(SCHEMA) as f:
-        schema = json.load(f)
-
-    for seed in range(5):
-        a = dump_yaml(mutate(load("registered_model"), seed, schema=schema, unique="check"))
-        b = dump_yaml(mutate(load("registered_model"), seed, schema=schema, unique="check"))
-        if a != b:
-            sys.stderr.write(f"seed {seed}: schema-aware mutation is not deterministic\n")
-            failed = True
-
+    # registered_model sets few optionals, so an added field must come from INJECT.
     base_fields = set(instance(load("registered_model")))
+    inject_names = {name for name, _ in INJECT["registered_models"]}
     injected = False
     for seed in range(30):
-        fields = set(instance(mutate(load("registered_model"), seed, schema=schema, unique="check")))
+        fields = set(instance(mutate(load("registered_model"), seed)))
         added = fields - base_fields
         if added:
             injected = True
-        # Injecting an output-only field would manufacture false drift.
-        leaked = SKIP_PROPERTY_NAMES & added
-        if leaked:
-            sys.stderr.write(f"seed {seed}: injected output-only field(s): {sorted(leaked)}\n")
+        unexpected = added - inject_names
+        if unexpected:
+            sys.stderr.write(f"seed {seed}: injected non-catalog field(s): {sorted(unexpected)}\n")
             failed = True
     if not injected:
-        sys.stderr.write("schema-aware mutation never injected an optional field\n")
+        sys.stderr.write("mutation never injected a curated optional field\n")
         failed = True
 
     if failed:

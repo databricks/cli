@@ -6,9 +6,10 @@ resources:
     foo:
       name: "test-volume-check"
       catalog_name: "main"
-      schema_name: []
+      schema_name: "default"
       grants:
         - principal: "account users"
+      comment: "fuzz-volume"
 === volume seed=1 ===
 bundle:
   name: "test-bundle-check"
@@ -16,12 +17,13 @@ resources:
   volumes:
     foo:
       name: "test-volume-check"
-      catalog_name: " "
+      catalog_name: "main"
       schema_name: "default"
       grants:
         - principal: "account users"
           privileges:
             - "READ_VOLUME"
+      comment: "fuzz-volume"
 === volume seed=2 ===
 bundle:
   name: "test-bundle-check"
@@ -29,8 +31,10 @@ resources:
   volumes:
     foo:
       name: "test-volume-check"
+      catalog_name: "main"
       schema_name: "default"
       grants:
         - principal: "account users"
           privileges:
             - "READ_VOLUME"
+      comment: "fuzz-volume"

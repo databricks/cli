@@ -10,10 +10,6 @@ grep '^Pattern = ' "$INVARIANT_DIR/test.toml" | while read -r stub; do
     grep -qxF -- "$stub" "$TESTDIR/test.toml" || echo "stub missing from fuzz/test.toml: $stub"
 done | contains.py '!stub missing' > /dev/null
 
-# Emit the schema from the CLI under test so the mutator always matches it.
-$CLI bundle schema > schema.json 2>LOG.schema.err
-cat LOG.schema.err | contains.py '!panic:' '!internal error' > /dev/null
-
 # run_fuzz.py calls this once per seed. It has to be a bash function so the target script it
 # sources sees the invariant helpers that script.prepare defined.
 seed_body() {
@@ -22,7 +18,6 @@ seed_body() {
     # behind reads back as drift in the next. Set here so targets see it too.
     export UNIQUE_NAME="$UNIQUE_NAME-$2"
     export FUZZ_SEED="$2"
-    export FUZZ_SCHEMA="../schema.json"
     source "$INVARIANT_DIR/$FUZZ_TARGET/script"
 }
 

@@ -221,10 +221,10 @@ def main():
 
     kinds = totals()
 
-    # Require at least one deploy: a broken schema, mutator or fixture looks like every seed
+    # Require at least one deploy: a broken mutator or fixture looks like every seed
     # being rejected. A single-seed replay is exempt.
     if count > 1 and not kinds["deployed"]:
-        sys.exit("fuzz: no seed deployed; the schema, mutator or fixtures are broken")
+        sys.exit("fuzz: no seed deployed; the mutator or fixtures are broken")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Mutate a known-good bundle config by deleting, perturbing, and adding random fields.
+Mutate a known-good bundle config by deleting, perturbing, and adding curated fields.
 
 Perturbs a curated invariant config that already deploys.
 
@@ -8,8 +8,8 @@ Two mutation kinds, chosen per step:
 
 - destructive (always): delete a field or replace it with a token, a dangerous value, or an empty
   container.
-- additive (with a schema): inject a valid optional field the base omits, valued by the schema
-  generator in gen_fuzz_config.py.
+- additive: inject one optional field from INJECT that the base omits. Values are hand-curated to
+  deploy (and to cover fields that previously reached reconcile/drift bugs).
 
 As a script, emits one mutated databricks.yml on stdout for the current seed (see main).
 
@@ -25,25 +25,39 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from envsubst import substitute_variables
-from gen_fuzz_config import (
-    DANGEROUS_INTS,
-    DANGEROUS_STRINGS,
-    Generator,
-    is_empty,
-    resource_element,
-    resource_types,
-    token,
-)
-
-DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
 # Biased high: injection is the path to drift bugs.
 ADD_PROB = 0.6
 
-# Curated single-resource configs that deploy standalone (only $UNIQUE_NAME, no init script). All
-# are in the invariant INPUT_CONFIG matrix, so they stay deploy-verified.
+# Probes for free-form scalars: the CLI must reject or round-trip these without panicking.
+DANGEROUS_STRINGS = [
+    "",
+    " ",
+    "a" * 300,
+    "line1\nline2",
+    "tab\there",
+    "\U0001f680-unicode-\u00e9",
+    "quote\"and'apostrophe",
+    "${resources.jobs.does_not_exist.id}",
+    "../../etc/passwd",
+]
+DANGEROUS_INTS = [
+    2**31 - 1,
+    2**31,
+    -(2**31),
+    2**63 - 1,
+    -(2**63),
+    -1,
+]
+DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
+
+# Curated single-resource configs that deploy standalone (no init script). All are in the invariant
+# INPUT_CONFIG matrix, so they stay deploy-verified. Fixture files (data/app, data/pipeline.py)
+# are staged by fuzz/script.prepare.
 MUTATE_BASES = [
+    "app",
     "catalog",
+    "experiment",
     "external_location",
     "job",
     "model",
@@ -55,6 +69,104 @@ MUTATE_BASES = [
     "sql_warehouse",
     "volume",
 ]
+
+# Optional fields absent from the corresponding base, keyed by resources.<type>. Only injected when
+# missing. Shapes are taken from acceptance fixtures that already deploy / reproduce known drift.
+INJECT = {
+    "apps": [
+        ("description", "fuzz-app-description"),
+        (
+            "config",
+            {
+                "command": ["python", "app.py"],
+                "env": [{"name": "FUZZ_ENV", "value": "1"}],
+            },
+        ),
+        ("git_source", {"branch": "main"}),
+        ("lifecycle", {"started": False}),
+    ],
+    "catalogs": [
+        ("custom_max_retention_hours", 168),
+        (
+            "managed_encryption_settings",
+            {"customer_managed_key_id": "00000000-0000-0000-0000-000000000000"},
+        ),
+        ("properties", {"fuzz_key": "fuzz_val"}),
+    ],
+    "experiments": [
+        ("description", "fuzz-experiment"),
+        ("tags", [{"key": "fuzz", "value": "1"}]),
+    ],
+    "external_locations": [
+        ("read_only", True),
+        ("skip_validation", True),
+    ],
+    "jobs": [
+        ("description", "fuzz-job"),
+        ("max_concurrent_runs", 1),
+        (
+            "webhook_notifications",
+            {"on_success": [{"id": "alpha"}, {"id": "beta"}]},
+        ),
+        ("tags", {"fuzz": "1"}),
+    ],
+    "models": [
+        ("description", "fuzz-model"),
+    ],
+    "model_serving_endpoints": [
+        ("description", "fuzz-endpoint"),
+        ("route_optimized", True),
+        (
+            "config",
+            {
+                "served_entities": [
+                    {
+                        "name": "prod",
+                        "burst_scaling_enabled": True,
+                        "external_model": {
+                            "name": "gpt-4o-mini",
+                            "provider": "openai",
+                            "task": "llm/v1/chat",
+                            "openai_config": {
+                                "openai_api_key_plaintext": "sk-test-plaintext-key",
+                            },
+                        },
+                    }
+                ],
+                "traffic_config": {
+                    "routes": [{"served_model_name": "prod", "traffic_percentage": 100}],
+                },
+            },
+        ),
+    ],
+    "pipelines": [
+        ("allow_duplicate_names", True),
+        ("parameters", {"fuzz_param": "1"}),
+        ("development", True),
+        ("photon", False),
+    ],
+    "registered_models": [
+        ("comment", "fuzz-registered-model"),
+        ("aliases", [{"alias_name": "champion", "id": "alias-champion"}]),
+    ],
+    "schemas": [
+        ("comment", "fuzz-schema"),
+        ("properties", {"fuzz_key": "fuzz_val"}),
+    ],
+    "secret_scopes": [],
+    "sql_warehouses": [
+        ("enable_photon", True),
+        ("lifecycle", {"started": False}),
+        ("tags", {"fuzz": "1"}),
+    ],
+    "volumes": [
+        ("comment", "fuzz-volume"),
+    ],
+}
+
+
+def token(rng):
+    return "fuzz_" + "".join(rng.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(8))
 
 
 def dump_scalar(v):
@@ -223,89 +335,38 @@ def mutate_once(rng, roots):
         container[key] = rng.choice([{}, [], None])
 
 
-def collect_insertions(gen, node, schema, out):
-    # Every writable optional field absent from the node, walking node and schema together so
-    # nested objects are candidates too. Each point carries gen.rtype, which add_field restores
-    # before generating a value for the one it picks.
-    schema = gen.resolve(schema)
-    if not isinstance(schema, dict):
-        return
-
-    branches = schema.get("oneOf") or schema.get("anyOf")
-    if branches:
-        # Pick the branch matching the node we have.
-        picked = None
-        for branch in branches:
-            resolved = gen.resolve(branch)
-            if isinstance(node, dict) and (
-                resolved.get("type") == "object" or "properties" in resolved or gen.is_map(resolved)
-            ):
-                picked = resolved
-                break
-            if isinstance(node, list) and resolved.get("type") == "array":
-                picked = resolved
-                break
-        if picked is None:
-            return
-        schema = picked
-
-    if isinstance(node, dict):
-        props = schema.get("properties", {})
-        for name, prop_schema in props.items():
-            if name not in node and not gen.should_skip_property(name):
-                out.append((node, name, prop_schema, gen.rtype))
-        for key, value in node.items():
-            if key in props and isinstance(value, (dict, list)):
-                collect_insertions(gen, value, props[key], out)
-        if gen.is_map(schema):
-            for value in node.values():
-                if isinstance(value, (dict, list)):
-                    collect_insertions(gen, value, schema["additionalProperties"], out)
-    elif isinstance(node, list):
-        items = schema.get("items")
-        if items:
-            for value in node:
-                if isinstance(value, (dict, list)):
-                    collect_insertions(gen, value, items, out)
-
-
-def add_field(gen, rng, config):
-    # Inject one valid optional field, absent from the base, into a random insertion point.
-    types = resource_types(gen)
-    points = []
+def resource_instances(config):
+    """Yield (resource_type, instance_dict) for each resource in the config."""
     for rtype, instances in config.get("resources", {}).items():
-        if rtype not in types or not isinstance(instances, dict):
-            continue
-        element = resource_element(gen, types[rtype])
-        gen.rtype = rtype
-        for instance in instances.values():
-            if isinstance(instance, dict):
-                collect_insertions(gen, instance, element, points)
-    if not points:
+        if isinstance(instances, dict):
+            for instance in instances.values():
+                if isinstance(instance, dict):
+                    yield rtype, instance
+
+
+def add_field(rng, config):
+    # Inject one curated optional that the instance still lacks.
+    candidates = []
+    for rtype, instance in resource_instances(config):
+        for name, value in INJECT.get(rtype, []):
+            if name not in instance:
+                candidates.append((instance, name, value))
+    if not candidates:
         return
-    node, name, prop_schema, rtype = rng.choice(points)
-    # rtype drives grants/permissions/typed-string generation.
-    gen.rtype = rtype
-    value = gen.gen(prop_schema, 1, name)
-    if not is_empty(value):
-        node[name] = value
+    instance, name, value = rng.choice(candidates)
+    # Copy so later destructive steps cannot mutate the shared catalog value in place.
+    instance[name] = json.loads(json.dumps(value))
 
 
-def mutate(config, seed, schema=None, unique="fuzz"):
-    # Without a schema only the destructive mutations run; the selftest uses that path for
-    # configs that stay stable as the schema grows.
+def mutate(config, seed):
     rng = random.Random(seed)
-    gen = Generator(schema, rng, unique) if schema is not None else None
 
     # Only inside resource instances, so the bundle/resources skeleton survives.
-    roots = []
-    for instances in config.get("resources", {}).values():
-        if isinstance(instances, dict):
-            roots.extend(v for v in instances.values() if isinstance(v, (dict, list)))
+    roots = [instance for _, instance in resource_instances(config)]
 
     for _ in range(rng.randint(1, 3)):
-        if gen is not None and rng.random() < ADD_PROB:
-            add_field(gen, rng, config)
+        if rng.random() < ADD_PROB:
+            add_field(rng, config)
         else:
             mutate_once(rng, roots)
 
@@ -320,12 +381,9 @@ def main():
     seed = int(os.environ["FUZZ_SEED"])
     name = MUTATE_BASES[seed % len(MUTATE_BASES)]
     path = os.path.join(os.environ["INVARIANT_DIR"], "configs", name + ".yml.tmpl")
-    unique = os.environ["UNIQUE_NAME"]
     with open(path) as f:
         config = load_yaml(substitute_variables(f.read()))
-    with open(os.environ["FUZZ_SCHEMA"]) as f:
-        schema = json.load(f)
-    sys.stdout.write(dump_yaml(mutate(config, seed, schema=schema, unique=unique)))
+    sys.stdout.write(dump_yaml(mutate(config, seed)))
 
 
 if __name__ == "__main__":
