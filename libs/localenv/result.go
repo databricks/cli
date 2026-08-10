@@ -189,11 +189,45 @@ type PhaseStatus struct {
 	Detail string `json:"-"`
 }
 
-// Warning is a non-fatal advisory surfaced in --json "warnings" (spec §6).
+// Warning is a non-fatal advisory surfaced in --json "warnings" (spec §6). Code
+// is a stable, categorical identifier from the closed set below; Message is
+// human-readable text for the text renderer and is not part of the contract.
 type Warning struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
+
+// Warning codes are the closed, categorical set surfaced in --json warnings[].
+// They let a consumer report a count and a code histogram (merge quality) without
+// parsing free-form text. All are emitted from the merge phase, where the fetched
+// env-owned pins can conflict with what the user already had.
+//
+// The messages are phrased in the present tense because the same detection runs
+// under --dry-run, where nothing has been written yet.
+const (
+	// WarnRequiresPythonOverridden: the user's [project].requires-python differs
+	// from the env's pin and is replaced by the managed value.
+	WarnRequiresPythonOverridden = "W_REQUIRES_PYTHON_OVERRIDDEN"
+	// WarnDBConnectPinOverridden: the user's databricks-connect pin sits directly in
+	// the dev group and is replaced by the managed value.
+	WarnDBConnectPinOverridden = "W_DBCONNECT_PIN_OVERRIDDEN"
+	// WarnDBConnectPinDuplicated: a databricks-connect pin of the user's is one the
+	// merge does not rewrite — reached through a PEP 735 include-group, a second pin
+	// in the dev array, or a group key that normalizes to "dev" without matching the
+	// literal key the merge edits — so the managed pin lands in the dev group
+	// alongside it. Unlike an override this leaves two pins for one package and uv
+	// cannot resolve it, a distinct and worse outcome that needs a manual fix, so it
+	// carries its own code. It can accompany an override and persists across re-runs
+	// for as long as the retained pin does.
+	WarnDBConnectPinDuplicated = "W_DBCONNECT_PIN_DUPLICATED"
+	// WarnUserConstraintConflict: a user dependency pins a package that the env's
+	// constraint-dependencies also constrains, to a provably non-overlapping version
+	// range (uv will fail to resolve). Every requirement uv locks is scanned —
+	// [project].dependencies, the optional-dependency extras, and all dependency
+	// groups — since constraint-dependencies applies to the whole resolution. Emitted
+	// only when the ranges are provably disjoint; ambiguous cases are not flagged.
+	WarnUserConstraintConflict = "W_USER_CONSTRAINT_CONFLICT"
+)
 
 // Result is the full outcome of a sync run and the root of the --json object
 // (spec §6). Field order matches the spec's schema so JSON key order is stable.
@@ -217,10 +251,9 @@ type Result struct {
 	Warnings      []Warning      `json:"warnings"`
 	Error         *PipelineError `json:"error"`
 	BackupPath    string         `json:"backupPath,omitempty"`
-	// DurationMs is part of the §6 contract but reserved for now: the pipeline
-	// does not measure wall time (a real clock would make acceptance goldens
-	// non-deterministic), so it is always emitted as 0 until timing is wired
-	// through a clock the tests can control.
+	// DurationMs is the pipeline's wall time in milliseconds (spec §6). It covers the
+	// CLI pipeline only; the extension measures its own end-to-end latency (process
+	// spawn, interpreter adoption) separately.
 	DurationMs int64 `json:"durationMs"`
 }
 

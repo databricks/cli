@@ -64,6 +64,8 @@
 # Integration tests
 /integration/               team:platform
 
+/integration/cmd/environments/  team:ide
+
 # Internal
 /internal/                  team:platform
 
