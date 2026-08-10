@@ -1,11 +1,17 @@
 package environments
 
 import (
+	"encoding/json"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	libslocalenv "github.com/databricks/cli/libs/localenv"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildSetupLocalEvent(t *testing.T) {
@@ -114,4 +120,52 @@ func TestPhaseCoversLocalenv(t *testing.T) {
 			"phase %q has no telemetry enum: add a case to phaseType and a value to "+
 				"SetupLocalPhase (setup_local.go + universe proto)", phase)
 	}
+}
+
+func TestLogSetupLocalEventRoundTrip(t *testing.T) {
+	t.Run("real run uploads one setup_local_event", func(t *testing.T) {
+		server := testserver.New(t)
+		t.Cleanup(server.Close)
+
+		var bodies []telemetry.RequestBody
+		server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+			var body telemetry.RequestBody
+			require.NoError(t, json.Unmarshal(req.Body, &body))
+			bodies = append(bodies, body)
+			return telemetry.ResponseBody{NumProtoSuccess: int64(len(body.ProtoLogs))}
+		})
+
+		ctx := telemetry.WithNewLogger(t.Context())
+		logSetupLocalEvent(ctx, &libslocalenv.Result{
+			OK:      true,
+			Mode:    libslocalenv.ModeDefault.String(),
+			Compute: &libslocalenv.ComputeInfo{Source: "serverless", EnvKey: "serverless/serverless-v5"},
+		})
+
+		ctx = cmdctx.SetConfigUsed(ctx, &config.Config{Host: server.URL, Token: "token"})
+		require.NoError(t, telemetry.Upload(ctx, protos.ExecutionContext{}))
+
+		require.Len(t, bodies, 1)
+		require.Len(t, bodies[0].ProtoLogs, 1)
+		assert.Contains(t, bodies[0].ProtoLogs[0], `"setup_local_event"`)
+		assert.Contains(t, bodies[0].ProtoLogs[0], `"env_key":"serverless/serverless-v5"`)
+	})
+
+	t.Run("dry-run buffers nothing to upload", func(t *testing.T) {
+		called := false
+		server := testserver.New(t)
+		t.Cleanup(server.Close)
+		server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+			called = true
+			return telemetry.ResponseBody{}
+		})
+
+		ctx := telemetry.WithNewLogger(t.Context())
+		logSetupLocalEvent(ctx, &libslocalenv.Result{DryRun: true, OK: true})
+
+		ctx = cmdctx.SetConfigUsed(ctx, &config.Config{Host: server.URL, Token: "token"})
+		// Upload no-ops when the buffer is empty, so the endpoint is never hit.
+		require.NoError(t, telemetry.Upload(ctx, protos.ExecutionContext{}))
+		assert.False(t, called, "dry-run must not upload any telemetry")
+	})
 }
