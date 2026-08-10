@@ -2,7 +2,7 @@ title "A resource that fails to apply is recorded as a failed operation carrying
 trace musterr $CLI bundle deploy
 trace print_requests.py //api/2.0/bundle --sort
 
-title "The failed resource is listed without a resource_id or state, so a later deploy plans to create it rather than treating it as already deployed"
+title "The failed resource is not listed at all: state is what projects a resource, and a failed create records none, so a later deploy plans to create it rather than treating it as already deployed"
 # The deployment ID is the workspace node's ID; read it back the way the CLI does.
 # Extracted with python, not jq: the ID exceeds 2^53 and jq 1.6 rounds it.
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record-failure/default/state/resources.deployment.json" -o json | python3 -c 'import sys,json; print(json.load(sys.stdin)["object_id"])')

@@ -304,17 +304,14 @@ func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID str
 		return Response{StatusCode: 500, Body: map[string]string{"message": err.Error()}}
 	}
 
-	// Reflect the operation onto the deployment-level resource set the way the
-	// backend does: a delete removes the resource, anything else upserts it.
-	//
-	// A failed operation is upserted too, matching the service, but it carries
-	// neither a resource_id nor state, so the read path treats the resource as not
-	// yet created rather than as existing state (verified against the service: a
-	// failed create is listed with an empty resource_id and no state).
-	switch {
-	case op.ActionType == bundledeployments.OperationActionTypeOperationActionTypeDelete && !failed:
+	// Reflect the operation onto the deployment-level resource set the way the backend
+	// does: state is what projects a resource, so an operation without it removes the
+	// resource instead of listing one (OperationStorage.createOperation buffers a delete
+	// when the entity has no state). Together with the invariant that state requires a
+	// resource_id, that means a listed resource always has an id.
+	if op.State == nil {
 		delete(d.resources, resourceKey)
-	default:
+	} else {
 		d.resources[resourceKey] = bundledeployments.Resource{
 			Name:           "deployments/" + deploymentID + "/resources/" + resourceKey,
 			ResourceKey:    resourceKey,
@@ -421,7 +418,7 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 
 	// Mirror onto the resource set the same way CreateOperation does, so the read
 	// path reflects the newest write.
-	if existing.ActionType == bundledeployments.OperationActionTypeOperationActionTypeDelete && !failed {
+	if existing.State == nil {
 		delete(d.resources, resourceKey)
 	} else {
 		d.resources[resourceKey] = bundledeployments.Resource{

@@ -86,15 +86,6 @@ func fetchDeploymentResources(ctx context.Context, client bundledeployments.Bund
 			}
 		}
 
-		// A resource with no id was never created: the deploy that recorded it failed
-		// before the API assigned one (a failed create is recorded with the error and
-		// nothing else). Leaving it out keeps it untracked, so the next deploy creates
-		// it and a destroy skips it - an entry with an empty id would instead look
-		// tracked and fail the delete with "missing in state".
-		if res.ResourceId == "" {
-			continue
-		}
-
 		out[key] = ResourceEntry{
 			ID:        res.ResourceId,
 			State:     recorded.State,

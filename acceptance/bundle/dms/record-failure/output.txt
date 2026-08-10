@@ -58,19 +58,9 @@ API message: cluster spec is invalid
   }
 }
 
-=== The failed resource is listed without a resource_id or state, so a later deploy plans to create it rather than treating it as already deployed
+=== The failed resource is not listed at all: state is what projects a resource, and a failed create records none, so a later deploy plans to create it rather than treating it as already deployed
 >>> [CLI] api get /api/2.0/bundle/deployments/[NUMID]/resources
-{
-  "resources": [
-    {
-      "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
-      "last_version_id": "1",
-      "name": "deployments/[NUMID]/resources/jobs.doomed",
-      "resource_key": "jobs.doomed",
-      "resource_type": ""
-    }
-  ]
-}
+{}
 
 === Redeploying from DMS state alone still creates the failed resource: it was never applied, so it must not be skipped as unchanged
 >>> [CLI] bundle plan
