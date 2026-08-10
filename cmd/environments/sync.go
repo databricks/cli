@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/flags"
 	libslocalenv "github.com/databricks/cli/libs/localenv"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -165,6 +166,18 @@ func runPipeline(cmd *cobra.Command) error {
 	}
 
 	w := cmdctx.WorkspaceClient(ctx)
+
+	// Show live per-phase progress only in text mode. In --output json the only
+	// thing on stdout must be the JSON object; the spinner writes to stderr and
+	// no-ops when non-interactive, but we still skip it entirely for JSON so the
+	// pipeline stays silent for machine consumers.
+	var progress libslocalenv.Reporter
+	if root.OutputType(cmd) != flags.OutputJSON {
+		rep := newSpinnerReporter(ctx)
+		defer rep.Close()
+		progress = rep
+	}
+
 	p := &libslocalenv.Pipeline{
 		Mode:              mode,
 		Check:             check,
@@ -175,6 +188,7 @@ func runPipeline(cmd *cobra.Command) error {
 		Compute:           sdkCompute{w: w},
 		Bundle:            bt,
 		PM:                libslocalenv.NewUvManager(),
+		Progress:          progress,
 	}
 
 	res, pipelineErr := p.Run(ctx)
