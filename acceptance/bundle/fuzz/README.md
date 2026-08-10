@@ -16,4 +16,4 @@ A failure is a CLI bug. `LOG.repro` prints e.g.
 
 `FUZZ_CHECK_DRIFT=0` (committed run) uses plan-determinism; `1` (`task test-fuzz` / nightly) uses
 the exact no_drift check. Only the committed run is expected green; a red nightly is a finding to
-triage.
+triage (gates `test-result`; failure summary has the repro).

@@ -444,6 +444,23 @@ jobs:
           export FUZZ_SEED_START=$(( $(date -u +%s) / 86400 * FUZZ_SEED_COUNT ))
           go tool -modfile=tools/task/go.mod task test-fuzz
 
+      # Otherwise a red nightly is a failed check with no triage crumbs.
+      - name: Summarize failure for triage
+        if: ${{ failure() }}
+        run: |
+          {
+            echo "## Fuzz nightly failed"
+            echo
+            echo "Exact drift is on (\`FUZZ_CHECK_DRIFT=1\`); a red nightly is a finding to triage."
+            echo "Use the failing variant's \`LOG.repro\`, or:"
+            echo
+            echo '```'
+            echo 'ENVFILTER=FUZZ_TARGET=<target> FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_CHECK_DRIFT=1 task test-fuzz'
+            echo '```'
+            echo
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.
   #
@@ -453,6 +470,8 @@ jobs:
   #
   # The step checks `contains(needs.*.result, 'failure')` to fail if any dependency failed.
   # Reference: https://github.com/orgs/community/discussions/25970
+  #
+  # test-fuzz is schedule-only (skipped on PRs); still list it so nightlies gate test-result.
   test-result:
     needs:
       - test
@@ -460,6 +479,7 @@ jobs:
       - test-exp-ssh
       - test-pipelines
       - test-sandbox
+      - test-fuzz
 
     if: ${{ always() }}
     name: test-result

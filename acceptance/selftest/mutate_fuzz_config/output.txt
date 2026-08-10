@@ -24,7 +24,7 @@ resources:
           privileges:
             - "READ_VOLUME"
       comment: "fuzz-volume"
-=== volume seed=2 ===
+=== volume seed=5 ===
 bundle:
   name: "test-bundle-check"
 resources:
@@ -33,8 +33,3 @@ resources:
       name: "test-volume-check"
       catalog_name: "main"
       schema_name: "default"
-      grants:
-        - principal: "account users"
-          privileges:
-            - "READ_VOLUME"
-      comment: "fuzz-volume"

@@ -5,6 +5,7 @@ so an algorithm change shows up as an acceptance output diff.
 
 - load -> dump -> load is a fixed point for every MUTATE_BASES entry
 - mutate(seed) is deterministic
+- sample volume seeds stay pairwise distinct (so output.txt catches algorithm drift)
 - INJECT eventually lands on a sparse base (registered_model)
 """
 
@@ -66,9 +67,17 @@ def main():
             sys.stderr.write(f"seed {seed}: mutation is not deterministic\n")
             failed = True
 
-    for seed in range(3):
+    # Distinct dumps: consecutive seeds can collide and hide algorithm changes in output.txt.
+    samples = [0, 1, 5]
+    dumps = []
+    for seed in samples:
+        out = dump_yaml(mutate(load("volume"), seed))
+        dumps.append(out)
         sys.stdout.write(f"=== volume seed={seed} ===\n")
-        sys.stdout.write(dump_yaml(mutate(load("volume"), seed)))
+        sys.stdout.write(out)
+    if len(set(dumps)) != len(dumps):
+        sys.stderr.write(f"sample seeds {samples} are not pairwise distinct\n")
+        failed = True
 
     # Sparse base: any new field must come from INJECT.
     base_fields = set(instance(load("registered_model")))
