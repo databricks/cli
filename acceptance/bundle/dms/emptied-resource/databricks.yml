@@ -9,4 +9,4 @@ resources:
     foo:
       name: dms_emptied_resource
       catalog_name: main
-      grants: [{ principal: someone@example.com, privileges: [USE_SCHEMA] }]
+      grants: [{principal: someone@example.com, privileges: [USE_SCHEMA]}]
