@@ -203,6 +203,6 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"vector_search_endpoints":      (&resources.VectorSearchEndpoint{}).ResourceDescription(),
 		"vector_search_indexes":        (&resources.VectorSearchIndex{}).ResourceDescription(),
 		"internal_immutable_snapshots": (&resources.Snapshot{}).ResourceDescription(),
-    "secrets":                      (&resources.Secret{}).ResourceDescription(),
+		"secrets":                      (&resources.Secret{}).ResourceDescription(),
 	}
 }
