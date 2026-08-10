@@ -54,6 +54,14 @@ const (
 	PhaseValidate  PhaseName = "validate"
 )
 
+// Reporter receives phase-start notifications during a run so a caller can show
+// live progress (e.g. a spinner). It is intentionally minimal: the pipeline owns
+// success/failure reporting via the Result, and Reporter only marks entry into a
+// phase. A nil Reporter disables progress.
+type Reporter interface {
+	PhaseStarted(name PhaseName)
+}
+
 // Phase status values (spec §6.2).
 const (
 	StatusOK      = "ok"
