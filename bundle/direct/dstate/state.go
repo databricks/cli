@@ -131,10 +131,10 @@ func NewDatabase(lineage string, serial int) Database {
 	}
 }
 
-// SaveState records the resource's state after action was applied to it. action is
-// what the deployment metadata service reports for the write; it is ignored when the
-// bundle does not record deployment history.
-func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry, action deployplan.ActionType) error {
+// SaveState records the resource's state after an operation was applied to it. info
+// is what the deployment metadata service reports for the write; it is ignored when
+// the bundle does not record deployment history.
+func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry, info OperationInfo) error {
 	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -167,15 +167,15 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		if err != nil {
 			return err
 		}
-		db.sink.RecordOperation(ctx, key, action, newID, recorded)
+		db.sink.RecordOperation(ctx, key, info, newID, recorded)
 	}
 
 	return nil
 }
 
-// DeleteState drops the resource's state entry. action distinguishes a real delete
+// DeleteState drops the resource's state entry. info distinguishes a real delete
 // from the intermediate drop a recreate performs, both of which are recorded.
-func (db *DeploymentState) DeleteState(ctx context.Context, key string, action deployplan.ActionType) error {
+func (db *DeploymentState) DeleteState(ctx context.Context, key string, info OperationInfo) error {
 	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -194,13 +194,8 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, action d
 	delete(db.stateIDs, key)
 
 	// State is nil: the resource no longer exists.
-	//
-	// A recreate drops the entry and then saves the replacement. The service keeps one
-	// operation per resource per version, so the sink opens that one operation as
-	// in-progress here and the save that follows completes it - leaving an interrupted
-	// recreate described as mid-recreate rather than as the resource it deleted.
 	if db.sink != nil {
-		db.sink.RecordOperation(ctx, key, action, deletedID, nil)
+		db.sink.RecordOperation(ctx, key, info, deletedID, nil)
 	}
 
 	return nil

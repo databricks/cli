@@ -24,8 +24,12 @@ type fakeSink struct {
 	ops []string
 }
 
-func (f *fakeSink) RecordOperation(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state json.RawMessage) {
-	f.ops = append(f.ops, fmt.Sprintf("%s %s id=%s state=%s", action, resourceKey, resourceID, string(state)))
+func (f *fakeSink) RecordOperation(ctx context.Context, resourceKey string, info OperationInfo, resourceID string, state json.RawMessage) {
+	entry := fmt.Sprintf("%s %s id=%s state=%s", info.Action, resourceKey, resourceID, string(state))
+	if info.InProgress {
+		entry += " in_progress"
+	}
+	f.ops = append(f.ops, entry)
 }
 
 func TestStateWritesRecordOperations(t *testing.T) {
@@ -41,21 +45,21 @@ func TestStateWritesRecordOperations(t *testing.T) {
 			// leaves the resource described as mid-recreate.
 			name: "recreate reports both of its writes",
 			write: func(t *testing.T, db *DeploymentState) {
-				require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "old"}, nil, deployplan.Create))
-				require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job", deployplan.Recreate))
-				require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "456", map[string]string{"key": "new"}, nil, deployplan.Recreate))
+				require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "old"}, nil, OperationInfo{Action: deployplan.Create}))
+				require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job", OperationInfo{Action: deployplan.Recreate, InProgress: true}))
+				require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "456", map[string]string{"key": "new"}, nil, OperationInfo{Action: deployplan.Recreate}))
 			},
 			want: []string{
 				`create jobs.my_job id=123 state={"state":{"key":"old"}}`,
-				`recreate jobs.my_job id=123 state=`,
+				`recreate jobs.my_job id=123 state= in_progress`,
 				`recreate jobs.my_job id=456 state={"state":{"key":"new"}}`,
 			},
 		},
 		{
 			name: "real delete reports the id it had and no state",
 			write: func(t *testing.T, db *DeploymentState) {
-				require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, deployplan.Create))
-				require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job", deployplan.Delete))
+				require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, OperationInfo{Action: deployplan.Create}))
+				require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job", OperationInfo{Action: deployplan.Delete}))
 			},
 			want: []string{
 				`create jobs.my_job id=123 state={"state":{}}`,
@@ -87,8 +91,8 @@ func TestStateWritesRecordNothingWithoutSink(t *testing.T) {
 	// No sink: recording is off, and the writes still succeed.
 	var db DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
-	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, deployplan.Create))
-	require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job", deployplan.Delete))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, OperationInfo{Action: deployplan.Create}))
+	require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job", OperationInfo{Action: deployplan.Delete}))
 	mustFinalize(t, &db)
 }
 
@@ -98,7 +102,7 @@ func TestOpenSaveFinalizeRoundTrip(t *testing.T) {
 	var db DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
 
-	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "val"}, nil, deployplan.Create))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "val"}, nil, OperationInfo{Action: deployplan.Create}))
 	mustFinalize(t, &db)
 
 	// Re-open and verify persisted data.
@@ -184,7 +188,7 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 	// Commit serial 1 with one resource.
 	var db DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
-	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, deployplan.Create))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, OperationInfo{Action: deployplan.Create}))
 	mustFinalize(t, &db)
 
 	var committed DeploymentState
@@ -248,12 +252,12 @@ func TestDeleteState(t *testing.T) {
 
 	var db DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
-	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, deployplan.Create))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, OperationInfo{Action: deployplan.Create}))
 	mustFinalize(t, &db)
 
 	var db2 DeploymentState
 	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
-	require.NoError(t, db2.DeleteState(t.Context(), "jobs.my_job", deployplan.Delete))
+	require.NoError(t, db2.DeleteState(t.Context(), "jobs.my_job", OperationInfo{Action: deployplan.Delete}))
 	mustFinalize(t, &db2)
 
 	var db3 DeploymentState
@@ -281,7 +285,7 @@ func TestGetOrInitLineageReadableBeforeWriteAndPersisted(t *testing.T) {
 	// Upgrading to write reuses the same lineage (it goes into the WAL header),
 	// and a write makes it durable.
 	require.NoError(t, db.UpgradeToWrite())
-	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, deployplan.Create))
+	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil, OperationInfo{Action: deployplan.Create}))
 	mustFinalize(t, &db)
 
 	// Re-open: the persisted lineage matches the one read before the write.

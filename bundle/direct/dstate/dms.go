@@ -25,6 +25,19 @@ type RecordedState struct {
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
+// OperationInfo is what a state write reports to the deployment metadata service.
+// The caller describes the write; the sink does not infer it from the state being nil.
+type OperationInfo struct {
+	// Action is the operation DMS records for this write.
+	Action deployplan.ActionType
+
+	// InProgress marks a write that is half of a larger change, so an interrupted
+	// deploy does not leave the resource described as finished. The service keeps one
+	// operation per resource per version, so the second write updates this same
+	// operation to succeeded. Only a recreate's delete sets it.
+	InProgress bool
+}
+
 // OperationSink records one resource operation with the deployment metadata service.
 // SaveState and DeleteState call it for every state write, so what DMS holds mirrors
 // the WAL - including the intermediate writes of a recreate.
@@ -32,7 +45,7 @@ type RecordedState struct {
 // It does not return an error: the upload happens on a background worker, and the
 // deploy learns about a failure when the queue is drained.
 type OperationSink interface {
-	RecordOperation(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state json.RawMessage)
+	RecordOperation(ctx context.Context, resourceKey string, info OperationInfo, resourceID string, state json.RawMessage)
 }
 
 // readDMSState replaces the file-derived resource state with the state recorded in

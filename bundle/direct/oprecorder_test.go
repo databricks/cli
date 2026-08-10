@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,7 +49,7 @@ func (f *fakeOpClient) UpdateOperation(ctx context.Context, parent, resourceKey 
 // an operationQueue worker does.
 func uploadOne(t *testing.T, u operationUploader, resourceKey string, action deployplan.ActionType, resourceID string, state json.RawMessage) {
 	t.Helper()
-	op, err := newStateOperation(action, resourceID, state)
+	op, err := newStateOperation(dstate.OperationInfo{Action: action}, resourceID, state)
 	require.NoError(t, err)
 	require.NoError(t, u.upload(t.Context(), resourceKey, op))
 }
@@ -109,7 +110,7 @@ func TestNewStateOperationRecordsEnvelopeAsIs(t *testing.T) {
 	// carries it through untouched, sensitive fields and all.
 	state := json.RawMessage(`{"state":{"name":"foo","token":"super-secret"}}`)
 
-	op, err := newStateOperation(deployplan.Create, "job-123", state)
+	op, err := newStateOperation(dstate.OperationInfo{Action: deployplan.Create}, "job-123", state)
 	require.NoError(t, err)
 
 	assert.JSONEq(t, string(state), string(op.state))
@@ -117,14 +118,14 @@ func TestNewStateOperationRecordsEnvelopeAsIs(t *testing.T) {
 }
 
 func TestNewStateOperationRejectsUnsupportedAction(t *testing.T) {
-	_, err := newStateOperation(deployplan.Skip, "job-123", nil)
+	_, err := newStateOperation(dstate.OperationInfo{Action: deployplan.Skip}, "job-123", nil)
 	assert.Error(t, err)
 }
 
 func TestNewStateOperationRejectsOversizedState(t *testing.T) {
 	big := json.RawMessage(strings.Repeat("x", maxOperationStateSize+1))
 
-	_, err := newStateOperation(deployplan.Create, "job-123", big)
+	_, err := newStateOperation(dstate.OperationInfo{Action: deployplan.Create}, "job-123", big)
 	assert.ErrorContains(t, err, "exceeds the 65536 byte limit")
 }
 

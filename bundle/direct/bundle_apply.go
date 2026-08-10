@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -102,7 +103,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			if entry.Gone {
 				// Planning confirmed the resource is already deleted remotely; only
 				// remove it from the state, without calling the delete API.
-				err = b.StateDB.DeleteState(ctx, resourceKey, action)
+				err = b.StateDB.DeleteState(ctx, resourceKey, dstate.OperationInfo{Action: action})
 			} else {
 				err = d.Destroy(ctx, &b.StateDB)
 			}

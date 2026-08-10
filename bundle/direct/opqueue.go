@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -83,20 +84,12 @@ func newOperationQueue(ctx context.Context, uploader operationUploader) *operati
 //
 // An earlier upload failure does not stop this: every write is still recorded, best
 // effort, so DMS ends up as close to reality as it can get.
-func (q *operationQueue) RecordOperation(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state json.RawMessage) {
+func (q *operationQueue) RecordOperation(ctx context.Context, resourceKey string, info dstate.OperationInfo, resourceID string, state json.RawMessage) {
 	if q == nil {
 		return
 	}
 
-	// A recreate drops the state entry before creating the replacement. Recorded as
-	// in-progress, so an interrupted recreate does not leave the resource described as
-	// the one it just deleted; the create that follows updates it to succeeded.
-	if action == deployplan.Recreate && state == nil {
-		q.enqueue(ctx, resourceKey, newInProgressOperation())
-		return
-	}
-
-	op, err := newStateOperation(action, resourceID, state)
+	op, err := newStateOperation(info, resourceID, state)
 	if err != nil {
 		// The deploy already persisted this write locally, so failing it here would
 		// report an error about history for a resource that deployed fine.

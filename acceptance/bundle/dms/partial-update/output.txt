@@ -93,6 +93,7 @@ Deployment complete!
   },
   "body": {
     "action_type": "OPERATION_ACTION_TYPE_RECREATE",
+    "resource_id": "main.dms_partial_update_schema",
     "resource_key": "schemas.foo",
     "status": "OPERATION_STATUS_IN_PROGRESS"
   }

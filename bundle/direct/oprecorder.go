@@ -24,9 +24,8 @@ const maxOperationStateSize = 64 * 1024
 // failing and masking the error we are trying to report.
 const maxOperationErrorMessageSize = 16 * 1024
 
-// operationStatusInProgress marks an operation whose writes are not finished. A
-// recreate opens one after its delete and updates it to succeeded once the create
-// lands, so an interrupted recreate is not left describing the resource it deleted.
+// operationStatusInProgress marks an operation whose writes are not finished; see
+// dstate.OperationInfo.InProgress for when a write asks for it.
 //
 // Declared here rather than used from the SDK: the enum value is generated from the
 // OpenAPI spec, which trails the service proto (databricks-eng/universe#2394529).
@@ -56,8 +55,8 @@ type recordedOperation struct {
 // newStateOperation describes a state write for upload. state is the serialized
 // RecordedState envelope the state DB just persisted, and nil for a delete, where
 // the resource is gone. It errors when the state exceeds maxOperationStateSize.
-func newStateOperation(action deployplan.ActionType, resourceID string, state json.RawMessage) (recordedOperation, error) {
-	actionType, err := deployActionToSDK(action)
+func newStateOperation(info dstate.OperationInfo, resourceID string, state json.RawMessage) (recordedOperation, error) {
+	actionType, err := deployActionToSDK(info.Action)
 	if err != nil {
 		return recordedOperation{}, err
 	}
@@ -66,22 +65,17 @@ func newStateOperation(action deployplan.ActionType, resourceID string, state js
 		return recordedOperation{}, fmt.Errorf("serialized state is %d bytes, which exceeds the %d byte limit for recording deployment history", len(state), maxOperationStateSize)
 	}
 
+	status := bundledeployments.OperationStatusOperationStatusSucceeded
+	if info.InProgress {
+		status = operationStatusInProgress
+	}
+
 	return recordedOperation{
 		action:     actionType,
 		resourceID: resourceID,
-		status:     bundledeployments.OperationStatusOperationStatusSucceeded,
+		status:     status,
 		state:      state,
 	}, nil
-}
-
-// newInProgressOperation opens a recreate before its create half has run. It carries
-// no state: the old resource is deleted and the new one does not exist yet, so there
-// is nothing that exists to describe.
-func newInProgressOperation() recordedOperation {
-	return recordedOperation{
-		action: bundledeployments.OperationActionTypeOperationActionTypeRecreate,
-		status: operationStatusInProgress,
-	}
 }
 
 // newFailedOperation records an operation that did not apply, so the deployment

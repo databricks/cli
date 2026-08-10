@@ -87,7 +87,7 @@ func envelope(t *testing.T, name string) json.RawMessage {
 
 func recordState(t *testing.T, q *operationQueue, resourceKey, name string) {
 	t.Helper()
-	q.RecordOperation(t.Context(), resourceKey, deployplan.Update, "id-1", envelope(t, name))
+	q.RecordOperation(t.Context(), resourceKey, dstate.OperationInfo{Action: deployplan.Update}, "id-1", envelope(t, name))
 }
 
 func TestOperationQueueUploadsEachOperation(t *testing.T) {
@@ -150,8 +150,8 @@ func TestOperationQueueUploadsQueuedWritesWhileWorkersAreBusy(t *testing.T) {
 
 	// A resource whose ID is only known after it was created: the first write has no
 	// ID, the second fills it in.
-	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "", envelope(t, "created"))
-	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", envelope(t, "updated"))
+	q.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Create}, "", envelope(t, "created"))
+	q.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Create}, "id-1", envelope(t, "updated"))
 
 	close(f.block)
 	require.NoError(t, q.close())
@@ -181,11 +181,11 @@ func TestOperationQueueRecordDuringUploadIsStillUploaded(t *testing.T) {
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 1)}
 	q := newOperationQueue(t.Context(), f)
 
-	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "", envelope(t, "v1"))
+	q.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Create}, "", envelope(t, "v1"))
 	assert.Equal(t, "resources.jobs.foo", <-f.started)
 
 	// The worker has taken the key off the queue and is uploading v1 right now.
-	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", envelope(t, "v2"))
+	q.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Create}, "id-1", envelope(t, "v2"))
 
 	close(f.block)
 	require.NoError(t, q.close())
@@ -223,11 +223,11 @@ func TestOperationQueueKeepsRecordingAfterUploadError(t *testing.T) {
 
 	// Wait for the failing upload to finish, so the error is stored before the next
 	// record rather than racing it.
-	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", envelope(t, "v1"))
+	q.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Create}, "id-1", envelope(t, "v1"))
 	assert.Equal(t, "resources.jobs.foo", <-f.done)
 
 	// The next resource is still accepted, even though the first upload failed.
-	q.RecordOperation(t.Context(), "resources.jobs.bar", deployplan.Create, "id-2", envelope(t, "v1"))
+	q.RecordOperation(t.Context(), "resources.jobs.bar", dstate.OperationInfo{Action: deployplan.Create}, "id-2", envelope(t, "v1"))
 
 	// Both were attempted, and close still reports the failure so the deploy fails.
 	require.ErrorIs(t, q.close(), uploadErr)
@@ -248,10 +248,10 @@ func TestOperationQueueDrainsQueuedOperationsAfterUploadError(t *testing.T) {
 
 	// Every worker is parked mid-upload, so these stay queued.
 	for i := range operationUploadWorkers {
-		q.RecordOperation(t.Context(), "resources.jobs.hold"+strconv.Itoa(i), deployplan.Create, "id-1", envelope(t, "v1"))
+		q.RecordOperation(t.Context(), "resources.jobs.hold"+strconv.Itoa(i), dstate.OperationInfo{Action: deployplan.Create}, "id-1", envelope(t, "v1"))
 		assert.Equal(t, "resources.jobs.hold"+strconv.Itoa(i), <-f.started)
 	}
-	q.RecordOperation(t.Context(), "resources.jobs.queued", deployplan.Create, "id-2", envelope(t, "v1"))
+	q.RecordOperation(t.Context(), "resources.jobs.queued", dstate.OperationInfo{Action: deployplan.Create}, "id-2", envelope(t, "v1"))
 
 	close(f.block)
 	require.ErrorIs(t, q.close(), uploadErr)
@@ -267,7 +267,7 @@ func TestOperationQueueRecordDropsUnsupportedAction(t *testing.T) {
 
 	// The state write already succeeded, so an operation that cannot be described is
 	// dropped with a warning rather than failing the deploy.
-	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Skip, "id-1", nil)
+	q.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Skip}, "id-1", nil)
 
 	require.NoError(t, q.close())
 	assert.Empty(t, f.recorded())
@@ -277,7 +277,7 @@ func TestOperationQueueRecordDropsOversizedState(t *testing.T) {
 	f := &fakeUploader{}
 	q := newOperationQueue(t.Context(), f)
 
-	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", envelope(t, strings.Repeat("x", maxOperationStateSize)))
+	q.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Create}, "id-1", envelope(t, strings.Repeat("x", maxOperationStateSize)))
 
 	require.NoError(t, q.close())
 	assert.Empty(t, f.recorded())
@@ -353,7 +353,7 @@ func TestOperationQueueUploadsOneResourceAtATime(t *testing.T) {
 			wg.Go(func() {
 				for i := range perWorker {
 					key := "resources.jobs.job" + strconv.Itoa((w*perWorker+i)%distinctKeyMod)
-					q.RecordOperation(ctx, key, deployplan.Update, "id-1", states[w])
+					q.RecordOperation(ctx, key, dstate.OperationInfo{Action: deployplan.Update}, "id-1", states[w])
 				}
 			})
 		}
@@ -373,6 +373,6 @@ func TestNilOperationQueueIsNoOp(t *testing.T) {
 	// no-op, so Apply does not have to branch.
 	q := newOperationQueue(t.Context(), nil)
 	require.Nil(t, q)
-	q.RecordOperation(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", nil)
+	q.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Create}, "id-1", nil)
 	require.NoError(t, q.close())
 }
