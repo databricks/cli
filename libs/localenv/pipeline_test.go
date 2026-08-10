@@ -162,6 +162,43 @@ func TestPipelineCheckMutatesNothing(t *testing.T) {
 	assert.Empty(t, entries)
 }
 
+func TestPipelineSurfacesMergeWarnings(t *testing.T) {
+	// writeProject pins requires-python ">=3.10" and databricks-connect ~=16.0.0,
+	// while sampleToml pins "==3.12.*" and ~=17.2.0 — the merge overrides both, so the
+	// result must carry both override warnings.
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, []string{WarnRequiresPythonOverridden, WarnDBConnectPinOverridden}, codes(res.Warnings))
+}
+
+func TestPipelineGreenfieldHasNoWarnings(t *testing.T) {
+	// A greenfield project has nothing of the user's to override.
+	dir := t.TempDir()
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.Empty(t, res.Warnings)
+	assert.True(t, res.Greenfield)
+}
+
 // newSlowServer serves the constraint artifact after fetchDelay, replying with
 // status so a caller can turn the fetch into a delayed failure.
 func newSlowServer(t *testing.T, status int) *httptest.Server {

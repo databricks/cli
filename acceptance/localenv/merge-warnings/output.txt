@@ -1,0 +1,18 @@
+
+>>> [CLI] environments setup-local --serverless-version 4 --dry-run
+preflight  ok  check
+resolve    ok  source=serverless envKey=serverless/serverless-v4
+fetch      ok  source=[DATABRICKS_URL]/serverless/serverless-v4/pyproject.toml fromCache=false
+merge      ok
+provision  ok
+validate   ok
+warning: requires-python ">=3.10" is replaced by the environment's ">=3.12"
+warning: databricks-connect "databricks-connect~=16.0.0" is replaced by the environment's "databricks-connect~=17.2.0"
+warning: databricks-connect "databricks-connect==15.0.0" is not rewritten by the merge; the environment's "databricks-connect~=17.2.0" sits in "dev" alongside it, and no version satisfies both
+warning: dependency "pyarrow==21.0.0" conflicts with the environment constraint "pyarrow<19"
+warning: dependency "pandas==4.0.0" conflicts with the environment constraint "pandas<3"
+Plan: [TEST_TMP_DIR]/pyproject.toml
+  changed region: requires-python
+  changed region: databricks-connect
+  changed region: tool.uv.constraint-dependencies
+Check complete. No files were modified.
