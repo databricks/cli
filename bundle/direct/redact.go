@@ -9,21 +9,22 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
 const sensitiveRedactedValue = "[redacted]"
 
-// redactStruct zeros all scalar fields in s (a pointer to a typed struct) that
-// the adapter marks as sensitive. The struct is modified in place.
-func redactStruct(adapter *dresources.Adapter, s any) error {
+// redactSensitiveFields replaces (or zeros) scalar fields in s (a pointer to a typed struct)
+// that the adapter marks as sensitive. replacement is what to set the field to; pass
+// sensitiveRedactedValue for plan output display, or "" for state-file storage.
+func redactSensitiveFields(adapter *dresources.Adapter, s any, replacement string) error {
 	if s == nil {
 		return nil
 	}
 
 	var toRedact []*structpath.PathNode
-	err := structwalk.Walk(s, func(path *structpath.PathNode, _ any, _ *reflect.StructField) {
+	err := structwalk.Walk(s, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
 		if adapter.IsSensitive(path) {
 			toRedact = append(toRedact, path)
 		}
@@ -33,9 +34,8 @@ func redactStruct(adapter *dresources.Adapter, s any) error {
 	}
 
 	for _, path := range toRedact {
-		if err := structaccess.Set(s, path, sensitiveRedactedValue); err != nil {
-			// Field might not be a string (e.g. it could be an int or bool); try
-			// setting it to its zero value instead.
+		if err := structaccess.Set(s, path, replacement); err != nil {
+			// Field is not a string; fall back to its zero value.
 			fv, ferr := structaccess.Get(s, path)
 			if ferr != nil {
 				continue
@@ -48,8 +48,22 @@ func redactStruct(adapter *dresources.Adapter, s any) error {
 	return nil
 }
 
+// redactStruct replaces sensitive fields with "[redacted]" for display in plan output.
+func redactStruct(adapter *dresources.Adapter, s any) error {
+	return redactSensitiveFields(adapter, s, sensitiveRedactedValue)
+}
+
+// zeroSensitiveFields clears sensitive fields to their zero value for safe storage in
+// the state file. This avoids a false "local change" diff on the next plan (the state
+// stores "" instead of the actual value, so old==new==nil/zero and drift detection
+// falls back to remote comparison via RemoteAlreadySet).
+func zeroSensitiveFields(adapter *dresources.Adapter, s any) error {
+	return redactSensitiveFields(adapter, s, "")
+}
+
 // redactChanges replaces the Old, New, and Remote values in any ChangeDesc whose
 // path is marked sensitive by the adapter, so the plan output does not leak them.
+// Empty/nil values are left as-is (they carry no secret).
 func redactChanges(adapter *dresources.Adapter, changes deployplan.Changes) error {
 	for pathString, ch := range changes {
 		path, err := structpath.ParsePath(pathString)
@@ -57,13 +71,13 @@ func redactChanges(adapter *dresources.Adapter, changes deployplan.Changes) erro
 			return fmt.Errorf("parsing change path %q: %w", pathString, err)
 		}
 		if adapter.IsSensitive(path) {
-			if ch.Old != nil {
+			if v, ok := ch.Old.(string); ok && v != "" {
 				ch.Old = sensitiveRedactedValue
 			}
-			if ch.New != nil {
+			if v, ok := ch.New.(string); ok && v != "" {
 				ch.New = sensitiveRedactedValue
 			}
-			if ch.Remote != nil {
+			if v, ok := ch.Remote.(string); ok && v != "" {
 				ch.Remote = sensitiveRedactedValue
 			}
 		}

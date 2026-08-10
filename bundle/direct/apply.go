@@ -314,7 +314,7 @@ func (d *DeploymentUnit) saveStateRedacted(db *dstate.DeploymentState, newID str
 	if err := json.Unmarshal(data, ptr); err != nil {
 		return fmt.Errorf("unmarshaling state copy for redaction: %w", err)
 	}
-	if err := redactStruct(d.Adapter, ptr); err != nil {
+	if err := zeroSensitiveFields(d.Adapter, ptr); err != nil {
 		return fmt.Errorf("redacting state: %w", err)
 	}
 	return db.SaveState(d.ResourceKey, newID, ptr, dependsOn)

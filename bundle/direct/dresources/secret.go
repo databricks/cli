@@ -5,7 +5,10 @@ import (
 	"net/http"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -114,4 +117,23 @@ func (r *ResourceSecret) DoDelete(ctx context.Context, id string, _ *catalog.Sec
 	return r.client.SecretsUc.DeleteSecret(ctx, catalog.DeleteSecretRequest{
 		FullName: id,
 	})
+}
+
+// OverrideChangeDesc handles the "value" field, which is write-only (the API never
+// returns it in GET responses — only effective_value is readable). The state file
+// stores "" for this field (never the plaintext), so old is always "" regardless of
+// the actual stored value. We compare new vs remote (via effective_value from DoRead)
+// to decide whether the secret actually changed: if they are equal, the user's config
+// already matches what is stored remotely and no update is needed.
+func (*ResourceSecret) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, ch *ChangeDesc, _ *catalog.Secret) error {
+	if path.String() != "value" {
+		return nil
+	}
+	if structdiff.IsEqual(ch.Remote, ch.New) {
+		ch.Action = deployplan.Skip
+		ch.Reason = deployplan.ReasonRemoteAlreadySet
+	} else {
+		ch.Action = deployplan.Update
+	}
+	return nil
 }
