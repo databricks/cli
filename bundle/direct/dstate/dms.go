@@ -9,6 +9,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
+// ResourceKeyPrefix is what a state key carries and a DMS resource key does not:
+// state calls a job "resources.jobs.foo", DMS calls it "jobs.foo". Stripped on the
+// way out and re-added on the way back, so both sides must use this one constant or
+// operations silently land under keys nothing reads.
+const ResourceKeyPrefix = "resources."
+
 // RecordedState is what the CLI serializes into the DMS Operation.State field. It
 // wraps the config rather than being it, so depends_on survives the round trip: DMS
 // has no field for dependency edges, and they cannot be recomputed once references
@@ -64,7 +70,7 @@ func fetchDeploymentResources(ctx context.Context, client bundledeployments.Bund
 		// DMS reports resource keys without the "resources." prefix (e.g.
 		// "jobs.foo"), but the state DB keys are fully qualified
 		// ("resources.jobs.foo"), so prepend it here.
-		key := "resources." + res.ResourceKey
+		key := ResourceKeyPrefix + res.ResourceKey
 
 		var recorded RecordedState
 		if res.State != nil {

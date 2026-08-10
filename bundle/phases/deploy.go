@@ -167,11 +167,11 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	// lock is acquired here
 	//
-	// Set up DMS recording of this deployment as a version. The version is not
-	// created until the plan is approved (below), so a cancelled deploy records
-	// nothing; the deferred CompleteVersion is a no-op until CreateVersion runs.
-	// CompleteVersion is deferred before lock.Release so it runs while the lock
-	// is still held (defers run last-in-first-out).
+	// Set up DMS recording of this deployment as a version. The version itself is
+	// created further down, before the plan is computed - see the comment there for
+	// why it cannot wait for approval. CompleteVersion is deferred before
+	// lock.Release so it runs while the lock is still held (defers run
+	// last-in-first-out), and is a no-op until CreateVersion has run.
 	recorder, err := newDeploymentRecorder(ctx, b, stateEngine, dms.VersionTypeDeploy)
 	if err != nil {
 		logdiag.LogError(ctx, err)

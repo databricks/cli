@@ -185,6 +185,14 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 		return dmsAborted("previous_version_id is outdated; the deployment's most recent version is " + d.deployment.LastVersionId)
 	}
 
+	// Not modelled: the deployment lock. Creating a version takes one on the real
+	// service (VersionStorage.LOCK_DURATION_MS), which refuses a second deploy with
+	// "deployment N is locked by version M (lock expires at ...)" until a two-minute
+	// lease elapses without a heartbeat. Refusing purely on an in-flight version is
+	// wrong here: several tests kill the CLI mid-apply, which leaves the version
+	// in-progress forever, where the real service would let the lease expire. Modelling
+	// it needs the lease clock, and Version carries no heartbeat field to hang it on.
+
 	// bundle_root_path is relative to git_folder_path, so the service rejects a
 	// workspace_info that carries one without the other.
 	if ws := version.WorkspaceInfo; ws != nil && (ws.GitFolderPath == "") != (ws.BundleRootPath == "") {

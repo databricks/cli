@@ -181,10 +181,8 @@ func newOperationRecorder(ops operationClient, deploymentID string, version int6
 var updatableFields = []string{"state", "error_message", "resource_id", "status"}
 
 func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op recordedOperation) error {
-	// DMS resource keys are unprefixed (e.g. "jobs.foo"), while the CLI's state
-	// keys carry a leading "resources." (e.g. "resources.jobs.foo"). Strip it on
-	// the way out; the read path re-adds it (see dstate.fetchDeploymentResources).
-	dmsKey := strings.TrimPrefix(resourceKey, "resources.")
+	// The read path re-adds the prefix; see dstate.ResourceKeyPrefix.
+	dmsKey := strings.TrimPrefix(resourceKey, dstate.ResourceKeyPrefix)
 
 	operation := bundledeployments.Operation{
 		ActionType:   op.action,
