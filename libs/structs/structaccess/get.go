@@ -249,15 +249,7 @@ func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.Stru
 
 		// Read JSON tag using structtag helper
 		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-
-		btag := structtag.BundleTag(sf.Tag.Get("bundle"))
-
-		// Sensitive fields use json:"-" to avoid serialization but are still diffed
-		// in memory under their Go field name. Allow lookup by Go field name for them.
 		if name == "-" {
-			if btag.Sensitive() && sf.Name == key {
-				return v.Field(i), sf, true
-			}
 			name = ""
 		}
 
@@ -266,6 +258,7 @@ func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.Stru
 		}
 		if name != "" && name == key {
 			// Skip fields marked as internal or readonly via bundle tag
+			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
 			if btag.Internal() || btag.ReadOnly() {
 				continue
 			}
