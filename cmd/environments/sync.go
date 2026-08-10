@@ -18,14 +18,18 @@ import (
 func newSetupLocalCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   libslocalenv.CommandVerb,
-		Short: "Provision a local Python environment matched to a Databricks compute target",
-		Long: `Provision (or update) a local Python environment matched to a Databricks compute target.
+		Short: "Set up a local Python environment that matches your Databricks compute",
+		Long: `Set up a local Python environment that matches a Databricks cluster or serverless version, so code you run on your machine behaves the same as it does on Databricks.
 
-Resolves the target to an environment key, fetches the pinned Python version,
-databricks-connect version, and dependency constraints published for that key,
-then provisions a matched .venv with uv. A project with no pyproject.toml is
-initialized from scratch; an existing pyproject.toml is merged in place (its
-env-owned sections are refreshed, user-owned content is preserved).`,
+Use this when you want to develop or debug a Databricks project locally: it installs the matching Python version and a compatible databricks-connect, and pins your dependencies to versions known to work with your chosen compute. It creates or updates a .venv (managed by uv) in the current directory and records the setup in pyproject.toml, leaving the rest of your project untouched.`,
+		Example: `  # Match a serverless version
+  databricks environments setup-local --serverless-version 5
+
+  # Match an existing cluster by name
+  databricks environments setup-local --cluster-name my-cluster
+
+  # See what would change without writing anything
+  databricks environments setup-local --serverless-version 5 --dry-run`,
 		// Hidden until the environment constraints repository is publicly
 		// available: the command is runnable for dogfooding but stays out of
 		// help and completion until it is unveiled.
