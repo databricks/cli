@@ -25,8 +25,9 @@ const (
 //
 //   - One resource, one upload at a time. DMS keeps a single state per resource, so
 //     overlapping uploads could land out of order and leave the older state.
-//   - Newest operation wins. Each carries the resource's full state, so a queued
-//     operation superseded by a newer one is dropped ("coalesced").
+//   - Newest operation wins. Each write carries the resource's full state, so writes
+//     that pile up behind an in-flight upload are merged into one ("coalesced") and
+//     the resource costs a single request instead of one per write.
 //
 // close reports the first upload failure, which fails the deploy: DMS becomes the
 // source of truth (see dstate.readDMSState), so a missing record would make the
@@ -42,11 +43,11 @@ type operationQueue struct {
 	// mu guards the fields below.
 	mu sync.Mutex
 
-	// pending holds the operations waiting per resource key, oldest first. Every one
-	// is uploaded: a resource can write state more than once in a deploy (a recreate
-	// drops it, then saves the new resource), and each write is its own event, so
-	// dropping the older one would hide a step. No key means nothing is waiting.
-	pending map[string][]recordedOperation
+	// pending holds the one operation waiting per resource key: a resource can write
+	// state more than once in a deploy (a recreate drops the entry, then saves the new
+	// resource), and writes that arrive before the previous one is uploaded are merged
+	// by mergeOperation. No key means nothing is waiting.
+	pending map[string]recordedOperation
 
 	// queuedOrUploading means "some worker will get to this key". Recording such a
 	// key writes to pending only, so two workers never upload one resource at once.
@@ -66,7 +67,7 @@ func newOperationQueue(ctx context.Context, uploader operationUploader) *operati
 	q := &operationQueue{
 		uploader:          uploader,
 		queue:             make(chan string, operationQueueSize),
-		pending:           make(map[string][]recordedOperation),
+		pending:           make(map[string]recordedOperation),
 		queuedOrUploading: make(map[string]bool),
 	}
 
@@ -117,17 +118,20 @@ func (q *operationQueue) recordFailure(ctx context.Context, resourceKey string, 
 	q.enqueue(ctx, resourceKey, op)
 }
 
-// enqueue appends op to the operations waiting for resourceKey and makes sure a
-// worker will pick it up.
+// enqueue makes op the operation waiting for resourceKey, merged onto whatever was
+// already waiting, and makes sure a worker will pick it up.
 func (q *operationQueue) enqueue(ctx context.Context, resourceKey string, op recordedOperation) {
 	q.mu.Lock()
-	q.pending[resourceKey] = append(q.pending[resourceKey], op)
+	if waiting, ok := q.pending[resourceKey]; ok {
+		op = mergeOperation(waiting, op)
+	}
+	q.pending[resourceKey] = op
 	alreadyHandled := q.queuedOrUploading[resourceKey]
 	q.queuedOrUploading[resourceKey] = true
 	q.mu.Unlock()
 
 	// A worker will re-read pending before it finishes, so it picks up the operation
-	// appended above. Queueing again would let a second worker upload the same key.
+	// stored above. Queueing again would let a second worker upload the same key.
 	if alreadyHandled {
 		return
 	}
@@ -176,26 +180,23 @@ func (q *operationQueue) work(ctx context.Context) {
 	}
 }
 
-// take claims the oldest operation waiting for resourceKey, reporting false and
-// clearing the queuedOrUploading mark when nothing is left, which lets record queue
-// it again. Both happen under one lock, so a key can never be left for no worker to
-// pick up.
+// take claims the operation waiting for resourceKey, reporting false and clearing the
+// queuedOrUploading mark when nothing is left, which lets record queue it again. Both
+// happen under one lock, so a key can never be left for no worker to pick up.
 func (q *operationQueue) take(resourceKey string) (recordedOperation, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	ops := q.pending[resourceKey]
-	if len(ops) == 0 {
-		delete(q.pending, resourceKey)
+	op, ok := q.pending[resourceKey]
+	if !ok {
 		delete(q.queuedOrUploading, resourceKey)
 		return recordedOperation{}, false
 	}
 
-	// Oldest first, so the service sees the writes in the order they happened. The
-	// mark stays until the branch above clears it, so anything recorded during this
-	// upload is still picked up and no second worker takes the key meanwhile.
-	q.pending[resourceKey] = ops[1:]
-	return ops[0], true
+	// The mark stays until the branch above clears it, so anything recorded during
+	// this upload is still picked up and no second worker takes the key meanwhile.
+	delete(q.pending, resourceKey)
+	return op, true
 }
 
 // setErr keeps the first upload error; later ones are dropped because one failure

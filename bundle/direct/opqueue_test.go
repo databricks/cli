@@ -27,10 +27,12 @@ type fakeUploader struct {
 	done chan string
 	err  error
 
-	mu          sync.Mutex
-	uploads     []string
-	actions     map[string]bundledeployments.OperationActionType
-	resourceIDs map[string]string
+	mu            sync.Mutex
+	uploads       []string
+	actions       map[string]bundledeployments.OperationActionType
+	resourceIDs   map[string]string
+	statuses      map[string]bundledeployments.OperationStatus
+	errorMessages map[string]string
 }
 
 func (f *fakeUploader) upload(ctx context.Context, resourceKey string, op recordedOperation) error {
@@ -46,9 +48,13 @@ func (f *fakeUploader) upload(ctx context.Context, resourceKey string, op record
 	if f.actions == nil {
 		f.actions = map[string]bundledeployments.OperationActionType{}
 		f.resourceIDs = map[string]string{}
+		f.statuses = map[string]bundledeployments.OperationStatus{}
+		f.errorMessages = map[string]string{}
 	}
 	f.actions[resourceKey] = op.action
 	f.resourceIDs[resourceKey] = op.resourceID
+	f.statuses[resourceKey] = op.status
+	f.errorMessages[resourceKey] = op.errorMessage
 	f.mu.Unlock()
 
 	// Sent outside the lock: a test that stops reading this channel would otherwise
@@ -77,6 +83,30 @@ func (f *fakeUploader) resourceIDFor(resourceKey string) string {
 	return f.resourceIDs[resourceKey]
 }
 
+func (f *fakeUploader) statusFor(resourceKey string) bundledeployments.OperationStatus {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.statuses[resourceKey]
+}
+
+func (f *fakeUploader) errorMessageFor(resourceKey string) string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.errorMessages[resourceKey]
+}
+
+// uploadsFor returns the uploads recorded for one resource key, for tests where
+// other resources are uploaded alongside it.
+func uploadsFor(f *fakeUploader, resourceKey string) []string {
+	var out []string
+	for _, u := range f.recorded() {
+		if strings.HasPrefix(u, resourceKey+"=") {
+			out = append(out, u)
+		}
+	}
+	return out
+}
+
 // envelope builds the serialized RecordedState the state DB hands the queue.
 func envelope(t *testing.T, name string) json.RawMessage {
 	t.Helper()
@@ -102,14 +132,14 @@ func TestOperationQueueUploadsEachOperation(t *testing.T) {
 	assert.Len(t, f.recorded(), 20)
 }
 
-func TestOperationQueueUploadsEveryWriteForSameResource(t *testing.T) {
-	// Hold the first upload so the writes behind it queue up. Each one is its own
-	// event, so all three are uploaded, oldest first - a resource can legitimately
-	// write state several times in one deploy (see Recreate).
+func TestOperationQueueMergesWritesQueuedBehindAnUpload(t *testing.T) {
+	// Hold the first upload so the writes behind it queue up. The two that pile up
+	// merge into one carrying the newest state, so the resource costs two requests
+	// rather than three - the in-flight one, then everything after it.
 	//
-	// started is buffered for all three: every write now uploads, and a worker
-	// blocking on an unread send would deadlock the drain below.
-	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 3)}
+	// started is buffered for both uploads: a worker blocking on an unread send
+	// would deadlock the drain below.
+	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 2)}
 	q := newOperationQueue(t.Context(), f)
 
 	recordState(t, q, "resources.jobs.foo", "v1")
@@ -125,16 +155,50 @@ func TestOperationQueueUploadsEveryWriteForSameResource(t *testing.T) {
 
 	assert.Equal(t, []string{
 		`resources.jobs.foo={"state":{"name":"v1"}}`,
-		`resources.jobs.foo={"state":{"name":"v2"}}`,
 		`resources.jobs.foo={"state":{"name":"v3"}}`,
 	}, f.recorded())
 }
 
-func TestOperationQueueUploadsQueuedWritesWhileWorkersAreBusy(t *testing.T) {
-	// Every worker is parked mid-upload, so the writes below sit in pending rather
-	// than being picked up. Both still go out, in order, once a worker frees up.
+func TestOperationQueueMergedRecreateKeepsItsActionType(t *testing.T) {
+	// A recreate records its intermediate delete, then the create that replaces the
+	// resource. Merging them must upload the recreate's action: the service fixes
+	// action_type when the operation is created and rejects it in an update mask, so
+	// taking the newer create's action would report the resource as merely created.
 	//
-	// started is buffered for the two foo writes as well: nothing reads it after the
+	// Every worker is parked so both writes land in pending and merge before upload.
+	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, operationUploadWorkers+2)}
+	q := newOperationQueue(t.Context(), f)
+
+	for i := range operationUploadWorkers {
+		recordState(t, q, "resources.jobs.hold"+strconv.Itoa(i), "v1")
+		assert.Equal(t, "resources.jobs.hold"+strconv.Itoa(i), <-f.started)
+	}
+
+	q.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Recreate, InProgress: true}, "old-id", nil)
+	q.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Create}, "new-id", envelope(t, "replacement"))
+
+	close(f.block)
+	require.NoError(t, q.close())
+
+	assert.Equal(t,
+		bundledeployments.OperationActionTypeOperationActionTypeRecreate,
+		f.actionFor("resources.jobs.foo"))
+	// The newer write's own fields still win: the replacement's id, state and its
+	// succeeded status, not the in-progress the delete asked for.
+	assert.Equal(t, "new-id", f.resourceIDFor("resources.jobs.foo"))
+	assert.Equal(t, []string{
+		`resources.jobs.foo={"state":{"name":"replacement"}}`,
+	}, uploadsFor(f, "resources.jobs.foo"))
+	assert.Equal(t,
+		bundledeployments.OperationStatusOperationStatusSucceeded,
+		f.statusFor("resources.jobs.foo"))
+}
+
+func TestOperationQueueMergesQueuedWritesWhileWorkersAreBusy(t *testing.T) {
+	// Every worker is parked mid-upload, so the writes below sit in pending rather
+	// than being picked up. They merge into one upload carrying the newest state.
+	//
+	// started is buffered for the merged foo write as well: nothing reads it after the
 	// loop below, and a worker blocking on the send would deadlock the drain.
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, operationUploadWorkers+2)}
 	q := newOperationQueue(t.Context(), f)
@@ -156,16 +220,9 @@ func TestOperationQueueUploadsQueuedWritesWhileWorkersAreBusy(t *testing.T) {
 	close(f.block)
 	require.NoError(t, q.close())
 
-	var uploadsForFoo []string
-	for _, u := range f.recorded() {
-		if strings.HasPrefix(u, "resources.jobs.foo=") {
-			uploadsForFoo = append(uploadsForFoo, u)
-		}
-	}
 	assert.Equal(t, []string{
-		`resources.jobs.foo={"state":{"name":"created"}}`,
 		`resources.jobs.foo={"state":{"name":"updated"}}`,
-	}, uploadsForFoo)
+	}, uploadsFor(f, "resources.jobs.foo"))
 
 	// The ID recorded last is the one the create learned.
 	assert.Equal(t, "id-1", f.resourceIDFor("resources.jobs.foo"))
@@ -199,6 +256,30 @@ func TestOperationQueueRecordDuringUploadIsStillUploaded(t *testing.T) {
 	assert.Equal(t, "id-1", f.resourceIDFor("resources.jobs.foo"))
 	assert.Empty(t, q.pending)
 	assert.Empty(t, q.queuedOrUploading)
+}
+
+func TestOperationQueueMergedFailureKeepsStatusAndMessageTogether(t *testing.T) {
+	// The service rejects error_message unless the status is failed, so a merge must
+	// not mix the newer status with the older message or vice versa. A resource that
+	// writes state and then fails is the sequence that would expose it.
+	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, operationUploadWorkers+2)}
+	q := newOperationQueue(t.Context(), f)
+
+	for i := range operationUploadWorkers {
+		recordState(t, q, "resources.jobs.hold"+strconv.Itoa(i), "v1")
+		assert.Equal(t, "resources.jobs.hold"+strconv.Itoa(i), <-f.started)
+	}
+
+	recordState(t, q, "resources.jobs.foo", "v1")
+	q.recordFailure(t.Context(), "resources.jobs.foo", deployplan.Update, "id-1", envelope(t, "prior"), errors.New("boom"))
+
+	close(f.block)
+	require.NoError(t, q.close())
+
+	assert.Equal(t,
+		bundledeployments.OperationStatusOperationStatusFailed,
+		f.statusFor("resources.jobs.foo"))
+	assert.Equal(t, "boom", f.errorMessageFor("resources.jobs.foo"))
 }
 
 func TestOperationQueueReturnsUploadError(t *testing.T) {
