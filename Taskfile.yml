@@ -735,10 +735,10 @@ tasks:
 
   test-fuzz:
     desc: Run invariant fuzz tests (mutated configs, direct engine)
-    # Sources fingerprint omitted: the window depends on FUZZ_* env vars Task can't see.
+    # No sources fingerprint: the window depends on FUZZ_* env vars Task can't see.
     cmds:
       - |
-        # Budget stops each variant; count is a ceiling. Drift on; timeout fits 4×budget.
+        # Budget stops each variant; count is a ceiling. Drift on.
         export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-10000}"
         export FUZZ_CHECK_DRIFT="${FUZZ_CHECK_DRIFT:-1}"
         export FUZZ_TIME_BUDGET="${FUZZ_TIME_BUDGET:-900}"

@@ -2,12 +2,11 @@
 """
 Mutate a curated, deploy-verified bundle config for the invariant fuzzer.
 
-Destructive: delete a field, or replace it with a token, dangerous value, or empty container.
+Destructive: delete/replace a field (token, dangerous scalar, or empty container).
 Additive: inject one optional from INJECT that the base omits (deploy-proven shapes).
 
-Emits one mutated databricks.yml on stdout as JSON: JSON is valid YAML 1.2 and the bundle loader
-accepts flow style, so no YAML writer is needed. Reading the bases does need one, since the
-harness python is stdlib-only (no PyYAML): load_yaml covers their block style.
+Emits JSON on stdout (valid YAML 1.2; no PyYAML in the harness). load_yaml covers the
+bases' block style only.
 """
 
 import json
@@ -19,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from envsubst import substitute_variables
 
-# Weight toward inject: that is how reconcile/drift bugs are reached.
+# Prefer inject: that is how reconcile/drift bugs are reached.
 ADD_PROB = 0.6
 
 # Hostile free-form scalars; the CLI must reject or round-trip without panicking.
@@ -44,7 +43,7 @@ DANGEROUS_INTS = [
 ]
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
-# Single-resource invariant configs. data/ fixtures are staged by script.prepare.
+# Single-resource invariant configs (data/ staged by script.prepare).
 MUTATE_BASES = [
     "app",
     "catalog",
@@ -61,7 +60,7 @@ MUTATE_BASES = [
     "volume",
 ]
 
-# Absences keyed by resources.<type>. Values from acceptance fixtures that deploy / showed drift.
+# Optional absences keyed by resources.<type>; shapes that deploy or showed drift.
 INJECT = {
     "apps": [
         ("description", "fuzz-app-description"),
@@ -153,8 +152,7 @@ INJECT = {
     ],
 }
 
-# Base types with nothing left to inject, and why. Explicit so that a type missing from INJECT by
-# accident is not mistaken for one that was audited and came up empty.
+# Audited-empty types (a missing INJECT key would look the same without this).
 NO_INJECT = {
     "secret_scopes": "only keyvault_metadata remains: Azure-only, conflicts with backend_type DATABRICKS",
 }
@@ -165,12 +163,12 @@ def token(rng):
 
 
 def dump_config(config):
-    # Literal non-ASCII: default escapes make invalid YAML surrogates before bundle sees them.
+    # ensure_ascii=False: default escapes become invalid YAML surrogates before the bundle sees them.
     return json.dumps(config, indent=2, ensure_ascii=False) + "\n"
 
 
 def tokenize(text):
-    # Skip empty and full-line "# ..." comments; curated bases use that style.
+    # Full-line comments only; curated bases never use trailing "#".
     out = []
     for raw in text.splitlines():
         stripped = raw.lstrip(" ")
@@ -187,7 +185,7 @@ def scalar(text):
         return []
     if text == "{}":
         return {}
-    # Flow sequences like [id] round-trip as the string "[id]"; fail loud so a new base is caught.
+    # Flow style would round-trip as a string; fail loud so a new base is caught.
     if text[0] in "[{":
         sys.exit(f"mutate_fuzz_config: flow-style value is not supported: {text!r}")
     if text == "true":
@@ -309,13 +307,13 @@ def add_field(rng, config):
     if not candidates:
         return
     instance, name, value = rng.choice(candidates)
-    # Deep copy: later destructive steps must not mutate the shared catalog entry.
+    # Deep copy so later destructive steps do not mutate the shared catalog entry.
     instance[name] = json.loads(json.dumps(value))
 
 
 def mutate(config, seed):
     rng = random.Random(seed)
-    # Stay inside resource instances so the bundle/resources skeleton survives.
+    # Resource instances only: keep the bundle/resources skeleton intact.
     roots = [instance for _, instance in resource_instances(config)]
 
     for _ in range(rng.randint(1, 3)):
@@ -328,7 +326,7 @@ def mutate(config, seed):
 
 
 def main():
-    # Windows stdout defaults to the ANSI code page; literal UTF-8 probes need UTF-8.
+    # Windows stdout is often ANSI; UTF-8 probes need an explicit encoding.
     sys.stdout.reconfigure(encoding="utf-8")
 
     seed = int(os.environ["FUZZ_SEED"])

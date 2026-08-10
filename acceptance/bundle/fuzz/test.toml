@@ -22,7 +22,7 @@ Ignore = [
 
 EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "delete_idempotent", "destroy_idempotent"]
 
-# Fake SQL endpoint for local tests
+# Local SQL stub used by some mutated configs.
 [[Server]]
 Pattern = "POST /api/2.0/sql/statements/"
 Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'

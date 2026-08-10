@@ -1,5 +1,5 @@
-# Fuzz overrides of invariant helpers. Source explicitly: we sit outside the invariant subtree
-# (test.toml / script.prepare only merge along the directory chain).
+# Fuzz overrides of invariant helpers. Source explicitly: we sit outside the invariant
+# subtree (test.toml / script.prepare only merge along the directory chain).
 export INVARIANT_DIR="$TESTDIR/../invariant"
 
 # Empty INPUT_CONFIG satisfies set -u; mutated configs are unnamed.
@@ -24,7 +24,7 @@ invariant_render() {
     fi
 }
 
-# Exact no-drift false-positives on fake-server gaps: require two identical consecutive plans.
+# Plan-determinism oracle when exact no_drift would false-positive on fake-server gaps.
 # Compare to 0: empty FUZZ_CHECK_DRIFT is re-defaulted to 1 by task test-fuzz.
 if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
     invariant_verify_no_drift() {

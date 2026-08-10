@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Contract checks for mutate_fuzz_config. Failures go to stderr; stdout is a few mutated configs
-so an algorithm change shows up as an acceptance output diff.
+Contract checks for mutate_fuzz_config. Failures go to stderr; stdout samples mutated
+configs so an algorithm change shows up as an acceptance output diff.
 
-- every MUTATE_BASES entry parses to a config with a non-empty resource instance
+- every MUTATE_BASES entry parses to a non-empty resource instance
 - every base type has INJECT entries or a NO_INJECT reason, never both or neither
 - every INJECT field is a settable input in the committed reference schema
 - mutate(seed) is deterministic
@@ -45,7 +45,7 @@ def resource_type(config):
 
 
 def field_flags():
-    """Map field path -> flags. A path repeats once per Go type behind it, so union the flags."""
+    """Map field path -> flags. A path can repeat (one Go type each), so union them."""
     flags = {}
     with open(FIELDS) as f:
         for line in f:
@@ -56,7 +56,7 @@ def field_flags():
 
 
 def main():
-    # Stable printed configs regardless of the harness UNIQUE_NAME.
+    # Pin UNIQUE_NAME so printed configs are stable across harness runs.
     os.environ["UNIQUE_NAME"] = "check"
     os.environ.setdefault("CURRENT_USER_NAME", "check-user")
     failed = False
@@ -67,7 +67,7 @@ def main():
             sys.stderr.write(f"{name}: base did not parse to a config with resources\n")
             failed = True
             continue
-        # A mis-parse can still yield a dict, so require the instance to have kept its fields.
+        # A mis-parse can still yield a dict; empty instance means the loader dropped fields.
         if not instance(parsed):
             sys.stderr.write(f"{name}: base parsed to an empty resource instance\n")
             failed = True
@@ -78,9 +78,7 @@ def main():
             )
             failed = True
 
-    # Catches a typo in a field or resource-type key, and a field dropped by a schema regen. An
-    # unknown field is only a warning, so the seed still deploys and the additive mutation is a
-    # silent no-op that the deployed/rejected tally cannot show.
+    # Unknown fields are only a warning, so a typo would deploy as a silent no-op inject.
     flags = field_flags()
     for rtype, fields in INJECT.items():
         for field, _ in fields:
@@ -96,7 +94,7 @@ def main():
             sys.stderr.write(f"seed {seed}: mutation is not deterministic\n")
             failed = True
 
-    # Distinct dumps: consecutive seeds can collide and hide algorithm changes in output.txt.
+    # Distinct dumps: colliding samples hide algorithm changes in output.txt.
     samples = [0, 1, 5]
     dumps = []
     for seed in samples:

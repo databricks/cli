@@ -9,10 +9,10 @@ Seed loop for the invariant fuzzer. Invokes seed_body from fuzz/script and class
   bug      - panic, internal error, mutator failure, or failure after deploy
 
 Writes LOG.summary per seed; on bug/hang writes LOG.repro and exits non-zero.
-Stdout stays empty (committed run asserts that).
+Stdout stays empty (the committed run asserts that).
 
-Knobs: FUZZ_TARGET (matrix), FUZZ_SEED_*, FUZZ_TIME_BUDGET, FUZZ_CHECK_DRIFT (repro only;
-script.prepare acts on the latter).
+Knobs: FUZZ_TARGET (matrix), FUZZ_SEED_*, FUZZ_TIME_BUDGET, FUZZ_CHECK_DRIFT
+(script.prepare acts on the latter).
 """
 
 import json
@@ -28,7 +28,7 @@ from pathlib import Path
 # Stuck-seed cap; FUZZ_SEED_TIMEOUT=0 disables.
 SEED_TIMEOUT = float(os.environ.get("FUZZ_SEED_TIMEOUT", "180"))
 
-# Nightly/task stop; seed count is only a ceiling. 0 disables. Keeps runs under test.toml Timeout.
+# Nightly/task stop; seed count is only a ceiling. 0 disables.
 BUDGET = float(os.environ.get("FUZZ_TIME_BUDGET", "900"))
 
 QUIT_GRACE = 10  # seconds between SIGQUIT and SIGKILL
@@ -37,12 +37,12 @@ CLEANUP_LOG = "LOG.destroy"  # EXIT-trap destroy; every target writes this
 
 TARGET = os.environ["FUZZ_TARGET"]
 
-# Part of the repro: 0 = plan-determinism, 1 = exact no_drift (task test-fuzz default).
+# Repro knob: 0 = plan-determinism, 1 = exact no_drift (task test-fuzz default).
 CHECK_DRIFT = os.environ.get("FUZZ_CHECK_DRIFT", "0")
 
 POSIX = os.name == "posix"
 
-# Resolved path: Windows CreateProcess otherwise picks System32\\bash.exe (WSL stub).
+# Resolved path: Windows CreateProcess otherwise picks System32\bash.exe (WSL stub).
 BASH = shutil.which("bash")
 
 
@@ -94,7 +94,7 @@ def run_seed(seed_dir, seed):
 
 def oracle_verdict(seed_dir):
     """Drift oracle wording if it fired; empty if it never ran or was happy."""
-    # Oracle check runs before the TESTSERVER_GAP scan; both can fire on one seed.
+    # Checked before TESTSERVER_GAP: both can fire on one seed.
     if b"Unexpected action=" in read(seed_dir / "LOG.check"):
         return "planned a change after deploy"
     if read(seed_dir / "LOG.plan.determinism.diff").strip():
@@ -108,7 +108,6 @@ def classify(seed_dir):
     """Kind and, for a failure, the reason."""
     gen_err = read(seed_dir / "LOG.gen.err").strip()
     if gen_err:
-        # Last line carries the exception type/message.
         last_line = gen_err.splitlines()[-1].decode(errors="replace")
         return "bug", f"could not be mutated: {last_line}"
 
@@ -120,7 +119,7 @@ def classify(seed_dir):
     if verdict:
         return "bug", verdict
 
-    # Skip cleanup: destroy runs after failure and must not mask the real cause.
+    # Skip cleanup: destroy after failure must not mask the real cause.
     if b"TESTSERVER_GAP" in concat_logs(seed_dir, skip={CLEANUP_LOG}):
         return "gap", ""
 
@@ -131,7 +130,7 @@ def classify(seed_dir):
 
 
 def resource_type(seed_dir):
-    # Absent/empty only when the mutator itself failed, which classify() already reports as a bug.
+    # Empty only when the mutator failed; classify() already reports that as a bug.
     raw = read(seed_dir / "LOG.config")
     if not raw:
         return "unknown"
@@ -146,7 +145,7 @@ def record(kind, seed, seed_dir):
 
 def fail(seed, seed_dir, kind, reason, prefix=""):
     record(kind, seed, seed_dir)
-    # LOG.repro: harness rewrites env values in stdout. ENVFILTER for matrix keys.
+    # Harness rewrites env values in stdout; ENVFILTER selects the matrix key.
     Path("LOG.repro").write_text(
         f"fuzz: seed {seed} {reason}, reproduce with: {prefix}"
         f"ENVFILTER=FUZZ_TARGET={TARGET} FUZZ_SEED_START={seed} "
@@ -200,7 +199,7 @@ def main():
 
     kinds = totals()
 
-    # Every seed rejected means the mutator/fixtures are broken; single-seed exempt.
+    # All-rejected means the mutator/fixtures are broken; single-seed repro is exempt.
     if count > 1 and not kinds:
         sys.exit("fuzz: no seeds ran")
     if count > 1 and kinds["rejected"] == sum(kinds.values()):
