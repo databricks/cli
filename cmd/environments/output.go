@@ -3,6 +3,8 @@ package environments
 import (
 	"context"
 	"fmt"
+	"runtime"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -13,7 +15,9 @@ import (
 
 // renderResult renders the pipeline result to the command's output.
 // In JSON mode it renders the full structured result (even on error).
-// In text mode it prints phase headers and a summary, then returns the error.
+// In text mode it prints a friendly success/failure summary (per-phase progress
+// is shown live via the spinner while the run is in flight), then returns the
+// error.
 //
 // res is always non-nil: Pipeline.Run constructs and returns a fully-populated
 // Result (with the canonical phase list and error object) on every path,
@@ -32,30 +36,35 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libslocalenv.Res
 		return nil
 	}
 
-	// Text mode: print each phase in execution order.
-	for _, phase := range res.Phases {
-		if phase.Detail != "" {
-			cmdio.LogString(ctx, fmt.Sprintf("%-10s %s  %s", phase.Phase, phase.Status, phase.Detail))
-		} else {
-			cmdio.LogString(ctx, fmt.Sprintf("%-10s %s", phase.Phase, phase.Status))
-		}
-	}
-
+	// Text mode. The internal phase log is intentionally NOT printed on success:
+	// it read as noise in the M5 bug bash (DECO-27977). Per-phase progress is shown
+	// live via the spinner reporter (see cmd/environments/progress.go); the full
+	// phase list remains in --output json, and --debug logs each phase as it is
+	// entered.
 	for _, w := range res.Warnings {
 		cmdio.LogString(ctx, "warning: "+w.Message)
 	}
 
 	if pipelineErr != nil {
-		cmdio.LogString(ctx, "For more detail, re-run with --debug, or --output json to share a structured report.")
-		// The failing phase's message was already printed by the phase loop above
-		// (Pipeline.fail sets the errored phase's Detail to the error text).
-		// Returning pipelineErr would make root print "Error: ..." with the same
-		// message again, since PipelineError.Unwrap yields the cause, not the
-		// ErrAlreadyPrinted sentinel. Signal already-printed to exit non-zero once.
+		if res.Error != nil && res.Error.Code == libslocalenv.ErrCanceled {
+			cmdio.LogString(ctx, "✗ Setup canceled.")
+		} else {
+			cmdio.LogString(ctx, "✗ Setup failed"+failureClause(res)+".")
+			if res.Error != nil {
+				cmdio.LogString(ctx, "")
+				// Indent every line: uv-driven failures fold uv's (often multi-line)
+				// stderr into the message, and a flush-left continuation reads as
+				// unrelated output rather than part of the reason.
+				cmdio.LogString(ctx, indent(res.Error.Error(), "  "))
+			}
+		}
+		cmdio.LogString(ctx, "")
+		cmdio.LogString(ctx, "Re-run with --debug for details, or --output json for a structured report.")
+		// The failing message is already surfaced above; ErrAlreadyPrinted exits
+		// non-zero without root re-printing "Error: ...".
 		return root.ErrAlreadyPrinted
 	}
 
-	// Print a final success / check summary.
 	if res.DryRun {
 		if res.Plan != nil {
 			cmdio.LogString(ctx, "Plan: "+res.Plan.WouldWrite)
@@ -67,15 +76,90 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libslocalenv.Res
 		return nil
 	}
 
-	if res.Resolved != nil {
-		summary := "Success: python=" + res.Resolved.PythonVersion
-		if res.Resolved.DBConnectVersion != "" {
-			summary += " databricks-connect=" + res.Resolved.DBConnectVersion
-		}
-		if res.VenvPath != "" {
-			summary += " venv=" + res.VenvPath
-		}
-		cmdio.LogString(ctx, summary)
-	}
+	renderSuccess(ctx, res)
 	return nil
+}
+
+// renderSuccess prints the friendly post-provision summary (DECO-27977).
+//
+// It runs only on a non-dry-run success (renderResult returns earlier for JSON,
+// failures, and dry runs), so res.VenvPath is always set: the validate phase — the
+// last thing a successful run does — assigns it unconditionally (see Pipeline.validate).
+func renderSuccess(ctx context.Context, res *libslocalenv.Result) {
+	cmdio.LogString(ctx, "✔ Local environment ready")
+	cmdio.LogString(ctx, "")
+
+	if res.Compute != nil {
+		cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "Compute target", res.Compute.Label()))
+	}
+	if res.Resolved != nil {
+		cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "Python", res.Resolved.PythonVersion))
+		if res.Resolved.DBConnectVersion != "" {
+			cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "databricks-connect", res.Resolved.DBConnectVersion))
+		}
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "Virtual env", res.VenvPath))
+	// pyproject.toml was created (greenfield) or updated in place (with a backup).
+	pyprojectDetail := "updated"
+	if res.Greenfield {
+		pyprojectDetail = "created"
+	} else if res.BackupPath != "" {
+		pyprojectDetail = "updated (backup: " + res.BackupPath + ")"
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "pyproject.toml", pyprojectDetail))
+
+	cmdio.LogString(ctx, "")
+	cmdio.LogString(ctx, "Next steps:")
+	cmdio.LogString(ctx, "  • Activate it:  "+activateHint(res.VenvPath))
+	cmdio.LogString(ctx, "  • Or select "+res.VenvPath+" as the Python interpreter in VS Code / Cursor")
+}
+
+// activateHint returns the shell command to activate the virtual environment,
+// matching the running OS. uv lays the venv out as Scripts\activate on Windows
+// and bin/activate on Unix (see venvPython in libs/localenv/uv.go, which branches
+// the same way); "source" is a POSIX-shell builtin, so Windows gets the bare
+// path instead. Printing the Unix form on Windows would hand the user a command
+// that fails with "source is not recognized" and a path that does not exist.
+func activateHint(venvPath string) string {
+	if runtime.GOOS == "windows" {
+		return venvPath + `\Scripts\activate`
+	}
+	return "source " + venvPath + "/bin/activate"
+}
+
+// failureClause maps the failing phase to a human clause for the failure line,
+// e.g. " while fetching constraints" (note the leading space). Keyed off the
+// recorded FailurePhase so text output stays in step with the --output json
+// error object. Returns "" for an unknown or missing phase, so the caller reads
+// "Setup failed." rather than the redundant "Setup failed during setup."
+func failureClause(res *libslocalenv.Result) string {
+	if res.Error == nil {
+		return ""
+	}
+	switch res.Error.FailurePhase {
+	case libslocalenv.PhasePreflight:
+		return " during preflight checks"
+	case libslocalenv.PhaseResolve:
+		return " while resolving your compute target"
+	case libslocalenv.PhaseFetch:
+		return " while fetching constraints"
+	case libslocalenv.PhaseMerge:
+		return " while updating pyproject.toml"
+	case libslocalenv.PhaseProvision:
+		return " while provisioning the virtual environment"
+	case libslocalenv.PhaseValidate:
+		return " while validating the environment"
+	default:
+		return ""
+	}
+}
+
+// indent prefixes every line of s with prefix. Used so a multi-line failure
+// message (uv stderr folded in) stays visually grouped under the failure line.
+func indent(s, prefix string) string {
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		lines[i] = prefix + line
+	}
+	return strings.Join(lines, "\n")
 }

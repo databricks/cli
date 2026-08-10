@@ -42,9 +42,6 @@ type TestConfig struct {
 	// Only checked if CLOUD_ENV is not empty.
 	CloudEnvs map[string]bool
 
-	// If true, run this test when running locally with a testserver
-	Local *bool
-
 	// If true, run this test when running with cloud env configured
 	Cloud *bool
 

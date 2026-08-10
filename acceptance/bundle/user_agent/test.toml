@@ -1,6 +1,5 @@
 Phase = 1
 RecordRequests = true
-Local = true
 IncludeRequestHeaders = ["User-Agent"]
 
 # This test asserts the User-Agent on every single request the CLI makes, so recording's

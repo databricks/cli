@@ -1,0 +1,1 @@
+direct: Fixed model serving `telemetry_config` drift and applied planned telemetry updates. Unsupported endpoint types now fail when telemetry is applied; create may still succeed because it drops the field ([#6106](https://github.com/databricks/cli/pull/6106)).

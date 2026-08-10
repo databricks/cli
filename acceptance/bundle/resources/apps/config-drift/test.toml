@@ -1,4 +1,3 @@
-Local = true
 Cloud = false # This currently fails on Cloud due to incorrect API behaviour.
 RecordRequests = true
 

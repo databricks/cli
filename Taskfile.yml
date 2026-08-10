@@ -584,19 +584,10 @@ tasks:
     cmds:
       - "go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
-  test-update-aws:
-    desc: Update acceptance test output (integration, requires deco access)
-    sources: *ACC_SOURCES_UPDATE
-    generates: *ACC_GENERATES_UPDATE
-    cmds:
-      - "deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=true go test ./acceptance -run ^TestAccept$ -update -timeout=1h -v"
-
   test-update-all:
     desc: Update all acceptance test outputs
-    # Sequential: both tasks overwrite the same acceptance output files.
     cmds:
       - task: test-update
-      - task: test-update-aws
 
   # Follows upstream HEAD, so its result changes over time: keep it out of
   # `generate-check`, which requires byte-for-byte reproducible output.

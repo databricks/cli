@@ -263,7 +263,7 @@ func TestLoadConfigPhaseIsNotInherited(t *testing.T) {
 			name: "leaf config without phase resets inherited value",
 			files: map[string]string{
 				"test.toml":            "Phase = 3\n",
-				"suite/test/test.toml": "Local = true\n",
+				"suite/test/test.toml": "Cloud = false\n",
 			},
 			dir:        "suite/test",
 			wantPhase:  0,
@@ -273,7 +273,7 @@ func TestLoadConfigPhaseIsNotInherited(t *testing.T) {
 			name: "leaf phase wins",
 			files: map[string]string{
 				"test.toml":            "Phase = 3\n",
-				"suite/test/test.toml": "Local = true\nPhase = 1\n",
+				"suite/test/test.toml": "Cloud = false\nPhase = 1\n",
 			},
 			dir:        "suite/test",
 			wantPhase:  1,

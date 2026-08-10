@@ -1,4 +1,3 @@
-Local = true
 Cloud = false
 
 # Deployment Metadata Service (DMS) recording is only supported by the direct

@@ -40,9 +40,24 @@ func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outpu
 // excluded; a .gitignore at repoPath is honored.
 func createPlainTarball(ctx context.Context, repoPath, outputTarball string, includePaths []string) error {
 	dirName := filepath.Base(repoPath)
-	parent := filepath.Dir(repoPath)
+	// Absolute so it resolves correctly regardless of tar's working dir (set below).
+	parent, err := filepath.Abs(filepath.Dir(repoPath))
+	if err != nil {
+		return err
+	}
 
-	args := []string{"-czf", outputTarball}
+	// Pass the archive path relative to its own directory (run tar there), never a
+	// full path: on Windows an absolute path like `C:\out\x.tar.gz` makes tar read
+	// the `C:` as a remote host ("Cannot connect to C:"), since tar treats a colon
+	// in the -f arg as host:path. A bare basename with -C avoids that on GNU tar and
+	// bsdtar alike.
+	outDirAbs, err := filepath.Abs(filepath.Dir(outputTarball))
+	if err != nil {
+		return err
+	}
+	outName := filepath.Base(outputTarball)
+
+	args := []string{"-czf", outName}
 
 	// Exclude macOS AppleDouble files: they sort before the real top-level dir and
 	// hijack a remote `head -1` parse. No-op on Linux.
@@ -66,7 +81,9 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, inc
 	}
 
 	// Archive from the parent so the directory name is preserved; with include_paths,
-	// prefix each so entries nest under it (matching git archive --prefix).
+	// prefix each so entries nest under it (matching git archive --prefix). -C only
+	// affects the file operands that follow it, not the -f archive path (which
+	// resolves against tar's working dir, set to outDirAbs below).
 	args = append(args, "-C", parent)
 	if len(includePaths) > 0 {
 		for _, p := range includePaths {
@@ -77,6 +94,8 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, inc
 	}
 
 	cmd := exec.CommandContext(ctx, "tar", args...)
+	// Run tar in the output directory so the bare -f basename lands there.
+	cmd.Dir = outDirAbs
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {

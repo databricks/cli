@@ -1,6 +1,4 @@
 Cloud = false
-Local = true
-
 # Redact structured logging fields from debug output
 [[Repls]]
 Old = ' pid=[0-9]+'

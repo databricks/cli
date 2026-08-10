@@ -32,6 +32,12 @@ SEMVER_RE = re.compile(r"^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+
 # mistaken for a fragment.
 README = "README.md"
 
+# nextversion.go embeds the version file above so the build can report the next
+# release version. It lives here because go:embed cannot reach a parent
+# directory, and keeping it here avoids a second copy of the version that could
+# drift. The release renderer only reads *.md fragments, so it ignores this.
+NEXTVERSION_GO = "nextversion.go"
+
 
 def load_sections(root):
     """Return the section slugs from .codegen.json, in changelog order.
@@ -63,7 +69,7 @@ def find_problems(changelog_dir, sections):
         # Root-level: only the version file and root documentation belong here. This prevents
         # someone accidentally putting a .md into .nextchanges thinking it would be picked up.
         if len(rel.parts) == 1:
-            if name != VERSION_FILE and name != README:
+            if name not in (VERSION_FILE, README, NEXTVERSION_GO):
                 problems.append((path, "unexpected file at .nextchanges root"))
             continue
 
