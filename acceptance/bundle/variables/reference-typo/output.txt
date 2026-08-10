@@ -1,0 +1,13 @@
+
+>>> errcode [CLI] bundle validate
+Error: reference does not exist: ${var.hst}, did you mean "host"?
+
+Name: reference-typo
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo/default
+
+Found 1 error
+
+Exit code: 1

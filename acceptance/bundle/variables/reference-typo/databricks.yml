@@ -1,0 +1,12 @@
+bundle:
+  name: reference-typo
+
+variables:
+  host:
+    default: https://example.com
+
+resources:
+  jobs:
+    one:
+      # "hst" is a typo of the "host" variable defined above; the error suggests it.
+      name: ${var.hst}
