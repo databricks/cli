@@ -60,7 +60,6 @@ Exit code: 1
     "result_state": {
       "action": "update",
       "reason": "run in progress",
-      "old": "SUCCESS",
       "new": "SUCCESS"
     }
   }
@@ -76,8 +75,8 @@ Updating deployment state...
 Deployment complete!
 
 === the same run finished, and nothing was cancelled, deleted or triggered
->>> read_state.py job_runs my_run id
-job_runs my_run id='[MY_RUN_ID]'
+>>> read_state.py job_runs my_run id result_state
+job_runs my_run id='[MY_RUN_ID]' result_state=None
 
 >>> print_requests.py //jobs
 

@@ -25,13 +25,11 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
-// JobRunState is what we persist for a triggered run: the RunNow request, plus
-// the outcome the run is required to reach.
+// JobRunState is the RunNow request plus the outcome required for planning.
 type JobRunState struct {
 	jobs.RunNow
 
-	// Always SUCCESS, never read from the config: it is the outcome the remote is
-	// compared against, which OverrideChangeDesc turns into a recreate or a wait.
+	// Always SUCCESS during planning and cleared before persistence.
 	ResultState jobs.RunResultState `json:"result_state,omitempty"`
 }
 
@@ -159,6 +157,7 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 	if err != nil {
 		return "", nil, err
 	}
+	config.ResultState = ""
 	return strconv.FormatInt(wait.RunId, 10), nil, nil
 }
 
@@ -322,11 +321,11 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 	}
 }
 
-// DoUpdate adopts a run that is still going. A run can't be modified, so the
-// only work an update does is finish the wait an interrupted deploy abandoned,
-// which is the only reason the plan asks for one.
-func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, _ *JobRunState, _ *PlanEntry) (*JobRunRemote, error) {
-	return r.waitForRun(ctx, id)
+// DoUpdate finishes the wait an interrupted deploy abandoned.
+func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, config *JobRunState, _ *PlanEntry) (*JobRunRemote, error) {
+	remote, err := r.waitForRun(ctx, id)
+	config.ResultState = ""
+	return remote, err
 }
 
 // OverrideChangeDesc downgrades result_state drift to an update while the run is

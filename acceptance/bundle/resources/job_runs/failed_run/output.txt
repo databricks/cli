@@ -16,11 +16,43 @@ Updating deployment state...
 >>> read_id.py my_run
 [MY_RUN_ID]
 
->>> [CLI] bundle plan
-recreate job_runs.my_run
-create jobs.downstream_job
-
-Plan: 2 to add, 0 to change, 1 to delete, 1 unchanged
+>>> [CLI] bundle plan -o json
+{
+  "depends_on": [
+    {
+      "node": "resources.jobs.my_job",
+      "label": "${resources.jobs.my_job.id}"
+    }
+  ],
+  "action": "recreate",
+  "new_state": {
+    "value": {
+      "job_id": [MY_JOB_ID],
+      "result_state": "SUCCESS"
+    }
+  },
+  "remote_state": {
+    "job_id": [MY_JOB_ID],
+    "result_state": "FAILED",
+    "run_id": [MY_RUN_ID],
+    "run_name": "test-job-[UNIQUE_NAME]",
+    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]",
+    "run_type": "JOB_RUN",
+    "state": {
+      "life_cycle_state": "INTERNAL_ERROR",
+      "result_state": "FAILED",
+      "state_message": "Task main failed with message: Workload failed, see run output for details."
+    }
+  },
+  "changes": {
+    "result_state": {
+      "action": "recreate",
+      "reason": "immutable",
+      "new": "SUCCESS",
+      "remote": "FAILED"
+    }
+  }
+}
 
 === so a redeploy runs the job again, and fails again
 >>> [CLI] bundle deploy

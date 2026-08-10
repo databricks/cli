@@ -12,11 +12,10 @@ trap cleanup EXIT
 title "a run that finishes FAILED fails the deploy"
 musterr trace $CLI bundle deploy
 
-# The framework saves the run id before calling WaitAfterCreate, so the failed run
-# stays recorded, and FAILED against the required SUCCESS is drift.
+# The framework saves the run id before WaitAfterCreate, so FAILED vs SUCCESS is drift.
 title "the failed run is recorded, and not having succeeded is drift"
 trace read_id.py my_run
-trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"]'
 
 # Name the job too, so the run-now bodies below say which number it is.
 read_id.py my_job > /dev/null

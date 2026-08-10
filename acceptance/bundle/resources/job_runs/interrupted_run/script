@@ -27,5 +27,5 @@ title "the deploy adopts that run and waits for it to finish"
 trace $CLI bundle deploy --plan tmp.plan.json
 
 title "the same run finished, and nothing was cancelled, deleted or triggered"
-trace read_state.py job_runs my_run id
+trace read_state.py job_runs my_run id result_state
 trace print_requests.py //jobs
