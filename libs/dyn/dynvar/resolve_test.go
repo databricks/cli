@@ -39,6 +39,16 @@ func TestResolveNotFound(t *testing.T) {
 	require.ErrorContains(t, err, `reference does not exist: ${a}`)
 }
 
+func TestResolveNotFoundSuggestsCloseKey(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"host": dyn.V("example.com"),
+		"b":    dyn.V("${hst}"),
+	})
+
+	_, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
+	require.ErrorContains(t, err, `reference does not exist: ${hst}, did you mean "host"?`)
+}
+
 func TestResolveWithNesting(t *testing.T) {
 	in := dyn.V(map[string]dyn.Value{
 		"a": dyn.V("${f.a}"),
