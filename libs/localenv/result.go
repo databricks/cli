@@ -3,6 +3,7 @@ package localenv
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // Command path components, defined once so a rename touches a single place
@@ -167,6 +168,21 @@ type ComputeInfo struct {
 	EnvKey            string `json:"envKey"`
 
 	SparkVersion string `json:"-"`
+}
+
+// Label returns a short, human-readable name for the resolved compute target,
+// for display in the text summary (e.g. "serverless 4", "cluster 0101-abc").
+// The precise environment key is still available in --output json and --debug.
+func (c *ComputeInfo) Label() string {
+	switch {
+	case c.ServerlessVersion != "":
+		// ServerlessVersion is normalized to "v4"; drop the "v" for display.
+		return "serverless " + strings.TrimPrefix(c.ServerlessVersion, "v")
+	case c.ClusterID != "":
+		return "cluster " + c.ClusterID
+	default:
+		return c.EnvKey
+	}
 }
 
 // ResolvedInfo is the resolved environment definition (spec §6 "resolved").
