@@ -1,5 +1,5 @@
 
-=== Machine A: deploy, then destroy (leaves local state with lineage L1 behind)
+=== Machine A: deploy, then destroy
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default/files...
@@ -16,7 +16,11 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
-=== Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)
+=== Destroy removed the local state files:
+
+>>> find.py ^.databricks/bundle/default/(resources.json|terraform/terraform.tfstate)$ --expect 0
+
+=== Machine B: fresh deploy of the same bundle (mints a new lineage remotely)
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default/files...
@@ -24,28 +28,13 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Machine A: any command that pulls remote state now fails
+=== Machine A: commands succeed, adopting machine B's remote state
 
->>> musterr [CLI] bundle plan
-Error: lineage mismatch in state files
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-Available state files:
-- resources.json: remote direct state serial=1 lineage="[LINEAGE_B]"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[LINEAGE_A]"
-
-
->>> musterr [CLI] bundle deploy
-Error: lineage mismatch in state files
-
-Available state files:
-- resources.json: remote direct state serial=1 lineage="[LINEAGE_B]"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[LINEAGE_A]"
-
-
->>> musterr [CLI] bundle destroy --auto-approve
-Error: lineage mismatch in state files
-
-Available state files:
-- resources.json: remote direct state serial=1 lineage="[LINEAGE_B]"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[LINEAGE_A]"
-
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

@@ -3,7 +3,9 @@ package phases
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"net/http"
+	"os"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
@@ -106,9 +108,27 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 
 	bundle.ApplyContext(ctx, b, files.Delete())
 
-	if !logdiag.HasError(ctx) {
-		cmdio.LogString(ctx, "Destroy complete!")
+	if logdiag.HasError(ctx) {
+		return
 	}
+
+	// Remove the local state files now that the deployment is gone. Destroy only
+	// deletes the remote state; leaving a local state file behind keeps its
+	// lineage around, so a later fresh deploy of the same bundle (e.g. from
+	// another machine that has no local state) mints a new lineage that no longer
+	// matches this lingering one, and every subsequent command fails with a
+	// lineage mismatch. Both engines keep a lineage-bearing state file, so remove
+	// both regardless of which engine ran the destroy.
+	_, localDirectPath := b.StateFilenameDirect(ctx)
+	_, localTerraformPath := b.StateFilenameTerraform(ctx)
+	for _, path := range []string{localDirectPath, localTerraformPath} {
+		if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+
+	cmdio.LogString(ctx, "Destroy complete!")
 }
 
 // The destroy phase deletes artifacts and resources.
