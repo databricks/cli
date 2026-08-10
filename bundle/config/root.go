@@ -145,7 +145,8 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	// as unknown fields on the SDK jobs.AiRuntimeTask.
 	v, err = rewriteAiRuntimeCodeSource(v)
 	if err != nil {
-		return nil, diag.Errorf("failed to rewrite %s: %v", path, err)
+		// Forward-slash the file path so the error is byte-identical across OSes.
+		return nil, diag.Errorf("failed to rewrite %s: %v", filepath.ToSlash(path), err)
 	}
 
 	// Normalize dynamic configuration tree according to configuration type.
