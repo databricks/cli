@@ -3,6 +3,7 @@ package environments
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -13,7 +14,9 @@ import (
 
 // renderResult renders the pipeline result to the command's output.
 // In JSON mode it renders the full structured result (even on error).
-// In text mode it prints phase headers and a summary, then returns the error.
+// In text mode it prints a friendly success/failure summary (per-phase progress
+// is shown live via the spinner while the run is in flight), then returns the
+// error.
 //
 // res is always non-nil: Pipeline.Run constructs and returns a fully-populated
 // Result (with the canonical phase list and error object) on every path,
@@ -34,8 +37,9 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libslocalenv.Res
 
 	// Text mode. The internal phase log is intentionally NOT printed on success:
 	// it read as noise in the M5 bug bash (DECO-27977). Per-phase progress is shown
-	// live via the spinner reporter (see cmd/environments/progress.go) and the full
-	// phase list remains in --output json and --debug.
+	// live via the spinner reporter (see cmd/environments/progress.go); the full
+	// phase list remains in --output json, and --debug logs each phase as it is
+	// entered.
 	for _, w := range res.Warnings {
 		cmdio.LogString(ctx, "warning: "+w.Message)
 	}
@@ -44,10 +48,13 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libslocalenv.Res
 		if res.Error != nil && res.Error.Code == libslocalenv.ErrCanceled {
 			cmdio.LogString(ctx, "✗ Setup canceled.")
 		} else {
-			cmdio.LogString(ctx, "✗ Setup failed "+failureClause(res)+".")
+			cmdio.LogString(ctx, "✗ Setup failed"+failureClause(res)+".")
 			if res.Error != nil {
 				cmdio.LogString(ctx, "")
-				cmdio.LogString(ctx, "  "+res.Error.Error())
+				// Indent every line: uv-driven failures fold uv's (often multi-line)
+				// stderr into the message, and a flush-left continuation reads as
+				// unrelated output rather than part of the reason.
+				cmdio.LogString(ctx, indent(res.Error.Error(), "  "))
 			}
 		}
 		cmdio.LogString(ctx, "")
@@ -109,26 +116,38 @@ func renderSuccess(ctx context.Context, res *libslocalenv.Result) {
 }
 
 // failureClause maps the failing phase to a human clause for the failure line,
-// e.g. "while fetching constraints". Keyed off the recorded FailurePhase so text
-// output stays in step with the --output json error object.
+// e.g. " while fetching constraints" (note the leading space). Keyed off the
+// recorded FailurePhase so text output stays in step with the --output json
+// error object. Returns "" for an unknown or missing phase, so the caller reads
+// "Setup failed." rather than the redundant "Setup failed during setup."
 func failureClause(res *libslocalenv.Result) string {
 	if res.Error == nil {
-		return "during setup"
+		return ""
 	}
 	switch res.Error.FailurePhase {
 	case libslocalenv.PhasePreflight:
-		return "during preflight checks"
+		return " during preflight checks"
 	case libslocalenv.PhaseResolve:
-		return "while resolving your compute target"
+		return " while resolving your compute target"
 	case libslocalenv.PhaseFetch:
-		return "while fetching constraints"
+		return " while fetching constraints"
 	case libslocalenv.PhaseMerge:
-		return "while updating pyproject.toml"
+		return " while updating pyproject.toml"
 	case libslocalenv.PhaseProvision:
-		return "while provisioning the virtual environment"
+		return " while provisioning the virtual environment"
 	case libslocalenv.PhaseValidate:
-		return "while validating the environment"
+		return " while validating the environment"
 	default:
-		return "during setup"
+		return ""
 	}
+}
+
+// indent prefixes every line of s with prefix. Used so a multi-line failure
+// message (uv stderr folded in) stays visually grouped under the failure line.
+func indent(s, prefix string) string {
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		lines[i] = prefix + line
+	}
+	return strings.Join(lines, "\n")
 }
