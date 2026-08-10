@@ -13,8 +13,8 @@ left to `tools/update_github_links.py`, which the workflow runs next.
 A fragment holds one entry per `* `/`- ` line, or a single entry when it has no
 such marker (see `render_nextchanges` in `internal/genkit/release_tagging.py`,
 which bullets the first line and passes continuation lines through). The
-reference goes at the end of an entry, so an entry wrapped over several lines
-gets it on the last line rather than mid-sentence.
+reference is appended at the very end of an entry, so an entry wrapped over
+several lines gets it on the last line.
 """
 
 import argparse
@@ -24,11 +24,15 @@ import re
 # A `* `/`- ` line starts a new entry; see the module docstring.
 ENTRY_MARKER_RE = re.compile(r"^\s*[*-] ")
 
-# Any `#1234` counts as a reference, raw or already expanded into a link: the
-# author pointed at a PR (or a related issue) themselves, so leave the entry
-# alone. This is also what makes a re-run a no-op, so the workflow's own push
-# cannot retrigger itself into a loop.
-EXISTING_REF_RE = re.compile(r"#\d+")
+# A reference already at the *end* of an entry, either the raw `(#1234)` this
+# tool writes or the `([#1234](…/pull/1234))` link update_github_links.py
+# expands it to. Only a trailing reference makes us leave the entry alone; a
+# `#1234` earlier in the body (e.g. "Fixes #6030: …") does not, so the PR is
+# still appended at the end. Matching both forms is also what makes a re-run a
+# no-op, so the workflow's own push cannot retrigger itself into a loop. A pull
+# *link* is required rather than any `([#…](…))`, so an issue link at the end
+# doesn't block the PR reference; a trailing period is tolerated.
+END_REF_RE = re.compile(r"(?:\(#\d+\)|\(\[#\d+\]\([^)]*/pull/\d+\)\))\s*\.?\s*$")
 
 
 def entry_ranges(lines):
@@ -48,48 +52,49 @@ def entry_ranges(lines):
 
 
 def append_reference(line, pr):
-    """Append ``(#pr)`` to one line, before its trailing period.
-
-    Existing entries in CHANGELOG.md put the link inside the sentence rather
-    than after it, e.g. ``… on every run ([#6060](…)).``
+    """Append ``(#pr)`` to the very end of one line.
 
     >>> append_reference("Added the `databricks quickstart` command.", 1234)
-    'Added the `databricks quickstart` command (#1234).'
+    'Added the `databricks quickstart` command. (#1234)'
     >>> append_reference("* No trailing period", 1234)
     '* No trailing period (#1234)'
     """
-    body = line.rstrip()
-    if body.endswith("."):
-        return f"{body[:-1]} (#{pr})."
-    return f"{body} (#{pr})"
+    return f"{line.rstrip()} (#{pr})"
 
 
 def annotate_text(text, pr):
     r"""Append ``(#pr)`` to every entry in a fragment that has no reference.
 
     >>> annotate_text("Added the `databricks quickstart` command.\n", 1234)
-    'Added the `databricks quickstart` command (#1234).\n'
+    'Added the `databricks quickstart` command. (#1234)\n'
 
-    Entries are annotated independently, and one that already references a PR
-    is left untouched:
+    Entries are annotated independently, and one that already ends with a PR
+    reference is left untouched:
 
     >>> annotate_text("* one\n* two ([#99](https://github.com/databricks/cli/pull/99))\n", 1234)
     '* one (#1234)\n* two ([#99](https://github.com/databricks/cli/pull/99))\n'
 
+    A reference to a prior PR or issue in the body does not count — the PR is
+    still appended at the end:
+
+    >>> annotate_text("Fixes [#6030](https://github.com/databricks/cli/issues/6030): a bug.\n", 1234)
+    'Fixes [#6030](https://github.com/databricks/cli/issues/6030): a bug. (#1234)\n'
+
     A wrapped entry gets the reference at its end, not mid-sentence:
 
     >>> annotate_text("A long entry that wraps\nover two lines.\n", 1234)
-    'A long entry that wraps\nover two lines (#1234).\n'
+    'A long entry that wraps\nover two lines. (#1234)\n'
     """
     lines = text.split("\n")
     for start, stop in entry_ranges(lines):
-        entry = lines[start:stop]
-        if EXISTING_REF_RE.search("\n".join(entry)):
-            continue
         content = [i for i in range(start, stop) if lines[i].strip()]
         if not content:
             continue
-        lines[content[-1]] = append_reference(lines[content[-1]], pr)
+        last = lines[content[-1]]
+        # Only a reference at the end of the entry blocks appending one.
+        if END_REF_RE.search(last):
+            continue
+        lines[content[-1]] = append_reference(last, pr)
     return "\n".join(lines)
 
 
