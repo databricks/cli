@@ -395,8 +395,8 @@ func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	projectRoot := t.TempDir()
 	t.Chdir(projectRoot)
-	// Skills-only agents' project skills are not visible to home-based detection,
-	// so update must pick them up via DetectProjectInstalled.
+	// Skills-only agents read project skills from their project config dirs; a
+	// home-based detection would miss these, so update must use DetectProjectInstalled.
 	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".pi", "skills", "databricks-core"), 0o755))
 	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".gemini", "skills", "databricks-core"), 0o755))
 	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".goose", "skills", "databricks-core"), 0o755))
