@@ -1,3 +1,9 @@
+# Recording needs a bundle it has seen from the start. This test rewinds state and
+# wipes the remote path the deployment record lives under, so recording refuses it.
+# TODO(DMS): drop this once existing state can be handed over to the service (see
+# the TODO in dstate.Open).
+EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
+
 EnvMatrix.READPLAN = ["", "1"]
 
 # Snapshot of pre-delete state used to re-run the delete on state that still

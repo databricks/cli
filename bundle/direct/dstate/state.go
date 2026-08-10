@@ -267,18 +267,6 @@ type DMSSource struct {
 	// DeploymentID is resolved from the deployment's workspace node (see
 	// dms.ResolveDeploymentID), and empty before the first recorded deploy.
 	DeploymentID string
-
-	// AllowExistingResources records a bundle whose state file already tracks
-	// resources, instead of refusing it. Those resources are not handed over to DMS:
-	// the first recorded deploy reports only what it touches, so the ones it does not
-	// touch are absent from DMS and a later deploy plans them as creates.
-	//
-	// It exists for the CLI's own acceptance tests, which run the whole bundle suite
-	// with recording on. The ones that need it seed a state file before deploying (the
-	// WAL and idempotency tests), so the guard fires on their first deploy and they
-	// never reach what they are actually testing. They assert what a deploy does rather
-	// than reading state back, so the duplication the refusal prevents cannot bite them.
-	AllowExistingResources bool
 }
 
 // Open reads the deployment state from disk (and recovers the WAL when
@@ -343,7 +331,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		// featureStateVersion with a feature flag plus a tombstone per resource so an
 		// older CLI refuses the state instead of deploying against resources it
 		// cannot see.
-		if dmsSource.DeploymentID == "" && len(db.Data.State) > 0 && !dmsSource.AllowExistingResources {
+		if dmsSource.DeploymentID == "" && len(db.Data.State) > 0 {
 			// The remedy is ordered deliberately: this error also blocks destroy, so the
 			// setting has to come out first or there is no way to tear the bundle down.
 			return fmt.Errorf(`cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded

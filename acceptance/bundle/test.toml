@@ -18,12 +18,9 @@ EnvMatrixExclude.dms_local_only = ["DATABRICKS_BUNDLE_DMS=true", "CONFIG_Cloud=t
 # which is a design decision, so the saved-plan path is left out of the DMS run for now.
 EnvMatrixExclude.dms_no_readplan = ["DATABRICKS_BUNDLE_DMS=true", "READPLAN=1"]
 
-# Recording is gated off for users (see validate.ValidateRecordDeploymentHistory) and
-# refuses a bundle whose state already tracks resources - which most tests here seed.
-# Both are forced on: these tests assert what a deploy does, so the resource duplication
-# the refusal guards against cannot bite them.
+# Recording is gated off for users (see validate.ValidateRecordDeploymentHistory), so
+# force it on: the point of this run is to exercise it.
 Env.DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY = "1"
-Env.DATABRICKS_BUNDLE_DMS_ALLOW_EXISTING_RESOURCES = "1"
 
 # The DMS run asserts the same golden files as the engine runs.
 EnvRepl.DATABRICKS_BUNDLE_DMS = false

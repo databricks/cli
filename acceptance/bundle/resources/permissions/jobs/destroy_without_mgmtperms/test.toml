@@ -2,8 +2,3 @@
 # so recording refuses it. TODO(DMS): drop this once existing state can be
 # handed over to the service (see the TODO in dstate.Open).
 EnvMatrix.DATABRICKS_BUNDLE_DMS = [""]
-
-Ignore = [".databricks"]
-
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["direct"]

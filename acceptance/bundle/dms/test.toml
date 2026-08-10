@@ -20,8 +20,3 @@ Ignore = [
 # so they force allow it the same way DMS development does. bundle/dms/not-supported
 # covers the rejection.
 Env.DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY = "1"
-
-# The parent lets the rest of the suite record a bundle whose state already tracks
-# resources, since most of those tests seed a state fixture. bundle/dms/existing-state
-# asserts that refusal, so it has to stay on here.
-Env.DATABRICKS_BUNDLE_DMS_ALLOW_EXISTING_RESOURCES = ""
