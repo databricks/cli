@@ -205,8 +205,32 @@ func TestValidateCodeSourceBlock(t *testing.T) {
 			block: config.CodeSourceOptions{RootPath: "src", IncludePaths: []string{"a", "b/c"}},
 		},
 		{
-			name:  "valid git commit",
-			block: config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{Commit: "abc123"}},
+			name:  "valid git commit short",
+			block: config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{Commit: "abc1234"}},
+		},
+		{
+			name:  "valid git commit full sha",
+			block: config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{Commit: "0123456789abcdef0123456789abcdef01234567"}},
+		},
+		{
+			name:    "git commit too short",
+			block:   config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{Commit: "abc123"}},
+			wantErr: "invalid code_source.git.commit",
+		},
+		{
+			name:    "git commit is a moving ref",
+			block:   config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{Commit: "HEAD"}},
+			wantErr: "invalid code_source.git.commit",
+		},
+		{
+			name:    "git commit non-hex (branch name)",
+			block:   config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{Commit: "main"}},
+			wantErr: "invalid code_source.git.commit",
+		},
+		{
+			name:    "git commit injection shape",
+			block:   config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{Commit: "--output=/tmp/x"}},
+			wantErr: "invalid code_source.git.commit",
 		},
 		{
 			name:           "conflict with code_source_path",
@@ -278,7 +302,7 @@ func TestValidateCodeSourceBlock(t *testing.T) {
 func TestValidateCodeSourceBlockGitSourceConflict(t *testing.T) {
 	b := bundleForValidate(t, "", &jobs.GitSource{GitUrl: "https://example.invalid/repo"})
 	mkCodeDir(t, b, "src")
-	setCodeSourceBlock(b, config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{Commit: "abc123"}})
+	setCodeSourceBlock(b, config.CodeSourceOptions{RootPath: "src", Git: &config.CodeSourceGit{Commit: "abc1234"}})
 	diags := Validate().Apply(t.Context(), b)
 	require.True(t, diags.HasError())
 	assert.Contains(t, diags[0].Summary, "cannot be combined with the job's git_source")

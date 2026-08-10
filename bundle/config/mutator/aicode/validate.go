@@ -205,12 +205,26 @@ func validateCodeSourceGit(git *config.CodeSourceGit, reject func(summary, detai
 			"only alphanumeric characters, hyphens, dots, slashes, and underscores are allowed",
 		)
 	}
+	// commit must be a hex object id, not a moving ref. A branch/tag/HEAD value would
+	// package a different archive (and content-addressed name) on every deploy,
+	// defeating the point of pinning; requiring hex also rejects a leading-"-" value
+	// that would otherwise be a flag-injection shape into `git archive`.
+	if git.Commit != "" && !gitCommitRe.MatchString(git.Commit) {
+		return reject(
+			fmt.Sprintf("invalid code_source.git.commit %q", git.Commit),
+			"commit must be a hex commit SHA (7-64 hex characters), not a branch, tag, or HEAD",
+		)
+	}
 	return nil
 }
 
 // gitRefRe guards a branch name that flows into git exec args against injection.
 // Mirrors the AIR CLI's gitRefRe (experimental/air/cmd/runconfig.go).
 var gitRefRe = regexp.MustCompile(`^[\w./-]+$`)
+
+// gitCommitRe requires a hex object id: full SHA-1 (40) or SHA-256 (64), or an
+// abbreviated prefix down to git's conventional 7-char short form.
+var gitCommitRe = regexp.MustCompile(`^[0-9a-fA-F]{7,64}$`)
 
 // packagesLocalDir reports whether codeSourcePath is one this mutator packages: a
 // local path that is an existing directory. A local *file* (a pre-built tarball from

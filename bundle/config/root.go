@@ -646,6 +646,10 @@ func rewriteAiRuntimeCodeSource(v dyn.Value) (dyn.Value, error) {
 		if extracted[jobName] == nil {
 			extracted[jobName] = map[string]dyn.Value{}
 		}
+		// Catches a duplicate (job, task_key) within this file only — the rewrite runs
+		// per file, before includes/targets are merged. A collision across files is
+		// resolved by the normal AiRuntimeExtras map merge (last block wins), the same
+		// as any other duplicated resource field.
 		if _, dup := extracted[jobName][taskKey]; dup {
 			return dyn.InvalidValue, fmt.Errorf("duplicate task_key %q in job %q with an ai_runtime_task.code_source block", taskKey, jobName)
 		}

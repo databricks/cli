@@ -317,24 +317,24 @@ func collectCodeSourceBlocks(b *bundle.Bundle) ([]blockSource, diag.Diagnostics)
 		return nil, diags
 	}
 
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		return dyn.MapByPattern(root, taskPattern, func(p dyn.Path, task dyn.Value) (dyn.Value, error) {
-			jobName := p[2].Key()
-			taskKey, ok := task.Get("task_key").AsString()
-			if !ok {
-				return task, nil
-			}
-			extras, ok := b.Config.AiRuntimeExtras[jobName][taskKey]
-			if !ok || extras.CodeSource == nil {
-				return task, nil
-			}
-			sources = append(sources, blockSource{
-				configPath: p.Append(dyn.Key("ai_runtime_task"), dyn.Key("code_source_path")),
-				location:   task.Get("ai_runtime_task").Location(),
-				opts:       *extras.CodeSource,
-			})
+	// Read-only pattern walk over the current tree — the callback returns each task
+	// unchanged and only records matches, so it does not go through Config.Mutate.
+	_, err := dyn.MapByPattern(b.Config.Value(), taskPattern, func(p dyn.Path, task dyn.Value) (dyn.Value, error) {
+		jobName := p[2].Key()
+		taskKey, ok := task.Get("task_key").AsString()
+		if !ok {
 			return task, nil
+		}
+		extras, ok := b.Config.AiRuntimeExtras[jobName][taskKey]
+		if !ok || extras.CodeSource == nil {
+			return task, nil
+		}
+		sources = append(sources, blockSource{
+			configPath: p.Append(dyn.Key("ai_runtime_task"), dyn.Key("code_source_path")),
+			location:   task.Get("ai_runtime_task").Location(),
+			opts:       *extras.CodeSource,
 		})
+		return task, nil
 	})
 	if err != nil {
 		diags = diags.Extend(diag.FromErr(err))

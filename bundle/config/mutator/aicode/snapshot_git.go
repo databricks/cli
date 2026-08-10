@@ -94,6 +94,18 @@ func (g gitRepo) commitExistsLocally(ctx context.Context, commitSHA string) bool
 	return err == nil
 }
 
+// hasFilesAtCommit reports whether the commit has any files (blobs) under the given
+// paths (whole tree when includePaths is empty). `-r` recurses so only blobs are
+// listed, not tree entries — an empty result means there is nothing to package.
+func (g gitRepo) hasFilesAtCommit(ctx context.Context, commitSHA string, includePaths []string) (bool, error) {
+	args := append([]string{"ls-tree", "-r", "--name-only", commitSHA}, includePaths...)
+	out, err := g.run(ctx, args...)
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(out) != "", nil
+}
+
 // validateIncludePathsExist checks that every include path exists at commitSHA. Without
 // -d, `git ls-tree` reports both blobs and trees; empty output means the path is missing.
 func (g gitRepo) validateIncludePathsExist(ctx context.Context, commitSHA string, includePaths []string) error {
@@ -161,6 +173,18 @@ func resolveGitCommit(ctx context.Context, repoPath string, git *config.CodeSour
 			return "", err
 		}
 	}
+
+	// Fail on an empty tree rather than package a codeless archive and deploy a job
+	// with no code. Mirrors the working-tree path's len(files)==0 guard; the
+	// include_paths existence check above does not catch an otherwise-empty root_path.
+	hasFiles, err := repo.hasFilesAtCommit(ctx, commit, includePaths)
+	if err != nil {
+		return "", err
+	}
+	if !hasFiles {
+		return "", fmt.Errorf("code_source.root_path has no files to package at commit %s", shortSHA(commit))
+	}
+
 	return commit, nil
 }
 
