@@ -56,6 +56,48 @@ func TestDetected(t *testing.T) {
 		a := &Agent{ConfigDir: configDir(t, false)}
 		assert.False(t, a.Detected(ctx))
 	})
+
+	t.Run("MandatoryFile requires the marker, not just the dir", func(t *testing.T) {
+		dir := t.TempDir()
+		a := &Agent{ConfigDir: func(context.Context) (string, error) { return dir, nil }, MandatoryFile: "marker"}
+		// Directory exists but the marker does not: not detected.
+		assert.False(t, a.Detected(ctx))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "marker"), []byte("x"), 0o644))
+		assert.True(t, a.Detected(ctx))
+	})
+
+	t.Run("Gemini remains detected after skills install before first run", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("USERPROFILE", home)
+		t.Setenv("GEMINI_CLI_HOME", "")
+		require.NoError(t, os.MkdirAll(filepath.Join(home, ".gemini", "skills", "databricks-core"), 0o755))
+
+		gemini := ByName(NameGemini)
+		require.NotNil(t, gemini)
+		assert.NoFileExists(t, filepath.Join(home, ".gemini", "projects.json"))
+		assert.True(t, gemini.Detected(ctx))
+	})
+
+	t.Run("Gemini is not detected merely because Antigravity exists", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("USERPROFILE", home)
+		// Antigravity creates ~/.gemini/antigravity, which also makes ~/.gemini exist.
+		require.NoError(t, os.MkdirAll(filepath.Join(home, ".gemini", "antigravity"), 0o755))
+
+		gemini := ByName(NameGemini)
+		require.NotNil(t, gemini)
+		antigravity := ByName(NameAntigravity)
+		require.NotNil(t, antigravity)
+
+		assert.True(t, antigravity.Detected(ctx), "Antigravity should be detected from its own dir")
+		assert.False(t, gemini.Detected(ctx), "Gemini must not be detected from Antigravity's shared ~/.gemini")
+
+		// Once Gemini writes its own marker, it is detected.
+		require.NoError(t, os.WriteFile(filepath.Join(home, ".gemini", "projects.json"), []byte("id"), 0o644))
+		assert.True(t, gemini.Detected(ctx))
+	})
 }
 
 func TestPiConfigDir(t *testing.T) {
@@ -63,33 +105,74 @@ func TestPiConfigDir(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
-	override := t.TempDir()
 
-	tests := []struct {
-		name        string
-		envDir      string
-		want        string
-		windowsOnly bool
-	}{
-		{name: "defaults to ~/.pi/agent", want: filepath.Join(home, ".pi", "agent")},
-		{name: "honors PI_CODING_AGENT_DIR override", envDir: override, want: override},
-		{name: "expands home in PI_CODING_AGENT_DIR override", envDir: "~/custom-agent", want: filepath.Join(home, "custom-agent")},
-		{name: "expands bare home in PI_CODING_AGENT_DIR override", envDir: "~", want: home},
-		{name: "expands Windows home separator", envDir: `~\custom-agent`, want: filepath.Join(home, "custom-agent"), windowsOnly: true},
-		{name: "preserves other tilde prefixes", envDir: "~other/custom-agent", want: "~other/custom-agent"},
-	}
+	t.Run("defaults to ~/.pi/agent", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, ".pi", "agent"), dir)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.windowsOnly && runtime.GOOS != "windows" {
-				t.Skip("Windows-only path form")
-			}
-			t.Setenv("PI_CODING_AGENT_DIR", tt.envDir)
-			dir, err := piConfigDir(ctx)
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, dir)
-		})
-	}
+	t.Run("honors PI_CODING_AGENT_DIR override", func(t *testing.T) {
+		override := t.TempDir()
+		t.Setenv("PI_CODING_AGENT_DIR", override)
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, override, dir)
+	})
+
+	t.Run("expands home in PI_CODING_AGENT_DIR override", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "~/custom-agent")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, "custom-agent"), dir)
+	})
+
+	t.Run("expands bare home in PI_CODING_AGENT_DIR override", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "~")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, home, dir)
+	})
+
+	t.Run("expands Windows home separator", func(t *testing.T) {
+		if runtime.GOOS != "windows" {
+			t.Skip("Windows-only path form")
+		}
+		t.Setenv("PI_CODING_AGENT_DIR", `~\custom-agent`)
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, "custom-agent"), dir)
+	})
+
+	t.Run("preserves other tilde prefixes", func(t *testing.T) {
+		t.Setenv("PI_CODING_AGENT_DIR", "~other/custom-agent")
+		dir, err := piConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, "~other/custom-agent", dir)
+	})
+}
+
+func TestGeminiConfigDir(t *testing.T) {
+	ctx := t.Context()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	t.Run("defaults to ~/.gemini", func(t *testing.T) {
+		t.Setenv("GEMINI_CLI_HOME", "")
+		dir, err := geminiConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, ".gemini"), dir)
+	})
+
+	t.Run("honors GEMINI_CLI_HOME override and appends .gemini", func(t *testing.T) {
+		root := t.TempDir()
+		t.Setenv("GEMINI_CLI_HOME", root)
+		dir, err := geminiConfigDir(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(root, ".gemini"), dir)
+	})
 }
 
 func TestHasBinary(t *testing.T) {
