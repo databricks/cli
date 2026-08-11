@@ -8,6 +8,10 @@
 │  compute:                                                      │
 │    accelerator_type: a10                                       │
 │    num_accelerators: 1                                         │
+│  environment:                                                  │
+│    version: 5                                                  │
+│    dependencies:                                               │
+│      - torch==2.3.0                                            │
 │  command: |-                                                   │
 │    for i in $(seq 1 10); do                                    │
 │      echo "step $i"                                            │
@@ -27,7 +31,7 @@
 │  MLflow Run    my-run                                          │
 │  User          user@example.com                                │
 │  Accelerators  1x A10                                          │
-│  Environment   N/A                                             │
+│  Environment   5                                               │
 │                                                                │
 ╰────────────────────────────────────────────────────────────────╯
 

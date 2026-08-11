@@ -230,6 +230,30 @@ func TestAcceleratorLabel(t *testing.T) {
 	assert.Equal(t, "8x", acceleratorLabel("", 8))
 }
 
+func TestEnvironmentFromConfig(t *testing.T) {
+	tests := []struct {
+		name       string
+		configYAML string
+		want       string
+	}{
+		{"empty", "", ""},
+		{"no environment", "experiment_name: my-exp\ncompute:\n  accelerator_type: a10", ""},
+		{"version int", "environment:\n  version: 5\n  dependencies:\n    - torch", "5"},
+		{"version string", "environment:\n  version: \"5\"\n  dependencies:\n    - torch", "5"},
+		// docker_image wins over version (they are mutually exclusive in a valid config).
+		{"docker image", "environment:\n  docker_image:\n    url: org/repo:tag", "org/repo:tag"},
+		// dependencies without a pinned version resolve the version at launch, so
+		// there is nothing to show here.
+		{"dependencies only", "environment:\n  dependencies:\n    - torch", ""},
+		{"malformed", "environment: [not-a-map", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, environmentFromConfig(tt.configYAML))
+		})
+	}
+}
+
 func TestStatusWord(t *testing.T) {
 	assert.Equal(t, "SUCCESS", statusWord("TERMINATED", "SUCCESS")) // result wins
 	assert.Equal(t, "RUNNING", statusWord("RUNNING", ""))           // falls back to lifecycle
