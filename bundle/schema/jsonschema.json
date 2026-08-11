@@ -1300,14 +1300,6 @@
                       "on_bundle_deploy": {
                         "description": "If true, re-fire the run on every bundle deploy, even when the run configuration is unchanged.",
                         "$ref": "#/$defs/bool"
-                      },
-                      "on_file_change": {
-                        "description": "Re-fire the run when the contents of files matching this glob change. Not yet supported.",
-                        "$ref": "#/$defs/string"
-                      },
-                      "on_value_change": {
-                        "description": "Re-fire the run when this bundle value expression changes. Not yet supported.",
-                        "$ref": "#/$defs/string"
                       }
                     },
                     "additionalProperties": false

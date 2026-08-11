@@ -27,32 +27,19 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 		}
 		for i, t := range jr.Lifecycle.Triggers {
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d]", name, i)
-			if t.FieldCount() != 1 {
+			if t.OnBundleDeploy == nil {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers entry must set exactly one trigger mode",
+					Summary:   "lifecycle.triggers entry must set on_bundle_deploy: true",
 					Locations: b.Config.GetLocations(path),
 				})
+				continue
 			}
-			if t.OnBundleDeploy != nil && !*t.OnBundleDeploy {
+			if !*t.OnBundleDeploy {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "lifecycle.triggers.on_bundle_deploy must be true when set",
 					Locations: b.Config.GetLocations(path + ".on_bundle_deploy"),
-				})
-			}
-			if t.OnFileChange != "" {
-				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers.on_file_change is not supported yet",
-					Locations: b.Config.GetLocations(path + ".on_file_change"),
-				})
-			}
-			if t.OnValueChange != "" {
-				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers.on_value_change is not supported yet",
-					Locations: b.Config.GetLocations(path + ".on_value_change"),
 				})
 			}
 		}

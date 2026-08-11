@@ -30,14 +30,7 @@ func TestValidateJobRunTriggers(t *testing.T) {
 			triggers: []resources.JobRunTrigger{
 				{},
 			},
-			summary: "lifecycle.triggers entry must set exactly one trigger mode",
-		},
-		{
-			name: "two modes",
-			triggers: []resources.JobRunTrigger{
-				{OnBundleDeploy: &trueVal, OnFileChange: "src/**/*.py"},
-			},
-			summary: "lifecycle.triggers entry must set exactly one trigger mode",
+			summary: "lifecycle.triggers entry must set on_bundle_deploy: true",
 		},
 		{
 			name: "on_bundle_deploy false",
@@ -45,20 +38,6 @@ func TestValidateJobRunTriggers(t *testing.T) {
 				{OnBundleDeploy: &falseVal},
 			},
 			summary: "lifecycle.triggers.on_bundle_deploy must be true when set",
-		},
-		{
-			name: "on_file_change unsupported",
-			triggers: []resources.JobRunTrigger{
-				{OnFileChange: "src/**/*.py"},
-			},
-			summary: "lifecycle.triggers.on_file_change is not supported yet",
-		},
-		{
-			name: "on_value_change unsupported",
-			triggers: []resources.JobRunTrigger{
-				{OnValueChange: "${resources.jobs.foo.id}"},
-			},
-			summary: "lifecycle.triggers.on_value_change is not supported yet",
 		},
 	}
 
