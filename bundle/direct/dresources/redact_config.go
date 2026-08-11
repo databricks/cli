@@ -11,14 +11,14 @@ import (
 
 // RedactSensitiveConfigValues walks the bundle config and replaces the
 // value of every field declared as sensitive_fields for its resource type with
-// "[redacted]". This is used before printing the full config to stdout (e.g.
-// `bundle validate -o json`) so plaintext secrets are never shown to the user.
-//
-// The function only handles resource types that have at least one sensitive_field
-// declared in resources.yml
+// "[redacted]". It also redacts the entire variables section when any sensitive
+// resource fields are present, since variables are the standard mechanism for
+// supplying secret values and their resolved values must not appear in the
+// output of `bundle validate -o json`.
 func RedactSensitiveConfigValues(root *config.Root) (*config.Root, error) {
 	fields := getSensitiveFields()
 
+	var hasSensitiveFields bool
 	for resourceType, fieldRules := range fields {
 		resources, err := structaccess.GetByString(root, "resources."+resourceType)
 		if err != nil {
@@ -29,6 +29,7 @@ func RedactSensitiveConfigValues(root *config.Root) (*config.Root, error) {
 				// The first segment of the path is the resource key, so we need to skip it and check the rest of the path
 				rest := path.SkipPrefix(1)
 				if rest.HasPatternPrefix(fieldRule.Field) {
+					hasSensitiveFields = true
 					_ = structaccess.SetByString(root, "resources."+resourceType+path.String(), sensitiveRedactedMarker)
 				}
 			}
@@ -37,6 +38,21 @@ func RedactSensitiveConfigValues(root *config.Root) (*config.Root, error) {
 			return nil, err
 		}
 	}
+
+	// Redact all variable values when any sensitive resource fields are present.
+	// Variables are the standard mechanism for supplying secret values and their
+	// resolved values must not appear in plaintext in the validate output.
+	if hasSensitiveFields {
+		for _, variable := range root.Variables {
+			if variable == nil {
+				continue
+			}
+			if _, ok := variable.Value.(string); ok {
+				variable.Value = sensitiveRedactedMarker
+			}
+		}
+	}
+
 	return root, nil
 }
 
