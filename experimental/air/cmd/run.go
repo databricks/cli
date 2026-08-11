@@ -48,15 +48,12 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 -h=config.compute and -hconfig.compute are not accepted.`,
 	}
 
-	// Document a config field instead of the command when -h is given a path.
-	// cobra hands the help function the positional args it collected, and it does
-	// so before Args and required-flag validation, so -f is not needed here.
+	// cobra passes -h's positional args to the help func before Args/required-flag
+	// validation, so a config path documents a field without needing -f.
 	cmd.SetHelpFunc(func(c *cobra.Command, args []string) {
 		fields := c.Flags().Args()
 		if len(fields) == 0 {
-			// Resolved through the parent rather than captured up front, so this
-			// picks up the inherited help function instead of cobra's default.
-			// A detached command (as in unit tests) has no parent to inherit from.
+			// Parent() is nil for a detached command (unit tests).
 			if parent := c.Parent(); parent != nil {
 				parent.HelpFunc()(c, args)
 				return

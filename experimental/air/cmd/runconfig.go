@@ -474,12 +474,11 @@ func (p *permission) validate() error {
 	return nil
 }
 
-// The remainder of this file implements `air run -h config.<field>`, which
-// documents the schema above from the struct tags themselves so the docs sit
-// next to the validation rules that enforce them.
+// Below: `air run -h config.<field>`, which documents the schema above from its
+// yaml/help/required struct tags.
 
-// configHelpRoot is the prefix that addresses the run YAML schema in help
-// output. Paths may also be given bare (`compute.url`).
+// configHelpRoot is the optional leading segment of a help path (`config.compute`
+// or bare `compute`).
 const configHelpRoot = "config"
 
 // writeConfigFieldHelp resolves a dotted config path and writes its docs.
@@ -500,33 +499,28 @@ var freeFormConfigFields = map[string]bool{
 	"secrets":       true,
 }
 
-// configTypeNames labels the polymorphic union types, whose accepted YAML shapes
-// reflection cannot see: each is a struct of unexported fields populated by a
-// custom UnmarshalYAML.
+// configTypeNames labels the polymorphic unions, whose YAML shape reflection
+// can't see (unexported fields filled by a custom UnmarshalYAML).
 var configTypeNames = map[reflect.Type]string{
 	reflect.TypeFor[dependencies](): "list of strings",
 	reflect.TypeFor[stringOrInt]():  "string or int",
 	reflect.TypeFor[gitRemote]():    "bool or string",
 }
 
-// configField is one resolved schema field: where it sits, what it accepts, and
-// what it is for.
+// configField is one resolved node of the run config schema.
 type configField struct {
 	path     string
 	typeName string
 	required string
 	help     string
-	// freeForm marks a map whose keys are user-defined (parameters, secrets,
-	// env_variables). It has no children, but a sub-path into it is still valid.
+	// freeForm marks a user-keyed map (parameters/secrets/env_variables): no
+	// children, yet any sub-path into it is valid.
 	freeForm bool
-	// children is non-empty for an object, whose sub-fields are listed instead
-	// of a type/description pair.
-	children []configField
+	children []configField // nil for a leaf
 }
 
-// configSchema describes the whole run YAML schema as a tree of configFields.
-// It is the single reflection walk over runConfig; both `-h config.<field>` and
-// --override path validation resolve against it.
+// configSchema is the single reflection walk over runConfig; both
+// `-h config.<field>` and --override path validation resolve against it.
 func configSchema() configField {
 	return configField{
 		path:     configHelpRoot,
@@ -547,9 +541,7 @@ func resolveConfigField(path string) (configField, error) {
 	current := root
 	for i, part := range strings.Split(trimmed, ".") {
 		if current.freeForm {
-			// A free-form map's keys are chosen by the user, so the map itself is
-			// the most specific thing the schema can describe. Say so, rather
-			// than implying the key is misspelled.
+			// Keys are user-defined, so the map is the most specific node.
 			return configField{}, fmt.Errorf("%q holds user-defined keys, so %q is not part of the schema; see %q instead", current.path, part, current.path)
 		}
 		if len(current.children) == 0 {
@@ -608,8 +600,8 @@ func unknownConfigFieldError(parent configField, part string, matched []string) 
 	return fmt.Errorf("%s\n\nfields under %q are: %s", msg, parent.path, strings.Join(names, ", "))
 }
 
-// closestConfigField picks the nearest candidate by edit distance, requiring the
-// match to be close enough that the suggestion is more helpful than noise.
+// closestConfigField returns the nearest candidate by edit distance, if one is
+// close enough to be worth suggesting.
 func closestConfigField(name string, candidates []string) (string, bool) {
 	best, bestDist := "", 0
 	for _, c := range candidates {
@@ -646,8 +638,7 @@ func configEditDistance(a, b string) int {
 }
 
 // describeStruct reads a struct's yaml/help/required tags into configFields,
-// recursing into nested objects. Fields are returned in declaration order, which
-// is the order the schema and its validation errors already use.
+// recursing into nested objects. Declaration order matches validate()'s errors.
 func describeStruct(t reflect.Type, prefix string) []configField {
 	var out []configField
 	for f := range t.Fields() {
@@ -737,7 +728,6 @@ func renderConfigField(w io.Writer, f configField) {
 		return
 	}
 
-	// Pad the name column so the summaries line up.
 	width := 0
 	for _, c := range f.children {
 		width = max(width, len(configLeafName(c.path)))

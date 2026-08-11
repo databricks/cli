@@ -563,9 +563,7 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	require.Error(t, writeConfigFieldHelp(&strings.Builder{}, "config.nope"))
 }
 
-// Every schema field must document itself, so a new field cannot be added
-// without help text. This is the same guard the bundle schema gets from its
-// PLACEHOLDER convention in annotations.yml.
+// Guards against adding a schema field without a help: tag.
 func TestConfigFieldsAllDocumented(t *testing.T) {
 	root, err := resolveConfigField("config")
 	require.NoError(t, err)
