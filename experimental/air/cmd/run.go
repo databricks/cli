@@ -2,7 +2,9 @@ package aircmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"path/filepath"
 	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
@@ -71,6 +73,13 @@ The workload is described by a YAML config file (see --file).`,
 			return renderEnvelope(ctx, runResult{Status: "DRY_RUN_OK", DryRun: true})
 		}
 
+		// A schedule needs a persistent job; `air run` only submits a one-time run, so
+		// it can't honor one. Offer to convert to a bundle (where deploy schedules it)
+		// rather than silently submitting an unscheduled run.
+		if cfg.Schedule != nil {
+			return handleScheduledRun(ctx, cfg, file)
+		}
+
 		w := cmdctx.WorkspaceClient(ctx)
 		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey)
 		if err != nil {
@@ -126,6 +135,36 @@ The workload is described by a YAML config file (see --file).`,
 	}
 
 	return cmd
+}
+
+// handleScheduledRun responds to a `schedule` in the run config. `air run` submits a
+// one-time run and can't schedule it; scheduling needs a persistent job, which a
+// Databricks Asset Bundle provides. It offers to convert the config to a bundle
+// (writing it next to the YAML) and prints the deploy step; it never submits, since a
+// scheduled run can't go through the submit path. Declining, or a non-interactive
+// session, exits non-zero with the manual command.
+func handleScheduledRun(ctx context.Context, cfg *runConfig, configPath string) error {
+	self := cliInvocation()
+	cmdio.LogString(ctx, "'schedule' is set, but 'air run' submits a one-time run and can't schedule it.")
+	cmdio.LogString(ctx, "Scheduling needs a persistent job, which a Databricks Asset Bundle provides.")
+
+	convertCmd := fmt.Sprintf("%s experimental air convert-to-dabs %s", self, configPath)
+	manual := fmt.Sprintf("Nothing submitted. To schedule this job:\n  %s\n  databricks bundle deploy", convertCmd)
+
+	convert, err := cmdio.AskYesOrNo(ctx, "Convert this config to a bundle now?")
+	if err != nil || !convert {
+		// A non-interactive session (no TTY) surfaces as an error here; treat it the
+		// same as declining and point at the manual command.
+		return errors.New(manual)
+	}
+
+	dir := filepath.Dir(configPath)
+	written, err := writeBundle(ctx, cfg, configPath, dir, false)
+	if err != nil {
+		return err
+	}
+	printConvertNextSteps(ctx, dir, written, bundleResourceKey(cfg.ExperimentName))
+	return nil
 }
 
 // watchTerminalStatus resolves a watched run's final display state for the
