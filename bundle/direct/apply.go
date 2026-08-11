@@ -299,25 +299,13 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 	return nil
 }
 
-// saveStateRedacted saves a copy of state to the deployment state file with
-// sensitive fields replaced by a placeholder value so secrets are never written
+// saveStateRedacted saves a state with sensitive fields replaced by a placeholder value so secrets are never written
 // to disk in plaintext.
 func (d *DeploymentUnit) saveStateRedacted(db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
-	// Round-trip through JSON to get an independent copy so the original struct
-	// (still held in memory for post-deploy use) is not modified.
-	data, err := json.Marshal(state)
-	if err != nil {
-		return fmt.Errorf("marshaling state for redaction: %w", err)
-	}
-	stateType := d.Adapter.StateType()
-	ptr := reflect.New(stateType.Elem()).Interface()
-	if err := json.Unmarshal(data, ptr); err != nil {
-		return fmt.Errorf("unmarshaling state copy for redaction: %w", err)
-	}
-	if err := zeroSensitiveFields(d.Adapter, ptr); err != nil {
+	if err := zeroSensitiveFields(d.Adapter, state); err != nil {
 		return fmt.Errorf("redacting state: %w", err)
 	}
-	return db.SaveState(d.ResourceKey, newID, ptr, dependsOn)
+	return db.SaveState(d.ResourceKey, newID, state, dependsOn)
 }
 
 func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {
