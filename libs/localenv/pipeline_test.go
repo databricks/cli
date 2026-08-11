@@ -432,6 +432,34 @@ func TestPipelineProvisionsAndValidatesExisting(t *testing.T) {
 	assert.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 }
 
+func TestPipelineDryRunOmitsFabricatedDBConnectVersion(t *testing.T) {
+	// A major-only pin like ~=17.0 (serverless, environments#15) is not a concrete
+	// version. Under --dry-run validate never corrects the reported value, so it
+	// must be empty rather than the fabricated "17.0".
+	dir := t.TempDir()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`[project]
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = ["databricks-connect~=17.0"]
+`))
+	}))
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, res.Resolved)
+	assert.Empty(t, res.Resolved.DBConnectVersion,
+		"dry-run must not report a fabricated version for a major-only pin")
+}
+
 func TestPipelineGreenfieldCreatesNewPyproject(t *testing.T) {
 	dir := t.TempDir()
 	srv := newTestServer(t)
@@ -884,6 +912,30 @@ func TestMajorVersion(t *testing.T) {
 	for _, tc := range cases {
 		assert.Equal(t, tc.want, majorVersion(tc.input), "input=%q", tc.input)
 	}
+}
+
+func TestDBCVersionFromPin(t *testing.T) {
+	cases := []struct {
+		pin  string
+		want string
+	}{
+		{"databricks-connect~=17.3.0", "17.3.0"},
+		// A range-only pin is not a concrete version: report nothing rather than a
+		// major.minor floor nothing installs.
+		{"databricks-connect~=17.0", ""},
+		{"databricks-connect~=17", ""},
+		{"", ""},
+	}
+	for _, tc := range cases {
+		assert.Equal(t, tc.want, dbcVersionFromPin(tc.pin), "pin=%q", tc.pin)
+	}
+}
+
+func TestDBCMajorFromPinHandlesMajorOnlyPin(t *testing.T) {
+	// The major-only pin that makes dbcVersionFromPin return "" must still yield a
+	// major for validate's real-run assertion — the two paths read the same pin.
+	assert.Equal(t, "17", dbcMajorFromPin("databricks-connect~=17.0"))
+	assert.Equal(t, "17", dbcMajorFromPin("databricks-connect~=17.3.0"))
 }
 
 // phaseStatus returns the status recorded for the named phase in res.
