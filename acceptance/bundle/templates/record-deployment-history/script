@@ -1,4 +1,4 @@
-# The env vars in test.toml opt every built-in template into recording deployment history.
+# The env var in test.toml opts every built-in template into recording deployment history.
 
 # Leaving the generated projects behind would add their .gitignore files to this repo, see #2318.
 trap 'rm -rf output' EXIT
@@ -8,9 +8,8 @@ for template in default-python default-sql default-scala dbt-sql lakeflow-integr
     trace grep -A1 '^experimental:' output/$template/*/databricks.yml
 done
 
-# The setting is gated off for now, so check that a generated project still loads with the
-# force-allow escape hatch that test.toml sets. The gate applies to the field rather than to
-# the layout, so one template is enough.
+# Check that a generated project still loads and keeps the field through validation.
+# This applies to the field rather than to the layout, so one template is enough.
 (cd output/default-python/my_default_python && trace $CLI bundle validate -o json | gron.py | grep experimental)
 
 # Keep one file in full to assert where the stanza lands in the document.

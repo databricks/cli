@@ -1,8 +1,4 @@
 Env.DATABRICKS_BUNDLE_INIT_RECORD_DEPLOYMENT_HISTORY = "true"
 
-# record_deployment_history is gated off for now, so generated projects only validate with the
-# force-allow escape hatch set.
-Env.DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY = "true"
-
 # What is under test is what `bundle init` writes, so one engine is enough.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
