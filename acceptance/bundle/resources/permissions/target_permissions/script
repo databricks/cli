@@ -1,5 +1,5 @@
 trace $CLI bundle plan
-$CLI bundle plan -o json | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 print_requests.py --nostamp //jobs/ > out.requests_create.$DATABRICKS_BUNDLE_ENGINE.json
 

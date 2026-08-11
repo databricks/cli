@@ -14,6 +14,6 @@ EOF
 
 # The reordered remote must not produce a phantom diff: on_* lists are diffed by id.
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp | jq '.plan."resources.jobs.my_job".changes | del(.. | objects | .deployment_id?, .version_id?)' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp | jq '.plan."resources.jobs.my_job".changes' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace print_requests.py //jobs --nostamp

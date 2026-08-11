@@ -1,15 +1,15 @@
 echo "*" > .gitignore
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-$CLI bundle plan -o json | nostamp | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace print_requests.py //jobs > out.create.requests.txt --nostamp
 
 title "Update trigger.periodic.unit and re-deploy"
 trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py //jobs > out.update.requests.$DATABRICKS_BUNDLE_ENGINE.json --nostamp
 

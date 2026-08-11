@@ -13,7 +13,7 @@ r["max_concurrent_runs"] = 2
 EOF
 
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp | jq 'del(.. | objects | .deployment_id?, .version_id?)' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm out.requests.txt
 # XXX READPLAN
