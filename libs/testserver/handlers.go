@@ -63,11 +63,11 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.0/policies/clusters/create", func(req Request) any { return req.Workspace.ClusterPoliciesCreate(req) })
-    server.Handle("POST", "/api/2.0/policies/clusters/edit", func(req Request) any { return req.Workspace.ClusterPoliciesEdit(})
-    server.Handle("POST", "/api/2.0/policies/clusters/delete", func(req Request) any { return req.Workspace.ClusterPoliciesDelete(req) })
-    server.Handle("GET", "/api/2.0/policies/clusters/get", func(req Request) any {
-        return req.Workspace.ClusterPoliciesGet(req, req.URL.Query().Get("policy_id"))
-    })
+	server.Handle("POST", "/api/2.0/policies/clusters/edit", func(req Request) any { return req.Workspace.ClusterPoliciesEdit(req) })
+	server.Handle("POST", "/api/2.0/policies/clusters/delete", func(req Request) any { return req.Workspace.ClusterPoliciesDelete(req) })
+	server.Handle("GET", "/api/2.0/policies/clusters/get", func(req Request) any {
+		return req.Workspace.ClusterPoliciesGet(req, req.URL.Query().Get("policy_id"))
+	})
 
 	server.Handle("GET", "/api/2.1/clusters/list", func(req Request) any {
 		return compute.ListClustersResponse{
