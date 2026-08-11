@@ -2,7 +2,6 @@
 # These tests simulate process crashes using KillCaller and verify state recovery.
 # Only runs with direct engine since WAL is a direct-engine feature.
 
-Local = true
 Env.DATABRICKS_CLI_TEST_PID = "1"
 
 [EnvMatrix]

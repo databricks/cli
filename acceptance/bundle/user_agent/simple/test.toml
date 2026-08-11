@@ -1,5 +1,4 @@
 RecordRequests = true
-Local = true
 IncludeRequestHeaders = ["User-Agent"]
 Ignore = [".databricks"]
 

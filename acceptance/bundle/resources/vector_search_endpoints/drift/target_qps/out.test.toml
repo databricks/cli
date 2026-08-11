@@ -1,4 +1,3 @@
-Local = true
 Cloud = false
 RequiresUnityCatalog = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

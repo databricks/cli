@@ -1,4 +1,3 @@
-Local = true
 # External locations require actual storage credentials with cloud IAM setup
 # which are environment-specific, so we only test locally with the mock server
 Cloud = false

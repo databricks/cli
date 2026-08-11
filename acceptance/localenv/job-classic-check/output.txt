@@ -1,11 +1,5 @@
 
 >>> [CLI] environments setup-local --job-task 12345.ingest --dry-run
-preflight  ok  check
-resolve    ok  source=job envKey=dbr/15.4.x-scala2.12
-fetch      ok  source=[DATABRICKS_URL]/dbr/15.4.x-scala2.12/pyproject.toml fromCache=false
-merge      ok
-provision  ok
-validate   ok
 Plan: [TEST_TMP_DIR]/pyproject.toml
   changed region: requires-python
   changed region: tool.uv.constraint-dependencies
