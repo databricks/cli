@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/databricks/cli/libs/env"
 )
@@ -109,6 +110,7 @@ const (
 	NameOpenCode    = "opencode"
 	NameCopilot     = "copilot"
 	NameAntigravity = "antigravity"
+	NamePi          = "pi"
 )
 
 // Databricks plugin identity, shared across the agents that ship a plugin.
@@ -204,6 +206,41 @@ var Registry = []*Agent{
 		SkillsSubdir: "global_skills",
 		// Antigravity is IDE-only with no CLI binary, so it has no plugin path.
 	},
+	{
+		Name:                 NamePi,
+		DisplayName:          "Pi",
+		ConfigDir:            piConfigDir,
+		SupportsProjectScope: true,
+		ProjectConfigDir:     ".pi",
+		Binary:               "pi",
+		// Pi reads agent skills (SKILL.md) but has no databricks plugin, so it is
+		// skills-only (Plugin nil).
+	},
+}
+
+// piConfigDir returns Pi's agent config directory: PI_CODING_AGENT_DIR when set,
+// else ~/.pi/agent. Mirroring Pi's own override keeps skills where Pi reads them
+// when a launcher (e.g. ucode) relocates its home.
+// See https://github.com/earendil-works/pi/blob/31b513e316ab2b5ec736268350635511297fa3c1/packages/coding-agent/src/config.ts#L494-L520.
+func piConfigDir(ctx context.Context) (string, error) {
+	if dir := env.Get(ctx, "PI_CODING_AGENT_DIR"); dir != "" {
+		if dir == "~" || strings.HasPrefix(dir, "~/") || (runtime.GOOS == "windows" && strings.HasPrefix(dir, `~\`)) {
+			home, err := env.UserHomeDir(ctx)
+			if err != nil {
+				return "", err
+			}
+			if dir == "~" {
+				return home, nil
+			}
+			return filepath.Join(home, dir[2:]), nil
+		}
+		return dir, nil
+	}
+	home, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".pi", "agent"), nil
 }
 
 // openCodeConfigDir returns OpenCode's config directory. OpenCode stores its
@@ -248,4 +285,39 @@ func DetectInstalled(ctx context.Context) []*Agent {
 		}
 	}
 	return installed
+}
+
+// DetectProjectInstalled returns project-scope agents that already have Databricks
+// skills in the current project. Config-dir detection is home-based, so it misses
+// project-local installs; update uses this to also refresh those.
+func DetectProjectInstalled(cwd string) []*Agent {
+	var installed []*Agent
+	for _, a := range Registry {
+		if a.SupportsProjectScope && HasDatabricksSkillsIn(a.ProjectSkillsDir(cwd)) {
+			installed = append(installed, a)
+		}
+	}
+	return installed
+}
+
+// SupportedNames returns every agent's display name in registry order, so the
+// "Supported agents" messages can't drift as agents are added.
+func SupportedNames() []string {
+	names := make([]string, len(Registry))
+	for i, a := range Registry {
+		names[i] = a.DisplayName
+	}
+	return names
+}
+
+// SkillsOnlyNames returns the display names of skills-only agents (Plugin == nil)
+// in registry order, so the install help can't drift as they are added.
+func SkillsOnlyNames() []string {
+	var names []string
+	for _, a := range Registry {
+		if a.Plugin == nil {
+			names = append(names, a.DisplayName)
+		}
+	}
+	return names
 }
