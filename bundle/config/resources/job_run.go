@@ -14,8 +14,8 @@ import (
 )
 
 // JobRun is the bundle config for a triggered job run, described by the same
-// fields as the Jobs RunNow request (embedded). Without lifecycle triggers it
-// re-fires only when its own config changes, not when the targeted job changes.
+// fields as the Jobs RunNow request (embedded). By default it re-fires when its
+// own configuration changes; lifecycle.triggers can add further conditions.
 type JobRun struct {
 	BaseResource
 	jobs.RunNow

@@ -20,7 +20,7 @@ Deployment complete!
   }
 }
 
-=== redeploy with unchanged config still re-fires
+=== redeploy re-fires with unchanged config
 >>> [CLI] bundle plan
 recreate job_runs.my_run
 

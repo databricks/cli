@@ -985,11 +985,11 @@ resources:
                 Lifecycle setting to prevent the resource from being destroyed.
             "triggers":
               "description": |-
-                Conditions that re-fire this job run. Without triggers, the run re-fires only when its own configuration changes.
+                Conditions that re-fire this job run (in addition to configuration changes).
               "$fields":
                 "on_bundle_deploy":
                   "description": |-
-                    If true, re-fire the run on every bundle deploy, even when the run configuration is unchanged.
+                    If true, re-fire the run on every bundle deploy.
         "python_named_params":
           "description": |-
             PLACEHOLDER

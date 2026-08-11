@@ -57,7 +57,7 @@ var knownMissingInRemoteType = map[string][]string{
 		"usage_policy_id",
 	},
 	"job_runs": {
-		// Local trigger fingerprints; the Jobs API has nothing corresponding.
+		// Local-only trigger fingerprints stored in state.
 		"triggers",
 	},
 }

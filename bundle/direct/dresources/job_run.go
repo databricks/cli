@@ -28,8 +28,7 @@ const jobRunTimeout = 24 * time.Hour
 
 // JobRunTriggersState is the persisted fingerprint of lifecycle.triggers.
 type JobRunTriggersState struct {
-	// Fresh UUID each plan when on_bundle_deploy is set; Old!=New forces recreate.
-	// A sticky true would be skipped as missing_in_remote when Old==New.
+	// Fresh UUID each plan when on_bundle_deploy is set so Old!=New forces recreate.
 	OnBundleDeploy string `json:"on_bundle_deploy,omitempty"`
 }
 
@@ -40,7 +39,7 @@ type JobRunState struct {
 	// Always SUCCESS during planning and cleared before persistence.
 	ResultState jobs.RunResultState `json:"result_state,omitempty"`
 
-	// Absent from RemoteType (knownMissingInRemoteType); local diff drives triggers.
+	// Local-only trigger fingerprints; listed in knownMissingInRemoteType.
 	Triggers *JobRunTriggersState `json:"triggers,omitempty"`
 }
 
@@ -176,7 +175,7 @@ func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 	return &JobRunState{
 		RunNow:      remote.RunNow,
 		ResultState: remote.ResultState,
-		// Triggers are local-only fingerprints; RemoteType has nothing to copy.
+		// Local-only trigger fingerprints stay unset on the remapped remote.
 		Triggers: nil,
 	}
 }
@@ -367,8 +366,7 @@ func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, config *JobRun
 // still going, so a run that may yet succeed is adopted and waited on. A run that
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
-// Clearing triggers.on_bundle_deploy is skipped so removing the trigger does not
-// fire one last run.
+// Removing triggers.on_bundle_deploy is a no-op so the existing run stays in place.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
 	switch path.String() {
 	case "triggers.on_bundle_deploy":

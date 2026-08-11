@@ -1280,7 +1280,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "triggers": {
-                        "description": "Conditions that re-fire this job run. Without triggers, the run re-fires only when its own configuration changes.",
+                        "description": "Conditions that re-fire this job run (in addition to configuration changes).",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.JobRunTrigger"
                       }
                     },
@@ -1298,7 +1298,7 @@
                     "type": "object",
                     "properties": {
                       "on_bundle_deploy": {
-                        "description": "If true, re-fire the run on every bundle deploy, even when the run configuration is unchanged.",
+                        "description": "If true, re-fire the run on every bundle deploy.",
                         "$ref": "#/$defs/bool"
                       }
                     },

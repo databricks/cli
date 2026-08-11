@@ -26,11 +26,11 @@ type LifecycleWithStarted struct {
 	Started *bool `json:"started,omitempty"`
 }
 
-// JobRunLifecycle adds run-fire triggers; other resources keep base Lifecycle only.
+// JobRunLifecycle extends Lifecycle with run-fire triggers.
 type JobRunLifecycle struct {
 	Lifecycle
 
-	// Without triggers, the run re-fires only when its own config changes.
+	// Triggers that cause the run to re-fire (in addition to config changes).
 	Triggers []JobRunTrigger `json:"triggers,omitempty"`
 }
 
