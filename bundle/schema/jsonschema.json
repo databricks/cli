@@ -66,6 +66,10 @@
                     "enum": [
                       "terraform",
                       "direct"
+                    ],
+                    "enumDescriptions": [
+                      "Deploy through Terraform. Deprecated: Migrate to `direct`, see https://docs.databricks.com/aws/en/dev-tools/bundles/direct",
+                      "Deploy by calling the Databricks APIs directly. This is the default."
                     ]
                   },
                   {
@@ -3096,7 +3100,7 @@
                       "markdownDescription": "The definition of the bundle deployment. For supported attributes see [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
                     },
                     "engine": {
-                      "description": "The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is \"terraform\".",
+                      "description": "The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is \"direct\".",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config/engine.EngineType"
                     },
                     "git": {
