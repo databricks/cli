@@ -7,10 +7,6 @@ type DataSourceDataClassificationCatalogConfigAutoTagConfigs struct {
 	ClassificationTag string `json:"classification_tag"`
 }
 
-type DataSourceDataClassificationCatalogConfigExcludedSchemas struct {
-	Names []string `json:"names"`
-}
-
 type DataSourceDataClassificationCatalogConfigIncludedSchemas struct {
 	Names []string `json:"names"`
 }
@@ -21,7 +17,6 @@ type DataSourceDataClassificationCatalogConfigProviderConfig struct {
 
 type DataSourceDataClassificationCatalogConfig struct {
 	AutoTagConfigs  []DataSourceDataClassificationCatalogConfigAutoTagConfigs `json:"auto_tag_configs,omitempty"`
-	ExcludedSchemas *DataSourceDataClassificationCatalogConfigExcludedSchemas `json:"excluded_schemas,omitempty"`
 	IncludedSchemas *DataSourceDataClassificationCatalogConfigIncludedSchemas `json:"included_schemas,omitempty"`
 	Name            string                                                    `json:"name"`
 	ProviderConfig  *DataSourceDataClassificationCatalogConfigProviderConfig  `json:"provider_config,omitempty"`

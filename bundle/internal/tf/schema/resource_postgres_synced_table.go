@@ -6,13 +6,6 @@ type ResourcePostgresSyncedTableProviderConfig struct {
 	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
-type ResourcePostgresSyncedTableSpecExtraColumns struct {
-	ColumnName  string `json:"column_name"`
-	ColumnType  string `json:"column_type"`
-	Compute     string `json:"compute,omitempty"`
-	Maintenance string `json:"maintenance,omitempty"`
-}
-
 type ResourcePostgresSyncedTableSpecNewPipelineSpec struct {
 	BudgetPolicyId string `json:"budget_policy_id,omitempty"`
 	StorageCatalog string `json:"storage_catalog,omitempty"`
@@ -30,7 +23,6 @@ type ResourcePostgresSyncedTableSpec struct {
 	Branch                         string                                          `json:"branch,omitempty"`
 	CreateDatabaseObjectsIfMissing bool                                            `json:"create_database_objects_if_missing,omitempty"`
 	ExistingPipelineId             string                                          `json:"existing_pipeline_id,omitempty"`
-	ExtraColumns                   []ResourcePostgresSyncedTableSpecExtraColumns   `json:"extra_columns,omitempty"`
 	NewPipelineSpec                *ResourcePostgresSyncedTableSpecNewPipelineSpec `json:"new_pipeline_spec,omitempty"`
 	PostgresDatabase               string                                          `json:"postgres_database,omitempty"`
 	PrimaryKeyColumns              []string                                        `json:"primary_key_columns,omitempty"`
