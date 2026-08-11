@@ -1,0 +1,83 @@
+
+=== Deploy a schema, so the deployment and its first version exist
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle --sort
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments",
+  "body": {
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy/default/state",
+    "target_name": "default"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "target_name": "default",
+    "display_name": "dms-declined-deploy",
+    "workspace_info": {
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy/default"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
+  "q": {
+    "resource_key": "schemas.foo"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "resource_id": "main.dms_declined_deploy_schema",
+    "resource_key": "schemas.foo",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_declined_deploy_schema\"}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+
+=== A destructive change without --auto-approve is declined: this console cannot prompt
+>>> update_file.py databricks.yml catalog_name: main catalog_name: other
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy/default/files...
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+  recreate resources.schemas.foo
+Error: the deployment requires destructive actions, but the current console does not support prompting.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
+To proceed, use --auto-approve after reviewing the plan above.
+
+
+=== Nothing was recorded for the declined deploy - no version, so none to abort
+>>> print_requests.py //api/2.0/bundle --sort
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.foo
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy/default
+
+Deleting files...
+Destroy complete!

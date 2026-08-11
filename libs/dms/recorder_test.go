@@ -237,6 +237,45 @@ func TestRecorderCompleteVersionNoOpWithoutCreateVersion(t *testing.T) {
 	assert.Empty(t, f.completed)
 }
 
+func TestRecorderPrepareDeploymentClaimsNoVersion(t *testing.T) {
+	// A deploy the user declines prepares but never creates: the version number is
+	// known, so the plan can be stamped with it, but no version exists to complete and
+	// the number is left for the next deploy to take.
+	f := &fakeDMS{
+		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
+			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "4"}, nil
+		},
+	}
+	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
+
+	require.NoError(t, r.PrepareDeployment(t.Context()))
+
+	assert.Equal(t, int64(5), r.Version())
+	assert.Empty(t, f.versions, "no version created")
+
+	require.NoError(t, r.CompleteVersion(t.Context(), true))
+	assert.Empty(t, f.completed, "nothing to complete")
+}
+
+func TestRecorderCreateVersionUsesThePreparedNumber(t *testing.T) {
+	f := &fakeDMS{
+		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
+			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "4"}, nil
+		},
+	}
+	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
+
+	require.NoError(t, r.PrepareDeployment(t.Context()))
+	require.NoError(t, r.CreateVersion(t.Context()))
+
+	// The version created is the one the plan was stamped with, and it reports the
+	// version it supersedes so the service rejects a racing deploy.
+	require.Len(t, f.versions, 1)
+	assert.Equal(t, "5", f.versions[0].versionID)
+	assert.Equal(t, "4", f.versions[0].body.PreviousVersionId)
+	assert.Equal(t, int64(5), r.Version())
+}
+
 func TestDeploymentIDFromName(t *testing.T) {
 	id, err := deploymentIDFromName("deployments/abc-123")
 	require.NoError(t, err)

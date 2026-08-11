@@ -91,9 +91,16 @@ type Recorder struct {
 	versionType  VersionType
 	metadata     Metadata
 
-	// populated by CreateVersion
-	versionNum    int64
-	stopHeartbeat context.CancelFunc
+	// populated by PrepareDeployment: the version number this deploy intends to
+	// create. It is known before the version exists so it can be stamped onto the
+	// resources the plan is computed from.
+	versionNum        int64
+	previousVersionID string
+
+	// populated by CreateVersion, once the version actually exists. A deploy the user
+	// declines never gets here, so there is nothing to complete or heartbeat.
+	versionCreated bool
+	stopHeartbeat  context.CancelFunc
 
 	// completed makes CompleteVersion idempotent, so a caller that completes the
 	// version early can still defer it unconditionally.
@@ -169,18 +176,37 @@ func (r *Recorder) CreateVersion(ctx context.Context) error {
 	if r == nil {
 		return nil
 	}
-
-	versionID, err := r.createDeploymentVersion(ctx)
-	if err != nil {
-		return err
+	// A deploy calls PrepareDeployment first, because it needs the version number to
+	// stamp onto the plan. A destroy has no such need, so settle it here instead.
+	if r.versionNum == 0 {
+		if err := r.PrepareDeployment(ctx); err != nil {
+			return err
+		}
 	}
 
-	versionNum, err := strconv.ParseInt(versionID, 10, 64)
+	versionID := strconv.FormatInt(r.versionNum, 10)
+
+	// The server rejects the call unless versionID is numerically greater than
+	// last_version_id and previous_version_id matches it. That is what makes claiming
+	// the number up front safe: another deploy that took it between PrepareDeployment
+	// and here is reported rather than overwritten.
+	version, err := r.versions.CreateVersion(ctx, r.deploymentID, versionID, createVersionRequest{
+		CliVersion:        build.GetInfo().Version,
+		VersionType:       r.versionType,
+		TargetName:        r.metadata.TargetName,
+		DisplayName:       r.metadata.DisplayName,
+		PreviousVersionId: r.previousVersionID,
+		DeploymentMode:    r.metadata.Mode,
+		GitInfo:           r.metadata.Git,
+		WorkspaceInfo:     r.metadata.Workspace,
+	})
 	if err != nil {
-		return fmt.Errorf("failed to parse version ID %q: %w", versionID, err)
+		return fmt.Errorf("failed to create deployment version: %w", err)
 	}
-	r.versionNum = versionNum
+
+	r.versionCreated = true
 	r.stopHeartbeat = startHeartbeat(ctx, r.svc, r.deploymentID, versionID)
+	log.Infof(ctx, "Created deployment version: deployment=%s version=%s", r.deploymentID, version.VersionId)
 	return nil
 }
 
@@ -195,16 +221,8 @@ func (r *Recorder) CompleteVersion(ctx context.Context, success bool) error {
 	return r.completeVersion(ctx, reason)
 }
 
-// AbortVersion completes the version as aborted, for a deploy the user declined at
-// the approval prompt. The version has to exist by then - it is stamped onto the
-// resources the plan is computed from - so this says nothing was applied rather than
-// leaving a version that reads like a deploy that failed.
-func (r *Recorder) AbortVersion(ctx context.Context) error {
-	return r.completeVersion(ctx, bundledeployments.VersionCompleteVersionCompleteForceAbort)
-}
-
 func (r *Recorder) completeVersion(ctx context.Context, reason bundledeployments.VersionComplete) error {
-	if r == nil || r.versionNum == 0 || r.completed {
+	if r == nil || !r.versionCreated || r.completed {
 		return nil
 	}
 	r.completed = true
@@ -240,10 +258,31 @@ func (r *Recorder) completeVersion(ctx context.Context, reason bundledeployments
 // createDeploymentVersion ensures the deployment record exists, then creates a new
 // version under it: with no ID it creates the deployment, otherwise it reads the
 // existing one for the next version number.
-func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID string, err error) {
-	// The version this one supersedes, sent as the concurrency check. Empty for a
-	// deployment's first version.
-	var previousVersionID string
+// PrepareDeployment makes sure the deployment exists and works out the version number
+// this deploy will create, without creating it. Both are needed before the plan, which
+// stamps them onto the resources it is computed from; the version itself is not created
+// until CreateVersion, so a deploy the user declines never claims one.
+func (r *Recorder) PrepareDeployment(ctx context.Context) error {
+	if r == nil {
+		return nil
+	}
+
+	versionID, err := r.resolveNextVersion(ctx)
+	if err != nil {
+		return err
+	}
+
+	versionNum, err := strconv.ParseInt(versionID, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse version ID %q: %w", versionID, err)
+	}
+	r.versionNum = versionNum
+	return nil
+}
+
+// resolveNextVersion creates the deployment if this is the first deploy, and returns
+// the version ID to create under it.
+func (r *Recorder) resolveNextVersion(ctx context.Context) (versionID string, err error) {
 	if r.deploymentID != "" {
 		// The ID came from a BUNDLE_DEPLOYMENT node that get-status returned, and by
 		// design the service has a deployment for every such node, so a not-found
@@ -266,7 +305,7 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 				return "", fmt.Errorf("failed to parse last_version_id %q: %w", dep.LastVersionId, parseErr)
 			}
 			versionID = strconv.FormatInt(lastVersion+1, 10)
-			previousVersionID = dep.LastVersionId
+			r.previousVersionID = dep.LastVersionId
 		}
 	} else {
 		// First deploy: create the deployment so the server assigns an ID.
@@ -289,24 +328,6 @@ func (r *Recorder) createDeploymentVersion(ctx context.Context) (versionID strin
 		versionID = "1"
 	}
 
-	// The server rejects the call unless versionID is numerically greater than
-	// last_version_id and previous_version_id matches it, so a deploy racing
-	// another is rejected rather than overwriting it.
-	version, versionErr := r.versions.CreateVersion(ctx, r.deploymentID, versionID, createVersionRequest{
-		CliVersion:        build.GetInfo().Version,
-		VersionType:       r.versionType,
-		TargetName:        r.metadata.TargetName,
-		DisplayName:       r.metadata.DisplayName,
-		PreviousVersionId: previousVersionID,
-		DeploymentMode:    r.metadata.Mode,
-		GitInfo:           r.metadata.Git,
-		WorkspaceInfo:     r.metadata.Workspace,
-	})
-	if versionErr != nil {
-		return "", fmt.Errorf("failed to create deployment version: %w", versionErr)
-	}
-
-	log.Infof(ctx, "Created deployment version: deployment=%s version=%s", r.deploymentID, version.VersionId)
 	return versionID, nil
 }
 

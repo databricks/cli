@@ -167,8 +167,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// lock is acquired here
 	//
 	// Set up DMS recording of this deployment as a version. The version itself is
-	// created further down, before the plan is computed - see the comment there for
-	// why it cannot wait for approval. CompleteVersion is deferred before
+	// created once the deploy is approved. CompleteVersion is deferred before
 	// lock.Release so it runs while the lock is still held (defers run
 	// last-in-first-out), and is a no-op until CreateVersion has run.
 	recorder, err := newDeploymentRecorder(ctx, b, stateEngine, dms.VersionTypeDeploy)
@@ -230,15 +229,14 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	// Create the version before planning: the plan snapshots the resource config, so
-	// the version has to be stamped on before it is computed or the applied resources
-	// would not carry it.
+	// Settle the deployment and the version number it will use before planning: the
+	// plan snapshots the resource config, so both have to be stamped on before it is
+	// computed or the applied resources would not carry them. The version itself is
+	// created after approval.
 	//
-	// Creating it is also what takes the deployment's lock server-side, so a deploy
-	// that loses a race pays for the upload above before being turned away. Moving it
-	// earlier does not work: on a first deploy the deployment record is registered
-	// under the state directory, which the upload is what creates.
-	if err := recorder.CreateVersion(ctx); err != nil {
+	// This cannot move earlier: on a first deploy the deployment is registered under
+	// the state directory, which the upload above is what creates.
+	if err := recorder.PrepareDeployment(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
@@ -252,9 +250,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		if logdiag.HasError(ctx) {
 			return
 		}
-		// Printed here rather than after the deploy so the user can follow the version
-		// while it runs, and still has the link if the deploy fails partway.
-		logDeploymentVersion(ctx, b, recorder)
 	}
 
 	planFromFile := plan != nil
@@ -296,17 +291,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	haveApproval, approvalErr := approvalForDeploy(ctx, b, plan)
 	if !haveApproval {
-		// Nothing was applied, so the version records an abort rather than a failure.
-		// It cannot simply be left uncreated: it is stamped onto the resources the plan
-		// is computed from, so it has to exist before the prompt. Aborting first also
-		// makes the deferred CompleteVersion a no-op.
+		// No version was created, so there is nothing to complete: the deferred
+		// CompleteVersion is a no-op until CreateVersion has run. The version number
+		// this deploy would have used is simply left for the next one to take.
 		//
 		// Both outcomes land here - the user declining, and a console that cannot
 		// prompt at all, which returns an error instead.
-		if err := recorder.AbortVersion(ctx); err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
 		if approvalErr != nil {
 			logdiag.LogError(ctx, approvalErr)
 			return
@@ -315,8 +305,15 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	// Record operations under the version created before planning, so DMS holds
-	// the deployed resource state.
+	// Create the version the plan was stamped with. Doing it here rather than before
+	// the prompt means a declined deploy never claims a version number.
+	if err := recorder.CreateVersion(ctx); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	logDeploymentVersion(ctx, b, recorder)
+
+	// Record operations under that version, so DMS holds the deployed resource state.
 	setOperationRecorder(ctx, b, recorder)
 	deployCore(ctx, b, plan, stateEngine, requestedEngine, recorder)
 

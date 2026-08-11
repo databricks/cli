@@ -1,0 +1,11 @@
+bundle:
+  name: dms-declined-deploy
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  schemas:
+    foo:
+      name: dms_declined_deploy_schema
+      catalog_name: main
