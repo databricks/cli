@@ -75,7 +75,7 @@ func TestValidateConfigRequestShape(t *testing.T) {
 	srv := validateServer(t, http.StatusOK, `{}`, &gotReq)
 
 	cfg := baseRunConfig()
-	cfg.MaxRetries = intPtr(3)
+	cfg.MaxRetries = new(3)
 	cfg.EnvVariables = map[string]string{"HF_HOME": "/tmp/hf"}
 	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), cfg)
 	require.NoError(t, err)
@@ -107,5 +107,3 @@ func TestValidateConfigRequestOmitsUnsetOptions(t *testing.T) {
 	_, hasMlflowRun := task["mlflow_run"]
 	assert.False(t, hasMlflowRun)
 }
-
-func intPtr(v int) *int { return &v }

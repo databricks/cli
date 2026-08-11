@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -43,7 +44,11 @@ func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *
 	}
 
 	var resp validateConfigResponse
-	err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, nil, nil, validateConfigRequest(cfg), &resp)
+	headers := map[string]string(nil)
+	if id := env.Get(ctx, "AIR_LITESWAP_ID"); id != "" {
+		headers = map[string]string{"x-databricks-traffic-id": "testenv://liteswap/" + id}
+	}
+	err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, headers, nil, validateConfigRequest(cfg), &resp)
 	if err != nil {
 		if endpointUnavailable(err) {
 			return nil
@@ -114,13 +119,10 @@ func putOpt[T any](m map[string]any, key string, value *T) {
 // to answer — the flag is off, or the workspace predates it — as opposed to the
 // config being rejected. Those cases fail open.
 func endpointUnavailable(err error) bool {
-	var apiErr *apierr.APIError
-	if errors.As(err, &apiErr) {
-		return apiErr.ErrorCode == "FEATURE_DISABLED" ||
-			apiErr.StatusCode == http.StatusNotFound ||
-			apiErr.StatusCode == http.StatusNotImplemented
-	}
-	return false
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && (apiErr.ErrorCode == "FEATURE_DISABLED" ||
+		apiErr.StatusCode == http.StatusNotFound ||
+		apiErr.StatusCode == http.StatusNotImplemented)
 }
 
 // formatConfigErrors renders the field errors as one message, one problem per
