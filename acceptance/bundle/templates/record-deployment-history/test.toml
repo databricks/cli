@@ -1,0 +1,2 @@
+# What is under test is what `bundle init` writes, so one engine is enough.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
