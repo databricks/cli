@@ -999,8 +999,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.vector_search_indexes.test_vector_search_index_old":      {ID: "vs-index-old"},
 		"resources.instance_pools.test_instance_pool":                       {ID: "1"},
 		"resources.instance_pools.test_instance_pool_old":                   {ID: "2"},
-		"resources.cluster_policies.test_cluster_policy":                     {ID: "cp-1"},
-		"resources.cluster_policies.test_cluster_policy_old":                 {ID: "cp-2"},
+		"resources.cluster_policies.test_cluster_policy":                    {ID: "cp-1"},
+		"resources.cluster_policies.test_cluster_policy_old":                {ID: "cp-2"},
 		"resources.secrets.test_secret":                                     {ID: "main.default.test_secret"},
 		"resources.secrets.test_secret_old":                                 {ID: "main.default.test_secret_old"},
 	}
