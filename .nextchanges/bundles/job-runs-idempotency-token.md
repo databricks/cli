@@ -1,0 +1,1 @@
+direct: experimental `job_runs` now sends a CLI-managed idempotency token on every run-now, so an SDK retry after a lost response returns the same run. Configured `idempotency_token` values are rejected.
