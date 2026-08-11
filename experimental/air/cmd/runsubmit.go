@@ -80,8 +80,11 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 			},
 		}},
 		CodeSourcePath: snap.CodeSourcePath,
-		// Verified as registered by prepareDockerImage.
-		DockerImageUrl: cfg.dockerImageURL(),
+		// NOTE: docker_image_url is intentionally not set here yet. The field was
+		// added to jobs.AiRuntimeTask in databricks-sdk-go after v0.170.0, which the
+		// CLI has not bumped to. prepareDockerImage already verifies the image is
+		// registered; passing it on the task lands in the follow-up PR once the SDK
+		// bump + codegen is in.
 	}
 	if cfg.MLflowRunName != nil {
 		task.MlflowRun = *cfg.MLflowRunName
