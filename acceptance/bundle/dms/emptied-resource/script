@@ -1,5 +1,8 @@
-title "Deploy a schema with one grant, then revoke it so the grants node empties out"
+title "Deploy a schema with one grant: the grants node is recorded with its state"
 trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle --sort
+
+title "Revoke the grant, so the grants node empties out"
 trace update_file.py databricks.yml 'grants: [{principal: someone@example.com, privileges: [USE_SCHEMA]}]' 'grants: []'
 trace $CLI bundle deploy
 
