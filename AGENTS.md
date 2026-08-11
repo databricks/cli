@@ -135,6 +135,8 @@ Where a panic is genuinely possible (e.g. `reflect.Type.Elem()` on a non-pointer
 
 **RULE: To keep an intentionally-unreferenced exported function, mark it `//deadcode:allow <reason>` within 6 lines above the `func`.** CI runs `deadcode -test ./...`; a func reachable only from a `*_test.go` is not flagged, so unwiring a feature can leave a sibling entry point dead. (`gofmt` inserts a blank `//` line between the directive and the doc comment; that's expected and still detected.)
 
+**RULE: Write platform agnostic code.** Avoid test logic that runs only on the operating system you are using. Do not forget about Windows!
+
 # Error Handling
 
 **RULE: Wrap errors with context using `%w`.** Preserves the error chain so `errors.Is` and `errors.As` keep working upstream.
