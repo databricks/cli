@@ -1,0 +1,16 @@
+title "Plan before anything is deployed: no deployment exists yet, so there is no lineage or serial to record"
+trace $CLI bundle plan -o json > tmp.plan.json
+trace jq '{lineage, serial, actions: [.plan[] | .action]}' tmp.plan.json
+
+title "Deploy normally, which creates the deployment and its first version"
+# Stands in for a concurrent deploy: it is what puts a deployment at the state path
+# that the plan above was computed without.
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle --sort
+
+title "Deploying the earlier plan is accepted, even though a deployment now exists"
+trace $CLI bundle deploy --plan tmp.plan.json
+trace print_requests.py //api/2.0/bundle --sort
+
+trace $CLI bundle destroy --auto-approve
+rm -f out.requests.txt tmp.plan.json
