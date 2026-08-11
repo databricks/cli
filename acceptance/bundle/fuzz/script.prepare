@@ -15,12 +15,13 @@ invariant_render() {
 
     cp databricks.yml LOG.config
 
-    trace $CLI bundle validate &> LOG.validate
+    # --strict: type/required warnings must reject, not deploy and fail mid-migrate.
+    set +e
+    trace $CLI bundle validate --strict &> LOG.validate
+    local rc=$?
+    set -e
     cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
-
-    # validate only warns on these; reject so the seed counts as rejected instead of
-    # deploying and failing mid-migrate/destroy (e.g. group_name: []).
-    if grep -qE 'required field .* is not set|expected (string|map|sequence|bool|number), found ' LOG.validate; then
+    if [ "$rc" -ne 0 ]; then
         return 1
     fi
 }

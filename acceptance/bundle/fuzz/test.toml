@@ -20,6 +20,7 @@ Ignore = [
     ".databricks.backup",
 ]
 
+# continue_293 omitted: pinned v0.293.0 rejects most current fields/types first.
 EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "delete_idempotent", "destroy_idempotent"]
 
 # Local SQL stub used by some mutated configs.

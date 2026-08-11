@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Seed loop for the invariant fuzzer. Invokes seed_body from fuzz/script and classifies each seed:
+Seed loop for the invariant fuzzer. Invokes fuzz/seed.sh per seed and classifies each:
 
   deployed - deployed and the invariant held
   rejected - CLI refused the config before deploy
@@ -79,9 +79,10 @@ def kill_seed(proc):
 
 def run_seed(seed_dir, seed):
     """Exit code and whether the seed was killed for timeout."""
+    seed_sh = Path(os.environ["TESTDIR"]) / "seed.sh"
     with open(seed_dir / "LOG.check", "wb") as log:
         proc = subprocess.Popen(
-            [BASH, "-euo", "pipefail", "-c", 'seed_body "$@"', "_", str(seed_dir), str(seed)],
+            [BASH, "-euo", "pipefail", str(seed_sh), str(seed_dir), str(seed)],
             stdout=log,
             stderr=subprocess.STDOUT,
             # Own process group so a hung CLI dies with the seed.
