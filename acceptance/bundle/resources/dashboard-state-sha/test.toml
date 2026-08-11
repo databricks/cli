@@ -5,7 +5,6 @@
 # content hash), which the in-memory testserver covers fully and deterministically. On real
 # cloud the read-after-deploy plan/state reads hit dashboard eventual consistency, and unlike
 # the tests under dashboards/ this dir doesn't inherit their retry/INJECT_STALE machinery.
-Local = true
 Cloud = false
 
 # dashboard.lvdash.json is rendered from dashboard.tmpl in the script (re-rendered for the edit).
