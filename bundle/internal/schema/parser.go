@@ -203,6 +203,8 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type) (annotation.File
 					if fieldErr != nil {
 						stageErr = errors.Join(stageErr, fmt.Errorf("%s.%s: %w", basePath, k, fieldErr))
 					}
+					// Apply custom launch stage override (e.g. keep resource in Beta despite API being GA)
+					launchStage = annotation.OverrideLaunchStage(basePath, launchStage)
 
 					description := refProp.Description
 
