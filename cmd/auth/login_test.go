@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -80,12 +81,13 @@ func (f *fakeDiscoveryPersistentAuth) Close() error {
 }
 
 type fakeDiscoveryClient struct {
-	oauthArg          *u2m.BasicDiscoveryOAuthArgument
-	oauthArgErr       error
-	persistentAuth    discoveryPersistentAuth
-	persistentAuthErr error
-	introspection     *auth.IntrospectionResult
-	introspectionErr  error
+	oauthArg           *u2m.BasicDiscoveryOAuthArgument
+	oauthArgErr        error
+	persistentAuth     discoveryPersistentAuth
+	persistentAuthErr  error
+	persistentAuthOpts []u2m.PersistentAuthOption
+	introspection      *auth.IntrospectionResult
+	introspectionErr   error
 	// For assertions
 	introspectHost  string
 	introspectToken string
@@ -99,10 +101,40 @@ func (f *fakeDiscoveryClient) NewOAuthArgument(profileName string) (*u2m.BasicDi
 }
 
 func (f *fakeDiscoveryClient) NewPersistentAuth(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+	f.persistentAuthOpts = opts
 	if f.persistentAuthErr != nil {
 		return nil, f.persistentAuthErr
 	}
 	return f.persistentAuth, nil
+}
+
+func TestDiscoveryLogin_UsesOAuthCallbackPort(t *testing.T) {
+	t.Setenv("DATABRICKS_OAUTH_CALLBACK_PORT", "8030")
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			challengeErr: errors.New("stop after creating persistent auth"),
+		},
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenStore:  newTestStore(),
+	})
+	require.Error(t, err)
+
+	persistentAuth := &u2m.PersistentAuth{}
+	for _, opt := range dc.persistentAuthOpts {
+		opt(persistentAuth)
+	}
+	port := reflect.ValueOf(persistentAuth).Elem().FieldByName("port").Int()
+	assert.EqualValues(t, 8030, port)
 }
 
 func (f *fakeDiscoveryClient) IntrospectToken(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
