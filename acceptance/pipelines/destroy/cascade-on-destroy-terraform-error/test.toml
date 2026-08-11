@@ -1,4 +1,3 @@
-Local = true
 RecordRequests = false
 
 # Static validation only; no need to run on cloud.
