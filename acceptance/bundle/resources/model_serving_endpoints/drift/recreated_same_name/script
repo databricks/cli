@@ -1,0 +1,41 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+endpoint_name="mse-endpoint-${UNIQUE_NAME}"
+
+title "Initial deployment"
+trace $CLI bundle deploy
+
+original_endpoint_id=$($CLI serving-endpoints get "${endpoint_name}" | jq -r '.id')
+add_repl.py "$original_endpoint_id" "ORIGINAL_ENDPOINT_ID"
+trace $CLI serving-endpoints get "${endpoint_name}" | jq '{name, creator}'
+
+title "Delete and recreate remotely with the same name"
+trace $CLI serving-endpoints delete "${endpoint_name}"
+trace $CLI serving-endpoints create "${endpoint_name}" --no-wait | jq '{name, creator}'
+
+remote_recreated_endpoint_id=$($CLI serving-endpoints get "${endpoint_name}" | jq -r '.id')
+add_repl.py "$remote_recreated_endpoint_id" "REMOTE_RECREATED_ENDPOINT_ID"
+trace $CLI serving-endpoints get "${endpoint_name}" | jq '{name, creator}'
+
+printf "Original endpoint id: %s\n" "$original_endpoint_id"
+printf "Remote recreated endpoint id: %s\n" "$remote_recreated_endpoint_id"
+
+if [ "$original_endpoint_id" = "$remote_recreated_endpoint_id" ]; then
+    echo "Expected remote recreation to assign a different endpoint id" >&2
+    exit 1
+fi
+
+title "Plan after out-of-band recreate"
+trace $CLI bundle plan
+
+trace $CLI bundle deploy
+trace $CLI serving-endpoints get "${endpoint_name}" | jq '{name, creator}'
+
+title "Persistent drift after deploy: V1 permissions API leaves an ACL on the deleted endpoint id, so plan keeps showing an update."
+trace $CLI bundle plan

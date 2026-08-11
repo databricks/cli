@@ -1,7 +1,5 @@
-preflight  ok  check
-resolve    error  resolving cluster name "dup": there are 2 active clusters named "dup"; use --cluster-id to disambiguate
-fetch      pending
-merge      pending
-provision  pending
-validate   pending
-For more detail, re-run with --debug, or --output json to share a structured report.
+✗ Setup failed while resolving your compute target.
+
+  resolving cluster name "dup": there are 2 active clusters named "dup"; use --cluster-id to disambiguate
+
+Re-run with --debug for details, or --output json for a structured report.

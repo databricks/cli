@@ -1,4 +1,2 @@
-Local = true
-
 [EnvMatrix]
 DATABRICKS_BUNDLE_ENGINE = []

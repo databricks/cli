@@ -50,5 +50,5 @@
   ],
   "warnings": [],
   "error": null,
-  "durationMs": 0
+  "durationMs": [DURATION_MS]
 }
