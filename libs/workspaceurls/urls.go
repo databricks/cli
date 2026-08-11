@@ -11,6 +11,7 @@ var resourceURLPatterns = map[string]string{
 	"alerts":                  "sql/alerts-v2/%s",
 	"apps":                    "apps/%s",
 	"catalogs":                "explore/data/%s",
+	"cluster_policies":        "compute/policies/%s",
 	"clusters":                "compute/clusters/%s",
 	"dashboards":              "dashboardsv3/%s/published",
 	"database_catalogs":       "explore/data/%s",
