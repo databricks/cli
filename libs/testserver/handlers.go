@@ -322,6 +322,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.JobsGetRun(req)
 	})
 
+	server.Handle("POST", "/api/2.2/jobs/runs/cancel", func(req Request) any {
+		return req.Workspace.JobsCancelRun(req)
+	})
+
 	server.Handle("POST", "/api/2.2/jobs/runs/delete", func(req Request) any {
 		return req.Workspace.JobsDeleteRun(req)
 	})
@@ -957,7 +961,7 @@ func AddDefaultHandlers(server *Server) {
 
 	// Serving Endpoints:
 	server.Handle("GET", "/api/2.0/serving-endpoints/{name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.ServingEndpoints, req.Vars["name"])
+		return req.Workspace.ServingEndpointGet(req.Vars["name"])
 	})
 
 	server.Handle("POST", "/api/2.0/serving-endpoints", func(req Request) any {
@@ -982,6 +986,10 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/tags", func(req Request) any {
 		return req.Workspace.ServingEndpointPatchTags(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/telemetry-config", func(req Request) any {
+		return req.Workspace.ServingEndpointPatchTelemetryConfig(req, req.Vars["name"])
 	})
 
 	// Vector Search Endpoints:

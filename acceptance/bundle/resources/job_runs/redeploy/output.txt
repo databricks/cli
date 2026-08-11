@@ -3,6 +3,8 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
 Deploying resources...
+job run [MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+job run [MY_RUN_ID]: SUCCESS
 Updating deployment state...
 Deployment complete!
 
@@ -16,7 +18,7 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?w=[NUMID]
   Jobs:
     my_job:
       Name: my-job
@@ -30,6 +32,7 @@ Resources:
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
+    "idempotency_token": "[UUID]",
     "job_id": [MY_JOB_ID],
     "job_parameters": {
       "env": "dev"
@@ -54,7 +57,8 @@ Resources:
       "job_id": [MY_JOB_ID],
       "job_parameters": {
         "env": "prod"
-      }
+      },
+      "result_state": "SUCCESS"
     }
   },
   "remote_state": {
@@ -62,12 +66,14 @@ Resources:
     "job_parameters": {
       "env": "dev"
     },
-    "run_id": [NUMID],
+    "result_state": "SUCCESS",
+    "run_id": [MY_RUN_ID],
     "run_name": "my-job",
-    "run_page_url": "[DATABRICKS_URL]/?o=[NUMID]#job/[MY_JOB_ID]/run/[NUMID]",
+    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]",
     "run_type": "JOB_RUN",
     "state": {
-      "life_cycle_state": "RUNNING"
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS"
     }
   },
   "changes": {
@@ -77,6 +83,12 @@ Resources:
       "old": "dev",
       "new": "prod",
       "remote": "dev"
+    },
+    "result_state": {
+      "action": "skip",
+      "reason": "remote_already_set",
+      "new": "SUCCESS",
+      "remote": "SUCCESS"
     }
   }
 }
@@ -84,6 +96,8 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
 Deploying resources...
+job run [MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
+job run [MY_RUN_ID_2]: SUCCESS
 Updating deployment state...
 Deployment complete!
 
@@ -97,7 +111,7 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?w=[NUMID]
   Jobs:
     my_job:
       Name: my-job
@@ -109,7 +123,7 @@ Resources:
   "method": "POST",
   "path": "/api/2.2/jobs/runs/delete",
   "body": {
-    "run_id": [NUMID]
+    "run_id": [MY_RUN_ID]
   }
 }
 
@@ -118,6 +132,7 @@ Resources:
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
+    "idempotency_token": "[UUID]",
     "job_id": [MY_JOB_ID],
     "job_parameters": {
       "env": "prod"

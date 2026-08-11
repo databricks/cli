@@ -463,7 +463,7 @@ func incompatibleAgentNames(targetAgents []*agents.Agent) []string {
 func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts InstallOptions) (map[string]SkillMeta, error) {
 	isSpecific := len(opts.SpecificSkills) > 0
 	cliVersion := build.GetInfo().Version
-	isDev := strings.HasPrefix(cliVersion, build.DefaultSemver)
+	isDev := build.GetInfo().IsDevelopment()
 
 	// Start with all skills or only the requested ones.
 	var candidates map[string]SkillMeta

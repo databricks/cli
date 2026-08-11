@@ -270,8 +270,9 @@ func (s *Schema) validateSchemaMinimumCliVersion(currentVersion string) func() e
 			return nil
 		}
 
-		// Ignore this validation rule for local builds.
-		if semver.Compare("v"+build.DefaultSemver, currentVersion) == 0 {
+		// Ignore this validation rule for development builds, which are built from
+		// main and may already carry the change the schema requires.
+		if build.IsDevelopmentVersion(currentVersion) {
 			return nil
 		}
 

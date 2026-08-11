@@ -1,4 +1,3 @@
-Local = true
 Cloud = false
 RequiresCluster = true
 GOOS.darwin = false

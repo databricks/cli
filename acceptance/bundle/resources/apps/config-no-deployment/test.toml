@@ -1,4 +1,3 @@
-Local = true
 Cloud = false
 
 # Asserts plan classification, not requests; drop the inherited RecordRequests.
