@@ -18,5 +18,6 @@ func newDebugCommand() *cobra.Command {
 	cmd.AddCommand(debug.NewStatesCommand())
 	cmd.AddCommand(debug.NewRenderTemplateSchemaCommand())
 	cmd.AddCommand(debug.NewListTargetsCommand())
+	cmd.AddCommand(debug.NewYamlToJSONCommand())
 	return cmd
 }
