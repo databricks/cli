@@ -1,0 +1,73 @@
+
+=== Deploy a pipeline configured with cascade_on_destroy: false
+>>> [CLI] pipelines deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+
+>>> print_requests.py //api/2.0/pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "name": "test-pipeline-cascade"
+  }
+}
+
+=== Change only cascade_on_destroy (false -> true): expect a state-only update, no pipeline update API call
+>>> [CLI] pipelines deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+
+>>> print_requests.py //api/2.0/pipelines
+
+=== Set cascade_on_destroy back to false and deploy so state reflects it before destroy
+>>> [CLI] pipelines deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+
+>>> print_requests.py //api/2.0/pipelines
+
+=== Unset cascade_on_destroy entirely: expect a state-only update that persists nil to state
+>>> [CLI] pipelines deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+
+>>> print_requests.py //api/2.0/pipelines
+
+=== Destroy: cascade_on_destroy is unset in state, so the delete uses the backend default (no cascade param)
+>>> [CLI] pipelines destroy --auto-approve
+The following resources will be deleted:
+  delete resources.pipelines.my_pipeline
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.my_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests.py //api/2.0/pipelines
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[UUID]"
+}

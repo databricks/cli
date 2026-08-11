@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -283,4 +286,118 @@ func TestShouldSkipBackendDefault_MapDriftUsesBracketKeys(t *testing.T) {
 	})
 	assert.True(t, ok)
 	assert.Equal(t, deployplan.ReasonBackendDefault, reason)
+}
+
+const jobRunKey = "resources.job_runs.my_run"
+
+// The plan skips only a run that reached the required SUCCESS, so a reference
+// served from the remote state cache reads a finished run.
+func TestLookupReferencePreDeploy_FinishedJobRun(t *testing.T) {
+	b := bundleWithSkippedJobRun(t, &dresources.JobRunRemote{
+		RunId:       123,
+		ResultState: jobs.RunResultStateSuccess,
+		State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateSuccess,
+		},
+	})
+
+	value, err := b.LookupReferencePreDeploy(t.Context(), structpath.MustParsePath(jobRunKey+".state.result_state"))
+
+	require.NoError(t, err)
+	assert.Equal(t, jobs.RunResultStateSuccess, value)
+}
+
+// jobRunResultStateAction classifies the result_state drift of a run in the given
+// state. Old == New because a deploy records the outcome it asked for, and only
+// the remote says whether the run reached it.
+func jobRunResultStateAction(t *testing.T, state *jobs.RunState) *deployplan.ChangeDesc {
+	t.Helper()
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	remote := &dresources.JobRunRemote{RunId: 123, ResultState: state.ResultState, State: state}
+	changes := deployplan.Changes{"result_state": &deployplan.ChangeDesc{
+		Old:    jobs.RunResultStateSuccess,
+		New:    jobs.RunResultStateSuccess,
+		Remote: state.ResultState,
+	}}
+
+	require.NoError(t, addPerFieldActions(t.Context(), adapters["job_runs"], changes, remote))
+	return changes["result_state"]
+}
+
+// References are served from the remote state cache only for a run the plan
+// skips, so a run that stopped without succeeding has to be re-triggered.
+func TestJobRunFinishedWithoutSuccessIsRecreate(t *testing.T) {
+	for name, state := range map[string]*jobs.RunState{
+		"FAILED": {
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateFailed,
+		},
+		"CANCELED": {
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateCanceled,
+		},
+		"TIMEDOUT": {
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateTimedout,
+		},
+		// A skipped run never ran, so it reports no result_state at all — the same
+		// as a run still going. Only the lifecycle state tells the two apart.
+		"SKIPPED": {LifeCycleState: jobs.RunLifeCycleStateSkipped},
+	} {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, deployplan.Recreate, jobRunResultStateAction(t, state).Action)
+		})
+	}
+}
+
+// A run that has not stopped yet may still succeed, so the deploy adopts it and
+// waits for it.
+func TestJobRunInProgressIsUpdate(t *testing.T) {
+	for _, lifeCycleState := range []jobs.RunLifeCycleState{
+		jobs.RunLifeCycleStatePending,
+		jobs.RunLifeCycleStateRunning,
+		jobs.RunLifeCycleStateTerminating,
+	} {
+		t.Run(string(lifeCycleState), func(t *testing.T) {
+			change := jobRunResultStateAction(t, &jobs.RunState{LifeCycleState: lifeCycleState})
+
+			assert.Equal(t, deployplan.Update, change.Action)
+			assert.Equal(t, "run in progress", change.Reason)
+		})
+	}
+}
+
+// The run reached the required outcome, so the plan can skip it.
+func TestJobRunSucceededOutcomeIsNotDrift(t *testing.T) {
+	change := jobRunResultStateAction(t, &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateTerminated,
+		ResultState:    jobs.RunResultStateSuccess,
+	})
+
+	assert.Equal(t, deployplan.Skip, change.Action)
+}
+
+// bundleWithSkippedJobRun sets up a deploy whose plan skips the run, so
+// references to it resolve from the remote state cache. The state cache holds
+// PrepareState's output, as a real plan does.
+func bundleWithSkippedJobRun(t *testing.T, remote *dresources.JobRunRemote) *DeploymentBundle {
+	t.Helper()
+
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	plan := deployplan.NewPlanDirect()
+	plan.Plan[jobRunKey] = &deployplan.PlanEntry{
+		Action:   deployplan.Skip,
+		NewState: &structvar.StructVarJSON{},
+	}
+
+	b := &DeploymentBundle{Adapters: adapters, Plan: plan}
+	state := (&dresources.ResourceJobRun{}).PrepareState(&resources.JobRun{})
+	b.StateCache.Store(jobRunKey, structvar.NewStructVar(state, nil))
+	b.RemoteStateCache.Store(jobRunKey, remote)
+	return b
 }
