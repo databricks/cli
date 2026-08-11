@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -43,6 +44,30 @@ var (
 	// can be preserved when the value is replaced.
 	requiresPythonRe = regexp.MustCompile(`^(\s*)requires-python\s*=`)
 )
+
+// replacedDBConnectPin returns the databricks-connect requirement that merging
+// target would rewrite in place, or "" when the merge would instead insert the
+// managed pin (leaving anything already there untouched).
+//
+// detectMergeWarnings uses this rather than re-deciding which pins the merge
+// recognizes: the merge matches double-quoted elements within the array devKeyRe
+// finds, and any second implementation of that rule drifts from it. A detector that
+// disagrees reports an override for a pin the merge never touched, which is a false
+// claim about the user's file rather than a missed warning.
+func replacedDBConnectPin(target []byte, c Constraints) string {
+	if c.DatabricksConnect == "" {
+		return ""
+	}
+	// Mirror MergeManaged's own preprocessing so the same lines are inspected.
+	lines := strings.Split(strings.ReplaceAll(string(target), "\r\n", "\n"), "\n")
+	if containsMultilineString(lines) {
+		return ""
+	}
+	// mergeDatabricksConnect rewrites element lines in place, so hand it a copy: this
+	// probe must not disturb the caller's view of the pre-merge file.
+	_, replaced, _ := mergeDatabricksConnect(slices.Clone(lines), c.DatabricksConnect)
+	return replaced
+}
 
 // MergeManaged applies the three managed transforms to target, preserving every other
 // byte (comments, ordering, whitespace). It returns the merged bytes and the list of
@@ -87,7 +112,7 @@ func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string
 		regions = append(regions, regionRequiresPython)
 	}
 
-	lines, dbcChanged := mergeDatabricksConnect(lines, c.DatabricksConnect)
+	lines, _, dbcChanged := mergeDatabricksConnect(lines, c.DatabricksConnect)
 	if dbcChanged {
 		regions = append(regions, regionDatabricksConnect)
 	}
@@ -237,16 +262,21 @@ var devKeyRe = regexp.MustCompile(`^\s*dev\s*=`)
 // databricks-connect pin sitting in a sibling group (e.g. docs/test) or inside a
 // trailing comment on some other line is never clobbered. The insert path is
 // idempotent: a subsequent merge finds the element and rewrites it in place.
-func mergeDatabricksConnect(lines []string, value string) ([]string, bool) {
+//
+// replacedPin is the requirement it rewrote in place, empty when it inserted the
+// managed pin instead. That distinction is what detectMergeWarnings needs: only a
+// rewrite means the user's pin is gone, and only the merge itself can say which
+// spellings it recognizes.
+func mergeDatabricksConnect(lines []string, value string) (out []string, replacedPin string, changed bool) {
 	if value == "" {
-		return lines, false
+		return lines, "", false
 	}
 	elem := `"` + value + `"`
 
 	header, end, found := tableBounds(lines, "[dependency-groups]")
 	if !found {
 		// No [dependency-groups] table: append a fresh managed dev group.
-		return appendManagedBlock(lines, []string{"[dependency-groups]", "dev = [", "    " + elem + ",", "]"}), true
+		return appendManagedBlock(lines, []string{"[dependency-groups]", "dev = [", "    " + elem + ",", "]"}), "", true
 	}
 
 	// Locate the dev assignment and the line span of its array value.
@@ -264,7 +294,7 @@ func mergeDatabricksConnect(lines []string, value string) ([]string, bool) {
 		out = append(out, lines[:header+1]...)
 		out = append(out, insert...)
 		out = append(out, lines[header+1:]...)
-		return out, true
+		return out, "", true
 	}
 	arrayLast, _ := arrayLineSpan(lines, devStart, end)
 
@@ -274,19 +304,19 @@ func mergeDatabricksConnect(lines []string, value string) ([]string, bool) {
 	if devStart == arrayLast {
 		line := lines[devStart]
 		arrayPart, commentPart := splitAtArrayClose(line)
-		if replaced, ok := replaceDbconnectElement(arrayPart, elem); ok {
-			newLine := replaced + commentPart
+		if rewritten, replaced, ok := replaceDbconnectElement(arrayPart, elem); ok {
+			newLine := rewritten + commentPart
 			if newLine == line {
-				return lines, false
+				return lines, replaced, false
 			}
 			lines[devStart] = newLine
-			return lines, true
+			return lines, replaced, true
 		}
 		// No databricks-connect element: insert one as the first array element.
 		open := strings.Index(arrayPart, "[")
 		closeIdx := strings.LastIndex(arrayPart, "]")
 		if open < 0 || closeIdx < open {
-			return lines, false
+			return lines, "", false
 		}
 		inner := strings.TrimSpace(arrayPart[open+1 : closeIdx])
 		newInner := elem
@@ -294,7 +324,7 @@ func mergeDatabricksConnect(lines []string, value string) ([]string, bool) {
 			newInner = elem + ", " + inner
 		}
 		lines[devStart] = arrayPart[:open+1] + newInner + arrayPart[closeIdx:] + commentPart
-		return lines, true
+		return lines, "", true
 	}
 
 	// Multi-line form: the array spans devStart..arrayLast. An existing
@@ -310,15 +340,15 @@ func mergeDatabricksConnect(lines []string, value string) ([]string, bool) {
 		if c := commentStart(code); c >= 0 {
 			code, comment = code[:c], code[c:]
 		}
-		if replaced, ok := replaceDbconnectElement(code, elem); ok {
+		if rewritten, replaced, ok := replaceDbconnectElement(code, elem); ok {
 			// Rewrite only the code portion; a trailing comment is user content and
 			// must be preserved byte-for-byte, even if it contains a quoted token.
-			newLine := replaced + comment
+			newLine := rewritten + comment
 			if newLine == lines[i] {
-				return lines, false
+				return lines, replaced, false
 			}
 			lines[i] = newLine
-			return lines, true
+			return lines, replaced, true
 		}
 		if dbconnectQuotedRe.MatchString(code) {
 			lastElem = i
@@ -340,11 +370,11 @@ func mergeDatabricksConnect(lines []string, value string) ([]string, bool) {
 	if lastElem >= 0 && lastElem < arrayLast {
 		lines[lastElem] = ensureTrailingComma(lines[lastElem])
 	}
-	out := make([]string, 0, len(lines)+1)
-	out = append(out, lines[:arrayLast]...)
-	out = append(out, indent+elem+",")
-	out = append(out, lines[arrayLast:]...)
-	return out, true
+	inserted := make([]string, 0, len(lines)+1)
+	inserted = append(inserted, lines[:arrayLast]...)
+	inserted = append(inserted, indent+elem+",")
+	inserted = append(inserted, lines[arrayLast:]...)
+	return inserted, "", true
 }
 
 // dbconnectQuotedRe matches any double-quoted array element token.
@@ -353,18 +383,18 @@ var dbconnectQuotedRe = regexp.MustCompile(`"[^"]*"`)
 // replaceDbconnectElement replaces the first quoted element in code whose package
 // name is databricks-connect (compared under PEP 503 normalization, so
 // "databricks_connect" / "Databricks-Connect" / "databricks.connect" all match)
-// with elem. It returns the rewritten code and whether a replacement was made.
-// Matching mirrors the artifact side (isDatabricksConnectDep) so a differently
-// spelled existing pin is rewritten in place rather than left for the insert path
-// to duplicate.
-func replaceDbconnectElement(code, elem string) (string, bool) {
+// with elem. It returns the rewritten code, the requirement it replaced, and
+// whether a replacement was made. Matching mirrors the artifact side
+// (isDatabricksConnectDep) so a differently spelled existing pin is rewritten in
+// place rather than left for the insert path to duplicate.
+func replaceDbconnectElement(code, elem string) (out, replaced string, ok bool) {
 	for _, m := range dbconnectQuotedRe.FindAllStringIndex(code, -1) {
 		inner := code[m[0]+1 : m[1]-1]
 		if isDatabricksConnectDep(inner) {
-			return code[:m[0]] + elem + code[m[1]:], true
+			return code[:m[0]] + elem + code[m[1]:], inner, true
 		}
 	}
-	return code, false
+	return code, "", false
 }
 
 // ensureTrailingComma appends a "," after the last non-space code character of

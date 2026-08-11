@@ -54,6 +54,10 @@ type Pipeline struct {
 	Compute           ComputeClient
 	PM                PackageManager
 
+	// Progress, when non-nil, receives a PhaseStarted call as each phase begins.
+	// Left nil by callers that don't render progress (e.g. --output json).
+	Progress Reporter
+
 	// res accumulates phase statuses and result fields as the run progresses.
 	res *Result
 }
@@ -136,6 +140,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// before any other work so the failure flows through the phase/JSON reporting
 	// (a plain Cobra mutual-exclusion error would print no command JSON object,
 	// which the --output json consumer needs).
+	p.report(ctx, PhasePreflight)
 	if err := ValidateComputeFlags(p.Flags); err != nil {
 		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "invalid compute target flags"))
 	}
@@ -164,12 +169,14 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 
 	// Phase: resolve — compute target → environment key.
+	p.report(ctx, PhaseResolve)
 	compute, err := p.resolve(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Phase: fetch — constraint artifact for the resolved env key.
+	p.report(ctx, PhaseFetch)
 	c, err := p.fetch(ctx, compute)
 	if err != nil {
 		return err
@@ -193,11 +200,12 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 	p.res.Resolved = &ResolvedInfo{
 		PythonVersion:    pyMinor,
-		DBConnectVersion: versionFromPin(dbcPin),
+		DBConnectVersion: dbcVersionFromPin(dbcPin),
 		ArtifactSource:   artifactSource(c.FromCache),
 	}
 
 	// Phase: merge — compute the merged pyproject.toml (in-memory, no writes yet).
+	p.report(ctx, PhaseMerge)
 	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, dbcPin)
 	if err != nil {
 		return err
@@ -219,11 +227,13 @@ func (p *Pipeline) run(ctx context.Context) error {
 	p.markOK(PhaseMerge, "")
 
 	// Phase: provision — ensure Python, run uv sync, seed pip.
+	p.report(ctx, PhaseProvision)
 	if err := p.provision(ctx, pyMinor); err != nil {
 		return err
 	}
 
 	// Phase: validate — assert the venv matches the target.
+	p.report(ctx, PhaseValidate)
 	return p.validate(ctx, pyMinor, dbcPin)
 }
 
@@ -313,6 +323,14 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		if err != nil {
 			return nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
 		}
+		// Surface merge-quality warnings (overridden or duplicated pins, conflicting
+		// user constraints) from the pre-merge file. Greenfield has nothing of the
+		// user's to override, so it is skipped. This runs for both dry-run and real
+		// runs so the --json consumer sees the same warnings either way. The pin the
+		// merge rewrote comes from the merge itself, so the warning can never claim a
+		// replacement that did not happen.
+		p.res.Warnings = append(p.res.Warnings,
+			detectMergeWarnings(baseBytes, effective, replacedDBConnectPin(baseBytes, effective))...)
 	}
 
 	// Under --dry-run, build the plan (with a diff) for reporting. A real run does
@@ -484,6 +502,15 @@ func initialPhases() []PhaseStatus {
 	return phases
 }
 
+// report announces entry into a phase to the Progress reporter, if one is set,
+// and logs the transition at debug level so --debug keeps a phase-by-phase trail.
+func (p *Pipeline) report(ctx context.Context, name PhaseName) {
+	if p.Progress != nil {
+		p.Progress.PhaseStarted(name)
+	}
+	log.Debugf(ctx, CommandName+": entering phase %s", name)
+}
+
 // markOK marks a phase ok with an optional human-readable detail.
 func (p *Pipeline) markOK(name PhaseName, detail string) {
 	for i := range p.res.Phases {
@@ -561,6 +588,32 @@ func versionFromPin(pin string) string {
 // pin string such as "databricks-connect~=17.2.0". Returns "" if unparseable.
 func dbcMajorFromPin(pin string) string {
 	return majorVersion(versionFromPin(pin))
+}
+
+// dbcVersionFromPin returns the pin's version only when it is a concrete
+// major.minor.patch, so a range-only pin like "~=17.0" (serverless pins by
+// major, databricks/environments#15) reports "" rather than the "17.0" floor
+// nothing installs. Gating only the reported version keeps dbcMajorFromPin's raw
+// versionFromPin extraction intact for the real-run major assertion in validate.
+func dbcVersionFromPin(pin string) string {
+	v := versionFromPin(pin)
+	if !isFullVersion(v) {
+		return ""
+	}
+	return v
+}
+
+// isFullVersion reports whether v has at least three numeric dot-separated
+// components, e.g. "17.3.0" but not "17.0". This is not a PEP 440 validator:
+// only the leading major.minor.patch must be digit-terminated, so suffixed forms
+// like "17.3.0.dev1" or "17.3.0.post1" pass through unchecked. That is fine here
+// because real pins are either major-only (~=17.0) or a concrete GA (~=17.3.0).
+func isFullVersion(v string) bool {
+	parts := strings.Split(v, ".")
+	if len(parts) < 3 {
+		return false
+	}
+	return isAllDigits(parts[0]) && isAllDigits(parts[1]) && isAllDigits(parts[2])
 }
 
 // majorVersion returns the major portion of a version string (digits before the

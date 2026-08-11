@@ -34,6 +34,8 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default/files...
 Deploying resources...
+job run [MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+job run [MY_RUN_ID]: SUCCESS
 Updating deployment state...
 Deployment complete!
 
@@ -68,16 +70,14 @@ Resources:
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
+    "idempotency_token": "[UUID]",
     "job_id": [MY_JOB_ID]
   }
 }
 
-=== the triggered run id is stored in state
->>> read_id.py my_run
-[MY_RUN_ID]
-
->>> read_id.py my_job
-[MY_JOB_ID]
+=== the triggered run id is stored in state, without result_state
+>>> read_state.py job_runs my_run id result_state
+job_runs my_run id='[MY_RUN_ID]' result_state=None
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
