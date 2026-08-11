@@ -366,26 +366,14 @@ func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, config *JobRun
 // still going, so a run that may yet succeed is adopted and waited on. A run that
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
-// Removing triggers.on_bundle_deploy is a no-op so the existing run stays in place.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
-	switch path.String() {
-	case "triggers.on_bundle_deploy":
-		if change.New == nil || change.New == "" {
-			change.Action = deployplan.Skip
-			change.Reason = "trigger removed"
-		}
-		return nil
-	case "result_state":
-		// The planner passes no remote state when the run could not be read.
-		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
-			return nil
-		}
-		change.Action = deployplan.Update
-		change.Reason = "run in progress"
-		return nil
-	default:
+	// The planner passes no remote state when the run could not be read.
+	if path.String() != "result_state" || remote == nil || runIsTerminal(remote.State.LifeCycleState) {
 		return nil
 	}
+	change.Action = deployplan.Update
+	change.Reason = "run in progress"
+	return nil
 }
 
 // DoDelete deletes the run via jobs/runs/delete, on both destroy and the
