@@ -14,13 +14,14 @@ Do not hand-edit generated files (`.codegen/cli.json`, `cmd/workspace/*`, `cmd/a
 ## Steps
 
 **1. Resolve the target versions.**
-Use the SDK version the user gave, or if they want "the version the Terraform provider vX.Y.Z uses", read the provider's `go.mod` at that tag: `https://raw.githubusercontent.com/databricks/terraform-provider-databricks/vX.Y.Z/go.mod`.
+Use the SDK version the user gave. If they didn't specify one, look up the latest released version yourself (the newest `vX.Y.Z` tag at `https://github.com/databricks/databricks-sdk-go/tags`) instead of prompting for it.
+If they want "the version the Terraform provider vX.Y.Z uses", read the provider's `go.mod` at that tag: `https://raw.githubusercontent.com/databricks/terraform-provider-databricks/vX.Y.Z/go.mod`.
 The accompanying OpenAPI SHA is pinned inside the SDK at that tag: `https://raw.githubusercontent.com/databricks/databricks-sdk-go/vX.Y.Z/.codegen/_openapi_sha`.
 Always bump the spec SHA together with the SDK; they are expected to move as a pair.
 
 **2. Apply the core bump.**
 Run `go get github.com/databricks/databricks-sdk-go@vX.Y.Z` to update `go.mod`/`go.sum`.
-Edit `.codegen/_openapi_sha` to the new SHA; the file has no trailing newline, so match the existing format.
+Write the new SHA with `echo ${SHA} > .codegen/_openapi_sha`; `generate` reformats the file afterward, so a trailing newline here does not matter.
 Run `go mod tidy` and confirm the `go.mod`/`go.sum` diff is the SDK line only.
 
 **3. Regenerate cli.json via genkit.**
@@ -38,7 +39,7 @@ Run `go build ./...` and fix compile breakages before touching acceptance golden
 **5. Handle SDK breaking changes.**
 Read the SDK's `CHANGELOG.md` at the target version (in the module cache) to enumerate breaking changes before chasing compile errors.
 A removed struct field that the CLI used (e.g. `jobs.AiRuntimeTask.CodeSourcePath`) should have its usage temporarily disabled with a comment noting it returns in a later SDK bump, not deleted outright.
-A new struct field triggers an `exhaustruct` lint failure in `bundle/direct/dresources/*`; wire the field through `PrepareState` and `RemapState` when it exists on both the input and remote types.
+A new struct field triggers an `exhaustruct` lint failure in `bundle/direct/dresources/*`. Run `./task lint` and (in case of issues) wire the field through `PrepareState` and `RemapState` when it exists on both the input and remote types.
 A field the new spec now annotates as output-only may already be emitted into `resources.generated.yml`, making the manual entry in `resources.yml` redundant; `TestResourcesYMLNoRedundantRules` catches this, so remove the manual entry.
 
 **6. Refresh goldens, then VERIFY.**
@@ -63,7 +64,7 @@ Regenerate the affected test's `out*` files with `go test ./acceptance -run 'Tes
 
 **8. Verify the rest.**
 Run `./task fmt` and `./task lint-q`; if either touches `acceptance/`, a fixture is wrong, so fix the source rather than editing output.
-Run the full root-module unit suite: `go test ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/... .`.
+Run the full root-module unit suite with `./task test-unit-root`.
 If a test fails, confirm whether it is pre-existing by reproducing it on the base commit in a throwaway worktree (`git worktree add --detach /tmp/base HEAD`) before assuming the bump caused it.
 Confirm no internal proxy URL leaked into any lock file: `./task check-uv-lock` covers `*uv.lock`, but the genkit `*.py.lock` files are outside that glob, so grep them for `pypi-proxy.cloud.databricks.com` separately.
 The `check-uv-lock` glob and the genkit lock revert are a known coverage gap; the internal proxy can re-leak into `internal/genkit/*.py.lock` on any future `generate-clijson`, so re-check after every run.
@@ -75,24 +76,11 @@ Add it without `(#NNNN)` now; backfill the number after the PR exists, then run 
 
 **10. Commit, push, PR.**
 If the push 403s, the active gh account lacks write access to `databricks/cli`; switch to one that has it with `gh auth switch`.
-Then follow the `pr-checklist` skill for the PR, and do not run `gh pr create` without the user's explicit permission.
-Commit body and PR description:
-
-```
-## Changes
-
-Bump `github.com/databricks/databricks-sdk-go` from v{old_version} to v{version}.
-
-Notable SDK/spec changes:
-- <one terse bullet per user-visible breaking change or new field handled>
-
-## Tests
-
-Generated artifacts and acceptance goldens regenerated; full unit and acceptance suites pass.
-```
+Then follow the `pr-checklist` skill for the commit body, PR description, and changelog, and do not run `gh pr create` without the user's explicit permission.
+The bump-specific content for that template is a `## Changes` line ``Bump `github.com/databricks/databricks-sdk-go` from v{old_version} to v{version}.`` followed by one terse bullet per user-visible breaking change or new field handled.
 
 ## Stacking and rebasing
 
-If a Terraform-provider bump PR is open and touches the same files (the bind-test `role` value and `bundle/terraform_dabs_map/generated.go`), stack on it or merge it once landed.
+If a Terraform-provider bump PR is open and touches the same files (e.g. a value in `bundle/terraform_dabs_map/generated.go`), stack on it or merge it once landed.
 On any merge/rebase conflict in a generated file like `generated.go`, resolve to a compilable state and then regenerate rather than hand-merging.
 A squash-merged upstream PR leaves its original commits as non-ancestors, so the branch log may show duplicate commits even when the net diff vs `origin/main` is correct.
