@@ -88,8 +88,7 @@ func sortDiagnostics(diags diag.Diagnostics) {
 			return n
 		}
 
-		// Diagnostics for sibling entries of one resource share a location, so fall back to
-		// the path to keep the order stable.
+		// Sibling entries can share a location; fall back to path for a stable order.
 		return cmp.Compare(fmt.Sprintf("%v", a.Paths), fmt.Sprintf("%v", b.Paths))
 	})
 }
@@ -190,10 +189,9 @@ func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	return diags
 }
 
-// errorForInvalidSecretScopePermissions errors for secret scope permissions that name no
-// principal. The backend rejects a secret ACL without one, but nothing rejects the input:
-// the direct engine only fails later while collapsing permissions, and Terraform creates
-// the scope before the ACL call fails, leaving a partial deploy.
+// errorForInvalidSecretScopePermissions errors when a permission names no principal.
+// The backend rejects that ACL; erroring here avoids a partial deploy where Terraform
+// creates the scope before the ACL call fails.
 func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
@@ -204,8 +202,8 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 			if hasSecretScopePrincipal(v) {
 				return v, nil
 			}
-			// ApplyBundlePermissions rebuilds the permissions sequence through
-			// convert.FromTyped, which drops the entries' locations, so point at the scope.
+			// ApplyBundlePermissions rebuilds permissions via convert.FromTyped and drops
+			// per-entry locations, so point at the scope.
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "secret scope permission principal is required",
@@ -225,9 +223,8 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 	return diags
 }
 
-// hasSecretScopePrincipal reports whether the permission names a principal. A value of the
-// wrong type counts as missing: normalization only warns and drops it, so the permission
-// would still reach the backend without a principal.
+// hasSecretScopePrincipal reports whether a principal is set. Wrong-typed values count as
+// missing: normalization only warns and drops them.
 func hasSecretScopePrincipal(v dyn.Value) bool {
 	for _, field := range []string{"user_name", "group_name", "service_principal_name"} {
 		if s, ok := v.Get(field).AsString(); ok && s != "" {
