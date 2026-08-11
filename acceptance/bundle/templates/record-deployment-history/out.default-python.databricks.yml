@@ -10,6 +10,11 @@ experimental:
 include:
   - resources/*.yml
 
+artifacts:
+  python_artifact:
+    type: whl
+    build: uv build --wheel
+
 # Variable declarations. These variables are assigned in the dev/prod targets below.
 variables:
   catalog:
@@ -28,7 +33,7 @@ targets:
     workspace:
       host: [DATABRICKS_URL]
     variables:
-      catalog: main
+      catalog: hive_metastore
       schema: ${workspace.current_user.short_name}
   prod:
     mode: production
@@ -37,7 +42,7 @@ targets:
       # We explicitly deploy to /Workspace/Users/[USERNAME] to make sure we only have a single copy.
       root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
     variables:
-      catalog: main
+      catalog: hive_metastore
       schema: prod
     permissions:
       - user_name: [USERNAME]

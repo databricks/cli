@@ -1,6 +1,3 @@
 {
-    "project_name": "my_default_sql",
-    "http_path": "/sql/2.0/warehouses/f00dcafe",
-    "default_catalog": "main",
-    "personal_schemas": "yes"
+    "project_name": "my_default_sql"
 }
