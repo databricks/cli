@@ -968,6 +968,8 @@ resources:
     "job_runs":
       "description": |-
         The job run definitions for the bundle, where each key is the name of the job run. Each job run triggers a run of an existing job as part of bundle deployment.
+
+        The deployment waits for the run to finish and fails if it does not succeed, so other resources can reference the run's outcome, for example `${resources.job_runs.<name>.state.result_state}`. A run that did not succeed is run again on the next deployment.
       "$fields":
         "lifecycle":
           "description": |-

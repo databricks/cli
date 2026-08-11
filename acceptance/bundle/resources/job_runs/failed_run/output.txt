@@ -1,0 +1,104 @@
+
+=== a run that finishes FAILED fails the deploy
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+job run [MY_RUN_ID]: Run URL: [RUN_URL]
+Error: cannot create resources.job_runs.my_run: waiting after creating id=[MY_RUN_ID]: run did not succeed: FAILED: Task main failed with message: Workload failed, see run output for details.
+task "main": RuntimeError: intentional failure
+run page: [RUN_URL]
+
+Error: cannot create resources.jobs.downstream_job: dependency failed: resources.job_runs.my_run
+
+Updating deployment state...
+
+=== the failed run is recorded, and not having succeeded is drift
+>>> read_id.py my_run
+[MY_RUN_ID]
+
+>>> [CLI] bundle plan -o json
+{
+  "depends_on": [
+    {
+      "node": "resources.jobs.my_job",
+      "label": "${resources.jobs.my_job.id}"
+    }
+  ],
+  "action": "recreate",
+  "new_state": {
+    "value": {
+      "job_id": [MY_JOB_ID],
+      "result_state": "SUCCESS"
+    }
+  },
+  "remote_state": {
+    "job_id": [MY_JOB_ID],
+    "result_state": "FAILED",
+    "run_id": [MY_RUN_ID],
+    "run_name": "test-job-[UNIQUE_NAME]",
+    "run_page_url": "[RUN_URL]",
+    "run_type": "JOB_RUN",
+    "state": {
+      "life_cycle_state": "INTERNAL_ERROR",
+      "result_state": "FAILED",
+      "state_message": "Task main failed with message: Workload failed, see run output for details."
+    }
+  },
+  "changes": {
+    "result_state": {
+      "action": "recreate",
+      "reason": "immutable",
+      "new": "SUCCESS",
+      "remote": "FAILED"
+    }
+  }
+}
+
+=== so a redeploy runs the job again, and fails again
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+job run [MY_RUN_ID_2]: Run URL: [RUN_URL]
+Error: cannot recreate resources.job_runs.my_run: waiting after creating id=[MY_RUN_ID_2]: run did not succeed: FAILED: Task main failed with message: Workload failed, see run output for details.
+task "main": RuntimeError: intentional failure
+run page: [RUN_URL]
+
+Error: cannot create resources.jobs.downstream_job: dependency failed: resources.job_runs.my_run
+
+Updating deployment state...
+
+=== run-now was issued once per deploy, and the recreate deleted the failed run
+>>> print_requests.py --keep //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [MY_JOB_ID]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+>>> print_requests.py //jobs/runs/delete
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/delete",
+  "body": {
+    "run_id": [MY_RUN_ID]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
