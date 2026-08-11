@@ -220,11 +220,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
 
-			// When the bundle records deployment history, the deployment metadata
-			// service owns resource state, so hand Open a DMS source to read it from
-			// there instead of the file. The local identity (lineage/serial) still
-			// comes from the file. Reads open the state write-disabled, so no lineage
-			// is minted here.
+			// Recording makes the service the source of truth for resource state, so a
+			// deploy has to plan against what it holds rather than a local file that
+			// another machine's deploy may have left behind.
 			var dmsSource *dstate.DMSSource
 			if env.RecordsDeploymentHistory(ctx, b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory) {
 				w := b.WorkspaceClient(ctx)

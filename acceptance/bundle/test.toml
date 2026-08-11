@@ -34,7 +34,7 @@ Env.UV_PYTHON = "3.10"
 # not recording is on. The URL itself is covered by workspaceurls.TestDeploymentURL, and
 # the calls behind it by bundle/dms/record.
 [[Repls]]
-Old = '(?m)^Deployment history: .*\n'
+Old = '(?m)^Current Deployment Version: .*\n'
 New = ''
 
 # User-agent:

@@ -122,7 +122,6 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 
 	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Deployment complete!")
-		logDeploymentHistory(ctx, b, recorder)
 	}
 
 	// Once the deploy is complete, dry-run the migration to the direct engine
@@ -253,6 +252,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		if logdiag.HasError(ctx) {
 			return
 		}
+		// Printed here rather than after the deploy so the user can follow the version
+		// while it runs, and still has the link if the deploy fails partway.
+		logDeploymentVersion(ctx, b, recorder)
 	}
 
 	planFromFile := plan != nil

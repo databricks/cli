@@ -84,27 +84,28 @@ func setOperationRecorder(ctx context.Context, b *bundle.Bundle, recorder *dms.R
 	b.DeploymentBundle.OpRec = direct.NewOperationRecorder(apiClient, recorder.DeploymentID(), recorder.Version())
 }
 
-// logDeploymentHistory links to the deployment this deploy was recorded under, so
-// the user can open its history without hunting for the ID. A nil recorder means
-// recording is off, and a zero version means the version was never created.
+// logDeploymentVersion links to the version this deploy was recorded under, so the
+// user can follow it while the deploy runs rather than hunting for the ID afterwards.
+// A nil recorder means recording is off, and a zero version means the version was
+// never created.
 //
 // The workspace ID is left out of the URL: the page redirects correctly without it,
 // and omitting it keeps the line short enough to stay clickable in a terminal.
-func logDeploymentHistory(ctx context.Context, b *bundle.Bundle, recorder *dms.Recorder) {
+func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, recorder *dms.Recorder) {
 	if recorder == nil || recorder.Version() == 0 {
 		return
 	}
 
 	baseURL, err := url.Parse(b.WorkspaceClient(ctx).Config.CanonicalHostName())
 	if err != nil {
-		// Only the link is lost, so report the deployment without it rather than
-		// failing a deploy that already succeeded.
+		// Only the link is lost, so report the version without it rather than failing
+		// a deploy over it.
 		log.Debugf(ctx, "Not linking to the recorded deployment: %s", err)
-		cmdio.LogString(ctx, fmt.Sprintf("Recorded deployment %s version %d", recorder.DeploymentID(), recorder.Version()))
+		cmdio.LogString(ctx, fmt.Sprintf("Current Deployment Version: %s version %d", recorder.DeploymentID(), recorder.Version()))
 		return
 	}
 
-	cmdio.LogString(ctx, "Deployment history: "+workspaceurls.DeploymentURL(*baseURL, recorder.DeploymentID(), recorder.Version()))
+	cmdio.LogString(ctx, "Current Deployment Version: "+workspaceurls.DeploymentURL(*baseURL, recorder.DeploymentID(), recorder.Version()))
 }
 
 // deploymentMetadata describes the bundle this deploy came from and where it
