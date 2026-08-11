@@ -7,12 +7,12 @@ with-newlines
 "
 trace $CLI secrets get-secret $scope string-key
 
-# Bytes that are not valid UTF-8 on their own, to show the CLI base64-encodes the
-# raw bytes rather than reinterpreting them as a string. Kept out of the traced
-# command line (and thus out of output.txt) because a terminal renders them as
-# replacement characters. A null byte is not usable: bash drops it from "$(...)".
+# Non-printable bytes, to show the CLI base64-encodes the raw bytes. They are
+# kept ASCII on purpose: Git Bash re-encodes non-UTF-8 argv bytes (\xfe becomes
+# \xc3\xbe), which would make the payload differ on Windows. A null byte is not
+# usable either, since bash drops it from "$(...)".
 title "--bytes-value is base64-encoded by the CLI before it is sent\n"
-bytes=$(printf '\x01\x02\xfe\xff')
+bytes=$(printf '\x01\x02\x03')
 trace $CLI secrets put-secret $scope bytes-key --bytes-value "$bytes"
 trace $CLI secrets get-secret $scope bytes-key
 

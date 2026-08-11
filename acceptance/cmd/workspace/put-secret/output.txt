@@ -15,12 +15,12 @@ with-newlines
 
 === --bytes-value is base64-encoded by the CLI before it is sent
 
->>> [CLI] secrets put-secret test-scope bytes-key --bytes-value þÿ
+>>> [CLI] secrets put-secret test-scope bytes-key --bytes-value 
 
 >>> [CLI] secrets get-secret test-scope bytes-key
 {
   "key": "bytes-key",
-  "value": "AQL+/w=="
+  "value": "AQID"
 }
 
 === the two value flags are mutually exclusive
@@ -44,7 +44,7 @@ Error: cannot specify both --bytes-value and --string-value
   "method": "POST",
   "path": "/api/2.0/secrets/put",
   "body": {
-    "bytes_value": "AQL+/w==",
+    "bytes_value": "AQID",
     "key": "bytes-key",
     "scope": "test-scope"
   }
