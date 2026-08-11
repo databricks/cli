@@ -83,7 +83,7 @@ func NewInstallCmd() *cobra.Command {
 
 By default this installs the databricks plugin through each agent's own CLI
 (Claude Code, Codex, GitHub Copilot). Agents without a headless plugin install
-(OpenCode, Antigravity, Cursor) get raw skill files.
+(` + strings.Join(agents.SkillsOnlyNames(), ", ") + `) get raw skill files.
 
 Escape hatches:
   --skills-only          Force raw skill files for every agent (no plugin).
@@ -95,7 +95,7 @@ Agent selection:
   (unset, interactive)   A picker over all known agents, detected ones pre-checked.
   (unset, non-interactive) Act on every detected agent.
 
-Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity`,
+Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -484,6 +484,6 @@ func resolveAgentNames(_ context.Context, names string) ([]*agents.Agent, error)
 func printNoAgentsMessage(ctx context.Context) {
 	cmdio.LogString(ctx, cmdio.Yellow(ctx, "No supported coding agents found on PATH."))
 	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "Supported: Claude Code, Codex CLI, GitHub Copilot, Cursor, OpenCode, Antigravity.")
+	cmdio.LogString(ctx, "Supported: "+strings.Join(agents.SupportedNames(), ", ")+".")
 	cmdio.LogString(ctx, "Install one, then re-run 'databricks aitools install'.")
 }

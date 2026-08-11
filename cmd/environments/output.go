@@ -23,6 +23,10 @@ import (
 // Result (with the canonical phase list and error object) on every path,
 // including failures, so no nil guard is needed here.
 func renderResult(ctx context.Context, cmd *cobra.Command, res *libslocalenv.Result, pipelineErr error) error {
+	// Emit one telemetry event per real run (success, failure, or cancel);
+	// dry-run runs are not recorded. Best-effort: never affects output.
+	logSetupLocalEvent(ctx, res)
+
 	if root.OutputType(cmd) == flags.OutputJSON {
 		if err := cmdio.Render(ctx, res); err != nil {
 			return err

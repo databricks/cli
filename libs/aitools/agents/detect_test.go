@@ -44,6 +44,54 @@ func configDir(t *testing.T, create bool) func(context.Context) (string, error) 
 	return func(_ context.Context) (string, error) { return dir, nil }
 }
 
+func TestDetected(t *testing.T) {
+	ctx := t.Context()
+
+	t.Run("bare config dir is the default signal", func(t *testing.T) {
+		a := &Agent{ConfigDir: configDir(t, true)}
+		assert.True(t, a.Detected(ctx))
+	})
+
+	t.Run("missing config dir is not detected", func(t *testing.T) {
+		a := &Agent{ConfigDir: configDir(t, false)}
+		assert.False(t, a.Detected(ctx))
+	})
+}
+
+func TestPiConfigDir(t *testing.T) {
+	ctx := t.Context()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	override := t.TempDir()
+
+	tests := []struct {
+		name        string
+		envDir      string
+		want        string
+		windowsOnly bool
+	}{
+		{name: "defaults to ~/.pi/agent", want: filepath.Join(home, ".pi", "agent")},
+		{name: "honors PI_CODING_AGENT_DIR override", envDir: override, want: override},
+		{name: "expands home in PI_CODING_AGENT_DIR override", envDir: "~/custom-agent", want: filepath.Join(home, "custom-agent")},
+		{name: "expands bare home in PI_CODING_AGENT_DIR override", envDir: "~", want: home},
+		{name: "expands Windows home separator", envDir: `~\custom-agent`, want: filepath.Join(home, "custom-agent"), windowsOnly: true},
+		{name: "preserves other tilde prefixes", envDir: "~other/custom-agent", want: "~other/custom-agent"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.windowsOnly && runtime.GOOS != "windows" {
+				t.Skip("Windows-only path form")
+			}
+			t.Setenv("PI_CODING_AGENT_DIR", tt.envDir)
+			dir, err := piConfigDir(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, dir)
+		})
+	}
+}
+
 func TestHasBinary(t *testing.T) {
 	ctx := t.Context()
 

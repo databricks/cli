@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"os"
 	"slices"
 
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -141,7 +142,16 @@ preview what would change without downloading.`,
 					}
 					opts.Skills = skills
 
-					result, err := updateSkillsFn(ctx, src, excludePluginAgents(installed, state), opts)
+					targetAgents := installed
+					if scope == installer.ScopeProject {
+						cwd, err := os.Getwd()
+						if err != nil {
+							return fmt.Errorf("failed to determine working directory: %w", err)
+						}
+						targetAgents = mergeAgents(installed, agents.DetectProjectInstalled(cwd))
+					}
+
+					result, err := updateSkillsFn(ctx, src, excludePluginAgents(targetAgents, state), opts)
 					if err != nil {
 						return err
 					}
@@ -249,6 +259,21 @@ func printPluginCheckResults(ctx context.Context, state *installer.InstallState,
 		}
 		cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s (%s)", agentDisplayName(name), versionToken(rec.Version), status))
 	}
+}
+
+func mergeAgents(installed, project []*agents.Agent) []*agents.Agent {
+	seen := make(map[string]bool, len(installed))
+	merged := make([]*agents.Agent, 0, len(installed)+len(project))
+	for _, a := range installed {
+		seen[a.Name] = true
+		merged = append(merged, a)
+	}
+	for _, a := range project {
+		if !seen[a.Name] {
+			merged = append(merged, a)
+		}
+	}
+	return merged
 }
 
 // excludePluginAgents drops agents that are managed as plugins in this scope, so
