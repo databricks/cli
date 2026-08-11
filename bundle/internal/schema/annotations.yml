@@ -543,6 +543,13 @@ resources:
                 "azure_tenant_id":
                   "description": |-
                     PLACEHOLDER
+    "cluster_policies":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
     "clusters":
       "description": |-
         The cluster definitions for the bundle, where each key is the name of a cluster.
