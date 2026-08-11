@@ -200,7 +200,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 	p.res.Resolved = &ResolvedInfo{
 		PythonVersion:    pyMinor,
-		DBConnectVersion: versionFromPin(dbcPin),
+		DBConnectVersion: dbcVersionFromPin(dbcPin),
 		ArtifactSource:   artifactSource(c.FromCache),
 	}
 
@@ -588,6 +588,32 @@ func versionFromPin(pin string) string {
 // pin string such as "databricks-connect~=17.2.0". Returns "" if unparseable.
 func dbcMajorFromPin(pin string) string {
 	return majorVersion(versionFromPin(pin))
+}
+
+// dbcVersionFromPin returns the pin's version only when it is a concrete
+// major.minor.patch, so a range-only pin like "~=17.0" (serverless pins by
+// major, databricks/environments#15) reports "" rather than the "17.0" floor
+// nothing installs. Gating only the reported version keeps dbcMajorFromPin's raw
+// versionFromPin extraction intact for the real-run major assertion in validate.
+func dbcVersionFromPin(pin string) string {
+	v := versionFromPin(pin)
+	if !isFullVersion(v) {
+		return ""
+	}
+	return v
+}
+
+// isFullVersion reports whether v has at least three numeric dot-separated
+// components, e.g. "17.3.0" but not "17.0". This is not a PEP 440 validator:
+// only the leading major.minor.patch must be digit-terminated, so suffixed forms
+// like "17.3.0.dev1" or "17.3.0.post1" pass through unchecked. That is fine here
+// because real pins are either major-only (~=17.0) or a concrete GA (~=17.3.0).
+func isFullVersion(v string) bool {
+	parts := strings.Split(v, ".")
+	if len(parts) < 3 {
+		return false
+	}
+	return isAllDigits(parts[0]) && isAllDigits(parts[1]) && isAllDigits(parts[2])
 }
 
 // majorVersion returns the major portion of a version string (digits before the
