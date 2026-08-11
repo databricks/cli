@@ -1,0 +1,126 @@
+
+>>> [CLI] bundle validate
+Name: test_cluster_policy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default
+
+Validation OK!
+
+>>> [CLI] bundle validate -o json
+{
+  "test_cluster_policy": {
+    "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+    "name": "my_cluster_policy"
+  }
+}
+
+>>> [CLI] bundle summary
+Name: test_cluster_policy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default
+Resources:
+  Cluster Policies:
+    test_cluster_policy:
+      Name: my_cluster_policy
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Verify the create request
+>>> jq select(.method == "POST" and (.path | contains("/policies/clusters/create"))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/policies/clusters/create",
+  "body": {
+    "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+    "name": "my_cluster_policy"
+  }
+}
+
+>>> [CLI] bundle summary
+Name: test_cluster_policy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default
+Resources:
+  Cluster Policies:
+    test_cluster_policy:
+      Name: my_cluster_policy
+      URL:  (not deployed)
+
+=== Update the cluster policy name
+>>> update_file.py databricks.yml my_cluster_policy my_cluster_policy_2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Verify the update request
+>>> jq select(.method == "POST" and (.path | contains("/policies/clusters/edit"))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/policies/clusters/edit",
+  "body": {
+    "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+    "name": "my_cluster_policy_2",
+    "policy_id": "[UUID]"
+  }
+}
+
+>>> [CLI] bundle summary
+Name: test_cluster_policy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default
+Resources:
+  Cluster Policies:
+    test_cluster_policy:
+      Name: my_cluster_policy_2
+      URL:  (not deployed)
+
+=== Destroy the cluster policy
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.test_cluster_policy
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default
+
+Deleting files...
+Destroy complete!
+
+=== Verify the destroy request
+>>> jq select(.method == "POST" and (.path | contains("/policies/clusters/delete"))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/policies/clusters/delete",
+  "body": {
+    "policy_id": "[UUID]"
+  }
+}
+
+>>> [CLI] bundle summary
+Name: test_cluster_policy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default
+Resources:
+  Cluster Policies:
+    test_cluster_policy:
+      Name: my_cluster_policy_2
+      URL:  (not deployed)
+
+>>> [CLI] bundle destroy --auto-approve
+No active deployment found to destroy!
