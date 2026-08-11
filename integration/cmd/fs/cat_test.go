@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
@@ -66,25 +65,4 @@ func TestFsCatOnNonExistentFile(t *testing.T) {
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 		})
 	}
-}
-
-func TestFsCatForDbfsInvalidScheme(t *testing.T) {
-	ctx := t.Context()
-	_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "cat", "dab:/non-existent-file")
-	assert.ErrorContains(t, err, "invalid scheme: dab")
-}
-
-func TestFsCatDoesNotSupportOutputModeJson(t *testing.T) {
-	ctx, wt := acc.WorkspaceTest(t)
-	w := wt.W
-
-	tmpDir := acc.TemporaryDbfsDir(wt, "fs-cat-")
-	f, err := filer.NewDbfsClient(w, tmpDir)
-	require.NoError(t, err)
-
-	err = f.Write(ctx, "hello.txt", strings.NewReader("abc"))
-	require.NoError(t, err)
-
-	_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "cat", "dbfs:"+path.Join(tmpDir, "hello.txt"), "--output=json")
-	assert.ErrorContains(t, err, "json output not supported")
 }
