@@ -978,7 +978,24 @@ resources:
       "$fields":
         "lifecycle":
           "description": |-
-            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed and when the run re-fires.
+          "$fields":
+            "prevent_destroy":
+              "description": |-
+                Lifecycle setting to prevent the resource from being destroyed.
+            "triggers":
+              "description": |-
+                Conditions that re-fire this job run. Without triggers, the run re-fires only when its own configuration changes.
+              "$fields":
+                "on_bundle_deploy":
+                  "description": |-
+                    If true, re-fire the run on every bundle deploy, even when the run configuration is unchanged.
+                "on_file_change":
+                  "description": |-
+                    Re-fire the run when the contents of files matching this glob change. Not yet supported.
+                "on_value_change":
+                  "description": |-
+                    Re-fire the run when this bundle value expression changes. Not yet supported.
         "python_named_params":
           "description": |-
             PLACEHOLDER

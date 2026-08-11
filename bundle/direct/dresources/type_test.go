@@ -56,6 +56,10 @@ var knownMissingInRemoteType = map[string][]string{
 	"vector_search_endpoints": {
 		"usage_policy_id",
 	},
+	"job_runs": {
+		// Local trigger fingerprints; the Jobs API has nothing corresponding.
+		"triggers",
+	},
 }
 
 // commonMissingInStateType lists fields that are commonly missing across all resource types.

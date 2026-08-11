@@ -1,0 +1,22 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "first deploy triggers a run"
+trace $CLI bundle deploy
+trace read_id.py my_job
+# Name the first run so the second becomes [MY_RUN_ID_2].
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now
+
+title "redeploy with unchanged config still re-fires"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+read_id.py my_run > /dev/null
+trace $CLI bundle summary
+
+title "second run-now after recreate"
+trace print_requests.py --keep //jobs/runs/delete
+trace print_requests.py //jobs/run-now

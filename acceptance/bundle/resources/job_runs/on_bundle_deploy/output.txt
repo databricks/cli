@@ -1,0 +1,80 @@
+
+=== first deploy triggers a run
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
+Deploying resources...
+job run [MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+job run [MY_RUN_ID]: SUCCESS
+Updating deployment state...
+Deployment complete!
+
+>>> read_id.py my_job
+[MY_JOB_ID]
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+=== redeploy with unchanged config still re-fires
+>>> [CLI] bundle plan
+recreate job_runs.my_run
+
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
+Deploying resources...
+job run [MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
+job run [MY_RUN_ID_2]: SUCCESS
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle summary
+Name: job-runs-on-bundle-deploy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default
+Resources:
+  Job Runs:
+    my_run:
+      Name: 
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?w=[NUMID]
+  Jobs:
+    my_job:
+      Name: my-job
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
+
+=== second run-now after recreate
+>>> print_requests.py --keep //jobs/runs/delete
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/delete",
+  "body": {
+    "run_id": [MY_RUN_ID]
+  }
+}
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default
+
+Deleting files...
+Destroy complete!

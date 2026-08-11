@@ -1,0 +1,1 @@
+direct: `resources.job_runs` can set `lifecycle.triggers.on_bundle_deploy: true` to re-fire the run on every bundle deploy, even when the run configuration is unchanged.
