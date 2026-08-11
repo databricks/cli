@@ -570,6 +570,20 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.ExternalLocations, req.Vars["name"])
 	})
 
+	// Storage Credentials:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/storage-credentials", func(req Request) any {
+		return catalog.ListStorageCredentialsResponse{
+			StorageCredentials: []catalog.StorageCredentialInfo{
+				{
+					Name:        "some-test-credential",
+					Id:          "1234",
+					MetastoreId: "abcd",
+				},
+			},
+		}
+	})
+
 	// Registered Models:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
