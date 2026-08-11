@@ -1,6 +1,7 @@
 # Shared setup for the invariant targets; each script keeps only the invariant it asserts.
 
-# Root of configs/ and data/. Callers outside this subtree set it before sourcing.
+# Root of configs/ and data/. Default assumes TESTDIR is an invariant target
+# (or fuzz/); callers outside this subtree set it before sourcing.
 # Exported: the fuzzer runs each seed in a fresh bash.
 export INVARIANT_DIR="${INVARIANT_DIR:-$TESTDIR/..}"
 

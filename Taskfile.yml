@@ -750,7 +750,7 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -count=1 -keeptmp -timeout=${LOCAL_TIMEOUT:-90m} -run "TestAccept/bundle/fuzz"
+          -- -count=1 -keeptmp -timeout=${LOCAL_TIMEOUT:-90m} -run "TestAccept/bundle/invariant/fuzz"
 
   # --- Integration tests ---
 

@@ -6,8 +6,8 @@ Destructive: delete/replace a field (token, dangerous scalar, or empty container
 Additive: inject one optional from INJECT that the base omits.
 Each seed picks exactly one mode so an additive finding maps to one catalog entry.
 
-Bases are JSON templates in fuzz/bases/ (regen with gen_bases.py when invariant
-YAML changes). Emits JSON on stdout; the bundle reads it as YAML 1.2.
+Bases are JSON templates in invariant/fuzz/bases/ (regen with gen_bases.py when
+invariant YAML changes). Emits JSON on stdout; the bundle reads it as YAML 1.2.
 """
 
 import json
@@ -44,7 +44,7 @@ DANGEROUS_INTS = [
 ]
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
-# Single-resource invariant configs; JSON snapshots in fuzz/bases/.
+# Single-resource invariant configs; JSON snapshots in invariant/fuzz/bases/.
 MUTATE_BASES = [
     "app",
     "catalog",
@@ -61,7 +61,9 @@ MUTATE_BASES = [
     "volume",
 ]
 
-BASES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bundle", "fuzz", "bases")
+BASES_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "bundle", "invariant", "fuzz", "bases"
+)
 
 # Schema-valid optionals from past drift/reconcile findings (may still fail to deploy).
 INJECT = {
