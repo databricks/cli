@@ -106,6 +106,10 @@ func initializeNumWorkers(c *compute.ClusterSpec) {
 	if c.Autoscale != nil {
 		return
 	}
+	// Policy defaults can supply autoscaling, which conflicts with num_workers.
+	if c.ApplyPolicyDefaultValues {
+		return
+	}
 	if c.NumWorkers != 0 {
 		return
 	}

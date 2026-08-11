@@ -138,6 +138,11 @@ resources:
       - field: tasks[*].for_each_task.task.new_cluster.data_security_mode
       - field: job_clusters[*].new_cluster.data_security_mode
 
+      # A cluster policy can supply autoscaling when apply_policy_default_values is enabled.
+      - field: tasks[*].new_cluster.autoscale
+      - field: tasks[*].for_each_task.task.new_cluster.autoscale
+      - field: job_clusters[*].new_cluster.autoscale
+
   job_runs:
     # Every jobs.RunNow field is listed, so nothing the request carries is drift.
     # TestJobRunIgnoresEveryRequestField keeps the list in step with the SDK.
