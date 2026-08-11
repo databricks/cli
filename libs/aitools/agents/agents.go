@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/databricks/cli/libs/env"
 )
@@ -44,6 +45,11 @@ type Agent struct {
 	// plugin-capability detection and as the program for the plugin probe.
 	// Empty for agents with no CLI binary (Antigravity is IDE-only).
 	Binary string
+	// MandatoryFile is a marker file required to confirm installation. It is a
+	// relative filename in ConfigDir. Use it when the presence of ConfigDir is not
+	// enough to determine if the agent is installed, such as when ConfigDir is
+	// shared with other products.
+	MandatoryFile string
 	// Plugin describes the databricks plugin for this agent, or nil when the
 	// agent has no plugin and skills files are its native delivery.
 	Plugin *PluginSpec
@@ -55,14 +61,25 @@ type Agent struct {
 	pluginVersion func(ctx context.Context, a *Agent) (string, bool)
 }
 
-// Detected returns true if the agent is installed on the system.
+// Detected reports whether the agent is installed: its config directory exists,
+// or its mandatory file or installed Databricks skills exist when one is set.
 func (a *Agent) Detected(ctx context.Context) bool {
 	dir, err := a.ConfigDir(ctx)
 	if err != nil {
 		return false
 	}
-	_, err = os.Stat(dir)
-	return err == nil
+	target := dir
+	if a.MandatoryFile != "" {
+		target = filepath.Join(dir, a.MandatoryFile)
+	}
+	if _, err = os.Stat(target); err == nil {
+		return true
+	}
+	if a.MandatoryFile == "" {
+		return false // ConfigDir does not exist
+	}
+	skillsDir, err := a.SkillsDir(ctx)
+	return err == nil && HasDatabricksSkillsIn(skillsDir)
 }
 
 // SkillsDir returns the full path to the agent's skills directory.
@@ -109,6 +126,8 @@ const (
 	NameOpenCode    = "opencode"
 	NameCopilot     = "copilot"
 	NameAntigravity = "antigravity"
+	NamePi          = "pi"
+	NameGemini      = "gemini"
 )
 
 // Databricks plugin identity, shared across the agents that ship a plugin.
@@ -204,6 +223,70 @@ var Registry = []*Agent{
 		SkillsSubdir: "global_skills",
 		// Antigravity is IDE-only with no CLI binary, so it has no plugin path.
 	},
+	{
+		Name:                 NamePi,
+		DisplayName:          "Pi",
+		ConfigDir:            piConfigDir,
+		SupportsProjectScope: true,
+		ProjectConfigDir:     ".pi",
+		Binary:               "pi",
+		// Pi reads agent skills (SKILL.md) but has no databricks plugin, so it is
+		// skills-only (Plugin nil).
+	},
+	{
+		Name:                 NameGemini,
+		DisplayName:          "Gemini CLI",
+		ConfigDir:            geminiConfigDir,
+		SupportsProjectScope: true,
+		ProjectConfigDir:     ".gemini",
+		Binary:               "gemini",
+		// Gemini CLI reads agent skills (SKILL.md) but has no databricks plugin, so
+		// it is skills-only (Plugin nil).
+		// Gemini writes projects.json after real use. Antigravity shares ~/.gemini,
+		// and installation_id is not reliable, so detection uses this Gemini-only file.
+		MandatoryFile: "projects.json",
+	},
+}
+
+// piConfigDir returns Pi's agent config directory: PI_CODING_AGENT_DIR when set,
+// else ~/.pi/agent. Mirroring Pi's own override keeps skills where Pi reads them
+// when a launcher (e.g. ucode) relocates its home.
+// See getAgentDir in @earendil-works/pi-coding-agent (config.ts).
+func piConfigDir(ctx context.Context) (string, error) {
+	if dir := env.Get(ctx, "PI_CODING_AGENT_DIR"); dir != "" {
+		if dir == "~" || strings.HasPrefix(dir, "~/") || (runtime.GOOS == "windows" && strings.HasPrefix(dir, `~\`)) {
+			home, err := env.UserHomeDir(ctx)
+			if err != nil {
+				return "", err
+			}
+			if dir == "~" {
+				return home, nil
+			}
+			return filepath.Join(home, dir[2:]), nil
+		}
+		return dir, nil
+	}
+	home, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".pi", "agent"), nil
+}
+
+// geminiConfigDir returns Gemini CLI's config directory: <GEMINI_CLI_HOME>/.gemini
+// when set, else ~/.gemini. Honoring Gemini's own override keeps skills where it
+// reads them under a relocated home (e.g. ucode).
+// https://github.com/google-gemini/gemini-cli/blob/main/docs/reference/configuration.md
+func geminiConfigDir(ctx context.Context) (string, error) {
+	root := env.Get(ctx, "GEMINI_CLI_HOME")
+	if root == "" {
+		home, err := env.UserHomeDir(ctx)
+		if err != nil {
+			return "", err
+		}
+		root = home
+	}
+	return filepath.Join(root, ".gemini"), nil
 }
 
 // openCodeConfigDir returns OpenCode's config directory. OpenCode stores its
@@ -248,4 +331,39 @@ func DetectInstalled(ctx context.Context) []*Agent {
 		}
 	}
 	return installed
+}
+
+// DetectProjectInstalled returns project-scope agents that already have Databricks
+// skills in the current project. Config-dir detection is home-based, so it misses
+// project-local installs; update uses this to also refresh those.
+func DetectProjectInstalled(cwd string) []*Agent {
+	var installed []*Agent
+	for _, a := range Registry {
+		if a.SupportsProjectScope && HasDatabricksSkillsIn(a.ProjectSkillsDir(cwd)) {
+			installed = append(installed, a)
+		}
+	}
+	return installed
+}
+
+// SupportedNames returns every agent's display name in registry order, so the
+// "Supported agents" messages can't drift as agents are added.
+func SupportedNames() []string {
+	names := make([]string, len(Registry))
+	for i, a := range Registry {
+		names[i] = a.DisplayName
+	}
+	return names
+}
+
+// SkillsOnlyNames returns the display names of skills-only agents (Plugin == nil)
+// in registry order, so the install help can't drift as they are added.
+func SkillsOnlyNames() []string {
+	var names []string
+	for _, a := range Registry {
+		if a.Plugin == nil {
+			names = append(names, a.DisplayName)
+		}
+	}
+	return names
 }

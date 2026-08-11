@@ -166,6 +166,10 @@ resources:
       - field: trace_location
         reason: spec:immutable
 
+    ignore_remote_changes:
+      - field: trace_location.uc_trace_location.effective_table_prefix
+        reason: spec:output_only
+
   external_locations:
 
     ignore_remote_changes:
@@ -179,6 +183,8 @@ resources:
     ignore_remote_changes:
       - field: etag
         reason: spec:output_only
+
+  # instance_pools: no api field behaviors
 
   # job_runs: no api field behaviors
 
@@ -319,6 +325,8 @@ resources:
         reason: spec:input_only
       - field: existing_pipeline_id
         reason: spec:input_only
+      - field: extra_columns
+        reason: spec:input_only
       - field: new_pipeline_spec
         reason: spec:input_only
       - field: postgres_database
@@ -345,6 +353,39 @@ resources:
   # schemas: no api field behaviors
 
   # secret_scopes: no api field behaviors
+
+  secrets:
+
+    recreate_on_changes:
+      - field: catalog_name
+        reason: spec:immutable
+      - field: name
+        reason: spec:immutable
+      - field: schema_name
+        reason: spec:immutable
+
+    ignore_remote_changes:
+      - field: owner
+        reason: spec:input_only
+      - field: value
+        reason: spec:input_only
+
+      - field: create_time
+        reason: spec:output_only
+      - field: created_by
+        reason: spec:output_only
+      - field: effective_owner
+        reason: spec:output_only
+      - field: effective_value
+        reason: spec:output_only
+      - field: full_name
+        reason: spec:output_only
+      - field: metastore_id
+        reason: spec:output_only
+      - field: update_time
+        reason: spec:output_only
+      - field: updated_by
+        reason: spec:output_only
 
   # sql_warehouses: no api field behaviors
 

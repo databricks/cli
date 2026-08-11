@@ -439,9 +439,10 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	assert.NotEmpty(t, state.Files["databricks-sql/SKILL.md"].SHA256)
 	assert.Equal(t, testSkillsRef, state.Files["databricks-sql/SKILL.md"].Origin)
 
+	// Per-skill progress now goes through a spinner, which is silent in this
+	// non-interactive test, so only these plain lines remain.
+	assert.Contains(t, stderr.String(), "Using skills version")
 	assert.Contains(t, stderr.String(), "Fetching skills manifest...")
-	assert.Contains(t, stderr.String(), "Downloading databricks-sql...")
-	assert.Contains(t, stderr.String(), "Exposing databricks-sql to 1 agent...")
 	assert.Contains(t, stderr.String(), "Installed 2 skills.")
 }
 
@@ -713,42 +714,26 @@ func TestIdempotentInstallUpdatesNewVersions(t *testing.T) {
 	assert.Equal(t, "0.2.0", state.Skills["databricks-sql"])
 }
 
-func TestLegacyDetectMessagePrinted(t *testing.T) {
+func TestLegacyTargetedInstallBlockedFromLegacyDir(t *testing.T) {
 	tmp := setupTestHome(t)
-	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
-	// Create skills on disk at canonical location but no state file.
-	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
-	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-sql"), 0o755))
-
-	src := &mockManifestSource{manifest: testManifest()}
-	agent := testAgent(tmp)
-
-	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
-	require.NoError(t, err)
-
-	assert.Contains(t, stderr.String(), "Found skills installed before state tracking was added.")
-}
-
-func TestLegacyDetectLegacyDir(t *testing.T) {
-	tmp := setupTestHome(t)
-	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	setupFetchMock(t)
-	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
-
-	// Create skills in the legacy location.
+	// Skills in the legacy location (~/.databricks/agent-skills), no state file.
 	legacyDir := filepath.Join(tmp, ".databricks", "agent-skills")
 	require.NoError(t, os.MkdirAll(filepath.Join(legacyDir, "databricks-sql"), 0o755))
 
 	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 
-	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
-	require.NoError(t, err)
-
-	assert.Contains(t, stderr.String(), "Found skills installed before state tracking was added.")
+	// A targeted install must be blocked when a legacy install is detected via
+	// the legacy dir, mirroring the canonical-dir case.
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{
+		SpecificSkills: []string{"databricks-sql"},
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "legacy install detected")
 }
 
 func TestIdempotentInstallReinstallsForNewAgent(t *testing.T) {
@@ -831,11 +816,11 @@ func TestLegacyFullInstallAllowed(t *testing.T) {
 	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 
-	// Full install (no SpecificSkills) should succeed and rebuild state.
+	// Full install (no SpecificSkills) should succeed and rebuild state silently.
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
 	require.NoError(t, err)
 
-	assert.Contains(t, stderr.String(), "Found skills installed before state tracking was added.")
+	assert.Contains(t, stderr.String(), "Installed 2 skills.")
 
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
@@ -1044,6 +1029,8 @@ func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
 		"opencode":    false,
 		"copilot":     false,
 		"antigravity": false,
+		"pi":          true,
+		"gemini":      true,
 	}
 
 	for _, agent := range agents.Registry {

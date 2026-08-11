@@ -1,7 +1,5 @@
-Local = true
 Cloud = true
 RequiresWarehouse = true
 RunsOnDbr = true
-GOOSOnPR.darwin = false
-GOOSOnPR.windows = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.READPLAN = ["", "1"]

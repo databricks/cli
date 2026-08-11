@@ -42,6 +42,15 @@ const (
 	DirectAutoMigrateViaConfig = "direct_migrated_via_config"
 	DirectAutoMigrateViaEnv    = "direct_migrated_via_env"
 
+	// Whether the (deprecated) terraform engine was explicitly opted into, and via
+	// which source. Independent: both can be present when config and env both
+	// request terraform. Emitted only when true; absence means "not opted in via
+	// this source", so the population still on terraform can be sliced by source.
+	//   - engine_terraform_config: bundle.engine = "terraform" in the bundle config.
+	//   - engine_terraform_env:    DATABRICKS_BUNDLE_ENGINE=terraform in the environment.
+	EngineTerraformConfig = "engine_terraform_config"
+	EngineTerraformEnv    = "engine_terraform_env"
+
 	// Whether workspace.state_path is under /Workspace/Shared.
 	StatePathIsShared = "state_path_is_shared"
 

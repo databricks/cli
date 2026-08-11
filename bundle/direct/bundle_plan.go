@@ -191,6 +191,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, id, err)
 					// This is not an error during deletion, so don't return false here
 				}
+			} else if adapter.IsGone(remoteState) {
+				// The resource is in a transient terminal-teardown state (e.g. an app in
+				// DELETING) that a GET still returns but a second delete would reject.
+				// Treat it as gone: apply cleans up state without re-issuing the delete.
+				entry.Gone = true
 			}
 
 			entry.RemoteState = remoteState
@@ -380,7 +385,13 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			return err
 		}
 
-		if structdiff.IsEqual(ch.Remote, ch.New) {
+		// RemoteAlreadySet only holds when ch.Remote is a real remote value we can compare
+		// against ch.New. Skip it for fields whose remote value is fabricated and thus
+		// meaningless: declared ignore_remote_changes (present in RemoteType but read back
+		// backend-managed/input-only), or absent from RemoteType (a guaranteed-nil
+		// placeholder, since RemapState is a dumb copy). Otherwise a coincidental
+		// new == remote (both nil, say) wrongly skips a real local change.
+		if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && !isFieldMissingInRemote(adapter, path) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
 		} else if allEmpty(ch.Old, ch.New, ch.Remote) {
@@ -450,8 +461,28 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	return nil
 }
 
+func ignoreRemoteChanges(cfg1, cfg2 *dresources.ResourceLifecycleConfig, path *structpath.PathNode) bool {
+	if _, ok := findMatchingRule(path, cfg1.IgnoreRemoteChanges); ok {
+		return true
+	}
+
+	if _, ok := findMatchingRule(path, cfg2.IgnoreRemoteChanges); ok {
+		return true
+	}
+
+	return false
+}
+
 // isFieldMissingInRemote reports whether path exists in StateType but is absent from RemoteType.
 // Such fields are accepted by the API on write but not returned by GET.
+//
+// Because RemapState is a dumb subset copy (see the "RemapState is a dumb copy" section in
+// dresources/README.md), a field absent from RemoteType is always nil/zero in the remapped
+// remote state the planner compares against (ch.Remote): there is nothing for RemapState to
+// copy it from, so it can never appear. That guarantee is what makes this a sound signal that
+// the field's remote value is meaningless. Fields the API returns under a different path are
+// added to RemoteType and populated in DoRead, so they are NOT missing here and keep their
+// real remote value.
 func isFieldMissingInRemote(adapter *dresources.Adapter, path *structpath.PathNode) bool {
 	if structaccess.ValidatePath(adapter.StateType(), path) != nil {
 		return false
@@ -968,6 +999,18 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		newStateConfig, err := adapter.PrepareState(inputConfig)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+
+		// New nodes only: a node with state must stay in the plan, otherwise emptying it plans nothing.
+		// Apply drops the state entry once the node is empty, so it is skipped from then on.
+		if _, hasState := db.State[node]; !hasState {
+			empty, err := adapter.IsEmptyState(newStateConfig)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", prefix, err)
+			}
+			if empty {
+				continue
+			}
 		}
 
 		// Note, we're extracting references in input config but resolving them in newState.Config which is PrepareState(inputConfig)

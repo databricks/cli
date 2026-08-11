@@ -1,9 +1,3 @@
-# Re-enable on pull requests (the parent integration_whl/ dir opts out): this variant
-# builds a wheel (bdist_wheel) on the interactive/classic-cluster path, exercising the
-# OS-specific venv build, so it must keep running on windows/macOS for PRs.
-GOOSOnPR.windows = true
-GOOSOnPR.darwin = true
-
 [EnvMatrix]
 DATA_SECURITY_MODE = [
     "USER_ISOLATION",

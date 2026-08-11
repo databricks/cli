@@ -20,6 +20,8 @@ external_locations: catalog.CreateExternalLocation
 
 genie_spaces: dashboards.GenieUpdateSpaceRequest
 
+instance_pools: compute.CreateInstancePool
+
 job_runs: jobs.RunNow
 
 jobs: jobs.JobSettings
@@ -51,6 +53,8 @@ registered_models: catalog.RegisteredModelInfo
 schemas: catalog.CreateSchema
 
 secret_scopes: workspace.CreateScope
+
+secrets: catalog.Secret
 
 sql_warehouses: sql.EditWarehouseRequest
 

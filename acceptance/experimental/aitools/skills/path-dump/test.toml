@@ -7,8 +7,7 @@ Ignore = [
     "dumped",
 ]
 
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [[Server]]
 Pattern = "GET /test-ref/manifest.json"

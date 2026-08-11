@@ -10,16 +10,14 @@
         "browse_only": false,
         "catalog_name": "main",
         "catalog_type": "MANAGED_CATALOG",
-        "created_at": [UNIX_TIME_MILLIS][0],
+        "created_at": [UNIX_TIME_MILLIS],
         "created_by": "[USERNAME]",
         "enable_predictive_optimization": "INHERIT",
         "full_name": "main.schema_out_of_band_principal_[UNIQUE_NAME]",
         "metastore_id": "[UUID]",
         "name": "schema_out_of_band_principal_[UNIQUE_NAME]",
         "owner": "[USERNAME]",
-        "schema_id": "[UUID]",
-        "updated_at": [UNIX_TIME_MILLIS][1],
-        "updated_by": "[USERNAME]"
+        "schema_id": "[UUID]"
       }
     },
     "resources.schemas.grants_schema.grants": {

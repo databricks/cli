@@ -3,7 +3,6 @@ package config
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -39,12 +38,8 @@ func TestConfigFileNames_FindInPath(t *testing.T) {
 			name:     "file not found",
 			files:    []string{},
 			expected: "",
-			err:      "no such file or directory",
+			err:      "databricks.yml not found",
 		},
-	}
-
-	if runtime.GOOS == "windows" {
-		testCases[3].err = "The system cannot find the file specified."
 	}
 
 	for _, tc := range testCases {

@@ -1,0 +1,135 @@
+
+>>> [CLI] bundle validate
+Name: test_instance_pool
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default
+
+Validation OK!
+
+>>> [CLI] bundle validate -o json
+{
+  "test_instance_pool": {
+    "idle_instance_autotermination_minutes": 60,
+    "instance_pool_name": "my_instance_pool",
+    "max_capacity": 5,
+    "min_idle_instances": 0,
+    "node_type_id": "Standard_DS3_v2"
+  }
+}
+
+>>> [CLI] bundle summary
+Name: test_instance_pool
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default
+Resources:
+  Instance Pools:
+    test_instance_pool:
+      Name: my_instance_pool
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Verify the create request
+>>> jq select(.method == "POST" and (.path | contains("/instance-pools/create"))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/instance-pools/create",
+  "body": {
+    "idle_instance_autotermination_minutes": 60,
+    "instance_pool_name": "my_instance_pool",
+    "max_capacity": 5,
+    "min_idle_instances": 0,
+    "node_type_id": "Standard_DS3_v2"
+  }
+}
+
+>>> [CLI] bundle summary
+Name: test_instance_pool
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default
+Resources:
+  Instance Pools:
+    test_instance_pool:
+      Name: my_instance_pool
+      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[NUMID]
+
+=== Update the instance pool name
+>>> update_file.py databricks.yml my_instance_pool my_instance_pool_2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Verify the update request
+>>> jq select(.method == "POST" and (.path | contains("/instance-pools/edit"))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/instance-pools/edit",
+  "body": {
+    "idle_instance_autotermination_minutes": 60,
+    "instance_pool_id": "[UUID]",
+    "instance_pool_name": "my_instance_pool_2",
+    "max_capacity": 5,
+    "min_idle_instances": 0,
+    "node_type_id": "Standard_DS3_v2"
+  }
+}
+
+>>> [CLI] bundle summary
+Name: test_instance_pool
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default
+Resources:
+  Instance Pools:
+    test_instance_pool:
+      Name: my_instance_pool_2
+      URL:  [DATABRICKS_URL]/compute/instance-pools/[UUID]?w=[NUMID]
+
+=== Destroy the instance pool
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.instance_pools.test_instance_pool
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default
+
+Deleting files...
+Destroy complete!
+
+=== Verify the destroy request
+>>> jq select(.method == "POST" and (.path | contains("/instance-pools/delete"))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/instance-pools/delete",
+  "body": {
+    "instance_pool_id": "[UUID]"
+  }
+}
+
+>>> [CLI] bundle summary
+Name: test_instance_pool
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default
+Resources:
+  Instance Pools:
+    test_instance_pool:
+      Name: my_instance_pool_2
+      URL:  (not deployed)
+
+>>> [CLI] bundle destroy --auto-approve
+No active deployment found to destroy!

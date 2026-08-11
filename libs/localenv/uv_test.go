@@ -37,9 +37,22 @@ func writePipConf(t *testing.T, conf string) context.Context {
 
 func TestUvArgs(t *testing.T) {
 	m := &uvManager{bin: "uv"}
-	assert.Equal(t, []string{"sync"}, m.syncArgs())
+	assert.Equal(t, []string{"sync", "--python", "3.12"}, m.syncArgs("3.12"))
 	assert.Equal(t, []string{"python", "install", "3.12"}, m.pythonInstallArgs("3.12"))
 	assert.Equal(t, []string{"pip", "install", "pip", "--python", "/p/.venv/bin/python"}, m.pipSeedArgs("/p/.venv/bin/python"))
+}
+
+func TestVenvPythonPath(t *testing.T) {
+	// Validate invokes this interpreter directly (not via `uv run`) so it observes
+	// exactly the .venv that was provisioned, ignoring any active VIRTUAL_ENV.
+	got := venvPython(filepath.Join("p", "proj"))
+	var want string
+	if runtime.GOOS == "windows" {
+		want = filepath.Join("p", "proj", ".venv", "Scripts", "python.exe")
+	} else {
+		want = filepath.Join("p", "proj", ".venv", "bin", "python")
+	}
+	assert.Equal(t, want, got)
 }
 
 func TestDiscoverUvFindsBinOnPath(t *testing.T) {

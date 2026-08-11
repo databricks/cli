@@ -164,8 +164,8 @@ var UpdateMaskFields = []string{
 	"resources",
 	"user_api_scopes",
 	"compute_size",
-	// "compute_min_instances", // TODO: add back when update APIs correctly support it
-	// "compute_max_instances", // TODO: add back when update APIs correctly support it
+	"compute_min_instances",
+	"compute_max_instances",
 	"git_repository",
 	"telemetry_export_destinations",
 }
@@ -246,12 +246,18 @@ func hasAppChanges(entry *PlanEntry) bool {
 	return entry.Changes.HasChangeExcept("source_code_path", "config", "git_source", "lifecycle", "lifecycle.started")
 }
 
-// OverrideChangeDesc skips source_code_path drift when the remote value is empty.
-// This happens when an app has no deployment yet (DefaultSourceCodePath is unset).
+// OverrideChangeDesc skips drift on the deploy-only fields (source_code_path, config,
+// git_source) while the app has no active deployment. DoRead reads them only from the
+// active deployment, so before the first deploy (or once a stop clears it) the remote
+// side is empty and the diff is spurious; it applies on the next start (manageLifecycle).
 func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *AppRemote) error {
-	if path.String() == "source_code_path" && (remote.SourceCodePath == "" || remote.SourceCodePath == "null") {
-		change.Action = deployplan.Skip
-		change.Reason = "no deployment"
+	// Prefix(1) so a nested diff (e.g. config.command) matches its top-level field.
+	switch path.Prefix(1).String() {
+	case "source_code_path", "config", "git_source":
+		if remote.ActiveDeployment == nil {
+			change.Action = deployplan.Skip
+			change.Reason = "no active deployment"
+		}
 	}
 	return nil
 }
@@ -300,6 +306,21 @@ func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
 func (r *ResourceApp) DoDelete(ctx context.Context, id string, _ *AppState) error {
 	_, err := r.client.Apps.DeleteByName(ctx, id)
 	return err
+}
+
+// IsGone treats a DELETING app as already-deleted. The Apps DELETE is
+// fire-and-forget: it returns success while the app sits in
+// ComputeState=DELETING for up to ~20 minutes, and a GET during that window
+// returns the app (not 404), so callers cannot rely on IsMissing. A second
+// DELETE while DELETING is rejected with 400, so without this the delete/destroy
+// path is not idempotent (acceptance/bundle/invariant/{delete,destroy}_idempotent).
+// Consulted both at plan time (bundle_plan.go) and after a failed apply-time
+// delete (apply.go deleteConfirmedGone), which covers saved-plan deploys where
+// the app enters DELETING only after the plan was computed.
+// Still uncovered: a DELETING app hit during a normal deploy/update (not a
+// delete) produces a spurious update/skip because plan/apply do not special-case it there.
+func (*ResourceApp) IsGone(remote *AppRemote) bool {
+	return remote.ComputeStatus != nil && remote.ComputeStatus.State == apps.ComputeStateDeleting
 }
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *AppState) (*AppRemote, error) {

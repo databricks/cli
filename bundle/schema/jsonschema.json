@@ -66,6 +66,10 @@
                     "enum": [
                       "terraform",
                       "direct"
+                    ],
+                    "enumDescriptions": [
+                      "Deploy through Terraform. Deprecated: Migrate to `direct`, see https://docs.databricks.com/aws/en/dev-tools/bundles/direct",
+                      "Deploy by calling the Databricks APIs directly. This is the default."
                     ]
                   },
                   {
@@ -100,6 +104,12 @@
                       "lifecycle": {
                         "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "parameters": {
+                        "description": "[Private Preview] Query parameters bound when executing the alert query, referenced in the\nquery text with `:name` syntax. Static values only.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/sql.AlertStatementParameter",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "parent_path": {
                         "description": "The workspace path of the folder containing the alert. Can only be set on create, and cannot be updated.",
@@ -422,6 +432,10 @@
                       "data_security_mode": {
                         "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n* `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n\nThe following modes are legacy aliases for the above modes:\n\n* `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.\n* `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode"
+                      },
+                      "dependency_mode": {
+                        "description": "[Beta] Controls dependency configuration for the cluster.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DependencyMode"
                       },
                       "docker_image": {
                         "description": "Custom docker image BYOC",
@@ -877,6 +891,131 @@
                   }
                 ]
               },
+              "resources.InstancePool": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "aws_attributes": {
+                        "description": "Attributes related to instance pools running on Amazon Web Services.\nIf not specified at pool creation, a set of default values will be used.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.InstancePoolAwsAttributes"
+                      },
+                      "azure_attributes": {
+                        "description": "Attributes related to instance pools running on Azure.\nIf not specified at pool creation, a set of default values will be used.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.InstancePoolAzureAttributes"
+                      },
+                      "custom_tags": {
+                        "description": "Additional tags for pool resources. Databricks will tag all pool resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`. Notes:\n\n- Currently, Databricks allows at most 45 custom tags",
+                        "$ref": "#/$defs/map/string"
+                      },
+                      "disk_spec": {
+                        "description": "Defines the specification of the disks that will be attached to all spark containers.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DiskSpec"
+                      },
+                      "enable_elastic_disk": {
+                        "description": "Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire\nadditional disk space when its Spark workers are running low on disk space. In AWS, this\nfeature requires specific AWS permissions to function correctly - refer to the User Guide for\nmore details.",
+                        "$ref": "#/$defs/bool"
+                      },
+                      "gcp_attributes": {
+                        "description": "Attributes related to instance pools running on Google Cloud Platform.\nIf not specified at pool creation, a set of default values will be used.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.InstancePoolGcpAttributes"
+                      },
+                      "idle_instance_autotermination_minutes": {
+                        "description": "Automatically terminates the extra instances in the pool cache after they are inactive for this\ntime in minutes if min_idle_instances requirement is already met. If not set, the extra pool\ninstances will be automatically terminated after a default timeout. If specified, the\nthreshold must be between 0 and 10000 minutes.\nUsers can also set this value to 0 to instantly remove idle instances from the cache if\nmin cache size could still hold.",
+                        "$ref": "#/$defs/int"
+                      },
+                      "instance_pool_name": {
+                        "description": "Pool name requested by the user. Pool name must be unique. Length must be between 1 and 100\ncharacters.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "max_capacity": {
+                        "description": "Maximum number of outstanding instances to keep in the pool, including both instances used by\nclusters and idle instances. Clusters that require further instance provisioning will fail during\nupsize requests.",
+                        "$ref": "#/$defs/int"
+                      },
+                      "min_idle_instances": {
+                        "description": "Minimum number of idle instances to keep in the instance pool",
+                        "$ref": "#/$defs/int"
+                      },
+                      "node_type_flexibility": {
+                        "description": "Flexible node type configuration for the pool.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.NodeTypeFlexibility"
+                      },
+                      "node_type_id": {
+                        "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.InstancePoolPermission",
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                      },
+                      "preloaded_docker_images": {
+                        "description": "Custom Docker Image BYOC",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/compute.DockerImage"
+                      },
+                      "preloaded_spark_versions": {
+                        "description": "A list containing at most one preloaded Spark image version for the pool. Pool-backed clusters started\nwith the preloaded Spark version will start faster. A list of available Spark versions\ncan be retrieved by using the [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
+                        "$ref": "#/$defs/slice/string"
+                      },
+                      "remote_disk_throughput": {
+                        "description": "If set, what the configurable throughput (in Mb/s) for the remote disk is. Currently only supported for GCP HYPERDISK_BALANCED types.",
+                        "$ref": "#/$defs/int"
+                      },
+                      "total_initial_remote_disk_size": {
+                        "description": "If set, what the total initial volume size (in GB) of the remote disks should be. Currently only supported for GCP HYPERDISK_BALANCED types.",
+                        "$ref": "#/$defs/int"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "instance_pool_name",
+                      "node_type_id"
+                    ],
+                    "markdownDescription": "The instance pool resource defines an [instance pool](https://docs.databricks.com/api/workspace/instancepools/create), a set of idle, ready-to-use cloud instances that reduce cluster start and auto-scaling times."
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.InstancePoolPermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "description": "The name of the group granted the permission level.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "description": "The permission level to apply. The allowed levels depend on the resource type.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.InstancePoolPermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "description": "The name of the service principal granted the permission level.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "description": "The name of the user granted the permission level.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Job": {
                 "oneOf": [
                   {
@@ -1042,10 +1181,6 @@
                         "deprecationMessage": "This field is deprecated",
                         "doNotSuggest": true,
                         "deprecated": true
-                      },
-                      "idempotency_token": {
-                        "description": "An optional token to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly one run\nis launched with that idempotency token.\n\nThis token must have at most 64 characters.\n\nFor more information, see [How to ensure idempotency for jobs](https://kb.databricks.com/jobs/jobs-idempotency.html).",
-                        "$ref": "#/$defs/string"
                       },
                       "jar_params": {
                         "description": "[Private Preview] A list of parameters for jobs with Spark JAR tasks, for example `\"jar_params\": [\"john doe\", \"35\"]`.\nThe parameters are used to invoke the main function of the main class specified in the Spark JAR task.\nIf not specified upon `run-now`, it defaults to an empty list.\njar_params cannot be specified in conjunction with notebook_params.\nThe JSON representation of this field (for example `{\"jar_params\":[\"john doe\",\"35\"]}`) cannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
@@ -1472,6 +1607,10 @@
                         "description": "[Public Preview] Budget policy of this pipeline.",
                         "$ref": "#/$defs/string"
                       },
+                      "cascade_on_destroy": {
+                        "description": "Whether destroying the pipeline also deletes its datasets (MVs, STs, Views). Defaults to true (the server default). Set to false to retain the datasets when the pipeline is deleted. Only affects the delete operation.",
+                        "$ref": "#/$defs/bool"
+                      },
                       "catalog": {
                         "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
                         "$ref": "#/$defs/string"
@@ -1658,12 +1797,15 @@
                     "type": "object",
                     "properties": {
                       "branch_id": {
+                        "description": "The ID to use for the branch; becomes the final component of the branch's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `development` becomes `projects/my-app/branches/development`.",
                         "$ref": "#/$defs/string"
                       },
                       "expire_time": {
+                        "description": "[Beta] Absolute expiration timestamp. When set, the branch will expire at this time.\nMutually exclusive with `ttl` and `no_expiry`. When updating, use `spec.expiration` in the update_mask.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
                       },
                       "is_protected": {
+                        "description": "[Beta] When set to true, protects the branch from deletion and reset. Associated compute endpoints and the project cannot be deleted while the branch is protected.",
                         "$ref": "#/$defs/bool"
                       },
                       "lifecycle": {
@@ -1671,27 +1813,35 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "no_expiry": {
+                        "description": "[Beta] Explicitly disable expiration. When set to true, the branch will not expire.\nIf set to false, the request is invalid; provide either ttl or expire_time instead.\nMutually exclusive with `expire_time` and `ttl`. When updating, use `spec.expiration` in the update_mask.",
                         "$ref": "#/$defs/bool"
                       },
                       "parent": {
+                        "description": "The project containing this branch (API resource hierarchy). Format: projects/{project_id}\n\nThis field indicates where the branch exists in the resource hierarchy. For point-in-time branching from another branch, see `source_branch`.",
                         "$ref": "#/$defs/string"
                       },
                       "purge_on_delete": {
+                        "description": "When true, permanently delete the branch when the bundle is destroyed. When false or unset, the branch is soft deleted and can be restored within its retention window.",
                         "$ref": "#/$defs/bool"
                       },
                       "replace_existing": {
+                        "description": "When true, take over an existing branch with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring a branch that already exists on the project (for example, the production branch created with the project) under bundle management. Only takes effect when the branch is created.",
                         "$ref": "#/$defs/bool"
                       },
                       "source_branch": {
+                        "description": "[Beta] The name of the source branch from which this branch was created (data lineage for point-in-time recovery).\nIf not specified, defaults to the project's default branch.\nFormat: projects/{project_id}/branches/{branch_id}",
                         "$ref": "#/$defs/string"
                       },
                       "source_branch_lsn": {
+                        "description": "[Beta] The Log Sequence Number (LSN) on the source branch from which this branch was created.",
                         "$ref": "#/$defs/string"
                       },
                       "source_branch_time": {
+                        "description": "[Beta] The point in time on the source branch from which this branch was created.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
                       },
                       "ttl": {
+                        "description": "[Beta] Relative time-to-live duration. When set, the branch will expire at creation_time + ttl.\nMutually exclusive with `expire_time` and `no_expiry`. When updating, use `spec.expiration` in the update_mask.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       }
                     },
@@ -1711,14 +1861,18 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "The desired state of the Catalog.",
                     "properties": {
                       "branch": {
+                        "description": "[Beta] The resource path of the branch associated with the catalog.\n\nFormat: projects/{project_id}/branches/{branch_id}.",
                         "$ref": "#/$defs/string"
                       },
                       "catalog_id": {
+                        "description": "The ID of the catalog in Unity Catalog; becomes the full resource name. For example, `my_catalog` becomes `catalogs/my_catalog`.",
                         "$ref": "#/$defs/string"
                       },
                       "create_database_if_missing": {
+                        "description": "[Beta] If set to true, the specified postgres_database is created on behalf of the calling user\nif it does not already exist. In this case, the calling user has a role created for\nthem in Postgres if they do not already have one.\n\nDefaults to false, meaning that the request fails if the specified postgres_database does not already exist.",
                         "$ref": "#/$defs/bool"
                       },
                       "lifecycle": {
@@ -1726,6 +1880,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "postgres_database": {
+                        "description": "[Beta] The name of the Postgres database inside the specified Lakebase project and branch to be associated with the UC catalog.\nThis database must already exist, unless create_database_if_missing is set to true on creation.\n\nA database can only be registered with one UC catalog at a time.\nTo re-register a database with a different catalog, the existing catalog must be deleted first.\n\nA child branch inherits the fact of parent's registration. This means the same-named database\nin a child branch cannot be registered with a second catalog\nwhile the parent's registration exists. To allow registering the database of a child branch,\ndrop and recreate the database on the child branch.\nThis removes the fact of parent's registration from this branch only.\n\nDoing Point In Time Restore (PITR) prior to the moment before the Postgres DB was registered\nin the Catalog drops the fact of registration of the database. So the user should avoid doing so.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1747,6 +1902,7 @@
                     "type": "object",
                     "properties": {
                       "database_id": {
+                        "description": "The ID to use for the database; becomes the final component of the database's resource name and the database name in Postgres. Must be 4-63 characters and use only characters available in DNS names, as defined by RFC 1123. If not specified, it is generated automatically.",
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
@@ -1754,9 +1910,11 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parent": {
+                        "description": "The branch containing this database. Format: projects/{project_id}/branches/{branch_id}",
                         "$ref": "#/$defs/string"
                       },
                       "postgres_database": {
+                        "description": "[Beta] The name of the Postgres database.\n\nThis expects a valid Postgres identifier as specified in the link below.\nhttps://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS\nRequired when creating the Database.\n\nTo rename, pass a valid postgres identifier when updating the Database.",
                         "$ref": "#/$defs/string"
                       },
                       "replace_existing": {
@@ -1764,6 +1922,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "role": {
+                        "description": "[Beta] The name of the role that owns the database.\nFormat: projects/{project_id}/branches/{branch_id}/roles/{role_id}\n\nTo change the owner, pass valid existing Role name when updating the Database\n\nA database always has an owner.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1786,21 +1945,27 @@
                     "type": "object",
                     "properties": {
                       "autoscaling_limit_max_cu": {
+                        "description": "[Beta] The maximum number of Compute Units. The maximum value is 64.\nThe difference between the minimum and maximum Compute Units (max - min) must not exceed 16.",
                         "$ref": "#/$defs/float64"
                       },
                       "autoscaling_limit_min_cu": {
+                        "description": "[Beta] The minimum number of Compute Units. Minimum value is 0.5.",
                         "$ref": "#/$defs/float64"
                       },
                       "disabled": {
+                        "description": "[Beta] Whether to restrict connections to the compute endpoint.\nEnabling this option schedules a suspend compute operation.\nA disabled compute endpoint cannot be enabled by a connection or\nconsole action.",
                         "$ref": "#/$defs/bool"
                       },
                       "endpoint_id": {
+                        "description": "The ID to use for the endpoint; becomes the final component of the endpoint's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `primary` becomes `projects/my-app/branches/development/endpoints/primary`.",
                         "$ref": "#/$defs/string"
                       },
                       "endpoint_type": {
+                        "description": "[Beta] The endpoint type. A branch can only have one READ_WRITE endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointType"
                       },
                       "group": {
+                        "description": "[Beta] Settings for optional HA configuration of the endpoint. If unspecified, the endpoint defaults\nto non HA settings, with a single compute backing the endpoint (and no readable secondaries\nfor Read/Write endpoints).",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec"
                       },
                       "lifecycle": {
@@ -1808,18 +1973,23 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "no_suspension": {
+                        "description": "[Beta] When set to true, explicitly disables automatic suspension (never suspend).\nShould be set to true when provided.\nMutually exclusive with `suspend_timeout_duration`. When updating, use `spec.suspension` in the update_mask.",
                         "$ref": "#/$defs/bool"
                       },
                       "parent": {
+                        "description": "The branch containing this endpoint (API resource hierarchy). Format: projects/{project_id}/branches/{branch_id}",
                         "$ref": "#/$defs/string"
                       },
                       "replace_existing": {
+                        "description": "When true, take over an existing endpoint with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring an endpoint that already exists on the branch (for example, the primary read-write endpoint created with the branch) under bundle management. Only takes effect when the endpoint is created.",
                         "$ref": "#/$defs/bool"
                       },
                       "settings": {
+                        "description": "[Beta] A collection of settings for a compute endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointSettings"
                       },
                       "suspend_timeout_duration": {
+                        "description": "[Beta] Duration of inactivity after which the compute endpoint is automatically suspended.\nIf specified should be between 60s and 604800s (1 minute to 1 week).\nMutually exclusive with `no_suspension`. When updating, use `spec.suspension` in the update_mask.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       }
                     },
@@ -1842,24 +2012,31 @@
                     "type": "object",
                     "properties": {
                       "budget_policy_id": {
+                        "description": "[Beta] The desired budget policy to associate with the project.\nSee status.budget_policy_id for the policy that is actually applied to the project.",
                         "$ref": "#/$defs/string"
                       },
                       "custom_tags": {
+                        "description": "[Beta] Custom tags to associate with the project. Forwarded to LBM for billing and cost tracking.\nTo update tags, provide the new tag list and include \"spec.custom_tags\" in the update_mask.\nTo clear all tags, provide an empty list and include \"spec.custom_tags\" in the update_mask.\nTo preserve existing tags, omit this field from the update_mask (or use wildcard \"*\" which auto-excludes empty tags).",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag"
                       },
                       "default_branch": {
+                        "description": "[Beta] The full resource path for the default branch of the project\nFormat: projects/{project_id}/branches/{branch_id}",
                         "$ref": "#/$defs/string"
                       },
                       "default_endpoint_settings": {
+                        "description": "[Beta] A collection of settings for a compute endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings"
                       },
                       "display_name": {
+                        "description": "[Beta] Human-readable project name. Length should be between 1 and 256 characters.",
                         "$ref": "#/$defs/string"
                       },
                       "enable_pg_native_login": {
+                        "description": "[Beta] Whether to enable PG native password login on all endpoints in this project. Defaults to false.",
                         "$ref": "#/$defs/bool"
                       },
                       "history_retention_duration": {
+                        "description": "[Beta] The number of seconds to retain the shared history for point in time recovery for all branches in this project. Value should be between 172800s (2 days) and 3024000s (35 days).",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       },
                       "lifecycle": {
@@ -1872,12 +2049,15 @@
                         "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "pg_version": {
+                        "description": "[Beta] The major Postgres version number. The set of supported versions may vary; consult the API documentation for currently accepted values.",
                         "$ref": "#/$defs/int"
                       },
                       "project_id": {
+                        "description": "The ID to use for the project; becomes the final component of the project's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `my-app` becomes `projects/my-app`.",
                         "$ref": "#/$defs/string"
                       },
                       "purge_on_delete": {
+                        "description": "When true, permanently delete the project when the bundle is destroyed. When false or unset, the project is soft deleted and can be restored within its retention window.",
                         "$ref": "#/$defs/bool"
                       }
                     },
@@ -1898,15 +2078,15 @@
                     "type": "object",
                     "properties": {
                       "attributes": {
-                        "description": "The desired API-exposed Postgres role attributes to associate with the role.",
+                        "description": "[Beta] The desired API-exposed Postgres role attributes to associate with the role.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAttributes"
                       },
                       "auth_method": {
-                        "description": "How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.",
+                        "description": "[Beta] How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAuthMethod"
                       },
                       "identity_type": {
-                        "description": "The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.",
+                        "description": "[Beta] The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleIdentityType"
                       },
                       "lifecycle": {
@@ -1914,7 +2094,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "membership_roles": {
-                        "description": "Standard roles that this role is a member of.",
+                        "description": "[Beta] Standard roles that this role is a member of.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole"
                       },
                       "parent": {
@@ -1922,7 +2102,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "postgres_role": {
-                        "description": "The name of the Postgres role. Required when creating the role.",
+                        "description": "[Beta] The name of the Postgres role. Required when creating the role.",
                         "$ref": "#/$defs/string"
                       },
                       "replace_existing": {
@@ -1952,43 +2132,63 @@
                     "type": "object",
                     "properties": {
                       "accelerated_sync": {
-                        "$ref": "#/$defs/bool"
+                        "description": "[Private Preview] When true, enables accelerated sync mode for the initial data load.\nThis significantly improves performance for large tables.\nRequires workspace-level enablement through Lakebase Accelerated Sync preview.",
+                        "$ref": "#/$defs/bool",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "branch": {
+                        "description": "[Beta] The full resource name the branch associated with the table.\n\nFormat: \"projects/{project_id}/branches/{branch_id}\".",
                         "$ref": "#/$defs/string"
                       },
                       "create_database_objects_if_missing": {
+                        "description": "[Beta] If true, the synced table's logical database and schema resources in PG\nwill be created if they do not already exist.\nThe request will fail if this is false and the database/schema do not exist.\n\nDefaults to true if omitted.",
                         "$ref": "#/$defs/bool"
                       },
                       "existing_pipeline_id": {
+                        "description": "[Beta] ID of an existing pipeline to bin-pack this synced table into.\nAt most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nThe pipeline used for the synced table is returned via the top level pipeline_id attribute.",
                         "$ref": "#/$defs/string"
+                      },
+                      "extra_columns": {
+                        "description": "[Private Preview] Extra PostgreSQL-only columns to add to the synced table.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecExtraColumn",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "lifecycle": {
                         "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "new_pipeline_spec": {
+                        "description": "[Beta] Specification for creating a new pipeline.\nAt most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nThe pipeline used for the synced table is returned via the top level pipeline_id attribute.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.NewPipelineSpec"
                       },
                       "postgres_database": {
+                        "description": "[Beta] The Postgres database name where the synced table will be created in.\n\nIf this synced table is created inside a Lakebase Catalog, this attribute can be omitted on creation and is inferred\nfrom the postgres_database associated with the Lakebase Catalog. If specified when inside a Lakebase Catalog, the value must match.\n\nA value must be specified when creating a synced table inside a Standard Catalog.",
                         "$ref": "#/$defs/string"
                       },
                       "primary_key_columns": {
+                        "description": "[Beta] Primary Key columns to be used for data insert/update in the destination.",
                         "$ref": "#/$defs/slice/string"
                       },
                       "scheduling_policy": {
+                        "description": "[Beta] Scheduling policy of the underlying pipeline.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy"
                       },
                       "source_table_full_name": {
+                        "description": "[Beta] Three-part (catalog, schema, table) name of the source Delta table.\n\nFor the corresponding destination table, use any of the two:\n\n* synced_table_id used at the creation of the SyncedTable\n* \"name\" consisting of \"synced_tables/\" prefix and the full name of the destination table.",
                         "$ref": "#/$defs/string"
                       },
                       "synced_table_id": {
+                        "description": "The ID to use for the synced table; becomes the final component of the synced table's resource name. It is the synced table name, a `{catalog}.{schema}.{table}` tuple of Unity Catalog entity names.\n\nIt names both an online view in Unity Catalog, accessible through Lakehouse Federation, and a Postgres table named `{table}` in schema `{schema}` in the connected Postgres database.",
                         "$ref": "#/$defs/string"
                       },
                       "timeseries_key": {
+                        "description": "[Beta] Time series key to deduplicate (tie-break) rows with the same primary key.",
                         "$ref": "#/$defs/string"
                       },
                       "type_overrides": {
+                        "description": "[Beta] Override the default Delta-\u003ePG type mapping for specific columns.\nA TypeOverride with PG_SPECIFIC_TYPE_UNSPECIFIED is rejected; a valid pg_type must be set.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecTypeOverride"
                       }
                     },
@@ -2208,6 +2408,63 @@
                       "name"
                     ],
                     "markdownDescription": "The schema resource type allows you to define Unity Catalog [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your jobs and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](https://docs.databricks.com/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.Secret": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "A secret stored in Unity Catalog. Secrets are three-level namespace objects\n(catalog.schema.secret) that securely store sensitive credential data such as\npasswords, tokens, and keys.",
+                    "properties": {
+                      "catalog_name": {
+                        "description": "[Public Preview] The name of the catalog where the schema and the secret reside.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "comment": {
+                        "description": "[Public Preview] User-provided free-form text description of the secret.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "expire_time": {
+                        "description": "[Public Preview] User-provided expiration time of the secret. Purely informational; does not trigger automatic actions.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      },
+                      "grants": {
+                        "description": "The grants to apply on this secret.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
+                      },
+                      "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "name": {
+                        "description": "[Public Preview] The name of the secret, relative to its parent schema.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "owner": {
+                        "description": "[Public Preview] The owner of the secret. Defaults to the creating principal on creation. Can be updated to\ntransfer ownership of the secret to another principal.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "schema_name": {
+                        "description": "[Public Preview] The name of the schema where the secret resides.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "value": {
+                        "description": "[Public Preview] The secret value to store. Must be a variable reference (e.g. ${var.my_secret}) to prevent plain-text secrets in configuration files.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "catalog_name",
+                      "name",
+                      "schema_name",
+                      "value"
+                    ]
                   },
                   {
                     "type": "string",
@@ -2472,11 +2729,11 @@
                       },
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission",
                         "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "target_qps": {
-                        "description": "[Public Preview] Target QPS for the endpoint. Mutually exclusive with num_replicas.\nThe actual replica count is calculated at index creation/sync time based on this value.\nBest-effort target; the system does not guarantee this QPS will be achieved.",
+                        "description": "Target QPS for the endpoint. Mutually exclusive with num_replicas.\nThe actual replica count is calculated at index creation/sync time based on this value.\nBest-effort target; the system does not guarantee this QPS will be achieved.",
                         "$ref": "#/$defs/int64"
                       },
                       "usage_policy_id": {
@@ -2490,6 +2747,35 @@
                     "required": [
                       "endpoint_type",
                       "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.VectorSearchEndpointPermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorSearchEndpointPermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
                     ]
                   },
                   {
@@ -2814,7 +3100,7 @@
                       "markdownDescription": "The definition of the bundle deployment. For supported attributes see [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
                     },
                     "engine": {
-                      "description": "The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is \"terraform\".",
+                      "description": "The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is \"direct\".",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config/engine.EngineType"
                     },
                     "git": {
@@ -3097,8 +3383,13 @@
                     "genie_spaces": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieSpace"
                     },
+                    "instance_pools": {
+                      "description": "The instance pool definitions for the bundle, where each key is the name of the instance pool.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.InstancePool",
+                      "markdownDescription": "The instance pool definitions for the bundle, where each key is the name of the instance pool. See [instance_pools](https://docs.databricks.com/dev-tools/bundles/resources.html#instance_pools)."
+                    },
                     "job_runs": {
-                      "description": "The job run definitions for the bundle, where each key is the name of the job run. Each job run triggers a run of an existing job as part of bundle deployment.",
+                      "description": "The job run definitions for the bundle, where each key is the name of the job run. Each job run triggers a run of an existing job as part of bundle deployment.\n\nThe deployment waits for the run to finish and fails if it does not succeed, so other resources can reference the run's outcome, for example `${resources.job_runs.\u003cname\u003e.state.result_state}`. A run that did not succeed is run again on the next deployment.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.JobRun"
                     },
                     "jobs": {
@@ -3122,6 +3413,7 @@
                       "markdownDescription": "The pipeline definitions for the bundle, where each key is the name of the pipeline. See [pipelines](https://docs.databricks.com/dev-tools/bundles/resources.html#pipelines)."
                     },
                     "postgres_branches": {
+                      "description": "The Postgres branch definitions for the bundle, where each key is the name of the branch. Each entry defines a branch of a Lakebase Autoscaling project, holding its own copy of the project's databases and roles.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
                     },
                     "postgres_catalogs": {
@@ -3129,15 +3421,19 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresCatalog"
                     },
                     "postgres_databases": {
+                      "description": "The Postgres database definitions for the bundle, where each key is the name of the database. Each entry defines a database on a Lakebase Autoscaling branch.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresDatabase"
                     },
                     "postgres_endpoints": {
+                      "description": "The Postgres endpoint definitions for the bundle, where each key is the name of the endpoint. Each entry defines a compute endpoint that serves queries for a Lakebase Autoscaling branch.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint"
                     },
                     "postgres_projects": {
+                      "description": "The Postgres project definitions for the bundle, where each key is the name of the project. Each entry defines a Lakebase Autoscaling project, the top-level container for branches, endpoints, databases, and roles.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresProject"
                     },
                     "postgres_roles": {
+                      "description": "The Postgres role definitions for the bundle, where each key is the name of the role. Each entry defines a role on a Lakebase Autoscaling branch, optionally backed by a Databricks identity.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresRole"
                     },
                     "postgres_synced_tables": {
@@ -3163,6 +3459,11 @@
                       "description": "The secret scope definitions for the bundle, where each key is the name of the secret scope.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SecretScope",
                       "markdownDescription": "The secret scope definitions for the bundle, where each key is the name of the secret scope. See [secret_scopes](https://docs.databricks.com/dev-tools/bundles/resources.html#secret_scopes)."
+                    },
+                    "secrets": {
+                      "description": "The Unity Catalog secret definitions for the bundle, where each key is the name of the secret.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Secret",
+                      "markdownDescription": "The Unity Catalog secret definitions for the bundle, where each key is the name of the secret. See [secrets](https://docs.databricks.com/dev-tools/bundles/resources.html#secrets)."
                     },
                     "sql_warehouses": {
                       "description": "The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.",
@@ -4079,11 +4380,6 @@
                     "MEDIUM",
                     "LARGE",
                     "XLARGE"
-                  ],
-                  "enumDescriptions": [
-                    "",
-                    "",
-                    "[Private Preview]"
                   ]
                 },
                 {
@@ -5003,7 +5299,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.AzureAvailability"
                     },
                     "capacity_reservation_group": {
-                      "description": "[Public Preview] The Azure capacity reservation group resource ID to use for launching VMs.\nWhen specified, VMs will be launched using the provided capacity reservation.\n\nCapacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not\nmanaged by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:\n1. Microsoft.Compute/capacityReservationGroups/read\n2. Microsoft.Compute/capacityReservationGroups/deploy/action\n3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read\n4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action\n\nFormat: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`",
+                      "description": "The Azure capacity reservation group resource ID to use for launching VMs.\nWhen specified, VMs will be launched using the provided capacity reservation.\n\nCapacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not\nmanaged by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:\n1. Microsoft.Compute/capacityReservationGroups/read\n2. Microsoft.Compute/capacityReservationGroups/deploy/action\n3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read\n4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action\n\nFormat: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`",
                       "$ref": "#/$defs/string"
                     },
                     "first_on_demand": {
@@ -5151,6 +5447,10 @@
                     "data_security_mode": {
                       "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n* `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n\nThe following modes are legacy aliases for the above modes:\n\n* `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.\n* `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode"
+                    },
+                    "dependency_mode": {
+                      "description": "[Beta] Controls dependency configuration for the cluster.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DependencyMode"
                     },
                     "docker_image": {
                       "description": "Custom docker image BYOC",
@@ -5331,6 +5631,118 @@
                   "additionalProperties": false,
                   "required": [
                     "destination"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.DependencyMode": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Controls dependency configuration for the cluster.\n\n* `DEPENDENCY_MODE_AUTO`: Databricks will choose the most appropriate dependency mode based on your compute configuration.\n* `DEPENDENCY_MODE_ENVIRONMENTS`: Enables a unified dependency management experience across classic and serverless, resulting in increased stability and performance. Supported only on DBR 19+ in Standard access mode.\n* `DEPENDENCY_MODE_CLUSTER_LIBRARIES`: Legacy mode: dependencies come from cluster libraries and init scripts.",
+                  "enum": [
+                    "DEPENDENCY_MODE_ENVIRONMENTS",
+                    "DEPENDENCY_MODE_CLUSTER_LIBRARIES",
+                    "DEPENDENCY_MODE_AUTO"
+                  ],
+                  "enumDescriptions": [
+                    "[Beta] Enables a unified dependency management experience across classic and serverless, resulting in increased stability and performance. Supported only on DBR 19+ in Standard access mode.",
+                    "[Beta] Legacy mode: dependencies come from cluster libraries and init scripts.",
+                    "[Beta] \u003cDatabricks\u003e will choose the most appropriate dependency mode based on your compute configuration."
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.DiskSpec": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Describes the disks that are launched for each instance in the spark cluster.\nFor example, if the cluster has 3 instances, each instance is configured to launch\n2 disks, 100 GiB each, then Databricks will launch a total of 6 disks,\n100 GiB each, for this cluster.",
+                  "properties": {
+                    "disk_count": {
+                      "description": "The number of disks launched for each instance:\n- This feature is only enabled for supported node types.\n- Users can choose up to the limit of the disks supported by the node type.\n- For node types with no OS disk, at least one disk must be specified;\notherwise, cluster creation will fail.\n\nIf disks are attached, Databricks will configure Spark to use only the disks for\nscratch storage, because heterogenously sized scratch devices can lead to inefficient disk\nutilization. If no disks are attached, Databricks will configure Spark to use\ninstance store disks.\n\nNote: If disks are specified, then the Spark configuration\n`spark.local.dir` will be overridden.\n\nDisks will be mounted at:\n- For AWS: `/ebs0`, `/ebs1`, and etc.\n- For Azure: `/remote_volume0`, `/remote_volume1`, and etc.",
+                      "$ref": "#/$defs/int"
+                    },
+                    "disk_iops": {
+                      "description": "The number of IOPS to provision for each attached disk.",
+                      "$ref": "#/$defs/int"
+                    },
+                    "disk_size": {
+                      "description": "The size of each disk (in GiB) launched for each instance.\nValues must fall into the supported range for a particular instance type.\n\nFor AWS:\n- General Purpose SSD: 100 - 4096 GiB\n- Throughput Optimized HDD: 500 - 4096 GiB\n\nFor Azure:\n- Premium LRS (SSD): 1 - 1023 GiB\n- Standard LRS (HDD): 1- 1023 GiB",
+                      "$ref": "#/$defs/int"
+                    },
+                    "disk_throughput": {
+                      "description": "The disk throughput to provision for each attached disk, in MB per second.",
+                      "$ref": "#/$defs/int"
+                    },
+                    "disk_type": {
+                      "description": "The type of disks that will be launched with this cluster.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DiskType"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.DiskType": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Describes the disk type.",
+                  "properties": {
+                    "azure_disk_volume_type": {
+                      "description": "All Azure Disk types that Databricks supports.\nSee https://docs.microsoft.com/en-us/azure/storage/storage-about-disks-and-vhds-linux#types-of-disks",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DiskTypeAzureDiskVolumeType"
+                    },
+                    "ebs_volume_type": {
+                      "description": "All EBS volume types that Databricks supports.\nSee https://aws.amazon.com/ebs/details/ for details.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DiskTypeEbsVolumeType"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.DiskTypeAzureDiskVolumeType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "All Azure Disk types that Databricks supports.\nSee https://docs.microsoft.com/en-us/azure/storage/storage-about-disks-and-vhds-linux#types-of-disks",
+                  "enum": [
+                    "PREMIUM_LRS",
+                    "STANDARD_LRS"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.DiskTypeEbsVolumeType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "All EBS volume types that Databricks supports.\nSee https://aws.amazon.com/ebs/details/ for details.",
+                  "enum": [
+                    "GENERAL_PURPOSE_SSD",
+                    "THROUGHPUT_OPTIMIZED_HDD"
                   ]
                 },
                 {
@@ -5584,6 +5996,139 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.InstancePoolAwsAttributes": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Attributes set during instance pool creation which are related to Amazon Web Services.",
+                  "properties": {
+                    "availability": {
+                      "description": "Availability type used for the spot nodes.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.InstancePoolAwsAttributesAvailability"
+                    },
+                    "instance_profile_arn": {
+                      "description": "[Beta] All AWS instances belonging to the instance pool will have this instance profile. If omitted, instances\nwill initially be launched with the workspace's default instance profile. If defined, clusters that use the\npool will inherit the instance profile, and must not specify their own instance profile on cluster creation or\nupdate. If the pool does not specify an instance profile, clusters using the pool may specify any instance profile.\nThe instance profile must have previously been added to the Databricks environment by an account administrator.\n\nThis feature may only be available to certain customer plans.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "spot_bid_price_percent": {
+                      "description": "Calculates the bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.",
+                      "$ref": "#/$defs/int"
+                    },
+                    "zone_id": {
+                      "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.InstancePoolAwsAttributesAvailability": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The set of AWS availability types supported when setting up nodes for a cluster.",
+                  "enum": [
+                    "SPOT",
+                    "ON_DEMAND"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.InstancePoolAzureAttributes": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Attributes set during instance pool creation which are related to Azure.",
+                  "properties": {
+                    "availability": {
+                      "description": "Availability type used for the spot nodes.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.InstancePoolAzureAttributesAvailability"
+                    },
+                    "capacity_reservation_group": {
+                      "description": "The Azure capacity reservation group resource ID to use for launching VMs in this pool.\nWhen specified, VMs will be launched using the provided capacity reservation.\n\nNOTE: Omitting this field will clear any existing configured capacity reservation group on the pool.\n\nCapacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not\nmanaged by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:\n1. Microsoft.Compute/capacityReservationGroups/read\n2. Microsoft.Compute/capacityReservationGroups/deploy/action\n3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read\n4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action\n\nFormat: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`",
+                      "$ref": "#/$defs/string"
+                    },
+                    "spot_bid_max_price": {
+                      "description": "With variable pricing, you have option to set a max price, in US dollars (USD)\nFor example, the value 2 would be a max price of $2.00 USD per hour.\nIf you set the max price to be -1, the VM won't be evicted based on price.\nThe price for the VM will be the current price for spot or the price for a standard VM,\nwhich ever is less, as long as there is capacity and quota available.",
+                      "$ref": "#/$defs/float64"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.InstancePoolAzureAttributesAvailability": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The set of Azure availability types supported when setting up nodes for a cluster.",
+                  "enum": [
+                    "SPOT_AZURE",
+                    "ON_DEMAND_AZURE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.InstancePoolGcpAttributes": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Attributes set during instance pool creation which are related to GCP.",
+                  "properties": {
+                    "gcp_availability": {
+                      "description": "This field determines whether the instance pool will contain preemptible\nVMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.GcpAvailability"
+                    },
+                    "local_ssd_count": {
+                      "description": "If provided, each node in the instance pool will have this number of local SSDs attached.\nEach local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds)\nfor the supported number of local SSDs for each instance type.",
+                      "$ref": "#/$defs/int"
+                    },
+                    "zone_id": {
+                      "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west1-a\". The provided availability\nzone must be in the same region as the Databricks workspace. For example, \"us-west1-a\"\nis not a valid zone id if the Databricks workspace resides in the \"us-east1\" region.\nThis is an optional field at instance pool creation, and if not specified, a default zone will be used.\n\nThis field can be one of the following:\n- \"HA\" =\u003e High availability, spread nodes across availability zones for a Databricks deployment region\n- A GCP availability zone =\u003e Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones (e.g. \"us-west1-a\").\n\nIf empty, Databricks picks an availability zone to schedule the cluster on.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.InstancePoolPermissionLevel": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Permission level",
+                  "enum": [
+                    "CAN_MANAGE",
+                    "CAN_ATTACH_TO"
+                  ]
                 },
                 {
                   "type": "string",
@@ -6274,7 +6819,7 @@
                       "doNotSuggest": true
                     },
                     "size": {
-                      "description": "[Private Preview] Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\nor PG_SPECIFIC_TYPE_HALFVEC (specifies the vector dimension, e.g., 1024).",
+                      "description": "[Private Preview] Size parameter for the target type, for types that take one (e.g. vector\ndimension, varchar length). Required when the chosen pg_type needs a size.",
                       "$ref": "#/$defs/int",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
@@ -6436,29 +6981,27 @@
                   "type": "object",
                   "description": "AiRuntimeTask: multi-node GPU compute task definition for Databricks AI\nRuntime workloads.\n\nJobs-framework-level concepts (retries, per-task timeout, idempotency\ntoken, usage/budget policy, permissions) live on the surrounding\nTaskSettings / run-submit request and are intentionally NOT duplicated\nhere. Users compose `ai_runtime_task` with the standard Jobs/DABs task\nwrapper to get those.",
                   "properties": {
-                    "deployments": {
-                      "description": "[Private Preview] Deployment specs for this task. Exactly one deployment is currently\nsupported (a single entry where every node runs the same command); this\nis a current-Preview constraint. Role-split workloads (driver + worker,\nparameter server, separate eval node, etc.) with multiple entries are the\neventual intent but not yet supported.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.DeploymentSpec",
+                    "code_source_path": {
+                      "description": "[Private Preview] Workspace or UC volume path of the code-source archive, unpacked on\neach node and exposed through `$CODE_SOURCE`. Set by first-party\ntooling; not for direct callers.",
+                      "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
+                    },
+                    "deployments": {
+                      "description": "[Public Preview] Deployment specs for this task. Exactly one deployment is currently\nsupported (a single entry where every node runs the same command); this\nis a current-Preview constraint. Role-split workloads (driver + worker,\nparameter server, separate eval node, etc.) with multiple entries are the\neventual intent but not yet supported.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.DeploymentSpec"
                     },
                     "experiment": {
-                      "description": "[Private Preview] MLflow experiment name for this run. If an experiment with this name\nalready exists under the calling user, the run is appended to it;\notherwise a new experiment is created. To target a specific MLflow\nstorage location (for example, when running as a service principal), set\n`mlflow_experiment_directory`.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] MLflow experiment name for this run. If an experiment with this name\nalready exists under the calling user, the run is appended to it;\notherwise a new experiment is created. To target a specific MLflow\nstorage location (for example, when running as a service principal), set\n`mlflow_experiment_directory`.",
+                      "$ref": "#/$defs/string"
                     },
                     "mlflow_experiment_directory": {
-                      "description": "[Private Preview] Optional workspace directory under which the MLflow experiment named in\n`experiment` is created. Must start with `/Workspace`. Set this when\nrunning as a service principal that has no default user directory; for\nregular users the experiment defaults to the user's home directory.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Optional workspace directory under which the MLflow experiment named in\n`experiment` is created. Must start with `/Workspace`. Set this when\nrunning as a service principal that has no default user directory; for\nregular users the experiment defaults to the user's home directory.",
+                      "$ref": "#/$defs/string"
                     },
                     "mlflow_run": {
-                      "description": "[Private Preview] Optional display name for the MLflow run created under `experiment`. If\nomitted, MLflow generates a default name.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Optional display name for the MLflow run created under `experiment`. If\nomitted, MLflow generates a default name.",
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false,
@@ -6640,16 +7183,12 @@
                   "description": "ComputeSpec: compute configuration — accelerator type and total\naccelerator count across all nodes.",
                   "properties": {
                     "accelerator_count": {
-                      "description": "[Private Preview] Total number of accelerators across all nodes. Must be a positive\nmultiple of the per-node accelerator count encoded in `accelerator_type`.\nFor example, `GPU_8xH100` with `accelerator_count: 16` allocates 2 nodes\n(8 GPUs per node).",
-                      "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Total number of accelerators across all nodes. Must be a positive\nmultiple of the per-node accelerator count encoded in `accelerator_type`.\nFor example, `GPU_8xH100` with `accelerator_count: 16` allocates 2 nodes\n(8 GPUs per node).",
+                      "$ref": "#/$defs/int"
                     },
                     "accelerator_type": {
-                      "description": "[Private Preview] Hardware accelerator type (for example, `GPU_1xA10` or `GPU_8xH100`).\nThe number of accelerators per node is encoded in the enum value —\n`GPU_8xH100` means 8 H100 GPUs per node.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ComputeSpecAcceleratorType",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Hardware accelerator type (for example, `GPU_1xA10` or `GPU_8xH100`).\nThe number of accelerators per node is encoded in the enum value —\n`GPU_8xH100` means 8 H100 GPUs per node.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ComputeSpecAcceleratorType"
                     }
                   },
                   "additionalProperties": false,
@@ -6675,9 +7214,9 @@
                     "GPU_8xH100"
                   ],
                   "enumDescriptions": [
-                    "[Private Preview]",
-                    "[Private Preview]",
-                    "[Private Preview]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -6948,22 +7487,16 @@
                   "description": "DeploymentSpec: configuration for one deployment within an AiRuntimeTask.\nEach entry in `AiRuntimeTask.deployments` describes a group of nodes that\nshare the same command and compute. Many single-program training\nalgorithms use a single entry where every node runs the same command;\nrole-split workloads (driver + worker, parameter server, separate eval\nnode, etc.) use multiple entries.",
                   "properties": {
                     "command_path": {
-                      "description": "[Private Preview] Workspace path of the script to run on each node in this deployment.\nUpload the script to this path and supply the path here. When the task\nruns, the file at this path is run on each node; if it fails, the task\nfails with its exit code.\n\nExample script contents:\n\n# Plain Python:\npython train.py --epochs 10\n\n# Multi-GPU via accelerate:\naccelerate launch train.py --config config.yaml\n\n# Distributed via torchrun:\ntorchrun --nproc_per_node=8 train.py",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Workspace path of the script to run on each node in this deployment.\nUpload the script to this path and supply the path here. When the task\nruns, the file at this path is run on each node; if it fails, the task\nfails with its exit code.\n\nExample script contents:\n\n# Plain Python:\npython train.py --epochs 10\n\n# Multi-GPU via accelerate:\naccelerate launch train.py --config config.yaml\n\n# Distributed via torchrun:\ntorchrun --nproc_per_node=8 train.py",
+                      "$ref": "#/$defs/string"
                     },
                     "compute": {
-                      "description": "[Private Preview] Compute resources allocated to each node in this deployment.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ComputeSpec",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Compute resources allocated to each node in this deployment.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ComputeSpec"
                     },
                     "name": {
-                      "description": "[Private Preview] Optional human-readable name for this deployment (for example, `driver`,\n`worker`, `param_server`). Used for log and UI display. Distinct names\nare recommended so deployments can be told apart, but uniqueness is not\nenforced.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Optional human-readable name for this deployment (for example, `driver`,\n`worker`, `param_server`). Used for log and UI display. Distinct names\nare recommended so deployments can be told apart, but uniqueness is not\nenforced.",
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false,
@@ -7212,6 +7745,12 @@
                     "new_cluster": {
                       "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec"
+                    },
+                    "serverless_compute_id": {
+                      "description": "[Private Preview] The ID of the serverless compute object to bind this cluster to. At most one\nJobCluster per job may set this field; the rate limit defined on the referenced\nserverless compute applies across all tasks bound to this cluster.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false,
@@ -8624,10 +9163,8 @@
                   "type": "object",
                   "properties": {
                     "ai_runtime_task": {
-                      "description": "[Private Preview] The task runs a multi-node GPU compute workload on Databricks AI Runtime.\nExternal-facing surface; mirrors the AIR CLI (fka SGCLI) v2 YAML schema.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AiRuntimeTask",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] The task runs a multi-gpu compute workload on Databricks AI Runtime. Specify\nthe accelerator type and count, the command to run, and where the workload's\ncode and MLflow output are stored.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AiRuntimeTask"
                     },
                     "alert_task": {
                       "description": "[Public Preview] The task evaluates a Databricks alert and sends notifications to subscribers\nwhen the `alert_task` field is present.",
@@ -9133,7 +9670,7 @@
                       "doNotSuggest": true
                     },
                     "table_prefix": {
-                      "description": "[Private Preview] The prefix for the trace tables, which are named\n`{catalog}.{schema}.{table_prefix}_otel_*`. May only contain letters,\ndigits, and underscores, and may be at most 238 characters. When unset, a\nserver-generated prefix derived from the experiment ID is used.",
+                      "description": "[Private Preview] The prefix for the trace tables, which are named\n`{catalog}.{schema}.{table_prefix}_otel_*`. May only contain letters,\ndigits, and underscores, and may be at most 238 characters. When unset, a\nserver-generated prefix derived from the experiment ID is used and this\nfield stays empty on read; the resolved value is always available in\n`effective_table_prefix`.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
@@ -9253,6 +9790,12 @@
                     "outlook_options": {
                       "description": "[Private Preview] Outlook specific options for ingestion",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "reddit_ads_options": {
+                      "description": "[Private Preview] Reddit Ads specific options for ingestion",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RedditAdsOptions",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     },
@@ -9927,6 +10470,33 @@
                     "table_configuration": {
                       "description": "[Public Preview] Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.IngestionPipelineDefinitionFanoutOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Fanout configuration for multi-table routing from streaming sources.\nRoutes each input record to a destination table based on a routing\nkey derived from the record. The key value becomes the table name\nsuffix: {destination_catalog}.{destination_schema}.{key_value}.",
+                  "properties": {
+                    "fanout_by": {
+                      "description": "[Private Preview] Column path or SQL expression whose value determines the destination table.\nSupports dotted paths (e.g. \"value.event_name\") and expressions\n(e.g. \"value:event_name::string\").",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "transforms": {
+                      "description": "[Private Preview] Optional transforms applied to each route's DataFrame before writing\nto the destination table.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
@@ -10829,6 +11399,66 @@
                 }
               ]
             },
+            "pipelines.RedditAdsOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Reddit Ads specific options for ingestion",
+                  "properties": {
+                    "custom_report_options": {
+                      "description": "[Private Preview] (Optional) Custom report definition. When set, the table is treated as a\nuser-defined Reddit Ads custom report. When unset, the table must match\none of the connector's prebuilt sources.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RedditAdsOptionsRedditAdsCustomReportOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "lookback_window_days": {
+                      "description": "[Private Preview] (Optional) Number of days to look back for report tables during incremental sync\nto capture late-arriving conversions and attribution data.\nIf not specified, defaults to 30 days.",
+                      "$ref": "#/$defs/int",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sync_start_date": {
+                      "description": "[Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.\nIf not specified, defaults to 2 years ago.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.RedditAdsOptionsRedditAdsCustomReportOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "User-defined custom report for the Reddit Ads connector.\nApplies only to the custom_report table — prebuilt tables ignore this.",
+                  "properties": {
+                    "breakdowns": {
+                      "description": "[Private Preview] (Optional) Breakdown dimensions to group report data by.\nExamples: CAMPAIGN_ID, DATE, COUNTRY, REGION, AD_ID.\nMust include at least one time dimension (DATE or HOUR).",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "fields": {
+                      "description": "[Private Preview] (Optional) Fields to include in the report (maps to the Reddit Ads API `fields` parameter).\nExamples: IMPRESSIONS, CLICKS, SPEND, CPC, CTR.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.ReportSpec": {
               "oneOf": [
                 {
@@ -10942,6 +11572,12 @@
                     "destination_schema": {
                       "description": "[Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.",
                       "$ref": "#/$defs/string"
+                    },
+                    "fanout_options": {
+                      "description": "[Private Preview] Fanout options for multi-table routing from streaming sources.\nWhen set, records are routed to destination tables based on a\nper-record routing key. The key value becomes the table name:\n{destination_catalog}.{destination_schema}.{key_value}.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionFanoutOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     },
                     "source_catalog": {
                       "description": "[Public Preview] The source catalog name. Might be optional depending on the type of source.",
@@ -11633,15 +12269,15 @@
                   "description": "Attributes that can be granted to a Postgres role. We are only implementing a subset for now, see xref:\nhttps://www.postgresql.org/docs/16/sql-createrole.html\nThe values follow Postgres keyword naming e.g. CREATEDB, BYPASSRLS, etc. which is why they don't include typical\nunderscores between words.",
                   "properties": {
                     "bypassrls": {
-                      "description": "[Beta]",
+                      "description": "[Beta] Grants the Postgres `BYPASSRLS` attribute, which lets the role bypass every row-level security policy.",
                       "$ref": "#/$defs/bool"
                     },
                     "createdb": {
-                      "description": "[Beta]",
+                      "description": "[Beta] Grants the Postgres `CREATEDB` attribute, which lets the role create databases.",
                       "$ref": "#/$defs/bool"
                     },
                     "createrole": {
-                      "description": "[Beta]",
+                      "description": "[Beta] Grants the Postgres `CREATEROLE` attribute, which lets the role create, alter, and drop other roles.",
                       "$ref": "#/$defs/bool"
                     }
                   },
@@ -11715,6 +12351,67 @@
                 }
               ]
             },
+            "postgres.SyncedTableSyncedTableSpecExtraColumn": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "An extra PostgreSQL column to add to the synced table.",
+                  "properties": {
+                    "column_name": {
+                      "description": "[Private Preview] Name of the column.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "column_type": {
+                      "description": "[Private Preview] PostgreSQL type of the column, for example \"tsvector\" or \"vector(1024)\".",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "compute": {
+                      "description": "[Private Preview] SQL expression used to compute the column's value, for example\n\"to_tsvector('english', content)\".",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "maintenance": {
+                      "description": "[Private Preview] How the column's value is populated and kept up to date.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecExtraColumnMaintenance",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "column_name",
+                    "column_type"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.SyncedTableSyncedTableSpecExtraColumnMaintenance": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "How the column's value is populated and kept up to date.",
+                  "enum": [
+                    "STORED_GENERATED"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "postgres.SyncedTableSyncedTableSpecPgSpecificType": {
               "oneOf": [
                 {
@@ -11770,7 +12467,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecPgSpecificType"
                     },
                     "size": {
-                      "description": "[Beta] Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\nor PG_SPECIFIC_TYPE_HALFVEC (specifies the vector dimension, e.g., 1024).",
+                      "description": "[Beta] Size parameter for the target type, for types that take one (e.g. vector\ndimension, varchar length). Required when the chosen pg_type needs a size.",
                       "$ref": "#/$defs/int"
                     }
                   },
@@ -12964,6 +13661,14 @@
                     "inference_table_config": {
                       "description": "[Public Preview] Configuration for inference table payload logging, including sampling.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.TelemetryInferenceTableConfig"
+                    },
+                    "table_names": {
+                      "description": "[Public Preview] The Unity Catalog tables to which endpoint telemetry (logs, traces, and metrics) is exported.\nProvide this to create a new telemetry profile for the endpoint from the given tables.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.UnityCatalogTableNames"
+                    },
+                    "telemetry_profile_id": {
+                      "description": "[Public Preview] The ID of an existing telemetry profile to apply to this endpoint. Provide this to reuse a\ntelemetry profile that has already been created, instead of specifying table_names.",
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
@@ -13001,6 +13706,36 @@
                     "routes": {
                       "description": "The list of routes that define traffic to each served entity.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.Route"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.UnityCatalogTableNames": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "annotations_table": {
+                      "description": "[Public Preview] The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported annotations.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "logs_table": {
+                      "description": "[Public Preview] The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported logs.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "metrics_table": {
+                      "description": "[Public Preview] The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported metrics.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "traces_table": {
+                      "description": "[Public Preview] The full three-level Unity Catalog name (catalog.schema.table) of the table that receives\nexported traces (spans).",
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
@@ -13057,6 +13792,42 @@
                   "enum": [
                     "ACTIVE",
                     "DELETED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertStatementParameter": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Redash-owned copy of the internal StatementParameter for the external AlertV2 API.\nThe internal `ordinal` and `args` fields are intentionally omitted: the public API\nsupports only flat, named scalar parameters; complex types (ARRAY, MAP, STRUCT) are\nnot supported. This mirrors SEA's public StatementParameter schema, see:\ncmdexec/sql-exec-api/proto/sql_exec_api_service.proto:763-779",
+                  "properties": {
+                    "name": {
+                      "description": "[Private Preview] The name of the parameter, referenced in the query as `:name`.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "type": {
+                      "description": "[Private Preview] The SQL data type of the parameter, e.g. STRING, INT, or DATE. Defaults to STRING. This is a\nstring rather than an enum because scalar subtypes such as DECIMAL(10, 4) cannot be enumerated.\nComplex types such as ARRAY, MAP, and STRUCT are not supported.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "value": {
+                      "description": "[Private Preview] The bound value for the parameter, given as a string. If omitted, the value is interpreted as NULL.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
                   ]
                 },
                 {
@@ -13627,6 +14398,23 @@
                 }
               ]
             },
+            "vectorsearch.VectorSearchEndpointPermissionLevel": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Permission level",
+                  "enum": [
+                    "CAN_CREATE",
+                    "CAN_MANAGE",
+                    "CAN_USE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "workspace.AzureKeyVaultSecretScopeMetadata": {
               "oneOf": [
                 {
@@ -13861,6 +14649,20 @@
                     }
                   ]
                 },
+                "resources.InstancePool": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.InstancePool"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.Job": {
                   "oneOf": [
                     {
@@ -14077,6 +14879,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Schema"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.Secret": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Secret"
                       }
                     },
                     {
@@ -14321,6 +15137,20 @@
                     }
                   ]
                 },
+                "resources.InstancePoolPermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.InstancePoolPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.JobPermission": {
                   "oneOf": [
                     {
@@ -14425,6 +15255,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.VectorSearchEndpointPermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission"
                       }
                     },
                     {
@@ -14542,6 +15386,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.RegisteredModelAlias"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "compute.DockerImage": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DockerImage"
                     }
                   },
                   {
@@ -14942,6 +15800,20 @@
                   }
                 ]
               },
+              "pipelines.Transformer": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "postgres.ProjectCustomTag": {
                 "oneOf": [
                   {
@@ -14962,6 +15834,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "postgres.SyncedTableSyncedTableSpecExtraColumn": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecExtraColumn"
                     }
                   },
                   {
@@ -15060,6 +15946,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "sql.AlertStatementParameter": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertStatementParameter"
                     }
                   },
                   {

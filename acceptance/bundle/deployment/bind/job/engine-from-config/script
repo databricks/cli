@@ -3,6 +3,8 @@
 # bundle.engine is set to "direct" in databricks.yml.
 # Both deploy and bind should use the direct engine.
 
+unset DATABRICKS_BUNDLE_ENGINE
+
 trace $CLI bundle deploy
 
 echo "=== State files after deploy ==="

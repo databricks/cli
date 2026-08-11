@@ -1,12 +1,12 @@
 
->>> [CLI] environments setup-local --serverless-version v4 --dry-run --output json
+>>> [CLI] environments setup-local --serverless-version 4 --dry-run --output json
 {
   "schemaVersion": 1,
   "command": "environments setup-local",
   "ok": true,
   "mode": "default",
   "dryRun": true,
-  "target": {
+  "compute": {
     "source": "serverless",
     "serverlessVersion": "v4",
     "envKey": "serverless/serverless-v4"
@@ -50,5 +50,5 @@
   ],
   "warnings": [],
   "error": null,
-  "durationMs": 0
+  "durationMs": [DURATION_MS]
 }

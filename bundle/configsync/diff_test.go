@@ -3,6 +3,8 @@ package configsync
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -244,6 +246,60 @@ func TestMatchPattern(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := matchPattern(tt.pattern, tt.path)
 			assert.Equal(t, tt.want, got, "matchPattern(%q, %q)", tt.pattern, tt.path)
+		})
+	}
+}
+
+// ExtractChanges must skip permissions/grants sub-resources: they are emitted as
+// their own plan keys but cannot be written back to YAML, and resolving them
+// (e.g. the server-populated object_id field, or a bundle-level permissions entry
+// with no per-resource YAML node) otherwise fails the whole sync.
+func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
+	ctx := t.Context()
+
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.jobs.my_job": {
+			Changes: deployplan.Changes{
+				"description": {Action: deployplan.Update, New: nil, Remote: "remote-desc"},
+			},
+		},
+		"resources.jobs.my_job.permissions": {
+			Changes: deployplan.Changes{
+				"object_id": {Action: deployplan.Update, New: nil, Remote: "/jobs/123"},
+			},
+		},
+		"resources.schemas.my_schema.grants": {
+			Changes: deployplan.Changes{
+				"[0].privileges": {Action: deployplan.Update, New: nil, Remote: []any{"SELECT"}},
+			},
+		},
+		// A resource literally named "permissions" is a regular resource, not a
+		// permissions sub-resource, so its changes must be kept (structural
+		// classification via config.GetNodeAndType, not a suffix match).
+		"resources.jobs.permissions": {
+			Changes: deployplan.Changes{
+				"description": {Action: deployplan.Update, New: nil, Remote: "kept"},
+			},
+		},
+	}}
+
+	for _, eng := range []engine.EngineType{engine.EngineDirect, engine.EngineTerraform} {
+		t.Run(string(eng), func(t *testing.T) {
+			changes, err := ExtractChanges(ctx, &bundle.Bundle{}, plan, eng)
+			require.NoError(t, err)
+
+			_, hasPerms := changes["resources.jobs.my_job.permissions"]
+			assert.False(t, hasPerms, "permissions sub-resource must be skipped")
+			_, hasGrants := changes["resources.schemas.my_schema.grants"]
+			assert.False(t, hasGrants, "grants sub-resource must be skipped")
+
+			job, hasJob := changes["resources.jobs.my_job"]
+			require.True(t, hasJob, "regular resource changes must be kept")
+			assert.Contains(t, job, "description")
+
+			namedPerms, hasNamedPerms := changes["resources.jobs.permissions"]
+			require.True(t, hasNamedPerms, "a resource named permissions must not be skipped")
+			assert.Contains(t, namedPerms, "description")
 		})
 	}
 }

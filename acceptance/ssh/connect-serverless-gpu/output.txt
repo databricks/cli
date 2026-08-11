@@ -27,6 +27,7 @@
             "serverless": "true",
             "sessionId": "serverless-gpu-test",
             "shutdownDelay": "10m0s",
+            "usagePolicyId": "",
             "version": "[CLI_VERSION]"
           },
           "notebook_path": "/Workspace/Users/[USERNAME]/.databricks/ssh-tunnel/[CLI_VERSION]/serverless-gpu-test/ssh-server-bootstrap"

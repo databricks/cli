@@ -77,3 +77,4 @@ go.work.sum
 tools/gofumpt
 .claude/worktrees/
 .worktrees/
+.isaac/

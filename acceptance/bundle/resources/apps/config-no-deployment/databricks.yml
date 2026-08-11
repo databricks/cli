@@ -1,0 +1,14 @@
+bundle:
+  name: app-config-no-deployment
+
+resources:
+  apps:
+    myapp:
+      name: test-app-config-no-deployment
+      description: my_app_description
+      source_code_path: ./app
+      config:
+        command: ["python", "app.py"]
+        env:
+          - name: MY_ENV_VAR
+            value: test_value

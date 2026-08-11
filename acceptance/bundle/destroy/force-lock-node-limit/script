@@ -1,0 +1,15 @@
+# When the workspace .bundle directory is at its child-node limit, writing the
+# deploy.lock file fails with a 403 MAX_CHILD_NODE_SIZE_EXCEEDED. A plain destroy
+# aborts on this, but `destroy --force-lock` tolerates it and proceeds lock-less
+# so the deployment can still be torn down (which is what frees up capacity).
+
+title "Deploy (creates the job and the deployment)"
+trace $CLI bundle deploy
+
+title "destroy without --force-lock (lock write hits the node limit: aborts)"
+fault.py "POST /api/2.0/workspace-files/import-file/*" 403 0 1 MAX_CHILD_NODE_SIZE_EXCEEDED
+trace errcode $CLI bundle destroy --auto-approve
+
+title "destroy with --force-lock (tolerates the node limit: proceeds and completes)"
+fault.py "POST /api/2.0/workspace-files/import-file/*" 403 0 1 MAX_CHILD_NODE_SIZE_EXCEEDED
+trace $CLI bundle destroy --force-lock --auto-approve

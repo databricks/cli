@@ -1,5 +1,79 @@
 # Version changelog
 
+## Release v1.11.0 (2026-08-06)
+
+### CLI
+
+ * Fixed `databricks repos get/update/delete` failing with `object at path "..." is not a repo` for Git-CLI-enabled folders (currently in preview), which the workspace API reports as directories rather than repos ([#6181](https://github.com/databricks/cli/pull/6181)).
+ * Support `dbfs:/Skills/...` paths in `databricks fs` commands, routed to the Files API. ([#6147](https://github.com/databricks/cli/pull/6147))
+
+### Bundles
+
+ * For jobs where `ai_runtime_task.code_source_path` is a relative path to a local directory, the directory is now packaged into a tarball (honoring `.gitignore` and `sync.include`/`sync.exclude`), uploaded during deployment, and `code_source_path` is rewritten to the uploaded workspace path. ([#6110](https://github.com/databricks/cli/pull/6110))
+ * Added JSON output to `bundle init`. Running `databricks bundle init <template> -o json` now reports the files the template wrote, relative to the output directory. This lets callers that pass `--output-dir` learn where the template materialized instead of assuming the output is a single directory named after the project. The default text output is unchanged. ([#6161](https://github.com/databricks/cli/pull/6161))
+ * The terraform deployment engine is deprecated and will stop working in a future version of the CLI. Setting `bundle.engine: terraform` now emits a deprecation warning. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct for how to migrate to the direct deployment engine. ([#6099](https://github.com/databricks/cli/pull/6099))
+ * Fixed the direct deployment engine planning a spurious `create` for an empty `grants: []` list. Terraform records no grants resource for such a list, so `bundle plan` after `bundle deployment migrate` no longer reports an action for it. Emptying a previously deployed list still revokes the grants, after which the node is dropped from the deployment state instead of being reported as unchanged forever. ([#6039](https://github.com/databricks/cli/pull/6039))
+ * Fixed `bundle generate` downloading notebooks found inside a folder without their file extension. They are now exported like top-level notebooks, so a Python notebook lands as `notebook.py` instead of an extensionless file ([#6144](https://github.com/databricks/cli/pull/6144)).
+ * direct: `webhook_notifications.on_*` destinations on jobs, tasks, and `for_each_task` are now compared as unordered sets. Previously the Jobs API returning these lists in a different order than submitted produced a phantom diff that `bundle plan` and `bundle deploy` could never converge past, reporting `1 to change` on every run ([#6060](https://github.com/databricks/cli/pull/6060)).
+ * Fixed a pipeline with `allow_duplicate_names: true` never converging on the direct engine: the field is only accepted on create/update and is never returned by the pipelines GET API, so every subsequent `bundle plan` reported the pipeline as a perpetual update. ([#6076](https://github.com/databricks/cli/pull/6076))
+ * direct: A local change to an input-only field (one the API accepts on write but never returns on read, e.g. pipelines' `run_as` or external locations' `skip_validation`) is no longer silently skipped when the new value coincidentally matches the field's fabricated remote value. Previously such a change could hit the `remote_already_set` shortcut and be dropped from the plan. ([#6112](https://github.com/databricks/cli/pull/6112))
+ * Revert usage of RedactiveSenstiveFields (added in [#5896](https://github.com/databricks/cli/pull/5896), released in 1.10.0) which lead to incorrect behaviour (permanent drift) for duration field in Postgres resources ([#6179](https://github.com/databricks/cli/pull/6179)).
+ * Document postgres resource fields in the json schema ([#6164](https://github.com/databricks/cli/pull/6164), [#6163](https://github.com/databricks/cli/pull/6163)).
+ * direct: Recreating a `vector_search_indexes` resource no longer fails with "Index ... is currently pending deletion" when the backend has not yet released the index name. The create is now retried until the name becomes available. ([#6143](https://github.com/databricks/cli/pull/6143))
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.165.0 to v0.166.0. ([#6175](https://github.com/databricks/cli/pull/6175))
+ * Upgrade Terraform provider to 1.124.0. ([#6174](https://github.com/databricks/cli/pull/6174))
+
+
+## Release v1.10.0 (2026-07-29)
+
+### CLI
+
+ * `ssh connect` now supports specifying a serverless usage policy with `--usage-policy-id`
+
+### Bundles
+
+ * Fixed `bundle deploy`/`bundle destroy` failing when an app enters the transient DELETING state between plan and apply (e.g. with a saved plan); the delete is now treated as complete instead of erroring (direct engine only).
+ * Fixed `bundle deploy`/`bundle destroy` failing when an app is still in the transient DELETING state; the delete is now treated as complete instead of erroring (direct engine only).
+ * `bundle destroy --force-lock` now proceeds without a deployment lock when the workspace directory is at its child-node limit and cannot accept the lock file, so a deployment can still be torn down when the workspace is full.
+ * Empty-string values on optional (omitempty) resource fields are now dropped before deployment instead of being sent to the backend. This fixes deploys failing with errors like `'' is not a valid cluster policy ID` when a field such as `policy_id` was set to `""` (often via a variable that resolved to an empty string). The behavior now matches between the terraform and direct engines and is reflected in `bundle validate -o json`.
+ * `bundle validate` and `bundle deploy` now reject a grant that is missing a `principal` with an error instead of a warning. Previously the deploy would start and, on the direct engine, create the securable before the grants PATCH failed (`400 INVALID_PARAMETER_VALUE`), leaving a partially-applied deployment.
+ * `bundle validate` and `bundle deploy` now reject a grant with an empty `privileges` list with an error. Previously, on the direct engine, such a grant never converged: the backend drops principals with no privileges, so every subsequent `bundle plan` reported the grant as a perpetual update.
+ * Fixes [#6030](https://github.com/databricks/cli/issues/6030): spurious `update` on catalog/schema/volume grants (direct engine); a principal granted `ALL_PRIVILEGES` no longer drifts when the backend also reports the concrete privileges it implies ([#6064](https://github.com/databricks/cli/pull/6064)).
+ * Use vector search endpoint permission types that are supported by the backend ([#6022](https://github.com/databricks/cli/pull/6022)).
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.160.0 to v0.165.0.
+ * Upgrade Terraform provider to 1.123.0
+
+
+## Release v1.9.0 (2026-07-22)
+
+### CLI
+
+ * `databricks auth profiles` no longer stalls on an unreachable workspace and instead fails validation after 5 seconds per host ([#5928](https://github.com/databricks/cli/pull/5928)).
+ * Fixed `databricks fs rm -r` failing on UC Volumes backed by GCS when a directory becomes empty during recursive deletion ([#5958](https://github.com/databricks/cli/pull/5958)).
+ * You can now ask questions about your data directly from the CLI with `databricks genie ask "..."`. Genie answers natural-language questions ("what were total sales last month?", "which tables are in the sales catalog?"), runs the query inside Databricks, and renders the answer in the terminal. This promotes the former `databricks experimental genie ask` command; the experimental alias still works but is deprecated and will be removed in a future release ([#6010](https://github.com/databricks/cli/pull/6010)).
+
+### Bundles
+
+ * `bundle validate` now reports a clear error when a `sql_warehouse` is missing a `name` (including whitespace-only names), and a warning when a grant is missing a `principal` ([#5818](https://github.com/databricks/cli/pull/5818)).
+ * Bundle templates now scaffold an `AGENTS.md` that points coding agents at Databricks AI Tools, alongside a minimal `CLAUDE.md` that includes it via `@AGENTS.md` ([#5996](https://github.com/databricks/cli/pull/5996)).
+ * `bundle generate job` can now download workspace files referenced by `spark_python_task`, rewriting them to a relative path like it already does for notebooks. This is opt-in via the `--download-spark-python-files` flag ([#5799](https://github.com/databricks/cli/pull/5799)).
+ * Simplified the `default-minimal` bundle template and added an alias `databricks bundle init empty` ([#5899](https://github.com/databricks/cli/pull/5899)).
+ * Add support for the `instance_pools` resource type in Declarative Automation Bundles. Instance pools are only supported in direct deployment mode.
+ * Do not emit "unknown field" warnings for YAML anchors grouped in a list or map, matching the existing suppression for standalone anchors ([#5975](https://github.com/databricks/cli/pull/5975)).
+ * Provide an actionable error message if databricks.yml is missing or DATABRICKS_BUNDLE_ROOT is invalid ([#5953](https://github.com/databricks/cli/pull/5953)).
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.154.0 to v0.160.0 ([#5982](https://github.com/databricks/cli/pull/5982)).
+ * Bump Terraform provider from v1.121.0 to v1.122.0 ([#5977](https://github.com/databricks/cli/pull/5977)).
+
+
 ## Release v1.8.0 (2026-07-15)
 
 ### Notable Changes

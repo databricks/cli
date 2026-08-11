@@ -1,10 +1,1 @@
 Cloud = true
-
-# These tests exercise platform-independent bundle logic (bind/unbind, deploy/destroy
-# sequencing). Some pass Unix-style paths and use MSYS_NO_PATHCONV or a leading "//"
-# to stop Git Bash from mangling them on Windows, but that is test scaffolding to make
-# the tests portable, not OS-specific product behavior under test (output is identical
-# on every OS). So on pull requests they run on Linux only to keep the windows/macOS
-# CI jobs fast; they still run on every OS on push to main.
-GOOSOnPR.windows = false
-GOOSOnPR.darwin = false

@@ -34,7 +34,8 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 var destroyApprovalGroups = []approvalGroup{
 	{group: "schemas", message: deleteSchemaMessage},
-	{group: "pipelines", message: deletePipelineMessage},
+	// Pipelines are handled separately in approvalForDestroy so the message reflects each
+	// pipeline's cascade_on_destroy setting; see logPipelineDeleteApproval.
 	{group: "volumes", message: deleteVolumeMessage},
 	{group: "database_instances", message: deleteDatabaseInstanceMessage},
 	{group: "synced_database_tables", message: deleteSyncedDatabaseTableMessage},
@@ -45,7 +46,44 @@ var destroyApprovalGroups = []approvalGroup{
 	{group: "genie_spaces", message: deleteGenieSpaceMessage},
 }
 
-func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
+// logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
+// a note that datasets will be deleted as well.
+func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action, engine engine.EngineType) error {
+	pipelineDeletes := filterGroup(actions, "pipelines", deployplan.Delete)
+
+	var cascading, retaining []deployplan.Action
+	for _, a := range pipelineDeletes {
+		cascade, err := pipelineDeletionCascades(b, a, engine)
+		if err != nil {
+			return err
+		}
+		if cascade {
+			cascading = append(cascading, a)
+		} else {
+			retaining = append(retaining, a)
+		}
+	}
+
+	for _, grp := range []struct {
+		message string
+		actions []deployplan.Action
+	}{
+		{deletePipelineWithCascadeMessage, cascading},
+		{deletePipelineNoCascadeMessage, retaining},
+	} {
+		if len(grp.actions) == 0 {
+			continue
+		}
+		cmdio.LogString(ctx, grp.message)
+		for _, a := range grp.actions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+	return nil
+}
+
+func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (bool, error) {
 	deleteActions := plan.GetActions()
 
 	// Deletes of resources that are already gone remotely only clean up the state,
@@ -69,6 +107,9 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	}
 
 	logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
+	if err := logPipelineDeleteApproval(ctx, b, deleteActions, engine); err != nil {
+		return false, err
+	}
 
 	cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
 	cmdio.LogString(ctx, "")
@@ -126,7 +167,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		return
 	}
 
-	bundle.ApplyContext(ctx, b, lock.Acquire())
+	bundle.ApplyContext(ctx, b, lock.Acquire(lock.GoalDestroy))
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -174,7 +215,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		}
 	}
 
-	hasApproval, err := approvalForDestroy(ctx, b, plan)
+	hasApproval, err := approvalForDestroy(ctx, b, plan, engine)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return

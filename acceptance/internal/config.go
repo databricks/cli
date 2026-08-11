@@ -37,19 +37,10 @@ type TestConfig struct {
 	// If absent, default to true.
 	GOOS map[string]bool
 
-	// Like GOOS, but only consulted when the test run is triggered by a GitHub
-	// pull_request event. Each string is compared against runtime.GOOS; if absent,
-	// default to true. This lets an OS-independent test run on Linux only for pull
-	// requests while still running on every OS on push to main.
-	GOOSOnPR map[string]bool
-
 	// Which Clouds the test is enabled on. Allowed values: "aws", "azure", "gcp".
 	// If absent, default to true.
 	// Only checked if CLOUD_ENV is not empty.
 	CloudEnvs map[string]bool
-
-	// If true, run this test when running locally with a testserver
-	Local *bool
 
 	// If true, run this test when running with cloud env configured
 	Cloud *bool
@@ -88,6 +79,10 @@ type TestConfig struct {
 	// Record the requests made to the server and write them as output to
 	// out.requests.txt
 	RecordRequests *bool
+
+	// If true, local runs route the CLI through the recording proxy (libs/testproxy)
+	// instead of straight to the testserver, matching the cloud topology.
+	Proxy *bool
 
 	// List of request headers to include when recording requests.
 	IncludeRequestHeaders []string
@@ -256,6 +251,22 @@ func validateConfig(t *testing.T, config TestConfig, configPath string) {
 			t.Fatalf("Invalid config %s: Ignore pattern %q targets output files (out*). "+
 				"Output files must not be ignored.", configPath, pattern)
 		}
+	}
+
+	// Reject EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []. It runs the test once
+	// locally with the variable unset, but on CI (which splits work by
+	// filtering ENVFILTER=DATABRICKS_BUNDLE_ENGINE=<value>) the test has no
+	// engine tag, so checkEnvFilters lets it through on BOTH the direct and
+	// terraform runners, duplicating the run. Use ["direct"] to pin it to a
+	// single CI runner, and unset DATABRICKS_BUNDLE_ENGINE in the script if
+	// the test needs to exercise the default engine.
+	//
+	// selftests intentionally exercise the empty-list mechanic and are
+	// exempt.
+	if vals, ok := config.EnvMatrix["DATABRICKS_BUNDLE_ENGINE"]; ok && len(vals) == 0 && !strings.Contains(configPath, "selftest/") {
+		t.Fatalf("Invalid config %s: EnvMatrix.DATABRICKS_BUNDLE_ENGINE = [] "+
+			"runs on both direct and terraform CI runners. Use "+
+			`EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"] instead`, configPath)
 	}
 }
 

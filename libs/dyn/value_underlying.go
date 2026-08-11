@@ -40,9 +40,16 @@ func (v Value) MustSequence() []Value {
 
 // AsString returns the underlying string if this value is a string,
 // the zero value and false otherwise.
+// For sensitive values (stored as [secretString]) it returns the real plaintext.
 func (v Value) AsString() (string, bool) {
-	vv, ok := v.v.(string)
-	return vv, ok
+	switch vv := v.v.(type) {
+	case string:
+		return vv, true
+	case secretString:
+		return vv.value, true
+	default:
+		return "", false
+	}
 }
 
 // MustString returns the underlying string if this value is a string,

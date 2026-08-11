@@ -1,5 +1,0 @@
-# Re-enable on pull requests (the parent integration_whl/ dir opts out): kept for
-# symmetry with the serverless variants so both cluster modes exercise the wheel
-# deploy path (uv venv activation) on windows/macOS for PRs.
-GOOSOnPR.windows = true
-GOOSOnPR.darwin = true

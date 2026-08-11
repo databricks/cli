@@ -134,7 +134,19 @@ Resource: resources.pipelines.my_pipeline
   "files_changed_count": 1,
   "files_written_count": 1,
   "refs_retargeted": 1,
-  "refs_from_siblings": 7
+  "refs_from_siblings": 7,
+  "state_serial": [SERIAL],
+  "state_lineage": "[UUID]",
+  "state_source": "local",
+  "states_available_count": 2,
+  "state_resource_ids": {
+    "resource_job_ids": [
+      "[MY_JOB_ID]"
+    ],
+    "resource_pipeline_ids": [
+      "[MY_PIPELINE_ID]"
+    ]
+  }
 }
 
 >>> [CLI] bundle destroy --auto-approve
@@ -143,7 +155,7 @@ The following resources will be deleted:
   delete resources.pipelines.my_pipeline
 
 This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
   delete resources.pipelines.my_pipeline
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default

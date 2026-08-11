@@ -89,6 +89,10 @@ var (
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_USE",
 		},
+		"instance_pools": {
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_ATTACH_TO",
+		},
 	}
 )
 

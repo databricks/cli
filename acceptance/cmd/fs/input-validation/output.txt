@@ -1,0 +1,18 @@
+
+>>> musterr [CLI] fs cp src dst --concurrency -1
+Error: --concurrency must be at least 1
+
+>>> musterr [CLI] fs cp src dst --concurrency 0
+Error: --concurrency must be at least 1
+
+>>> musterr [CLI] fs cp dbfs:/a https:/b
+Error: invalid scheme: https
+
+>>> musterr [CLI] fs cat dab:/non-existent-file
+Error: invalid scheme: dab
+
+>>> musterr [CLI] fs ls path-without-a-dbfs-scheme --output=json
+Error: no such directory: path-without-a-dbfs-scheme
+
+>>> musterr [CLI] fs cat hello.txt --output=json
+Error: json output not supported

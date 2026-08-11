@@ -15,6 +15,7 @@ var RequiredFields = map[string][]string{
 	"resources.alerts.*.evaluation":                  {"comparison_operator", "source"},
 	"resources.alerts.*.evaluation.source":           {"name"},
 	"resources.alerts.*.evaluation.threshold.column": {"name"},
+	"resources.alerts.*.parameters[*]":               {"name"},
 	"resources.alerts.*.permissions[*]":              {"level"},
 	"resources.alerts.*.schedule":                    {"quartz_cron_schedule", "timezone_id"},
 
@@ -66,6 +67,9 @@ var RequiredFields = map[string][]string{
 	"resources.external_locations.*": {"credential_name", "name", "url"},
 
 	"resources.genie_spaces.*.permissions[*]": {"level"},
+
+	"resources.instance_pools.*":                {"instance_pool_name", "node_type_id"},
+	"resources.instance_pools.*.permissions[*]": {"level"},
 
 	"resources.job_runs.*":       {"job_id"},
 	"resources.job_runs.*.queue": {"enabled"},
@@ -248,6 +252,7 @@ var RequiredFields = map[string][]string{
 	"resources.postgres_roles.*": {"role_id", "parent"},
 
 	"resources.postgres_synced_tables.*":                   {"synced_table_id"},
+	"resources.postgres_synced_tables.*.extra_columns[*]":  {"column_name", "column_type"},
 	"resources.postgres_synced_tables.*.type_overrides[*]": {"column_name", "pg_type"},
 
 	"resources.quality_monitors.*":                   {"assets_dir", "output_schema_name", "table_name"},
@@ -261,6 +266,8 @@ var RequiredFields = map[string][]string{
 	"resources.secret_scopes.*":                   {"name"},
 	"resources.secret_scopes.*.keyvault_metadata": {"dns_name", "resource_id"},
 	"resources.secret_scopes.*.permissions[*]":    {"level"},
+
+	"resources.secrets.*": {"catalog_name", "name", "schema_name", "value"},
 
 	"resources.sql_warehouses.*.permissions[*]": {"level"},
 

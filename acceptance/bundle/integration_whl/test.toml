@@ -1,15 +1,4 @@
-Local = true
 CloudSlow = true
-
-# The OS-specific surface here is the wheel build path (uv venv layout: .venv/Scripts
-# vs .venv/bin, and the python3->python alias; see venv_activate in
-# acceptance/script.prepare). That path is identical across every variant, so on pull
-# requests we run only a couple of representative building variants on windows/macOS
-# (serverless and interactive_cluster_dynamic_version re-enable themselves) and skip
-# the rest, which vary only OS-independent bundle logic. All still run on every OS on
-# push to main.
-GOOSOnPR.windows = false
-GOOSOnPR.darwin = false
 
 # Workspace file system does not allow initializing python envs on it.
 # I suspect something about the default python env on DBR interferes with it.

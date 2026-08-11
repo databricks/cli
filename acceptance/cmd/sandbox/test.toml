@@ -5,8 +5,9 @@
 # otherwise produce these on every run.
 Ignore = [".databricks", ".ssh"]
 
-# Sandbox commands are independent of the bundle engine. Override the
-# root EnvMatrix so the two engines don't both run in parallel for
-# every sandbox test — when they did, they raced each other writing
-# to the same ~/.databricks/sandbox.json file.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
+# Sandbox commands are independent of the bundle engine. Pin to a single
+# value so the two engines don't both run in parallel for every sandbox
+# test — when they did, they raced each other writing to the same
+# ~/.databricks/sandbox.json file. An empty list would run once locally
+# but on both direct and terraform CI runners, defeating the point.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

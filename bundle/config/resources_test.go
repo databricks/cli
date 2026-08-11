@@ -201,6 +201,9 @@ func TestResourcesBindSupport(t *testing.T) {
 		Clusters: map[string]*resources.Cluster{
 			"my_cluster": {},
 		},
+		InstancePools: map[string]*resources.InstancePool{
+			"my_instance_pool": {},
+		},
 		Dashboards: map[string]*resources.Dashboard{
 			"my_dashboard": {},
 		},
@@ -235,6 +238,15 @@ func TestResourcesBindSupport(t *testing.T) {
 		SecretScopes: map[string]*resources.SecretScope{
 			"my_secret_scope": {
 				Name: "0",
+			},
+		},
+		Secrets: map[string]*resources.Secret{
+			"my_secret": {
+				Secret: catalog.Secret{
+					CatalogName: "main",
+					SchemaName:  "default",
+					Name:        "my_secret",
+				},
 			},
 		},
 		SqlWarehouses: map[string]*resources.SqlWarehouse{
@@ -353,6 +365,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockExternalLocationsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockSchemasAPI().EXPECT().GetByFullName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockClustersAPI().EXPECT().GetByClusterId(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockInstancePoolsAPI().EXPECT().GetByInstancePoolId(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockGenieAPI().EXPECT().GetSpace(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVolumesAPI().EXPECT().Read(mock.Anything, mock.Anything).Return(nil, nil)
@@ -377,6 +390,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockSecretsUcAPI().EXPECT().GetSecret(mock.Anything, mock.Anything).Return(&catalog.Secret{FullName: "0"}, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {

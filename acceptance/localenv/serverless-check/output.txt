@@ -1,11 +1,5 @@
 
->>> [CLI] environments setup-local --serverless-version v4 --dry-run
-preflight  ok  check
-resolve    ok  source=serverless envKey=serverless/serverless-v4
-fetch      ok  source=[DATABRICKS_URL]/serverless/serverless-v4/pyproject.toml fromCache=false
-merge      ok
-provision  ok
-validate   ok
+>>> [CLI] environments setup-local --serverless-version 4 --dry-run
 Plan: [TEST_TMP_DIR]/pyproject.toml
   changed region: requires-python
   changed region: tool.uv.constraint-dependencies

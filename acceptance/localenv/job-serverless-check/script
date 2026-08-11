@@ -1,1 +1,1 @@
-trace $CLI environments setup-local --job-id 12345 --dry-run
+trace $CLI environments setup-local --job-task 12345.transform --dry-run

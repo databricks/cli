@@ -18,6 +18,7 @@ import (
 // install_test.go.
 var (
 	promptAgentSelection     = defaultPromptAgentSelection
+	promptProceed            = defaultPromptProceed
 	installSkillsForAgentsFn = installer.InstallSkillsForAgents
 	installPluginForAgentFn  = installer.InstallPluginForAgent
 	recordPluginInstallsFn   = installer.RecordPluginInstalls
@@ -36,6 +37,21 @@ const (
 	// deliverySkip does nothing for the agent and explains why.
 	deliverySkip
 )
+
+// String returns the delivery name used in `list --output json`, so the install
+// plan and the list output name the same thing the same way.
+func (d delivery) String() string {
+	switch d {
+	case deliveryPlugin:
+		return "plugin"
+	case deliverySkills:
+		return "skills"
+	case deliverySkip:
+		return "skip"
+	default:
+		return "unknown"
+	}
+}
 
 // agentPlanItem is the resolved plan for one agent: what we'll do and why.
 type agentPlanItem struct {
@@ -67,7 +83,7 @@ func NewInstallCmd() *cobra.Command {
 
 By default this installs the databricks plugin through each agent's own CLI
 (Claude Code, Codex, GitHub Copilot). Agents without a headless plugin install
-(OpenCode, Antigravity, Cursor) get raw skill files.
+(` + strings.Join(agents.SkillsOnlyNames(), ", ") + `) get raw skill files.
 
 Escape hatches:
   --skills-only          Force raw skill files for every agent (no plugin).
@@ -79,7 +95,7 @@ Agent selection:
   (unset, interactive)   A picker over all known agents, detected ones pre-checked.
   (unset, non-interactive) Act on every detected agent.
 
-Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity`,
+Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -142,7 +158,7 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 			// In the interactive picker path, show a plan summary and confirm.
 			if !explicit && cmdio.IsPromptSupported(ctx) {
 				printPlanSummary(ctx, plan, scope)
-				proceed, err := cmdio.AskYesOrNo(ctx, "Proceed?")
+				proceed, err := promptProceed()
 				if err != nil {
 					return err
 				}
@@ -252,6 +268,18 @@ func agentStateLabel(s agents.DisplayState) string {
 	default:
 		return "not found"
 	}
+}
+
+func defaultPromptProceed() (bool, error) {
+	proceed := true
+	err := huh.NewConfirm().
+		Title("Proceed?").
+		Value(&proceed).
+		Run()
+	if err != nil {
+		return false, err
+	}
+	return proceed, nil
 }
 
 func defaultPromptAgentSelection(_ context.Context, choices []agentChoice) ([]*agents.Agent, error) {
@@ -456,6 +484,6 @@ func resolveAgentNames(_ context.Context, names string) ([]*agents.Agent, error)
 func printNoAgentsMessage(ctx context.Context) {
 	cmdio.LogString(ctx, cmdio.Yellow(ctx, "No supported coding agents found on PATH."))
 	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "Supported: Claude Code, Codex CLI, GitHub Copilot, Cursor, OpenCode, Antigravity.")
+	cmdio.LogString(ctx, "Supported: "+strings.Join(agents.SupportedNames(), ", ")+".")
 	cmdio.LogString(ctx, "Install one, then re-run 'databricks aitools install'.")
 }

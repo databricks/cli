@@ -56,6 +56,7 @@ var databricksTemplates = []Template{
 	{
 		name:        DefaultMinimal,
 		description: "The minimal template, for advanced users",
+		aliases:     []string{"empty"},
 		Reader:      &builtinReader{name: string(DefaultMinimal)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultMinimal}},
 	},

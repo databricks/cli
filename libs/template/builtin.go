@@ -8,6 +8,12 @@ import (
 //go:embed all:templates
 var builtinTemplates embed.FS
 
+// sharedLibraryDir holds definitions shared across templates; it has no schema, so builtin() excludes it.
+const sharedLibraryDir = "common"
+
+// sharedLibraryFS is parsed into every template's namespace by newRenderer.
+var sharedLibraryFS, _ = fs.Sub(builtinTemplates, "templates/"+sharedLibraryDir+"/"+libraryDirName)
+
 // builtinTemplate represents a template that is built into the CLI.
 type builtinTemplate struct {
 	Name string
@@ -29,6 +35,11 @@ func builtin() ([]builtinTemplate, error) {
 	var out []builtinTemplate
 	for _, entry := range entries {
 		if !entry.IsDir() {
+			continue
+		}
+
+		// The shared library dir is not a template; skip it.
+		if entry.Name() == sharedLibraryDir {
 			continue
 		}
 

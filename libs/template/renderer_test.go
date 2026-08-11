@@ -155,6 +155,34 @@ func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 	assert.Equal(t, "shreyas.goenka@databricks.com", strings.Trim(string(b), "\n\r"))
 }
 
+func TestRendererSharedLibraryAndOverride(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	ctx := t.Context()
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/library-override/template", "./testdata/library-override/library")
+	require.NoError(t, err)
+
+	err = r.walk()
+	require.NoError(t, err)
+	out, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = r.persistToDisk(ctx, out)
+	require.NoError(t, err)
+
+	b, err := os.ReadFile(filepath.Join(tmpDir, "out"))
+	require.NoError(t, err)
+	got := string(b)
+
+	// agents_md is defined only in the shared library, so rendering it (a heading)
+	// without error proves the shared library is parsed into the template's namespace.
+	assert.Contains(t, got, "shared: #")
+	// claude_md is defined in both the shared library and this template's own
+	// library; the template's own definition must take precedence.
+	assert.Contains(t, got, "own: OWN WINS")
+}
+
 func TestRendererExecuteTemplate(t *testing.T) {
 	templateText := `"{{.count}} items are made of {{.Material}}".
 {{if eq .Animal "sheep" }}

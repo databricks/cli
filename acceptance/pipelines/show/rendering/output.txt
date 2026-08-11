@@ -1,0 +1,26 @@
+
+=== table output: long note truncated, ragged row blank cell
+
+>>> [CLI] pipelines show main.default.people
+name   id  note
+-----  --  ----------------------------------------
+alice  1   this is a very long note value that e...
+bob    2   
+
+2 rows
+
+=== json output: column order preserved, ragged row padded with null
+
+>>> [CLI] pipelines show main.default.people --output json
+[
+  {
+    "name": "alice",
+    "id": "1",
+    "note": "this is a very long note value that exceeds forty display cells"
+  },
+  {
+    "name": "bob",
+    "id": "2",
+    "note": null
+  }
+]

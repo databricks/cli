@@ -1,13 +1,6 @@
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 
-# These tests assert the telemetry payload emitted on deploy; the output is
-# OS-normalized (see the (linux|darwin|windows) -> [OS] replacement below), so it
-# behaves identically on every OS. On pull requests they run on Linux only to keep
-# the windows/macOS CI jobs fast; they still run on every OS on push to main.
-GOOSOnPR.windows = false
-GOOSOnPR.darwin = false
-
 [Env]
 DATABRICKS_CACHE_ENABLED = 'false'
 

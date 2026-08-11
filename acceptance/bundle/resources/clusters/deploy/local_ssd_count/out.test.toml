@@ -1,7 +1,4 @@
-Local = true
 Cloud = true
-GOOSOnPR.darwin = false
-GOOSOnPR.windows = false
 CloudEnvs.aws = false
 CloudEnvs.azure = false
 CloudEnvs.gcp = true

@@ -148,14 +148,17 @@ func TestAgentChoicesOnlyOffersActionableAgents(t *testing.T) {
 	fakeBinsOnPath(t, "claude")
 	ctx := cmdio.MockDiscard(t.Context())
 
-	// Project scope: only Claude (plugin) supports it; the user-only plugin
-	// agents and files-only agents are not offered as choices.
+	// Project scope: agents that support project-scoped skills are offered (Claude
+	// via plugin; Pi/Gemini via skills). User-only plugin agents and global-only
+	// files agents are not.
 	choices := agentChoices(ctx, installer.ScopeProject, false)
 	var names []string
 	for _, c := range choices {
 		names = append(names, c.agent.Name)
 	}
 	assert.Contains(t, names, agents.NameClaudeCode)
+	assert.Contains(t, names, agents.NamePi)
+	assert.Contains(t, names, agents.NameGemini)
 	assert.NotContains(t, names, agents.NameCursor)
 	assert.NotContains(t, names, agents.NameCodex)
 	assert.NotContains(t, names, agents.NameOpenCode)
@@ -322,6 +325,16 @@ func TestInstallInteractivePickerAndConfirm(t *testing.T) {
 		return nil, nil
 	}
 
+	// The confirm is a huh widget that reads the real terminal, so drive it via
+	// the override rather than piped stdin; assert it was consulted.
+	origProceed := promptProceed
+	t.Cleanup(func() { promptProceed = origProceed })
+	proceedCalled := false
+	promptProceed = func() (bool, error) {
+		proceedCalled = true
+		return true, nil
+	}
+
 	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	defer test.Done()
 	go drainReader(test.Stdout)
@@ -330,15 +343,9 @@ func TestInstallInteractivePickerAndConfirm(t *testing.T) {
 	cmd := NewInstallCmd()
 	cmd.SetContext(telemetry.WithNewLogger(ctx))
 
-	errc := make(chan error, 1)
-	go func() { errc <- cmd.RunE(cmd, nil) }()
-
-	_, err := test.Stdin.WriteString("y\n")
-	require.NoError(t, err)
-	require.NoError(t, test.Stdin.Flush())
-
-	require.NoError(t, <-errc)
+	require.NoError(t, cmd.RunE(cmd, nil))
 	assert.True(t, pickerCalled)
+	assert.True(t, proceedCalled)
 	require.Len(t, *plugins, 1)
 	assert.Equal(t, agents.NameClaudeCode, (*plugins)[0].agent)
 }

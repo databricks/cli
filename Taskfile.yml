@@ -298,7 +298,7 @@ tasks:
       # Validate placement first so a misplaced fragment fails loudly instead of
       # being silently skipped by the renderer (see validate_nextchanges.py).
       - task: check-changelog
-      - "uv run --locked internal/genkit/release_tagging.py --preview"
+      - "uv run --locked internal/genkit/tagging.py --preview"
 
   deadcode:
     desc: Check for dead code
@@ -309,15 +309,16 @@ tasks:
     cmds:
       - ./tools/check_deadcode.py
 
-  check-uv-lock:
-    desc: Fail if a Databricks PyPI proxy URL leaked into a uv.lock
-    # pydabs-codegen reverts this proxy-URL churn after regenerating; this is a
+  check-lockfiles:
+    desc: Fail if a Databricks PyPI proxy URL leaked into a uv.lock or .py.lock
+    # pydabs-codegen reverts this proxy-URL churn after regenerating, and
+    # generate-clijson scrubs it from the genkit tagging locks; this is a
     # backstop against a proxy URL reaching a committed lock any other way.
     cmds:
-      - "! git grep -lF databricks.com -- '*uv.lock'"
+      - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
   checks:
-    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, uv.lock)
+    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, lockfiles)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
     # touching more paths should not race with whitespace/link scanners.
     cmds:
@@ -326,7 +327,7 @@ tasks:
       - task: links
       - task: deadcode
       - task: check-changelog
-      - task: check-uv-lock
+      - task: check-lockfiles
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
@@ -583,19 +584,19 @@ tasks:
     cmds:
       - "go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
-  test-update-aws:
-    desc: Update acceptance test output (integration, requires deco access)
-    sources: *ACC_SOURCES_UPDATE
-    generates: *ACC_GENERATES_UPDATE
-    cmds:
-      - "deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=true go test ./acceptance -run ^TestAccept$ -update -timeout=1h -v"
-
   test-update-all:
     desc: Update all acceptance test outputs
-    # Sequential: both tasks overwrite the same acceptance output files.
     cmds:
       - task: test-update
-      - task: test-update-aws
+
+  # Follows upstream HEAD, so its result changes over time: keep it out of
+  # `generate-check`, which requires byte-for-byte reproducible output.
+  bump-mlops-stacks:
+    desc: Bump the vendored mlops-stacks acceptance template to github.com/databricks/mlops-stacks HEAD
+    cmds:
+      - "./tools/bump_mlops_stacks.py"
+      # The bump rewrites a test input, so refresh that test's golden output.
+      - "go test ./acceptance -run '^TestAccept/bundle/deploy/mlops-stacks' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
   slowest:
     desc: Show 50 slowest tests from last run
@@ -649,7 +650,7 @@ tasks:
   # generic `test` target (the catch-all) instead.
 
   test-exp-aitools:
-    desc: Run aitools (top-level + experimental) unit and acceptance tests
+    desc: Run aitools (top-level + experimental) unit and acceptance tests.
     sources:
       - cmd/aitools/**
       - libs/aitools/**
@@ -893,17 +894,28 @@ tasks:
       - rm .github/workflows/next-changelog.yml
       - mv tagging.py internal/genkit/tagging.py
       - mv tagging.py.lock internal/genkit/tagging.py.lock
-      # The release runs internal/genkit/release_tagging.py, a repo-owned wrapper
-      # that renders CHANGELOG.md from .nextchanges/ around the synced tagging.py.
-      # Point the workflow at it (genkit emits a bare `tagging.py`) and give the
-      # wrapper a matching lock (it declares the same deps).
+      # The release workflow tagging.yml expects tagging.py in a different location
+      # so we rewrite via sed
       - |
         if [ "$(uname)" = "Darwin" ]; then
-          sed -i '' 's|tagging.py|internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
+          sed -i '' 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
         else
-          sed -i 's|tagging.py|internal/genkit/release_tagging.py|g' .github/workflows/tagging.yml
+          sed -i 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
         fi
-      - cp internal/genkit/tagging.py.lock internal/genkit/release_tagging.py.lock
+      # In an environment configured with the internal PyPI proxy, uv bakes the
+      # proxy URL into the resolved locks. Unlike pydabs (which blind-reverts its
+      # locks because codegen never wants to change them), these locks legitimately
+      # track the synced producer's deps, so rewrite only the proxy URL back to the
+      # public registry and preserve any real dependency changes. Glob the lock
+      # files so a future genkit lock is scrubbed without editing this task. The
+      # trailing slash is optional so both proxy URL forms are matched.
+      # check-lockfiles is the backstop if this ever misses.
+      - |
+        if [ "$(uname)" = "Darwin" ]; then
+          sed -i '' 's|https://pypi-proxy.cloud.databricks.com/simple/\{0,1\}|https://pypi.org/simple|g' internal/genkit/*.py.lock
+        else
+          sed -i 's|https://pypi-proxy.cloud.databricks.com/simple/\{0,1\}|https://pypi.org/simple|g' internal/genkit/*.py.lock
+        fi
       - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
       - task: ws
 

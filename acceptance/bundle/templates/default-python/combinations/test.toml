@@ -1,13 +1,5 @@
 Cloud = true
 
-# This matrix (notebook/DLT/python inclusion) tests OS-independent bundle logic; the
-# only OS-specific surface is the wheel build (uv venv layout, bdist_wheel), which is
-# covered on every OS by templates/default-python/integration_classic. So on pull
-# requests these run on Linux only to keep the windows/macOS CI jobs fast; they still
-# run on every OS on push to main.
-GOOSOnPR.windows = false
-GOOSOnPR.darwin = false
-
 Ignore = ["input.json"]
 
 EnvMatrix.READPLAN = ["", "1"]

@@ -1,9 +1,9 @@
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [Env]
-DATABRICKS_LOCALENV_CONSTRAINT_SOURCE = "$DATABRICKS_HOST"
+DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
 
-# A classic-compute job (a single job cluster, no serverless environments)
+# A classic task carries its own new_cluster, so --job-task <id>.<task-key>
 # resolves to that cluster's DBR-derived environment key.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/get"
@@ -12,8 +12,8 @@ Response.Body = '''
   "job_id": 12345,
   "settings": {
     "name": "classic-job",
-    "job_clusters": [
-      {"job_cluster_key": "main", "new_cluster": {"spark_version": "15.4.x-scala2.12", "num_workers": 1}}
+    "tasks": [
+      {"task_key": "ingest", "new_cluster": {"spark_version": "15.4.x-scala2.12", "num_workers": 1}}
     ]
   }
 }

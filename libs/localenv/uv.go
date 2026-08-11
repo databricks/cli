@@ -63,7 +63,7 @@ func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 	m.bin = bin
 
 	// Use --version (not "version") to avoid project-scoped sub-command that requires pyproject.toml.
-	version, err := process.Background(ctx, []string{m.bin, "--version"})
+	version, err := process.Background(ctx, []string{m.bin, "--version"}, process.WithProcessGroup())
 	if err != nil {
 		return "", uvFailure(ErrUvMissing, err, "uv version check")
 	}
@@ -75,12 +75,15 @@ func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 // (process.WithDir("") is a no-op). The index-url is injected only when
 // resolveIndexURL returns non-empty; it returns "" when UV_INDEX_URL is already
 // set, so an explicit value in the environment is never clobbered.
+// WithProcessGroup is applied because uv fans out to its own subprocesses
+// (Python, build backends); on SIGINT/SIGTERM they must be reaped as a group
+// rather than left as orphans holding locks over a half-written .venv.
 func (m *uvManager) runUv(ctx context.Context, args []string, dir string) error {
 	if indexURL := m.resolveIndexURL(ctx); indexURL != "" {
-		_, err := process.Background(ctx, args, process.WithDir(dir), process.WithEnv("UV_INDEX_URL", indexURL))
+		_, err := process.Background(ctx, args, process.WithDir(dir), process.WithEnv("UV_INDEX_URL", indexURL), process.WithProcessGroup())
 		return err
 	}
-	_, err := process.Background(ctx, args, process.WithDir(dir))
+	_, err := process.Background(ctx, args, process.WithDir(dir), process.WithProcessGroup())
 	return err
 }
 
@@ -93,9 +96,13 @@ func (m *uvManager) EnsurePython(ctx context.Context, minor string) error {
 	return nil
 }
 
-// Provision runs `uv sync` inside projectDir to install project dependencies.
-func (m *uvManager) Provision(ctx context.Context, projectDir string) error {
-	args := append([]string{m.bin}, m.syncArgs()...)
+// Provision runs `uv sync` inside projectDir to install project dependencies,
+// pinning the interpreter to pyMinor. Without --python, `uv sync` selects the
+// newest installed interpreter satisfying requires-python (e.g. 3.13 for a
+// ">=3.12" floor), which then fails validation against the 3.12 target; pinning
+// the minor we just installed keeps the venv on the intended version.
+func (m *uvManager) Provision(ctx context.Context, projectDir, pyMinor string) error {
+	args := append([]string{m.bin}, m.syncArgs(pyMinor)...)
 	if err := m.runUv(ctx, args, projectDir); err != nil {
 		return uvFailure(ErrProvision, err, "uv sync")
 	}
@@ -143,14 +150,18 @@ try:
     print("` + validateDBCPrefix + `" + importlib.metadata.version("databricks-connect"))
 except importlib.metadata.PackageNotFoundError:
     print("` + validateDBCPrefix + `")`
-	// --no-project runs the interpreter from the created .venv without re-resolving/syncing
-	// the project's declared dependencies, so validation observes exactly what was installed.
+	// Invoke the venv interpreter directly rather than `uv run`: `uv run` resolves
+	// the interpreter from an active VIRTUAL_ENV / CONDA_PREFIX when one is set
+	// (even with --no-project), which would validate whatever env the caller has
+	// active instead of the .venv we just provisioned. The direct path is exactly
+	// what was installed, so validation observes the real target.
 	out, err := process.Background(ctx,
-		[]string{m.bin, "run", "--no-project", "python", "-c", pyCode},
+		[]string{venvPython(projectDir), "-c", pyCode},
 		process.WithDir(projectDir),
+		process.WithProcessGroup(),
 	)
 	if err != nil {
-		return "", "", uvFailure(ErrValidate, err, "uv run python validation")
+		return "", "", uvFailure(ErrValidate, err, "venv python validation")
 	}
 	pyVer, ok := lineWithPrefix(out, validatePyPrefix)
 	if !ok || pyVer == "" {
@@ -180,9 +191,10 @@ func lineWithPrefix(out, prefix string) (string, bool) {
 	return "", false
 }
 
-// syncArgs returns the argument slice for `uv sync` (without the binary).
-func (m *uvManager) syncArgs() []string {
-	return []string{"sync"}
+// syncArgs returns the argument slice for `uv sync` (without the binary),
+// pinning the interpreter to pyMinor via --python.
+func (m *uvManager) syncArgs(pyMinor string) []string {
+	return []string{"sync", "--python", pyMinor}
 }
 
 // pythonInstallArgs returns the argument slice for `uv python install <minor>`.
@@ -353,7 +365,10 @@ func installUv(ctx context.Context) error {
 	// (~/.local/bin), so record exactly what ran before it fires — visible under
 	// --debug for anyone auditing where uv came from.
 	log.Debugf(ctx, "uv: not found; running installer: %s", strings.Join(cmd, " "))
-	_, err := process.Background(ctx, cmd)
+	// The installer is a shell/PowerShell pipeline that spawns curl and the
+	// downloaded script; reap the whole group on cancellation so an interrupted
+	// install leaves no orphaned downloader behind.
+	_, err := process.Background(ctx, cmd, process.WithProcessGroup())
 	return err
 }
 

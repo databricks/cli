@@ -1,7 +1,0 @@
-# Each stub must fail with "not implemented"; errcode records the exit code.
-
-title "logs"
-errcode trace $CLI experimental air logs 123
-
-title "register-image"
-errcode trace $CLI experimental air register-image my-image:latest

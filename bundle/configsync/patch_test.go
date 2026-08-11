@@ -50,8 +50,9 @@ resources:
 		},
 	}
 
-	fieldChanges, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, skipped, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
+	require.Empty(t, skipped)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)

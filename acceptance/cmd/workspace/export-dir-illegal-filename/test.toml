@@ -1,4 +1,3 @@
-Local = true
 Cloud = false
 
 # This reproduces databricks/cli#5171. The behaviour is OS-specific (see _script),

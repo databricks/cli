@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -79,6 +80,13 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"instance_pools": &resources.InstancePool{
+		CreateInstancePool: compute.CreateInstancePool{
+			InstancePoolName: "my-instance-pool",
+			NodeTypeId:       "i3.xlarge",
+		},
+	},
+
 	"synced_database_tables": &resources.SyncedDatabaseTable{
 		SyncedDatabaseTable: database.SyncedDatabaseTable{
 			Name: "main.myschema.my_synced_table",
@@ -118,6 +126,16 @@ var testConfig map[string]any = map[string]any{
 					Value: "v1",
 				},
 			},
+		},
+	},
+
+	"secrets": &resources.Secret{
+		Secret: catalog.Secret{
+			CatalogName: "main",
+			SchemaName:  "default",
+			Name:        "my_secret",
+			Value:       "my_secret_value",
+			Comment:     "Test secret",
 		},
 	},
 
@@ -434,6 +452,16 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"instance_pools.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &PermissionsState{
+			ObjectID: "/instance-pools/pool-permissions",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
 	"apps.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		waiter, err := client.Apps.Create(ctx, apps.CreateAppRequest{
 			App: apps.App{
@@ -693,6 +721,17 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"secrets.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "secret",
+			FullName:      "main.default.my_secret",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
 	"secret_scopes.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		err := client.Secrets.CreateScope(ctx, workspace.CreateScope{
 			Scope:            "permissions_test_scope",
@@ -875,6 +914,9 @@ type testIgnoreFilter struct {
 }
 
 // newTestIgnoreFilter creates a filter from the adapter's resource configs.
+// It also ignores fields that exist in StateType but not in RemoteType, because
+// those are automatically suppressed by the planner (reason: missing_in_remote)
+// and RemapState cannot populate them from remote state.
 func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 	ignoreFields := make(map[string]bool)
 	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
@@ -885,6 +927,17 @@ func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 			ignoreFields[p.Field.String()] = true
 		}
 	}
+	// Auto-include fields present in StateType but absent from RemoteType.
+	_ = structwalk.WalkType(adapter.StateType(), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
+		if path.IsRoot() {
+			return true
+		}
+		if structaccess.ValidatePattern(adapter.RemoteType(), path) != nil {
+			ignoreFields[path.String()] = true
+			return false
+		}
+		return true
+	})
 	return &testIgnoreFilter{ignoreFields: ignoreFields}
 }
 
@@ -985,7 +1038,14 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, createdID, newState)
 	require.NoError(t, err)
 	if remoteStateFromWaitCreate != nil {
+		// Re-read after the wait: the earlier remote can be stale for resources
+		// whose state settles while WaitAfterCreate blocks (e.g. job_runs).
+		remote, err = adapter.DoRead(ctx, createdID)
+		require.NoError(t, err)
 		require.Equal(t, remote, remoteStateFromWaitCreate)
+
+		remappedState, err = adapter.RemapState(remote)
+		require.NoError(t, err)
 	}
 
 	if adapter.HasDoUpdate() {
@@ -1058,11 +1118,28 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
+	// Apps DoDelete is fire-and-forget: the API returns success while the app
+	// sits in DELETING state for up to ~20 minutes before the record is removed.
+	// A GET on the DELETING app returns the app, not 404 -- the testserver
+	// mirrors that in libs/testserver/apps.go. DoRead therefore still succeeds
+	// here; the planner treats this transient state as gone via ResourceApp.IsGone
+	// so delete/destroy stay idempotent (acceptance/bundle/invariant/{delete,destroy}_idempotent).
+	deleteLeavesDeleting := group == "apps"
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
-	if deleteIsNoop {
+	switch {
+	case deleteIsNoop:
 		require.NoError(t, err)
-	} else {
+		// The resource genuinely still exists, so it must not report as gone.
+		assert.False(t, adapter.IsGone(remoteAfterDelete))
+	case deleteLeavesDeleting:
+		require.NoError(t, err)
+		require.NotNil(t, remoteAfterDelete)
+		// IsGone lets the planner short-circuit the second delete on this
+		// transient DELETING state; this is what keeps the delete/destroy
+		// invariant tests idempotent, so assert the contract directly.
+		assert.True(t, adapter.IsGone(remoteAfterDelete))
+	default:
 		require.Error(t, err)
 		require.Nil(t, remoteAfterDelete)
 	}

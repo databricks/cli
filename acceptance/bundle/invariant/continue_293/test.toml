@@ -13,6 +13,9 @@ EnvMatrixExclude.no_vector_search_index = ["INPUT_CONFIG=vector_search_index.yml
 # genie_spaces resource is not supported on v0.293.0
 EnvMatrixExclude.no_genie_space = ["INPUT_CONFIG=genie_space.yml.tmpl"]
 
+# instance_pools resource is not supported on v0.293.0
+EnvMatrixExclude.no_instance_pool = ["INPUT_CONFIG=instance_pool.yml.tmpl"]
+
 # job_runs resource is not supported on v0.293.0
 EnvMatrixExclude.no_job_run = ["INPUT_CONFIG=job_run.yml.tmpl"]
 

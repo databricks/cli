@@ -1,12 +1,14 @@
 package localenv
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/hexops/gotextdiff"
@@ -47,10 +49,14 @@ type Pipeline struct {
 	ProjectDir        string
 	ConstraintBaseURL string
 	CacheDir          string
-	Flags             TargetFlags
+	Flags             ComputeFlags
 	Bundle            BundleTarget
 	Compute           ComputeClient
 	PM                PackageManager
+
+	// Progress, when non-nil, receives a PhaseStarted call as each phase begins.
+	// Left nil by callers that don't render progress (e.g. --output json).
+	Progress Reporter
 
 	// res accumulates phase statuses and result fields as the run progresses.
 	res *Result
@@ -80,7 +86,44 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 	// Phases start as pending and flip to ok/error as the run progresses.
 	p.res.Phases = initialPhases()
 
+	// Stamp wall time from a defer so every exit path is covered — success, a phase
+	// failure, and the cancellation reclassification below all return through it.
+	start := time.Now()
+	defer func() { p.res.DurationMs = time.Since(start).Milliseconds() }()
+
 	if err := p.run(ctx); err != nil {
+		// A cancelled context means the user or parent interrupted us (SIGINT/
+		// SIGTERM). The phase that was running reports its own failure (e.g. uv
+		// sync exiting on the signal surfaces as E_PROVISION with "signal:
+		// terminated"), which misleads a --json consumer into thinking something
+		// broke. Reclassify to E_CANCELED here — the single funnel where ctx is in
+		// scope — keeping the recorded FailurePhase and diskMutated so the consumer
+		// still knows where we stopped and whether disk was touched.
+		//
+		// The phase's own error is kept as the wrapped cause rather than replaced:
+		// a real failure can race with the signal (uv sync failing on a dependency
+		// conflict while the user gives up and hits Ctrl-C), and that cause is the
+		// only diagnostic there is.
+		if ctx.Err() != nil && p.res.Error != nil {
+			// Snapshot the phase's error *before* overwriting Code/Msg below. uvFailure
+			// folds uv's stderr — the actual diagnostic (e.g. a dependency-conflict
+			// "no solution found") — into Msg, so wrapping only the inner .Err would
+			// drop it, leaving less than main in exactly the racing-failure case this
+			// is meant to preserve. Wrapping the whole original PipelineError keeps
+			// Msg (stderr and all) in the chain.
+			orig := &PipelineError{Code: p.res.Error.Code, Msg: p.res.Error.Msg, Err: p.res.Error.Err}
+			p.res.Error.Code = ErrCanceled
+			p.res.Error.Msg = "interrupted"
+			// Two %w verbs keep both the context error and the phase's original error
+			// matchable by errors.Is, on one line — errors.Join would embed a newline
+			// and break the single-line phase row text mode prints.
+			p.res.Error.Err = fmt.Errorf("%w; %w", ctx.Err(), orig)
+			// fail() already snapshotted the pre-reclassification text into the
+			// errored phase's Detail, which is what text mode prints. Re-sync it so
+			// text and --json agree on cancellation (see PipelineError.MarshalJSON).
+			p.syncFailureDetail()
+			return p.res, p.res.Error
+		}
 		return p.res, err
 	}
 	p.res.OK = true
@@ -97,7 +140,8 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// before any other work so the failure flows through the phase/JSON reporting
 	// (a plain Cobra mutual-exclusion error would print no command JSON object,
 	// which the --output json consumer needs).
-	if err := ValidateTargetFlags(p.Flags); err != nil {
+	p.report(ctx, PhasePreflight)
+	if err := ValidateComputeFlags(p.Flags); err != nil {
 		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "invalid compute target flags"))
 	}
 	// P0 supports only uv; any other detected manager is a clean, non-blaming exit.
@@ -125,13 +169,15 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 
 	// Phase: resolve — compute target → environment key.
-	target, err := p.resolve(ctx)
+	p.report(ctx, PhaseResolve)
+	compute, err := p.resolve(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Phase: fetch — constraint artifact for the resolved env key.
-	c, err := p.fetch(ctx, target)
+	p.report(ctx, PhaseFetch)
+	c, err := p.fetch(ctx, compute)
 	if err != nil {
 		return err
 	}
@@ -159,6 +205,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 
 	// Phase: merge — compute the merged pyproject.toml (in-memory, no writes yet).
+	p.report(ctx, PhaseMerge)
 	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, dbcPin)
 	if err != nil {
 		return err
@@ -180,30 +227,32 @@ func (p *Pipeline) run(ctx context.Context) error {
 	p.markOK(PhaseMerge, "")
 
 	// Phase: provision — ensure Python, run uv sync, seed pip.
+	p.report(ctx, PhaseProvision)
 	if err := p.provision(ctx, pyMinor); err != nil {
 		return err
 	}
 
 	// Phase: validate — assert the venv matches the target.
+	p.report(ctx, PhaseValidate)
 	return p.validate(ctx, pyMinor, dbcPin)
 }
 
-// resolve runs ResolveTarget and records the resolve phase.
-func (p *Pipeline) resolve(ctx context.Context) (*TargetInfo, error) {
-	target, err := ResolveTarget(ctx, p.Flags, p.Compute, p.Bundle)
+// resolve runs ResolveCompute and records the resolve phase.
+func (p *Pipeline) resolve(ctx context.Context) (*ComputeInfo, error) {
+	compute, err := ResolveCompute(ctx, p.Flags, p.Compute, p.Bundle)
 	if err != nil {
-		return nil, p.fail(PhaseResolve, false, asPipelineError(err, ErrResolve, "target resolution failed"))
+		return nil, p.fail(PhaseResolve, false, asPipelineError(err, ErrResolve, "compute resolution failed"))
 	}
-	p.res.Target = target
-	p.markOK(PhaseResolve, fmt.Sprintf("source=%s envKey=%s", target.Source, target.EnvKey))
-	return target, nil
+	p.res.Compute = compute
+	p.markOK(PhaseResolve, fmt.Sprintf("source=%s envKey=%s", compute.Source, compute.EnvKey))
+	return compute, nil
 }
 
 // fetch fetches constraints for the resolved target and records the fetch phase.
 // Under --dry-run the cache is not populated, so a dry run performs no disk writes
 // (an existing cache is still read for offline fallback).
-func (p *Pipeline) fetch(ctx context.Context, target *TargetInfo) (*Constraints, error) {
-	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, target.EnvKey, p.CacheDir, !p.Check)
+func (p *Pipeline) fetch(ctx context.Context, compute *ComputeInfo) (*Constraints, error) {
+	c, err := FetchConstraints(ctx, p.ConstraintBaseURL, compute.EnvKey, p.CacheDir, !p.Check)
 	if err != nil {
 		// FetchConstraints classifies the cause: E_ENV_UNSUPPORTED for a missing
 		// key (404) versus E_FETCH for transport failure with no cache. Both are
@@ -274,6 +323,14 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		if err != nil {
 			return nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
 		}
+		// Surface merge-quality warnings (overridden or duplicated pins, conflicting
+		// user constraints) from the pre-merge file. Greenfield has nothing of the
+		// user's to override, so it is skipped. This runs for both dry-run and real
+		// runs so the --json consumer sees the same warnings either way. The pin the
+		// merge rewrote comes from the merge itself, so the warning can never claim a
+		// replacement that did not happen.
+		p.res.Warnings = append(p.res.Warnings,
+			detectMergeWarnings(baseBytes, effective, replacedDBConnectPin(baseBytes, effective))...)
 	}
 
 	// Under --dry-run, build the plan (with a diff) for reporting. A real run does
@@ -338,6 +395,16 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 			return p.fail(PhaseMerge, false, NewError(ErrMerge, statErr, "cannot stat backup %s", filepath.ToSlash(backup)))
 		}
 		p.res.BackupPath = filepath.ToSlash(backup)
+
+		// Skip the write when the merged output already matches what is on disk.
+		// On an idempotent re-run mergePlan reproduces the current file byte for
+		// byte, so rewriting it would only advance the mtime — spuriously
+		// invalidating file watchers and uv.lock freshness checks — without
+		// changing content. The backup above is untouched (the existing .bak is
+		// kept), so this leaves disk exactly as it was.
+		if current, readErr := os.ReadFile(pyproject); readErr == nil && bytes.Equal(current, mergedBytes) {
+			return nil
+		}
 	}
 
 	if err := os.WriteFile(pyproject, mergedBytes, 0o644); err != nil {
@@ -356,7 +423,7 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 	if err := p.PM.EnsurePython(ctx, pyMinor); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrPythonInstall, "ensure python %s failed", pyMinor))
 	}
-	if err := p.PM.Provision(ctx, p.ProjectDir); err != nil {
+	if err := p.PM.Provision(ctx, p.ProjectDir, pyMinor); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "provision failed"))
 	}
 	if err := p.PM.PostProvision(ctx, p.ProjectDir); err != nil {
@@ -411,7 +478,11 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string)
 	}
 	p.markOK(PhaseValidate, detail)
 
-	p.res.VenvPath = filepath.ToSlash(filepath.Join(p.ProjectDir, venvDir))
+	// venvPath is reported relative to the project root (spec §6.1), not as an
+	// absolute path: the value names the ".venv" the command provisions inside
+	// ProjectDir, and the VS Code consumer already knows the project root (it
+	// sets the working directory when it shells out). venvDir is already ".venv".
+	p.res.VenvPath = venvDir
 	if p.res.Resolved != nil {
 		if defaultMode {
 			p.res.Resolved.DBConnectVersion = dbcVer
@@ -429,6 +500,15 @@ func initialPhases() []PhaseStatus {
 		phases[i] = PhaseStatus{Phase: name, Status: StatusPending}
 	}
 	return phases
+}
+
+// report announces entry into a phase to the Progress reporter, if one is set,
+// and logs the transition at debug level so --debug keeps a phase-by-phase trail.
+func (p *Pipeline) report(ctx context.Context, name PhaseName) {
+	if p.Progress != nil {
+		p.Progress.PhaseStarted(name)
+	}
+	log.Debugf(ctx, CommandName+": entering phase %s", name)
 }
 
 // markOK marks a phase ok with an optional human-readable detail.
@@ -457,6 +537,22 @@ func (p *Pipeline) fail(phase PhaseName, diskMutated bool, pe *PipelineError) er
 	}
 	p.res.Error = pe
 	return pe
+}
+
+// syncFailureDetail re-copies the recorded error's text into its phase's Detail.
+// fail() sets Detail when the failure happens; a caller that rewrites the error
+// afterwards (Run's E_CANCELED reclassification) must call this so text output —
+// which prints Detail — keeps agreeing with the --json error object.
+func (p *Pipeline) syncFailureDetail() {
+	if p.res.Error == nil {
+		return
+	}
+	for i := range p.res.Phases {
+		if p.res.Phases[i].Phase == p.res.Error.FailurePhase {
+			p.res.Phases[i].Detail = p.res.Error.Error()
+			return
+		}
+	}
 }
 
 // asPipelineError returns err as a *PipelineError if it already is one, otherwise

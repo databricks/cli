@@ -1,0 +1,53 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -t dev
+}
+trap cleanup EXIT
+
+$CLI bundle deploy -t dev
+job_id="$(read_id.py split_job)"
+
+
+# alpha is the only task in the target block, so it must be written at index 0 of
+# that block. Its merged index is also 0, but the top-level block's index 0 is
+# zeta -- a naive merged-index write lands on zeta instead.
+title "Edit alpha, defined only in the target block"
+edit_resource.py jobs $job_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "alpha":
+        task["timeout_seconds"] = 111
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "Only alpha in the target block gains timeout_seconds: 111"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+
+# mu is at merged index 1 but physical index 1 of the top-level block, and zeta
+# (merged index 2) is physical index 0. The merged order and the block order
+# disagree, so writing by merged index edits the wrong task.
+title "Edit mu, a top-level task that is not first after the merge sort"
+edit_resource.py jobs $job_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "mu":
+        task["timeout_seconds"] = 222
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+
+title "Only mu in the top-level block gains timeout_seconds: 222"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

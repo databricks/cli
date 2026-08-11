@@ -6,6 +6,12 @@ trap cleanup EXIT
 
 title "deploy triggers the run with only the overridden parameter"
 trace $CLI bundle deploy
+
+# Name the ids so the request body and the URLs below say which number is the job
+# and which is the run.
+read_id.py my_job > /dev/null
+read_id.py my_run > /dev/null
+
 trace print_requests.py //jobs/run-now
 
 title "plan is stable: the resolved job default does not look like drift"

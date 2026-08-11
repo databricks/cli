@@ -200,6 +200,13 @@ func shortSHA(sha string) string {
 // coordination with the backend reader.
 const snapshotStateSchemaVersion = 1
 
+// gitStateName and gitDiffName are the git provenance sidecar basenames, uploaded
+// next to the code snapshot for human/agent inspection of what was submitted.
+const (
+	gitStateName = "git_state.json"
+	gitDiffName  = "git_diff.patch"
+)
+
 // defaultRemoteName is the remote consulted for merge-base and repo URL (local refs
 // only — the remote-fetch path is gone).
 const defaultRemoteName = "origin"

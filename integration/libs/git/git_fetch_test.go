@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/integration/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/git"
 	"github.com/stretchr/testify/assert"
@@ -47,6 +48,13 @@ func ensureWorkspacePrefix(root string) string {
 }
 
 func TestFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
+	// On GCP the Repos API returns no branch, commit, or origin URL for a
+	// freshly-cloned repo, so FetchRepositoryInfo comes back empty and the
+	// assertions in assertFullGitInfo fail.
+	if testutil.GetCloud(t) == testutil.GCP {
+		t.Skip("Skipping on GCP: Repos API does not return git metadata")
+	}
+
 	ctx, wt := acc.WorkspaceTest(t)
 	targetPath := ensureWorkspacePrefix(acc.TemporaryRepo(wt, examplesRepoUrl))
 

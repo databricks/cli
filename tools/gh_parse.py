@@ -245,11 +245,14 @@ def load_known_failures():
 
 def cleanup_env(name):
     """
-    >>> cleanup_env("test-output-aws-prod-is-linux-ubuntu-latest")
+    >>> cleanup_env("test-output-aws-cli-is-linux-ubuntu-latest")
     'aws linux'
 
-    >>> cleanup_env("test-output-gcp-prod-is-windows-server-latest")
+    >>> cleanup_env("test-output-gcp-cli-is-windows-server-latest")
     'gcp windows'
+
+    >>> cleanup_env("test-output-aws-prod-is-linux-ubuntu-latest")
+    'aws linux'
 
     >>> cleanup_env("test-output-azure-prod-ucws-is-linux-ubuntu-latest")
     'azure-ucws linux'
@@ -259,6 +262,7 @@ def cleanup_env(name):
     name = name.removeprefix("test-output-")
     name = name.replace("-prod-ucws-is-", "-ucws-")
     name = name.replace("-prod-is-", "-")
+    name = name.replace("-cli-is-", "-")
     name = name.replace("-linux-ubuntu-latest", " linux")
     name = name.replace("-windows-server-latest", " windows")
     return name

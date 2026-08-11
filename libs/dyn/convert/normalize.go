@@ -18,10 +18,19 @@ const (
 	// IncludeMissingFields causes the normalization to include fields that defined on the given
 	// type but are missing in the source value. They are included with their zero values.
 	IncludeMissingFields NormalizeOption = iota
+
+	// DropEmptyStrings drops struct fields whose value is an empty string, unless
+	// the field is tagged without omitempty (i.e. its zero value must be sent).
+	// This mirrors JSON serialization, where an omitempty string field set to ""
+	// is omitted from the request. Without this, an explicitly-set "" reaches
+	// ToTyped, which force-sends it, and the backend rejects it (e.g.
+	// "'' is not a valid cluster policy ID").
+	DropEmptyStrings
 )
 
 type normalizeOptions struct {
 	includeMissingFields bool
+	dropEmptyStrings     bool
 }
 
 func Normalize(dst any, src dyn.Value, opts ...NormalizeOption) (dyn.Value, diag.Diagnostics) {
@@ -30,6 +39,8 @@ func Normalize(dst any, src dyn.Value, opts ...NormalizeOption) (dyn.Value, diag
 		switch opt {
 		case IncludeMissingFields:
 			n.includeMissingFields = true
+		case DropEmptyStrings:
+			n.dropEmptyStrings = true
 		}
 	}
 
@@ -87,6 +98,36 @@ func typeMismatch(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnost
 	}
 }
 
+// isAnchorContainer reports whether v is a YAML anchor or a non-empty
+// sequence/map composed entirely of anchor containers. Anchors define reusable
+// blocks and must not trigger "unknown field" warnings, including when nested
+// inside a container.
+func isAnchorContainer(v dyn.Value) bool {
+	if v.IsAnchor() {
+		return true
+	}
+
+	var elements []dyn.Value
+	switch v.Kind() {
+	case dyn.KindSequence:
+		elements = v.MustSequence()
+	case dyn.KindMap:
+		elements = v.MustMap().Values()
+	default:
+		return false
+	}
+
+	if len(elements) == 0 {
+		return false
+	}
+	for _, e := range elements {
+		if !isAnchorContainer(e) {
+			return false
+		}
+	}
+	return true
+}
+
 func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen []reflect.Type, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -101,7 +142,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 			fieldName := pk.MustString()
 			index, ok := info.Fields[fieldName]
 			if !ok {
-				if !pv.IsAnchor() {
+				if !isAnchorContainer(pv) {
 					// Special case: provide a more helpful message for "valueFrom" vs "value_from"
 					if fieldName == "valueFrom" {
 						if _, hasValueFrom := info.Fields["value_from"]; hasValueFrom {
@@ -132,6 +173,15 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 				diags = diags.Extend(err)
 				// Skip the element if it cannot be normalized.
 				if !nv.IsValid() {
+					continue
+				}
+			}
+
+			// Drop an empty string on an omitempty field so it is not force-sent
+			// to the backend (see DropEmptyStrings). ForceEmpty marks fields whose
+			// zero value must be kept, so those are left in place.
+			if n.dropEmptyStrings && !info.ForceEmpty[fieldName] {
+				if s, ok := nv.AsString(); ok && s == "" {
 					continue
 				}
 			}
@@ -285,6 +335,15 @@ func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value, path 
 
 	switch src.Kind() {
 	case dyn.KindString:
+		// A sensitive string must be returned as-is: dyn.NewValue(MustString(), ...)
+		// would construct a plain string and strip the secretString wrapper. Type
+		// normalization (e.g. coercing a bool "true" to string) cannot apply to a
+		// sensitive value because its Kind is already KindString, so returning early
+		// here is correct. Updating the secret value is done via FromTyped, not
+		// Normalize: FromTyped re-wraps the new value as NewSensitiveValue.
+		if src.IsSensitive() {
+			return src, nil
+		}
 		return dyn.NewValue(src.MustString(), src.Locations()), nil
 	case dyn.KindBool:
 		return dyn.NewValue(strconv.FormatBool(src.MustBool()), src.Locations()), nil

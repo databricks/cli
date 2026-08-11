@@ -1,7 +1,6 @@
 {
     "recommendations": [
         "databricks.databricks",
-        "redhat.vscode-yaml",
-        "charliermarsh.ruff"
+        "redhat.vscode-yaml"
     ]
 }

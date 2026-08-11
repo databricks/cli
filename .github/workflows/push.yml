@@ -37,12 +37,12 @@ jobs:
       targets: ${{ steps.mask1.outputs.targets || steps.mask2.outputs.targets || steps.mask3.outputs.targets }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: tools/go.mod
 
@@ -130,16 +130,40 @@ jobs:
 
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
           cache-key: test-${{ matrix.deployment }}
 
+      # Make origin/main available with enough history for `git diff --merge-base
+      # origin/main`, which the acceptance subset selector uses to always run the
+      # tests this PR adds/changes on the windows/macOS cells. actions/checkout does
+      # a shallow single-ref clone by default, so origin/main is otherwise absent and
+      # the diff fails, silently disabling change detection. This must run AFTER
+      # setup-build-environment, whose own checkout would re-shallow the repo. Only
+      # PRs subset tests, so the fetch is unnecessary elsewhere.
+      - name: Fetch origin/main for change detection
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            git fetch --no-tags --unshallow origin
+          fi
+
       - name: Run tests
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
+          # On pull requests, run only a subset of acceptance subtests on the slower
+          # windows/macOS cells so neither lands on the critical path to merge. An
+          # empty percentage disables subsetting, so Linux PRs and push-to-main run
+          # the full suite (full coverage on every OS). The percentages are fixed and
+          # tuned to keep windows/macOS under the Linux wall-clock time. The seed is
+          # the head commit, so a re-run of the same commit repeats the subset while a
+          # new commit reshuffles it.
+          TESTS_SELECT_SUBSET_SEED: ${{ github.event.pull_request.head.sha }}
+          TESTS_SELECT_SUBSET_PCT: ${{ github.event_name == 'pull_request' && (matrix.os.name == 'windows' && '10' || matrix.os.name == 'macos' && '60') || '' }}
         run: go tool -modfile=tools/task/go.mod task test
 
       - name: Upload gotestsum JSON output
@@ -210,7 +234,7 @@ jobs:
 
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
@@ -262,7 +286,7 @@ jobs:
 
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
@@ -321,7 +345,7 @@ jobs:
 
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
@@ -373,7 +397,7 @@ jobs:
 
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
@@ -424,7 +448,7 @@ jobs:
 
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Dedicated cache-key so this job's Go cache doesn't evict the primary
       # test caches from the 10 GB GHA quota.

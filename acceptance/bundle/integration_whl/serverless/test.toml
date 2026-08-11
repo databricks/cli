@@ -1,14 +1,6 @@
 CloudSlow = true
-Local = true
-
 # serverless is only enabled if UC is enabled
 RequiresUnityCatalog = true
-
-# Re-enable on pull requests (the parent integration_whl/ dir opts out): this variant
-# builds a wheel (bdist_wheel) on the serverless path, exercising the OS-specific venv
-# build, so it must keep running on windows/macOS for PRs.
-GOOSOnPR.windows = true
-GOOSOnPR.darwin = true
 
 [[Repls]]
 Old = '\\'

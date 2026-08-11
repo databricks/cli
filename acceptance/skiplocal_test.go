@@ -1,25 +1,22 @@
 package acceptance_test
 
 import (
+	"errors"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"testing"
 )
 
-// DATABRICKS_TEST_SKIPLOCAL controls skipping of Local acceptance tests.
+// Cloud PR runs set DATABRICKS_TEST_SKIPLOCAL=withchanged to skip acceptance
+// tests that already run locally, except those this branch touches.
 const (
 	SkipLocalEnvVar = "DATABRICKS_TEST_SKIPLOCAL"
 
-	// SkipLocalAll skips every test with Local = true.
-	SkipLocalAll = "true"
-	// SkipLocalWithChanged skips Local tests except those added or changed on this
-	// branch (relative to the merge base with origin/main), so a cloud run still
-	// exercises the tests this branch touches.
 	SkipLocalWithChanged = "withchanged"
 
-	// maxChangedLocalTests caps how many changed tests SkipLocalWithChanged re-enables,
-	// keeping the cloud run bounded. Added tests are preferred over modified ones.
+	// Cap re-enabled tests so cloud PR runs stay bounded; prefer added over modified.
 	maxChangedLocalTests = 50
 
 	invariantConfigsPrefix = "acceptance/bundle/invariant/configs/"
@@ -61,8 +58,19 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 // committed. The three-dot form origin/main...HEAD only covers committed
 // changes and misses unstaged edits, which breaks the "touch a config, run
 // the test" local dev workflow (same reason lintdiff.py uses --merge-base).
-func selectChangedLocalTests(testDirs map[string]bool) map[string][]string {
-	out, _ := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main").Output()
+func selectChangedLocalTests(t *testing.T, testDirs map[string]bool) map[string][]string {
+	out, err := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main").Output()
+	if err != nil {
+		// A failed diff (most commonly a missing origin/main in a shallow CI
+		// checkout) must not be silently treated as "nothing changed": that
+		// disables change detection and lets newly added tests skip. Fail loudly.
+		// Every caller (push.yml PR cells, integration runs) now fetches origin/main.
+		stderr := ""
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
+			stderr = strings.TrimSpace(string(exitErr.Stderr))
+		}
+		t.Fatalf("git diff --merge-base origin/main failed: %v\n%s", err, stderr)
+	}
 	diff := strings.TrimSpace(string(out))
 
 	// result accumulates dirs with their filters; added tracks brand-new dirs.
@@ -96,6 +104,15 @@ func selectChangedLocalTests(testDirs map[string]bool) map[string][]string {
 				}
 			}
 			continue
+		}
+
+		// test.toml and out.test.toml under the invariant tree regenerate
+		// automatically when INPUT_CONFIG changes; ignore them so they don't
+		// unlock all variants of every invariant subdir.
+		if strings.HasPrefix(path, "acceptance/"+invariantDirPrefix) {
+			if name := filepath.Base(path); name == "test.toml" || name == "out.test.toml" {
+				continue
+			}
 		}
 
 		dir := testDirForFile(path, testDirs)

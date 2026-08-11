@@ -18,6 +18,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
+// clusterWaitTimeout bounds how long we poll for a cluster to reach its target
+// state (RUNNING/TERMINATED) after create, edit, or start/stop. Provisioning can
+// legitimately take longer than 15 minutes on capacity-constrained workspaces
+// (a cluster stays PENDING with "Finding instances for new nodes"), so we allow
+// 30 minutes before giving up. Terminal states still halt immediately.
+const clusterWaitTimeout = 30 * time.Minute
+
 // ClusterState is the state type for Cluster resources. It extends compute.ClusterSpec with
 // lifecycle settings and the cluster ID.
 // ClusterId is written to state by DoCreate/DoUpdate for informational purposes; it is not
@@ -41,9 +48,15 @@ func (s ClusterState) MarshalJSON() ([]byte, error) {
 // ClusterRemote extends compute.ClusterDetails with a synthetic Lifecycle field so that
 // RemoteType satisfies TestRemoteSuperset (every field in ClusterState exists in ClusterRemote).
 // Lifecycle.Started is populated by DoRead from the cluster's running state.
+//
+// ApplyPolicyDefaultValues is promoted to the top level because the cluster GET API returns it
+// only under .spec (a snapshot of the create/edit settings), never at the top level. DoRead
+// copies it up so RemapState stays a dumb copy and the field participates in normal drift
+// detection instead of being suppressed as missing_in_remote.
 type ClusterRemote struct {
 	compute.ClusterDetails
-	Lifecycle *StateLifecycle `json:"lifecycle,omitempty"`
+	ApplyPolicyDefaultValues bool            `json:"apply_policy_default_values,omitempty"`
+	Lifecycle                *StateLifecycle `json:"lifecycle,omitempty"`
 }
 
 func (r *ClusterRemote) UnmarshalJSON(b []byte) error {
@@ -81,7 +94,7 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 	started := input.State == compute.StateRunning
 	spec := &ClusterState{
 		ClusterSpec: compute.ClusterSpec{
-			ApplyPolicyDefaultValues:   false,
+			ApplyPolicyDefaultValues:   input.ApplyPolicyDefaultValues,
 			Autoscale:                  input.Autoscale,
 			AutoterminationMinutes:     input.AutoterminationMinutes,
 			AwsAttributes:              input.AwsAttributes,
@@ -90,6 +103,7 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 			ClusterName:                input.ClusterName,
 			CustomTags:                 input.CustomTags,
 			DataSecurityMode:           input.DataSecurityMode,
+			DependencyMode:             input.DependencyMode,
 			DockerImage:                input.DockerImage,
 			DriverInstancePoolId:       input.DriverInstancePoolId,
 			DriverNodeTypeId:           input.DriverNodeTypeId,
@@ -119,9 +133,6 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 		},
 		Lifecycle: &StateLifecycle{Started: &started},
 	}
-	if input.Spec != nil {
-		spec.ApplyPolicyDefaultValues = input.Spec.ApplyPolicyDefaultValues
-	}
 	return spec
 }
 
@@ -131,8 +142,14 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 		return nil, err
 	}
 	remote := &ClusterRemote{
-		ClusterDetails: *details,
-		Lifecycle:      nil,
+		ClusterDetails:           *details,
+		ApplyPolicyDefaultValues: false,
+		Lifecycle:                nil,
+	}
+	// The GET response carries apply_policy_default_values only under .spec (a snapshot of the
+	// create/edit settings), not at the top level. Promote it so RemapState is a dumb copy.
+	if details.Spec != nil {
+		remote.ApplyPolicyDefaultValues = details.Spec.ApplyPolicyDefaultValues
 	}
 
 	switch details.State {
@@ -166,8 +183,7 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 	if hasClusterChanges(entry) {
 		// Same retry as in TF provider logic
 		// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
-		timeout := 15 * time.Minute
-		_, err := retries.Poll(ctx, timeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
+		_, err := retries.Poll(ctx, clusterWaitTimeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
 			wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, &config.ClusterSpec))
 			if err == nil {
 				return wait, nil
@@ -197,7 +213,7 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 		return nil, err
 	} else if !desiredStarted && alreadyRunning {
 		// lifecycle.started=false: fire Delete; WaitAfterUpdate polls for TERMINATED.
-		// Delete does not remove the cluster, it just sets the state to TERMINATED.
+		// Note: Delete terminates the cluster; permanent removal is a separate API (permanent-delete).
 		_, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
 		return nil, err
 	}
@@ -212,11 +228,11 @@ func (r *ResourceCluster) WaitAfterUpdate(ctx context.Context, id string, config
 	}
 
 	if *config.Lifecycle.Started {
-		_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, 15*time.Minute, nil)
+		_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, clusterWaitTimeout, nil)
 		return nil, err
 	}
 
-	_, err := r.client.Clusters.WaitGetClusterTerminated(ctx, id, 15*time.Minute, nil)
+	_, err := r.client.Clusters.WaitGetClusterTerminated(ctx, id, clusterWaitTimeout, nil)
 	return nil, err
 }
 
@@ -224,18 +240,19 @@ func (r *ResourceCluster) WaitAfterUpdate(ctx context.Context, id string, config
 // When lifecycle.started=false, it then terminates the cluster.
 func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config *ClusterState) (*ClusterRemote, error) {
 	// Always wait for RUNNING first: clusters start in PENDING state and must be polled.
-	_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, 15*time.Minute, nil)
+	_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, clusterWaitTimeout, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	if config.Lifecycle != nil && config.Lifecycle.Started != nil && !*config.Lifecycle.Started {
 		// started=false: terminate the cluster after it reaches RUNNING.
+		// Note: Delete terminates the cluster; permanent removal is a separate API (permanent-delete).
 		deleteWaiter, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
 		if err != nil {
 			return nil, err
 		}
-		_, err = deleteWaiter.Get()
+		_, err = deleteWaiter.GetWithTimeout(clusterWaitTimeout)
 		return nil, err
 	}
 
@@ -323,6 +340,7 @@ func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 		CloneFrom:                  nil, // Not supported by DABs
 		CustomTags:                 config.CustomTags,
 		DataSecurityMode:           config.DataSecurityMode,
+		DependencyMode:             config.DependencyMode,
 		DockerImage:                config.DockerImage,
 		DriverInstancePoolId:       config.DriverInstancePoolId,
 		DriverNodeTypeId:           config.DriverNodeTypeId,
@@ -372,6 +390,7 @@ func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster
 		ClusterName:                config.ClusterName,
 		CustomTags:                 config.CustomTags,
 		DataSecurityMode:           config.DataSecurityMode,
+		DependencyMode:             config.DependencyMode,
 		DockerImage:                config.DockerImage,
 		DriverInstancePoolId:       config.DriverInstancePoolId,
 		DriverNodeTypeId:           config.DriverNodeTypeId,

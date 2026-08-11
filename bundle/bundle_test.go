@@ -1,7 +1,6 @@
 package bundle
 
 import (
-	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -38,7 +37,7 @@ func tryLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
 
 func TestLoadNotExists(t *testing.T) {
 	b, err := Load(t.Context(), "/doesntexist")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+	assert.ErrorContains(t, err, "databricks.yml not found")
 	assert.Nil(t, b)
 }
 
@@ -70,6 +69,29 @@ func TestBundleLocalStateDir(t *testing.T) {
 	// format is <CWD>/.databricks/bundle/<target>
 	assert.NoError(t, err)
 	assert.Equal(t, filepath.Join(projectDir, ".databricks", "bundle", "default"), cacheDir)
+}
+
+func TestGetSyncIncludePatternsScopesSnapshotDir(t *testing.T) {
+	ctx := t.Context()
+	projectDir := t.TempDir()
+	f, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
+	require.NoError(t, err)
+	f.Close()
+
+	b, err := Load(ctx, projectDir)
+	require.NoError(t, err)
+	b.Config.Bundle.Target = "default"
+
+	// Without an AI Runtime code snapshot, the dir is not force-included.
+	includes, err := b.GetSyncIncludePatterns(ctx)
+	require.NoError(t, err)
+	assert.NotContains(t, includes, AiCodeSnapshotDir+"/*")
+
+	// Once the aicode mutator sets the flag, it is.
+	b.HasAiRuntimeCodeSnapshot = true
+	includes, err = b.GetSyncIncludePatterns(ctx)
+	require.NoError(t, err)
+	assert.Contains(t, includes, AiCodeSnapshotDir+"/*")
 }
 
 func TestBundleLocalStateDirOverride(t *testing.T) {
@@ -110,7 +132,7 @@ func TestBundleMustLoadFailureWithEnv(t *testing.T) {
 	b, diags := mustLoad(t)
 	require.Nil(t, b)
 	require.Len(t, diags, 1, "expected diagnostics")
-	assert.Contains(t, diags[0].Summary, "invalid bundle root")
+	assert.Contains(t, diags[0].Summary, "Invalid bundle root")
 	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
@@ -119,7 +141,7 @@ func TestBundleMustLoadFailureIfNotFound(t *testing.T) {
 	b, diags := mustLoad(t)
 	require.Nil(t, b)
 	require.Len(t, diags, 1, "expected diagnostics")
-	assert.Contains(t, diags[0].Summary, "unable to locate bundle root")
+	assert.Contains(t, diags[0].Summary, "Unable to locate the bundle root")
 	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
@@ -136,7 +158,7 @@ func TestBundleTryLoadFailureWithEnv(t *testing.T) {
 	b, diags := tryLoad(t)
 	require.Nil(t, b)
 	require.Len(t, diags, 1, "expected diagnostics")
-	assert.Contains(t, diags[0].Summary, "invalid bundle root")
+	assert.Contains(t, diags[0].Summary, "Invalid bundle root")
 	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 

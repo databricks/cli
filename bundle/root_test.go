@@ -15,9 +15,14 @@ func TestRootFromEnv(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv(env.RootVariable, dir)
 
-	// It should pull the root from the environment variable.
-	root, err := mustGetRoot(ctx)
+	// The bundle root must contain a configuration file.
+	f, err := os.Create(filepath.Join(dir, config.FileNames[0]))
 	require.NoError(t, err)
+	f.Close()
+
+	// It should pull the root from the environment variable.
+	root, diags := mustGetRoot(ctx)
+	require.NoError(t, diags.Error())
 	require.Equal(t, root, dir)
 }
 
@@ -27,8 +32,9 @@ func TestRootFromEnvDoesntExist(t *testing.T) {
 	t.Setenv(env.RootVariable, filepath.Join(dir, "doesntexist"))
 
 	// It should pull the root from the environment variable.
-	_, err := mustGetRoot(ctx)
-	require.Errorf(t, err, "invalid bundle root")
+	_, diags := mustGetRoot(ctx)
+	require.True(t, diags.HasError())
+	require.Contains(t, diags[0].Summary, "Invalid bundle root")
 }
 
 func TestRootFromEnvIsFile(t *testing.T) {
@@ -40,8 +46,9 @@ func TestRootFromEnvIsFile(t *testing.T) {
 	t.Setenv(env.RootVariable, f.Name())
 
 	// It should pull the root from the environment variable.
-	_, err = mustGetRoot(ctx)
-	require.Errorf(t, err, "invalid bundle root")
+	_, diags := mustGetRoot(ctx)
+	require.True(t, diags.HasError())
+	require.Contains(t, diags[0].Summary, "Invalid bundle root")
 }
 
 func TestRootIfEnvIsEmpty(t *testing.T) {
@@ -50,8 +57,9 @@ func TestRootIfEnvIsEmpty(t *testing.T) {
 	t.Setenv(env.RootVariable, dir)
 
 	// It should pull the root from the environment variable.
-	_, err := mustGetRoot(ctx)
-	require.Errorf(t, err, "invalid bundle root")
+	_, diags := mustGetRoot(ctx)
+	require.True(t, diags.HasError())
+	require.Contains(t, diags[0].Summary, "Invalid bundle root")
 }
 
 func TestRootLookup(t *testing.T) {
@@ -82,8 +90,8 @@ func TestRootLookup(t *testing.T) {
 
 	// It should find the project root from $PWD.
 	t.Chdir("./a/b/c")
-	foundRoot, err := mustGetRoot(ctx)
-	require.NoError(t, err)
+	foundRoot, diags := mustGetRoot(ctx)
+	require.NoError(t, diags.Error())
 	foundRoot, err = filepath.EvalSymlinks(foundRoot)
 	require.NoError(t, err)
 	require.Equal(t, root, foundRoot)
@@ -98,6 +106,7 @@ func TestRootLookupError(t *testing.T) {
 
 	// It can't find a project root from a temporary directory.
 	t.Chdir(t.TempDir())
-	_, err := mustGetRoot(ctx)
-	require.ErrorContains(t, err, "unable to locate bundle root")
+	_, diags := mustGetRoot(ctx)
+	require.True(t, diags.HasError())
+	require.Contains(t, diags[0].Summary, "Unable to locate the bundle root")
 }

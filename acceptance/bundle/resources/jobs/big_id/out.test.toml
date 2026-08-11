@@ -1,6 +1,3 @@
-Local = true
 Cloud = false
-GOOSOnPR.darwin = false
-GOOSOnPR.windows = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.READPLAN = ["", "1"]

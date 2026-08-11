@@ -1,0 +1,74 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Edit num_workers on the top-level cluster and on the target cluster
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.pipelines.split_pipeline
+  clusters[0].num_workers: replace
+  clusters[1].num_workers: replace
+
+
+
+=== default updates top-level, maintenance updates the target block
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -15,5 +15,5 @@
+       clusters:
+         - label: default
+-          num_workers: 2
++          num_workers: 5
+       libraries:
+         - notebook:
+@@ -28,3 +28,3 @@
+           clusters:
+             - label: maintenance
+-              num_workers: 1
++              num_workers: 3
+
+=== Remove the target-block cluster (length change)
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.pipelines.split_pipeline
+  clusters: replace
+  clusters[1].num_workers: remove
+
+
+
+=== The top-level cluster is untouched; the target entry is left as a remnant
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -28,3 +28,2 @@
+           clusters:
+             - label: maintenance
+-              num_workers: 3
+
+>>> grep -c label: default databricks.yml
+1
+
+>>> grep -c label: maintenance databricks.yml
+1
+
+>>> grep -c num_workers databricks.yml
+1
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.pipelines.split_pipeline
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.split_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!

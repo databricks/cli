@@ -127,7 +127,6 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		db.Data.State = make(map[string]ResourceEntry)
 	}
 
-	// don't indent so that every WAL entry remains on a single line
 	jsonMessage, err := json.Marshal(state)
 	if err != nil {
 		return err

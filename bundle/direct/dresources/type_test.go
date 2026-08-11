@@ -16,14 +16,16 @@ import (
 // These are known issues that should be fixed. If a field listed here is found in RemoteType,
 // the test fails to ensure the entry is removed from this map.
 var knownMissingInRemoteType = map[string][]string{
-	"clusters": {
-		"apply_policy_default_values",
-	},
 	"external_locations": {
 		"skip_validation",
 	},
 	"model_serving_endpoints": {
 		"rate_limits",
+	},
+	"pipelines": {
+		// Note that this is a deliberate omission: cascade_on_destroy is a client-side-only field.
+		// It has no remote counterpart, so it is never expected in RemoteType.
+		"cascade_on_destroy",
 	},
 	"quality_monitors": {
 		"skip_builtin_dashboard",

@@ -1,0 +1,2 @@
+# DATABRICKS_BUNDLE_ROOT points at a path that does not exist: os.Stat fails.
+musterr trace DATABRICKS_BUNDLE_ROOT=doesnotexist $CLI bundle validate

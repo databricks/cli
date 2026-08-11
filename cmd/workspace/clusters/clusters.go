@@ -220,6 +220,7 @@ func newCreate() *cobra.Command {
   SINGLE_USER,
   USER_ISOLATION,
 ]`)
+	cmd.Flags().Var(&createReq.DependencyMode, "dependency-mode", `Controls dependency configuration for the cluster. Supported values: [DEPENDENCY_MODE_AUTO, DEPENDENCY_MODE_CLUSTER_LIBRARIES, DEPENDENCY_MODE_ENVIRONMENTS]`)
 	// TODO: complex arg: docker_image
 	cmd.Flags().StringVar(&createReq.DriverInstancePoolId, "driver-instance-pool-id", createReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	// TODO: complex arg: driver_node_type_flexibility
@@ -503,6 +504,7 @@ func newEdit() *cobra.Command {
   SINGLE_USER,
   USER_ISOLATION,
 ]`)
+	cmd.Flags().Var(&editReq.DependencyMode, "dependency-mode", `Controls dependency configuration for the cluster. Supported values: [DEPENDENCY_MODE_AUTO, DEPENDENCY_MODE_CLUSTER_LIBRARIES, DEPENDENCY_MODE_ENVIRONMENTS]`)
 	// TODO: complex arg: docker_image
 	cmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", editReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	// TODO: complex arg: driver_node_type_flexibility

@@ -1,6 +1,12 @@
-Local = true
 Cloud = true
 RequiresWarehouse = true
+
+Ignore = ["tmp.plan.json", "tmp.plan_after_unbind.json"]
+
+# Bind writes state without going through DoCreate/DoUpdate, so a deploy from a saved
+# plan after binding must still send the full serialized_dashboard. Inherited by
+# recreation/, whose script also deploys from a saved plan.
+EnvMatrix.READPLAN = ["", "1"]
 
 [[Repls]]
 Old = "[0-9a-f]{32}"

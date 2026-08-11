@@ -1,3 +1,0 @@
-# Stubs fail locally before any API call, so no server stubs needed.
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []

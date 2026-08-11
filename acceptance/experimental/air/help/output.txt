@@ -10,12 +10,13 @@ Usage:
   databricks experimental air [command]
 
 Available Commands:
-  cancel         Cancel one or more runs
-  get            Show status, configuration, and timing details for a specific run
-  list           List your active runs for the current profile (use --all-status for finished runs)
-  logs           Stream or fetch logs for a run
-  register-image Mirror a Docker image into the workspace registry
-  run            Submit a training workload from a YAML config
+  cancel          Cancel one or more runs
+  convert-to-dabs Convert an AIR run YAML into a Databricks Asset Bundle
+  get             Show status, configuration, and timing details for a specific run
+  list            List your active runs for the current profile (use --all-status for finished runs)
+  logs            Stream or fetch logs for a run
+  register-image  Mirror a Docker image into the workspace registry
+  run             Submit a training workload from a YAML config
 
 Flags:
   -h, --help   help for air
@@ -41,6 +42,27 @@ Flags:
       --filter stringArray   Filter runs, e.g. experiment=foo* (repeatable)
   -h, --help                 help for list
       --limit int            Maximum number of runs to show (default 20)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+=== logs help
+>>> [CLI] experimental air logs --help
+Stream logs from an active run, or fetch logs from a completed run.
+
+Usage:
+  databricks experimental air logs JOB_RUN_ID [flags]
+
+Flags:
+      --download-to string   Download all logs to this directory instead of printing
+  -h, --help                 help for logs
+      --lines int            For completed runs, print the last N lines (default 10000)
+      --minutes int          Fetch only logs from the last N minutes
+      --node int             Fetch logs from this node
+      --retry int            View logs from a specific retry attempt; -1 means latest (default -1)
 
 Global Flags:
       --debug            enable debug logging

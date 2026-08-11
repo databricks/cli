@@ -1,0 +1,7 @@
+
+>>> DATABRICKS_BUNDLE_ROOT=doesnotexist [CLI] bundle validate
+Error: Invalid bundle root DATABRICKS_BUNDLE_ROOT="doesnotexist": stat doesnotexist: no such file or directory
+
+The DATABRICKS_BUNDLE_ROOT environment variable must point to an existing directory that contains a bundle configuration file.
+
+Found 1 error

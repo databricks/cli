@@ -10,12 +10,20 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
-type acquire struct{}
+// maxChildNodeSizeExceeded is the error_code the Workspace API returns (as a 403)
+// when a directory is at its child-node limit and cannot accept a new child.
+// The SDK has no sentinel for it, so we match on the code directly.
+const maxChildNodeSizeExceeded = "MAX_CHILD_NODE_SIZE_EXCEEDED"
 
-func Acquire() bundle.Mutator {
-	return &acquire{}
+type acquire struct {
+	goal Goal
+}
+
+func Acquire(goal Goal) bundle.Mutator {
+	return &acquire{goal}
 }
 
 func (m *acquire) Name() string {
@@ -50,6 +58,19 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	log.Infof(ctx, "Acquiring deployment lock (force: %v)", force)
 	err = b.Locker.Lock(ctx, force)
 	if err != nil {
+		// When destroying with --force-lock, tolerate a full workspace directory
+		// that cannot accept the lock file: proceeding lock-less carries the same
+		// caveat --force-lock already documents (no guaranteed exclusive access),
+		// which is acceptable when the goal is to tear the deployment down.
+		// This check must precede the fs.ErrPermission branch below because the API
+		// reports the child-node limit as a 403, which the filer maps to that error.
+		if m.goal == GoalDestroy && force {
+			if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.ErrorCode == maxChildNodeSizeExceeded {
+				log.Warnf(ctx, "Proceeding with destroy without a deployment lock: %v", err)
+				return nil
+			}
+		}
+
 		log.Errorf(ctx, "Failed to acquire deployment lock: %v", err)
 
 		if errors.Is(err, fs.ErrPermission) {
