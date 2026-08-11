@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -146,7 +148,10 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			out := cmd.OutOrStdout()
 			// The MLflow links stream in via the logs below, so don't poll here.
 			printSubmitResult(ctx, out, runIDStr, dashboardURL)
-			cmdio.LogString(ctx, "Monitoring run and streaming logs...")
+			// Separate the submit summary from the streamed logs.
+			fmt.Fprintln(out)
+			fmt.Fprintln(out, "Monitoring run and streaming logs...")
+			printLogsDivider(ctx, out)
 			return runLogs(ctx, cmd, req)
 		}
 
@@ -189,6 +194,22 @@ func printMLflowLinks(ctx context.Context, out io.Writer, host string, ids *mlfl
 	expURL := mlflowExperimentURL(host, ids)
 	fmt.Fprintln(out, "View MLflow run at: "+hyperlink(ctx, out, runURL, runURL))
 	fmt.Fprintln(out, "View MLflow experiment at: "+hyperlink(ctx, out, expURL, expURL))
+}
+
+// logsDividerWidth is the total display width of the --watch logs divider.
+const logsDividerWidth = 60
+
+// printLogsDivider prints a dim, centered "Logs" rule marking where the streamed
+// --watch logs begin, separating them from the submit summary. The color
+// degrades to plain characters on non-rich terminals.
+func printLogsDivider(ctx context.Context, out io.Writer) {
+	renderer, _ := cmdio.NewRenderer(ctx, out)
+	p := newPalette(renderer)
+
+	const label = " Logs "
+	side := max((logsDividerWidth-utf8.RuneCountInString(label))/2, 0)
+	rule := strings.Repeat("─", side) + label + strings.Repeat("─", side)
+	fmt.Fprintln(out, p.n7.Render(rule))
 }
 
 // watchTerminalStatus resolves a watched run's final display state for the

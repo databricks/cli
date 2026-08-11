@@ -113,6 +113,9 @@ func TestRunWatchStreamsLogs(t *testing.T) {
 	assert.Contains(t, out, "Submitted workload with Job Run ID: 777")
 	assert.Contains(t, out, "View job run at: ")
 	assert.Contains(t, out, "Monitoring run and streaming logs...")
+	// A "Logs" divider separates the submit summary from the streamed logs.
+	assert.Contains(t, out, "Logs")
+	assert.Contains(t, out, "───")
 	// The submitted run's logs stream through, oldest-first.
 	assert.Contains(t, out, "step 1\nstep 2")
 }
