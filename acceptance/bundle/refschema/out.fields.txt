@@ -1868,6 +1868,7 @@ resources.jobs.*.trigger.table_update.wait_after_last_change_seconds	int	ALL
 resources.jobs.*.trigger_state	*jobs.TriggerStateProto	REMOTE
 resources.jobs.*.trigger_state.file_arrival	*jobs.FileArrivalTriggerState	REMOTE
 resources.jobs.*.trigger_state.file_arrival.using_file_events	bool	REMOTE
+resources.jobs.*.trigger_state.pause_status	jobs.PauseStatus	REMOTE
 resources.jobs.*.trigger_state.sql_condition	*jobs.SqlConditionState	REMOTE
 resources.jobs.*.trigger_state.sql_condition.latest_condition_evaluation_satisfied	bool	REMOTE
 resources.jobs.*.trigger_state.sql_condition.latest_condition_evaluation_sql_session_id	string	REMOTE

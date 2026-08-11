@@ -90,7 +90,7 @@ Unity Catalog
   resource-quotas                        Unity Catalog enforces resource quotas on all securable objects, which limits the number of resources that can be created.
   rfa                                    *Public Preview* Request for Access enables users to request access for Unity Catalog securables.
   schemas                                A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.
-  secrets-uc                             *Public Preview* A secret is a Unity Catalog securable object that stores sensitive credential data (such as passwords, tokens, and keys) within a three-level namespace (**catalog_name.schema_name.secret_name**).
+  secrets-uc                             A secret is a Unity Catalog securable object that stores sensitive credential data (such as passwords, tokens, and keys) within a three-level namespace (**catalog_name.schema_name.secret_name**).
   storage-credentials                    A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant.
   system-schemas                         *Public Preview* A system schema is a schema that lives within the system catalog.
   table-constraints                      Primary key and foreign key constraints encode relationships between fields in tables.

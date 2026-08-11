@@ -80,12 +80,11 @@ func newCreateWorkspaceAssignmentDetailProxy() *cobra.Command {
 	cmd.Short = `Create a workspace assignment detail for a workspace.`
 	cmd.Long = `Create a workspace assignment detail for a workspace.
 
-  Creates a workspace assignment detail for a principal (workspace-level proxy).
-  Entitlement grants are applied individually and non-atomically — if a
-  failure occurs partway through, the principal will be assigned to the
-  workspace but with only a subset of the requested entitlements. Use
-  GetWorkspaceAssignmentDetail to confirm which entitlements were successfully
-  granted.
+  Creates a workspace assignment detail for a principal in the calling
+  workspace. Entitlements are granted one at a time rather than atomically. If
+  the request fails partway through, the principal stays assigned to the
+  workspace with only some of the requested entitlements. Get the assignment
+  detail afterwards to confirm which entitlements were granted.
 
   Arguments:
     PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks.`
@@ -172,11 +171,11 @@ func newDeleteWorkspaceAssignmentDetailProxy() *cobra.Command {
 	cmd.Short = `Delete a workspace assignment detail for a workspace.`
 	cmd.Long = `Delete a workspace assignment detail for a workspace.
 
-  Deletes a workspace assignment detail for a principal (workspace-level proxy),
-  revoking all associated entitlements. Entitlement revocations are applied
-  individually and non-atomically — if a failure occurs partway through, the
-  principal remains assigned with a subset of its original entitlements, and the
-  operation is safe to retry.
+  Deletes a workspace assignment detail for a principal in the calling
+  workspace, revoking all of its entitlements. Entitlements are revoked one at a
+  time rather than atomically. If the request fails partway through, the
+  principal stays assigned with some of its original entitlements. Retrying is
+  safe.
 
   Arguments:
     PRINCIPAL_ID: Required. ID of the principal in Databricks to delete workspace assignment
@@ -313,8 +312,7 @@ func newGetWorkspaceAssignmentDetailProxy() *cobra.Command {
 	cmd.Short = `Get workspace assignment details for a principal.`
 	cmd.Long = `Get workspace assignment details for a principal.
 
-  Returns the assignment details for a principal in a workspace (workspace-level
-  proxy).
+  Returns the assignment details for a principal in the calling workspace.
 
   Arguments:
     PRINCIPAL_ID: Required. The internal ID of the principal (user/sp/group) for which the
@@ -377,16 +375,16 @@ func newListWorkspaceAssignmentDetailsProxy() *cobra.Command {
 	var listWorkspaceAssignmentDetailsProxyReq iamv2.ListWorkspaceAssignmentDetailsProxyRequest
 
 	cmd.Flags().IntVar(&listWorkspaceAssignmentDetailsProxyReq.PageSize, "page-size", listWorkspaceAssignmentDetailsProxyReq.PageSize, `The maximum number of workspace assignment details to return.`)
-	cmd.Flags().StringVar(&listWorkspaceAssignmentDetailsProxyReq.PageToken, "page-token", listWorkspaceAssignmentDetailsProxyReq.PageToken, `A page token, received from a previous ListWorkspaceAssignmentDetailsProxy call.`)
+	cmd.Flags().StringVar(&listWorkspaceAssignmentDetailsProxyReq.PageToken, "page-token", listWorkspaceAssignmentDetailsProxyReq.PageToken, `A page token from a previous list call.`)
 
 	cmd.Use = "list-workspace-assignment-details-proxy"
 	cmd.Short = `List workspace assignment details for a workspace.`
 	cmd.Long = `List workspace assignment details for a workspace.
 
-  Lists workspace assignment details for a workspace (workspace-level proxy).
-  For scalability, the response omits the per-principal entitlement fields
-  (entitlements and effective_entitlements); call
-  GetWorkspaceAssignmentDetailProxy to read entitlements for a single principal.`
+  Lists workspace assignment details for the calling workspace. The response
+  omits the per-principal entitlement fields (entitlements and
+  effective_entitlements). To read the entitlements for a single principal,
+  get that principal's assignment detail.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -536,9 +534,10 @@ func newResolveServicePrincipalProxy() *cobra.Command {
 
 Resolve an external service principal in the Databricks account.
 
-  Resolves an SP with the given external ID from the customer's IdP. If the SP
-  does not exist, it will be created. If the customer is not onboarded onto
-  Automatic Identity Management (AIM), this will return an error.
+  Resolves a service principal with the given external ID from the customer's
+  IdP. If the service principal does not exist, it will be created. If the
+  customer is not onboarded onto Automatic Identity Management (AIM), this will
+  return an error.
 
   Arguments:
     EXTERNAL_ID: Required. The external ID of the service principal in the customer's IdP.`
@@ -712,11 +711,10 @@ func newUpdateWorkspaceAssignmentDetailProxy() *cobra.Command {
 	cmd.Short = `Update a workspace assignment detail for a workspace.`
 	cmd.Long = `Update a workspace assignment detail for a workspace.
 
-  Updates the entitlements of a directly assigned principal in a workspace
-  (workspace-level proxy). Entitlement changes are applied individually and
-  non-atomically — if a failure occurs partway through, only a subset of the
-  requested changes may have been applied. Use GetWorkspaceAssignmentDetail to
-  confirm the final state.
+  Updates the entitlements of a directly assigned principal in the calling
+  workspace. Changes are applied one at a time rather than atomically. If the
+  request fails partway through, only some of the requested changes take effect.
+  Get the assignment detail afterwards to confirm the final state.
 
   Arguments:
     PRINCIPAL_ID: Required. ID of the principal in Databricks.

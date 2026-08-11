@@ -2422,15 +2422,15 @@
                     "description": "A secret stored in Unity Catalog. Secrets are three-level namespace objects\n(catalog.schema.secret) that securely store sensitive credential data such as\npasswords, tokens, and keys.",
                     "properties": {
                       "catalog_name": {
-                        "description": "[Public Preview] The name of the catalog where the schema and the secret reside.",
+                        "description": "The name of the catalog where the schema and the secret reside.",
                         "$ref": "#/$defs/string"
                       },
                       "comment": {
-                        "description": "[Public Preview] User-provided free-form text description of the secret.",
+                        "description": "User-provided free-form text description of the secret.",
                         "$ref": "#/$defs/string"
                       },
                       "expire_time": {
-                        "description": "[Public Preview] User-provided expiration time of the secret. Purely informational; does not trigger automatic actions.",
+                        "description": "User-provided expiration time of the secret. Purely informational; does not trigger automatic actions.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
                       },
                       "grants": {
@@ -2442,19 +2442,19 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "[Public Preview] The name of the secret, relative to its parent schema.",
+                        "description": "The name of the secret, relative to its parent schema.",
                         "$ref": "#/$defs/string"
                       },
                       "owner": {
-                        "description": "[Public Preview] The owner of the secret. Defaults to the creating principal on creation. Can be updated to\ntransfer ownership of the secret to another principal.",
+                        "description": "The owner of the secret. Defaults to the creating principal on creation. Can be updated to\ntransfer ownership of the secret to another principal.",
                         "$ref": "#/$defs/string"
                       },
                       "schema_name": {
-                        "description": "[Public Preview] The name of the schema where the secret resides.",
+                        "description": "The name of the schema where the secret resides.",
                         "$ref": "#/$defs/string"
                       },
                       "value": {
-                        "description": "[Public Preview] The secret value to store. Must be a variable reference (e.g. ${var.my_secret}) to prevent plain-text secrets in configuration files.",
+                        "description": "The secret value to store. Must be a variable reference (e.g. ${var.my_secret}) to prevent plain-text secrets in configuration files.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -10487,16 +10487,12 @@
                   "description": "Fanout configuration for multi-table routing from streaming sources.\nRoutes each input record to a destination table based on a routing\nkey derived from the record. The key value becomes the table name\nsuffix: {destination_catalog}.{destination_schema}.{key_value}.",
                   "properties": {
                     "fanout_by": {
-                      "description": "[Private Preview] Column path or SQL expression whose value determines the destination table.\nSupports dotted paths (e.g. \"value.event_name\") and expressions\n(e.g. \"value:event_name::string\").",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Column path or SQL expression whose value determines the destination table.\nSupports dotted paths (e.g. \"value.event_name\") and expressions\n(e.g. \"value:event_name::string\").",
+                      "$ref": "#/$defs/string"
                     },
                     "transforms": {
-                      "description": "[Private Preview] Optional transforms applied to each route's DataFrame before writing\nto the destination table.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Optional transforms applied to each route's DataFrame before writing\nto the destination table.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer"
                     }
                   },
                   "additionalProperties": false
@@ -11574,10 +11570,8 @@
                       "$ref": "#/$defs/string"
                     },
                     "fanout_options": {
-                      "description": "[Private Preview] Fanout options for multi-table routing from streaming sources.\nWhen set, records are routed to destination tables based on a\nper-record routing key. The key value becomes the table name:\n{destination_catalog}.{destination_schema}.{key_value}.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionFanoutOptions",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Fanout options for multi-table routing from streaming sources.\nWhen set, records are routed to destination tables based on a\nper-record routing key. The key value becomes the table name:\n{destination_catalog}.{destination_schema}.{key_value}.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionFanoutOptions"
                     },
                     "source_catalog": {
                       "description": "[Public Preview] The source catalog name. Might be optional depending on the type of source.",

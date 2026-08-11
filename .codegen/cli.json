@@ -4469,7 +4469,7 @@
           ]
         },
         "state": {
-          "description": "Serialized local config state after the operation. Should be unset for\ndelete operations. Mutable: may be updated after creation via\nUpdateOperation. When updating, the caller must echo the last-observed\n`sequence_id` as a concurrency precondition.",
+          "description": "Serialized local config state after the operation. Should be unset for\ndelete operations. Mutable: may be updated after creation via\nUpdateOperation. When updating, the caller must echo the last-observed\n`sequence_id` as a concurrency precondition.\n\nOpaque to this service: the string is stored and returned unchanged. This is\ndeliberately not google.protobuf.Value, whose only numeric case is\n`double number_value`, so parsing the client's JSON into it rewrites every\ninteger as a double - `1` reads back as `1.0`, which no longer deserializes\ninto an integer field - and silently loses precision above 2^53, which is\nwithin range for IDs the client records.\n\nA string rather than bytes: the payload is always UTF-8 JSON, and proto3 JSON\nmaps bytes to base64, which inflates every request and response by a third\nand makes state unreadable in logs and API responses. Both generate the same\nOpenAPI schema (\"type\": \"string\"), so the SDKs are identical either way.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -4581,7 +4581,7 @@
           ]
         },
         "state": {
-          "description": "Serialized local config state (what the CLI deployed).",
+          "description": "Serialized local config state (what the CLI deployed). Opaque to this\nservice; see Operation.state for why this is a string and not\ngoogle.protobuf.Value.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -6518,7 +6518,7 @@
         "secret": {
           "description": "The secret object to create. The **name**, **catalog_name**, **schema_name**, and **value**\nfields are required.",
           "ref": "catalog.Secret",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -8958,7 +8958,7 @@
           ]
         },
         "page_size": {
-          "description": "Maximum number of MCP services to return. Defaults to 100 when unset or 0;\nthe maximum is 1000. Use `next_page_token` to retrieve additional pages.",
+          "description": "Maximum number of MCP services to return. Defaults to 100 when unset or 0;\nthe maximum is 100. Use `next_page_token` to retrieve additional pages.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -9046,7 +9046,7 @@
           ]
         },
         "page_size": {
-          "description": "Maximum number of provider services to return. Defaults to 100 when unset or\n0; the maximum is 1000. Use `next_page_token` to retrieve additional pages.",
+          "description": "Maximum number of provider services to return. Defaults to 100 when unset or\n0; the maximum is 100. Use `next_page_token` to retrieve additional pages.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -9110,7 +9110,7 @@
           ]
         },
         "page_size": {
-          "description": "Maximum number of model services to return. Defaults to 100 when unset or 0;\nthe maximum is 1000. Use `next_page_token` to retrieve additional pages.",
+          "description": "Maximum number of model services to return. Defaults to 100 when unset or 0;\nthe maximum is 100. Use `next_page_token` to retrieve additional pages.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -9366,28 +9366,28 @@
       "fields": {
         "catalog_name": {
           "description": "The name of the catalog under which to list secrets. Both **catalog_name** and\n**schema_name** must be specified together.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_size": {
           "description": "Maximum number of secrets to return.\n\n- If not specified, at most 1000 secrets are returned.\n- If set to a value greater than 0, the page length is the minimum of this value and 1000.\n- If set to 0, the page length is set to 1000.\n- If set to a value less than 0, an invalid parameter error is returned.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "page_token": {
           "description": "Opaque pagination token to go to the next page based on previous query. The maximum page length\nis determined by a server configured value.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "schema_name": {
           "description": "The name of the schema under which to list secrets. Both **catalog_name** and\n**schema_name** must be specified together.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -9399,14 +9399,14 @@
       "fields": {
         "next_page_token": {
           "description": "Opaque token to retrieve the next page of results. Absent if there are no more pages.\n**page_token** should be set to this value for the next request.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "secrets": {
           "description": "An array of secret objects.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
@@ -10060,18 +10060,11 @@
       }
     },
     "catalog.ModelProviderServiceConfigAmazonBedrockProviderDirectConfig": {
-      "description": "Direct form of Amazon Bedrock provider config.\n\nAuthentication is one of two mutually exclusive modes, exactly one of which\nmust be supplied on Create:\n- Access keys: set both `aws_access_key_id` and `aws_secret_access_key`,\nleave `service_credential` unset.\n- UC service credential: set `service_credential.name` to the AIP-122\nresource-name form `credentials/{name}`, leave both access-key fields\nunset. The credential value lives in UC and is referenced by name, not\nheld on this message.\nSetting `service_credential` alongside either access-key field is\nrejected by service-side validation on Create; the proto itself allows any\ncombination on the wire.",
+      "description": "Direct form of Amazon Bedrock provider config.\n\nAuthentication is one of two mutually exclusive modes, exactly one of which\nmust be supplied on Create:\n- Access keys: set `aws_access_key`, leave `service_credential` unset.\n- UC service credential: set `service_credential.name` to the AIP-122\nresource-name form `credentials/{name}`, leave `aws_access_key` unset. The\ncredential value lives in UC and is referenced by name, not held on this\nmessage.\nSetting more than one mode is rejected.",
       "fields": {
-        "aws_access_key_id": {
-          "description": "AWS access key ID for Bedrock authentication. Required on Create when using\naccess-key auth; must be paired with `aws_secret_access_key` and is\nmutually exclusive with `service_credential`. Treated as\nusername-equivalent (not a secret value): round-trips on reads and is\nscrubbed from audit logs.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
-        "aws_secret_access_key": {
-          "description": "AWS secret access key paired with `aws_access_key_id`. Required on Create\nwhen using access-key auth; mutually exclusive with `service_credential`.\nSupplied as inline plaintext via `ProviderSecret.plaintext`.",
-          "ref": "catalog.ModelProviderServiceConfigProviderSecret",
+        "aws_access_key": {
+          "description": "AWS access-key-pair auth. Mutually exclusive with `service_credential`.\nSupersedes the flat `aws_access_key_id` / `aws_secret_access_key` fields.",
+          "ref": "catalog.ModelProviderServiceConfigAwsAccessKey",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -10085,7 +10078,7 @@
           ]
         },
         "service_credential": {
-          "description": "Reference to a UC service credential authorizing Bedrock requests. On\nCreate the caller supplies `service_credential.name` in the AIP-122\nresource-name form `credentials/{name}`. Required on Create when using\nUC-service-credential auth; mutually exclusive with the aws_access_key_id\n+ aws_secret_access_key pair. The credential is referenced by name; its\nvalue is not carried here. On read the resolved `id` and `is_deleted` are\nalso populated. Only supported on AWS-hosted workspaces; Create requests\nfrom other clouds are rejected with INVALID_PARAMETER_VALUE.",
+          "description": "Reference to a UC service credential authorizing Bedrock requests. On\nCreate the caller supplies `service_credential.name` in the AIP-122\nresource-name form `credentials/{name}`. Required on Create when using\nUC-service-credential auth; mutually exclusive with `aws_access_key`. The\ncredential is referenced by name; its value is not carried here. On read the\nresolved `id` and `is_deleted` are also populated. Only supported on AWS-hosted\nworkspaces; Create requests from other clouds are rejected with\nINVALID_PARAMETER_VALUE.",
           "ref": "catalog.ModelProviderServiceConfigServiceCredential",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
@@ -10153,6 +10146,26 @@
         "ANTHROPIC_RELAYED_PLAN_TYPE_TEAM_ENTERPRISE": "PUBLIC_BETA"
       }
     },
+    "catalog.ModelProviderServiceConfigAwsAccessKey": {
+      "description": "AWS access-key-pair auth for Amazon Bedrock: a SigV4-signing key pair.",
+      "fields": {
+        "access_key_id": {
+          "description": "AWS access key ID. Required on Create when using access-key auth. Treated as\nusername-equivalent (not a secret value): round-trips on reads and is\nscrubbed from audit logs.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "secret_access_key": {
+          "description": "AWS secret access key paired with `access_key_id`. Required on Create when\nusing access-key auth. Supplied as inline plaintext via\n`ProviderSecret.plaintext`.",
+          "ref": "catalog.ModelProviderServiceConfigProviderSecret",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
     "catalog.ModelProviderServiceConfigAzureOpenAiProviderConfig": {
       "description": "Azure OpenAI provider configuration.",
       "fields": {
@@ -10166,10 +10179,10 @@
       }
     },
     "catalog.ModelProviderServiceConfigAzureOpenAiProviderDirectConfig": {
-      "description": "Direct form of Azure OpenAI provider config. Exactly one of three\nmutually-exclusive auth modes must be supplied on Create:\n- API key: set `api_key`, leave the Entra fields and `service_credential`\nunset.\n- Entra ID (service principal): set all of `tenant_id`, `client_id`, and\n`client_secret`, leave `api_key` and `service_credential` unset.\n- UC service credential: set `service_credential.name` to the AIP-122\nresource-name form `credentials/{name}`, leave `api_key` and all Entra\nfields unset. The credential value lives in UC and is referenced by name,\nnot held on this message. Only supported on Azure-hosted workspaces.\nSetting more than one mode, or an incomplete Entra triple, is rejected.",
+      "description": "Direct form of Azure OpenAI provider config. Exactly one of three\nmutually-exclusive auth modes must be supplied on Create:\n- API key: set `api_key`, leave `entra_service_principal` and\n`service_credential` unset.\n- Entra ID (service principal): set `entra_service_principal`, leave\n`api_key` and `service_credential` unset.\n- UC service credential: set `service_credential.name` to the AIP-122\nresource-name form `credentials/{name}`, leave `api_key` and\n`entra_service_principal` unset. The credential value lives in UC and is\nreferenced by name, not held on this message. Only supported on\nAzure-hosted workspaces.\nSetting more than one mode is rejected.",
       "fields": {
         "api_key": {
-          "description": "Azure OpenAI API key. Mutually exclusive with the Entra fields. Supplied as\ninline plaintext via `ProviderSecret.plaintext`.",
+          "description": "Azure OpenAI API key. Mutually exclusive with the Entra and\nservice-credential modes. Supplied as inline plaintext via\n`ProviderSecret.plaintext`.",
           "ref": "catalog.ModelProviderServiceConfigProviderSecret",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
@@ -10183,31 +10196,17 @@
             "OPTIONAL"
           ]
         },
-        "client_id": {
-          "description": "Entra ID client (application) ID for service-principal auth. Set together\nwith `tenant_id` and `client_secret`; mutually exclusive with `api_key`\nand `service_credential`.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
-        "client_secret": {
-          "description": "Entra ID client secret for service-principal auth. Set together with\n`tenant_id` and `client_id`; mutually exclusive with `api_key` and\n`service_credential`. Supplied as\ninline plaintext via `ProviderSecret.plaintext`.",
-          "ref": "catalog.ModelProviderServiceConfigProviderSecret",
+        "entra_service_principal": {
+          "description": "Entra ID (service principal) auth. Mutually exclusive with `api_key` and\n`service_credential`. Supersedes the flat `tenant_id` / `client_id` /\n`client_secret` fields.",
+          "ref": "catalog.ModelProviderServiceConfigEntraServicePrincipal",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "service_credential": {
-          "description": "Reference to a UC service credential authorizing Azure OpenAI requests. On\nCreate the caller supplies `service_credential.name` in the AIP-122\nresource-name form `credentials/{name}`. Required on Create when using\nUC-service-credential auth; mutually exclusive with `api_key` and with the\nEntra triple (tenant_id + client_id + client_secret). The credential is\nreferenced by name; its value is not carried here. On read the resolved `id`\nand `is_deleted` are also populated. Only supported on Azure-hosted\nworkspaces; Create requests from other clouds are rejected with\nINVALID_PARAMETER_VALUE.",
+          "description": "Reference to a UC service credential authorizing Azure OpenAI requests. On\nCreate the caller supplies `service_credential.name` in the AIP-122\nresource-name form `credentials/{name}`. Required on Create when using\nUC-service-credential auth; mutually exclusive with `api_key` and\n`entra_service_principal`. The credential is\nreferenced by name; its value is not carried here. On read the resolved `id`\nand `is_deleted` are also populated. Only supported on Azure-hosted\nworkspaces; Create requests from other clouds are rejected with\nINVALID_PARAMETER_VALUE.",
           "ref": "catalog.ModelProviderServiceConfigServiceCredential",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
-        "tenant_id": {
-          "description": "Entra ID (Azure AD) tenant ID for service-principal auth. Set together with\n`client_id` and `client_secret`; mutually exclusive with `api_key` and\n`service_credential`.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -10240,6 +10239,33 @@
         },
         "base_url": {
           "description": "Endpoint URL of the OpenAI-compatible service (e.g.,\n`https://api.example.com/v1`). Required on Create.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
+    "catalog.ModelProviderServiceConfigEntraServicePrincipal": {
+      "description": "Entra ID (Azure AD) service-principal auth: AI Gateway exchanges the\n`tenant_id` + `client_id` identify the service principal, and the `credential`\noneof proves that identity, exchanged for an Entra bearer token on outbound\nrequests via the OAuth2 client-credentials grant. Shared by the Azure OpenAI\nand Microsoft Foundry provider configs.",
+      "fields": {
+        "client_id": {
+          "description": "Entra ID client (application) ID. Required on Create.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "client_secret": {
+          "description": "Entra ID client secret. Supplied as inline plaintext via\n`ProviderSecret.plaintext`.",
+          "ref": "catalog.ModelProviderServiceConfigProviderSecret",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "tenant_id": {
+          "description": "Entra ID (Azure AD) tenant ID. Required on Create.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -10281,10 +10307,10 @@
       }
     },
     "catalog.ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig": {
-      "description": "Direct form of Gemini Enterprise provider config.",
+      "description": "Direct form of Gemini Enterprise provider config.\n\nAuthentication is one of two mutually exclusive modes; exactly one must be\nsupplied on Create:\n- API key: set `api_key`, leave `service_credential` unset.\n- UC service credential: set `service_credential`, leave `api_key` unset.",
       "fields": {
         "api_key": {
-          "description": "Google Gemini Enterprise API key. Required on Create. Supplied as inline\nplaintext via `ProviderSecret.plaintext`.",
+          "description": "Google Gemini Enterprise API key. Required on Create when using API-key\nauth; mutually exclusive with `service_credential`. Supplied as inline\nplaintext via `ProviderSecret.plaintext`.",
           "ref": "catalog.ModelProviderServiceConfigProviderSecret",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
@@ -10320,10 +10346,10 @@
       }
     },
     "catalog.ModelProviderServiceConfigMicrosoftFoundryProviderDirectConfig": {
-      "description": "Direct form of Microsoft Foundry provider config.\n\nAuthentication is one of three mutually exclusive modes, exactly one of which\nmust be supplied on Create:\n- API key: set `api_key`, leave the Entra fields and `service_credential`\nunset.\n- Entra ID (service principal): set all of `tenant_id`, `client_id`, and\n`client_secret`, leave `api_key` and `service_credential` unset. AI\nGateway exchanges these for an Entra bearer token on outbound requests via\nthe OAuth2 client-credentials grant.\n- UC service credential: set `service_credential.name` to the AIP-122\nresource-name form `credentials/{name}`, leave `api_key` and all Entra\nfields unset. The credential value lives in UC and is referenced by name,\nnot held on this message. Only supported on Azure-hosted workspaces.\nSetting more than one mode, or an incomplete Entra triple, is rejected.",
+      "description": "Direct form of Microsoft Foundry provider config.\n\nAuthentication is one of three mutually exclusive modes, exactly one of which\nmust be supplied on Create:\n- API key: set `api_key`, leave `entra_service_principal` and\n`service_credential` unset.\n- Entra ID (service principal): set `entra_service_principal`, leave\n`api_key` and `service_credential` unset. AI Gateway exchanges these for\nan Entra bearer token on outbound requests via the OAuth2\nclient-credentials grant.\n- UC service credential: set `service_credential.name` to the AIP-122\nresource-name form `credentials/{name}`, leave `api_key` and\n`entra_service_principal` unset. The credential value lives in UC and is\nreferenced by name, not held on this message. Only supported on\nAzure-hosted workspaces.\nSetting more than one mode is rejected.",
       "fields": {
         "api_key": {
-          "description": "Microsoft AI Foundry API key. Mutually exclusive with the Entra fields.\nSupplied as inline plaintext via `ProviderSecret.plaintext`.",
+          "description": "Microsoft AI Foundry API key. Mutually exclusive with the Entra and\nservice-credential modes. Supplied as inline plaintext via\n`ProviderSecret.plaintext`.",
           "ref": "catalog.ModelProviderServiceConfigProviderSecret",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
@@ -10337,31 +10363,17 @@
             "OPTIONAL"
           ]
         },
-        "client_id": {
-          "description": "Entra ID client (application) ID for service-principal auth. Set together\nwith `tenant_id` and `client_secret`; mutually exclusive with `api_key`\nand `service_credential`.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
-        "client_secret": {
-          "description": "Entra ID client secret for service-principal auth. Set together with\n`tenant_id` and `client_id`; mutually exclusive with `api_key` and\n`service_credential`. Supplied as\ninline plaintext via `ProviderSecret.plaintext`.",
-          "ref": "catalog.ModelProviderServiceConfigProviderSecret",
+        "entra_service_principal": {
+          "description": "Entra ID (service principal) auth. Mutually exclusive with `api_key` and\n`service_credential`. Supersedes the flat `tenant_id` / `client_id` /\n`client_secret` fields.",
+          "ref": "catalog.ModelProviderServiceConfigEntraServicePrincipal",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "service_credential": {
-          "description": "Reference to a UC service credential authorizing Microsoft Foundry requests.\nOn Create the caller supplies `service_credential.name` in the AIP-122\nresource-name form `credentials/{name}`. Required on Create when using\nUC-service-credential auth; mutually exclusive with `api_key` and with the\nEntra triple (tenant_id + client_id + client_secret). The credential is\nreferenced by name; its value is not carried here. On read the resolved `id`\nand `is_deleted` are also populated. Only supported on Azure-hosted\nworkspaces; Create requests from other clouds are rejected with\nINVALID_PARAMETER_VALUE.",
+          "description": "Reference to a UC service credential authorizing Microsoft Foundry requests.\nOn Create the caller supplies `service_credential.name` in the AIP-122\nresource-name form `credentials/{name}`. Required on Create when using\nUC-service-credential auth; mutually exclusive with `api_key` and\n`entra_service_principal`. The credential is\nreferenced by name; its value is not carried here. On read the resolved `id`\nand `is_deleted` are also populated. Only supported on Azure-hosted\nworkspaces; Create requests from other clouds are rejected with\nINVALID_PARAMETER_VALUE.",
           "ref": "catalog.ModelProviderServiceConfigServiceCredential",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
-        "tenant_id": {
-          "description": "Entra ID (Azure AD) tenant ID for service-principal auth. Set together with\n`client_id` and `client_secret`; mutually exclusive with `api_key` and\n`service_credential`.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
@@ -12141,77 +12153,77 @@
       "fields": {
         "catalog_name": {
           "description": "The name of the catalog where the schema and the secret reside.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE"
           ]
         },
         "comment": {
           "description": "User-provided free-form text description of the secret.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "create_time": {
           "description": "The time at which this secret was created.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "created_by": {
           "description": "The principal that created the secret.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "effective_owner": {
           "description": "The effective owner of the secret, which may differ from the directly-set **owner** due to\ninheritance.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "effective_value": {
           "description": "The secret value. Only populated in responses when you have the **READ_SECRET**\nprivilege and **include_value** is set to true in the request. The maximum size is 60 KiB.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "expire_time": {
           "description": "User-provided expiration time of the secret. This field indicates when the secret should no\nlonger be used and may be displayed as a warning in the UI. It is purely informational and\ndoes not trigger any automatic actions or affect the secret's lifecycle.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "full_name": {
           "description": "The three-level (fully qualified) name of the secret, in the form of **catalog_name.schema_name.secret_name**.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "metastore_id": {
           "description": "Unique identifier of the metastore hosting the secret.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "name": {
           "description": "The name of the secret, relative to its parent schema.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE"
           ]
         },
         "owner": {
           "description": "The owner of the secret. Defaults to the creating principal on creation. Can be updated to\ntransfer ownership of the secret to another principal.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "INPUT_ONLY",
             "OPTIONAL"
@@ -12219,28 +12231,28 @@
         },
         "schema_name": {
           "description": "The name of the schema where the secret resides.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "IMMUTABLE"
           ]
         },
         "update_time": {
           "description": "The time at which this secret was last updated.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "updated_by": {
           "description": "The principal that last updated the secret.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "value": {
           "description": "The secret value to store. This field is input-only and is not returned in responses — use\nthe **effective_value** field (via GetSecret with **include_value** set to true) to read the\nsecret value. The maximum size is 60 KiB (pre-encryption). Accepted content includes\npasswords, tokens, keys, and other sensitive credential data.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "INPUT_ONLY"
           ]
@@ -13790,11 +13802,11 @@
         "secret": {
           "description": "The secret object containing the fields to update. Only fields specified in **update_mask**\nwill be updated.",
           "ref": "catalog.Secret",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         },
         "update_mask": {
           "description": "The field mask specifying which fields of the secret to update.\n- If **update_mask** is **\"*\"**, all fields specified in **secret** are updated.\n- If **update_mask** specifies one or more fields, only those fields are updated.\nEach specified field must be set in **secret**.\nSupported fields: **value**, **comment**, **owner**, **expire_time**. To change the secret\nname, delete and recreate the secret.",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "GA"
         }
       }
     },
@@ -22178,6 +22190,7 @@
       }
     },
     "dashboards.TextAttachment": {
+      "description": "A text response on a conversation message: the answer, the final summary, or a\nclarifying follow-up question, along with optional phase and verification metadata.",
       "fields": {
         "content": {
           "description": "AI generated message",
@@ -22187,7 +22200,7 @@
           "launch_stage": "GA"
         },
         "purpose": {
-          "description": "Purpose/intent of this text attachment",
+          "description": "Purpose of this text attachment. A completed message may contain more than\none text attachment (for example a clarifying follow-up question alongside\nthe final answer); use this field to tell them apart. `TEXT_ATTACHMENT_PURPOSE_ANSWER`\nmarks the final answer/summary and `FOLLOW_UP_QUESTION` marks a clarifying question.",
           "ref": "dashboards.TextAttachmentPurpose",
           "launch_stage": "GA"
         }
@@ -25420,7 +25433,7 @@
           "launch_stage": "GA"
         },
         "emails": {
-          "description": "All the emails associated with the Databricks user.",
+          "description": "All the emails associated with the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
           "launch_stage": "GA"
         },
         "externalId": {
@@ -25440,7 +25453,7 @@
           "launch_stage": "GA"
         },
         "userName": {
-          "description": "Email address of the Databricks user.",
+          "description": "Email address of the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
           "launch_stage": "GA"
         }
       }
@@ -26889,7 +26902,7 @@
           "launch_stage": "GA"
         },
         "emails": {
-          "description": "All the emails associated with the Databricks user.",
+          "description": "All the emails associated with the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
           "launch_stage": "GA"
         },
         "externalId": {
@@ -26905,7 +26918,7 @@
           "launch_stage": "GA"
         },
         "userName": {
-          "description": "Email address of the Databricks user.",
+          "description": "Email address of the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
           "launch_stage": "GA"
         }
       }
@@ -27008,7 +27021,7 @@
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "emails": {
-          "description": "All the emails associated with the Databricks user.",
+          "description": "All the emails associated with the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "entitlements": {
@@ -27035,7 +27048,7 @@
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "userName": {
-          "description": "Email address of the Databricks user.",
+          "description": "Email address of the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
           "launch_stage": "PUBLIC_PREVIEW"
         }
       }
@@ -27059,7 +27072,7 @@
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "emails": {
-          "description": "All the emails associated with the Databricks user.",
+          "description": "All the emails associated with the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "entitlements": {
@@ -27090,7 +27103,7 @@
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "userName": {
-          "description": "Email address of the Databricks user.",
+          "description": "Email address of the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
           "launch_stage": "PUBLIC_PREVIEW"
         }
       }
@@ -27206,18 +27219,18 @@
             "OPTIONAL"
           ]
         },
+        "group_id": {
+          "description": "Internal group ID of the group in Databricks.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
         "group_name": {
           "description": "Display name of the group.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
             "OPTIONAL"
-          ]
-        },
-        "internal_id": {
-          "description": "Internal group ID of the group in Databricks.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OUTPUT_ONLY"
           ]
         }
       }
@@ -27232,7 +27245,7 @@
           ]
         },
         "page_token": {
-          "description": "A page token, received from a previous ListWorkspaceAssignmentDetailsProxy call. Provide this to retrieve the subsequent page.",
+          "description": "A page token from a previous list call. Provide this to retrieve the subsequent page.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -27284,7 +27297,7 @@
       }
     },
     "iamv2.ResolveGroupProxyRequest": {
-      "description": "Request message for resolving a group with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the group's groupname, and inherited parent groups.",
+      "description": "Request message for resolving a group with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the group's name and inherited parent groups.",
       "fields": {
         "external_id": {
           "description": "Required. The external ID of the group in the customer's IdP.",
@@ -27293,7 +27306,7 @@
       }
     },
     "iamv2.ResolveGroupRequest": {
-      "description": "Request message for resolving a group with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the group's groupname, and inherited parent groups.",
+      "description": "Request message for resolving a group with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the group's name and inherited parent groups.",
       "fields": {
         "external_id": {
           "description": "Required. The external ID of the group in the customer's IdP.",
@@ -27311,7 +27324,7 @@
       }
     },
     "iamv2.ResolveServicePrincipalProxyRequest": {
-      "description": "Request message for resolving a service principal with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the service principal's displayname, status, and inherited parent groups.",
+      "description": "Request message for resolving a service principal with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the service principal's display name, status, and inherited parent groups.",
       "fields": {
         "external_id": {
           "description": "Required. The external ID of the service principal in the customer's IdP.",
@@ -27320,7 +27333,7 @@
       }
     },
     "iamv2.ResolveServicePrincipalRequest": {
-      "description": "Request message for resolving a service principal with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the service principal's displayname, status, and inherited parent groups.",
+      "description": "Request message for resolving a service principal with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the service principal's display name, status, and inherited parent groups.",
       "fields": {
         "external_id": {
           "description": "Required. The external ID of the service principal in the customer's IdP.",
@@ -27338,7 +27351,7 @@
       }
     },
     "iamv2.ResolveUserProxyRequest": {
-      "description": "Request message for resolving a user with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the user's displayname, status, and inherited parent groups.",
+      "description": "Request message for resolving a user with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the user's display name, status, and inherited parent groups.",
       "fields": {
         "external_id": {
           "description": "Required. The external ID of the user in the customer's IdP.",
@@ -27347,7 +27360,7 @@
       }
     },
     "iamv2.ResolveUserRequest": {
-      "description": "Request message for resolving a user with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the user's displayname, status, and inherited parent groups.",
+      "description": "Request message for resolving a user with the given external ID from the customer's IdP into Databricks.\nWill resolve metadata such as the user's display name, status, and inherited parent groups.",
       "fields": {
         "external_id": {
           "description": "Required. The external ID of the user in the customer's IdP.",
@@ -27403,7 +27416,7 @@
             "OPTIONAL"
           ]
         },
-        "internal_id": {
+        "service_principal_id": {
           "description": "Internal service principal ID of the service principal in Databricks.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
@@ -27481,7 +27494,7 @@
             "OPTIONAL"
           ]
         },
-        "internal_id": {
+        "user_id": {
           "description": "Internal userId of the user in Databricks.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
@@ -27592,7 +27605,7 @@
       }
     },
     "iamv2.WorkspaceAssignmentDetail": {
-      "description": "The direct assignment of a provisioned account-level principal (user, service\nprincipal, or group) to a workspace, together with the entitlements that\nassignment grants in the workspace.\n\nA WorkspaceAssignmentDetail exists only for principals that are directly\nassigned to the workspace; principals that merely inherit workspace access\nthrough a group are not represented here (see WorkspaceAccessDetail /\nWorkspaceIdentityDetail for the effective, direct-or-indirect view). Creating\nthe resource assigns the principal to the workspace; deleting it removes the\nassignment. The `entitlements` field is the only client-settable field and\ndefines the entitlements granted directly on this assignment; `effective_entitlements`\nis the read-only union of those plus any granted via group membership.\n\nA direct assignment always carries at least one directly-assigned entitlement:\nthe assignment is what grants the entitlement, so a WorkspaceAssignmentDetail\nwith an empty `entitlements` set is not a valid state. Both create and update\nrequire a non-empty `entitlements` set (an empty set is rejected); to remove a\nprincipal's assignment entirely, delete the resource.\n\nThis resource replaces workspace assignment previously managed through the\nworkspace SCIM and permission-assignment APIs, and is intended for account\nand workspace admins.",
+      "description": "The direct assignment of a provisioned account-level principal (user, service\nprincipal, or group) to a workspace, together with the entitlements that\nassignment grants in the workspace.\n\nThis resource covers only principals assigned directly to the workspace.\nPrincipals that inherit workspace access through a group are not represented\nhere. See WorkspaceAccessDetail and WorkspaceIdentityDetail for the effective,\ndirect-or-indirect view. Creating the resource assigns the principal to the\nworkspace, and deleting it removes the assignment.\n\n`entitlements` is the only client-settable field. It holds the entitlements\ngranted directly on this assignment, including any the principal also holds\nthrough a group. `effective_entitlements` is the read-only union of those and\nany granted through group membership.\n\nA direct assignment always carries at least one directly-assigned entitlement,\nbecause the assignment is what grants it. Create and update both reject an\nempty `entitlements` set. To remove a principal's assignment entirely, delete\nthe resource.\n\nThis resource replaces workspace assignment previously managed through the\nworkspace SCIM and permission-assignment APIs, and is intended for account\nand workspace admins.",
       "fields": {
         "account_id": {
           "description": "The account ID parent of the workspace where the principal is assigned",
@@ -27602,7 +27615,7 @@
           ]
         },
         "effective_entitlements": {
-          "description": "The principal's full effective entitlements granted in this workspace: every entitlement it holds\nwhether granted directly or via group membership. Populated on Get; empty on List.",
+          "description": "Every entitlement the principal holds in this workspace, whether granted directly or through\ngroup membership. Get responses populate this field. List responses leave it empty.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY",
@@ -27610,7 +27623,7 @@
           ]
         },
         "entitlements": {
-          "description": "Entitlements granted directly to the principal on this workspace. The only client-settable\nfield: create and update manage exactly this set (including entitlements the principal also\nholds via a group).\nNot populated by ListWorkspaceAssignmentDetails (omitted for scalability); call\nGetWorkspaceAssignmentDetail to read the entitlements for a single principal.",
+          "description": "Entitlements granted directly to the principal on this workspace. This is the only\nclient-settable field. Create and update manage exactly this set, including entitlements the\nprincipal also holds through a group.\nList responses leave this field empty. Get a single principal to read its entitlements.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL",
@@ -30703,7 +30716,7 @@
           "launch_stage": "PRIVATE_PREVIEW"
         },
         "idempotency_token": {
-          "description": "An optional token to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly one run\nis launched with that idempotency token.\n\nThis token must have at most 64 characters.\n\nFor more information, see [How to ensure idempotency for jobs](https://kb.databricks.com/jobs/jobs-idempotency.html).",
+          "description": "An optional token to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly one run\nis launched with that idempotency token.\n\nThis token must have at most 64 characters.",
           "launch_stage": "GA"
         },
         "jar_params": {
@@ -31705,7 +31718,7 @@
           "launch_stage": "GA"
         },
         "idempotency_token": {
-          "description": "An optional token that can be used to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly\none run is launched with that idempotency token.\n\nThis token must have at most 64 characters.\n\nFor more information, see [How to ensure idempotency for jobs](https://kb.databricks.com/jobs/jobs-idempotency.html).",
+          "description": "An optional token that can be used to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly\none run is launched with that idempotency token.\n\nThis token must have at most 64 characters.",
           "launch_stage": "GA"
         },
         "notification_settings": {
@@ -32458,6 +32471,11 @@
         "file_arrival": {
           "ref": "jobs.FileArrivalTriggerState",
           "launch_stage": "GA"
+        },
+        "pause_status": {
+          "description": "Whether this trigger is paused or not. For continuous schedules, it can differ from the\nconfigured pause_status whenever a paused continuous job is kickstarted by an operation\nother than an update, such as a run-now.",
+          "ref": "jobs.PauseStatus",
+          "launch_stage": "PRIVATE_PREVIEW"
         },
         "sql_condition": {
           "description": "State for SQL condition evaluation, can coexist with other trigger states.",
@@ -37025,6 +37043,34 @@
         }
       }
     },
+    "ml.KinesisStreamConfig": {
+      "description": "Kinesis-specific configuration for a Stream. For the underlying connector and its source\noptions, see the Databricks documentation on connecting to Amazon Kinesis\n(https://docs.databricks.com/aws/en/connect/streaming/kinesis).",
+      "fields": {
+        "extra_options": {
+          "description": "Optional Kinesis source options, validated against a server-side allowlist at request time.\nAuth and connection details belong on the parent Stream's `connection_config`, not here.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "stream_arns": {
+          "description": "Kinesis stream ARNs to read from.",
+          "ref": "ml.StreamArnList",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "stream_names": {
+          "description": "Kinesis stream names to read from.",
+          "ref": "ml.StreamNameList",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
     "ml.LastDistinctFunction": {
       "description": "Returns the last N distinct values, ordered by the feature's timeseries column.",
       "fields": {
@@ -39402,6 +39448,18 @@
         }
       }
     },
+    "ml.StreamArnList": {
+      "description": "A list of Kinesis stream ARNs to read from.",
+      "fields": {
+        "arns": {
+          "description": "Kinesis stream ARNs to read from. For example,\n'arn:aws:kinesis:us-west-2:111122223333:stream/stream-a'.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
     "ml.StreamConnectionConfig": {
       "description": "Specifies how to connect and authenticate to the stream platform.",
       "fields": {
@@ -39415,6 +39473,18 @@
         },
         "uc_connection_name": {
           "description": "Name of an existing UC Connection for stream platform access.\nMust be the correct type for the streaming platform (e.g. a Kafka Connection for a Kafka\nStream, or a Kinesis Connection for a Kinesis Stream).",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
+    "ml.StreamNameList": {
+      "description": "A list of Kinesis stream names to read from.",
+      "fields": {
+        "names": {
+          "description": "Kinesis stream names to read from.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -39479,6 +39549,14 @@
         "kafka_stream_config": {
           "description": "Configuration for Apache Kafka streams.",
           "ref": "ml.KafkaStreamConfig",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "kinesis_stream_config": {
+          "description": "Configuration for AWS Kinesis Data Streams.",
+          "ref": "ml.KinesisStreamConfig",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -41343,7 +41421,7 @@
       "fields": {
         "cascade": {
           "description": "If false, pipeline deletion will not cascade to its datasets (MVs, STs, Views).\nBy default, this parameter will be true and all tables will be deleted with the pipeline.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "GA"
         },
         "force": {
           "description": "If true, deletion will proceed even if resource cleanup fails.\nBy default, deletion will fail if resources cleanup is required but fails.",
@@ -41961,11 +42039,11 @@
       "fields": {
         "fanout_by": {
           "description": "Column path or SQL expression whose value determines the destination table.\nSupports dotted paths (e.g. \"value.event_name\") and expressions\n(e.g. \"value:event_name::string\").",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "transforms": {
           "description": "Optional transforms applied to each route's DataFrame before writing\nto the destination table.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -43261,7 +43339,7 @@
         "fanout_options": {
           "description": "Fanout options for multi-table routing from streaming sources.\nWhen set, records are routed to destination tables based on a\nper-record routing key. The key value becomes the table name:\n{destination_catalog}.{destination_schema}.{key_value}.",
           "ref": "pipelines.IngestionPipelineDefinitionFanoutOptions",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "source_catalog": {
           "description": "The source catalog name. Might be optional depending on the type of source.",
@@ -43755,6 +43833,11 @@
           "description": "A list of tables to update with fullRefresh. If both refresh_selection and\nfull_refresh_selection are empty, this is a full graph update. Full Refresh on a table means\nthat the states of the table will be reset before the refresh.",
           "launch_stage": "GA"
         },
+        "mode": {
+          "description": "Indicates whether the update is either part of a continuous job run, or running in legacy continuous pipeline mode.\nReturned only for GetUpdate; not populated in ListUpdates responses.",
+          "ref": "pipelines.UpdateMode",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "parameters": {
           "description": "Key/value map of parameters used to initiate the update",
           "launch_stage": "PUBLIC_BETA"
@@ -43830,6 +43913,16 @@
         "SETTING_UP_TABLES": "GA",
         "STOPPING": "GA",
         "WAITING_FOR_RESOURCES": "GA"
+      }
+    },
+    "pipelines.UpdateMode": {
+      "enum": [
+        "DEFAULT",
+        "CONTINUOUS"
+      ],
+      "enum_launch_stages": {
+        "CONTINUOUS": "PRIVATE_PREVIEW",
+        "DEFAULT": "PRIVATE_PREVIEW"
       }
     },
     "pipelines.UpdateStateInfo": {
@@ -63085,6 +63178,15 @@
       }
     },
     "workspace.DeleteSecretResponse": {},
+    "workspace.DirectoryInfo": {
+      "description": "Additional metadata about a directory.",
+      "fields": {
+        "is_git_folder": {
+          "description": "Whether the directory is a Git folder, whose contents are version-controlled by a remote Git\nrepository. How a Git folder is represented depends on whether it has Git CLI access:\n\n- A Git folder with Git CLI access has an object type of ``DIRECTORY``, with this field set\nto ``true``.\n- A standard Git folder, which does not have Git CLI access, has an object type of ``REPO``\nand does not include this field.\n- A directory that is not Git-backed has this field set to ``false``.\n\nUse this field together with ``object_type`` to identify every Git folder in a workspace.",
+          "launch_stage": "PUBLIC_BETA"
+        }
+      }
+    },
     "workspace.ExportFormat": {
       "description": "The format for workspace import and export.",
       "enum": [
@@ -63449,6 +63551,11 @@
         "created_at": {
           "description": "Only applicable to files. The creation UTC timestamp.",
           "launch_stage": "GA"
+        },
+        "directory_info": {
+          "description": "Additional metadata about the directory. Only set for objects of type ``DIRECTORY``.",
+          "ref": "workspace.DirectoryInfo",
+          "launch_stage": "PUBLIC_BETA"
         },
         "language": {
           "description": "The language of the object. This value is set only if the object type is ``NOTEBOOK``. For Jupyter (.ipynb) notebooks, this is always ``PYTHON``.",
@@ -66720,7 +66827,7 @@
               },
               {
                 "name": "page_size",
-                "description": "Maximum number of MCP services to return. Defaults to 100 when unset or 0;\nthe maximum is 1000. Use `next_page_token` to retrieve additional pages.",
+                "description": "Maximum number of MCP services to return. Defaults to 100 when unset or 0;\nthe maximum is 100. Use `next_page_token` to retrieve additional pages.",
                 "is_query": true,
                 "entity": {
                   "is_int": true
@@ -66801,7 +66908,7 @@
               },
               {
                 "name": "page_size",
-                "description": "Maximum number of provider services to return. Defaults to 100 when unset or\n0; the maximum is 1000. Use `next_page_token` to retrieve additional pages.",
+                "description": "Maximum number of provider services to return. Defaults to 100 when unset or\n0; the maximum is 100. Use `next_page_token` to retrieve additional pages.",
                 "is_query": true,
                 "entity": {
                   "is_int": true
@@ -66882,7 +66989,7 @@
               },
               {
                 "name": "page_size",
-                "description": "Maximum number of model services to return. Defaults to 100 when unset or 0;\nthe maximum is 1000. Use `next_page_token` to retrieve additional pages.",
+                "description": "Maximum number of model services to return. Defaults to 100 when unset or 0;\nthe maximum is 100. Use `next_page_token` to retrieve additional pages.",
                 "is_query": true,
                 "entity": {
                   "is_int": true
@@ -80125,10 +80232,11 @@
               },
               {
                 "name": "state",
-                "description": "Serialized local config state after the operation. Should be unset for\ndelete operations. Mutable: may be updated after creation via\nUpdateOperation. When updating, the caller must echo the last-observed\n`sequence_id` as a concurrency precondition.",
+                "description": "Serialized local config state after the operation. Should be unset for\ndelete operations. Mutable: may be updated after creation via\nUpdateOperation. When updating, the caller must echo the last-observed\n`sequence_id` as a concurrency precondition.\n\nOpaque to this service: the string is stored and returned unchanged. This is\ndeliberately not google.protobuf.Value, whose only numeric case is\n`double number_value`, so parsing the client's JSON into it rewrites every\ninteger as a double - `1` reads back as `1.0`, which no longer deserializes\ninto an integer field - and silently loses precision above 2^53, which is\nwithin range for IDs the client records.\n\nA string rather than bytes: the payload is always UTF-8 JSON, and proto3 JSON\nmaps bytes to base64, which inflates every request and response by a third\nand makes state unreadable in logs and API responses. Both generate the same\nOpenAPI schema (\"type\": \"string\"), so the SDKs are identical either way.",
                 "is_request_body_field": true,
-                "is_optional_object": true,
-                "entity": {}
+                "entity": {
+                  "is_string": true
+                }
               },
               {
                 "name": "status",
@@ -82374,10 +82482,11 @@
               },
               {
                 "name": "state",
-                "description": "Serialized local config state after the operation. Should be unset for\ndelete operations. Mutable: may be updated after creation via\nUpdateOperation. When updating, the caller must echo the last-observed\n`sequence_id` as a concurrency precondition.",
+                "description": "Serialized local config state after the operation. Should be unset for\ndelete operations. Mutable: may be updated after creation via\nUpdateOperation. When updating, the caller must echo the last-observed\n`sequence_id` as a concurrency precondition.\n\nOpaque to this service: the string is stored and returned unchanged. This is\ndeliberately not google.protobuf.Value, whose only numeric case is\n`double number_value`, so parsing the client's JSON into it rewrites every\ninteger as a double - `1` reads back as `1.0`, which no longer deserializes\ninto an integer field - and silently loses precision above 2^53, which is\nwithin range for IDs the client records.\n\nA string rather than bytes: the payload is always UTF-8 JSON, and proto3 JSON\nmaps bytes to base64, which inflates every request and response by a third\nand makes state unreadable in logs and API responses. Both generate the same\nOpenAPI schema (\"type\": \"string\"), so the SDKs are identical either way.",
                 "is_request_body_field": true,
-                "is_optional_object": true,
-                "entity": {}
+                "entity": {
+                  "is_string": true
+                }
               },
               {
                 "name": "status",
@@ -133527,7 +133636,7 @@
         "methods": [
           {
             "name": "CreateWorkspaceAssignmentDetail",
-            "description": "Creates a workspace assignment detail for a principal. Entitlement grants are applied\nindividually and non-atomically — if a failure occurs partway through, the principal will be\nassigned to the workspace but with only a subset of the requested entitlements. Use\nGetWorkspaceAssignmentDetail to confirm which entitlements were successfully granted.",
+            "description": "Creates a workspace assignment detail for a principal. Entitlements are granted one at a time\nrather than atomically. If the request fails partway through, the principal stays assigned to\nthe workspace with only some of the requested entitlements. Get the assignment detail\nafterwards to confirm which entitlements were granted.",
             "summary": "Create a workspace assignment detail.",
             "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspace-assignment-details",
             "can_use_json": true,
@@ -133698,7 +133807,7 @@
               },
               {
                 "name": "effective_entitlements",
-                "description": "The principal's full effective entitlements granted in this workspace: every entitlement it holds\nwhether granted directly or via group membership. Populated on Get; empty on List.",
+                "description": "Every entitlement the principal holds in this workspace, whether granted directly or through\ngroup membership. Get responses populate this field. List responses leave it empty.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -133730,7 +133839,7 @@
               },
               {
                 "name": "entitlements",
-                "description": "Entitlements granted directly to the principal on this workspace. The only client-settable\nfield: create and update manage exactly this set (including entitlements the principal also\nholds via a group).\nNot populated by ListWorkspaceAssignmentDetails (omitted for scalability); call\nGetWorkspaceAssignmentDetail to read the entitlements for a single principal.",
+                "description": "Entitlements granted directly to the principal on this workspace. This is the only\nclient-settable field. Create and update manage exactly this set, including entitlements the\nprincipal also holds through a group.\nList responses leave this field empty. Get a single principal to read its entitlements.",
                 "is_request_body_field": true,
                 "entity": {
                   "pascal_name": "EntitlementList",
@@ -133820,7 +133929,7 @@
           },
           {
             "name": "DeleteWorkspaceAssignmentDetail",
-            "description": "Deletes a workspace assignment detail for a principal, revoking all associated entitlements.\nEntitlement revocations are applied individually and non-atomically — if a failure occurs\npartway through, the principal remains assigned with a subset of its original entitlements,\nand the operation is safe to retry.",
+            "description": "Deletes a workspace assignment detail for a principal, revoking all of its entitlements.\nEntitlements are revoked one at a time rather than atomically. If the request fails partway\nthrough, the principal stays assigned with some of its original entitlements. Retrying is safe.",
             "summary": "Delete a workspace assignment detail.",
             "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspace-assignment-details/{principal_id}",
             "is_hidden_cli": true,
@@ -134153,7 +134262,7 @@
           },
           {
             "name": "ListWorkspaceAssignmentDetails",
-            "description": "Lists workspace assignment details for a workspace.\nFor scalability, the response omits the per-principal entitlement fields (`entitlements` and\n`effective_entitlements`); call GetWorkspaceAssignmentDetail to read entitlements for a single\nprincipal.",
+            "description": "Lists workspace assignment details for a workspace. The response omits the per-principal\nentitlement fields (`entitlements` and `effective_entitlements`). To read the entitlements for\na single principal, get that principal's assignment detail.",
             "summary": "List workspace assignment details for a workspace.",
             "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspace-assignment-details",
             "is_hidden_cli": true,
@@ -134296,7 +134405,7 @@
           },
           {
             "name": "ResolveServicePrincipal",
-            "description": "Resolves an SP with the given external ID from the customer's IdP. If the SP does not exist, it will be created.\nIf the customer is not onboarded onto Automatic Identity Management (AIM), this will return an error.",
+            "description": "Resolves a service principal with the given external ID from the customer's IdP. If the service\nprincipal does not exist, it will be created.\nIf the customer is not onboarded onto Automatic Identity Management (AIM), this will return an error.",
             "summary": "Resolve an external service principal in the Databricks account.",
             "path": "/api/2.0/identity/accounts/{account_id}/service-principals/resolve-by-external-id",
             "can_use_json": true,
@@ -134426,7 +134535,7 @@
           },
           {
             "name": "UpdateWorkspaceAssignmentDetail",
-            "description": "Updates the entitlements of a directly assigned principal in a workspace. Entitlement changes\nare applied individually and non-atomically — if a failure occurs partway through, only a\nsubset of the requested changes may have been applied. Use GetWorkspaceAssignmentDetail to\nconfirm the final state.",
+            "description": "Updates the entitlements of a directly assigned principal in a workspace. Changes are applied\none at a time rather than atomically. If the request fails partway through, only some of the\nrequested changes take effect. Get the assignment detail afterwards to confirm the final state.",
             "summary": "Update a workspace assignment detail.",
             "path": "/api/2.0/identity/accounts/{account_id}/workspaces/{workspace_id}/workspace-assignment-details/{principal_id}",
             "can_use_json": true,
@@ -134652,7 +134761,7 @@
               },
               {
                 "name": "effective_entitlements",
-                "description": "The principal's full effective entitlements granted in this workspace: every entitlement it holds\nwhether granted directly or via group membership. Populated on Get; empty on List.",
+                "description": "Every entitlement the principal holds in this workspace, whether granted directly or through\ngroup membership. Get responses populate this field. List responses leave it empty.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -134684,7 +134793,7 @@
               },
               {
                 "name": "entitlements",
-                "description": "Entitlements granted directly to the principal on this workspace. The only client-settable\nfield: create and update manage exactly this set (including entitlements the principal also\nholds via a group).\nNot populated by ListWorkspaceAssignmentDetails (omitted for scalability); call\nGetWorkspaceAssignmentDetail to read the entitlements for a single principal.",
+                "description": "Entitlements granted directly to the principal on this workspace. This is the only\nclient-settable field. Create and update manage exactly this set, including entitlements the\nprincipal also holds through a group.\nList responses leave this field empty. Get a single principal to read its entitlements.",
                 "is_request_body_field": true,
                 "entity": {
                   "pascal_name": "EntitlementList",
@@ -138241,7 +138350,7 @@
           },
           {
             "name": "ListRuns",
-            "description": "List runs in descending order by start time.",
+            "description": "List runs in descending order by end time. If a run has not finished, it falls back to start time.",
             "summary": "List job runs.",
             "path": "/api/2.2/jobs/runs/list",
             "has_required_positional_arguments": true,
@@ -138739,7 +138848,7 @@
               },
               {
                 "name": "idempotency_token",
-                "description": "An optional token to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly one run\nis launched with that idempotency token.\n\nThis token must have at most 64 characters.\n\nFor more information, see [How to ensure idempotency for jobs](https://kb.databricks.com/jobs/jobs-idempotency.html).",
+                "description": "An optional token to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly one run\nis launched with that idempotency token.\n\nThis token must have at most 64 characters.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -139076,7 +139185,7 @@
               },
               {
                 "name": "idempotency_token",
-                "description": "An optional token that can be used to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly\none run is launched with that idempotency token.\n\nThis token must have at most 64 characters.\n\nFor more information, see [How to ensure idempotency for jobs](https://kb.databricks.com/jobs/jobs-idempotency.html).",
+                "description": "An optional token that can be used to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly\none run is launched with that idempotency token.\n\nThis token must have at most 64 characters.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -181150,10 +181259,8 @@
           "name": "catalog"
         },
         "docs_group": "catalog",
-        "launch_stage": "PUBLIC_PREVIEW",
-        "cli_launch_stage_label": "*Public Preview*",
-        "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-        "cli_launch_stage_display": "Public Preview",
+        "launch_stage": "GA",
+        "cli_launch_stage_display": "GA",
         "list": {
           "request": {
             "pascal_name": "ListSecretsRequest"
@@ -181168,10 +181275,8 @@
             "can_use_json": true,
             "is_crud_create": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "CreateSecretRequest",
               "is_object": true,
@@ -181638,10 +181743,8 @@
             "summary": "Delete a secret.",
             "path": "/api/2.1/unity-catalog/secrets/{full_name}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "DeleteSecretRequest",
               "is_object": true,
@@ -181701,10 +181804,8 @@
             "path": "/api/2.1/unity-catalog/secrets/{full_name}",
             "is_crud_read": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "GetSecretRequest",
               "is_object": true,
@@ -181841,10 +181942,8 @@
             "summary": "List secrets.",
             "path": "/api/2.1/unity-catalog/secrets",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "ListSecretsRequest",
               "is_object": true
@@ -181907,10 +182006,8 @@
             "path": "/api/2.1/unity-catalog/secrets/{full_name}",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_PREVIEW",
-            "cli_launch_stage_label": "*Public Preview*",
-            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
-            "cli_launch_stage_display": "Public Preview",
+            "launch_stage": "GA",
+            "cli_launch_stage_display": "GA",
             "request": {
               "pascal_name": "UpdateSecretRequest",
               "is_object": true,
@@ -197733,7 +197830,7 @@
           },
           {
             "name": "Patch",
-            "description": "Partially updates a user resource by applying the supplied operations on specific user attributes.",
+            "description": "Partially updates a user resource by applying the supplied operations on specific user attributes.\nThe `userName` and `emails` attributes cannot be updated through this API; any supplied changes to them are ignored (no-op).",
             "summary": "Update user details.",
             "path": "/api/2.0/preview/scim/v2/Users/{id}",
             "can_use_json": true,
@@ -197856,7 +197953,7 @@
           },
           {
             "name": "Update",
-            "description": "Replaces a user's information with the data supplied in request.",
+            "description": "Replaces a user's information with the data supplied in request.\nThe `userName` and `emails` attributes cannot be updated through this API; any supplied changes to them are ignored (no-op).",
             "summary": "Replace a user.",
             "path": "/api/2.0/preview/scim/v2/Users/{id}",
             "can_use_json": true,
@@ -197913,7 +198010,7 @@
               },
               {
                 "name": "emails",
-                "description": "All the emails associated with the Databricks user.",
+                "description": "All the emails associated with the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
                 "is_request_body_field": true,
                 "entity": {
                   "pascal_name": "ComplexValueList",
@@ -198005,7 +198102,7 @@
               },
               {
                 "name": "userName",
-                "description": "Email address of the Databricks user.",
+                "description": "Email address of the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -198459,7 +198556,7 @@
           },
           {
             "name": "Patch",
-            "description": "Partially updates a user resource by applying the supplied operations on specific user attributes.",
+            "description": "Partially updates a user resource by applying the supplied operations on specific user attributes.\nThe `userName` and `emails` attributes cannot be updated through this API; any supplied changes to them are ignored (no-op).",
             "summary": "Update user details.",
             "path": "/api/2.0/accounts/{account_id}/scim/v2/Users/{id}",
             "can_use_json": true,
@@ -198547,7 +198644,7 @@
           },
           {
             "name": "Update",
-            "description": "Replaces a user's information with the data supplied in request.",
+            "description": "Replaces a user's information with the data supplied in request.\nThe `userName` and `emails` attributes cannot be updated through this API; any supplied changes to them are ignored (no-op).",
             "summary": "Replace a user.",
             "path": "/api/2.0/accounts/{account_id}/scim/v2/Users/{id}",
             "can_use_json": true,
@@ -198602,7 +198699,7 @@
               },
               {
                 "name": "emails",
-                "description": "All the emails associated with the Databricks user.",
+                "description": "All the emails associated with the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
                 "is_request_body_field": true,
                 "entity": {
                   "pascal_name": "ComplexValueList",
@@ -198652,7 +198749,7 @@
               },
               {
                 "name": "userName",
-                "description": "Email address of the Databricks user.",
+                "description": "Email address of the Databricks user. This attribute cannot be updated through the SCIM PATCH or PUT APIs; any supplied change is ignored.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -206636,7 +206733,7 @@
         "methods": [
           {
             "name": "CreateWorkspaceAssignmentDetailProxy",
-            "description": "Creates a workspace assignment detail for a principal (workspace-level proxy). Entitlement\ngrants are applied individually and non-atomically — if a failure occurs partway through, the\nprincipal will be assigned to the workspace but with only a subset of the requested\nentitlements. Use GetWorkspaceAssignmentDetail to confirm which entitlements were successfully\ngranted.",
+            "description": "Creates a workspace assignment detail for a principal in the calling workspace. Entitlements\nare granted one at a time rather than atomically. If the request fails partway through, the\nprincipal stays assigned to the workspace with only some of the requested entitlements. Get the\nassignment detail afterwards to confirm which entitlements were granted.",
             "summary": "Create a workspace assignment detail for a workspace.",
             "path": "/api/2.0/identity/workspace-assignment-details",
             "can_use_json": true,
@@ -206778,7 +206875,7 @@
               },
               {
                 "name": "effective_entitlements",
-                "description": "The principal's full effective entitlements granted in this workspace: every entitlement it holds\nwhether granted directly or via group membership. Populated on Get; empty on List.",
+                "description": "Every entitlement the principal holds in this workspace, whether granted directly or through\ngroup membership. Get responses populate this field. List responses leave it empty.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -206810,7 +206907,7 @@
               },
               {
                 "name": "entitlements",
-                "description": "Entitlements granted directly to the principal on this workspace. The only client-settable\nfield: create and update manage exactly this set (including entitlements the principal also\nholds via a group).\nNot populated by ListWorkspaceAssignmentDetails (omitted for scalability); call\nGetWorkspaceAssignmentDetail to read the entitlements for a single principal.",
+                "description": "Entitlements granted directly to the principal on this workspace. This is the only\nclient-settable field. Create and update manage exactly this set, including entitlements the\nprincipal also holds through a group.\nList responses leave this field empty. Get a single principal to read its entitlements.",
                 "is_request_body_field": true,
                 "entity": {
                   "pascal_name": "EntitlementList",
@@ -206891,7 +206988,7 @@
           },
           {
             "name": "DeleteWorkspaceAssignmentDetailProxy",
-            "description": "Deletes a workspace assignment detail for a principal (workspace-level proxy), revoking all\nassociated entitlements. Entitlement revocations are applied individually and non-atomically\n— if a failure occurs partway through, the principal remains assigned with a subset of its\noriginal entitlements, and the operation is safe to retry.",
+            "description": "Deletes a workspace assignment detail for a principal in the calling workspace, revoking all of\nits entitlements. Entitlements are revoked one at a time rather than atomically. If the request\nfails partway through, the principal stays assigned with some of its original entitlements.\nRetrying is safe.",
             "summary": "Delete a workspace assignment detail for a workspace.",
             "path": "/api/2.0/identity/workspace-assignment-details/{principal_id}",
             "is_hidden_cli": true,
@@ -207031,7 +207128,7 @@
           },
           {
             "name": "GetWorkspaceAssignmentDetailProxy",
-            "description": "Returns the assignment details for a principal in a workspace (workspace-level proxy).",
+            "description": "Returns the assignment details for a principal in the calling workspace.",
             "summary": "Get workspace assignment details for a principal.",
             "path": "/api/2.0/identity/workspace-assignment-details/{principal_id}",
             "is_hidden_cli": true,
@@ -207116,7 +207213,7 @@
           },
           {
             "name": "ListWorkspaceAssignmentDetailsProxy",
-            "description": "Lists workspace assignment details for a workspace (workspace-level proxy).\nFor scalability, the response omits the per-principal entitlement fields (`entitlements` and\n`effective_entitlements`); call GetWorkspaceAssignmentDetailProxy to read entitlements for a\nsingle principal.",
+            "description": "Lists workspace assignment details for the calling workspace. The response omits the\nper-principal entitlement fields (`entitlements` and `effective_entitlements`). To read the\nentitlements for a single principal, get that principal's assignment detail.",
             "summary": "List workspace assignment details for a workspace.",
             "path": "/api/2.0/identity/workspace-assignment-details",
             "is_hidden_cli": true,
@@ -207142,7 +207239,7 @@
               },
               {
                 "name": "page_token",
-                "description": "A page token, received from a previous ListWorkspaceAssignmentDetailsProxy call. Provide this to retrieve the subsequent page.",
+                "description": "A page token from a previous list call. Provide this to retrieve the subsequent page.",
                 "is_query": true,
                 "entity": {
                   "is_string": true
@@ -207217,7 +207314,7 @@
           },
           {
             "name": "ResolveServicePrincipalProxy",
-            "description": "Resolves an SP with the given external ID from the customer's IdP. If the SP does not exist, it will be created.\nIf the customer is not onboarded onto Automatic Identity Management (AIM), this will return an error.",
+            "description": "Resolves a service principal with the given external ID from the customer's IdP. If the service\nprincipal does not exist, it will be created.\nIf the customer is not onboarded onto Automatic Identity Management (AIM), this will return an error.",
             "summary": "Resolve an external service principal in the Databricks account.",
             "path": "/api/2.0/identity/service-principals/resolve-by-external-id",
             "can_use_json": true,
@@ -207347,7 +207444,7 @@
           },
           {
             "name": "UpdateWorkspaceAssignmentDetailProxy",
-            "description": "Updates the entitlements of a directly assigned principal in a workspace (workspace-level\nproxy). Entitlement changes are applied individually and non-atomically — if a failure occurs\npartway through, only a subset of the requested changes may have been applied. Use\nGetWorkspaceAssignmentDetail to confirm the final state.",
+            "description": "Updates the entitlements of a directly assigned principal in the calling workspace. Changes are\napplied one at a time rather than atomically. If the request fails partway through, only some of\nthe requested changes take effect. Get the assignment detail afterwards to confirm the final\nstate.",
             "summary": "Update a workspace assignment detail for a workspace.",
             "path": "/api/2.0/identity/workspace-assignment-details/{principal_id}",
             "can_use_json": true,
@@ -207546,7 +207643,7 @@
               },
               {
                 "name": "effective_entitlements",
-                "description": "The principal's full effective entitlements granted in this workspace: every entitlement it holds\nwhether granted directly or via group membership. Populated on Get; empty on List.",
+                "description": "Every entitlement the principal holds in this workspace, whether granted directly or through\ngroup membership. Get responses populate this field. List responses leave it empty.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -207578,7 +207675,7 @@
               },
               {
                 "name": "entitlements",
-                "description": "Entitlements granted directly to the principal on this workspace. The only client-settable\nfield: create and update manage exactly this set (including entitlements the principal also\nholds via a group).\nNot populated by ListWorkspaceAssignmentDetails (omitted for scalability); call\nGetWorkspaceAssignmentDetail to read the entitlements for a single principal.",
+                "description": "Entitlements granted directly to the principal on this workspace. This is the only\nclient-settable field. Create and update manage exactly this set, including entitlements the\nprincipal also holds through a group.\nList responses leave this field empty. Get a single principal to read its entitlements.",
                 "is_request_body_field": true,
                 "entity": {
                   "pascal_name": "EntitlementList",
