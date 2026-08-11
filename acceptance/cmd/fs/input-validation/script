@@ -6,8 +6,9 @@ trace musterr $CLI fs cp src dst --concurrency 0
 trace musterr $CLI fs cp dbfs:/a https:/b
 trace musterr $CLI fs cat dab:/non-existent-file
 
-# A path without a scheme is treated as a (non-existent) local path.
-trace musterr $CLI fs ls /path-without-a-dbfs-scheme --output=json
+# A path without a scheme is treated as a local path. Keep it relative: Git Bash
+# rewrites a leading-slash argument into a Windows path before the CLI sees it.
+trace musterr $CLI fs ls path-without-a-dbfs-scheme --output=json
 
 # fs cat streams raw file contents, which have no JSON representation.
 trace musterr $CLI fs cat hello.txt --output=json
