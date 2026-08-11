@@ -2,6 +2,10 @@ experiment_name: my-exp
 compute:
   accelerator_type: a10
   num_accelerators: 1
+environment:
+  version: 5
+  dependencies:
+    - torch==2.3.0
 command: |-
   for i in $(seq 1 10); do
     echo "step $i"

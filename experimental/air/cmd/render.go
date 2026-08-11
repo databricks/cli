@@ -91,6 +91,15 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	renderer, colorOn := cmdio.NewRenderer(ctx, out)
 	p := newPalette(renderer)
 
+	// Resolve the training config once: it renders the Configuration box, and for
+	// ai_runtime runs it is the only source of the Environment cell (the run
+	// response carries the runtime image for gen_ai_compute runs, but no
+	// environment field for ai_runtime runs, leaving EnvironmentDisplay at "N/A").
+	configYAML := resolveConfigYAML(ctx, w, run, data)
+	if data.EnvironmentDisplay == na {
+		data.EnvironmentDisplay = orNA(environmentFromConfig(configYAML))
+	}
+
 	view := runView{
 		runID:        data.RunID,
 		dashboardURL: data.DashboardURL,
@@ -112,7 +121,7 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	}
 
 	var sections []string
-	if body := colorizeConfig(p, resolveConfigYAML(ctx, w, run, data)); body != "" {
+	if body := colorizeConfig(p, configYAML); body != "" {
 		sections = append(sections, renderBox(p, configBoxTitle, body))
 	}
 	sections = append(sections, renderBox(p, metadataBoxTitle, renderFields(p, colorOn, view)))

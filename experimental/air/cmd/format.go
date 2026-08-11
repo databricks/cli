@@ -298,6 +298,31 @@ func environment(run *jobs.Run) string {
 	return task.DlRuntimeImage
 }
 
+// environmentFromConfig extracts the training environment for the Environment
+// cell from a run's config YAML: the docker image URL when the config pins one,
+// otherwise the environment version. Returns "" when the config declares no
+// environment or cannot be parsed. This is the only source of the environment
+// for ai_runtime runs, whose GetRun response carries no environment field (the
+// gen_ai_compute path reads the image from the run response via environment()).
+func environmentFromConfig(configYAML string) string {
+	if configYAML == "" {
+		return ""
+	}
+	var cfg struct {
+		Environment *environmentConfig `yaml:"environment"`
+	}
+	if err := yaml.Unmarshal([]byte(configYAML), &cfg); err != nil || cfg.Environment == nil {
+		return ""
+	}
+	if cfg.Environment.DockerImage != nil {
+		return cfg.Environment.DockerImage.URL
+	}
+	if cfg.Environment.Version.set {
+		return cfg.Environment.Version.raw
+	}
+	return ""
+}
+
 // maxRetries returns the configured retry limit for the run's latest task as a
 // display string: "unlimited" for the backend's -1, otherwise the count.
 func maxRetries(run *jobs.Run) string {
