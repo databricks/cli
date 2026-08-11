@@ -1,5 +1,4 @@
 Cloud = false
-RequiresUnityCatalog = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.FUZZ_TARGET = [
   "no_drift",
@@ -7,4 +6,3 @@ EnvMatrix.FUZZ_TARGET = [
   "delete_idempotent",
   "destroy_idempotent"
 ]
-EnvMatrix.INPUT_CONFIG = []

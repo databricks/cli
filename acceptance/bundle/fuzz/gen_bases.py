@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Regenerate fuzz/bases/*.json.tmpl from sibling invariant YAML configs.
+"""Regenerate fuzz/bases/*.json.tmpl from invariant YAML configs.
 
-Offline (PyYAML). From repo root:
-  python3 acceptance/bundle/invariant/fuzz/gen_bases.py
+Offline (PyYAML). From repo root: python3 acceptance/bundle/fuzz/gen_bases.py
 Keeps $UNIQUE_NAME / $CURRENT_USER_NAME for runtime envsubst.
 """
 
@@ -12,15 +11,13 @@ from pathlib import Path
 
 import yaml
 
-FUZZ = Path(__file__).resolve().parent
-INVARIANT = FUZZ.parent
-ROOT = INVARIANT.parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "acceptance" / "bin"))
 
 from mutate_fuzz_config import MUTATE_BASES  # noqa: E402
 
-CONFIGS = INVARIANT / "configs"
-OUT = FUZZ / "bases"
+CONFIGS = ROOT / "acceptance" / "bundle" / "invariant" / "configs"
+OUT = Path(__file__).resolve().parent / "bases"
 
 
 def main():

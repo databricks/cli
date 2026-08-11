@@ -1,13 +1,13 @@
-Harness over sibling invariant targets: mutates curated configs and runs `../$FUZZ_TARGET`.
+Harness over ../invariant: mutates curated configs and runs a real target script.
 `run_fuzz.py` owns the seed loop (`seed.sh` per seed) and classifies deployed /
 rejected / gap / hang / bug. `FUZZ_TARGET` in test.toml picks the target.
 
 Each seed mutates a JSON base in `bases/` (from the matching invariant YAML;
 regen with `gen_bases.py`) and may inject a curated optional from INJECT.
 
-Parent `script.prepare` / curated `[[Server]]` stubs are inherited; this leaf adds
-TESTSERVER_GAP catch-alls for unmodeled routes. seed.sh sources the parent prepare
-explicitly because it does not walk the harness merge chain.
+Helpers come from ../invariant/script.prepare (sourced explicitly; prepare/test.toml
+only merge along the directory chain). Server stubs are copied into test.toml;
+script asserts stub parity. Unmodeled routes return `TESTSERVER_GAP` (gaps).
 
 A failure is a CLI bug. `LOG.repro` prints e.g.
 `ENVFILTER=FUZZ_TARGET=no_drift FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_CHECK_DRIFT=0 task test-fuzz`

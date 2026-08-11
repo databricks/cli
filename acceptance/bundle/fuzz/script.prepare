@@ -1,8 +1,11 @@
-# Fuzz overrides of invariant helpers. The harness merges parent prepare before this
-# file; seed.sh sources parent explicitly because it does not walk that chain.
+# Fuzz overrides of invariant helpers. Source explicitly: we sit outside the invariant
+# subtree (test.toml / script.prepare only merge along the directory chain).
+export INVARIANT_DIR="$TESTDIR/../invariant"
 
 # Empty INPUT_CONFIG satisfies set -u; mutated configs are unnamed.
 export INPUT_CONFIG=""
+
+source "$INVARIANT_DIR/script.prepare"
 
 # Mutator writes the config; validate is an isolated panic surface before deploy.
 invariant_render() {

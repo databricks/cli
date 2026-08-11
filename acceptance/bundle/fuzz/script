@@ -1,0 +1,11 @@
+# Mutate a curated config per seed and run ../invariant/$FUZZ_TARGET. Loop: run_fuzz.py.
+
+# Empty READPLAN: the saved-plan matrix is out of scope for fuzz.
+export READPLAN=""
+
+# Fail if ../invariant/test.toml gained a stub that was not copied here.
+grep '^Pattern = ' "$INVARIANT_DIR/test.toml" | while read -r stub; do
+    grep -qxF -- "$stub" "$TESTDIR/test.toml" || echo "stub missing from fuzz/test.toml: $stub"
+done | contains.py '!stub missing' > /dev/null
+
+run_fuzz.py
