@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
@@ -141,10 +142,26 @@ func submitToken(flag string, cfg *runConfig) (string, error) {
 	return token, nil
 }
 
+// withSpinner runs fn while showing an stderr spinner labeled msg when show is
+// true; otherwise it just runs fn. The spinner auto-degrades to nothing on a
+// non-interactive terminal, so piped output is unaffected; show is false in JSON
+// mode so the stdout envelope stream stays clean. Mirrors the Python CLI's
+// cli_progress phases.
+func withSpinner(ctx context.Context, show bool, msg string, fn func() error) error {
+	if !show {
+		return fn()
+	}
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update(msg)
+	defer sp.Close()
+	return fn()
+}
+
 // submitWorkload runs the submit happy path: ensure the experiment directory,
 // upload the launch artifacts, assemble the Jobs payload, and submit it. It
-// returns the new run_id and its dashboard URL.
-func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string) (int64, string, error) {
+// returns the new run_id and its dashboard URL. showProgress enables the
+// stderr upload/packaging spinners (text mode only).
+func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (int64, string, error) {
 	// Resolve the idempotency token first so a bad key fails before any upload,
 	// and before the policy lookup below spends a round trip on it.
 	token, err := submitToken(idempotencyKey, cfg)
@@ -200,7 +217,9 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if err != nil {
 		return 0, "", err
 	}
-	if err := uploadArtifacts(ctx, fc, items); err != nil {
+	if err := withSpinner(ctx, showProgress, "Uploading yaml configuration files…", func() error {
+		return uploadArtifacts(ctx, fc, items)
+	}); err != nil {
 		return 0, "", err
 	}
 
@@ -210,7 +229,11 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	var snap snapshotResult
 	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
 		// Sidecars land in the run's launch dir (funcDir) via fc, next to command.sh.
-		snap, err = snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, fc, funcDir)
+		err = withSpinner(ctx, showProgress, "Packaging code snapshot…", func() error {
+			var e error
+			snap, e = snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, fc, funcDir)
+			return e
+		})
 		if err != nil {
 			return 0, "", err
 		}

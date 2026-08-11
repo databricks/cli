@@ -1,0 +1,1 @@
+`databricks experimental air run` now prints a richer submit summary matching the Python CLI: a "Submitting experiment" line, a green "Submitted workload with Job Run ID" line, and hyperlinked Job Run, MLflow Run, and MLflow Experiment links; the JSON envelope reports `status: PENDING` on submit.

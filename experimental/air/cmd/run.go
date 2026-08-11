@@ -3,6 +3,7 @@ package aircmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
@@ -98,23 +99,39 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			return renderEnvelope(ctx, runResult{Status: "DRY_RUN_OK", DryRun: true})
 		}
 
+		jsonOut := root.OutputType(cmd) == flags.OutputJSON
+
+		// Announce the experiment before uploading (text only; JSON stdout stays a
+		// clean envelope stream). Mirrors Python's "Submitting experiment: ..." line.
+		if !jsonOut {
+			cmdio.LogString(ctx, "Submitting experiment: "+cfg.ExperimentName)
+		}
+
 		w := cmdctx.WorkspaceClient(ctx)
-		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey)
+		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey, !jsonOut)
 		if err != nil {
 			return err
 		}
 
 		runIDStr := strconv.FormatInt(runID, 10)
-		jsonOut := root.OutputType(cmd) == flags.OutputJSON
 
 		if !watch {
 			if !jsonOut {
-				cmdio.LogString(ctx, "Submitted run "+runIDStr)
-				cmdio.LogString(ctx, "View at: "+dashboardURL)
+				out := cmd.OutOrStdout()
+				printSubmitResult(ctx, out, runIDStr, dashboardURL)
+				// The confirmation above is already printed, so a bare submit isn't
+				// blocked on the MLflow links. Their IDs are assigned only once the
+				// task run starts, so this best-effort poll usually returns nil; when
+				// it does, the two MLflow links are simply omitted.
+				if ids := resolveMLflowIDsForRun(ctx, w, runID); ids != nil {
+					printMLflowLinks(ctx, out, w.Config.Host, ids)
+				}
 				cmdio.LogString(ctx, "\nTip: use --watch to stream logs until the run completes.")
 				return nil
 			}
-			return renderEnvelope(ctx, runResult{Status: "SUBMITTED", RunID: runIDStr, DashboardURL: dashboardURL})
+			// status mirrors Python's non-watch submit envelope ("PENDING"), not the
+			// --watch JSONL "SUBMITTED" event type below.
+			return renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL})
 		}
 
 		// --watch: stream the submitted run's logs until it reaches a terminal
@@ -128,8 +145,9 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		}
 
 		if !jsonOut {
-			cmdio.LogString(ctx, "Submitted run "+runIDStr)
-			cmdio.LogString(ctx, "View at: "+dashboardURL)
+			out := cmd.OutOrStdout()
+			// The MLflow links stream in via the logs below, so don't poll here.
+			printSubmitResult(ctx, out, runIDStr, dashboardURL)
 			cmdio.LogString(ctx, "Monitoring run and streaming logs...")
 			return runLogs(ctx, cmd, req)
 		}
@@ -153,6 +171,29 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 	}
 
 	return cmd
+}
+
+// printSubmitResult writes the guaranteed part of the human-readable submit
+// summary: a green success line and the Job Run hyperlink. These don't depend on
+// the MLflow IDs, so they print immediately (before any MLflow poll). The green
+// color and link degrade to plain text on non-rich terminals (via the renderer's
+// Ascii profile and hyperlink()), so piped/captured output stays clean.
+func printSubmitResult(ctx context.Context, out io.Writer, runIDStr, dashboardURL string) {
+	renderer, _ := cmdio.NewRenderer(ctx, out)
+	p := newPalette(renderer)
+
+	fmt.Fprintln(out, p.green.Render("Submitted workload with Job Run ID: "+runIDStr))
+	fmt.Fprintln(out, "View job run at: "+hyperlink(ctx, out, dashboardURL, dashboardURL))
+}
+
+// printMLflowLinks appends the MLflow run and experiment hyperlinks, once their
+// IDs have been resolved. Like printSubmitResult, the links degrade to plain URLs
+// on non-rich terminals.
+func printMLflowLinks(ctx context.Context, out io.Writer, host string, ids *mlflowIdentifiers) {
+	runURL := mlflowRunURL(host, ids)
+	expURL := mlflowExperimentURL(host, ids)
+	fmt.Fprintln(out, "View MLflow run at: "+hyperlink(ctx, out, runURL, runURL))
+	fmt.Fprintln(out, "View MLflow experiment at: "+hyperlink(ctx, out, expURL, expURL))
 }
 
 // watchTerminalStatus resolves a watched run's final display state for the

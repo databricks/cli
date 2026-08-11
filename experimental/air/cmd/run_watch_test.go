@@ -110,7 +110,8 @@ func TestRunWatchStreamsLogs(t *testing.T) {
 	require.NoError(t, err)
 
 	out := buf.String()
-	assert.Contains(t, out, "Submitted run 777")
+	assert.Contains(t, out, "Submitted workload with Job Run ID: 777")
+	assert.Contains(t, out, "View job run at: ")
 	assert.Contains(t, out, "Monitoring run and streaming logs...")
 	// The submitted run's logs stream through, oldest-first.
 	assert.Contains(t, out, "step 1\nstep 2")

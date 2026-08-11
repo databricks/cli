@@ -225,7 +225,7 @@ func TestSubmitWorkload(t *testing.T) {
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	runID, dashboardURL, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key")
+	runID, dashboardURL, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
 	require.NoError(t, err)
 	assert.Equal(t, int64(777), runID)
 	assert.Contains(t, dashboardURL, "/jobs/runs/777")
@@ -268,7 +268,7 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 	cfg, err := loadRunConfigWithOverrides(t.Context(), cfgPath, []string{"compute.num_accelerators=4"})
 	require.NoError(t, err)
 
-	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key")
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
 	require.NoError(t, err)
 
 	require.Len(t, got.Tasks, 1)
@@ -310,7 +310,7 @@ code_source:
 
 	// The DABs upload path logs via cmdio; the real `air run` context carries it.
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem")
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -353,7 +353,7 @@ code_source:
 	require.NoError(t, err)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem")
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -550,7 +550,7 @@ code_source:
 	require.NoError(t, err)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem")
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -584,7 +584,7 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 
 		cfg := *base
 		cfg.UsagePolicyName = new("nope")
-		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "")
+		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "", false)
 		require.ErrorContains(t, err, `no usage policy named "nope"`)
 		for _, p := range paths {
 			assert.NotContains(t, p, "/workspace/", "no workspace write may precede policy resolution")
@@ -605,7 +605,7 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 
 		cfg := *base
 		cfg.Environment = &environmentConfig{Dependencies: dependencies{set: true, isList: false, path: "missing.yaml"}}
-		_, _, err = submitWorkload(t.Context(), tw, &cfg, cfgPath, "")
+		_, _, err = submitWorkload(t.Context(), tw, &cfg, cfgPath, "", false)
 		require.ErrorContains(t, err, "failed to read requirements file")
 		assert.False(t, uploaded, "no artifacts should be uploaded when dependency resolution fails")
 	})
@@ -639,7 +639,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		cfg, err := loadRunConfig(cfgPath)
 		require.NoError(t, err)
 
-		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem")
+		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
 		require.NoError(t, err)
 		assert.Equal(t, policyID, got.BudgetPolicyId)
 	})
@@ -650,7 +650,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		cfg, err := loadRunConfig(cfgPath)
 		require.NoError(t, err)
 
-		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem")
+		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
 		require.NoError(t, err)
 		assert.Equal(t, policyID, got.BudgetPolicyId)
 	})
