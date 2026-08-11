@@ -45,7 +45,7 @@ type Resources struct {
 	VectorSearchIndexes   map[string]*resources.VectorSearchIndex    `json:"vector_search_indexes,omitempty"`
 	InstancePools         map[string]*resources.InstancePool         `json:"instance_pools,omitempty"`
 	Secrets               map[string]*resources.Secret               `json:"secrets,omitempty"`
-	ClusterPolicies       map[string]*resources.ClusterPolicy        `json:cluster_policies,omitempty`
+	ClusterPolicies       map[string]*resources.ClusterPolicy        `json:"cluster_policies,omitempty"`
 }
 
 type ConfigResource interface {
