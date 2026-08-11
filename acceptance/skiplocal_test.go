@@ -109,7 +109,7 @@ func selectChangedLocalTests(t *testing.T, testDirs map[string]bool) map[string]
 		// test.toml and out.test.toml under the invariant tree regenerate
 		// automatically when INPUT_CONFIG changes; ignore them so they don't
 		// unlock all variants of every invariant subdir.
-		if strings.HasPrefix(path, filepath.Join("acceptance", invariantDirPrefix)) {
+		if strings.HasPrefix(path, "acceptance/"+invariantDirPrefix) {
 			if name := filepath.Base(path); name == "test.toml" || name == "out.test.toml" {
 				continue
 			}
