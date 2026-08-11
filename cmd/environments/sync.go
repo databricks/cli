@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/flags"
 	libslocalenv "github.com/databricks/cli/libs/localenv"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -18,18 +19,18 @@ import (
 func newSetupLocalCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   libslocalenv.CommandVerb,
-		Short: "Provision a local Python environment matched to a Databricks compute target",
-		Long: `Provision (or update) a local Python environment matched to a Databricks compute target.
+		Short: "Set up a local Python environment that matches your Databricks compute",
+		Long: `Set up a local Python environment that matches a Databricks cluster or serverless version, so code you run on your machine behaves the same as it does on Databricks.
 
-Resolves the target to an environment key, fetches the pinned Python version,
-databricks-connect version, and dependency constraints published for that key,
-then provisions a matched .venv with uv. A project with no pyproject.toml is
-initialized from scratch; an existing pyproject.toml is merged in place (its
-env-owned sections are refreshed, user-owned content is preserved).`,
-		// Hidden until the environment constraints repository is publicly
-		// available: the command is runnable for dogfooding but stays out of
-		// help and completion until it is unveiled.
-		Hidden: true,
+Use this when you want to develop or debug a Databricks project locally: it installs the matching Python version and a compatible databricks-connect, and pins your dependencies to versions known to work with your chosen compute. It creates or updates a .venv (managed by uv) in the current directory and records the setup in pyproject.toml, leaving the rest of your project untouched.`,
+		Example: `  # Match a serverless version
+  databricks environments setup-local --serverless-version 5
+
+  # Match an existing cluster by name
+  databricks environments setup-local --cluster-name my-cluster
+
+  # See what would change without writing anything
+  databricks environments setup-local --serverless-version 5 --dry-run`,
 	}
 	// The target is selected via flags; reject stray positional args rather than
 	// silently ignoring them.
@@ -39,6 +40,8 @@ env-owned sections are refreshed, user-owned content is preserved).`,
 	// auth configuration in the shared PreRunE so a malformed databricks.yml (e.g.
 	// two targets marked default) can't fail the command before it runs; the fallback
 	// bundle read in bundleTarget swallows such errors and falls through to E_NO_TARGET.
+	// As a consequence auth resolves from profile/env only: the bundle's
+	// workspace.host/profile no longer feed the workspace client for this command.
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
 		return root.MustWorkspaceClient(cmd, args)
@@ -159,6 +162,18 @@ func runPipeline(cmd *cobra.Command) error {
 	}
 
 	w := cmdctx.WorkspaceClient(ctx)
+
+	// Show live per-phase progress only in text mode. In --output json the only
+	// thing on stdout must be the JSON object; the spinner writes to stderr and
+	// no-ops when non-interactive, but we still skip it entirely for JSON so the
+	// pipeline stays silent for machine consumers.
+	var rep *spinnerReporter
+	var progress libslocalenv.Reporter
+	if root.OutputType(cmd) != flags.OutputJSON {
+		rep = newSpinnerReporter(ctx)
+		progress = rep
+	}
+
 	p := &libslocalenv.Pipeline{
 		Mode:              mode,
 		Check:             check,
@@ -169,9 +184,13 @@ func runPipeline(cmd *cobra.Command) error {
 		Compute:           sdkCompute{w: w},
 		Bundle:            bt,
 		PM:                libslocalenv.NewUvManager(),
+		Progress:          progress,
 	}
 
 	res, pipelineErr := p.Run(ctx)
+	if rep != nil {
+		rep.Close()
+	}
 	return renderResult(ctx, cmd, res, pipelineErr)
 }
 

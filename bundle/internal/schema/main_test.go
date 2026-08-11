@@ -5,17 +5,34 @@ import (
 	"io"
 	"os"
 	"path"
+	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const cliJSONPath = "../../../.codegen/cli.json"
+
+func TestJobRunIdempotencyTokenIsNotInSchema(t *testing.T) {
+	s := jsonschema.Schema{
+		Properties: map[string]*jsonschema.Schema{
+			"idempotency_token": {},
+			"job_id":            {},
+		},
+	}
+
+	s = removeJobsFields(reflect.TypeFor[resources.JobRun](), s)
+
+	assert.NotContains(t, s.Properties, "idempotency_token")
+	assert.Contains(t, s.Properties, "job_id")
+}
 
 func copyFile(src, dst string) error {
 	in, err := os.Open(src)
