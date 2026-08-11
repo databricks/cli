@@ -450,8 +450,10 @@ dev = ["databricks-connect~=17.0"]
 	p := &Pipeline{
 		Mode: ModeDefault, Check: true, ProjectDir: dir,
 		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
-		Flags:   ComputeFlags{Serverless: "v4"},
-		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+		Flags: ComputeFlags{Serverless: "v4"},
+		// No dbc value: Check mode stops before validate, so fakePM.Validate never
+		// runs — the reported version comes purely from the pin on the dry-run path.
+		Compute: stubCompute{}, PM: fakePM{py: "3.12"},
 	}
 	res, err := p.Run(t.Context())
 	require.NoError(t, err)
@@ -920,9 +922,14 @@ func TestDBCVersionFromPin(t *testing.T) {
 		want string
 	}{
 		{"databricks-connect~=17.3.0", "17.3.0"},
+		// An exact pin is the only genuinely concrete form; the helper accepts it.
+		{"databricks-connect==17.3.0", "17.3.0"},
 		// A range-only pin is not a concrete version: report nothing rather than a
-		// major.minor floor nothing installs.
+		// major.minor floor nothing installs. Serverless pins major-only across
+		// every env (~=16.0/~=17.0/~=18.0, environments#15).
+		{"databricks-connect~=16.0", ""},
 		{"databricks-connect~=17.0", ""},
+		{"databricks-connect~=18.0", ""},
 		{"databricks-connect~=17", ""},
 		{"", ""},
 	}

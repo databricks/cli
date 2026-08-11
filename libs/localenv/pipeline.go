@@ -604,7 +604,10 @@ func dbcVersionFromPin(pin string) string {
 }
 
 // isFullVersion reports whether v has at least three numeric dot-separated
-// components, e.g. "17.3.0" but not "17.0".
+// components, e.g. "17.3.0" but not "17.0". This is not a PEP 440 validator:
+// only the leading major.minor.patch must be digit-terminated, so suffixed forms
+// like "17.3.0.dev1" or "17.3.0.post1" pass through unchecked. That is fine here
+// because real pins are either major-only (~=17.0) or a concrete GA (~=17.3.0).
 func isFullVersion(v string) bool {
 	parts := strings.Split(v, ".")
 	if len(parts) < 3 {
