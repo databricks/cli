@@ -28,7 +28,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, planEntry *deployplan.PlanEntry) error {
 	ctx = log.WithPrefix(ctx, "deploying "+d.ResourceKey)
 	if actionType == deployplan.Create {
-		return d.Create(ctx, db, newState)
+		return d.Create(ctx, db, newState, deployplan.Create)
 	}
 
 	oldID := db.GetResourceID(d.ResourceKey)
@@ -50,7 +50,10 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	}
 }
 
-func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
+// Create creates the resource and records its state. action is the operation the
+// create is part of: a recreate ends by calling this, and reports the write as a
+// recreate so the deployment history says how the resource got here.
+func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any, action deployplan.ActionType) error {
 	var newID string
 	var remoteState any
 	_, err := retryWith(ctx, func(err error) bool {
@@ -75,7 +78,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = db.SaveState(ctx, d.ResourceKey, newID, newState, d.DependsOn, dstate.OperationInfo{Action: deployplan.Create})
+	err = db.SaveState(ctx, d.ResourceKey, newID, newState, d.DependsOn, dstate.OperationInfo{Action: action})
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -134,7 +137,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
 
-	return d.Create(ctx, db, newState)
+	return d.Create(ctx, db, newState, deployplan.Recreate)
 }
 
 func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {

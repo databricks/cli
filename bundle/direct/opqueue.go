@@ -45,8 +45,8 @@ type operationQueue struct {
 
 	// pending holds the one operation waiting per resource key: a resource can write
 	// state more than once in a deploy (a recreate drops the entry, then saves the new
-	// resource), and writes that arrive before the previous one is uploaded are merged
-	// by mergeOperation. No key means nothing is waiting.
+	// resource), and a write that arrives before the previous one is uploaded replaces
+	// it. No key means nothing is waiting.
 	pending map[string]recordedOperation
 
 	// queuedOrUploading means "some worker will get to this key". Recording such a
@@ -118,13 +118,10 @@ func (q *operationQueue) recordFailure(ctx context.Context, resourceKey string, 
 	q.enqueue(ctx, resourceKey, op)
 }
 
-// enqueue makes op the operation waiting for resourceKey, merged onto whatever was
+// enqueue makes op the operation waiting for resourceKey, replacing whatever was
 // already waiting, and makes sure a worker will pick it up.
 func (q *operationQueue) enqueue(ctx context.Context, resourceKey string, op recordedOperation) {
 	q.mu.Lock()
-	if waiting, ok := q.pending[resourceKey]; ok {
-		op = mergeOperation(waiting, op)
-	}
 	q.pending[resourceKey] = op
 	alreadyHandled := q.queuedOrUploading[resourceKey]
 	q.queuedOrUploading[resourceKey] = true

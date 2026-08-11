@@ -52,20 +52,6 @@ type recordedOperation struct {
 	state json.RawMessage
 }
 
-// mergeOperation folds a newer write onto one still waiting to be uploaded, so a
-// resource costs one request no matter how many times it writes state. The newer
-// write describes the resource as it now stands, so its fields win.
-//
-// The action is the exception: it comes from the older write, because the service
-// fixes action_type when the operation is created and rejects it in an update mask
-// (only state, error_message, resource_id and status are updatable). Keeping the
-// older one is what makes the merged upload a single create that still reports how
-// the resource got here - a recreate whose second write is a create stays a recreate.
-func mergeOperation(older, newer recordedOperation) recordedOperation {
-	newer.action = older.action
-	return newer
-}
-
 // newStateOperation describes a state write for upload. state is the serialized
 // RecordedState envelope the state DB just persisted, and nil for a delete, where
 // the resource is gone. It errors when the state exceeds maxOperationStateSize.

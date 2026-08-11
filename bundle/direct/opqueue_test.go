@@ -160,10 +160,11 @@ func TestOperationQueueMergesWritesQueuedBehindAnUpload(t *testing.T) {
 }
 
 func TestOperationQueueMergedRecreateKeepsItsActionType(t *testing.T) {
-	// A recreate records its intermediate delete, then the create that replaces the
-	// resource. Merging them must upload the recreate's action: the service fixes
-	// action_type when the operation is created and rejects it in an update mask, so
-	// taking the newer create's action would report the resource as merely created.
+	// Both writes of a recreate report it as a recreate (see DeploymentUnit.Create),
+	// so the merged upload carries that action however the two are combined. It has to:
+	// the service fixes action_type when the operation is created and rejects it in an
+	// update mask, so a merged pair that reported "create" would leave the history
+	// saying the resource was merely created.
 	//
 	// Every worker is parked so both writes land in pending and merge before upload.
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, operationUploadWorkers+2)}
@@ -175,7 +176,7 @@ func TestOperationQueueMergedRecreateKeepsItsActionType(t *testing.T) {
 	}
 
 	q.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Recreate, InProgress: true}, "old-id", nil)
-	q.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Create}, "new-id", envelope(t, "replacement"))
+	q.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Recreate}, "new-id", envelope(t, "replacement"))
 
 	close(f.block)
 	require.NoError(t, q.close())
