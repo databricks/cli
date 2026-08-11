@@ -190,48 +190,31 @@ func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 }
 
 // errorForInvalidSecretScopePermissions errors when a permission names no principal.
-// The backend rejects that ACL; erroring here avoids a partial deploy where Terraform
-// creates the scope before the ACL call fails.
+// Wrong-typed values are already empty here (normalization only warns and drops them).
 func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	_, err := dyn.MapByPattern(
-		b.Config.Value(),
-		dyn.NewPattern(dyn.Key("resources"), dyn.Key("secret_scopes"), dyn.AnyKey(), dyn.Key("permissions"), dyn.AnyIndex()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			if hasSecretScopePrincipal(v) {
-				return v, nil
+	for key, scope := range b.Config.Resources.SecretScopes {
+		for i, perm := range scope.Permissions {
+			if perm.UserName != "" || perm.GroupName != "" || perm.ServicePrincipalName != "" {
+				continue
 			}
+			path := fmt.Sprintf("resources.secret_scopes.%s.permissions[%d]", key, i)
 			// ApplyBundlePermissions rebuilds permissions via convert.FromTyped and drops
 			// per-entry locations, so point at the scope.
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "secret scope permission principal is required",
 				Detail:    "Set one of user_name, group_name or service_principal_name",
-				Locations: b.Config.GetLocations("resources.secret_scopes." + p[2].Key()),
-				Paths:     []dyn.Path{slices.Clone(p)},
+				Locations: b.Config.GetLocations("resources.secret_scopes." + key),
+				Paths:     []dyn.Path{dyn.MustPathFromString(path)},
 			})
-			return v, nil
-		},
-	)
-	if err != nil {
-		return diag.FromErr(err)
+		}
 	}
 
 	sortDiagnostics(diags)
 
 	return diags
-}
-
-// hasSecretScopePrincipal reports whether a principal is set. Wrong-typed values count as
-// missing: normalization only warns and drops them.
-func hasSecretScopePrincipal(v dyn.Value) bool {
-	for _, field := range []string{"user_name", "group_name", "service_principal_name"} {
-		if s, ok := v.Get(field).AsString(); ok && s != "" {
-			return true
-		}
-	}
-	return false
 }
 
 // isMissingOrEmptyString reports whether v is unset, null, or an empty string.
