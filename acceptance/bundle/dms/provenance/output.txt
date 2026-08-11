@@ -53,7 +53,7 @@ Deployment complete!
 }
 
 === The service denormalizes them onto the deployment, so a reader gets the provenance of the latest version
->>> [CLI] api get /api/2.0/bundle/deployments/[NUMID]
+>>> MSYS_NO_PATHCONV=1 [CLI] api get /api/2.0/bundle/deployments/[NUMID]
 {
   "target_name": "dev",
   "deployment_mode": "DEPLOYMENT_MODE_DEVELOPMENT",

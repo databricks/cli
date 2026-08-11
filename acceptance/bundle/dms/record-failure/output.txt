@@ -59,7 +59,7 @@ API message: cluster spec is invalid
 }
 
 === The failed resource is not listed at all: state is what projects a resource, and a failed create records none, so a later deploy plans to create it rather than treating it as already deployed
->>> [CLI] api get /api/2.0/bundle/deployments/[NUMID]/resources
+>>> MSYS_NO_PATHCONV=1 [CLI] api get /api/2.0/bundle/deployments/[NUMID]/resources
 {}
 
 === Redeploying from DMS state alone still creates the failed resource: it was never applied, so it must not be skipped as unchanged
