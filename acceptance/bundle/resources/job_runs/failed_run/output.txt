@@ -2,7 +2,7 @@
 === a run that finishes FAILED fails the deploy
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-job run [MY_RUN_ID]: Run URL: [RUN_URL]
+Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [RUN_URL]
 Error: cannot create resources.job_runs.my_run: waiting after creating id=[MY_RUN_ID]: run did not succeed: FAILED: Task main failed with message: Workload failed, see run output for details.
 task "main": RuntimeError: intentional failure
 run page: [RUN_URL]
@@ -56,7 +56,7 @@ Files: 8 uploaded, 0 deleted
 === so a redeploy runs the job again, and fails again
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-job run [MY_RUN_ID_2]: Run URL: [RUN_URL]
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [RUN_URL]
 Error: cannot recreate resources.job_runs.my_run: waiting after creating id=[MY_RUN_ID_2]: run did not succeed: FAILED: Task main failed with message: Workload failed, see run output for details.
 task "main": RuntimeError: intentional failure
 run page: [RUN_URL]

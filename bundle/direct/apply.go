@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -14,8 +15,14 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
+func (d *DeploymentUnit) withResourceKey(ctx context.Context) context.Context {
+	// Match plan output (e.g. "job_runs.foo"), not the internal "resources." form.
+	return dresources.WithResourceKey(ctx, strings.TrimPrefix(d.ResourceKey, "resources."))
+}
+
 func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState) error {
 	ctx = log.WithPrefix(ctx, "destroying "+d.ResourceKey)
+	ctx = d.withResourceKey(ctx)
 	id := db.GetResourceID(d.ResourceKey)
 	if id == "" {
 		log.Infof(ctx, "Cannot delete %s: missing from state", d.ResourceKey)
@@ -27,6 +34,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, planEntry *deployplan.PlanEntry) error {
 	ctx = log.WithPrefix(ctx, "deploying "+d.ResourceKey)
+	ctx = d.withResourceKey(ctx)
 	if actionType == deployplan.Create {
 		return d.Create(ctx, db, newState)
 	}

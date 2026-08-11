@@ -2,8 +2,8 @@
 === the deploy waits for the run to finish
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-job run [MY_RUN_ID]: Run URL: [RUN_URL]
-job run [MY_RUN_ID]: SUCCESS
+Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [RUN_URL]
+Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
 Created job_runs.my_run
 Created jobs.downstream_job
 Created jobs.my_job

@@ -329,11 +329,13 @@ func runIsTerminal(state jobs.RunLifeCycleState) bool {
 		state == jobs.RunLifeCycleStateInternalError
 }
 
-// reportRunLine names the run, since resources deploy concurrently onto one stream.
+// reportRunLine names the resource and run id so concurrent deploys stay readable.
+// Deploy attaches the key via [WithResourceKey].
 func reportRunLine(ctx context.Context, runID int64, msg string) {
-	if cmdio.HasIO(ctx) {
-		cmdio.LogString(ctx, fmt.Sprintf("job run %d: %s", runID, msg))
+	if !cmdio.HasIO(ctx) {
+		return
 	}
+	cmdio.LogString(ctx, fmt.Sprintf("Output from %s: id=%d: %s", ResourceKey(ctx), runID, msg))
 }
 
 // DoUpdate finishes the wait an interrupted deploy abandoned.
