@@ -989,7 +989,7 @@ resources:
               "$fields":
                 "on_bundle_deploy":
                   "description": |-
-                    If true, re-fire the run on every bundle deploy.
+                    If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.
         "python_named_params":
           "description": |-
             PLACEHOLDER

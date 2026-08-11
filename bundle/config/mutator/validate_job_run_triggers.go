@@ -25,6 +25,14 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 		if jr == nil || jr.Lifecycle == nil {
 			continue
 		}
+		// Recreate-every-deploy cannot coexist with prevent_destroy.
+		if jr.HasOnBundleDeploy() && jr.Lifecycle.PreventDestroy {
+			diags = diags.Append(diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "lifecycle.triggers.on_bundle_deploy is incompatible with lifecycle.prevent_destroy",
+				Locations: b.Config.GetLocations(fmt.Sprintf("resources.job_runs.%s.lifecycle", name)),
+			})
+		}
 		for i, t := range jr.Lifecycle.Triggers {
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d]", name, i)
 			if t.OnBundleDeploy == nil {

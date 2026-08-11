@@ -15,9 +15,10 @@ func TestValidateJobRunTriggers(t *testing.T) {
 	falseVal := false
 
 	tests := []struct {
-		name     string
-		triggers []resources.JobRunTrigger
-		summary  string
+		name           string
+		triggers       []resources.JobRunTrigger
+		preventDestroy bool
+		summary        string
 	}{
 		{
 			name: "on_bundle_deploy true",
@@ -39,6 +40,18 @@ func TestValidateJobRunTriggers(t *testing.T) {
 			},
 			summary: "lifecycle.triggers.on_bundle_deploy must be true when set",
 		},
+		{
+			name: "on_bundle_deploy with prevent_destroy",
+			triggers: []resources.JobRunTrigger{
+				{OnBundleDeploy: &trueVal},
+			},
+			preventDestroy: true,
+			summary:        "lifecycle.triggers.on_bundle_deploy is incompatible with lifecycle.prevent_destroy",
+		},
+		{
+			name:           "prevent_destroy alone",
+			preventDestroy: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -49,7 +62,8 @@ func TestValidateJobRunTriggers(t *testing.T) {
 						JobRuns: map[string]*resources.JobRun{
 							"my_run": {
 								Lifecycle: &resources.JobRunLifecycle{
-									Triggers: tt.triggers,
+									Lifecycle: resources.Lifecycle{PreventDestroy: tt.preventDestroy},
+									Triggers:  tt.triggers,
 								},
 							},
 						},

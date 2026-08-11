@@ -1298,7 +1298,7 @@
                     "type": "object",
                     "properties": {
                       "on_bundle_deploy": {
-                        "description": "If true, re-fire the run on every bundle deploy.",
+                        "description": "If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.",
                         "$ref": "#/$defs/bool"
                       }
                     },
