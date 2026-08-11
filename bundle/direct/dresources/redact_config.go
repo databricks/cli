@@ -24,7 +24,7 @@ func RedactSensitiveConfigValues(root *config.Root) (*config.Root, error) {
 		if err != nil {
 			return nil, err
 		}
-		structwalk.Walk(resources, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
+		err = structwalk.Walk(resources, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
 			for _, fieldRule := range fieldRules {
 				// The first segment of the path is the resource key, so we need to skip it and check the rest of the path
 				rest := path.SkipPrefix(1)
@@ -33,13 +33,17 @@ func RedactSensitiveConfigValues(root *config.Root) (*config.Root, error) {
 				}
 			}
 		})
+		if err != nil {
+			return nil, err
+		}
 	}
 	return root, nil
 }
 
 const sensitiveRedactedMarker = "[redacted]"
 
-// getSensitiveFields returns one dyn.Pattern per sensitive field rule across
+// getSensiti
+// veFields returns one dyn.Pattern per sensitive field rule across
 // all resource types. Each pattern covers: resources.<type>.*.<field_path>.
 func getSensitiveFields() map[string][]FieldRule {
 	cfg := MustLoadConfig()

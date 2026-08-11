@@ -20,6 +20,9 @@ func renderJsonOutput(cmd *cobra.Command, b *bundle.Bundle) error {
 		return nil
 	}
 	redactedRoot, err := dresources.RedactSensitiveConfigValues(&b.Config)
+	if err != nil {
+		return err
+	}
 	converted, err := convert.FromTyped(redactedRoot, b.Config.Value())
 	if err != nil {
 		return err
