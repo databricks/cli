@@ -10,7 +10,7 @@ import (
 
 type validateJobRunTriggers struct{}
 
-// ValidateJobRunTriggers checks lifecycle.triggers on job_runs.
+// ValidateJobRunTriggers rejects invalid lifecycle.triggers on job_runs.
 func ValidateJobRunTriggers() bundle.Mutator {
 	return &validateJobRunTriggers{}
 }
