@@ -9,8 +9,10 @@ MSYS_NO_PATHCONV = "1"
 Pattern = "HEAD /"
 Response.Body = ''
 
-# The typed SDK GetRun response: an ai_runtime_task run has no gen_ai_compute_task,
-# so the task comes back empty (the SDK has no field for ai_runtime_task).
+# The GetRun response for an ai_runtime_task run. It has no gen_ai_compute_task,
+# so the Environment cell instead comes from the run's environments[].spec (keyed
+# by the task's environment_key), which the typed SDK Run drops — `air get` reads
+# it with a raw request, so this route is hit twice (typed GetRun + that request).
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/get"
 Response.Body = '''
@@ -21,12 +23,16 @@ Response.Body = '''
   "start_time": 1700000000000,
   "end_time": 1700000012000,
   "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+  "environments": [
+    {"environment_key": "default", "spec": {"environment_version": "4"}}
+  ],
   "tasks": [
     {
       "task_key": "train",
       "run_id": 456,
       "attempt_number": 0,
       "max_retries": 3,
+      "environment_key": "default",
       "ai_runtime_task": {
         "experiment": "my-exp",
         "deployments": [
