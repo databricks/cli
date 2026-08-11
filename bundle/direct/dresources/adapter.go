@@ -312,7 +312,8 @@ func (a *Adapter) validate() error {
 	// If RemapState is implemented, validate its signature.
 	// Otherwise require remote type to equal state type so remapping isn't needed.
 	if a.remapState != nil {
-		validations = append(validations,
+		validations = append(
+			validations,
 			"RemapState input", a.remapState.InTypes[0], remoteType,
 			"RemapState return", a.remapState.OutTypes[0], stateType,
 		)
@@ -415,13 +416,12 @@ func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
 
 // IsSensitive reports whether any path in v that has this path as a prefix should
 // be treated as sensitive (redacted from plan output and deployment state).
-func (a *Adapter) IsSensitive(path *structpath.PathNode) bool {
+func (a *Adapter) GetSensitiveFields() []string {
+	var fields []string
 	for _, r := range a.resourceConfig.SensitiveFields {
-		if path.HasPatternPrefix(r.Field) {
-			return true
-		}
+		fields = append(fields, r.Field.String())
 	}
-	return false
+	return fields
 }
 
 // FieldTriggersRecreate reports whether a local change to the field forces a

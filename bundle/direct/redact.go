@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
 const sensitiveRedactedValue = "[redacted]"
@@ -23,26 +23,23 @@ func redactSensitiveFields(adapter *dresources.Adapter, s any, replacement strin
 		return nil
 	}
 
-	var toRedact []*structpath.PathNode
-	err := structwalk.Walk(s, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
-		if adapter.IsSensitive(path) {
-			toRedact = append(toRedact, path)
+	fields := adapter.GetSensitiveFields()
+	for _, field := range fields {
+		path, err := structpath.ParsePath(field)
+		if err != nil {
+			return fmt.Errorf("parsing sensitive field path %q: %w", field, err)
 		}
-	})
-	if err != nil {
-		return fmt.Errorf("walking struct: %w", err)
-	}
 
-	for _, path := range toRedact {
-		if err := structaccess.Set(s, path, replacement); err != nil {
-			// Field is not a string; fall back to its zero value.
-			fv, ferr := structaccess.Get(s, path)
-			if ferr != nil {
-				continue
-			}
-			zero := reflect.Zero(reflect.TypeOf(fv)).Interface()
-			_ = structaccess.Set(s, path, zero)
+		fv, err := structaccess.Get(s, path)
+		if err != nil {
+			continue
 		}
+		if fv == nil {
+			// structaccess.Get returns nil for omitempty fields whose value is zero.
+			// Such fields are absent from JSON, so there is nothing to redact or zero.
+			continue
+		}
+		_ = structaccess.Set(s, path, replacement)
 	}
 
 	return nil
@@ -65,12 +62,9 @@ func zeroSensitiveFields(adapter *dresources.Adapter, s any) error {
 // path is marked sensitive by the adapter, so the plan output does not leak them.
 // Empty/nil values are left as-is (they carry no secret).
 func redactChanges(adapter *dresources.Adapter, changes deployplan.Changes) error {
+	fields := adapter.GetSensitiveFields()
 	for pathString, ch := range changes {
-		path, err := structpath.ParsePath(pathString)
-		if err != nil {
-			return fmt.Errorf("parsing change path %q: %w", pathString, err)
-		}
-		if adapter.IsSensitive(path) {
+		if slices.Contains(fields, pathString) {
 			if v, ok := ch.Old.(string); ok && v != "" {
 				ch.Old = sensitiveRedactedValue
 			}

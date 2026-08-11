@@ -1,81 +1,54 @@
 package dresources
 
 import (
-	"github.com/databricks/cli/libs/dyn"
+	"reflect"
+
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
-// RedactSensitiveConfigValues walks the bundle config dyn.Value and replaces the
+// RedactSensitiveConfigValues walks the bundle config and replaces the
 // value of every field declared as sensitive_fields for its resource type with
 // "[redacted]". This is used before printing the full config to stdout (e.g.
 // `bundle validate -o json`) so plaintext secrets are never shown to the user.
 //
 // The function only handles resource types that have at least one sensitive_field
-// declared in resources.yml. Each sensitive field pattern is translated to a
-// dyn.Pattern of the form: resources.<type>.*.<field_path>.
-func RedactSensitiveConfigValues(v dyn.Value) (dyn.Value, error) {
-	patterns := buildSensitivePatterns()
-	for _, pat := range patterns {
-		var err error
-		v, err = dyn.MapByPattern(v, pat, func(p dyn.Path, _ dyn.Value) (dyn.Value, error) {
-			return dyn.V(sensitiveRedactedMarker), nil
-		})
+// declared in resources.yml
+func RedactSensitiveConfigValues(root *config.Root) (*config.Root, error) {
+	fields := getSensitiveFields()
+
+	for resourceType, fieldRules := range fields {
+		resources, err := structaccess.GetByString(root, "resources."+resourceType)
 		if err != nil {
-			return dyn.InvalidValue, err
+			return nil, err
 		}
+		structwalk.Walk(resources, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
+			for _, fieldRule := range fieldRules {
+				// The first segment of the path is the resource key, so we need to skip it and check the rest of the path
+				rest := path.SkipPrefix(1)
+				if rest.HasPatternPrefix(fieldRule.Field) {
+					_ = structaccess.SetByString(root, "resources."+resourceType+path.String(), sensitiveRedactedMarker)
+				}
+			}
+		})
 	}
-	return v, nil
+	return root, nil
 }
 
 const sensitiveRedactedMarker = "[redacted]"
 
-// buildSensitivePatterns returns one dyn.Pattern per sensitive field rule across
+// getSensitiveFields returns one dyn.Pattern per sensitive field rule across
 // all resource types. Each pattern covers: resources.<type>.*.<field_path>.
-func buildSensitivePatterns() []dyn.Pattern {
+func getSensitiveFields() map[string][]FieldRule {
 	cfg := MustLoadConfig()
-	var patterns []dyn.Pattern
+	fields := make(map[string][]FieldRule)
 	for resourceType, rc := range cfg.Resources {
-		for _, rule := range rc.SensitiveFields {
-			if rule.Field == nil {
-				continue
-			}
-			fieldPat := structPathToDynPattern(rule.Field)
-			if fieldPat == nil {
-				continue
-			}
-			// resources.<type>.* + field pattern components
-			base := dyn.NewPattern(
-				dyn.Key("resources"),
-				dyn.Key(resourceType),
-				dyn.AnyKey(),
-			)
-			full := append(base, fieldPat...)
-			patterns = append(patterns, full)
+		if rc.SensitiveFields == nil {
+			continue
 		}
+		fields[resourceType] = rc.SensitiveFields
 	}
-	return patterns
-}
-
-// structPathToDynPattern converts a structpath.PatternNode to a slice of
-// dyn.patternComponent values. Returns nil if conversion is not possible.
-func structPathToDynPattern(node *structpath.PatternNode) dyn.Pattern {
-	if node == nil || node.IsRoot() {
-		return nil
-	}
-
-	segments := node.AsSlice()
-	pat := make(dyn.Pattern, 0, len(segments))
-	for _, seg := range segments {
-		if seg.BracketStar() || seg.DotStar() {
-			pat = append(pat, dyn.AnyKey())
-		} else if idx, ok := seg.Index(); ok {
-			pat = append(pat, dyn.Index(idx))
-		} else if key, ok := seg.StringKey(); ok {
-			pat = append(pat, dyn.Key(key))
-		} else {
-			// Unsupported segment type; skip entire pattern.
-			return nil
-		}
-	}
-	return pat
+	return fields
 }
