@@ -17,9 +17,10 @@ import (
 // the same file (YAML 1.2 scalars, duplicate key handling).
 func NewYamlToJSONCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "yaml-to-json FILE",
-		Short: "Print a YAML file as JSON, parsed the way the bundle parses it",
-		Args:  root.ExactArgs(1),
+		Use:    "yaml-to-json FILE",
+		Short:  "Print a YAML file as JSON, parsed the way the bundle parses it",
+		Args:   root.ExactArgs(1),
+		Hidden: true,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
