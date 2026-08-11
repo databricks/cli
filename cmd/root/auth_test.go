@@ -239,7 +239,6 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 // AskForWorkspaceProfile resolve without interactive input.
 func TestMustWorkspaceClientRewritesInvalidRefreshTokenForPickedProfile(t *testing.T) {
 	testutil.CleanupEnvironment(t)
-	t.Setenv("PATH", "")
 
 	// Fake OIDC endpoints: discovery succeeds, token refresh is rejected as if
 	// the cached refresh token were invalid.
