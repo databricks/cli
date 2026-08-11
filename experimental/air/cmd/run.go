@@ -2,9 +2,7 @@ package aircmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"path/filepath"
 	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,6 +18,7 @@ type runResult struct {
 	Status       string `json:"status"`
 	DryRun       bool   `json:"dry_run,omitempty"`
 	RunID        string `json:"run_id,omitempty"`
+	JobID        string `json:"job_id,omitempty"`
 	DashboardURL string `json:"dashboard_url,omitempty"`
 }
 
@@ -73,11 +72,11 @@ The workload is described by a YAML config file (see --file).`,
 			return renderEnvelope(ctx, runResult{Status: "DRY_RUN_OK", DryRun: true})
 		}
 
-		// A schedule needs a persistent job; `air run` only submits a one-time run, so
-		// it can't honor one. Offer to convert to a bundle (where deploy schedules it)
-		// rather than silently submitting an unscheduled run.
+		// A schedule turns the workload into a persistent, scheduled job instead of a
+		// one-time run: create (or update) the job and return, since there is no
+		// immediate run to submit or stream.
 		if cfg.Schedule != nil {
-			return handleScheduledRun(ctx, cfg, file)
+			return runScheduled(ctx, cmd, cfg, file)
 		}
 
 		w := cmdctx.WorkspaceClient(ctx)
@@ -137,33 +136,35 @@ The workload is described by a YAML config file (see --file).`,
 	return cmd
 }
 
-// handleScheduledRun responds to a `schedule` in the run config. `air run` submits a
-// one-time run and can't schedule it; scheduling needs a persistent job, which a
-// Databricks Asset Bundle provides. It offers to convert the config to a bundle
-// (writing it next to the YAML) and prints the deploy step; it never submits, since a
-// scheduled run can't go through the submit path. Declining, or a non-interactive
-// session, exits non-zero with the manual command.
-func handleScheduledRun(ctx context.Context, cfg *runConfig, configPath string) error {
-	self := cliInvocation()
-	cmdio.LogString(ctx, "'schedule' is set, but 'air run' submits a one-time run and can't schedule it.")
-	cmdio.LogString(ctx, "Scheduling needs a persistent job, which a Databricks Asset Bundle provides.")
-
-	convertCmd := fmt.Sprintf("%s experimental air convert-to-dabs %s", self, configPath)
-	manual := fmt.Sprintf("Nothing submitted. To schedule this job:\n  %s\n  databricks bundle deploy", convertCmd)
-
-	convert, err := cmdio.AskYesOrNo(ctx, "Convert this config to a bundle now?")
-	if err != nil || !convert {
-		// A non-interactive session (no TTY) surfaces as an error here; treat it the
-		// same as declining and point at the manual command.
-		return errors.New(manual)
-	}
-
-	dir := filepath.Dir(configPath)
-	written, err := writeBundle(ctx, cfg, configPath, dir, false)
+// runScheduled creates (or updates) a persistent, scheduled job for a workload
+// whose config carries a `schedule`. Unlike a submit, there is no immediate run
+// to stream, so --watch does not apply here.
+func runScheduled(ctx context.Context, cmd *cobra.Command, cfg *runConfig, configPath string) error {
+	w := cmdctx.WorkspaceClient(ctx)
+	jobID, jobURL, created, err := createScheduledJob(ctx, w, cfg, configPath)
 	if err != nil {
 		return err
 	}
-	printConvertNextSteps(ctx, dir, written, bundleResourceKey(cfg.ExperimentName))
+	jobIDStr := strconv.FormatInt(jobID, 10)
+
+	if root.OutputType(cmd) == flags.OutputJSON {
+		status := "SCHEDULED_UPDATED"
+		if created {
+			status = "SCHEDULED_CREATED"
+		}
+		return renderEnvelope(ctx, runResult{Status: status, JobID: jobIDStr, DashboardURL: jobURL})
+	}
+
+	verb := "Updated"
+	if created {
+		verb = "Created"
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("%s scheduled job %s", verb, jobIDStr))
+	cmdio.LogString(ctx, "View at: "+jobURL)
+	cmdio.LogString(ctx, fmt.Sprintf("Runs on schedule: %s (%s)", cfg.Schedule.QuartzCronExpression, cfg.Schedule.TimezoneID))
+	if cfg.Schedule.PauseStatus == "PAUSED" {
+		cmdio.LogString(ctx, "The schedule is PAUSED; set pause_status: UNPAUSED (or unpause it in the Jobs UI) to activate it.")
+	}
 	return nil
 }
 
