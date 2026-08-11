@@ -190,6 +190,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Rejects experimental.record_deployment_history: the feature is not usable yet.
 		validate.ValidateRecordDeploymentHistory(),
 
+		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
+		validate.ValidateJobRunIdempotencyToken(),
+
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
 		// points to a Terraform-only field with no DABs equivalent.

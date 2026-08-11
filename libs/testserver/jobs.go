@@ -379,6 +379,13 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
+	// A resent request with the same non-empty token returns the run that token started.
+	if request.IdempotencyToken != "" {
+		if runId, ok := s.JobRunIdempotency[request.IdempotencyToken]; ok {
+			return Response{Body: jobs.RunNowResponse{RunId: runId}}
+		}
+	}
+
 	runId := nextID()
 	runName := "run-name"
 	if job.Settings != nil && job.Settings.Name != "" {
@@ -448,6 +455,10 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		Tasks:                tasks,
 		JobParameters:        runJobParameters(job.Settings, request.JobParameters),
 		OverridingParameters: runOverridingParameters(request),
+	}
+
+	if request.IdempotencyToken != "" {
+		s.JobRunIdempotency[request.IdempotencyToken] = runId
 	}
 
 	return Response{Body: jobs.RunNowResponse{RunId: runId}}
