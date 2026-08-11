@@ -119,10 +119,8 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			if !jsonOut {
 				out := cmd.OutOrStdout()
 				printSubmitResult(ctx, out, runIDStr, dashboardURL)
-				// The confirmation above is already printed, so a bare submit isn't
-				// blocked on the MLflow links. Their IDs are assigned only once the
-				// task run starts, so this best-effort poll usually returns nil; when
-				// it does, the two MLflow links are simply omitted.
+				// Append the MLflow links only if they resolve; a bare submit is not
+				// blocked on them since the confirmation above is already printed.
 				if ids := resolveMLflowIDsForRun(ctx, w, runID); ids != nil {
 					printMLflowLinks(ctx, out, w.Config.Host, ids)
 				}
@@ -173,11 +171,9 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 	return cmd
 }
 
-// printSubmitResult writes the guaranteed part of the human-readable submit
-// summary: a green success line and the Job Run hyperlink. These don't depend on
-// the MLflow IDs, so they print immediately (before any MLflow poll). The green
-// color and link degrade to plain text on non-rich terminals (via the renderer's
-// Ascii profile and hyperlink()), so piped/captured output stays clean.
+// printSubmitResult writes the green success line and Job Run hyperlink. These
+// don't depend on the MLflow IDs, so they print before any MLflow poll. Color
+// and links degrade to plain text on non-rich terminals.
 func printSubmitResult(ctx context.Context, out io.Writer, runIDStr, dashboardURL string) {
 	renderer, _ := cmdio.NewRenderer(ctx, out)
 	p := newPalette(renderer)
@@ -186,9 +182,8 @@ func printSubmitResult(ctx context.Context, out io.Writer, runIDStr, dashboardUR
 	fmt.Fprintln(out, "View job run at: "+hyperlink(ctx, out, dashboardURL, dashboardURL))
 }
 
-// printMLflowLinks appends the MLflow run and experiment hyperlinks, once their
-// IDs have been resolved. Like printSubmitResult, the links degrade to plain URLs
-// on non-rich terminals.
+// printMLflowLinks appends the MLflow run and experiment hyperlinks once their
+// IDs are resolved.
 func printMLflowLinks(ctx context.Context, out io.Writer, host string, ids *mlflowIdentifiers) {
 	runURL := mlflowRunURL(host, ids)
 	expURL := mlflowExperimentURL(host, ids)

@@ -142,11 +142,9 @@ func submitToken(flag string, cfg *runConfig) (string, error) {
 	return token, nil
 }
 
-// withSpinner runs fn while showing an stderr spinner labeled msg when show is
-// true; otherwise it just runs fn. The spinner auto-degrades to nothing on a
-// non-interactive terminal, so piped output is unaffected; show is false in JSON
-// mode so the stdout envelope stream stays clean. Mirrors the Python CLI's
-// cli_progress phases.
+// withSpinner runs fn, showing an stderr spinner labeled msg when show is true.
+// The spinner auto-degrades to nothing on a non-interactive terminal; show is
+// false in JSON mode so the stdout envelope stream stays clean.
 func withSpinner(ctx context.Context, show bool, msg string, fn func() error) error {
 	if !show {
 		return fn()

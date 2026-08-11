@@ -72,21 +72,16 @@ func mlflowRunURL(host string, ids *mlflowIdentifiers) string {
 		strings.TrimRight(host, "/"), ids.ExperimentID, ids.RunID)
 }
 
-// mlflowExperimentURL links to the MLflow experiment page. Mirrors Python's
-// mlflow_experiment_url (cli_display.py); like the other run-submit links it
-// omits the ?o= workspace-id query the Python CLI adds, matching mlflowRunURL
-// and the run-submit dashboard URL.
+// mlflowExperimentURL links to the MLflow experiment page. Omits the ?o= query
+// for consistency with mlflowRunURL and the run-submit dashboard URL.
 func mlflowExperimentURL(host string, ids *mlflowIdentifiers) string {
 	return fmt.Sprintf("%s/ml/experiments/%s", strings.TrimRight(host, "/"), ids.ExperimentID)
 }
 
-// resolveMLflowIDsForRun best-effort resolves a just-submitted run's MLflow
-// experiment/run IDs. They are assigned only once the task run starts, so it
-// polls runs/get + runs/get-output a few times (mirroring the Python CLI, which
-// polls for the same IDs after submit — cli_entrypoint.py _try_update_mlflow_run_name).
-// Returns nil if they don't appear within the budget or the context is
-// cancelled; callers treat that as "no MLflow link" rather than an error, since
-// the run is already submitted.
+// resolveMLflowIDsForRun best-effort resolves a just-submitted run's MLflow IDs,
+// polling because they are assigned only once the task run starts. Returns nil
+// (treated as "no link", not an error) if they don't appear within the budget or
+// the context is cancelled.
 func resolveMLflowIDsForRun(ctx context.Context, w *databricks.WorkspaceClient, runID int64) *mlflowIdentifiers {
 	// The task run id is fixed at submit time, so resolve it once; only the MLflow
 	// output (runs/get-output) fills in later, so that is all we poll.
