@@ -1,5 +1,0 @@
-Env.DATABRICKS_BUNDLE_INIT_RECORD_DEPLOYMENT_HISTORY = "true"
-
-# record_deployment_history is gated off for now, so generated projects only validate with the
-# force-allow escape hatch set.
-Env.DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY = "true"

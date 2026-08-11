@@ -1,9 +1,0 @@
-{
-    "project_name": "my_default_python",
-    "include_job": "yes",
-    "include_pipeline": "no",
-    "include_python": "no",
-    "serverless": "yes",
-    "default_catalog": "main",
-    "personal_schemas": "yes"
-}
