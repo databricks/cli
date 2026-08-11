@@ -548,6 +548,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			var extraVars []string
 			if cloudEnv != "" {
 				extraVars = append(extraVars, "CONFIG_Cloud=true")
+				// CONFIG_CloudName carries the normalized cloud (aws/azure/gcp) so
+				// EnvMatrixExclude rules can drop a variant on one cloud only.
+				extraVars = append(extraVars, "CONFIG_CloudName="+getCloudEnvBase(cloudEnv))
 			}
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
