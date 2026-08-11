@@ -160,13 +160,6 @@ func TestOperationQueueMergesWritesQueuedBehindAnUpload(t *testing.T) {
 }
 
 func TestOperationQueueMergedRecreateKeepsItsActionType(t *testing.T) {
-	// Both writes of a recreate report it as a recreate (see DeploymentUnit.Create),
-	// so the merged upload carries that action however the two are combined. It has to:
-	// the service fixes action_type when the operation is created and rejects it in an
-	// update mask, so a merged pair that reported "create" would leave the history
-	// saying the resource was merely created.
-	//
-	// Every worker is parked so both writes land in pending and merge before upload.
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, operationUploadWorkers+2)}
 	q := newOperationQueue(t.Context(), f)
 

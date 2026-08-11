@@ -22,6 +22,7 @@ type fakeOpCall struct {
 	resourceKey string
 	op          bundledeployments.Operation
 	update      updateOperationRequest
+	fields      []string
 }
 
 type fakeOpClient struct {
@@ -38,10 +39,10 @@ func (f *fakeOpClient) CreateOperation(ctx context.Context, parent, resourceKey 
 	return operationResponse{SequenceId: f.sequence}, nil
 }
 
-func (f *fakeOpClient) UpdateOperation(ctx context.Context, parent, resourceKey string, body updateOperationRequest) (operationResponse, error) {
+func (f *fakeOpClient) UpdateOperation(ctx context.Context, parent, resourceKey string, fields []string, body updateOperationRequest) (operationResponse, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.calls = append(f.calls, fakeOpCall{method: "update", parent: parent, resourceKey: resourceKey, update: body})
+	f.calls = append(f.calls, fakeOpCall{method: "update", parent: parent, resourceKey: resourceKey, update: body, fields: fields})
 	return operationResponse{SequenceId: f.sequence}, nil
 }
 
@@ -90,6 +91,50 @@ func TestOperationRecorderUpdatesSecondWriteForSameResource(t *testing.T) {
 	assert.Equal(t, "7", f.calls[1].update.SequenceId)
 	assert.Equal(t, "job-456", f.calls[1].update.ResourceId)
 	require.NotNil(t, f.calls[1].update.State)
+}
+
+func TestOperationRecorderFailureAfterAStateWriteKeepsTheState(t *testing.T) {
+	// A create whose WaitAfterCreate fails has already written state for a resource
+	// that exists remotely. Updating the operation must only mark it failed: sending
+	// the failure's own empty state and id would clear both, and a resource with no
+	// state is dropped from the deployment, so the next plan would re-create it.
+	f := &fakeOpClient{sequence: "3"}
+	r := newOperationRecorder(f, "dep-1", 2)
+
+	uploadOne(t, r, "resources.job_runs.my_run", deployplan.Create, "run-1", envelope(t, "the run"))
+
+	failed, err := newFailedOperation(deployplan.Create, "", nil, errors.New("run did not succeed: FAILED"))
+	require.NoError(t, err)
+	require.NoError(t, r.upload(t.Context(), "resources.job_runs.my_run", failed))
+
+	require.Len(t, f.calls, 2)
+	assert.Equal(t, "create", f.calls[0].method)
+
+	update := f.calls[1]
+	assert.Equal(t, "update", update.method)
+	assert.Equal(t, failureFields, update.fields)
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, update.update.Status)
+	assert.Equal(t, "run did not succeed: FAILED", update.update.ErrorMessage)
+	// Neither is in the mask, so what the create recorded stands.
+	assert.Nil(t, update.update.State)
+	assert.Empty(t, update.update.ResourceId)
+}
+
+func TestOperationRecorderFailureBeforeAnyWriteCarriesPriorState(t *testing.T) {
+	// Nothing has been recorded for the resource, so the failure creates the operation
+	// and has to carry the prior state itself - the resource still exists, and the
+	// service rejects an operation that records state without an id.
+	f := &fakeOpClient{sequence: "1"}
+	r := newOperationRecorder(f, "dep-1", 2)
+
+	failed, err := newFailedOperation(deployplan.Update, "main.some_schema", envelope(t, "before"), errors.New("boom"))
+	require.NoError(t, err)
+	require.NoError(t, r.upload(t.Context(), "resources.schemas.foo", failed))
+
+	require.Len(t, f.calls, 1)
+	assert.Equal(t, "create", f.calls[0].method)
+	assert.Equal(t, "main.some_schema", f.calls[0].op.ResourceId)
+	require.NotNil(t, f.calls[0].op.State)
 }
 
 func TestOperationRecorderTracksSequencePerResource(t *testing.T) {

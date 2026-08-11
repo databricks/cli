@@ -41,10 +41,12 @@ type updateOperationRequest struct {
 	SequenceId   string                            `json:"sequence_id,omitempty"`
 }
 
-// operationClient records operations under a deployment version.
+// operationClient records operations under a deployment version. UpdateOperation
+// takes the fields to update, because a failure updates fewer of them than a state
+// write does.
 type operationClient interface {
 	CreateOperation(ctx context.Context, parent, resourceKey string, op bundledeployments.Operation) (operationResponse, error)
-	UpdateOperation(ctx context.Context, parent, resourceKey string, body updateOperationRequest) (operationResponse, error)
+	UpdateOperation(ctx context.Context, parent, resourceKey string, fields []string, body updateOperationRequest) (operationResponse, error)
 }
 
 // apiOperationClient talks to the operations API through the workspace client.
@@ -70,12 +72,12 @@ func (a *apiOperationClient) CreateOperation(ctx context.Context, parent, resour
 	return result, nil
 }
 
-func (a *apiOperationClient) UpdateOperation(ctx context.Context, parent, resourceKey string, body updateOperationRequest) (operationResponse, error) {
+func (a *apiOperationClient) UpdateOperation(ctx context.Context, parent, resourceKey string, fields []string, body updateOperationRequest) (operationResponse, error) {
 	var result operationResponse
 	path := fmt.Sprintf("/api/2.0/bundle/%s/operations/%s", parent, resourceKey)
 	err := a.client.Do(ctx, http.MethodPatch, path,
 		auth.WorkspaceIDHeaders(a.client.Config),
-		map[string]any{"update_mask": strings.Join(updatableFields, ",")},
+		map[string]any{"update_mask": strings.Join(fields, ",")},
 		body, &result)
 	if err != nil {
 		return operationResponse{}, err

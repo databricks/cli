@@ -174,6 +174,14 @@ func newOperationRecorder(ops operationClient, deploymentID string, version int6
 // change. resource_id is included because a recreate learns a new one.
 var updatableFields = []string{"state", "error_message", "resource_id", "status"}
 
+// failureFields are the fields a failure changes on an operation that already exists.
+// It deliberately leaves state and resource_id alone: the resource was written before
+// the step that failed, so what is already recorded describes something that exists,
+// and a failure carries no state of its own to replace it with. Including them would
+// clear both - the service takes the update mask literally - and a resource with no
+// state is dropped from the deployment, so the next plan would try to create it again.
+var failureFields = []string{"error_message", "status"}
+
 func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op recordedOperation) error {
 	// The read path re-adds the prefix; see dstate.ResourceKeyPrefix.
 	dmsKey := strings.TrimPrefix(resourceKey, dstate.ResourceKeyPrefix)
@@ -207,13 +215,26 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 	if recorded {
 		// Only the masked fields and sequence_id are read on an update; action_type
 		// stays as the operation was created, so sending it would just be misleading.
-		result, err = r.ops.UpdateOperation(ctx, r.parent, dmsKey, updateOperationRequest{
+		body := updateOperationRequest{
 			State:        operation.State,
 			ErrorMessage: operation.ErrorMessage,
 			ResourceId:   operation.ResourceId,
 			Status:       operation.Status,
 			SequenceId:   sequenceID,
-		})
+		}
+		fields := updatableFields
+		if op.status == bundledeployments.OperationStatusOperationStatusFailed {
+			// Mark the existing record failed and leave the rest of it alone; see
+			// failureFields. A failure that arrives before any operation exists still
+			// goes through CreateOperation below, carrying the prior state.
+			fields = failureFields
+			body = updateOperationRequest{
+				ErrorMessage: operation.ErrorMessage,
+				Status:       operation.Status,
+				SequenceId:   sequenceID,
+			}
+		}
+		result, err = r.ops.UpdateOperation(ctx, r.parent, dmsKey, fields, body)
 	} else {
 		result, err = r.ops.CreateOperation(ctx, r.parent, dmsKey, operation)
 	}

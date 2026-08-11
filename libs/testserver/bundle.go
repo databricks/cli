@@ -6,6 +6,7 @@ import (
 	"path"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -19,6 +20,11 @@ import (
 // (DeploymentWhsClient); the literal is repeated here rather than shared with
 // the CLI so a test would catch the CLI drifting from the service.
 const dmsDeploymentNodeName = "resources.deployment.json"
+
+// dmsUpdatableOperationFields are the update_mask paths UpdateOperation accepts. Any
+// other path is rejected, and action_type in particular is fixed when the operation is
+// created.
+var dmsUpdatableOperationFields = []string{"state", "error_message", "resource_id", "status"}
 
 // dmsDeployment holds a deployment record together with the versions and
 // resources recorded under it, so the read APIs (ListVersions/ListResources)
@@ -374,6 +380,18 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 	if updateMask == "" {
 		return dmsInvalidArgument("update_mask is required")
 	}
+	// Only the paths named in the mask are written; every other field of the stored
+	// operation is left as it is. A caller that omits state keeps the state already
+	// recorded, which is how a failure marks an operation failed without erasing the
+	// resource it had written.
+	update := map[string]bool{}
+	for path := range strings.SplitSeq(updateMask, ",") {
+		path = strings.TrimSpace(path)
+		if !slices.Contains(dmsUpdatableOperationFields, path) {
+			return dmsInvalidArgument("update_mask path " + path + " is not updatable")
+		}
+		update[path] = true
+	}
 
 	defer s.LockUnlock()()
 
@@ -391,8 +409,26 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 		return dmsAborted("sequence_id is outdated; the operation is at " + strconv.FormatInt(existing.SequenceId, 10))
 	}
 
-	failed := op.Status == bundledeployments.OperationStatusOperationStatusFailed
-	if !failed && op.ErrorMessage != "" {
+	// The invariants hold over the operation the update leaves behind, not the request:
+	// a field the mask leaves out keeps the value it already had, so a failure that
+	// updates only status and error_message is checked against the state and id the
+	// earlier write recorded.
+	after := *existing
+	if update["state"] {
+		after.State = op.State
+	}
+	if update["error_message"] {
+		after.ErrorMessage = op.ErrorMessage
+	}
+	if update["resource_id"] {
+		after.ResourceId = op.ResourceId
+	}
+	if update["status"] {
+		after.Status = op.Status
+	}
+
+	failed := after.Status == bundledeployments.OperationStatusOperationStatusFailed
+	if !failed && after.ErrorMessage != "" {
 		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED")
 	}
 
@@ -400,15 +436,23 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 	// which resource via resource_id. This applies to both succeeded and failed
 	// operations: a failed operation reports prior state to document what existed
 	// before the attempt failed.
-	if op.State != nil && op.ResourceId == "" {
+	if after.State != nil && after.ResourceId == "" {
 		return dmsInvalidArgument("resource_id is required for an operation that records state")
 	}
 
-	// Only the mutable fields change; action_type and resource_key stay as created.
-	existing.State = op.State
-	existing.ErrorMessage = op.ErrorMessage
-	existing.ResourceId = op.ResourceId
-	existing.Status = op.Status
+	// Only the masked fields change; action_type and resource_key stay as created.
+	if update["state"] {
+		existing.State = op.State
+	}
+	if update["error_message"] {
+		existing.ErrorMessage = op.ErrorMessage
+	}
+	if update["resource_id"] {
+		existing.ResourceId = op.ResourceId
+	}
+	if update["status"] {
+		existing.Status = op.Status
+	}
 	existing.SequenceId++
 
 	body, err := operationBody(existing)
