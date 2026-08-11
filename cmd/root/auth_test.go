@@ -238,8 +238,6 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 // "token refresh: ... invalid_grant" error instead. A single-profile store lets
 // AskForWorkspaceProfile resolve without interactive input.
 func TestMustWorkspaceClientRewritesInvalidRefreshTokenForPickedProfile(t *testing.T) {
-	testutil.CleanupEnvironment(t)
-
 	// Fake OIDC endpoints: discovery succeeds, token refresh is rejected as if
 	// the cached refresh token were invalid.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -255,10 +253,18 @@ func TestMustWorkspaceClientRewritesInvalidRefreshTokenForPickedProfile(t *testi
 	}))
 	t.Cleanup(server.Close)
 
+	// Isolate the auth-relevant environment directly rather than via
+	// CleanupEnvironment: that helper calls os.Clearenv, which makes the
+	// httptest server above fail to bind on the Windows CI runner. The other
+	// httptest-based tests avoid it for the same reason.
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+	t.Setenv("DATABRICKS_HOST", "")
+	t.Setenv("DATABRICKS_TOKEN", "")
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
 
 	configFile := filepath.Join(home, ".databrickscfg")
 	require.NoError(t, os.WriteFile(configFile,
