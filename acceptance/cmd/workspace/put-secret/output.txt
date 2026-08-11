@@ -1,0 +1,51 @@
+
+>>> [CLI] secrets create-scope test-scope
+
+=== --string-value is sent verbatim and read back as-is
+
+>>> [CLI] secrets put-secret test-scope string-key --string-value test-value
+with-newlines
+
+
+>>> [CLI] secrets get-secret test-scope string-key
+{
+  "key": "string-key",
+  "value": "dGVzdC12YWx1ZQp3aXRoLW5ld2xpbmVzCg=="
+}
+
+=== --bytes-value is base64-encoded by the CLI before it is sent
+
+>>> [CLI] secrets put-secret test-scope bytes-key --bytes-value þÿ
+
+>>> [CLI] secrets get-secret test-scope bytes-key
+{
+  "key": "bytes-key",
+  "value": "AQL+/w=="
+}
+
+=== the two value flags are mutually exclusive
+
+>>> musterr [CLI] secrets put-secret test-scope k --string-value a --bytes-value b
+Error: cannot specify both --bytes-value and --string-value
+
+=== what the CLI actually put on the wire
+
+>>> print_requests.py //api/2.0/secrets/put
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/put",
+  "body": {
+    "key": "string-key",
+    "scope": "test-scope",
+    "string_value": "test-value\nwith-newlines\n"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/put",
+  "body": {
+    "bytes_value": "AQL+/w==",
+    "key": "bytes-key",
+    "scope": "test-scope"
+  }
+}
