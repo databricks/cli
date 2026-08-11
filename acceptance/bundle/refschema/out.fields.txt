@@ -845,8 +845,12 @@ resources.job_runs.*.jar_params[*]	string	ALL
 resources.job_runs.*.job_id	int64	ALL
 resources.job_runs.*.job_parameters	map[string]string	ALL
 resources.job_runs.*.job_parameters.*	string	ALL
+resources.job_runs.*.lifecycle	*resources.JobRunLifecycle	INPUT
 resources.job_runs.*.lifecycle	resources.Lifecycle	INPUT
 resources.job_runs.*.lifecycle.prevent_destroy	bool	INPUT
+resources.job_runs.*.lifecycle.triggers	[]resources.JobRunTrigger	INPUT
+resources.job_runs.*.lifecycle.triggers[*]	resources.JobRunTrigger	INPUT
+resources.job_runs.*.lifecycle.triggers[*].on_bundle_deploy	*bool	INPUT
 resources.job_runs.*.modified_status	string	INPUT
 resources.job_runs.*.notebook_params	map[string]string	ALL
 resources.job_runs.*.notebook_params.*	string	ALL
@@ -885,6 +889,8 @@ resources.job_runs.*.state.queue_reason	string	REMOTE
 resources.job_runs.*.state.result_state	jobs.RunResultState	REMOTE
 resources.job_runs.*.state.state_message	string	REMOTE
 resources.job_runs.*.state.user_cancelled_or_timedout	bool	REMOTE
+resources.job_runs.*.triggers	*dresources.JobRunTriggersState	STATE
+resources.job_runs.*.triggers.on_bundle_deploy	string	STATE
 resources.job_runs.*.url	string	INPUT
 resources.jobs.*.budget_policy_id	string	ALL
 resources.jobs.*.continuous	*jobs.Continuous	ALL
