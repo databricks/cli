@@ -131,7 +131,7 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, "")
+	testAccept(t, InprocessMode)
 }
 
 func TestInprocessMode(t *testing.T) {
@@ -146,8 +146,13 @@ func TestInprocessMode(t *testing.T) {
 	// testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
 	// Run the "deco env flip workspace" command to configure a workspace.
 
-	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
-	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
+	// Both selftests run in a single testAccept call: each call repeats the whole
+	// setup (terraform install, wheel build, CLI build, yamlfmt build), and the
+	// HOME sandbox that PrepareServer installs on this test leaks into the setup
+	// of any later call. HOME determines GOPATH/GOMODCACHE, so a second call
+	// rebuilds yamlfmt against an empty module cache and re-downloads its
+	// dependencies, costing ~60s.
+	require.Equal(t, 2, testAccept(t, true, "selftest/basic", "selftest/server"))
 }
 
 // Configure replacements for environment variables we read from test environments.
@@ -218,7 +223,8 @@ func requirePrerequisites(t *testing.T) bool {
 	})
 }
 
-func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
+// selectedTests, when non-empty, restricts the run to exactly those test dirs.
+func testAccept(t *testing.T, inprocessMode bool, selectedTests ...string) int {
 	if testdiff.OverwriteMode && !hasRunFilter() {
 		Subset = true
 	}
@@ -464,11 +470,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	}
 	subset.changed = changedTests
 
-	if singleTest != "" {
+	if len(selectedTests) > 0 {
 		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
-			return n != singleTest
+			return !slices.Contains(selectedTests, n)
 		})
-		require.NotEmpty(t, testDirs, "singleTest=%#v did not match any tests\n%#v", singleTest, testDirs)
+		require.NotEmpty(t, testDirs, "selectedTests=%#v did not match any tests\n%#v", selectedTests, testDirs)
 	}
 
 	skippedDirs := 0
