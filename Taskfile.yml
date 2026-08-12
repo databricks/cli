@@ -556,17 +556,11 @@ tasks:
   local-select:
     desc: Run selection of local tests (tests changed in this branch)
     # Local counterpart of cloud-select: the same DATABRICKS_TEST_SELECT_CHANGED selection,
-    # against the testserver instead of a real workspace. No sources/generates because the
-    # selection depends on the git diff, which Task cannot checksum. Run with
-    # GOTESTSUM_FORMAT=standard-verbose to see which tests were selected.
+    # against the testserver instead of a real workspace. -v to show the selection summary
+    # and the tests that ran; no sources/generates because the selection depends on the git
+    # diff, which Task cannot checksum.
     cmds:
-      - |
-        DATABRICKS_TEST_SELECT_CHANGED=${DATABRICKS_TEST_SELECT_CHANGED:-50} \
-        {{.GO_TOOL}} gotestsum \
-          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
-          --no-summary=skipped \
-          --packages ./acceptance \
-          -- -timeout=${LOCAL_TIMEOUT:-60m}
+      - "DATABRICKS_TEST_SELECT_CHANGED=${DATABRICKS_TEST_SELECT_CHANGED:-50} go test ./acceptance -run '^TestAccept$' -v -timeout=${LOCAL_TIMEOUT:-60m}"
 
   test-update:
     desc: Update acceptance test output (local)

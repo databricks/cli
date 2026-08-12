@@ -486,6 +486,16 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	}
 	subset.changed = changedTests
 
+	// Drop the tests that were not selected instead of skipping them per dir: a skip
+	// per dir buries the run in a thousand SKIP lines and hides the selection summary.
+	// Their out.test.toml is left alone, which is what a partial run should do.
+	if selectChanged {
+		testDirs = slices.DeleteFunc(testDirs, func(dir string) bool {
+			_, ok := changedTests[dir]
+			return !ok
+		})
+	}
+
 	if len(selectedTests) > 0 {
 		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
 			return !slices.Contains(selectedTests, n)
@@ -534,7 +544,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath, dir, selectChanged, changedTests)
+			skipReason := getSkipReason(&config, configPath)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -670,15 +680,7 @@ func validateTestPhase(phase int) error {
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
-// selectChanged reports whether DATABRICKS_TEST_SELECT_CHANGED was set at startup.
-// changedTests maps test dirs to extra env filters; nil map means feature is off.
-func getSkipReason(config *internal.TestConfig, configPath, dir string, selectChanged bool, changedTests map[string][]string) string {
-	if selectChanged {
-		if _, ok := changedTests[dir]; !ok {
-			return "Not selected by " + SelectChangedEnvVar
-		}
-	}
-
+func getSkipReason(config *internal.TestConfig, configPath string) string {
 	if Forcerun {
 		return ""
 	}
