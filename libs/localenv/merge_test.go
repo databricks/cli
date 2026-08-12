@@ -651,6 +651,12 @@ dependencies = [  # runtime deps
 dev = ["databricks-connect~=16.0"]
 `,
 	}
+	// A comment on a surviving element (or the opening line) must be preserved; the
+	// removal only drops the databricks-connect element, not the neighbouring comment.
+	wantComment := map[string]string{
+		"trailing comment on previous element": "# test runner",
+		"comment on the opening bracket line":  "# runtime deps",
+	}
 	for name, in := range cases {
 		out, _, err := MergeManaged([]byte(in), testConstraints())
 		require.NoError(t, err, name)
@@ -658,6 +664,7 @@ dev = ["databricks-connect~=16.0"]
 		assert.NotContains(t, s, "databricks-connect==15.1.*", name)
 		assert.Contains(t, s, `"pytest",`, name)
 		assert.Contains(t, s, `"databricks-connect~=17.2.0"`, name)
+		assert.Contains(t, s, wantComment[name], name+": neighbouring comment must be preserved")
 		requireValidTOML(t, out)
 	}
 }
@@ -680,6 +687,7 @@ dev = [
 	s := string(out)
 	assert.Contains(t, s, `"databricks-connect~=17.2.0",`, "the managed pin is kept and updated")
 	assert.NotContains(t, s, "databricks-connect==15.0.0", "the second pin is removed")
+	assert.Contains(t, s, "# managed by setup-local", "the managed pin's comment is preserved")
 	requireValidTOML(t, out)
 }
 

@@ -546,7 +546,18 @@ func removeDbconnectFromArraySpan(spanLines []string, keepFirst bool) (out, remo
 	}
 	var kept []string
 	seenFirst := false
+	// carry holds the leading comment/blank lines of a removed element. splitTopLevelElements
+	// breaks on commas, so a trailing comment left on the *previous* element's line lands as
+	// a leading comment line on this element's token; dropping the whole token would delete
+	// that previous element's comment (MergeManaged preserves comments). Carry those lines to
+	// the next retained token so the comment stays on the line it belonged to. A comment that
+	// instead described the removed element is indistinguishable from that case, so it is kept
+	// too and may end up beside the following element — content is never lost, but a comment
+	// can be relocated; that is the accepted trade-off of the split-on-commas approach.
+	carry := ""
 	for _, elem := range splitTopLevelElements(body) {
+		elem = carry + elem
+		carry = ""
 		if pin, isDBC := dbconnectElementPin(elem); isDBC {
 			if keepFirst && !seenFirst {
 				seenFirst = true
@@ -554,6 +565,7 @@ func removeDbconnectFromArraySpan(spanLines []string, keepFirst bool) (out, remo
 				continue
 			}
 			removed = append(removed, pin)
+			carry = leadingLinesBeforeElement(elem)
 			continue
 		}
 		kept = append(kept, elem)
@@ -561,7 +573,30 @@ func removeDbconnectFromArraySpan(spanLines []string, keepFirst bool) (out, remo
 	if len(removed) == 0 {
 		return spanLines, nil
 	}
+	// A carry left over after the last token (the removed element was last) has no following
+	// token; emit it on its own line before the closing "]" so the comment survives and does
+	// not comment out the bracket.
+	if strings.TrimSpace(carry) != "" {
+		kept = append(kept, carry+"\n")
+	}
 	return strings.Split(prefix+strings.Join(kept, ",")+suffix, "\n"), removed
+}
+
+// leadingLinesBeforeElement returns the comment/blank lines that precede the value line
+// in an array-element token — the trailing comment splitTopLevelElements moved here from
+// the previous element's line. The value line and anything after it (the element's own
+// trailing comment) is excluded, since that belongs to the element being removed.
+func leadingLinesBeforeElement(elem string) string {
+	lines := strings.Split(elem, "\n")
+	for i, line := range lines {
+		if c := commentStart(line); c >= 0 {
+			line = line[:c]
+		}
+		if strings.TrimSpace(line) != "" {
+			return strings.Join(lines[:i], "\n")
+		}
+	}
+	return ""
 }
 
 // arrayParts splits a joined "key = [ ... ]" block into the text up to and including
