@@ -41,7 +41,6 @@ OK  	deploy.terraform	/api/2.0/workspace/delete	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace/mkdirs	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace/mkdirs	engine/terraform
 MISS	deploy.terraform	/.well-known/databricks-config	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
-MISS	deploy.terraform	/api/2.0/preview/scim/v2/Me	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	deploy.terraform	/api/2.1/unity-catalog/schemas/mycatalog.myschema	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	deploy.terraform	/api/2.1/unity-catalog/schemas	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	deploy.terraform	/.well-known/databricks-config	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5'
@@ -73,8 +72,6 @@ OK  	destroy.terraform	/api/2.0/workspace-files/import-file/Workspace/Users/[USE
 OK  	destroy.terraform	/api/2.0/workspace/delete	engine/terraform
 MISS	destroy.terraform	/.well-known/databricks-config	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
 MISS	destroy.terraform	/api/2.1/unity-catalog/schemas/mycatalog.myschema	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
-MISS	destroy.terraform	/api/2.0/preview/scim/v2/Me	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
-MISS	destroy.terraform	/api/2.0/preview/scim/v2/Me	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	destroy.terraform	/api/2.1/unity-catalog/current-metastore-assignment	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	destroy.terraform	/api/2.1/unity-catalog/schemas/mycatalog.myschema	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	destroy.terraform	/.well-known/databricks-config	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5'
@@ -110,7 +107,6 @@ MISS	plan2.terraform	/api/2.0/workspace/get-status	'cli/[CLI_VERSION] databricks
 OK  	plan2.terraform	/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json	engine/terraform
 OK  	plan2.terraform	/api/2.0/workspace/get-status	engine/terraform
 MISS	plan2.terraform	/.well-known/databricks-config	'cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
-MISS	plan2.terraform	/api/2.0/preview/scim/v2/Me	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	plan2.terraform	/api/2.1/unity-catalog/schemas/mycatalog.myschema	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	plan2.terraform	/.well-known/databricks-config	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5'
 MISS	plan2.terraform	/.well-known/databricks-config	'databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5'

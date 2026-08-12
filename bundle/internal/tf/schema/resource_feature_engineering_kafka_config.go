@@ -72,15 +72,8 @@ type ResourceFeatureEngineeringKafkaConfigIngestionConfig struct {
 	IngestionPipelineId  string                                                                    `json:"ingestion_pipeline_id,omitempty"`
 }
 
-type ResourceFeatureEngineeringKafkaConfigKeySchemaProtoSchema struct {
-	MessageName string `json:"message_name"`
-	SchemaText  string `json:"schema_text"`
-}
-
 type ResourceFeatureEngineeringKafkaConfigKeySchema struct {
-	AvroSchema  string                                                     `json:"avro_schema,omitempty"`
-	JsonSchema  string                                                     `json:"json_schema,omitempty"`
-	ProtoSchema *ResourceFeatureEngineeringKafkaConfigKeySchemaProtoSchema `json:"proto_schema,omitempty"`
+	JsonSchema string `json:"json_schema,omitempty"`
 }
 
 type ResourceFeatureEngineeringKafkaConfigProviderConfig struct {
@@ -93,15 +86,8 @@ type ResourceFeatureEngineeringKafkaConfigSubscriptionMode struct {
 	SubscribePattern string `json:"subscribe_pattern,omitempty"`
 }
 
-type ResourceFeatureEngineeringKafkaConfigValueSchemaProtoSchema struct {
-	MessageName string `json:"message_name"`
-	SchemaText  string `json:"schema_text"`
-}
-
 type ResourceFeatureEngineeringKafkaConfigValueSchema struct {
-	AvroSchema  string                                                       `json:"avro_schema,omitempty"`
-	JsonSchema  string                                                       `json:"json_schema,omitempty"`
-	ProtoSchema *ResourceFeatureEngineeringKafkaConfigValueSchemaProtoSchema `json:"proto_schema,omitempty"`
+	JsonSchema string `json:"json_schema,omitempty"`
 }
 
 type ResourceFeatureEngineeringKafkaConfig struct {
