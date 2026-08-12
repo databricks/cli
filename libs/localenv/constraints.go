@@ -74,6 +74,11 @@ type Constraints struct {
 	DatabricksConnect string
 	// ConstraintDeps is the list of entries from [tool.uv].constraint-dependencies.
 	ConstraintDeps []string
+	// EnvironmentVersion is the serverless environment version written into
+	// [tool.databricks.environment].environment_version (e.g. "5"). It is not
+	// parsed from the artifact but set by the pipeline from the resolved compute
+	// target; it is empty for cluster targets, where the section is not managed.
+	EnvironmentVersion string
 }
 
 // cacheFileName maps an env key to a single, collision-free cache filename.

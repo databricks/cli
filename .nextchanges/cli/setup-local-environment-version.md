@@ -1,0 +1,1 @@
+`databricks environments setup-local` now records the resolved serverless environment version in a `[tool.databricks.environment]` section of the generated `pyproject.toml` on serverless targets, so the same project can run interactively, in bundles, and in serverless jobs from one source of truth. Cluster targets are unaffected.

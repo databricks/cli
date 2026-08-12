@@ -8,5 +8,6 @@ warning: dependency "pandas==4.0.0" conflicts with the environment constraint "p
 Plan: [TEST_TMP_DIR]/pyproject.toml
   changed region: requires-python
   changed region: databricks-connect
+  changed region: tool.databricks.environment
   changed region: tool.uv.constraint-dependencies
 Check complete. No files were modified.

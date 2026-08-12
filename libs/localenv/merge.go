@@ -28,10 +28,19 @@ var (
 
 // Region names reported back to the caller via MergeManaged's regions return value.
 const (
-	regionRequiresPython    = "requires-python"
-	regionDatabricksConnect = "databricks-connect"
-	regionToolUv            = "tool.uv.constraint-dependencies"
+	regionRequiresPython        = "requires-python"
+	regionDatabricksConnect     = "databricks-connect"
+	regionToolUv                = "tool.uv.constraint-dependencies"
+	regionDatabricksEnvironment = "tool.databricks.environment"
 )
+
+// databricksEnvironmentTable is the TOML table header that carries the
+// serverless environment version, and environmentVersionRe matches the start of
+// its managed environment_version assignment (capturing leading whitespace so it
+// is preserved when the value is replaced).
+const databricksEnvironmentTable = "[tool.databricks.environment]"
+
+var environmentVersionRe = regexp.MustCompile(`^(\s*)environment_version\s*=`)
 
 var (
 	// tableHeaderRe matches a TOML table header line: a standard table like
@@ -88,7 +97,7 @@ func planDBConnect(target []byte, c Constraints) dbconnectPlan {
 	return dbconnectPlan{replacedDevPin: replaced, removed: removed}
 }
 
-// MergeManaged applies the three managed transforms to target, preserving every other
+// MergeManaged applies the managed transforms to target, preserving every other
 // byte (comments, ordering, whitespace). It returns the merged bytes and the list of
 // regions that actually changed. The operation is idempotent: feeding its own output
 // back in produces identical bytes.
@@ -142,6 +151,11 @@ func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string
 	}
 	if dbcChanged || strayChanged {
 		regions = append(regions, regionDatabricksConnect)
+	}
+
+	lines, envChanged := mergeDatabricksEnvironment(lines, c.EnvironmentVersion)
+	if envChanged {
+		regions = append(regions, regionDatabricksEnvironment)
 	}
 
 	lines, uvChanged := mergeToolUv(lines, c.ConstraintDeps)
@@ -235,6 +249,45 @@ func mergeRequiresPython(lines []string, value string) ([]string, bool) {
 	inserted := make([]string, 0, len(lines)+1)
 	inserted = append(inserted, lines[:header+1]...)
 	inserted = append(inserted, want("", ""))
+	inserted = append(inserted, lines[header+1:]...)
+	return inserted, true
+}
+
+// mergeDatabricksEnvironment pins environment_version to version within the
+// env-owned [tool.databricks.environment] table: it replaces an existing value
+// (preserving the line's indentation and any inline comment), inserts the key
+// when the table exists without it, and appends the table when it is absent.
+// An empty version (a cluster target) is a no-op — the section is only written
+// for serverless targets, so an existing one is left untouched rather than
+// removed. Returns whether the line slice changed.
+func mergeDatabricksEnvironment(lines []string, version string) ([]string, bool) {
+	if version == "" {
+		return lines, false
+	}
+
+	header, end, found := tableBounds(lines, databricksEnvironmentTable)
+	if !found {
+		return appendManagedBlock(lines, []string{databricksEnvironmentTable, fmt.Sprintf(`environment_version = "%s"`, version)}), true
+	}
+
+	for i := header + 1; i < end; i++ {
+		m := environmentVersionRe.FindStringSubmatch(lines[i])
+		if m == nil {
+			continue
+		}
+		// Only the value is managed; a trailing inline comment is user content.
+		replacement := fmt.Sprintf(`%senvironment_version = "%s"%s`, m[1], version, trailingComment(lines[i]))
+		if lines[i] == replacement {
+			return lines, false
+		}
+		lines[i] = replacement
+		return lines, true
+	}
+
+	// Table exists but has no environment_version: insert directly under the header.
+	inserted := make([]string, 0, len(lines)+1)
+	inserted = append(inserted, lines[:header+1]...)
+	inserted = append(inserted, fmt.Sprintf(`environment_version = "%s"`, version))
 	inserted = append(inserted, lines[header+1:]...)
 	return inserted, true
 }
@@ -1100,9 +1153,10 @@ func equalLines(a, b []string) bool {
 const freshProjectVersion = "0.0.0"
 
 // RenderFreshPyproject produces a complete managed pyproject.toml for a project that has
-// none, with [project], [dependency-groups].dev (carrying the databricks-connect pin), and
-// the marker-bracketed [tool.uv] constraint block. When c.DatabricksConnect is empty
-// (constraints-only mode) the dev group is emitted empty rather than with a blank entry.
+// none, with [project], [dependency-groups].dev (carrying the databricks-connect pin), the
+// [tool.databricks.environment] section (serverless targets only), and the marker-bracketed
+// [tool.uv] constraint block. When c.DatabricksConnect is empty (constraints-only mode) the
+// dev group is emitted empty rather than with a blank entry.
 func RenderFreshPyproject(projectName string, c Constraints) []byte {
 	var b strings.Builder
 	b.WriteString("[project]\n")
@@ -1120,6 +1174,13 @@ func RenderFreshPyproject(projectName string, c Constraints) []byte {
 		b.WriteString("dev = []\n")
 	}
 	b.WriteString("\n")
+	// The serverless environment version is written only for serverless targets;
+	// a cluster target leaves EnvironmentVersion empty and omits the section.
+	if c.EnvironmentVersion != "" {
+		b.WriteString(databricksEnvironmentTable + "\n")
+		fmt.Fprintf(&b, "environment_version = %q\n", c.EnvironmentVersion)
+		b.WriteString("\n")
+	}
 	for _, line := range renderToolUvBlock(c.ConstraintDeps, true) {
 		b.WriteString(line)
 		b.WriteString("\n")

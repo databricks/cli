@@ -192,6 +192,15 @@ func (c *ComputeInfo) Label() string {
 	}
 }
 
+// ServerlessEnvironmentVersion returns the bare serverless environment version
+// (e.g. "5") to write into [tool.databricks.environment].environment_version.
+// ServerlessVersion is normalized to "vN", so the leading "v" is dropped to
+// match the documented bare-number form. It is empty for a cluster target
+// (which leaves ServerlessVersion unset), where the section is not managed.
+func (c *ComputeInfo) ServerlessEnvironmentVersion() string {
+	return strings.TrimPrefix(c.ServerlessVersion, "v")
+}
+
 // ResolvedInfo is the resolved environment definition (spec §6 "resolved").
 // DBConnectVersion is omitted in constraints-only mode.
 type ResolvedInfo struct {
