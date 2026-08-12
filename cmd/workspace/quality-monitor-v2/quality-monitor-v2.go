@@ -141,6 +141,10 @@ Create a quality monitor.
 		fn(cmd, &createQualityMonitorReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createQualityMonitorReq.QualityMonitor)
+
 	return cmd
 }
 
@@ -439,6 +443,10 @@ Update a quality monitor.
 	for _, fn := range updateQualityMonitorOverrides {
 		fn(cmd, &updateQualityMonitorReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateQualityMonitorReq.QualityMonitor)
 
 	return cmd
 }

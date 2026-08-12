@@ -189,6 +189,10 @@ func newCreateCustomLlm() *cobra.Command {
 		fn(cmd, &createCustomLlmReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createCustomLlmReq)
+
 	return cmd
 }
 
@@ -432,6 +436,10 @@ func newUpdateCustomLlm() *cobra.Command {
 	for _, fn := range updateCustomLlmOverrides {
 		fn(cmd, &updateCustomLlmReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateCustomLlmReq)
 
 	return cmd
 }

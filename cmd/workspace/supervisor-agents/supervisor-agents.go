@@ -160,6 +160,10 @@ Create an example for a Supervisor Agent.
 		fn(cmd, &createExampleReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createExampleReq.Example)
+
 	return cmd
 }
 
@@ -249,6 +253,10 @@ Create a Supervisor Agent.
 	for _, fn := range createSupervisorAgentOverrides {
 		fn(cmd, &createSupervisorAgentReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createSupervisorAgentReq.SupervisorAgent)
 
 	return cmd
 }
@@ -364,6 +372,10 @@ Create a Tool.
 	for _, fn := range createToolOverrides {
 		fn(cmd, &createToolReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createToolReq.Tool)
 
 	return cmd
 }
@@ -1165,6 +1177,10 @@ Set supervisor agent permissions.
 		fn(cmd, &setPermissionsReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &setPermissionsReq)
+
 	return cmd
 }
 
@@ -1270,6 +1286,10 @@ Update an example in a Supervisor Agent.
 		fn(cmd, &updateExampleReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateExampleReq.Example)
+
 	return cmd
 }
 
@@ -1348,6 +1368,10 @@ Update supervisor agent permissions.
 	for _, fn := range updatePermissionsOverrides {
 		fn(cmd, &updatePermissionsReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updatePermissionsReq)
 
 	return cmd
 }
@@ -1447,6 +1471,10 @@ Update a Supervisor Agent.
 	for _, fn := range updateSupervisorAgentOverrides {
 		fn(cmd, &updateSupervisorAgentReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateSupervisorAgentReq.SupervisorAgent)
 
 	return cmd
 }
@@ -1559,6 +1587,10 @@ Update a Tool.
 	for _, fn := range updateToolOverrides {
 		fn(cmd, &updateToolReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateToolReq.Tool)
 
 	return cmd
 }

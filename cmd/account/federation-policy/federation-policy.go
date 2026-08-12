@@ -163,6 +163,10 @@ func newCreate() *cobra.Command {
 		fn(cmd, &createReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createReq.Policy)
+
 	return cmd
 }
 
@@ -420,6 +424,10 @@ func newUpdate() *cobra.Command {
 	for _, fn := range updateOverrides {
 		fn(cmd, &updateReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateReq.Policy)
 
 	return cmd
 }

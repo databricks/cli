@@ -150,6 +150,10 @@ func newCreateCredential() *cobra.Command {
 		fn(cmd, &createCredentialReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createCredentialReq)
+
 	return cmd
 }
 
@@ -298,6 +302,10 @@ func newGenerateTemporaryServiceCredential() *cobra.Command {
 	for _, fn := range generateTemporaryServiceCredentialOverrides {
 		fn(cmd, &generateTemporaryServiceCredentialReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &generateTemporaryServiceCredentialReq)
 
 	return cmd
 }
@@ -532,6 +540,10 @@ func newUpdateCredential() *cobra.Command {
 		fn(cmd, &updateCredentialReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateCredentialReq)
+
 	return cmd
 }
 
@@ -624,6 +636,10 @@ func newValidateCredential() *cobra.Command {
 	for _, fn := range validateCredentialOverrides {
 		fn(cmd, &validateCredentialReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &validateCredentialReq)
 
 	return cmd
 }

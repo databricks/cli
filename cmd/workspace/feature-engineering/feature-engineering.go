@@ -173,6 +173,10 @@ func newCreateFeature() *cobra.Command {
 		fn(cmd, &createFeatureReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createFeatureReq.Feature)
+
 	return cmd
 }
 
@@ -287,6 +291,10 @@ func newCreateKafkaConfig() *cobra.Command {
 		fn(cmd, &createKafkaConfigReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createKafkaConfigReq.KafkaConfig)
+
 	return cmd
 }
 
@@ -377,6 +385,10 @@ func newCreateMaterializedFeature() *cobra.Command {
 	for _, fn := range createMaterializedFeatureOverrides {
 		fn(cmd, &createMaterializedFeatureReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createMaterializedFeatureReq.MaterializedFeature)
 
 	return cmd
 }
@@ -498,6 +510,10 @@ func newCreateStream() *cobra.Command {
 	for _, fn := range createStreamOverrides {
 		fn(cmd, &createStreamReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createStreamReq.Stream)
 
 	return cmd
 }
@@ -1366,6 +1382,10 @@ func newUpdateFeature() *cobra.Command {
 		fn(cmd, &updateFeatureReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateFeatureReq.Feature)
+
 	return cmd
 }
 
@@ -1483,6 +1503,10 @@ func newUpdateKafkaConfig() *cobra.Command {
 		fn(cmd, &updateKafkaConfigReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateKafkaConfigReq.KafkaConfig)
+
 	return cmd
 }
 
@@ -1580,6 +1604,10 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	for _, fn := range updateMaterializedFeatureOverrides {
 		fn(cmd, &updateMaterializedFeatureReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateMaterializedFeatureReq.MaterializedFeature)
 
 	return cmd
 }
@@ -1703,6 +1731,10 @@ func newUpdateStream() *cobra.Command {
 	for _, fn := range updateStreamOverrides {
 		fn(cmd, &updateStreamReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &updateStreamReq.Stream)
 
 	return cmd
 }

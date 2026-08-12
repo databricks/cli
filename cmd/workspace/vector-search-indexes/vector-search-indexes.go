@@ -160,6 +160,10 @@ func newCreateIndex() *cobra.Command {
 		fn(cmd, &createIndexReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &createIndexReq)
+
 	return cmd
 }
 
@@ -236,6 +240,10 @@ func newDeleteDataVectorIndex() *cobra.Command {
 	for _, fn := range deleteDataVectorIndexOverrides {
 		fn(cmd, &deleteDataVectorIndexReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &deleteDataVectorIndexReq)
 
 	return cmd
 }
@@ -513,6 +521,10 @@ func newQueryIndex() *cobra.Command {
 		fn(cmd, &queryIndexReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &queryIndexReq)
+
 	return cmd
 }
 
@@ -591,6 +603,10 @@ func newQueryNextPage() *cobra.Command {
 		fn(cmd, &queryNextPageReq)
 	}
 
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &queryNextPageReq)
+
 	return cmd
 }
 
@@ -668,6 +684,10 @@ func newScanIndex() *cobra.Command {
 	for _, fn := range scanIndexOverrides {
 		fn(cmd, &scanIndexReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &scanIndexReq)
 
 	return cmd
 }
@@ -812,6 +832,10 @@ func newUpsertDataVectorIndex() *cobra.Command {
 	for _, fn := range upsertDataVectorIndexOverrides {
 		fn(cmd, &upsertDataVectorIndexReq)
 	}
+
+	// Register --generate-skeleton after overrides so it wraps any RunE they
+	// installed; --generate-skeleton then short-circuits the whole command.
+	root.RegisterGenerateSkeleton(cmd, &upsertDataVectorIndexReq)
 
 	return cmd
 }
