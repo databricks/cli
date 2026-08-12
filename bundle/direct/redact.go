@@ -1,16 +1,13 @@
 package direct
 
 import (
-	"encoding/json"
 	"fmt"
-	"reflect"
 	"slices"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 const sensitiveRedactedValue = "[redacted]"
@@ -79,39 +76,11 @@ func redactChanges(adapter *dresources.Adapter, changes deployplan.Changes) erro
 	return nil
 }
 
-// redactNewStateJSON redacts sensitive fields inside a StructVarJSON by round-tripping
-// through the adapter's state type so path matching works correctly.
-func redactNewStateJSON(adapter *dresources.Adapter, svj *structvar.StructVarJSON) error {
-	if svj == nil || len(svj.Value) == 0 {
-		return nil
-	}
-
-	stateType := adapter.StateType()
-	// StateType returns a pointer type; Elem gives the concrete struct type.
-	ptr := reflect.New(stateType.Elem()).Interface()
-	if err := json.Unmarshal(svj.Value, ptr); err != nil {
-		return fmt.Errorf("unmarshaling new_state: %w", err)
-	}
-
-	if err := redactStruct(adapter, ptr); err != nil {
-		return fmt.Errorf("redacting new_state: %w", err)
-	}
-
-	redacted, err := json.Marshal(ptr)
-	if err != nil {
-		return fmt.Errorf("re-marshaling new_state: %w", err)
-	}
-	svj.Value = redacted
-	return nil
-}
-
-// redactPlanEntry redacts sensitive fields from all three sections of a plan entry:
-// new_state, remote_state, and changes. The entry is modified in place.
+// redactPlanEntry redacts sensitive fields from remote_state and changes of a plan
+// entry. new_state is already redacted before serialization in makePlan.
 func redactPlanEntry(adapter *dresources.Adapter, entry *deployplan.PlanEntry) error {
-	if entry.NewState != nil {
-		if err := redactNewStateJSON(adapter, entry.NewState); err != nil {
-			return err
-		}
+	if len(adapter.GetSensitiveFields()) == 0 {
+		return nil
 	}
 
 	if entry.RemoteState != nil {
