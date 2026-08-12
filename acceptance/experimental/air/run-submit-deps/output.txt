@@ -1,8 +1,9 @@
 
 === submit with inline dependencies
 >>> [CLI] experimental air run -f run.yaml
-Submitted run 555
-View at: [DATABRICKS_URL]/jobs/runs/555
+Submitting experiment: deps-smoke
+Submitted workload with Job Run ID: 555
+View job run at: [DATABRICKS_URL]/jobs/runs/555
 
 Tip: use --watch to stream logs until the run completes.
 
@@ -57,8 +58,9 @@ Tip: use --watch to stream logs until the run completes.
 
 === file-form deps: version comes from the requirements file
 >>> [CLI] experimental air run -f run-file.yaml
-Submitted run 555
-View at: [DATABRICKS_URL]/jobs/runs/555
+Submitting experiment: deps-file-smoke
+Submitted workload with Job Run ID: 555
+View job run at: [DATABRICKS_URL]/jobs/runs/555
 
 Tip: use --watch to stream logs until the run completes.
 

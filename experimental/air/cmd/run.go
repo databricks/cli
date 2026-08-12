@@ -3,7 +3,10 @@ package aircmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -98,23 +101,37 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			return renderEnvelope(ctx, runResult{Status: "DRY_RUN_OK", DryRun: true})
 		}
 
+		jsonOut := root.OutputType(cmd) == flags.OutputJSON
+
+		// Announce the experiment before uploading; skipped in JSON mode to keep
+		// stdout a clean envelope stream.
+		if !jsonOut {
+			cmdio.LogString(ctx, "Submitting experiment: "+cfg.ExperimentName)
+		}
+
 		w := cmdctx.WorkspaceClient(ctx)
-		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey)
+		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey, !jsonOut)
 		if err != nil {
 			return err
 		}
 
 		runIDStr := strconv.FormatInt(runID, 10)
-		jsonOut := root.OutputType(cmd) == flags.OutputJSON
 
 		if !watch {
 			if !jsonOut {
-				cmdio.LogString(ctx, "Submitted run "+runIDStr)
-				cmdio.LogString(ctx, "View at: "+dashboardURL)
+				out := cmd.OutOrStdout()
+				printSubmitResult(ctx, out, runIDStr, dashboardURL)
+				// Append the MLflow links only if they resolve; a bare submit is not
+				// blocked on them since the confirmation above is already printed.
+				if ids := resolveMLflowIDsForRun(ctx, w, runID); ids != nil {
+					printMLflowLinks(ctx, out, w.Config.Host, ids)
+				}
 				cmdio.LogString(ctx, "\nTip: use --watch to stream logs until the run completes.")
 				return nil
 			}
-			return renderEnvelope(ctx, runResult{Status: "SUBMITTED", RunID: runIDStr, DashboardURL: dashboardURL})
+			// PENDING is the submit status, distinct from the --watch JSONL
+			// SUBMITTED event type below.
+			return renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL})
 		}
 
 		// --watch: stream the submitted run's logs until it reaches a terminal
@@ -128,15 +145,19 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		}
 
 		if !jsonOut {
-			cmdio.LogString(ctx, "Submitted run "+runIDStr)
-			cmdio.LogString(ctx, "View at: "+dashboardURL)
-			cmdio.LogString(ctx, "Monitoring run and streaming logs...")
+			out := cmd.OutOrStdout()
+			// The MLflow links stream in via the logs below, so don't poll here.
+			printSubmitResult(ctx, out, runIDStr, dashboardURL)
+			// Separate the submit summary from the streamed logs.
+			fmt.Fprintln(out)
+			fmt.Fprintln(out, "Monitoring run and streaming logs...")
+			printLogsDivider(ctx, out)
 			return runLogs(ctx, cmd, req)
 		}
 
 		// --json: emit SUBMITTED first (so a consumer sees the run id immediately),
 		// STATUS events on each lifecycle transition, and a closing terminal-status
-		// envelope after streaming. Mirrors the Python CLI's --watch JSONL contract.
+		// envelope after streaming.
 		out := cmd.OutOrStdout()
 		printSubmittedEvent(out, runIDStr, dashboardURL)
 		req.onStatusChange = func(current, previous string) {
@@ -153,6 +174,42 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 	}
 
 	return cmd
+}
+
+// printSubmitResult writes the green success line and Job Run hyperlink. These
+// don't depend on the MLflow IDs, so they print before any MLflow poll. Color
+// and links degrade to plain text on non-rich terminals.
+func printSubmitResult(ctx context.Context, out io.Writer, runIDStr, dashboardURL string) {
+	renderer, _ := cmdio.NewRenderer(ctx, out)
+	p := newPalette(renderer)
+
+	fmt.Fprintln(out, p.green.Render("Submitted workload with Job Run ID: "+runIDStr))
+	fmt.Fprintln(out, "View job run at: "+hyperlink(ctx, out, dashboardURL, dashboardURL))
+}
+
+// printMLflowLinks appends the MLflow run and experiment hyperlinks once their
+// IDs are resolved.
+func printMLflowLinks(ctx context.Context, out io.Writer, host string, ids *mlflowIdentifiers) {
+	runURL := mlflowRunURL(host, ids)
+	expURL := mlflowExperimentURL(host, ids)
+	fmt.Fprintln(out, "View MLflow run at: "+hyperlink(ctx, out, runURL, runURL))
+	fmt.Fprintln(out, "View MLflow experiment at: "+hyperlink(ctx, out, expURL, expURL))
+}
+
+// logsDividerWidth is the total display width of the --watch logs divider.
+const logsDividerWidth = 60
+
+// printLogsDivider prints a centered "Logs" rule marking where the streamed
+// --watch logs begin, separating them from the submit summary. The dim color is
+// dropped on non-rich terminals; the rule characters are always printed.
+func printLogsDivider(ctx context.Context, out io.Writer) {
+	renderer, _ := cmdio.NewRenderer(ctx, out)
+	p := newPalette(renderer)
+
+	const label = " Logs "
+	side := max((logsDividerWidth-utf8.RuneCountInString(label))/2, 0)
+	rule := strings.Repeat("─", side) + label + strings.Repeat("─", side)
+	fmt.Fprintln(out, p.n7.Render(rule))
 }
 
 // watchTerminalStatus resolves a watched run's final display state for the
