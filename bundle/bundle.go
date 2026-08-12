@@ -149,6 +149,10 @@ type Bundle struct {
 	// Files that are synced to the workspace.file_path
 	Files []fileset.File
 
+	// FileCounts is how many files the deploy uploaded and deleted. Unlike Files,
+	// which lists everything tracked, this counts only what actually changed.
+	FileCounts libsync.FileCounts
+
 	// Stores an initialized copy of this bundle's Terraform wrapper.
 	Terraform *tfexec.Terraform
 

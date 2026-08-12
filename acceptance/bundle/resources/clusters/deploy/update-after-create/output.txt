@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created clusters.test_cluster
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created clusters.test_cluster
+Files: 8 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Cluster should exist after bundle deployment:
 {
@@ -20,9 +20,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-updated clusters.test_cluster
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated clusters.test_cluster
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

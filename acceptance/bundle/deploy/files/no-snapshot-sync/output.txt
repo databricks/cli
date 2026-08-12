@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created jobs.foo
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.foo
+Files: 10 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Check that test file is in workspace
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py
@@ -44,7 +44,8 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Files: 8 uploaded, 2 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 === Check that removed files are not in the workspace anymore
 >>> errcode [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py

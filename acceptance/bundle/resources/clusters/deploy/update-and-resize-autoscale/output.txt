@@ -1,7 +1,8 @@
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Files: 10 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Cluster should exist with num_workers after bundle deployment:
 {
@@ -19,7 +20,8 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Files: 6 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> jq select(.method == "POST" and (.path | contains("/clusters/edit"))) | del(.body.aws_attributes, .body.driver_node_type_id, .body.data_security_mode, .body.enable_elastic_disk) out.requests.txt
 {
@@ -52,7 +54,8 @@ Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> jq select(.method == "POST" and (.path | contains("/clusters/edit"))) | del(.body.aws_attributes, .body.driver_node_type_id, .body.data_security_mode, .body.enable_elastic_disk) out.requests.txt
 {
@@ -105,7 +108,8 @@ Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> jq select(.method == "POST" and (.path | contains("/clusters/resize"))) out.requests.txt
 {
@@ -134,7 +138,8 @@ Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> jq select(.method == "POST" and (.path | contains("/clusters/resize"))) out.requests.txt
 {

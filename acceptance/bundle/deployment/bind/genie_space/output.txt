@@ -8,7 +8,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Files: 6 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> [CLI] genie get-space [GENIE_SPACE_ID]
 {

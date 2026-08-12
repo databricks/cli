@@ -6,9 +6,9 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default/files...
-created dashboards.my_dashboard
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created dashboards.my_dashboard
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 {
   "display_name": "test dashboard",
   "lifecycle_state": "ACTIVE",
@@ -31,9 +31,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default/files...
-updated dashboards.my_dashboard
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated dashboards.my_dashboard
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 {
   "display_name": "test dashboard",
   "lifecycle_state": "ACTIVE",

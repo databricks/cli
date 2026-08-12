@@ -1,7 +1,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-created jobs.ambiguous_single_block_job
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.ambiguous_single_block_job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Rename alpha -> zzz and beta -> aaa, and point gamma at the new keys
 === Sync

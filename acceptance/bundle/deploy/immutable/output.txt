@@ -37,9 +37,8 @@ Building python_artifact...
 >>> [CLI] bundle deploy
 Building python_artifact...
 Uploading immutable bundle snapshot...
-created jobs.my_job
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.my_job
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] jobs get [NUMID]
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"

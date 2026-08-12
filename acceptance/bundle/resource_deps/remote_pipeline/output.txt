@@ -1,12 +1,12 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created pipelines.foo1
-created pipelines.foo2
-created pipelines.foo3
-created pipelines.foo4
-
-Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
+Created pipelines.foo1
+Created pipelines.foo2
+Created pipelines.foo3
+Created pipelines.foo4
+Files: 7 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests
 "foo1 name"

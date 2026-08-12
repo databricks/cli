@@ -8,11 +8,10 @@ Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-index-grants-[UNIQUE_NAME]/default/files...
-created vector_search_endpoints.my_endpoint
-created vector_search_indexes.my_index
-created vector_search_indexes.my_index.grants
-
-Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Created vector_search_endpoints.my_endpoint
+Created vector_search_indexes.my_index
+Created vector_search_indexes.my_index.grants
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged

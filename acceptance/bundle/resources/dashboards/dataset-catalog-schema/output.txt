@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-dataset-test-[UNIQUE_NAME]/default/files...
-created dashboards.dashboard1
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created dashboards.dashboard1
+Files: 9 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 {
   "lifecycle_state": "ACTIVE",
   "parent_path": "/Users/[USERNAME]",

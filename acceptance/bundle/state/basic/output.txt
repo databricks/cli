@@ -1,10 +1,11 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/state/default/files...
-created jobs.test
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.test
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/state/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.

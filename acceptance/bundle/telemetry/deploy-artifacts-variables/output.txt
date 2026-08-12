@@ -3,9 +3,9 @@
 Building test_artifact...
 Uploading databricks.yml...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-artifacts-variables/dev/files...
-created jobs.test-job
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.test-job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === No artifact metrics expected
 >>> cat out.requests.txt
@@ -14,9 +14,9 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 Building test_artifact...
 Uploading databricks.yml...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-artifacts-variables/prod/files...
-created jobs.test-job
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.test-job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Artifact metrics expected
 >>> cat out.requests.txt

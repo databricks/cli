@@ -4,9 +4,8 @@
 === Initial deployment with aliases set
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default/files...
-created registered_models.my_registered_model
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created registered_models.my_registered_model
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Plan is a no-op: GET never echoes aliases, so they must not drift
 >>> [CLI] bundle plan
@@ -39,9 +38,8 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default/files...
-updated registered_models.my_registered_model
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated registered_models.my_registered_model
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 === Re-plan after the edit converges: no further changes
 >>> [CLI] bundle plan

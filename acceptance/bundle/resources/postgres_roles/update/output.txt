@@ -20,11 +20,10 @@ Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-role-[UNIQUE_NAME]/default/files...
-created postgres_branches.main
-created postgres_projects.my_project
-created postgres_roles.my_role
-
-Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Created postgres_branches.main
+Created postgres_projects.my_project
+Created postgres_roles.my_role
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -54,7 +53,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-role-[UNIQUE_NAME]/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 3 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 3 unchanged.
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -99,9 +98,8 @@ Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-role-[UNIQUE_NAME]/default/files...
-updated postgres_roles.my_role
-
-Deploy: 0 created, 1 changed, 0 deleted, 2 unchanged.
+Updated postgres_roles.my_role
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged.
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -135,9 +133,8 @@ Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-role-[UNIQUE_NAME]/default/files...
-updated postgres_roles.my_role
-
-Deploy: 0 created, 1 changed, 0 deleted, 2 unchanged.
+Updated postgres_roles.my_role
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged.
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

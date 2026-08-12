@@ -2,11 +2,10 @@
 === Deploy project, branch, and role
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/inherited-role-conflict-[UNIQUE_NAME]/default/files...
-created postgres_branches.main
-created postgres_projects.my_project
-created postgres_roles.my_role
-
-Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Created postgres_branches.main
+Created postgres_projects.my_project
+Created postgres_roles.my_role
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Unbind the role: it now exists on the branch but is no longer tracked by the bundle
 >>> [CLI] bundle deployment unbind my_role

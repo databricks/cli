@@ -2,18 +2,18 @@
 === Initial deploy: cluster created and running
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created clusters.mycluster
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created clusters.mycluster
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //clusters/start
 
 === Change tags and deploy from plan: no extra start
 >>> update_file.py databricks.yml env: original env: updated
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-updated clusters.mycluster
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated clusters.mycluster
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //clusters/start
 The following resources will be deleted:

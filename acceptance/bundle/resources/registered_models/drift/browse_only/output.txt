@@ -2,9 +2,8 @@
 === Initial deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created registered_models.model1
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created registered_models.model1
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Plan is a no-op despite the backend computing browse_only
 >>> [CLI] bundle plan
@@ -21,7 +20,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === Redeploy is a no-op (no UpdateRegisteredModel call)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> print_requests.py //unity
 json.method = "POST";

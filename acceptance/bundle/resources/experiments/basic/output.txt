@@ -13,6 +13,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default/files...
+Files: 7 uploaded, 0 deleted
 
 >>> [CLI] experiments get-experiment [NUMID]
 {
@@ -58,6 +59,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default/files...
+Files: 2 uploaded, 0 deleted
 
 >>> [CLI] experiments get-experiment [NUMID]
 {
@@ -103,6 +105,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default/files...
+Files: 2 uploaded, 0 deleted
 
 >>> [CLI] experiments get-experiment [NUMID]
 {
@@ -143,6 +146,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default/files...
+Files: 3 uploaded, 0 deleted
 
 >>> [CLI] experiments get-experiment [NUMID]
 {

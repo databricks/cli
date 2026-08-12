@@ -26,10 +26,9 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-catalog-[UNIQUE_NAME]/default/files...
-created postgres_catalogs.my_catalog
-created postgres_projects.my_project
-
-Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Created postgres_catalogs.my_catalog
+Created postgres_projects.my_project
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] postgres get-catalog catalogs/lakebase_test_[UNIQUE_NAME]
 {

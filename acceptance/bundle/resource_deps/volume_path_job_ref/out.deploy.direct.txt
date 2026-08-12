@@ -1,8 +1,8 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
-created jobs.foo
-created jobs.process
-created volumes.data
-
-Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.foo
+Created jobs.process
+Created volumes.data
+Files: 9 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.

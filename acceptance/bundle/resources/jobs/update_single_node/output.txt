@@ -6,9 +6,8 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.foo
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.foo
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //jobs
 
@@ -22,9 +21,8 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-updated jobs.foo
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated jobs.foo
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //jobs
 

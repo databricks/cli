@@ -2,9 +2,8 @@
 === Deploy: app created with no_compute; config is not deployed until the app starts
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-config-no-deployment/default/files...
-created apps.myapp
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created apps.myapp
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Plan is a no-op: config/source_code_path drift is skipped while the app has no active deployment
 >>> [CLI] bundle plan

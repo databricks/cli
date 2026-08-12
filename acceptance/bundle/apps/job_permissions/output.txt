@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy -q
 Warning: app "my_app" references jobs "my_job" which has permissions set. To prevent permission override after deploying the app, please add the app service principal to the jobs permissions
   at resources.apps.my_app
-  in databricks.yml:24:7
+  in databricks.yml:30:7
 
 Add the following section to the jobs permissions:
 
@@ -15,6 +15,7 @@ Add the following section to the jobs permissions:
 
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 9 uploaded, 0 deleted
 
 === After first deploy
 >>> has_manage_run
@@ -23,7 +24,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQU
 >>> [CLI] bundle deploy -q
 Warning: app "my_app" references jobs "my_job" which has permissions set. To prevent permission override after deploying the app, please add the app service principal to the jobs permissions
   at resources.apps.my_app
-  in databricks.yml:24:7
+  in databricks.yml:30:7
 
 Add the following section to the jobs permissions:
 
@@ -36,6 +37,7 @@ Add the following section to the jobs permissions:
 
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 2 uploaded, 0 deleted
 
 >>> has_manage_run
 false
@@ -43,6 +45,7 @@ false
 === Apply fix and redeploy
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 2 uploaded, 0 deleted
 
 >>> has_manage_run
 true

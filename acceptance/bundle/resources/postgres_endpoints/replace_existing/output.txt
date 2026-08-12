@@ -10,11 +10,10 @@ Validation OK!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-replace-endpoint-[UNIQUE_NAME]/default/files...
-created postgres_branches.develop
-created postgres_endpoints.primary
-created postgres_projects.my_project
-
-Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Created postgres_branches.develop
+Created postgres_endpoints.primary
+Created postgres_projects.my_project
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/develop/endpoints/primary
 {

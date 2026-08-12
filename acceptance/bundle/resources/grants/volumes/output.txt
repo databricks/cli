@@ -3,11 +3,11 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
-created schemas.grants_schema
-created volumes.grants_volume
-created volumes.grants_volume.grants
-
-Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Created schemas.grants_schema
+Created volumes.grants_volume
+Created volumes.grants_volume.grants
+Files: 8 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //permissions
 
@@ -28,9 +28,9 @@ Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
-updated volumes.grants_volume.grants
-
-Deploy: 0 created, 1 changed, 0 deleted, 2 unchanged.
+Updated volumes.grants_volume.grants
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged.
 
 >>> print_requests.py //permissions
 

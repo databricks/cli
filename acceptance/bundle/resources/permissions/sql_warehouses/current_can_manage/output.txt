@@ -21,10 +21,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created sql_warehouses.foo
-created sql_warehouses.foo.permissions
-
-Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Created sql_warehouses.foo
+Created sql_warehouses.foo.permissions
+Files: 6 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

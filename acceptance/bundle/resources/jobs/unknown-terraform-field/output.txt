@@ -5,6 +5,6 @@ Warning: unknown field: autotermination_minutes
   at task[0].new_cluster
   in databricks.yml:14:13
 
-created jobs.job
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.

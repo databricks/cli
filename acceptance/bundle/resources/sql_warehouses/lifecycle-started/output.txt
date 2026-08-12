@@ -2,9 +2,9 @@
 === Deploy with started=true: warehouse created and running
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created sql_warehouses.mywarehouse
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created sql_warehouses.mywarehouse
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //sql/warehouses
 {
@@ -35,9 +35,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 === Deploy fixes the drift: warehouse restarted
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-updated sql_warehouses.mywarehouse
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated sql_warehouses.mywarehouse
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //sql/warehouses
 {
@@ -62,7 +62,8 @@ Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> print_requests.py //sql/warehouses
 {
@@ -79,9 +80,9 @@ Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-updated sql_warehouses.mywarehouse
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated sql_warehouses.mywarehouse
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //sql/warehouses
 {

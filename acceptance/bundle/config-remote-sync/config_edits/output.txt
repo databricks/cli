@@ -1,8 +1,8 @@
 Uploading dummy.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-created jobs.my_job
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.my_job
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Case 1: Added locally, updated remotely with different value
 

@@ -2,10 +2,9 @@
 === Initial deploy creates two endpoints with distinct names
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-create-fails-[UNIQUE_NAME]/default/files...
-created vector_search_endpoints.blocker_endpoint
-created vector_search_endpoints.my_endpoint
-
-Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Created vector_search_endpoints.blocker_endpoint
+Created vector_search_endpoints.my_endpoint
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Edit my_endpoint: rename onto blocker_endpoint's name and switch endpoint_type to trigger Recreate
 >>> update_file.py databricks.yml vs-endpoint-a-[UNIQUE_NAME] vs-endpoint-b-[UNIQUE_NAME]

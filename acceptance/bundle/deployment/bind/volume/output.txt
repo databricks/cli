@@ -12,7 +12,8 @@ Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Files: 6 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> [CLI] volumes read main.test-schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]
 {

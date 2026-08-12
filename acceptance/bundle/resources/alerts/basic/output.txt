@@ -1,10 +1,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default/files...
-created alerts.myalert
-created alerts.myalert.permissions
-
-Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Created alerts.myalert
+Created alerts.myalert.permissions
+Files: 6 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] alerts-v2 get-alert [ALERT_ID]
 {

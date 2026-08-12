@@ -10,6 +10,7 @@ Validation OK!
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
+Files: 6 uploaded, 0 deleted
 
 === Assert the volume is created successfully
 >>> [CLI] volumes read main.schema1-[UNIQUE_NAME].my_volume
@@ -58,6 +59,7 @@ For managed volumes, the files stored in the volume are also deleted from your
 cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:
   recreate resources.volumes.foo
+Files: 1 uploaded, 0 deleted
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

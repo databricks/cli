@@ -7,8 +7,8 @@ Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
-updated jobs.job_1
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated jobs.job_1
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] jobs get [NUMID] --output json

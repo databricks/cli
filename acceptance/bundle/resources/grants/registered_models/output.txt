@@ -5,11 +5,11 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-created registered_models.my_registered_model
-created registered_models.my_registered_model.grants
-created schemas.my_schema
-
-Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Created registered_models.my_registered_model
+Created registered_models.my_registered_model.grants
+Created schemas.my_schema
+Files: 7 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //permissions
 

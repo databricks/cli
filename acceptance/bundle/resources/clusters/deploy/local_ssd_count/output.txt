@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-ssd-count-0-[UNIQUE_NAME]/default/files...
-created clusters.test_cluster
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created clusters.test_cluster
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Cluster should exist after bundle deployment:
 

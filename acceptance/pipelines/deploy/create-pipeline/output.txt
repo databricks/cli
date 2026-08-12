@@ -1,9 +1,9 @@
 
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/files...
-created pipelines.foo
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created pipelines.foo
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 >>> [CLI] pipelines get [UUID]
@@ -30,4 +30,5 @@ View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 >>> [CLI] pipelines deploy --quiet
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.

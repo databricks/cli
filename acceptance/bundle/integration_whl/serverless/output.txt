@@ -5,9 +5,9 @@
 Building my_test_code...
 Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created jobs.some_other_job
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.some_other_job
+Files: 18 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle run some_other_job
 Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[NUMID]
@@ -23,7 +23,8 @@ Got arguments:
 Building my_test_code...
 Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Files: 11 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> [CLI] bundle run some_other_job
 Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[NUMID]

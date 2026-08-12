@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard-replace-[UNIQUE_NAME]/default/files...
-created dashboards.already_exists
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created dashboards.already_exists
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Get current dashboard
 "{\n  \"uiSettings\": {\n    \"theme\": {\n      \"widgetHeaderAlignment\": \"ALIGNMENT_UNSPECIFIED\"\n    }\n  }\n}\n"

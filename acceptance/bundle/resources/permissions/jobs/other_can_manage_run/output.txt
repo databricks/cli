@@ -30,10 +30,10 @@
 
 >>> errcode [CLI] bundle deploy -t green
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green/files...
-created jobs.interim_gold_layer_job
-created jobs.interim_gold_layer_job.permissions
-
-Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.interim_gold_layer_job
+Created jobs.interim_gold_layer_job.permissions
+Files: 6 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> errcode [CLI] bundle destroy -t green --auto-approve
 The following resources will be deleted:

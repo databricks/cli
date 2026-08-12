@@ -5,7 +5,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-delete-test/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
+Files: 7 uploaded, 0 deleted
 === Final state (should have no jobs) ===
 
 >>> [CLI] bundle summary

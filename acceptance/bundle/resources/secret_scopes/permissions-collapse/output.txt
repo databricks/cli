@@ -4,10 +4,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-collapse-[UNIQUE_NAME]/default/files...
-created secret_scopes.my_scope
-created secret_scopes.my_scope.permissions
-
-Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Created secret_scopes.my_scope
+Created secret_scopes.my_scope.permissions
+Files: 7 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] secrets list-scopes -o json
 {

@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.job
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle plan -o json
 Error: plan serial 999 does not match state serial 1; the state has been modified since the plan was created. Please run 'bundle plan' again

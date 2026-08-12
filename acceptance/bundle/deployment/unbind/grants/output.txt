@@ -1,10 +1,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created schemas.schema_1
-created schemas.schema_1.grants
-
-Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Created schemas.schema_1
+Created schemas.schema_1.grants
+Files: 6 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] grants get schema main.test-schema-[UNIQUE_NAME] --output json
 {
@@ -19,10 +19,10 @@ Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy --var suffix=another
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created schemas.schema_1
-created schemas.schema_1.grants
-
-Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Created schemas.schema_1
+Created schemas.schema_1.grants
+Files: 1 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Grants should be the same as before unbind
 >>> [CLI] grants get schema main.test-schema-[UNIQUE_NAME] --output json

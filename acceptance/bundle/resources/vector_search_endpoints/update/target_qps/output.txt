@@ -2,10 +2,9 @@
 === Initial deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
-created vector_search_endpoints.my_endpoint
-created vector_search_endpoints.my_endpoint.permissions
-
-Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Created vector_search_endpoints.my_endpoint
+Created vector_search_endpoints.my_endpoint.permissions
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //vector-search/endpoints //permissions
 
@@ -26,10 +25,9 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
-updated vector_search_endpoints.my_endpoint
-updated vector_search_endpoints.my_endpoint.permissions
-
-Deploy: 0 created, 2 changed, 0 deleted, 0 unchanged.
+Updated vector_search_endpoints.my_endpoint
+Updated vector_search_endpoints.my_endpoint.permissions
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //vector-search/endpoints //permissions
 

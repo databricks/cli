@@ -2,16 +2,14 @@
 === Initial deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created model_serving_endpoints.endpoint1
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created model_serving_endpoints.endpoint1
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Update config and telemetry_config
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-updated model_serving_endpoints.endpoint1
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated model_serving_endpoints.endpoint1
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 === Plan converges
 >>> [CLI] bundle plan
@@ -29,9 +27,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === Remove telemetry_config
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-updated model_serving_endpoints.endpoint1
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated model_serving_endpoints.endpoint1
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] api get /api/2.0/serving-endpoints/test-endpoint
 null

@@ -1,7 +1,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
-created jobs.cli_default_job
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.cli_default_job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === existing_cluster_id is injected by OverrideCompute; the YAML has none
 >>> grep -c existing_cluster_id databricks.yml

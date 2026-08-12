@@ -7,6 +7,7 @@
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-permissions-[UNIQUE_NAME]/default/files...
+Files: 8 uploaded, 0 deleted
 
 >>> [CLI] secrets list-scopes -o json
 {
@@ -25,6 +26,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-permi
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-permissions-[UNIQUE_NAME]/default/files...
+Files: 4 uploaded, 0 deleted
 
 >>> [CLI] secrets list-acls test-scope-permissions-[UNIQUE_NAME]
 {"permission":"MANAGE","principal":"[USERNAME]"}
@@ -36,6 +38,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-permi
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-permissions-[UNIQUE_NAME]/default/files...
+Files: 3 uploaded, 0 deleted
 
 >>> [CLI] secrets list-scopes -o json
 {

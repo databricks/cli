@@ -7,6 +7,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-secret-scope-test-[UNIQUE_NAME]/default/files...
+Files: 6 uploaded, 0 deleted
 
 >>> [CLI] secrets list-scopes -o json
 {

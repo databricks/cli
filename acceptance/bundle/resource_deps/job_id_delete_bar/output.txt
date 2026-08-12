@@ -1,10 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.bar
-created jobs.foo
-
-Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.bar
+Created jobs.foo
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //jobs
 {
@@ -55,10 +54,9 @@ Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-deleted jobs.bar
-updated jobs.foo
-
-Deploy: 0 created, 1 changed, 1 deleted, 0 unchanged.
+Deleted jobs.bar
+Updated jobs.foo
+Resources: 0 created, 1 changed, 1 deleted, 0 unchanged.
 
 >>> print_requests.py --sort //jobs
 

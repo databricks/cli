@@ -2,9 +2,8 @@
 === Initial deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
-created vector_search_endpoints.my_endpoint
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created vector_search_endpoints.my_endpoint
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Simulate remote drift: change target_qps to 5 outside the bundle
 >>> [CLI] vector-search-endpoints patch-endpoint vs-endpoint-[UNIQUE_NAME] --target-qps 5
@@ -33,9 +32,8 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 === Deploy restores target_qps to 1
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
-updated vector_search_endpoints.my_endpoint
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated vector_search_endpoints.my_endpoint
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //vector-search/endpoints
 {

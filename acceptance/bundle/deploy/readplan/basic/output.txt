@@ -5,9 +5,9 @@
 
 >>> [CLI] bundle deploy --plan out.plan_create.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.job
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.job
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py --get //jobs
 {
@@ -41,7 +41,8 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle deploy --plan out.plan_skip.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> print_requests.py --get //jobs
 

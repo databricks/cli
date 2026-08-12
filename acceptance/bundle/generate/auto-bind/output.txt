@@ -21,9 +21,9 @@ test.py
 === Deploy the bound job:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]/files...
-updated jobs.test_job
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated jobs.test_job
+Files: 9 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 === Destroy the bundle:
 >>> [CLI] bundle destroy --auto-approve

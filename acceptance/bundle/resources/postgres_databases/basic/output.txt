@@ -34,12 +34,11 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-[UNIQUE_NAME]/default/files...
-created postgres_branches.main
-created postgres_databases.my_database
-created postgres_projects.my_project
-created postgres_roles.owner
-
-Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
+Created postgres_branches.main
+Created postgres_databases.my_database
+Created postgres_projects.my_project
+Created postgres_roles.owner
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] postgres get-database projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database
 {

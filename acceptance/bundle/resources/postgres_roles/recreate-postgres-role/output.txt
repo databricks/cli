@@ -35,11 +35,10 @@ Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-recreate-postgres-role-[UNIQUE_NAME]/default/files...
-created postgres_branches.main
-created postgres_projects.my_project
-created postgres_roles.my_role
-
-Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Created postgres_branches.main
+Created postgres_projects.my_project
+Created postgres_roles.my_role
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 {
@@ -115,9 +114,8 @@ Plan: 1 to add, 0 to change, 1 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-recreate-postgres-role-[UNIQUE_NAME]/default/files...
-recreated postgres_roles.my_role
-
-Deploy: 1 created, 0 changed, 1 deleted, 2 unchanged.
+Recreated postgres_roles.my_role
+Resources: 1 created, 0 changed, 1 deleted, 2 unchanged.
 
 >>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 {

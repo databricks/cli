@@ -1,8 +1,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-created schemas.schema1
-created volumes.vol1
-
-Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Created schemas.schema1
+Created volumes.vol1
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 {
   "method": "POST",
   "path": "/api/2.1/unity-catalog/schemas",
@@ -57,4 +56,4 @@ Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 ]
 === Redeploy without changes - should be a no-op
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 2 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged.

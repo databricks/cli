@@ -18,4 +18,5 @@ Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-quality-monitor-test-localonly/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Files: 6 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.

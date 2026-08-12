@@ -22,9 +22,8 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-endpoint-[UNIQUE_NAME]/default/files...
-created vector_search_endpoints.my_endpoint
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created vector_search_endpoints.my_endpoint
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
 {

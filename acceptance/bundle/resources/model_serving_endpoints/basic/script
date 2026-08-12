@@ -15,7 +15,7 @@ trap cleanup EXIT
 # stable across runs. Same approach as secret_scopes/basic and the requests
 # sorting below.
 trace $CLI bundle plan -o json | gron.py --sort-arrays __embed__ > out.first-plan.$DATABRICKS_BUNDLE_ENGINE.txt
-trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Resources:'
 # Sort access_control_list: the terraform engine stores it as a set whose order
 # depends on the (unmasked) principal value, so it differs between the local fake
 # SP and the real cloud SP. Sorting makes the recorded request stable across both.
@@ -34,7 +34,7 @@ echo "$get_output" | jq '{name, creator}'
 export ENDPOINT_NAME="test-endpoint-$UNIQUE_NAME-2"
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle plan -o json | gron.py --sort-arrays __embed__ > out.second-plan.$DATABRICKS_BUNDLE_ENGINE.txt
-trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Resources:'
 print_requests.py //serving-endpoints | gron.py --sort-arrays access_control_list > out.second-requests.$DATABRICKS_BUNDLE_ENGINE.txt
 
 echo "$ENDPOINT_NAME:ENDPOINT_NAME_2" >> ACC_REPLS

@@ -1,10 +1,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_bundle_[UNIQUE_NAME]/default/files...
-created jobs.job
-created sql_warehouses.warehouse
-
-Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.job
+Created sql_warehouses.warehouse
+Files: 7 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Permissions API simply takes the latest level in the request for a given principal
 jobs CAN_VIEW,CAN_MANAGE_RUN => CAN_MANAGE_RUN

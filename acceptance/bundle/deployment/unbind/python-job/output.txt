@@ -1,9 +1,9 @@
 
 >>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle deploy --var job_name=My Job
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
-created jobs.job_1
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.job_1
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle summary --var job_name=My Job --output json
 
@@ -11,9 +11,9 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle deploy --var job_name=Updated Job
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
-created jobs.job_1
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.job_1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] jobs get [NUMID] --output json
 {

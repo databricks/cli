@@ -3,9 +3,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files...
-created jobs.train
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.train
+Files: 14 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === each task's tarball holds only synced files (both under the repo root .air_snapshots)
 
@@ -110,9 +110,9 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files...
-updated jobs.train
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated jobs.train
+Files: 4 uploaded, 1 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py --sort --del-field raw_body //.air_snapshots/
 {

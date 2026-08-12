@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/quality-monitor-update-[UNIQUE_NAME]/default/files...
-created quality_monitors.monitor1
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created quality_monitors.monitor1
+Files: 8 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.

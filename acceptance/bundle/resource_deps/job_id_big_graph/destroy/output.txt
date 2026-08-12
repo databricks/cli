@@ -1,20 +1,19 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.chain_bottom
-created jobs.chain_mid
-created jobs.chain_top
-created jobs.diamond_bottom
-created jobs.diamond_left
-created jobs.diamond_right
-created jobs.diamond_top
-created jobs.independent1
-created jobs.independent2
-created jobs.multi_child
-created jobs.multi_parent1
-created jobs.multi_parent2
-
-Deploy: 12 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.chain_bottom
+Created jobs.chain_mid
+Created jobs.chain_top
+Created jobs.diamond_bottom
+Created jobs.diamond_left
+Created jobs.diamond_right
+Created jobs.diamond_top
+Created jobs.independent1
+Created jobs.independent2
+Created jobs.multi_child
+Created jobs.multi_parent1
+Created jobs.multi_parent2
+Resources: 12 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py --sort //jobs
 {

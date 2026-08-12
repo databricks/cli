@@ -5,12 +5,11 @@ Creating temporary source table: main.source_[UNIQUE_NAME].trips_source
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default/files...
-created postgres_catalogs.my_catalog
-created postgres_projects.my_project
-created postgres_synced_tables.my_table
-created schemas.pipeline_storage
-
-Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
+Created postgres_catalogs.my_catalog
+Created postgres_projects.my_project
+Created postgres_synced_tables.my_table
+Created schemas.pipeline_storage
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle plan
 recreate postgres_synced_tables.my_table
@@ -19,9 +18,8 @@ Plan: 1 to add, 0 to change, 1 to delete, 3 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default/files...
-recreated postgres_synced_tables.my_table
-
-Deploy: 1 created, 0 changed, 1 deleted, 3 unchanged.
+Recreated postgres_synced_tables.my_table
+Resources: 1 created, 0 changed, 1 deleted, 3 unchanged.
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -18,9 +18,9 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 === Deploy bundle
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-git-source-[UNIQUE_NAME]/files...
-created apps.my_app
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created apps.my_app
+Files: 8 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle run my_app
 ✓ Getting the status of the app [APP_NAME]
@@ -61,7 +61,8 @@ You can access the app at [APP_NAME]-123.cloud.databricksapps.com
 === Update git_source branch and redeploy
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-git-source-[UNIQUE_NAME]/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 === Verify config update was applied
 >>> [CLI] apps get [APP_NAME] --output json

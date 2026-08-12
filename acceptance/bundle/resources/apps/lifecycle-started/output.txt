@@ -2,9 +2,9 @@
 === Deploy with started=true: app created with compute running
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-created apps.myapp
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created apps.myapp
+Files: 8 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //apps
 {
@@ -32,9 +32,9 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-updated apps.myapp
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated apps.myapp
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //deployments
 {
@@ -58,9 +58,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 === Deploy fixes the drift: compute restarted
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-updated apps.myapp
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated apps.myapp
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 === Stop app externally, then deploy with started=false: app stays stopped
 >>> errcode [CLI] apps stop [UNIQUE_NAME]
@@ -72,9 +72,9 @@ Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-updated apps.myapp
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated apps.myapp
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //apps
 {
@@ -104,9 +104,9 @@ Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
-updated apps.myapp
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated apps.myapp
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //apps
 {

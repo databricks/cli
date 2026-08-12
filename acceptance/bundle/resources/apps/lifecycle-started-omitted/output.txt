@@ -2,9 +2,9 @@
 === (started omitted) -> deploy: app created with no_compute=true, no start/stop requests
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
-created apps.mykey
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created apps.mykey
+Files: 8 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_app_requests
 {
@@ -22,23 +22,25 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 === (started omitted) -> started: false -> deploy: no start/stop requests
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> print_app_requests
 
 === started: false -> (started omitted) -> deploy: no start/stop requests
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> print_app_requests
 
 === (started omitted) -> started: true -> deploy: app started
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
-updated apps.mykey
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated apps.mykey
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_app_requests
 {
@@ -58,9 +60,9 @@ Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 === started: true -> (started omitted) -> deploy: no start/stop requests (compute stays as-is)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
-updated apps.mykey
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated apps.mykey
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_app_requests
 

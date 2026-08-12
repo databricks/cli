@@ -22,7 +22,7 @@ include:
 === Deploy the generated bundle
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline_and_deploy-[UNIQUE_NAME]/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
+Files: 12 uploaded, 0 deleted
 
 === Destroy the deployed bundle
 >>> [CLI] bundle destroy --auto-approve

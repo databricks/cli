@@ -3,6 +3,7 @@
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
+Files: 8 uploaded, 0 deleted
 
 === Print the GET endpoint details
 {
@@ -14,6 +15,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/
 
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
+Files: 6 uploaded, 0 deleted
 
 === Print the GET endpoint details
 {

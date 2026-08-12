@@ -2,9 +2,8 @@
 === Step 1: deploy with purge_on_delete unset
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pg-purge-transitions-[UNIQUE_NAME]/default/files...
-created postgres_projects.proj
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created postgres_projects.proj
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> get_purge
 (unset)
@@ -12,9 +11,8 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 === Step 2: set purge_on_delete: true
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pg-purge-transitions-[UNIQUE_NAME]/default/files...
-updated postgres_projects.proj
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated postgres_projects.proj
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> get_purge
 json.state.resources.postgres_projects.proj.state.purge_on_delete = true;
@@ -22,9 +20,8 @@ json.state.resources.postgres_projects.proj.state.purge_on_delete = true;
 === Step 3: flip to purge_on_delete: false
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pg-purge-transitions-[UNIQUE_NAME]/default/files...
-updated postgres_projects.proj
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated postgres_projects.proj
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> get_purge
 json.state.resources.postgres_projects.proj.state.purge_on_delete = false;
@@ -32,7 +29,7 @@ json.state.resources.postgres_projects.proj.state.purge_on_delete = false;
 === Step 4: remove the line again
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pg-purge-transitions-[UNIQUE_NAME]/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> get_purge
 json.state.resources.postgres_projects.proj.state.purge_on_delete = false;

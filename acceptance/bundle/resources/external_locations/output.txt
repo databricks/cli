@@ -10,12 +10,12 @@ Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created catalogs.test_catalog
-created catalogs.test_catalog.grants
-created external_locations.test_location
-created external_locations.test_location.grants
-
-Deploy: 4 created, 0 changed, 0 deleted, 0 unchanged.
+Created catalogs.test_catalog
+Created catalogs.test_catalog.grants
+Created external_locations.test_location
+Created external_locations.test_location.grants
+Files: 6 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Assert the catalog is created with grants
 >>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
@@ -71,9 +71,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-updated external_locations.test_location
-
-Deploy: 0 created, 1 changed, 0 deleted, 3 unchanged.
+Updated external_locations.test_location
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 3 unchanged.
 
 === Assert the external location comment is updated
 >>> [CLI] external-locations get test_ext_location_[UNIQUE_NAME]
@@ -91,9 +91,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-updated catalogs.test_catalog
-
-Deploy: 0 created, 1 changed, 0 deleted, 3 unchanged.
+Updated catalogs.test_catalog
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 3 unchanged.
 
 === Assert the catalog comment is updated
 >>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]

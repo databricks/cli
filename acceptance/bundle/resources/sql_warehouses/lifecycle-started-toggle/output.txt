@@ -2,9 +2,9 @@
 === Deploy with started=false: warehouse created and then stopped
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-created sql_warehouses.mywarehouse
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created sql_warehouses.mywarehouse
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //sql/warehouses
 {
@@ -33,9 +33,9 @@ Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-updated sql_warehouses.mywarehouse
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated sql_warehouses.mywarehouse
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //sql/warehouses
 {
@@ -52,9 +52,9 @@ Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-updated sql_warehouses.mywarehouse
-
-Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Updated sql_warehouses.mywarehouse
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //sql/warehouses
 {

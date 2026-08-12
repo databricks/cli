@@ -128,26 +128,38 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 }
 
 // logDeploySummary prints the per-resource actions that were applied followed by
-// a summary line, mirroring the output of "bundle plan". Per-resource lines are
-// suppressed by --quiet. The past-tense verb is the short action name plus "d"
-// (create→created, delete→deleted, ...).
+// file and resource summary lines. Per-resource lines are suppressed by --quiet.
+// The past-tense verb is the short action name plus "d" (create→Created,
+// delete→Deleted, ...), capitalized to match the sentence case of other output.
+// "bundle plan" keeps the lower-case present tense, so the two are still
+// distinguishable at a glance.
 func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
-	printed := false
 	if !b.Quiet {
 		for _, action := range plan.GetActions() {
 			if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
 				continue
 			}
-			cmdio.LogString(ctx, action.ActionType.StringShort()+"d "+strings.TrimPrefix(action.ResourceKey, "resources."))
-			printed = true
+			verb := action.ActionType.StringShort() + "d"
+			cmdio.LogString(ctx, strings.ToUpper(verb[:1])+verb[1:]+" "+strings.TrimPrefix(action.ResourceKey, "resources."))
 		}
 	}
-	if printed {
-		cmdio.LogString(ctx, "")
+
+	// Report file sync separately from resources: a deploy that only changes
+	// business logic (a .py or .sql file) leaves every resource unchanged, so
+	// without this line its summary is all zeros and looks like a no-op.
+	if b.FileCounts.Uploaded > 0 || b.FileCounts.Deleted > 0 {
+		cmdio.LogString(ctx, fmt.Sprintf("Files: %d uploaded, %d deleted", b.FileCounts.Uploaded, b.FileCounts.Deleted))
 	}
 
+	// Nothing to report when the plan is empty, which happens for a bundle with no
+	// resources at all. Any deployed resource lands in one of the counts, including
+	// unchanged, so a non-empty plan always prints.
 	counts := plan.CountActions()
-	summary := fmt.Sprintf("Deploy: %d created, %d changed, %d deleted, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
+	if counts == (deployplan.ActionCounts{}) && plan.NotSelected == 0 {
+		return
+	}
+
+	summary := fmt.Sprintf("Resources: %d created, %d changed, %d deleted, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
 	// Gate on the plan's own NotSelected (not b.Select) so the suffix survives a
 	// deploy from a --plan file, where --select was applied at plan time and
 	// b.Select is empty here. NotSelected is only ever set by FilterToSelected.

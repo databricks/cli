@@ -4,7 +4,7 @@
 Warn: Direct engine requested in bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Removing empty terraform state; direct engine will be used on the next deploy (opted in via bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11)...
-Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
+Files: 5 uploaded, 0 deleted
 
 === Terraform state is renamed to .backup; no resources.json (empty state, nothing to persist)
 
@@ -44,6 +44,6 @@ direct_migrated_via_config true
 === Next deploy uses direct engine by default (no more mismatch warning)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
+Files: 2 uploaded, 0 deleted
 
 >>> print_migration_telemetry

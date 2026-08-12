@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy -t one
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/one/files...
-Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.
+Files: 5 uploaded, 0 deleted
 
 >>> cat out.requests.txt
 {

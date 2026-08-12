@@ -2,9 +2,9 @@
 === Deploy (creates the job and the deployment)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-created jobs.foo
-
-Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Created jobs.foo
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === destroy without --force-lock (lock write hits the node limit: aborts)
 >>> errcode [CLI] bundle destroy --auto-approve
