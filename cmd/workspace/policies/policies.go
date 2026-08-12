@@ -74,6 +74,7 @@ func newCreatePolicy() *cobra.Command {
 	// TODO: complex arg: column_mask
 	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.Comment, "comment", createPolicyReq.PolicyInfo.Comment, `Optional description of the policy.`)
 	// TODO: array: except_principals
+	// TODO: complex arg: grant
 	// TODO: array: match_columns
 	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.Name, "name", createPolicyReq.PolicyInfo.Name, `Name of the policy.`)
 	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.OnSecurableFullname, "on-securable-fullname", createPolicyReq.PolicyInfo.OnSecurableFullname, `Full name of the securable on which the policy is defined.`)
@@ -131,7 +132,7 @@ func newCreatePolicy() *cobra.Command {
         VOLUME,
       ]
     POLICY_TYPE: Type of the policy. Required on create.
-      Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
+      Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_GRANT, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -441,6 +442,7 @@ func newUpdatePolicy() *cobra.Command {
 	// TODO: complex arg: column_mask
 	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.Comment, "comment", updatePolicyReq.PolicyInfo.Comment, `Optional description of the policy.`)
 	// TODO: array: except_principals
+	// TODO: complex arg: grant
 	// TODO: array: match_columns
 	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.Name, "name", updatePolicyReq.PolicyInfo.Name, `Name of the policy.`)
 	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.OnSecurableFullname, "on-securable-fullname", updatePolicyReq.PolicyInfo.OnSecurableFullname, `Full name of the securable on which the policy is defined.`)
@@ -501,7 +503,7 @@ func newUpdatePolicy() *cobra.Command {
         VOLUME,
       ]
     POLICY_TYPE: Type of the policy. Required on create.
-      Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
+      Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_GRANT, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
