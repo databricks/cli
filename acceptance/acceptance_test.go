@@ -142,6 +142,11 @@ func TestInprocessMode(t *testing.T) {
 	if os.Getenv("CLOUD_ENV") != "" {
 		t.Skip("No need to run this as integration test.")
 	}
+	if os.Getenv(SelectChangedEnvVar) != "" {
+		// The two selftests below only run if this branch changed them, so the
+		// assertions on the returned count do not hold under test selection.
+		t.Skip("Disabled via " + SelectChangedEnvVar)
+	}
 
 	// Uncomment to load  ~/.databricks/debug-env.json to debug integration tests
 	// testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
