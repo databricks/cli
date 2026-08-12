@@ -759,10 +759,12 @@ tasks:
           --packages "./acceptance ./integration/..." \
           -- -parallel 4 -timeout=12h -short
 
-  # The name is referenced by the eng-dev-ecosystem workflows that dispatch it; renaming
-  # it here would silently fall back to integration-short (the full cloud suite).
-  integration-short-skiplocal:
+  integration-short-selection:
     desc: Run integration tests for PRs (skips CloudSlow and acceptance tests the PR does not touch)
+    # The alias is the name the eng-dev-ecosystem CI job dispatches (cli-isolated-pr.yml
+    # passes it as integration_task, and cli-isolated-tests.yml greps Taskfile.yml for it
+    # and falls back to integration-short, the full cloud suite, if it is missing).
+    aliases: [integration-short-skiplocal]
     deps: [install-pythons]
     cmds:
       - |
