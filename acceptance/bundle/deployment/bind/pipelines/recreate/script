@@ -9,7 +9,7 @@ trace musterr $CLI bundle deployment bind foo $NEW_PIPELINE_ID &> out.bind-fail.
 print_requests.py '^//import-file/' '^//workspace/'
 
 rm -f out.requests.txt
-trace $CLI bundle deployment bind foo $NEW_PIPELINE_ID --auto-approve &> out.bind-success.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle deployment bind foo $NEW_PIPELINE_ID --auto-approve &> out.bind-success.txt
 trace print_requests.py '^//import-file/' '^//workspace/'
 
 trace $CLI bundle summary -o json | jq .resources > out.summary.json

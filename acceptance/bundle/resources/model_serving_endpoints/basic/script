@@ -19,7 +19,7 @@ trace $CLI bundle deploy
 # Sort access_control_list: the terraform engine stores it as a set whose order
 # depends on the (unmasked) principal value, so it differs between the local fake
 # SP and the real cloud SP. Sorting makes the recorded request stable across both.
-print_requests.py //serving-endpoints | gron.py --sort-arrays access_control_list > out.first-requests.$DATABRICKS_BUNDLE_ENGINE.txt
+print_requests.py //serving-endpoints | gron.py --sort-arrays access_control_list > out.first-requests.txt
 
 echo "$ENDPOINT_NAME:ENDPOINT_NAME_1" >> ACC_REPLS
 

@@ -10,7 +10,7 @@ cp empty.yml databricks.yml
 # Drain requests recorded so far; only requests made after the config removal matter below.
 print_requests.py --get // &> LOG.requests_setup
 trace $CLI bundle plan &> out.plan_removed.$DATABRICKS_BUNDLE_ENGINE.txt
-trace $CLI bundle deploy --auto-approve &> out.deploy_removed.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle deploy --auto-approve &> out.deploy_removed.txt
 
 title "Plan and deploy again, then summary"
 trace $CLI bundle plan
