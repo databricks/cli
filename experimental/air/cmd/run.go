@@ -199,9 +199,9 @@ func printMLflowLinks(ctx context.Context, out io.Writer, host string, ids *mlfl
 // logsDividerWidth is the total display width of the --watch logs divider.
 const logsDividerWidth = 60
 
-// printLogsDivider prints a dim, centered "Logs" rule marking where the streamed
-// --watch logs begin, separating them from the submit summary. The color
-// degrades to plain characters on non-rich terminals.
+// printLogsDivider prints a centered "Logs" rule marking where the streamed
+// --watch logs begin, separating them from the submit summary. The dim color is
+// dropped on non-rich terminals; the rule characters are always printed.
 func printLogsDivider(ctx context.Context, out io.Writer) {
 	renderer, _ := cmdio.NewRenderer(ctx, out)
 	p := newPalette(renderer)

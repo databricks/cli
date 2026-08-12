@@ -234,9 +234,6 @@ type bricklensStreamer struct {
 	onFirstLog func()
 	// updateSpinner, when set, refreshes the waiting-spinner text each poll.
 	updateSpinner func(string)
-	// statusTaskRunID caches the task run id used to fetch the server status
-	// message; resolved once since the task run id is fixed for the run.
-	statusTaskRunID int64
 }
 
 // waitingSpinnerText returns the waiting-spinner text: the server-set STATUS
@@ -253,18 +250,16 @@ func (st *bricklensStreamer) waitingSpinnerText() string {
 }
 
 // serverStatusMessage returns the run's server-set STATUS message (normalized for
-// display), or "" if unavailable. Best-effort: any fetch failure logs at debug
-// and returns "". The status message lives on the task run's output, so the task
-// run id is resolved once and cached.
+// display), or "" if unavailable. The message lives on the latest task run's
+// output, re-resolved each call so a retry's new task run is picked up.
+// Best-effort: any fetch failure logs at debug and returns "".
 func (st *bricklensStreamer) serverStatusMessage() string {
-	if st.statusTaskRunID == 0 {
-		run, err := st.w.Jobs.GetRun(st.ctx, jobs.GetRunRequest{RunId: st.req.runID})
-		if err != nil || len(run.Tasks) == 0 {
-			return ""
-		}
-		st.statusTaskRunID = run.Tasks[len(run.Tasks)-1].RunId
+	run, err := st.w.Jobs.GetRun(st.ctx, jobs.GetRunRequest{RunId: st.req.runID})
+	if err != nil || len(run.Tasks) == 0 {
+		return ""
 	}
-	out, err := st.w.Jobs.GetRunOutputByRunId(st.ctx, st.statusTaskRunID)
+	taskRunID := run.Tasks[len(run.Tasks)-1].RunId
+	out, err := st.w.Jobs.GetRunOutputByRunId(st.ctx, taskRunID)
 	if err != nil {
 		log.Debugf(st.ctx, "air logs: status_message fetch failed for run %d: %v", st.req.runID, err)
 		return ""

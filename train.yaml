@@ -1,6 +1,0 @@
-experiment_name: llama-fine-tune          # <=100 chars, [A-Za-z0-9_-] only
-compute:
-  accelerator_type: GPU_1xA10              # A10 = 1 GPU/node, so count 1 is a valid multiple
-  num_accelerators: 1
-command: |
-  python train.py --epochs 3
