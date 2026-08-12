@@ -1,0 +1,17 @@
+# The env var in test.toml opts every built-in template into recording deployment history.
+
+# Leaving the generated projects behind would add their .gitignore files to this repo, see #2318.
+trap 'rm -rf output' EXIT
+
+for template in default-python default-sql default-scala dbt-sql lakeflow-integrations; do
+    $CLI bundle init "$template" --config-file "input.$template.json" --output-dir "output/$template"
+    trace grep -A1 '^experimental:' output/$template/*/databricks.yml
+done
+
+# Check that a generated project still loads and keeps the field through validation.
+# This applies to the field rather than to the layout, so one template is enough.
+(cd output/default-python/my_default_python && trace $CLI bundle validate -o json | gron.py | grep experimental)
+
+# Keep one file in full to assert where the stanza lands in the document.
+mv output/default-python/my_default_python/databricks.yml out.default-python.databricks.yml
+add_repl.py "$(grep -o 'uuid: .*' out.default-python.databricks.yml | cut -d ' ' -f2)" BUNDLE_UUID
