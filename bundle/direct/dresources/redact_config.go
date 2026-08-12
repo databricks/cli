@@ -58,9 +58,7 @@ func RedactSensitiveConfigValues(root *config.Root) (*config.Root, error) {
 
 const sensitiveRedactedMarker = "[redacted]"
 
-// getSensiti
-// veFields returns one dyn.Pattern per sensitive field rule across
-// all resource types. Each pattern covers: resources.<type>.*.<field_path>.
+// getSensitiveFields returns the map of resource type to list of sensitive fields.
 func getSensitiveFields() map[string][]FieldRule {
 	cfg := MustLoadConfig()
 	fields := make(map[string][]FieldRule)

@@ -414,8 +414,7 @@ func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
 	return a.generatedResourceConfig
 }
 
-// IsSensitive reports whether any path in v that has this path as a prefix should
-// be treated as sensitive (redacted from plan output and deployment state).
+// GetSensitiveFields returns the list of sensitive fields for the resource.
 func (a *Adapter) GetSensitiveFields() []string {
 	var fields []string
 	for _, r := range a.resourceConfig.SensitiveFields {
