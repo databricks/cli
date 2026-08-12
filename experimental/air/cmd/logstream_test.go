@@ -373,6 +373,110 @@ func TestRequestPageRetriesThenSucceeds(t *testing.T) {
 	assert.Equal(t, 3, calls)
 }
 
+// emptyLogsServer serves an empty Bricklens log response for any /logs request
+// and a stub for everything else (SDK config probes, etc.).
+func emptyLogsServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/logs") {
+			_, _ = w.Write([]byte(`{"log_records": []}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestStreamBricklensEmptyFallsBackToMLflow(t *testing.T) {
+	// Bricklens served every request but returned no record. That is not proof the
+	// run has no logs (they may be in MLflow), so the streamer must hand off via
+	// errBricklensFeatureDisabled and emit nothing itself, rather than reporting
+	// "No logs available" (the reported bug: the print path did, --download-to did not).
+	tests := []struct {
+		name   string
+		req    logRequest
+		status logRunStatus
+	}{
+		{
+			name:   "terminal run",
+			req:    logRequest{runID: 123, node: 0, attempt: -1, tailLines: -1, jsonOutput: true},
+			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "SUCCESS", endTimeMs: 1700000012000},
+		},
+		{
+			name:   "static view of a past retry",
+			req:    logRequest{runID: 123, node: 0, attempt: 0, tailLines: -1, staticView: true, jsonOutput: true},
+			status: logRunStatus{lifeCycleState: "RUNNING"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			w := newTestWorkspaceClient(t, emptyLogsServer(t).URL)
+			_, err := streamBricklensLogs(t.Context(), w, &buf, tt.req, tt.status)
+			require.ErrorIs(t, err, errBricklensFeatureDisabled)
+			assert.Empty(t, buf.String(), "nothing should be emitted before the hand-off")
+		})
+	}
+}
+
+func TestStreamBricklensTerminalWithRecordsDoesNotFallBack(t *testing.T) {
+	// A terminal run whose Bricklens stream has records prints them and reports the
+	// run's outcome, without triggering the empty-result fallback.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/logs") {
+			_, _ = w.Write([]byte(`{"log_records": [{"time_unix_nano": 1700000001000000000, "body": "hello", "node_index": 0}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	var buf bytes.Buffer
+	w := newTestWorkspaceClient(t, srv.URL)
+	status := logRunStatus{lifeCycleState: "TERMINATED", resultState: "SUCCESS", endTimeMs: 1700000012000}
+	ok, err := streamBricklensLogs(t.Context(), w, &buf, logRequest{runID: 123, node: 0, attempt: -1, tailLines: -1, jsonOutput: true}, status)
+	require.NoError(t, err)
+	assert.True(t, ok)
+	assert.Contains(t, buf.String(), `"line":"hello"`)
+}
+
+func TestFetchLogsFallsBackToMLflowWhenBricklensEmpty(t *testing.T) {
+	// End-to-end repro: a terminal SUCCESS run whose Bricklens stream is empty but
+	// whose logs are in MLflow. The print path must fall back to MLflow and print
+	// them, exactly as --download-to already does.
+	var base string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			_, _ = w.Write([]byte(`{"log_records": []}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(`{"run_id": 123, "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"}, "tasks": [{"run_id": 456}]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output": {"mlflow_experiment_id": "E1", "mlflow_run_id": "R1"}}`))
+		case r.URL.Path == "/api/2.0/mlflow/artifacts/list":
+			_, _ = w.Write([]byte(`{"files": [{"path": "logs/node_0"}, {"path": "logs/node_0/logs-0.chunk.txt"}]}`))
+		case r.URL.Path == "/api/2.0/mlflow/artifacts/credentials-for-read":
+			_, _ = w.Write([]byte(`{"credential_infos": [{"signed_uri": "` + base + `/presigned"}]}`))
+		case r.URL.Path == "/presigned":
+			_, _ = w.Write([]byte("line 1\nline 2\n"))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	base = srv.URL
+	t.Cleanup(srv.Close)
+
+	var buf bytes.Buffer
+	w := newTestWorkspaceClient(t, srv.URL)
+	status := logRunStatus{lifeCycleState: "TERMINATED", resultState: "SUCCESS", endTimeMs: 1700000012000}
+	ok, err := fetchLogs(t.Context(), w, &buf, logRequest{runID: 123, node: 0, attempt: -1, tailLines: -1, jsonOutput: true}, status)
+	require.NoError(t, err)
+	assert.True(t, ok)
+	assert.Contains(t, buf.String(), `"line":"line 1"`)
+	assert.Contains(t, buf.String(), `"line":"line 2"`)
+}
+
 func TestSeenSetEviction(t *testing.T) {
 	s := newSeenSet(2)
 	s.add(1, "a")

@@ -33,8 +33,10 @@ const (
 var retryCheckInterval = 3 * time.Second
 
 // errBricklensFeatureDisabled signals the caller to fall back to MLflow: Bricklens
-// is gated off (FEATURE_DISABLED), not deployed (ENDPOINT_NOT_FOUND / 404), or
-// persistently failing. The flag is evaluated server-side.
+// is gated off (FEATURE_DISABLED), not deployed (ENDPOINT_NOT_FOUND / 404),
+// persistently failing, or served every request successfully but never returned a
+// record for a run whose logs may still be in MLflow. The flag is evaluated
+// server-side.
 var errBricklensFeatureDisabled = errors.New("bricklens logs unavailable; falling back to mlflow")
 
 // logRequest describes what to fetch, shared by both backends so they honor the
@@ -289,11 +291,10 @@ func (st *bricklensStreamer) run() (bool, error) {
 
 		if terminal {
 			if !st.firstLogSeen {
-				// Stop the spinner before the no-logs line so frames don't smear.
-				if st.onFirstLog != nil {
-					st.onFirstLog()
-				}
-				st.emitNoLogs()
+				// A successful but empty Bricklens stream isn't proof the run has no
+				// logs; they may be in MLflow (as --download-to reads). Fall back
+				// there, which owns the real no-logs report and the same exit code.
+				return false, errBricklensFeatureDisabled
 			}
 			log.Infof(st.ctx, "air logs: run %d finished in state %s", st.req.runID, st.status.displayState())
 			return st.status.succeeded(), nil
@@ -326,7 +327,10 @@ func (st *bricklensStreamer) drainStatic(toSec int64) (bool, error) {
 		return false, err
 	}
 	if !st.firstLogSeen {
-		st.emitNoLogs()
+		// An empty Bricklens tail doesn't mean the attempt has no logs; fall back to
+		// MLflow, which holds the immutable per-attempt artifacts. See the terminal
+		// branch in run.
+		return false, errBricklensFeatureDisabled
 	}
 	return st.status.succeeded(), nil
 }
@@ -465,10 +469,6 @@ func (st *bricklensStreamer) emit(body string) {
 	}
 	st.firstLogSeen = true
 	emitLogLine(st.out, st.req, body)
-}
-
-func (st *bricklensStreamer) emitNoLogs() {
-	emitNoLogs(st.out, st.req, st.status)
 }
 
 // displayState is the result state, else the lifecycle state, else "UNKNOWN".
