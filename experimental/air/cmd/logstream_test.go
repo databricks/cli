@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -202,6 +203,62 @@ func TestDisplayState(t *testing.T) {
 	assert.Equal(t, "SUCCESS", logRunStatus{lifeCycleState: "TERMINATED", resultState: "SUCCESS"}.displayState())
 	assert.Equal(t, "RUNNING", logRunStatus{lifeCycleState: "RUNNING"}.displayState())
 	assert.Equal(t, "UNKNOWN", logRunStatus{}.displayState())
+}
+
+func TestNormalizeStatusMessage(t *testing.T) {
+	tests := []struct {
+		raw  string
+		want string
+	}{
+		{"STATUS: Waiting for GPU capacity.", "Waiting for GPU capacity..."},
+		{"STATUS:Waiting for GPU capacity", "Waiting for GPU capacity..."},
+		{"status: provisioning", "provisioning..."}, // type match is case-insensitive
+		{"STATUS: done...", "done..."},              // trailing dots collapse to one "..."
+		{"INFO: not a status", ""},                  // other type ignored
+		{"no type prefix", ""},
+		{"STATUS:", ""},    // empty payload
+		{"STATUS:   ", ""}, // whitespace-only payload
+		{"", ""},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, normalizeStatusMessage(tt.raw), "raw=%q", tt.raw)
+	}
+}
+
+func TestWaitingSpinnerText(t *testing.T) {
+	// A server that returns the run (with a task) and a STATUS-typed status_message.
+	newStreamer := func(t *testing.T, statusMessage, lifeCycle string) *bricklensStreamer {
+		t.Helper()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/2.2/jobs/runs/get":
+				_, _ = w.Write([]byte(`{"run_id": 1, "tasks": [{"run_id": 2}]}`))
+			case "/api/2.2/jobs/runs/get-output":
+				_, _ = w.Write([]byte(`{"ai_runtime_task_output": {"status_message": ` + strconv.Quote(statusMessage) + `}}`))
+			default:
+				_, _ = w.Write([]byte(`{}`))
+			}
+		}))
+		t.Cleanup(srv.Close)
+		return &bricklensStreamer{
+			ctx:    t.Context(),
+			w:      newTestWorkspaceClient(t, srv.URL),
+			req:    logRequest{runID: 1, node: 0},
+			status: logRunStatus{lifeCycleState: lifeCycle},
+		}
+	}
+
+	// Server STATUS message wins.
+	assert.Equal(t, "Waiting for GPU capacity...",
+		newStreamer(t, "STATUS: Waiting for GPU capacity", "PENDING").waitingSpinnerText())
+
+	// No status message + PENDING -> compute-capacity fallback.
+	assert.Equal(t, waitingForComputeStatus,
+		newStreamer(t, "", "PENDING").waitingSpinnerText())
+
+	// No status message + non-PENDING -> default "waiting for run to start".
+	assert.Equal(t, "Waiting for run to start (node 0)...",
+		newStreamer(t, "", "RUNNING").waitingSpinnerText())
 }
 
 func TestEmitLogLineJSON(t *testing.T) {

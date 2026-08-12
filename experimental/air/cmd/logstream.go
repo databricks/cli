@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -26,7 +27,39 @@ const (
 	defaultCompletedRunTailLines = 10000
 	// seenRecordsCap bounds the dedup set, evicting oldest-inserted entries first.
 	seenRecordsCap = 100000
+	// statusMessageRefreshEveryNPolls throttles the server status_message fetch for
+	// the waiting spinner, so we don't issue a get-output on every poll tick
+	// (matches Python's STATUS_MESSAGE_REFRESH_EVERY_N_POLLS).
+	statusMessageRefreshEveryNPolls = 5
 )
+
+// statusMessageType is the prefix ai_runtime uses to tag a client-facing message
+// packed into ai_runtime_task_output.status_message as "<TYPE>:<payload>"; the CLI
+// surfaces only STATUS-typed messages.
+const statusMessageType = "STATUS"
+
+// waitingForComputeStatus is the fallback shown while a native-PENDING run waits
+// for accelerator compute, matching the Python CLI (run_parsing.py
+// WAITING_FOR_COMPUTE_STATUS).
+const waitingForComputeStatus = "Waiting for accelerator compute capacity to become available..."
+
+// normalizeStatusMessage returns the payload of a "STATUS:<payload>" message,
+// normalized for display as an ongoing status (trailing "." stripped, "..."
+// progress suffix appended), or "" for a message of any other type or an
+// empty/absent one. Mirrors Python's extract_status_message (run_parsing.py).
+func normalizeStatusMessage(raw string) string {
+	messageType, payload, ok := strings.Cut(raw, ":")
+	if !ok || !strings.EqualFold(strings.TrimSpace(messageType), statusMessageType) {
+		return ""
+	}
+	payload = strings.TrimSpace(payload)
+	payload = strings.TrimRight(payload, ".")
+	payload = strings.TrimSpace(payload)
+	if payload == "" {
+		return ""
+	}
+	return payload + "..."
+}
 
 // retryCheckInterval is the wait between status/log polls. A var so tests can
 // shrink it.
@@ -204,6 +237,46 @@ type bricklensStreamer struct {
 	onFirstLog func()
 	// updateSpinner, when set, refreshes the waiting-spinner text each poll.
 	updateSpinner func(string)
+	// statusTaskRunID caches the task run id used to fetch the server status
+	// message; resolved once since the task run id is fixed for the run.
+	statusTaskRunID int64
+}
+
+// waitingSpinnerText returns the text for the waiting spinner: the server-set
+// STATUS message if present, else the compute-capacity message for a native
+// PENDING run, else the default "waiting for run to start". Mirrors Python's
+// _waiting_status_text (log_streaming.py).
+func (st *bricklensStreamer) waitingSpinnerText() string {
+	if msg := st.serverStatusMessage(); msg != "" {
+		return msg
+	}
+	if st.status.lifeCycleState == "PENDING" {
+		return waitingForComputeStatus
+	}
+	return fmt.Sprintf("Waiting for run to start (node %d)...", st.req.node)
+}
+
+// serverStatusMessage returns the run's server-set STATUS message (normalized for
+// display), or "" if unavailable. Best-effort: any fetch failure logs at debug
+// and returns "". The status message lives on the task run's output, so the task
+// run id is resolved once and cached.
+func (st *bricklensStreamer) serverStatusMessage() string {
+	if st.statusTaskRunID == 0 {
+		run, err := st.w.Jobs.GetRun(st.ctx, jobs.GetRunRequest{RunId: st.req.runID})
+		if err != nil || len(run.Tasks) == 0 {
+			return ""
+		}
+		st.statusTaskRunID = run.Tasks[len(run.Tasks)-1].RunId
+	}
+	out, err := st.w.Jobs.GetRunOutputByRunId(st.ctx, st.statusTaskRunID)
+	if err != nil {
+		log.Debugf(st.ctx, "air logs: status_message fetch failed for run %d: %v", st.req.runID, err)
+		return ""
+	}
+	if out.AiRuntimeTaskOutput == nil {
+		return ""
+	}
+	return normalizeStatusMessage(out.AiRuntimeTaskOutput.StatusMessage)
 }
 
 // reportStatusChange fires onStatusChange when the run's display state differs
@@ -242,6 +315,11 @@ func (st *bricklensStreamer) run() (bool, error) {
 	}
 
 	firstIteration := true
+	// Throttled refresh of the waiting-spinner text: statusRefreshCounter gates the
+	// server status_message fetch to every Nth poll, and lastSpinnerText avoids
+	// redundant spinner updates.
+	statusRefreshCounter := 0
+	lastSpinnerText := ""
 	for {
 		if !firstIteration {
 			status, err := resolveRunStatus(st.ctx, st.w, st.req.runID)
@@ -269,9 +347,17 @@ func (st *bricklensStreamer) run() (bool, error) {
 		terminal := st.status.terminal()
 		toSec := st.req.toSeconds(st.status)
 
-		// While waiting on a still-active run with no logs yet, refresh the spinner.
+		// While waiting on a still-active run with no logs yet, refresh the spinner
+		// with the server-set status (throttled), so a run stuck waiting for compute
+		// shows why rather than a generic "waiting" message.
 		if !terminal && !st.firstLogSeen && st.updateSpinner != nil {
-			st.updateSpinner(fmt.Sprintf("Waiting for run to start (node %d)...", st.req.node))
+			if statusRefreshCounter%statusMessageRefreshEveryNPolls == 0 {
+				if desired := st.waitingSpinnerText(); desired != lastSpinnerText {
+					st.updateSpinner(desired)
+					lastSpinnerText = desired
+				}
+			}
+			statusRefreshCounter++
 		}
 
 		// A run already terminal on the first iteration renders as a tail (most
