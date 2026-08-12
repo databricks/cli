@@ -131,7 +131,7 @@ func (*ResourceSecret) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 	}
 	if structdiff.IsEqual(ch.Remote, ch.New) {
 		ch.Action = deployplan.Skip
-		ch.Reason = deployplan.ReasonRemoteAlreadySet
+		ch.Reason = deployplan.ReasonCustom
 	} else {
 		ch.Action = deployplan.Update
 	}
