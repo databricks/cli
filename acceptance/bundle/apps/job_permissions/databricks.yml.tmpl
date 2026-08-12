@@ -1,6 +1,12 @@
 bundle:
   name: test-bundle-$UNIQUE_NAME
 
+# The script writes out.after_first_deploy.* between the deploys, so without this
+# the later deploys' uploaded file count depends on which variant ran before.
+sync:
+  exclude:
+    - out.*
+
 permissions:
   - level: CAN_MANAGE
     user_name: ${workspace.current_user.userName}
