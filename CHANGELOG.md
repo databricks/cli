@@ -1,5 +1,12 @@
 # Version changelog
 
+## Release v1.12.1 (2026-08-12)
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.166.0 to v0.170.0 ([#6251](https://github.com/databricks/cli/pull/6251)).
+
+
 ## Release v1.12.0 (2026-08-12)
 
 ### CLI
