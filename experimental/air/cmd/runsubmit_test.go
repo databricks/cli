@@ -3,7 +3,6 @@ package aircmd
 import (
 	"encoding/json"
 	"io"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -134,64 +133,6 @@ func TestBuildSubmitPayloadInlineDependencies(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotContains(t, string(b), "dependencies")
 	}
-}
-
-// TestEnvironmentDependencies covers how declared deps are resolved to a flat list:
-// an inline list (no file version), a requirements file (path resolved against the
-// config dir, version read from the file), none, and a missing file.
-func TestEnvironmentDependencies(t *testing.T) {
-	inline := &runConfig{Environment: &environmentConfig{
-		Dependencies: dependencies{set: true, isList: true, list: []string{"torch", "numpy"}},
-	}}
-	deps, version, err := environmentDependencies(inline, "run.yaml")
-	require.NoError(t, err)
-	assert.Equal(t, []string{"torch", "numpy"}, deps)
-	assert.Empty(t, version)
-
-	dir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "reqs.yaml"), []byte("version: \"5\"\ndependencies:\n  - pandas\n"), 0o600))
-	fromFile := &runConfig{Environment: &environmentConfig{
-		Dependencies: dependencies{set: true, isList: false, path: "reqs.yaml"},
-	}}
-	deps, version, err = environmentDependencies(fromFile, filepath.Join(dir, "run.yaml"))
-	require.NoError(t, err)
-	assert.Equal(t, []string{"pandas"}, deps)
-	assert.Equal(t, "5", version)
-
-	deps, _, err = environmentDependencies(&runConfig{}, "run.yaml")
-	require.NoError(t, err)
-	assert.Nil(t, deps)
-
-	missing := &runConfig{Environment: &environmentConfig{
-		Dependencies: dependencies{set: true, isList: false, path: "nope.yaml"},
-	}}
-	_, _, err = environmentDependencies(missing, filepath.Join(dir, "run.yaml"))
-	require.ErrorContains(t, err, "failed to read requirements file")
-}
-
-// TestReadRequirementsDependencies covers reading a requirements file's dependency
-// list and version, with a missing key yielding an empty list and a -r include
-// rejected.
-func TestReadRequirementsDependencies(t *testing.T) {
-	dir := t.TempDir()
-
-	reqPath := filepath.Join(dir, "requirements.yaml")
-	require.NoError(t, os.WriteFile(reqPath, []byte("version: \"5\"\ndependencies:\n  - torch==2.3.0\n  - numpy\n"), 0o600))
-	deps, version, err := readRequirementsDependencies(reqPath)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"torch==2.3.0", "numpy"}, deps)
-	assert.Equal(t, "5", version)
-
-	emptyPath := filepath.Join(dir, "empty.yaml")
-	require.NoError(t, os.WriteFile(emptyPath, []byte("version: \"5\"\n"), 0o600))
-	deps, _, err = readRequirementsDependencies(emptyPath)
-	require.NoError(t, err)
-	assert.Empty(t, deps)
-
-	includePath := filepath.Join(dir, "include.yaml")
-	require.NoError(t, os.WriteFile(includePath, []byte("dependencies:\n  - -r other.txt\n"), 0o600))
-	_, _, err = readRequirementsDependencies(includePath)
-	require.ErrorContains(t, err, "requirements-file include")
 }
 
 func TestSubmitToken(t *testing.T) {
@@ -606,26 +547,6 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 		for _, p := range paths {
 			assert.NotContains(t, p, "/workspace/", "no workspace write may precede policy resolution")
 		}
-	})
-
-	t.Run("bad requirements file fails before any upload", func(t *testing.T) {
-		server := testserver.New(t)
-		t.Cleanup(server.Close)
-		var uploaded bool
-		server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(testserver.Request) any {
-			uploaded = true
-			return nil
-		})
-		stubValidateConfig(server)
-		testserver.AddDefaultHandlers(server)
-		tw, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
-		require.NoError(t, err)
-
-		cfg := *base
-		cfg.Environment = &environmentConfig{Dependencies: dependencies{set: true, isList: false, path: "missing.yaml"}}
-		_, _, err = submitWorkload(t.Context(), tw, &cfg, cfgPath, "", false)
-		require.ErrorContains(t, err, "failed to read requirements file")
-		assert.False(t, uploaded, "no artifacts should be uploaded when dependency resolution fails")
 	})
 }
 

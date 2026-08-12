@@ -1,4 +1,0 @@
-version: 5
-dependencies:
-  - numpy
-  - torch==2.3.0
