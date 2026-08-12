@@ -1,0 +1,7 @@
+resources:
+  pipelines:
+    pipeline_c:
+      name: pipeline_c
+      libraries:
+        - notebook:
+            path: ./nb.py
