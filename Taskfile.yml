@@ -20,6 +20,31 @@ vars:
   EMBED_SOURCES:
     sh: 'uv run -p ">=3.11" --no-project python tools/list_embeds.py'
 
+env:
+  # Isolate golangci-lint's results cache per worktree. Its cache key is a hash
+  # of file *contents*, but each cached issue stores the file's *absolute* path.
+  # Two worktrees with byte-identical packages (the near-static tools/ module is
+  # the usual culprit) get a cross-worktree cache hit, so the second inherits the
+  # first's absolute paths; the //nolint processor then re-opens those paths to
+  # apply suppressions and, when the other worktree was deleted, can't — so
+  # suppressed issues leak through as phantom failures pointing at a gone path.
+  # See golangci/golangci-lint#6656 (closed as an accepted trade-off of the
+  # shared-cache work in #6445). The default shared cache
+  # (~/Library/Caches/golangci-lint) is machine-global; rooting it under the
+  # gitignored per-worktree .task/ makes contamination impossible.
+  #
+  # CI is unaffected: it runs a single checkout and never persists this directory
+  # (setup-go caches only the Go build cache).
+  #
+  # Trade-off: a fresh worktree's FIRST full `task lint` can't reuse another
+  # worktree's issue cache, so it runs cold (~2min on the root module vs ~20s
+  # warm; the incremental `task lint-q` used by the default dev loop is
+  # unaffected, <1s either way). Task's `env:` yields to an inherited value, so
+  # this is opt-out: export GOLANGCI_LINT_CACHE (e.g. to the shared
+  # ~/Library/Caches/golangci-lint) to trade isolation back for cross-worktree
+  # reuse, or run `task seed-lint-cache` to warm a new worktree from main.
+  GOLANGCI_LINT_CACHE: '{{.ROOT_DIR}}/.task/golangci-lint'
+
 # pydabs-* tasks live in python/Taskfile.yml so `task pydabs-foo` works when
 # run from python/. Flattened so they keep their `pydabs-` names at the root.
 includes:
@@ -113,8 +138,10 @@ tasks:
   #   -j=4 — cap analyzer concurrency; higher values use more CPU without
   #     reducing wall time on this codebase.
   #
-  # Cross-worktree concurrency relies on content-addressable cache keys added
-  # in golangci-lint v2.12.0; keep the binary at v2.12.0+ in tools/go.mod.
+  # Concurrent cross-worktree runs rely on content-addressable cache keys added
+  # in golangci-lint v2.12.0; keep the binary at v2.12.0+ in tools/go.mod. Those
+  # keys don't cover the deleted-worktree case (stale absolute paths in cached
+  # issues) — the per-worktree GOLANGCI_LINT_CACHE in the top-level `env:` does.
   lint-go:
     desc: Lint Go files across all modules (root, tools, codegen)
     deps: ['lint-go-root', 'lint-go-tools', 'lint-go-codegen']
@@ -172,6 +199,27 @@ tasks:
       - "**/testdata/**"
     cmds:
       - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --fix"
+
+  seed-lint-cache:
+    desc: >-
+      Warm this worktree's golangci-lint cache by copying the main worktree's,
+      so the first full `task lint` runs warm instead of cold. Safe because the
+      main worktree is permanent, so its cached issue paths always resolve.
+    # Skip when GOLANGCI_LINT_CACHE has been overridden away from the per-worktree
+    # default (the shared-cache opt-out already gets cross-worktree reuse for free).
+    status:
+      - test "$GOLANGCI_LINT_CACHE" != "{{.ROOT_DIR}}/.task/golangci-lint"
+    cmds:
+      - |
+        main_wt=$(git worktree list --porcelain | grep -m1 '^worktree ' | cut -d' ' -f2-)
+        src="$main_wt/.task/golangci-lint"
+        dst="{{.ROOT_DIR}}/.task/golangci-lint"
+        if [ "$src" = "$dst" ]; then echo "Already in the main worktree; nothing to seed."; exit 0; fi
+        if [ ! -d "$src" ]; then echo "No cache at $src; run 'task lint' in the main worktree first." >&2; exit 1; fi
+        mkdir -p "{{.ROOT_DIR}}/.task"
+        rm -rf "$dst"
+        cp -R "$src" "$dst"
+        echo "Seeded $dst from $src"
 
   # --- Formatting ---
 
