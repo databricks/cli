@@ -559,6 +559,47 @@ environment_version = "4"
 	assert.NotContains(t, regions, "tool.databricks.environment")
 }
 
+func TestMergeAddsEnvironmentToPreFeatureManagedFile(t *testing.T) {
+	// The common upgrade path: a file a pre-feature CLI wrote for a serverless
+	// target already carries the managed [tool.uv] marker block but no
+	// [tool.databricks.environment] section. Re-running the new CLI must add the
+	// section, keep exactly one managed block, and stay idempotent.
+	in := []byte(`[project]
+name = "demo"
+version = "0.0.0"
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = [
+    "databricks-connect~=17.2.0",
+]
+
+` + managedMarkerStart + `
+[tool.uv]
+constraint-dependencies = [
+    "pydantic~=2.10.6",
+    "anyio~=4.6.2",
+]
+` + managedMarkerEnd + `
+`)
+	c := testConstraints()
+	c.EnvironmentVersion = "5"
+	out, regions, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, "[tool.databricks.environment]")
+	assert.Contains(t, s, `environment_version = "5"`)
+	assert.Contains(t, regions, "tool.databricks.environment")
+	// The pre-existing managed [tool.uv] block is neither duplicated nor disturbed.
+	assert.Equal(t, 1, countOccurrences(s, managedMarkerStart))
+	assert.Equal(t, 1, countOccurrences(s, "[tool.databricks.environment]"))
+	requireValidTOML(t, out)
+	// Idempotent on the upgraded file.
+	twice, _, err := MergeManaged(out, c)
+	require.NoError(t, err)
+	assert.Equal(t, s, string(twice))
+}
+
 func TestMergeStripsMultiLineConstraintDepsWithBracketInFirstElement(t *testing.T) {
 	// The user's stale constraint-dependencies is a multi-line array whose FIRST
 	// element line contains a "]" inside an extras spec. A naive
