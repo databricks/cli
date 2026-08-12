@@ -23,7 +23,7 @@ require (
 	github.com/hashicorp/terraform-json v0.28.0 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
 	github.com/jackc/pgx/v5 v5.10.0 // MIT
-	github.com/mattn/go-isatty v0.0.22 // MIT
+	github.com/mattn/go-isatty v0.0.24 // MIT
 	github.com/muesli/termenv v0.16.0 // MIT
 	github.com/palantir/pkg/yamlpatch v1.5.0 // BSD-3-Clause
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // BSD-2-Clause
