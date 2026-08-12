@@ -1,0 +1,24 @@
+# databricks-connect is fully owned by setup-local: a stray pin in
+# [project].dependencies, an optional-dependency extra, or another dependency group
+# would make uv unsatisfiable, so the merge removes them all and manages the single
+# pin in [dependency-groups].dev. The JSON diff shows every stray removed and one
+# W_DBCONNECT_CONSOLIDATED warning per removed pin, in resolution order.
+cat > pyproject.toml <<'PY'
+[project]
+name = "demo"
+requires-python = ">=3.10"
+dependencies = [
+    "databricks-dlt",
+    "databricks-connect==15.1.*",
+    "pytest",
+]
+
+[project.optional-dependencies]
+extra = ["databricks-connect==14.0.0"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+docs = ["databricks-connect==15.0.0"]
+PY
+
+trace $CLI environments setup-local --serverless-version 4 --dry-run --output json

@@ -323,14 +323,14 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		if err != nil {
 			return nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
 		}
-		// Surface merge-quality warnings (overridden or duplicated pins, conflicting
-		// user constraints) from the pre-merge file. Greenfield has nothing of the
-		// user's to override, so it is skipped. This runs for both dry-run and real
-		// runs so the --json consumer sees the same warnings either way. The pin the
-		// merge rewrote comes from the merge itself, so the warning can never claim a
-		// replacement that did not happen.
+		// Surface merge-quality warnings (overridden, consolidated, or duplicated pins,
+		// conflicting user constraints) from the pre-merge file. Greenfield has nothing of
+		// the user's to override, so it is skipped. This runs for both dry-run and real
+		// runs so the --json consumer sees the same warnings either way. The databricks-connect
+		// edits come from the merge itself (planDBConnect), so a warning can never claim a
+		// rewrite or removal that did not happen.
 		p.res.Warnings = append(p.res.Warnings,
-			detectMergeWarnings(baseBytes, effective, replacedDBConnectPin(baseBytes, effective))...)
+			detectMergeWarnings(baseBytes, effective, planDBConnect(baseBytes, effective))...)
 	}
 
 	// Under --dry-run, build the plan (with a diff) for reporting. A real run does

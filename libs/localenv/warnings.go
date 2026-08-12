@@ -160,7 +160,7 @@ func resolutionRequirements(p userPyprojectTOML) []string {
 // content) produce nothing — there is nothing of the user's to override. Warnings are
 // deterministic and ordered (requires-python, then databricks-connect, then
 // constraint conflicts in the order uv would encounter them) so goldens are stable.
-func detectMergeWarnings(userPyproject []byte, c Constraints, replacedPin string) []Warning {
+func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan) []Warning {
 	if len(userPyproject) == 0 {
 		return nil
 	}
@@ -183,51 +183,91 @@ func detectMergeWarnings(userPyproject []byte, c Constraints, replacedPin string
 		})
 	}
 
-	// The user's databricks-connect pin differs from the env's. Only meaningful in
-	// default mode (c.DatabricksConnect is empty in constraints-only, where the dev
-	// group is left untouched).
+	// The requirements uv still resolves after the merge: everything minus the dev pin
+	// the merge rewrites (replacedDevPin) and the strays the consolidation pass removes.
+	// A conflict against an entry the merge discards describes a state that does not
+	// survive it, so excluding both keeps the conflict scan honest.
+	survivors := removeDBConnectPins(retainedRequirements(p, plan.replacedDevPin), plan.removed)
+
+	// The user's databricks-connect pins differ from the env's. Only meaningful in
+	// default mode (c.DatabricksConnect is empty in constraints-only, where
+	// databricks-connect is left untouched).
 	if c.DatabricksConnect != "" {
-		warnings = append(warnings, dbconnectWarnings(p, replacedPin, c.DatabricksConnect)...)
+		warnings = append(warnings, dbconnectWarnings(plan, survivors, c.DatabricksConnect)...)
 	}
 
-	// The pin the merge replaces is excluded from the conflict scan: a conflict against
-	// an entry that is about to be discarded describes a state that does not survive
-	// the merge, and its own warning already covers it. Retained databricks-connect
-	// pins stay in scope — they are still part of the resolution.
-	warnings = append(warnings, constraintConflicts(retainedRequirements(p, replacedPin), c.ConstraintDeps)...)
+	warnings = append(warnings, constraintConflicts(survivors, c.ConstraintDeps)...)
 	return warnings
 }
 
-// dbconnectWarnings reports how the merge treats the user's databricks-connect
-// pins, distinguishing two outcomes that need different user actions.
+// removeDBConnectPins drops from reqs the requirements the consolidation pass deletes,
+// one occurrence per removed pin (mirroring retainedRequirements' subtraction of the
+// rewritten dev pin). The strays are removed by MergeManaged, so a warning about them
+// as if they survived would describe a state the merge does not produce.
+func removeDBConnectPins(reqs []string, removed []removedDBConnect) []string {
+	if len(removed) == 0 {
+		return reqs
+	}
+	counts := make(map[string]int, len(removed))
+	for _, r := range removed {
+		counts[strings.TrimSpace(r.pin)]++
+	}
+	out := make([]string, 0, len(reqs))
+	for _, r := range reqs {
+		t := strings.TrimSpace(r)
+		if counts[t] > 0 {
+			counts[t]--
+			continue
+		}
+		out = append(out, r)
+	}
+	return out
+}
+
+// dbconnectWarnings reports how the merge treats the user's databricks-connect pins,
+// distinguishing three outcomes that need different user actions. What the merge does
+// is not re-derived here — it comes from plan (see planDBConnect):
 //
-// Which pin the merge rewrites is not re-derived here — replacedPin comes from the
-// merge itself (see replacedDBConnectPin). Every other databricks-connect
-// requirement uv would resolve is left in place beside the managed pin: a pin in a
-// group the merge does not edit, one reached through a PEP 735 include-group, or a
-// second element in dev's own array. That leaves two pins for one package, and where
-// their ranges do not intersect uv cannot resolve at all — a strictly worse outcome
-// than an override, and one the user has to fix by hand. Reporting it as "is
-// replaced" would state something factually untrue and hide the resolution failure
-// behind a reassuring advisory.
+//   - replacedDevPin: the pin sitting directly in the dev group, rewritten in place to
+//     the env's version (WarnDBConnectPinOverridden).
+//   - removed: strays the consolidation pass deletes from [project].dependencies, an
+//     optional-dependency extra, or another group so exactly one pin survives
+//     (WarnDBConnectConsolidated). Reported for every removed pin, since the removal is
+//     a file edit the user should see regardless of whether the ranges overlapped.
+//   - a databricks-connect pin the line-based merge cannot delete but uv still resolves
+//     — a single-quoted element — left beside the managed pin. Where its range is
+//     disjoint from the env's, uv cannot resolve at all (WarnDBConnectPinDuplicated), a
+//     distinct failure the user must fix by hand.
 //
-// The two conditions are reported independently rather than as a first-match choice,
-// because they can coexist and the duplicate outlives the override: once the env's
-// pin is in dev, a re-run finds a matching direct pin, and stopping there would go
-// silent on a retained pin that still makes the project unresolvable.
-func dbconnectWarnings(p userPyprojectTOML, replacedPin, envPin string) []Warning {
+// The conditions are reported independently rather than as a first-match choice,
+// because a run can override the dev pin, consolidate strays, and still leave an
+// unresolvable survivor all at once.
+func dbconnectWarnings(plan dbconnectPlan, survivors []string, envPin string) []Warning {
 	var warnings []Warning
 
 	envPin = strings.TrimSpace(envPin)
-	if replacedPin != "" && strings.TrimSpace(replacedPin) != envPin {
+	if plan.replacedDevPin != "" && strings.TrimSpace(plan.replacedDevPin) != envPin {
 		warnings = append(warnings, Warning{
 			Code:    WarnDBConnectPinOverridden,
-			Message: fmt.Sprintf("databricks-connect %q is replaced by the environment's %q", strings.TrimSpace(replacedPin), envPin),
+			Message: fmt.Sprintf("databricks-connect %q is replaced by the environment's %q", strings.TrimSpace(plan.replacedDevPin), envPin),
+		})
+	}
+
+	for _, r := range plan.removed {
+		if strings.TrimSpace(r.pin) == envPin {
+			// Identical to the managed pin: the removal is pure deduplication, so there
+			// is nothing for the user to know or reconcile.
+			continue
+		}
+		warnings = append(warnings, Warning{
+			Code: WarnDBConnectConsolidated,
+			Message: fmt.Sprintf("databricks-connect %q in %s is removed; it is managed in %q at the environment's %q",
+				strings.TrimSpace(r.pin), r.location, devGroup, envPin),
 		})
 	}
 
 	_, envSpec, envOK := splitDepSpec(envPin)
-	for _, pin := range dbconnectPins(retainedRequirements(p, replacedPin)) {
+	for _, pin := range dbconnectPins(survivors) {
 		if pin == envPin {
 			// An identical pin needs no reconciliation: uv sees one requirement twice.
 			continue
@@ -323,9 +363,12 @@ func constraintConflicts(userDeps, envConstraints []string) []Warning {
 }
 
 // clause is a parsed single version clause: an operator and a numeric release.
+// wildcard marks a "==X.Y.*" prefix match, whose range is the segment held fixed
+// (see clause.interval).
 type clause struct {
-	op  string
-	rel []int
+	op       string
+	rel      []int
+	wildcard bool
 }
 
 // parseClause parses one "<op><release>" clause. ok is false when the clause cannot
@@ -339,14 +382,22 @@ func parseClause(spec string) (clause, bool) {
 	if m == nil {
 		return clause{}, false
 	}
-	// Reject anything trailing the numeric release (wildcards, pre/post/dev tags):
-	// modeling those correctly is out of scope, and guessing risks a false conflict.
-	if strings.TrimSpace(spec[len(m[0]):]) != "" {
-		return clause{}, false
-	}
 	op := m[1]
 	if op == "" {
 		op = "==" // a bare version in dependencies means an exact pin
+	}
+	// A trailing ".*" is a PEP 440 prefix-match wildcard. It is only defined for "=="
+	// (and "!="); "==15.1.*" pins the 15.1 series. For any other operator ".*" is
+	// malformed, and "!=X.*" excludes a whole series — a non-contiguous set the
+	// interval model cannot represent — so both stay unknown. Any other trailing text
+	// (pre/post/dev tags) is out of scope and also refused, to avoid a false conflict.
+	wildcard := false
+	switch rest := strings.TrimSpace(spec[len(m[0]):]); {
+	case rest == "":
+	case rest == ".*" && op == "==":
+		wildcard = true
+	default:
+		return clause{}, false
 	}
 	var rel []int
 	for part := range strings.SplitSeq(m[2], ".") {
@@ -364,7 +415,7 @@ func parseClause(spec string) (clause, bool) {
 	if op == "~=" && len(rel) < 2 {
 		return clause{}, false
 	}
-	return clause{op: op, rel: rel}, true
+	return clause{op: op, rel: rel, wildcard: wildcard}, true
 }
 
 // rangesDisjoint reports whether two version specifiers provably share no
@@ -435,6 +486,13 @@ type interval struct {
 func (c clause) interval() (interval, bool) {
 	switch c.op {
 	case "==":
+		if c.wildcard {
+			// "==X.Y.*" admits the whole X.Y series: floor X.Y inclusive, exclusive
+			// ceiling incrementing the last held segment ("==15.1.*" -> [15.1, 15.2)).
+			ceil := slices.Clone(c.rel)
+			ceil[len(ceil)-1]++
+			return interval{lo: c.rel, loIncl: true, hi: ceil}, true
+		}
 		// A single point. compareRelease zero-pads, so this also covers the spellings
 		// that denote the same release (3.12 and 3.12.0).
 		return interval{lo: c.rel, loIncl: true, hi: c.rel, hiIncl: true}, true

@@ -7,12 +7,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// detectWarnings runs the detector the way mergePlan does, taking the replaced pin
-// from the merge itself rather than a hand-supplied value. Tests must not assert
-// against a different notion of what the merge rewrites than production uses — that
-// divergence is the bug this wiring exists to prevent.
+// detectWarnings runs the detector the way mergePlan does, taking the databricks-connect
+// plan from the merge itself rather than hand-supplied values. Tests must not assert
+// against a different notion of what the merge rewrites or removes than production uses —
+// that divergence is the bug this wiring exists to prevent.
 func detectWarnings(userPyproject []byte, c Constraints) []Warning {
-	return detectMergeWarnings(userPyproject, c, replacedDBConnectPin(userPyproject, c))
+	return detectMergeWarnings(userPyproject, c, planDBConnect(userPyproject, c))
 }
 
 // codes extracts the warning codes in order for concise assertions.
@@ -129,13 +129,12 @@ test = []
 	}, codes(detectWarnings(user, c)))
 }
 
-func TestDetectMergeWarningsIncludeGroupIsDuplicatedNotOverridden(t *testing.T) {
-	// MergeManaged only rewrites a pin sitting in dev's own array. A pin reached
-	// through an include-group is left alone and the env's pin is inserted alongside
-	// it, so the merged file carries two pins for one package and uv cannot resolve.
-	// That is a different condition from an override and needs its own code —
-	// reporting "is replaced" here would state something untrue and hide a hard
-	// resolution failure behind a reassuring advisory.
+func TestDetectMergeWarningsStrayPinsAreConsolidated(t *testing.T) {
+	// A databricks-connect pin in another group — reached through an include-group or
+	// held directly in a sibling group — is removed by the consolidation pass so the
+	// managed pin is the only one left. That is reported as consolidation, not as an
+	// override (nothing in dev was rewritten) and not as a duplicate (the pin does not
+	// survive the merge).
 	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: "databricks-connect==17.0.0"}
 
 	indirect := []byte(`[project]
@@ -146,7 +145,7 @@ dev = [{include-group = "spark"}]
 spark = ["databricks-connect==16.1.0"]
 `)
 	got := detectWarnings(indirect, c)
-	assert.Equal(t, []string{WarnDBConnectPinDuplicated}, codes(got))
+	assert.Equal(t, []string{WarnDBConnectConsolidated}, codes(got))
 	// The message must not claim a replacement that did not happen.
 	assert.NotContains(t, got[0].Message, "is replaced")
 
@@ -160,8 +159,7 @@ dev = ["databricks-connect==16.1.0"]
 	assert.Equal(t, []string{WarnDBConnectPinOverridden}, codes(detectWarnings(direct, c)))
 
 	// With pins both in dev and behind an include-group, the merge rewrites dev's and
-	// leaves the included one, so both conditions hold and both are reported. Only
-	// flagging the override would go silent on the pin that still breaks resolution.
+	// removes the included one, so both an override and a consolidation are reported.
 	both := []byte(`[project]
 requires-python = "==3.12.*"
 
@@ -169,18 +167,17 @@ requires-python = "==3.12.*"
 dev = ["databricks-connect==16.1.0", {include-group = "spark"}]
 spark = ["databricks-connect==15.0.0"]
 `)
-	assert.Equal(t, []string{WarnDBConnectPinOverridden, WarnDBConnectPinDuplicated},
+	assert.Equal(t, []string{WarnDBConnectPinOverridden, WarnDBConnectConsolidated},
 		codes(detectWarnings(both, c)))
 
-	// The merge is idempotent, but the included pin it does not rewrite is not fixed
-	// by re-running: the duplicate warning must persist for as long as the two pins do,
-	// or the user loses the only signal about a project uv cannot resolve.
+	// Consolidation actually fixes the project: re-running on the merged file finds a
+	// single managed pin and nothing to warn about (the spark stray is gone).
 	merged, _, err := MergeManaged(both, c)
 	require.NoError(t, err)
-	assert.Equal(t, []string{WarnDBConnectPinDuplicated}, codes(detectWarnings(merged, c)))
+	assert.Empty(t, detectWarnings(merged, c))
 
 	// An include-group cycle must terminate rather than recurse forever, and the pin
-	// behind it is still found.
+	// behind it is still removed.
 	cyclic := []byte(`[project]
 requires-python = "==3.12.*"
 
@@ -188,19 +185,22 @@ requires-python = "==3.12.*"
 dev = [{include-group = "a"}]
 a = [{include-group = "dev"}, "databricks-connect==16.1.0"]
 `)
-	assert.Equal(t, []string{WarnDBConnectPinDuplicated}, codes(detectWarnings(cyclic, c)))
+	assert.Equal(t, []string{WarnDBConnectConsolidated}, codes(detectWarnings(cyclic, c)))
 
-	// PEP 735 normalizes group names the same way PEP 503 normalizes package names.
-	renamed := []byte(`[project]
+	// A quoted TOML group key is outside the line-based removal's reach, so the pin
+	// survives beside the managed one and is reported as a duplicate — uv still cannot
+	// resolve it, so the user must not lose the signal.
+	quotedKey := []byte(`[project]
 requires-python = "==3.12.*"
 
 [dependency-groups]
-dev = [{include-group = "My_Spark.Group"}]
+dev = [{include-group = "my-spark-group"}]
 "my-spark-group" = ["databricks-connect==16.1.0"]
 `)
-	assert.Equal(t, []string{WarnDBConnectPinDuplicated}, codes(detectWarnings(renamed, c)))
+	assert.Equal(t, []string{WarnDBConnectPinDuplicated}, codes(detectWarnings(quotedKey, c)))
 
-	// An included pin that already matches the env needs no reconciliation.
+	// A stray pin that already matches the env needs no reconciliation: it is removed
+	// as a pure duplicate, with no warning.
 	matching := []byte(`[project]
 requires-python = "==3.12.*"
 
@@ -364,11 +364,11 @@ Dev = ["numpy==9.9.9"]
 	}
 }
 
-func TestDetectMergeWarningsNonLiteralDevGroupIsNotAnOverride(t *testing.T) {
+func TestDetectMergeWarningsNonLiteralDevGroupIsConsolidated(t *testing.T) {
 	// MergeManaged finds the dev array with devKeyRe (`^\s*dev\s*=`), so a group spelled
-	// "Dev" is never rewritten: the merge adds its own dev key and the user's pin stays.
-	// Claiming an override here would describe a replacement that did not happen, and
-	// staying silent would hide a file uv rejects outright.
+	// "Dev" is never rewritten: the merge adds its own dev key. The consolidation pass
+	// then removes the stray pin from "Dev", so it is reported as consolidated, not as
+	// an override (nothing was replaced in place).
 	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: "databricks-connect==17.0.0"}
 	user := []byte(`[project]
 requires-python = "==3.12.*"
@@ -377,42 +377,40 @@ requires-python = "==3.12.*"
 Dev = ["databricks-connect==16.1.0"]
 `)
 	got := detectWarnings(user, c)
-	assert.Equal(t, []string{WarnDBConnectPinDuplicated}, codes(got))
+	assert.Equal(t, []string{WarnDBConnectConsolidated}, codes(got))
 	assert.NotContains(t, got[0].Message, "is replaced")
 
 	merged, _, err := MergeManaged(user, c)
 	require.NoError(t, err)
-	assert.Contains(t, string(merged), `"databricks-connect==16.1.0"`, "the user's pin is retained, not replaced")
+	assert.NotContains(t, string(merged), `databricks-connect==16.1.0`, "the stray pin is removed, not retained")
 }
 
-func TestDBConnectOverrideFollowsWhatTheMergeRewrites(t *testing.T) {
-	// The override warning must be driven by the merge's own answer, not by a second
-	// implementation of "is this pin in the dev array". MergeManaged rewrites only
-	// double-quoted elements, so each spelling below is left in place beside the managed
-	// pin — reporting it as replaced would be a false claim about the user's file.
+func TestDBConnectWarningsFollowWhatTheMergeDoes(t *testing.T) {
+	// The warnings must be driven by the merge's own answer, not by a second
+	// implementation of what it edits. The merge rewrites and removes only
+	// double-quoted elements the line-based passes reach, so a pin the passes cannot
+	// touch survives beside the managed pin and is a duplicate (uv cannot resolve),
+	// while a pin they can reach is consolidated away.
 	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: "databricks-connect==17.0.0"}
-	for name, body := range map[string]string{
-		// A TOML literal string is a string, but not one replaceDbconnectElement matches.
+
+	// Pins the line-based passes cannot reach survive the merge — a duplicate.
+	survives := map[string]string{
+		// A TOML literal string is a string, but not one the double-quoted matcher sees.
 		"single-quoted element": `[project]
 requires-python = "==3.12.*"
 
 [dependency-groups]
 dev = ['databricks-connect==16.1.0']
 `,
-		// A dotted key defines the same table but no line matches devKeyRe.
+		// A dotted key defines the group outside a [dependency-groups] table header, so
+		// the line-based removal never scans it.
 		"top-level dotted key": `dependency-groups.dev = ["databricks-connect==16.1.0"]
 
 [project]
 requires-python = "==3.12.*"
 `,
-		// devKeyRe is literal, so a normalization-equal key is a different array.
-		"capitalized group": `[project]
-requires-python = "==3.12.*"
-
-[dependency-groups]
-Dev = ["databricks-connect==16.1.0"]
-`,
-	} {
+	}
+	for name, body := range survives {
 		got := detectWarnings([]byte(body), c)
 		assert.Equal(t, []string{WarnDBConnectPinDuplicated}, codes(got), name)
 		assert.NotContains(t, got[0].Message, "is replaced", name)
@@ -423,20 +421,35 @@ Dev = ["databricks-connect==16.1.0"]
 		assert.Contains(t, string(merged), "databricks-connect==16.1.0", name)
 		assert.Contains(t, string(merged), "databricks-connect==17.0.0", name)
 	}
+
+	// A double-quoted pin in a normalization-equal group ("Dev") is reached by the
+	// removal pass, so it is consolidated away rather than left as a duplicate.
+	capitalized := []byte(`[project]
+requires-python = "==3.12.*"
+
+[dependency-groups]
+Dev = ["databricks-connect==16.1.0"]
+`)
+	got := detectWarnings(capitalized, c)
+	assert.Equal(t, []string{WarnDBConnectConsolidated}, codes(got))
+	merged, _, err := MergeManaged(capitalized, c)
+	require.NoError(t, err)
+	assert.NotContains(t, string(merged), "databricks-connect==16.1.0")
+	assert.Contains(t, string(merged), "databricks-connect==17.0.0")
 }
 
 func TestDBConnectDuplicateOnlyWhenRangesCannotBothHold(t *testing.T) {
-	// Two pins for one package are only a problem when nothing satisfies both. uv
-	// resolves an overlapping pair without complaint, so there is nothing to reconcile
-	// and no warning to give.
+	// A pin the merge cannot remove (single-quoted, so the double-quoted-only passes do
+	// not reach it) survives beside the managed pin. Two pins for one package are only a
+	// problem when nothing satisfies both: uv resolves an overlapping pair without
+	// complaint, so there is nothing to reconcile and no warning to give.
 	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: "databricks-connect~=17.2.0"}
 
 	overlapping := []byte(`[project]
 requires-python = "==3.12.*"
 
 [dependency-groups]
-dev = [{include-group = "spark"}]
-spark = ["databricks-connect>=16"]
+dev = ['databricks-connect>=16']
 `)
 	assert.Empty(t, detectWarnings(overlapping, c), ">=16 and ~=17.2.0 both hold at 17.2.x")
 
@@ -444,16 +457,16 @@ spark = ["databricks-connect>=16"]
 requires-python = "==3.12.*"
 
 [dependency-groups]
-dev = [{include-group = "spark"}]
-spark = ["databricks-connect==15.0.0"]
+dev = ['databricks-connect==15.0.0']
 `)
 	assert.Equal(t, []string{WarnDBConnectPinDuplicated}, codes(detectWarnings(disjoint, c)),
 		"==15.0.0 is outside ~=17.2.0, so uv cannot resolve")
 }
 
-func TestDBConnectWarningsSecondDirectPinIsRetained(t *testing.T) {
-	// MergeManaged replaces only the first databricks-connect element in the dev array,
-	// so a second one survives and leaves two pins uv cannot resolve.
+func TestDBConnectWarningsSecondDirectPinIsConsolidated(t *testing.T) {
+	// MergeManaged rewrites only the first databricks-connect element in the dev array;
+	// the consolidation pass then removes any further one, so a second pin is reported
+	// as consolidated rather than left as a duplicate uv cannot resolve.
 	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: "databricks-connect==17.0.0"}
 	user := []byte(`[project]
 requires-python = "==3.12.*"
@@ -461,9 +474,70 @@ requires-python = "==3.12.*"
 [dependency-groups]
 dev = ["databricks-connect==17.0.0", "databricks-connect==16.0.0"]
 `)
-	// The first pin already matches the env, so there is nothing to override — but the
-	// second still has to be reconciled by hand.
-	assert.Equal(t, []string{WarnDBConnectPinDuplicated}, codes(detectWarnings(user, c)))
+	// The first pin already matches the env, so there is nothing to override; the second
+	// is removed and reported as consolidated.
+	assert.Equal(t, []string{WarnDBConnectConsolidated}, codes(detectWarnings(user, c)))
+}
+
+func TestConsolidatedWarningNamesLocationAndCoexistsWithOverride(t *testing.T) {
+	// A stray pin in [project].dependencies is consolidated, and the message names where
+	// it came from so the user can see what the merge edited.
+	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: "databricks-connect~=17.2.0"}
+	projectDeps := []byte(`[project]
+requires-python = "==3.12.*"
+dependencies = ["databricks-connect==15.1.*"]
+`)
+	got := detectWarnings(projectDeps, c)
+	require.Equal(t, []string{WarnDBConnectConsolidated}, codes(got))
+	assert.Contains(t, got[0].Message, "[project].dependencies")
+
+	// An override in dev and consolidations across an optional extra and a sibling group
+	// coexist, in a deterministic order (override first, then removals in resolution
+	// order: optional-dependencies before dependency-groups).
+	mixed := []byte(`[project]
+requires-python = "==3.12.*"
+
+[project.optional-dependencies]
+extra = ["databricks-connect==14.0.0"]
+
+[dependency-groups]
+dev = ["databricks-connect==16.1.0"]
+docs = ["databricks-connect==15.0.0"]
+`)
+	want := codes(detectWarnings(mixed, c))
+	assert.Equal(t, []string{WarnDBConnectPinOverridden, WarnDBConnectConsolidated, WarnDBConnectConsolidated}, want)
+	// The order must be stable across runs (group names come from a Go map).
+	for range 200 {
+		assert.Equal(t, want, codes(detectWarnings(mixed, c)))
+	}
+}
+
+func TestConstraintsOnlyEmitsNoDBConnectWarnings(t *testing.T) {
+	// With an empty DatabricksConnect (constraints-only mode) databricks-connect is left
+	// untouched wherever it sits, so none of the db-connect warnings fire.
+	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: ""}
+	user := []byte(`[project]
+requires-python = "==3.12.*"
+dependencies = ["databricks-connect==15.1.*"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+docs = ["databricks-connect==15.0.0"]
+`)
+	assert.Empty(t, detectWarnings(user, c))
+}
+
+func TestUserConstraintConflictFiresForWildcardPin(t *testing.T) {
+	// A prefix-match wildcard pin ("==18.*") must be modeled so a conflict with the env's
+	// constraint-dependencies is reported rather than silently missed.
+	user := []byte(`[project]
+requires-python = "==3.12.*"
+dependencies = ["pyarrow==18.*"]
+`)
+	c := Constraints{RequiresPython: "==3.12.*", ConstraintDeps: []string{"pyarrow~=19.0"}}
+	got := detectWarnings(user, c)
+	assert.Equal(t, []string{WarnUserConstraintConflict}, codes(got))
+	assert.Contains(t, got[0].Message, "pyarrow")
 }
 
 func TestConstraintConflictsDuplicateEnvEntriesAreOrderIndependent(t *testing.T) {
@@ -530,8 +604,17 @@ func TestRangesDisjoint(t *testing.T) {
 		{">=2.0", "==2.5", false, "2.5 is above the floor — overlapping"},
 		{"!=2.0", "==2.0", false, "!= is not modeled — never a conflict"},
 		{">=2.0,<3.0", "==5.0", true, "5.0 is above the compound range's ceiling"},
-		{"==2.*", "==2.0", false, "wildcards are unparsed — no conflict"},
 		{"", "~=21.0.0", false, "no user spec — nothing to compare"},
+
+		// PEP 440 prefix-match wildcards ("==X.Y.*"). The clause admits the whole X.Y
+		// series: [X.Y, X.(Y+1)). Only "==" carries a wildcard; "!=X.*" and any other
+		// operator stay undecidable (parseClause refuses them), never a false conflict.
+		{"==15.1.*", "~=17.0", true, "the 15.1 series is entirely below [17.0, 18.0)"},
+		{"==17.0.*", "~=17.0", false, "the 17.0 series sits inside [17.0, 18.0)"},
+		{"==17.*", "~=17.2.0", false, "the 17.* series spans the ~=17.2.0 range"},
+		{"==2.*", "==3.0", true, "the 2.* series ends at 3, which the exact 3.0 exceeds"},
+		{"==2.*", "==2.0", false, "2.0 is inside the 2.* series [2, 3)"},
+		{"!=2.*", "==2.0", false, "!=X.* excludes a whole series — undecidable, never a conflict"},
 
 		// Opposite-direction bounds. This is the shape the published constraint
 		// artifacts use (pyarrow<19, pandas<3), so failing to decide it would make the
