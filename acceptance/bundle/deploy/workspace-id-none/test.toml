@@ -1,0 +1,10 @@
+# Deploys with workspace_id=none, the sentinel `auth login --skip-workspace`
+# persists. Non-filer SDK calls (e.g. the populate_current_user /Me request)
+# still send it as X-Databricks-Workspace-Id: none. The local testserver ignores
+# the header so the deploy succeeds; this test runs on a real workspace (Cloud)
+# to reveal whether the sentinel actually breaks routing there.
+Cloud = true
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+[Env]
+DATABRICKS_WORKSPACE_ID = "none"
