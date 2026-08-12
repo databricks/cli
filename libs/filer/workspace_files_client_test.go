@@ -109,6 +109,36 @@ func TestWorkspaceFilesClientWorkspaceIDHeaders(t *testing.T) {
 	})
 }
 
+// Confirms NewWorkspaceFilesClient clears the CLI-only "none" sentinel so the
+// SDK's Workspace.Upload/Download never route on it, while a real workspace ID
+// is left untouched.
+func TestNewWorkspaceFilesClientNormalizesWorkspaceID(t *testing.T) {
+	server := testserver.New(t)
+
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"none sentinel is cleared", auth.WorkspaceIDNone, ""},
+		{"real workspace ID is kept", "7474644166319138", "7474644166319138"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client, err := databricks.NewWorkspaceClient(&databricks.Config{
+				Host:        server.URL,
+				Token:       "testtoken",
+				WorkspaceID: tc.input,
+			})
+			require.NoError(t, err)
+
+			_, err = NewWorkspaceFilesClient(client, "/dir")
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, client.Config.WorkspaceID)
+		})
+	}
+}
+
 // importFormFields parses the multipart body of a recorded /workspace/import
 // request into a field name -> value map.
 func importFormFields(t *testing.T, contentType string, body []byte) map[string]string {
