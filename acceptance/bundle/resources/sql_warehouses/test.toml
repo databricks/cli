@@ -1,5 +1,4 @@
 Cloud = false
-Local = true
 CloudSlow = false
 RecordRequests = true
 

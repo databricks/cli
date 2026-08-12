@@ -1,7 +1,6 @@
 Timeout = '40s'
 TimeoutWindows = '120s'
 
-Local = true
 Cloud = false
 
 # Mask the real databricks-bundles version so the golden pyproject.toml does not

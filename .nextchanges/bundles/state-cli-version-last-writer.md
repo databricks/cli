@@ -1,0 +1,1 @@
+The `cli_version` field in the direct engine's deployment state (`resources.json`) now records the CLI version that last wrote the state. Previously it kept the version of the CLI that first created the state.

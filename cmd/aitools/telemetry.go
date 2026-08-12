@@ -81,6 +81,10 @@ func agentType(name string) protos.AitoolsAgentType {
 		return protos.AitoolsAgentTypeCopilot
 	case agents.NameAntigravity:
 		return protos.AitoolsAgentTypeAntigravity
+	case agents.NamePi:
+		return protos.AitoolsAgentTypePi
+	case agents.NameGemini:
+		return protos.AitoolsAgentTypeGemini
 	default:
 		return protos.AitoolsAgentTypeUnspecified
 	}

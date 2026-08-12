@@ -1,5 +1,5 @@
 # Maintainers (can approve any PR)
-*                           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @renaudhartert-db @janniklasrose @lennartkats-db
+*                           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @renaudhartert-db @janniklasrose @lennartkats-db @rugpanov @rclarey
 
 # Bundles
 /bundle/                    team:bundle
@@ -15,9 +15,9 @@
 /cmd/labs/                  @alexott @asnare
 
 # Local environments / DB Connect
-/libs/localenv/             @rugpanov @rclarey @anton-107 @misha-db
-/cmd/environments/          @rugpanov @rclarey @anton-107 @misha-db
-/acceptance/localenv/       @rugpanov @rclarey @anton-107 @misha-db
+/libs/localenv/             team:ide
+/cmd/environments/          team:ide
+/acceptance/localenv/       team:ide
 
 # Apps
 /cmd/apps/                  team:eng-apps-devex
@@ -63,6 +63,8 @@
 
 # Integration tests
 /integration/               team:platform
+
+/integration/cmd/environments/  team:ide
 
 # Internal
 /internal/                  team:platform

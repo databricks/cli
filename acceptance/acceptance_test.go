@@ -449,9 +449,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	subset := newSubsetSelector(t, testdiff.OverwriteMode, Forcerun)
 
 	switch skipLocalMode {
-	case "", SkipLocalAll, SkipLocalWithChanged:
+	case "", SkipLocalWithChanged:
 	default:
-		t.Fatalf("Unsupported %s=%q, expected %q or %q", SkipLocalEnvVar, skipLocalMode, SkipLocalAll, SkipLocalWithChanged)
+		t.Fatalf("Unsupported %s=%q, expected %q", SkipLocalEnvVar, skipLocalMode, SkipLocalWithChanged)
 	}
 	skipLocalWithChanged := skipLocalMode == SkipLocalWithChanged
 
@@ -657,16 +657,9 @@ func validateTestPhase(phase int) error {
 // skipLocalMode is the value of DATABRICKS_TEST_SKIPLOCAL read once at startup.
 // changedTests maps test dirs to extra env filters; nil map means feature is off.
 func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode string, changedTests map[string][]string) string {
-	switch skipLocalMode {
-	case SkipLocalAll:
-		if isTruePtr(config.Local) {
-			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalAll + " in " + configPath
-		}
-	case SkipLocalWithChanged:
-		if isTruePtr(config.Local) {
-			if _, ok := changedTests[dir]; !ok {
-				return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
-			}
+	if skipLocalMode == SkipLocalWithChanged {
+		if _, ok := changedTests[dir]; !ok {
+			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
 		}
 	}
 
@@ -721,11 +714,6 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID is empty)", configPath)
 		}
 
-	} else {
-		// Local run
-		if !isTruePtr(config.Local) {
-			return fmt.Sprintf("Disabled via Local setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
-		}
 	}
 
 	return ""

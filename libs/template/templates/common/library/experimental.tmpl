@@ -1,0 +1,15 @@
+{{- /*
+     * Temporary opt-in for recording deployment history; remove once it is the default.
+     *
+     * The flag is passed in rather than read from the record_deployment_history helper here,
+     * because this shared library is parsed for every template, including by callers that
+     * register no helpers.
+     */ -}}
+
+{{- define "experimental_record_deployment_history" -}}
+{{- if .}}
+
+experimental:
+  record_deployment_history: true
+{{- end}}
+{{- end}}

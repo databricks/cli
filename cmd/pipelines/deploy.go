@@ -38,7 +38,7 @@ func deployCommand() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			InitFunc: func(b *bundle.Bundle) {
-				b.Config.Bundle.Deployment.Lock.Force = forceLock
+				utils.SetForceLock(cmd, b, forceLock)
 				b.AutoApprove = autoApprove
 
 				if cmd.Flag("fail-on-active-runs").Changed {

@@ -13,7 +13,7 @@ trace cat telemetry.json | jq ' .entry.databricks_cli_log.bundle_deploy_event.ex
 # omit it from the engine-agnostic out.telemetry.txt below. Sizes are deterministic
 # for a fixed config and asserted exactly. state_file_size_bytes is dropped because
 # it is os.Stat of resources.json, whose header embeds the CLI version string
-# (0.0.0-dev+<sha> on linux/macos vs 0.0.0-dev on windows).
+# (<version>-dev+<sha> on linux/macos vs <version>-dev on windows).
 cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources_metadata | if . then del(.state_file_size_bytes) else . end' > out.resources_metadata.$DATABRICKS_BUNDLE_ENGINE.txt
 
 # The dry-run migration to the direct engine runs only after a terraform deploy,

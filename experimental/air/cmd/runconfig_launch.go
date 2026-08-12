@@ -26,14 +26,19 @@ func (c *runConfig) maxRetries() int {
 }
 
 // dockerImageURL returns the custom docker image URL, or "" when none is set.
-//
-// TODO: not wired into submission yet — the native ai_runtime_task carries no
-// docker field, and full support needs image registration (pending the DCS work).
 func (c *runConfig) dockerImageURL() string {
-	if c.Environment != nil && c.Environment.DockerImage != nil {
-		return c.Environment.DockerImage.URL
+	if img := c.dockerImage(); img != nil {
+		return img.URL
 	}
 	return ""
+}
+
+// dockerImage returns the environment.docker_image block, or nil when none is set.
+func (c *runConfig) dockerImage() *dockerImageConfig {
+	if c.Environment == nil {
+		return nil
+	}
+	return c.Environment.DockerImage
 }
 
 // requirementsFile returns the path to a requirements file when
