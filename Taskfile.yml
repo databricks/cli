@@ -759,7 +759,7 @@ tasks:
           --packages "./acceptance ./integration/..." \
           -- -parallel 4 -timeout=12h -short
 
-  integration-short-selection:
+  cloud-selection:
     desc: Run integration tests for PRs (skips CloudSlow and acceptance tests the PR does not touch)
     # The alias is the name the eng-dev-ecosystem CI job dispatches (cli-isolated-pr.yml
     # passes it as integration_task, and cli-isolated-tests.yml greps Taskfile.yml for it
