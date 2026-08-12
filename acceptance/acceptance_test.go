@@ -464,22 +464,20 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		testDirsSet[d] = true
 	}
 
-	skipLocalMode := os.Getenv(SkipLocalEnvVar)
 	subset := newSubsetSelector(t, testdiff.OverwriteMode, Forcerun)
 
-	switch skipLocalMode {
-	case "", SkipLocalWithChanged:
-	default:
-		t.Fatalf("Unsupported %s=%q, expected %q", SkipLocalEnvVar, skipLocalMode, SkipLocalWithChanged)
+	changedLimit := getSelectChangedLimit(t)
+	selectChanged := changedLimit > 0
+	if !selectChanged && subset.enabled {
+		changedLimit = subsetChangedLimit
 	}
-	skipLocalWithChanged := skipLocalMode == SkipLocalWithChanged
 
-	// changedTests maps test dir to extra env filters for added/modified tests; nil
-	// filters means all variants of that dir changed. Both SkipLocalWithChanged and the
-	// subset selector keep these tests, so detect them at most once here.
+	// changedTests maps test dir to extra env filters for changed tests; nil filters
+	// means all variants of that dir changed. Both SelectChangedEnvVar and the subset
+	// selector keep these tests, so detect them at most once here.
 	var changedTests map[string][]string
-	if skipLocalWithChanged || subset.enabled {
-		changedTests = selectChangedLocalTests(t, testDirsSet)
+	if changedLimit > 0 {
+		changedTests = selectChangedTests(t, testDirsSet, changedLimit)
 	}
 	subset.changed = changedTests
 
@@ -531,7 +529,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath, dir, skipLocalMode, changedTests)
+			skipReason := getSkipReason(&config, configPath, dir, selectChanged, changedTests)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -585,9 +583,9 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 						if runParallel {
 							t.Parallel()
 						}
-						// Under SkipLocalWithChanged, an invariant dir re-enabled by a
+						// Under SelectChangedEnvVar, an invariant dir re-enabled by a
 						// specific config change runs only its matching variants.
-						if skipLocalWithChanged {
+						if selectChanged {
 							if variantFilters := changedTests[dir]; variantFilters != nil {
 								checkEnvFilters(t, envset, variantFilters)
 							}
@@ -667,12 +665,12 @@ func validateTestPhase(phase int) error {
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
-// skipLocalMode is the value of DATABRICKS_TEST_SKIPLOCAL read once at startup.
+// selectChanged reports whether DATABRICKS_TEST_SELECT_CHANGED was set at startup.
 // changedTests maps test dirs to extra env filters; nil map means feature is off.
-func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode string, changedTests map[string][]string) string {
-	if skipLocalMode == SkipLocalWithChanged {
+func getSkipReason(config *internal.TestConfig, configPath, dir string, selectChanged bool, changedTests map[string][]string) string {
+	if selectChanged {
 		if _, ok := changedTests[dir]; !ok {
-			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
+			return "Not selected by " + SelectChangedEnvVar
 		}
 	}
 

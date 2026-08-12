@@ -762,12 +762,14 @@ tasks:
           --packages "./acceptance ./integration/..." \
           -- -parallel 4 -timeout=12h -short
 
+  # The name is referenced by the eng-dev-ecosystem workflows that dispatch it; renaming
+  # it here would silently fall back to integration-short (the full cloud suite).
   integration-short-skiplocal:
-    desc: Run integration tests for PRs (skips CloudSlow and tests with testserver coverage)
+    desc: Run integration tests for PRs (skips CloudSlow and acceptance tests the PR does not touch)
     deps: [install-pythons]
     cmds:
       - |
-        DATABRICKS_TEST_SKIPLOCAL=withchanged VERBOSE_TEST=1 \
+        DATABRICKS_TEST_SELECT_CHANGED=50 VERBOSE_TEST=1 \
         go run -modfile=tools/go.mod ./tools/testrunner/main.go \
           {{.GO_TOOL}} gotestsum \
           --format github-actions \

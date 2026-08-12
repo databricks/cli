@@ -2,26 +2,44 @@ package acceptance_test
 
 import (
 	"errors"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
 
-// Cloud PR runs set DATABRICKS_TEST_SKIPLOCAL=withchanged to skip acceptance
-// tests that already run locally, except those this branch touches.
+// Cloud PR runs set DATABRICKS_TEST_SELECT_CHANGED=N to run only the acceptance
+// tests this branch touches, at most N of them, instead of the full suite.
 const (
-	SkipLocalEnvVar = "DATABRICKS_TEST_SKIPLOCAL"
+	SelectChangedEnvVar = "DATABRICKS_TEST_SELECT_CHANGED"
 
-	SkipLocalWithChanged = "withchanged"
-
-	// Cap re-enabled tests so cloud PR runs stay bounded; prefer added over modified.
-	maxChangedLocalTests = 50
+	// Cap for runs that need change detection without setting the env var: the subset
+	// selector keeps changed tests on top of its hash-selected fraction, so a PR that
+	// edits hundreds of test dirs must not turn the subset cells back into a full run.
+	subsetChangedLimit = 50
 
 	invariantConfigsPrefix = "acceptance/bundle/invariant/configs/"
 	invariantDirPrefix     = "bundle/invariant/"
 )
+
+// getSelectChangedLimit returns the number of changed tests to select, or 0 when
+// DATABRICKS_TEST_SELECT_CHANGED is unset (feature off).
+func getSelectChangedLimit(t *testing.T) int {
+	raw := os.Getenv(SelectChangedEnvVar)
+	if raw == "" {
+		return 0
+	}
+
+	limit, err := strconv.Atoi(raw)
+	if err != nil || limit <= 0 {
+		t.Fatalf("Invalid %s=%q, expected a positive integer", SelectChangedEnvVar, raw)
+	}
+
+	return limit
+}
 
 // testDirForFile maps a repo-relative changed file (e.g. acceptance/bundle/foo/script)
 // to its owning test dir relative to acceptance/ (e.g. bundle/foo), or "" if the file
@@ -41,15 +59,10 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 	return ""
 }
 
-// selectChangedLocalTests returns a map of test dir → extra env filters for
-// re-enabling under SkipLocalWithChanged. A nil filter slice means all variants
-// of that dir run; a non-nil slice restricts to variants matching those filters
-// (applied by the caller via checkEnvFilters in the variant loop).
-// Added dirs come before modified ones; the total is capped at maxChangedLocalTests.
-//
-// A changed invariant config (acceptance/bundle/invariant/configs/*.yml.tmpl)
-// maps to all invariant subdirs with an INPUT_CONFIG= filter, so touching
-// job.yml.tmpl re-enables all subdirs but only for their job.yml.tmpl variants.
+// selectChangedTests returns a map of test dir → extra env filters for the tests this
+// branch changed. A nil filter slice means all variants of that dir run; a non-nil
+// slice restricts to variants matching those filters (applied by the caller via
+// checkEnvFilters in the variant loop).
 //
 // --merge-base diffs the working tree against the merge base of HEAD and
 // origin/main. This covers committed, staged, and unstaged changes alike —
@@ -58,7 +71,7 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 // committed. The three-dot form origin/main...HEAD only covers committed
 // changes and misses unstaged edits, which breaks the "touch a config, run
 // the test" local dev workflow (same reason lintdiff.py uses --merge-base).
-func selectChangedLocalTests(t *testing.T, testDirs map[string]bool) map[string][]string {
+func selectChangedTests(t *testing.T, testDirs map[string]bool, limit int) map[string][]string {
 	out, err := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main").Output()
 	if err != nil {
 		// A failed diff (most commonly a missing origin/main in a shallow CI
@@ -71,12 +84,38 @@ func selectChangedLocalTests(t *testing.T, testDirs map[string]bool) map[string]
 		}
 		t.Fatalf("git diff --merge-base origin/main failed: %v\n%s", err, stderr)
 	}
-	diff := strings.TrimSpace(string(out))
 
-	// result accumulates dirs with their filters; added tracks brand-new dirs.
+	changed, dropped := classifyChangedTests(strings.TrimSpace(string(out)), testDirs, limit)
+
+	// Log the outcome up front: which tests the diff picked, and how many the limit
+	// cut, so a CI run shows what it is about to cover without reading every skip line.
+	names := make([]string, 0, len(changed))
+	for dir, filters := range changed {
+		if filters != nil {
+			dir += "[" + strings.Join(filters, ",") + "]"
+		}
+		names = append(names, dir)
+	}
+	slices.Sort(names)
+	t.Logf("Selected %d changed tests (limit=%d, %d not selected): %s", len(names), limit, dropped, strings.Join(names, " "))
+
+	return changed
+}
+
+// classifyChangedTests maps `git diff --name-status` output to test dirs, keeping at
+// most limit of them: added dirs first, then modified ones, then moved ones. It also
+// returns how many changed dirs the limit dropped.
+//
+// A changed invariant config (acceptance/bundle/invariant/configs/*.yml.tmpl)
+// maps to all invariant subdirs with an INPUT_CONFIG= filter, so touching
+// job.yml.tmpl re-enables all subdirs but only for their job.yml.tmpl variants.
+func classifyChangedTests(diff string, testDirs map[string]bool, limit int) (map[string][]string, int) {
+	// result accumulates dirs with their filters; added and moved record how each dir
+	// itself changed, so the cap can prefer added over modified over moved.
 	// nil filter slice = all variants run; non-nil = restricted to those filters.
 	result := map[string][]string{}
 	added := map[string]bool{}
+	moved := map[string]bool{}
 
 	for line := range strings.SplitSeq(diff, "\n") {
 		fields := strings.Split(line, "\t")
@@ -120,32 +159,43 @@ func selectChangedLocalTests(t *testing.T, testDirs map[string]bool) map[string]
 			continue
 		}
 		result[dir] = nil // nil = all variants; overrides any prior config-scoped filter
-		// A script file with status A means the test dir is brand new.
-		// Renames (R) land here as the destination path but are not "added".
-		if status == "A" && strings.HasSuffix(path, "/script") {
-			added[dir] = true
+		// The status of a dir's script file says how the dir itself changed:
+		// A means brand new, R (Rnnn) means moved here from another path.
+		if strings.HasSuffix(path, "/script") {
+			switch {
+			case status == "A":
+				added[dir] = true
+			case strings.HasPrefix(status, "R"):
+				moved[dir] = true
+			}
 		}
 	}
 
-	var addedDirs, modifiedDirs []string
+	var addedDirs, modifiedDirs, movedDirs []string
 	for dir := range result {
-		if added[dir] {
+		switch {
+		case added[dir]:
 			addedDirs = append(addedDirs, dir)
-		} else {
+		case moved[dir]:
+			movedDirs = append(movedDirs, dir)
+		default:
 			modifiedDirs = append(modifiedDirs, dir)
 		}
 	}
 	slices.Sort(addedDirs)
 	slices.Sort(modifiedDirs)
+	slices.Sort(movedDirs)
 
-	selected := append(addedDirs, modifiedDirs...)
-	if len(selected) > maxChangedLocalTests {
-		selected = selected[:maxChangedLocalTests]
+	selected := slices.Concat(addedDirs, modifiedDirs, movedDirs)
+	dropped := 0
+	if len(selected) > limit {
+		dropped = len(selected) - limit
+		selected = selected[:limit]
 	}
 
-	out2 := make(map[string][]string, len(selected))
+	out := make(map[string][]string, len(selected))
 	for _, dir := range selected {
-		out2[dir] = result[dir]
+		out[dir] = result[dir]
 	}
-	return out2
+	return out, dropped
 }
