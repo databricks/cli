@@ -103,8 +103,8 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 
 		jsonOut := root.OutputType(cmd) == flags.OutputJSON
 
-		// Announce the experiment before uploading (text only; JSON stdout stays a
-		// clean envelope stream). Mirrors Python's "Submitting experiment: ..." line.
+		// Announce the experiment before uploading; skipped in JSON mode to keep
+		// stdout a clean envelope stream.
 		if !jsonOut {
 			cmdio.LogString(ctx, "Submitting experiment: "+cfg.ExperimentName)
 		}
@@ -129,8 +129,8 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 				cmdio.LogString(ctx, "\nTip: use --watch to stream logs until the run completes.")
 				return nil
 			}
-			// status mirrors Python's non-watch submit envelope ("PENDING"), not the
-			// --watch JSONL "SUBMITTED" event type below.
+			// PENDING is the submit status, distinct from the --watch JSONL
+			// SUBMITTED event type below.
 			return renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL})
 		}
 
@@ -157,7 +157,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 
 		// --json: emit SUBMITTED first (so a consumer sees the run id immediately),
 		// STATUS events on each lifecycle transition, and a closing terminal-status
-		// envelope after streaming. Mirrors the Python CLI's --watch JSONL contract.
+		// envelope after streaming.
 		out := cmd.OutOrStdout()
 		printSubmittedEvent(out, runIDStr, dashboardURL)
 		req.onStatusChange = func(current, previous string) {

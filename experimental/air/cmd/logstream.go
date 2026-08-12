@@ -27,26 +27,23 @@ const (
 	defaultCompletedRunTailLines = 10000
 	// seenRecordsCap bounds the dedup set, evicting oldest-inserted entries first.
 	seenRecordsCap = 100000
-	// statusMessageRefreshEveryNPolls throttles the server status_message fetch for
-	// the waiting spinner, so we don't issue a get-output on every poll tick
-	// (matches Python's STATUS_MESSAGE_REFRESH_EVERY_N_POLLS).
+	// statusMessageRefreshEveryNPolls throttles the status_message fetch so the
+	// waiting spinner doesn't issue a get-output on every poll tick.
 	statusMessageRefreshEveryNPolls = 5
 )
 
-// statusMessageType is the prefix ai_runtime uses to tag a client-facing message
-// packed into ai_runtime_task_output.status_message as "<TYPE>:<payload>"; the CLI
-// surfaces only STATUS-typed messages.
+// statusMessageType tags a client-facing message packed into
+// ai_runtime_task_output.status_message as "<TYPE>:<payload>"; only STATUS-typed
+// messages are surfaced.
 const statusMessageType = "STATUS"
 
-// waitingForComputeStatus is the fallback shown while a native-PENDING run waits
-// for accelerator compute, matching the Python CLI (run_parsing.py
-// WAITING_FOR_COMPUTE_STATUS).
+// waitingForComputeStatus is the fallback shown while a PENDING run waits for
+// accelerator compute.
 const waitingForComputeStatus = "Waiting for accelerator compute capacity to become available..."
 
 // normalizeStatusMessage returns the payload of a "STATUS:<payload>" message,
-// normalized for display as an ongoing status (trailing "." stripped, "..."
-// progress suffix appended), or "" for a message of any other type or an
-// empty/absent one. Mirrors Python's extract_status_message (run_parsing.py).
+// normalized for display (trailing "." stripped, "..." suffix added), or "" for
+// any other type or an empty/absent message.
 func normalizeStatusMessage(raw string) string {
 	messageType, payload, ok := strings.Cut(raw, ":")
 	if !ok || !strings.EqualFold(strings.TrimSpace(messageType), statusMessageType) {
@@ -242,10 +239,9 @@ type bricklensStreamer struct {
 	statusTaskRunID int64
 }
 
-// waitingSpinnerText returns the text for the waiting spinner: the server-set
-// STATUS message if present, else the compute-capacity message for a native
-// PENDING run, else the default "waiting for run to start". Mirrors Python's
-// _waiting_status_text (log_streaming.py).
+// waitingSpinnerText returns the waiting-spinner text: the server-set STATUS
+// message if present, else the compute-capacity message for a PENDING run, else
+// the default "waiting for run to start".
 func (st *bricklensStreamer) waitingSpinnerText() string {
 	if msg := st.serverStatusMessage(); msg != "" {
 		return msg
