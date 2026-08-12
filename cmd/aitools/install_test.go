@@ -236,6 +236,85 @@ func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
 	require.Error(t, executePlan(ctx, nil, planExplicit, installer.InstallOptions{Scope: installer.ScopeGlobal}))
 }
 
+func TestExecutePlanRestoresMissingMarketplace(t *testing.T) {
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+
+	origInstall := installPluginForAgentFn
+	origRestore := restoreMarketplaceForAgentFn
+	origPrompt := promptMarketplaceRestore
+	origRecord := recordPluginInstallsFn
+	origCleanup := cleanupLegacyFn
+	t.Cleanup(func() {
+		installPluginForAgentFn = origInstall
+		restoreMarketplaceForAgentFn = origRestore
+		promptMarketplaceRestore = origPrompt
+		recordPluginInstallsFn = origRecord
+		cleanupLegacyFn = origCleanup
+	})
+
+	installCalls := 0
+	installPluginForAgentFn = func(
+		_ context.Context,
+		a *agents.Agent,
+		scope string,
+		_ string,
+	) (installer.PluginRecord, error) {
+		installCalls++
+		if installCalls == 1 {
+			return installer.PluginRecord{}, &installer.BlockedError{
+				Agent:  a.Name,
+				Reason: installer.ReasonMarketplaceNotConfigured,
+			}
+		}
+		return installer.PluginRecord{
+			Marketplace: "claude-plugins-official",
+			Plugin:      "databricks",
+			Scope:       scope,
+			Version:     "0.2.6",
+		}, nil
+	}
+
+	promptCalled := false
+	promptMarketplaceRestore = func(*agents.Agent) (bool, error) {
+		promptCalled = true
+		return true, nil
+	}
+
+	restoreCalled := false
+	restoreMarketplaceForAgentFn = func(context.Context, *agents.Agent) error {
+		restoreCalled = true
+		return nil
+	}
+
+	recordPluginInstallsFn = func(
+		context.Context,
+		string,
+		map[string]installer.PluginRecord,
+		string,
+	) error {
+		return nil
+	}
+	cleanupLegacyFn = func(context.Context, *agents.Agent, string) error {
+		return nil
+	}
+
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	plan := buildPlan([]*agents.Agent{claude}, installer.ScopeGlobal, false, true)
+
+	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer test.Done()
+	go drainReader(test.Stdout)
+	go drainReader(test.Stderr)
+
+	require.NoError(
+		t,
+		executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}),
+	)
+	assert.True(t, promptCalled)
+	assert.True(t, restoreCalled)
+	assert.Equal(t, 2, installCalls)
+}
+
 // --- RunE: skills-only path (config-dir detection, no plugin) ---
 
 func TestInstallSkillsOnlyAllAgents(t *testing.T) {

@@ -17,12 +17,14 @@ import (
 // Package-level seams for testability. Tests override these via helpers in
 // install_test.go.
 var (
-	promptAgentSelection     = defaultPromptAgentSelection
-	promptProceed            = defaultPromptProceed
-	installSkillsForAgentsFn = installer.InstallSkillsForAgents
-	installPluginForAgentFn  = installer.InstallPluginForAgent
-	recordPluginInstallsFn   = installer.RecordPluginInstalls
-	cleanupLegacyFn          = installer.RemoveLegacyRawSkills
+	promptAgentSelection         = defaultPromptAgentSelection
+	promptProceed                = defaultPromptProceed
+	installSkillsForAgentsFn     = installer.InstallSkillsForAgents
+	installPluginForAgentFn      = installer.InstallPluginForAgent
+	recordPluginInstallsFn       = installer.RecordPluginInstalls
+	cleanupLegacyFn              = installer.RemoveLegacyRawSkills
+	promptMarketplaceRestore     = defaultPromptMarketplaceRestore
+	restoreMarketplaceForAgentFn = installer.RestoreMarketplaceForAgent
 )
 
 // delivery is how the databricks tools are delivered to one agent.
@@ -282,6 +284,18 @@ func defaultPromptProceed() (bool, error) {
 	return proceed, nil
 }
 
+func defaultPromptMarketplaceRestore(agent *agents.Agent) (bool, error) {
+	restore := true
+	err := huh.NewConfirm().
+		Title(agent.DisplayName + "'s required plugin marketplace is not configured. Add it now?").
+		Value(&restore).
+		Run()
+	if err != nil {
+		return false, err
+	}
+	return restore, nil
+}
+
 func defaultPromptAgentSelection(_ context.Context, choices []agentChoice) ([]*agents.Agent, error) {
 	options := make([]huh.Option[string], 0, len(choices))
 	byName := make(map[string]*agents.Agent, len(choices))
@@ -405,6 +419,23 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 		for _, it := range pluginItems {
 			cmdio.LogString(ctx, fmt.Sprintf("Installing databricks plugin for %s...", it.agent.DisplayName))
 			rec, err := installPluginForAgentFn(ctx, it.agent, it.scope, ref)
+			if err != nil {
+				if blockedErr, ok := errors.AsType[*installer.BlockedError](err); ok &&
+					blockedErr.Reason == installer.ReasonMarketplaceNotConfigured &&
+					cmdio.IsPromptSupported(ctx) {
+					restore, promptErr := promptMarketplaceRestore(it.agent)
+					if promptErr != nil {
+						return promptErr
+					}
+					if restore {
+						if restoreErr := restoreMarketplaceForAgentFn(ctx, it.agent); restoreErr != nil {
+							err = restoreErr
+						} else {
+							rec, err = installPluginForAgentFn(ctx, it.agent, it.scope, ref)
+						}
+					}
+				}
+			}
 			if err != nil {
 				cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %v", it.agent.DisplayName, err)))
 				if it.explicit {

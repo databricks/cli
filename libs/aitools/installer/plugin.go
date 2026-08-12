@@ -19,6 +19,7 @@ import (
 var lookPath = exec.LookPath
 
 const (
+	claudeOfficialMarketplaceSource = "anthropics/claude-plugins-official"
 	// pluginProbeTimeout bounds the `<agent> plugin --help` capability check.
 	pluginProbeTimeout = 5 * time.Second
 	// pluginCmdTimeout bounds an install/update/uninstall command, which may
@@ -46,6 +47,8 @@ const (
 	// ReasonNoPlugin: the agent has no installable plugin. Callers filter these
 	// out; it is guarded here to avoid a nil dereference.
 	ReasonNoPlugin = "no-plugin"
+	// ReasonMarketplaceNotConfigured: the agent's built-in marketplace is missing.
+	ReasonMarketplaceNotConfigured = "marketplace-not-configured"
 )
 
 func (e *BlockedError) Error() string {
@@ -228,6 +231,32 @@ func probePluginCLI(ctx context.Context, agent *agents.Agent) (string, error) {
 	return bin, nil
 }
 
+// RestoreMarketplaceForAgent restores Claude Code's official marketplace when
+// it has been removed from the local configuration.
+func RestoreMarketplaceForAgent(ctx context.Context, agent *agents.Agent) error {
+	if agent.Name != agents.NameClaudeCode {
+		return fmt.Errorf("marketplace restoration is not supported for %s", agent.DisplayName)
+	}
+
+	bin, err := probePluginCLI(ctx, agent)
+	if err != nil {
+		return err
+	}
+
+	if _, err := runAgentCmd(
+		ctx,
+		pluginCmdTimeout,
+		[]string{bin, "plugin", "marketplace", "add", claudeOfficialMarketplaceSource},
+	); err != nil {
+		return &BlockedError{
+			Agent:  agent.Name,
+			Reason: ReasonInstallFailed,
+			Detail: stderrOf(err),
+		}
+	}
+	return nil
+}
+
 // InstallPluginForAgent registers the databricks marketplace and installs the
 // plugin through the agent's own CLI, returning the record to persist in state.
 // It never falls back to skills: a blocked install returns a *BlockedError.
@@ -250,6 +279,16 @@ func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope
 	// An empty Source marks a built-in marketplace (e.g. Claude's
 	// claude-plugins-official): it is already registered, so we never add or
 	// de-register it.
+	//
+	// Claude Code allows users to remove its built-in marketplace, so verify that
+	// it is still registered before attempting the plugin installation.
+	if agent.Plugin.Source == "" && !marketplaceRegistered(ctx, bin, agent.Plugin.Marketplace) {
+		return PluginRecord{}, &BlockedError{
+			Agent:  agent.Name,
+			Reason: ReasonMarketplaceNotConfigured,
+			Detail: fmt.Sprintf("marketplace %q is not configured", agent.Plugin.Marketplace),
+		}
+	}
 	installedMarketplace := false
 	if agent.Plugin.Source != "" {
 		alreadyPresent := marketplaceRegistered(ctx, bin, agent.Plugin.Marketplace)
