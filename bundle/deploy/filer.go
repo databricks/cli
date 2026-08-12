@@ -8,7 +8,6 @@ import (
 	"io/fs"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/auth"
@@ -50,7 +49,10 @@ func (s stateFiler) Read(ctx context.Context, path string) (io.ReadCloser, error
 	}
 
 	var buf bytes.Buffer
-	urlPath := "/api/2.0/workspace-files/" + url.PathEscape(strings.TrimLeft(absPath, "/"))
+	// Read via the raw apiClient.Do (not the SDK's Workspace.Download) so
+	// auth.WorkspaceIDHeaders can drop the CLI-only "none" workspace-id sentinel
+	// that Download would send literally. See PR #6149 for the write-path equivalent.
+	urlPath := "/api/2.0/workspace/export?path=" + url.QueryEscape(absPath) + "&direct_download=true"
 	err = s.apiClient.Do(ctx, http.MethodGet, urlPath, auth.WorkspaceIDHeaders(s.apiClient.Config), nil, nil, &buf)
 	if err != nil {
 		return nil, err
@@ -72,10 +74,8 @@ func (s stateFiler) Write(ctx context.Context, path string, reader io.Reader, mo
 }
 
 // StateFiler returns a filer.Filer that can be used to read/write state files.
-// We use a custom workspace filer which uses workspace-files API to read state files.
-// This API has a higher than 10 MB limits and allows to export large state files.
-// We don't use the same API for read because it doesn't correct get the file content for notebooks and returns
-// "File Not Found" error instead.
+// Reads use the streaming /workspace/export API, which is officially supported,
+// scoped, and streams state files well beyond the 10 MB JSON export limit.
 func StateFiler(ctx context.Context, b *bundle.Bundle) (filer.Filer, error) {
 	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
