@@ -158,70 +158,49 @@ func TestGooseConfigDir(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
-	t.Setenv("APPDATA", "")
 
-	t.Run("GOOSE_PATH_ROOT override wins and appends config", func(t *testing.T) {
-		root := t.TempDir()
-		t.Setenv("GOOSE_PATH_ROOT", root)
-		dir, err := gooseConfigDir(ctx)
-		require.NoError(t, err)
-		assert.Equal(t, filepath.Join(root, "config"), dir)
-	})
+	absRoot := t.TempDir()
+	absXDG := t.TempDir()
+	absAppData := t.TempDir()
+	// Windows resolves under %APPDATA%, falling back to %USERPROFILE%\AppData\Roaming.
+	winDefault := filepath.Join(home, "AppData", "Roaming", "Block", "goose", "config")
 
-	t.Run("relative GOOSE_PATH_ROOT is ignored", func(t *testing.T) {
-		// Goose only honors an absolute path root; a relative value falls through.
-		t.Setenv("GOOSE_PATH_ROOT", "relative/root")
-		t.Setenv("XDG_CONFIG_HOME", "")
-		dir, err := gooseConfigDir(ctx)
-		require.NoError(t, err)
-		if runtime.GOOS == "windows" {
-			assert.Equal(t, filepath.Join(home, "AppData", "Roaming", "Block", "goose", "config"), dir)
-		} else {
-			assert.Equal(t, filepath.Join(home, ".config", "goose"), dir)
-		}
-	})
-
-	t.Setenv("GOOSE_PATH_ROOT", "")
-
-	if runtime.GOOS == "windows" {
-		t.Run("honors APPDATA", func(t *testing.T) {
-			appData := t.TempDir()
-			t.Setenv("APPDATA", appData)
-			dir, err := gooseConfigDir(ctx)
-			require.NoError(t, err)
-			assert.Equal(t, filepath.Join(appData, "Block", "goose", "config"), dir)
-		})
-
-		t.Run("defaults to USERPROFILE when APPDATA is unset", func(t *testing.T) {
-			t.Setenv("APPDATA", "")
-			dir, err := gooseConfigDir(ctx)
-			require.NoError(t, err)
-			assert.Equal(t, filepath.Join(home, "AppData", "Roaming", "Block", "goose", "config"), dir)
-		})
-		return
+	// onlyOn restricts a case to one platform: "windows", "unix" (any non-Windows),
+	// or "" for every platform. Goose only honors an absolute path override.
+	tests := []struct {
+		name      string
+		onlyOn    string
+		gooseRoot string
+		xdg       string
+		appData   string
+		want      string
+	}{
+		{name: "absolute GOOSE_PATH_ROOT wins", gooseRoot: absRoot, want: filepath.Join(absRoot, "config")},
+		{name: "relative GOOSE_PATH_ROOT ignored, unix", onlyOn: "unix", gooseRoot: "relative/root", want: filepath.Join(home, ".config", "goose")},
+		{name: "relative GOOSE_PATH_ROOT ignored, windows", onlyOn: "windows", gooseRoot: "relative/root", want: winDefault},
+		{name: "honors XDG_CONFIG_HOME", onlyOn: "unix", xdg: absXDG, want: filepath.Join(absXDG, "goose")},
+		{name: "ignores relative XDG_CONFIG_HOME", onlyOn: "unix", xdg: "relative/config", want: filepath.Join(home, ".config", "goose")},
+		{name: "defaults to ~/.config when XDG unset", onlyOn: "unix", want: filepath.Join(home, ".config", "goose")},
+		{name: "honors APPDATA", onlyOn: "windows", appData: absAppData, want: filepath.Join(absAppData, "Block", "goose", "config")},
+		{name: "defaults to USERPROFILE when APPDATA unset", onlyOn: "windows", want: winDefault},
 	}
 
-	t.Run("honors XDG_CONFIG_HOME", func(t *testing.T) {
-		xdg := t.TempDir()
-		t.Setenv("XDG_CONFIG_HOME", xdg)
-		dir, err := gooseConfigDir(ctx)
-		require.NoError(t, err)
-		assert.Equal(t, filepath.Join(xdg, "goose"), dir)
-	})
-
-	t.Run("ignores relative XDG_CONFIG_HOME", func(t *testing.T) {
-		t.Setenv("XDG_CONFIG_HOME", "relative/config")
-		dir, err := gooseConfigDir(ctx)
-		require.NoError(t, err)
-		assert.Equal(t, filepath.Join(home, ".config", "goose"), dir)
-	})
-
-	t.Run("defaults to ~/.config when XDG is unset", func(t *testing.T) {
-		t.Setenv("XDG_CONFIG_HOME", "")
-		dir, err := gooseConfigDir(ctx)
-		require.NoError(t, err)
-		assert.Equal(t, filepath.Join(home, ".config", "goose"), dir)
-	})
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.onlyOn == "windows" && runtime.GOOS != "windows" {
+				t.Skip("Windows-only path")
+			}
+			if tc.onlyOn == "unix" && runtime.GOOS == "windows" {
+				t.Skip("non-Windows path")
+			}
+			t.Setenv("GOOSE_PATH_ROOT", tc.gooseRoot)
+			t.Setenv("XDG_CONFIG_HOME", tc.xdg)
+			t.Setenv("APPDATA", tc.appData)
+			dir, err := gooseConfigDir(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, dir)
+		})
+	}
 }
 
 func TestGeminiConfigDir(t *testing.T) {
