@@ -1,0 +1,1 @@
+When migrating a bundle to the direct deployment engine, resources that only the direct engine supports (e.g. instance pools, catalogs) are now ignored during the migrating deploy instead of failing it. They are created by the next deploy, which runs on the migrated state.

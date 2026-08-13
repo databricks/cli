@@ -1,0 +1,63 @@
+
+=== Deploy with terraform (instance_pools is commented out; terraform cannot deploy it)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Add a direct-only resource to the config without deploying it
+>>> update_file.py databricks.yml #instance_pools instance_pools
+
+=== Deploying on terraform rejects it, which is what sends the user to migrate
+>>> musterr [CLI] bundle deploy
+Error: Instance Pool resources are only supported with direct deployment mode
+  in databricks.yml:7:19
+
+Instance Pool resources require direct deployment mode. Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' or set 'bundle.engine: direct' in your databricks.yml to use instance_pool resources.
+Learn more at https://docs.databricks.com/dev-tools/bundles/direct
+
+
+=== Migration ignores the direct-only resource; it will be created on the next deploy
+>>> [CLI] bundle deployment migrate
+Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
+
+Validate the migration by running "databricks bundle plan", there should be no actions planned.
+
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
+
+To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/default/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate
+
+
+=== After migration: plan shows the direct-only resource as "to add"
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+create instance_pools.pool
+
+Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Deploy creates it; verify via recorded requests
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //instance-pools/create
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/instance-pools/create",
+  "body": {
+    "idle_instance_autotermination_minutes": 60,
+    "instance_pool_name": "My Pool",
+    "node_type_id": "Standard_DS3_v2"
+  }
+}
+
+=== No further actions planned
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
