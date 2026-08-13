@@ -1,0 +1,26 @@
+# A git repository: all metadata resolves, from the root and from a subdirectory.
+git-repo-init
+git remote add origin https://github.com/databricks/cli.test
+mkdir -p a/b/c
+
+title "from the worktree root\n"
+trace $CLI bundle debug fetch-repository-info --output json
+
+title "from a subdirectory (resolves to the same worktree root)\n"
+trace $CLI bundle debug fetch-repository-info --path a/b/c --output json
+
+rm -fr .git
+
+# Not a git repository: every field is empty and it is not an error.
+title "outside a git repository\n"
+trace $CLI bundle debug fetch-repository-info --path a/b/c --output json
+
+title "a path that does not exist\n"
+trace $CLI bundle debug fetch-repository-info --path does-not-exist --output json
+
+# A .git that is a file rather than a directory: the worktree root is still
+# found, but no metadata can be read from it.
+title "a broken .git\n"
+touch .git
+trace $CLI bundle debug fetch-repository-info --path a/b/c --output json
+rm -f .git

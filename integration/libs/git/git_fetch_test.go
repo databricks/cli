@@ -1,10 +1,7 @@
 package git_test
 
 import (
-	"os"
-	"os/exec"
 	"path"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -103,73 +100,4 @@ func TestFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 			assertEmptyGitInfo(t, info)
 		})
 	}
-}
-
-func TestFetchRepositoryInfoDotGit_FromGitRepo(t *testing.T) {
-	ctx, wt := acc.WorkspaceTest(t)
-
-	repo := cloneRepoLocally(t, examplesRepoUrl)
-
-	for _, tc := range []struct {
-		name  string
-		input string
-	}{
-		{"subdir", filepath.Join(repo, "knowledge_base/dashboard_nyc_taxi")},
-		{"root", repo},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			info, err := git.FetchRepositoryInfo(ctx, tc.input, wt.W)
-			assert.NoError(t, err)
-			assertFullGitInfo(t, repo, info)
-		})
-	}
-}
-
-func cloneRepoLocally(t *testing.T, repoUrl string) string {
-	tempDir := t.TempDir()
-	localRoot := filepath.Join(tempDir, "repo")
-
-	cmd := exec.Command("git", "clone", "--depth=1", examplesRepoUrl, localRoot)
-	err := cmd.Run()
-	require.NoError(t, err)
-	return localRoot
-}
-
-func TestFetchRepositoryInfoDotGit_FromNonGitRepo(t *testing.T) {
-	ctx, wt := acc.WorkspaceTest(t)
-
-	tempDir := t.TempDir()
-	root := filepath.Join(tempDir, "repo")
-	require.NoError(t, os.MkdirAll(filepath.Join(root, "a/b/c"), 0o700))
-
-	tests := []struct {
-		name  string
-		input string
-	}{
-		{"subdir", filepath.Join(root, "a/b/c")},
-		{"root", root},
-		{"non-existent", filepath.Join(root, "/non-existent")},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			info, err := git.FetchRepositoryInfo(ctx, test.input, wt.W)
-			assert.NoError(t, err)
-			assertEmptyGitInfo(t, info)
-		})
-	}
-}
-
-func TestFetchRepositoryInfoDotGit_FromBrokenGitRepo(t *testing.T) {
-	ctx, wt := acc.WorkspaceTest(t)
-
-	tempDir := t.TempDir()
-	root := filepath.Join(tempDir, "repo")
-	path := filepath.Join(root, "a/b/c")
-	require.NoError(t, os.MkdirAll(path, 0o700))
-	require.NoError(t, os.WriteFile(filepath.Join(root, ".git"), []byte(""), 0o000))
-
-	info, err := git.FetchRepositoryInfo(ctx, path, wt.W)
-	assert.NoError(t, err)
-	assertSparseGitInfo(t, root, info)
 }

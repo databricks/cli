@@ -1,0 +1,47 @@
+
+=== from the worktree root
+
+>>> [CLI] bundle debug fetch-repository-info --output json
+{
+  "worktree_root": "[TEST_TMP_DIR]",
+  "current_branch": "main",
+  "latest_commit": "[COMMIT_SHA]",
+  "origin_url": "https://github.com/databricks/cli.test"
+}
+=== from a subdirectory (resolves to the same worktree root)
+
+>>> [CLI] bundle debug fetch-repository-info --path a/b/c --output json
+{
+  "worktree_root": "[TEST_TMP_DIR]",
+  "current_branch": "main",
+  "latest_commit": "[COMMIT_SHA]",
+  "origin_url": "https://github.com/databricks/cli.test"
+}
+=== outside a git repository
+
+>>> [CLI] bundle debug fetch-repository-info --path a/b/c --output json
+{
+  "worktree_root": "",
+  "current_branch": "",
+  "latest_commit": "",
+  "origin_url": ""
+}
+=== a path that does not exist
+
+>>> [CLI] bundle debug fetch-repository-info --path does-not-exist --output json
+{
+  "worktree_root": "",
+  "current_branch": "",
+  "latest_commit": "",
+  "origin_url": ""
+}
+=== a broken .git
+
+>>> [CLI] bundle debug fetch-repository-info --path a/b/c --output json
+Warn: failed to read .git: expected "[TEST_TMP_DIR]/.git" to contain a line with "gitdir: [...]"
+{
+  "worktree_root": "[TEST_TMP_DIR]",
+  "current_branch": "",
+  "latest_commit": "",
+  "origin_url": ""
+}

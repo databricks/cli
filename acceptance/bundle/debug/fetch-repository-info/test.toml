@@ -1,0 +1,6 @@
+Cloud = true
+
+# The commit is created by the test, so its sha differs on every run.
+[[Repls]]
+Old = '\b[0-9a-f]{40}\b'
+New = '[COMMIT_SHA]'
