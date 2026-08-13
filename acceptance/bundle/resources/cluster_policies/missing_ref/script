@@ -1,0 +1,2 @@
+title "Plan fails: job references an undeclared cluster policy"
+musterr $CLI bundle plan &> out.plan.txt

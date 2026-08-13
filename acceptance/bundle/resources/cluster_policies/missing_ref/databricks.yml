@@ -1,0 +1,14 @@
+bundle:
+  name: cluster_policy_missing_ref
+
+resources:
+  jobs:
+    j:
+      name: my_job
+      tasks:
+        - task_key: main
+          new_cluster:
+            # References a cluster policy that is not declared in this bundle.
+            policy_id: ${resources.cluster_policies.missing.id}
+            spark_version: 13.3.x-scala2.12
+            num_workers: 1
