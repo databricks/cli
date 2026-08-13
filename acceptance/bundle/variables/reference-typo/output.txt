@@ -1,5 +1,7 @@
 
->>> errcode [CLI] bundle validate
+=== Typo of a defined variable: single suggestion
+
+>>> [CLI] bundle validate
 Error: reference does not exist: ${var.hst}, did you mean "host"?
 
 Name: reference-typo
@@ -10,4 +12,41 @@ Workspace:
 
 Found 1 error
 
-Exit code: 1
+=== Typo close to two defined variables: multiple suggestions
+
+>>> [CLI] bundle validate
+Error: reference does not exist: ${var.hst}, did you mean one of: "host", "hosts"?
+
+Name: reference-typo-multiple
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-multiple/default
+
+Found 1 error
+
+=== Typo in a non-variable reference (workspace field): multiple suggestions
+
+>>> [CLI] bundle validate
+Error: reference does not exist: ${workspace.stot_path}, did you mean one of: "root_path", "state_path"?
+
+Name: reference-typo-non-var-multiple
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-non-var-multiple/default
+
+Found 1 error
+
+=== Multiple typos in one value: only the first reference is reported
+
+>>> [CLI] bundle validate
+Error: reference does not exist: ${var.hst}, did you mean "host"?
+
+Name: reference-typo-first-of-many
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-first-of-many/default
+
+Found 1 error

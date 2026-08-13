@@ -1,1 +1,11 @@
-trace errcode $CLI bundle validate
+title "Typo of a defined variable: single suggestion\n"
+withdir single musterr trace $CLI bundle validate
+
+title "Typo close to two defined variables: multiple suggestions\n"
+withdir multiple musterr trace $CLI bundle validate
+
+title "Typo in a non-variable reference (workspace field): multiple suggestions\n"
+withdir non-var-multiple musterr trace $CLI bundle validate
+
+title "Multiple typos in one value: only the first reference is reported\n"
+withdir first-of-many musterr trace $CLI bundle validate
