@@ -21,7 +21,7 @@
     "wouldWrite": "[TEST_TMP_DIR]/pyproject.toml",
     "wouldBackup": "[TEST_TMP_DIR]/pyproject.toml.bak",
     "wouldInstallPython": "3.12",
-    "diff": "--- pyproject.toml\n+++ pyproject.toml.new\n@@ -1,9 +1,17 @@\n [project]\n name = \"demo\"\n-requires-python = \"\u003e=3.10\"\n+requires-python = \"\u003e=3.12\"\n dependencies = [\"pyarrow==21.0.0\"]\n \n [dependency-groups]\n-dev = [\"databricks-connect~=16.0.0\", {include-group = \"spark\"}]\n+dev = [\"databricks-connect~=17.2.0\", {include-group = \"spark\"}]\n spark = [\"databricks-connect==15.0.0\"]\n qa = [\"pandas==4.0.0\"]\n+\n+# managed by databricks environments setup-local — do not edit\n+[tool.uv]\n+constraint-dependencies = [\n+    \"pyarrow\u003c19\",\n+    \"pandas\u003c3\",\n+]\n+# end managed by databricks environments setup-local\n"
+    "diff": "--- pyproject.toml\n+++ pyproject.toml.new\n@@ -1,9 +1,17 @@\n [project]\n name = \"demo\"\n-requires-python = \"\u003e=3.10\"\n+requires-python = \"\u003e=3.12\"\n dependencies = [\"pyarrow==21.0.0\"]\n \n [dependency-groups]\n-dev = [\"databricks-connect~=16.0.0\", {include-group = \"spark\"}]\n-spark = [\"databricks-connect==15.0.0\"]\n+dev = [\"databricks-connect~=17.2.0\", {include-group = \"spark\"}]\n+spark = []\n qa = [\"pandas==4.0.0\"]\n+\n+# managed by databricks environments setup-local — do not edit\n+[tool.uv]\n+constraint-dependencies = [\n+    \"pyarrow\u003c19\",\n+    \"pandas\u003c3\",\n+]\n+# end managed by databricks environments setup-local\n"
   },
   "phases": [
     {
@@ -59,8 +59,8 @@
       "message": "databricks-connect \"databricks-connect~=16.0.0\" is replaced by the environment's \"databricks-connect~=17.2.0\""
     },
     {
-      "code": "W_DBCONNECT_PIN_DUPLICATED",
-      "message": "databricks-connect \"databricks-connect==15.0.0\" is not rewritten by the merge; the environment's \"databricks-connect~=17.2.0\" sits in \"dev\" alongside it, and no version satisfies both"
+      "code": "W_DBCONNECT_CONSOLIDATED",
+      "message": "databricks-connect \"databricks-connect==15.0.0\" in [dependency-groups].spark conflicts with the environment's \"databricks-connect~=17.2.0\" and is removed; it is managed in \"dev\""
     },
     {
       "code": "W_USER_CONSTRAINT_CONFLICT",

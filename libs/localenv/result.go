@@ -242,14 +242,21 @@ const (
 	// WarnDBConnectPinOverridden: the user's databricks-connect pin sits directly in
 	// the dev group and is replaced by the managed value.
 	WarnDBConnectPinOverridden = "W_DBCONNECT_PIN_OVERRIDDEN"
+	// WarnDBConnectConsolidated: a databricks-connect pin the user had outside the
+	// managed dev entry — in [project].dependencies, an optional-dependency extra, or
+	// another dependency group — was disjoint from the environment's version and is
+	// removed, so what remains resolves. Only conflicting pins are removed; a pin that
+	// co-resolves, carries no version, or is marker-gated is left in place. Emitted once
+	// per removed pin. Informational: the merge makes the project resolvable.
+	WarnDBConnectConsolidated = "W_DBCONNECT_CONSOLIDATED"
 	// WarnDBConnectPinDuplicated: a databricks-connect pin of the user's is one the
-	// merge does not rewrite — reached through a PEP 735 include-group, a second pin
-	// in the dev array, or a group key that normalizes to "dev" without matching the
-	// literal key the merge edits — so the managed pin lands in the dev group
-	// alongside it. Unlike an override this leaves two pins for one package and uv
-	// cannot resolve it, a distinct and worse outcome that needs a manual fix, so it
-	// carries its own code. It can accompany an override and persists across re-runs
-	// for as long as the retained pin does.
+	// merge can neither rewrite nor remove — a spelling the line-based passes do not
+	// reach (a single-quoted element, a pin under a quoted TOML key, or an inline-table
+	// or dotted sub-table form) — so the managed pin lands in the dev group alongside
+	// it. Unlike an override this leaves two pins for one package and, where their
+	// ranges are disjoint, uv cannot resolve it — a distinct and worse outcome that
+	// needs a manual fix, so it carries its own code. It can accompany an override or a
+	// consolidation and persists across re-runs for as long as the survivor does.
 	WarnDBConnectPinDuplicated = "W_DBCONNECT_PIN_DUPLICATED"
 	// WarnUserConstraintConflict: a user dependency pins a package that the env's
 	// constraint-dependencies also constrains, to a provably non-overlapping version
