@@ -149,8 +149,8 @@ func TestAgentChoicesOnlyOffersActionableAgents(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 
 	// Project scope: agents that support project-scoped skills are offered (Claude
-	// via plugin; Pi/Gemini via skills). User-only plugin agents and global-only
-	// files agents are not.
+	// via plugin; Pi/Gemini/Goose via skills). User-only plugin agents and
+	// global-only files agents are not.
 	choices := agentChoices(ctx, installer.ScopeProject, false)
 	var names []string
 	for _, c := range choices {
@@ -159,6 +159,7 @@ func TestAgentChoicesOnlyOffersActionableAgents(t *testing.T) {
 	assert.Contains(t, names, agents.NameClaudeCode)
 	assert.Contains(t, names, agents.NamePi)
 	assert.Contains(t, names, agents.NameGemini)
+	assert.Contains(t, names, agents.NameGoose)
 	assert.NotContains(t, names, agents.NameCursor)
 	assert.NotContains(t, names, agents.NameCodex)
 	assert.NotContains(t, names, agents.NameOpenCode)
