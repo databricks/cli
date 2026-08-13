@@ -155,9 +155,6 @@ jobs:
       - name: Run tests
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
-          # Pinned to a frozen version: only v1.0.0 has a CMVP certificate, and
-          # "latest" tracks the in-tree source.
-          GOFIPS140: v1.0.0
           # On pull requests, run only a subset of acceptance subtests on the slower
           # windows/macOS cells so neither lands on the critical path to merge. An
           # empty percentage disables subsetting, so Linux PRs and push-to-main run
