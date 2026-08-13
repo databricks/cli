@@ -6,26 +6,14 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Add a direct-only resource and opt in to the direct engine via config
+=== Add a direct-only resource to the config
 >>> update_file.py databricks.yml #instance_pools instance_pools
 
->>> update_file.py databricks.yml name: test-bundle name: test-bundle
-  engine: direct
-
-=== Plan ignores the direct-only resource, since this run still uses terraform
->>> [CLI] bundle plan
+=== Opt in via env var only: deploy migrates the state, ignoring the direct-only resource
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Warn: Direct engine requested in DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
 Warning: ignoring instance_pool resources in this deploy
-  in databricks.yml:6:19
-
-Instance Pool resources are only supported by the direct deployment engine, but the existing state uses terraform. They will be created by the next deploy, after the state is migrated to the direct engine.
-
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
-
-=== Deploy migrates the state, ignoring the direct-only resource
->>> [CLI] bundle deploy
-Warn: Direct engine requested in bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
-Warning: ignoring instance_pool resources in this deploy
-  in databricks.yml:6:19
+  in databricks.yml:5:19
 
 Instance Pool resources are only supported by the direct deployment engine, but the existing state uses terraform. They will be created by the next deploy, after the state is migrated to the direct engine.
 
@@ -33,11 +21,11 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-Migrating state to direct deployment engine (opted in via bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11)...
+Migrating state to direct deployment engine (opted in via DATABRICKS_BUNDLE_ENGINE environment variable)...
 Migrated 1 resource to direct deployment engine.
 
 >>> print_migration_telemetry
-direct_migrated_via_config true
+direct_migrated_via_env true
 
 === The direct-only resource is created on the next deploy
 >>> [CLI] bundle plan

@@ -12,7 +12,7 @@ Deployment complete!
 === Deploying on terraform rejects it, which is what sends the user to migrate
 >>> musterr [CLI] bundle deploy
 Error: Instance Pool resources are only supported with direct deployment mode
-  in databricks.yml:7:19
+  in databricks.yml:5:19
 
 Instance Pool resources require direct deployment mode. Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' or set 'bundle.engine: direct' in your databricks.yml to use instance_pool resources.
 Learn more at https://docs.databricks.com/dev-tools/bundles/direct
