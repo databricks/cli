@@ -141,6 +141,11 @@ func TestInprocessMode(t *testing.T) {
 	if os.Getenv("CLOUD_ENV") != "" {
 		t.Skip("No need to run this as integration test.")
 	}
+	if os.Getenv(SelectChangedEnvVar) != "" {
+		// The two selftests below only run if this branch changed them, so the
+		// assertions on the returned count do not hold under test selection.
+		t.Skip("Disabled via " + SelectChangedEnvVar)
+	}
 
 	// Uncomment to load  ~/.databricks/debug-env.json to debug integration tests
 	// testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
@@ -445,24 +450,32 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		testDirsSet[d] = true
 	}
 
-	skipLocalMode := os.Getenv(SkipLocalEnvVar)
 	subset := newSubsetSelector(t, testdiff.OverwriteMode, Forcerun)
 
-	switch skipLocalMode {
-	case "", SkipLocalWithChanged:
-	default:
-		t.Fatalf("Unsupported %s=%q, expected %q", SkipLocalEnvVar, skipLocalMode, SkipLocalWithChanged)
+	changedLimit := getSelectChangedLimit(t)
+	selectChanged := changedLimit > 0
+	if !selectChanged && subset.enabled {
+		changedLimit = subsetChangedLimit
 	}
-	skipLocalWithChanged := skipLocalMode == SkipLocalWithChanged
 
-	// changedTests maps test dir to extra env filters for added/modified tests; nil
-	// filters means all variants of that dir changed. Both SkipLocalWithChanged and the
-	// subset selector keep these tests, so detect them at most once here.
+	// changedTests maps test dir to extra env filters for changed tests; nil filters
+	// means all variants of that dir changed. Both SelectChangedEnvVar and the subset
+	// selector keep these tests, so detect them at most once here.
 	var changedTests map[string][]string
-	if skipLocalWithChanged || subset.enabled {
-		changedTests = selectChangedLocalTests(t, testDirsSet)
+	if changedLimit > 0 {
+		changedTests = selectChangedTests(t, testDirsSet, changedLimit)
 	}
 	subset.changed = changedTests
+
+	// Drop the tests that were not selected instead of skipping them per dir: a skip
+	// per dir buries the run in a thousand SKIP lines and hides the selection summary.
+	// Their out.test.toml is left alone, which is what a partial run should do.
+	if selectChanged {
+		testDirs = slices.DeleteFunc(testDirs, func(dir string) bool {
+			_, ok := changedTests[dir]
+			return !ok
+		})
+	}
 
 	if singleTest != "" {
 		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
@@ -518,7 +531,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath, dir, skipLocalMode, changedTests)
+			skipReason := getSkipReason(&config, configPath)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -572,9 +585,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if runParallel {
 							t.Parallel()
 						}
-						// Under SkipLocalWithChanged, an invariant dir re-enabled by a
+						// Under SelectChangedEnvVar, an invariant dir re-enabled by a
 						// specific config change runs only its matching variants.
-						if skipLocalWithChanged {
+						if selectChanged {
 							if variantFilters := changedTests[dir]; variantFilters != nil {
 								checkEnvFilters(t, envset, variantFilters)
 							}
@@ -654,15 +667,7 @@ func validateTestPhase(phase int) error {
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
-// skipLocalMode is the value of DATABRICKS_TEST_SKIPLOCAL read once at startup.
-// changedTests maps test dirs to extra env filters; nil map means feature is off.
-func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode string, changedTests map[string][]string) string {
-	if skipLocalMode == SkipLocalWithChanged {
-		if _, ok := changedTests[dir]; !ok {
-			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
-		}
-	}
-
+func getSkipReason(config *internal.TestConfig, configPath string) string {
 	if Forcerun {
 		return ""
 	}
