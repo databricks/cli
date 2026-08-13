@@ -11,7 +11,7 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.0/policies/clusters/create",
   "body": {
-    "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+    "definition": "{\n  \"spark_version\": {\n    \"type\": \"fixed\",\n    \"value\": \"13.3.x-scala2.12\"\n  }\n}",
     "name": "my_policy"
   }
 }
@@ -59,7 +59,7 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.0/policies/clusters/edit",
   "body": {
-    "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+    "definition": "{\n  \"spark_version\": {\n    \"type\": \"fixed\",\n    \"value\": \"13.3.x-scala2.12\"\n  }\n}",
     "name": "my_policy_2",
     "policy_id": "[POL_ID]"
   }

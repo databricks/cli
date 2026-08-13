@@ -5,4 +5,10 @@ resources:
   cluster_policies:
     pol:
       name: shared_lookup_policy
-      definition: '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'
+      definition: |-
+        {
+          "spark_version": {
+            "type": "fixed",
+            "value": "13.3.x-scala2.12"
+          }
+        }
