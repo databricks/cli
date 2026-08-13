@@ -1,0 +1,34 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "pol": {
+    "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+    "name": "my_policy"
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_definition_yaml/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Native YAML definition serializes to the compact JSON string the API receives
+>>> print_requests.py //policies/clusters
+{
+  "method": "POST",
+  "path": "/api/2.0/policies/clusters/create",
+  "body": {
+    "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+    "name": "my_policy"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.pol
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster_policy_definition_yaml/default
+
+Deleting files...
+Destroy complete!

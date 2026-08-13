@@ -1,0 +1,9 @@
+trace $CLI bundle validate -o json | jq ".resources.cluster_policies"
+
+trace $CLI bundle deploy
+
+title "Native YAML definition serializes to the compact JSON string the API receives"
+trace print_requests.py //policies/clusters
+
+trace $CLI bundle destroy --auto-approve
+rm out.requests.txt
