@@ -1,0 +1,34 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "pol": {
+    "definition": "{\n  \"spark_version\": {\n    \"type\": \"fixed\",\n    \"value\": \"13.3.x-scala2.12\"\n  }\n}",
+    "name": "my_policy"
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_definition_multiline/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Create body preserves the block-scalar definition as a newline-escaped string
+>>> print_requests.py //policies/clusters
+{
+  "method": "POST",
+  "path": "/api/2.0/policies/clusters/create",
+  "body": {
+    "definition": "{\n  \"spark_version\": {\n    \"type\": \"fixed\",\n    \"value\": \"13.3.x-scala2.12\"\n  }\n}",
+    "name": "my_policy"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.pol
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster_policy_definition_multiline/default
+
+Deleting files...
+Destroy complete!
