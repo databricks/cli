@@ -29,6 +29,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/databricks/cli/acceptance/internal"
+	"github.com/databricks/cli/acceptance/internal/selection"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
@@ -89,7 +90,7 @@ func init() {
 }
 
 const (
-	EntryPointScript = "script"
+	EntryPointScript = selection.EntryPointScript
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
 	MaxFileSize      = 1_000_000
@@ -142,10 +143,10 @@ func TestInprocessMode(t *testing.T) {
 	if os.Getenv("CLOUD_ENV") != "" {
 		t.Skip("No need to run this as integration test.")
 	}
-	if os.Getenv(SelectChangedEnvVar) != "" {
+	if os.Getenv(selection.EnvVar) != "" {
 		// The two selftests below only run if this branch changed them, so the
 		// assertions on the returned count do not hold under test selection.
-		t.Skip("Disabled via " + SelectChangedEnvVar)
+		t.Skip("Disabled via " + selection.EnvVar)
 	}
 
 	// Uncomment to load  ~/.databricks/debug-env.json to debug integration tests
@@ -471,18 +472,24 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 
 	subset := newSubsetSelector(t, testdiff.OverwriteMode, Forcerun)
 
-	changedLimit := getSelectChangedLimit(t)
+	changedLimit, err := selection.ParseLimit(os.Getenv(selection.EnvVar))
+	require.NoError(t, err)
 	selectChanged := changedLimit > 0
 	if !selectChanged && subset.enabled {
 		changedLimit = subsetChangedLimit
 	}
 
 	// changedTests maps test dir to extra env filters for changed tests; nil filters
-	// means all variants of that dir changed. Both SelectChangedEnvVar and the subset
+	// means all variants of that dir changed. Both selection.EnvVar and the subset
 	// selector keep these tests, so detect them at most once here.
 	var changedTests map[string][]string
 	if changedLimit > 0 {
-		changedTests = selectChangedTests(t, testDirsSet, changedLimit)
+		// A failed selection (e.g. no origin/main in a shallow checkout) must fail the
+		// run: treating it as "nothing changed" would silently skip new tests.
+		result, err := selection.FromGit(testDirsSet, changedLimit)
+		require.NoError(t, err)
+		t.Log(result.Summary())
+		changedTests = result.Tests
 	}
 	subset.changed = changedTests
 
@@ -598,7 +605,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 						if runParallel {
 							t.Parallel()
 						}
-						// Under SelectChangedEnvVar, an invariant dir re-enabled by a
+						// Under selection.EnvVar, an invariant dir re-enabled by a
 						// specific config change runs only its matching variants.
 						if selectChanged {
 							if variantFilters := changedTests[dir]; variantFilters != nil {
@@ -651,23 +658,9 @@ func getEnvFilters(t *testing.T) []string {
 }
 
 func getTests(t *testing.T) []string {
-	testDirs := make([]string, 0, 128)
-
-	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		name := filepath.Base(path)
-		if name == EntryPointScript {
-			// Presence of 'script' marks a test case in this directory
-			testName := filepath.ToSlash(filepath.Dir(path))
-			testDirs = append(testDirs, testName)
-		}
-		return nil
-	})
+	// Tests are discovered relative to the acceptance dir, which is the working directory.
+	testDirs, err := selection.FindTestDirs(".")
 	require.NoError(t, err)
-
-	slices.Sort(testDirs)
 	return testDirs
 }
 

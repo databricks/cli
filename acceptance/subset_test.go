@@ -23,6 +23,12 @@ const (
 	// a new commit reshuffles the subset while a retry of the same commit repeats it.
 	// If unset, a random seed is generated and logged so the run can be reproduced.
 	SubsetSeedEnvVar = "TESTS_SELECT_SUBSET_SEED"
+
+	// subsetChangedLimit caps how many changed tests the subset selector keeps on top of
+	// its hash-selected fraction. Unlike selection.EnvVar it carries no count of its own,
+	// and a PR that edits hundreds of test dirs must not turn the subset cells back into
+	// a full run.
+	subsetChangedLimit = 50
 )
 
 // subsetSelector decides, per subtest, whether it runs under TESTS_SELECT_SUBSET_PCT.
