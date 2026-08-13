@@ -35,38 +35,90 @@ func newSuggestMapping(keys ...string) Mapping {
 }
 
 func TestSuggestKeys(t *testing.T) {
-	// Keys within distance 2 are returned ordered by increasing distance;
-	// ties keep the map's insertion order.
-	m := newSuggestMapping("host", "hosts", "token", "auth_type")
-	assert.Equal(t, []string{"host", "hosts"}, suggestKeys(m, "host"))
-
-	// No key is close enough.
-	assert.Empty(t, suggestKeys(m, "completely_different"))
-
-	// Distance-2 substitutions and insertions are both included.
-	m = newSuggestMapping("profile", "prfile", "prof")
-	assert.Equal(t, []string{"prfile", "profile"}, suggestKeys(m, "prfil"))
-
-	// Empty map yields no suggestions.
-	assert.Empty(t, suggestKeys(NewMapping(), "anything"))
+	tests := []struct {
+		name string
+		keys []string
+		typo string
+		want []string
+	}{
+		{
+			// Keys within distance 2 are returned ordered by increasing
+			// distance; ties keep the map's insertion order.
+			name: "ordered by distance",
+			keys: []string{"host", "hosts", "token", "auth_type"},
+			typo: "host",
+			want: []string{"host", "hosts"},
+		},
+		{
+			name: "no key close enough",
+			keys: []string{"host", "hosts", "token", "auth_type"},
+			typo: "completely_different",
+			want: []string{},
+		},
+		{
+			// Distance-2 substitutions and insertions are both included.
+			name: "distance two included",
+			keys: []string{"profile", "prfile", "prof"},
+			typo: "prfil",
+			want: []string{"prfile", "profile"},
+		},
+		{
+			name: "empty map",
+			keys: nil,
+			typo: "anything",
+			want: []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, suggestKeys(newSuggestMapping(tt.keys...), tt.typo))
+		})
+	}
 }
 
 func TestDidYouMean(t *testing.T) {
-	assert.Empty(t, didYouMean(nil))
-	assert.Empty(t, didYouMean([]string{}))
-	assert.Equal(t, `, did you mean "host"?`, didYouMean([]string{"host"}))
-	assert.Equal(t, `, did you mean one of: "host", "hosts"?`, didYouMean([]string{"host", "hosts"}))
+	tests := []struct {
+		name        string
+		suggestions []string
+		want        string
+	}{
+		{"nil", nil, ""},
+		{"empty", []string{}, ""},
+		{"single", []string{"host"}, `, did you mean "host"?`},
+		{"multiple", []string{"host", "hosts"}, `, did you mean one of: "host", "hosts"?`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, didYouMean(tt.suggestions))
+		})
+	}
 }
 
 func TestDidYouMeanSuffix(t *testing.T) {
-	// A noSuchKeyError with suggestions produces the clause.
-	err := noSuchKeyError{p: NewPath(Key("hst")), suggestions: []string{"host"}}
-	assert.Equal(t, `, did you mean "host"?`, DidYouMeanSuffix(err))
-
-	// A noSuchKeyError without suggestions produces nothing.
-	err = noSuchKeyError{p: NewPath(Key("xyz"))}
-	assert.Empty(t, DidYouMeanSuffix(err))
-
-	// Any other error type produces nothing.
-	assert.Empty(t, DidYouMeanSuffix(errors.New("some other error")))
+	tests := []struct {
+		name string
+		err  error
+		want string
+	}{
+		{
+			name: "no such key with suggestions",
+			err:  noSuchKeyError{p: NewPath(Key("hst")), suggestions: []string{"host"}},
+			want: `, did you mean "host"?`,
+		},
+		{
+			name: "no such key without suggestions",
+			err:  noSuchKeyError{p: NewPath(Key("xyz"))},
+			want: "",
+		},
+		{
+			name: "other error type",
+			err:  errors.New("some other error"),
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, DidYouMeanSuffix(tt.err))
+		})
+	}
 }
