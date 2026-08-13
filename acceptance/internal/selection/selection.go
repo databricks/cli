@@ -187,37 +187,48 @@ type changedDir struct {
 	// config change from narrowing the dir back down to one config.
 	allVariants bool
 
-	// added is set when the dir's script is new, moved when the script arrived as a
-	// rename, and fixture when any file the test is made of changed (that is, anything
-	// but the generated out* files). A dir with no fixture change is one whose golden
+	// newDir is set when the dir's script is new, so the whole test is new, and moved when
+	// the script arrived as a rename, so the test only changed location. The two are
+	// exclusive: a script is either added or renamed.
+	newDir bool
+	moved  bool
+
+	// fixture is set when a file the test is made of changed, generated when a file the
+	// test produces changed (out*). A dir with only generated changes is one whose golden
 	// output was regenerated.
-	added   bool
-	moved   bool
-	fixture bool
+	fixture   bool
+	generated bool
 }
 
-// The cap takes the highest scoring dirs. An added test is the most likely to be broken; a
-// moved one only changed location. A dir where nothing but the golden output changed scores
-// negative: that usually follows a change elsewhere in the tree and lands on hundreds of
-// dirs at once, which would otherwise fill the quota with tests this branch never edited.
+// The cap takes the highest scoring dirs, and the scores add up, so a dir that changed in
+// several ways outranks one that changed in a single way. A new test is the most likely to
+// be broken, while a dir where nothing but the golden output changed scores lowest: that
+// usually follows a change elsewhere in the tree and lands on hundreds of dirs at once,
+// which would otherwise fill the quota with tests this branch never edited.
 const (
-	scoreAdd       = 10
+	scoreNewDir    = 5
 	scoreChange    = 5
-	scoreMoved     = 2
-	scoreGenerated = -1
+	scoreGenerated = 1
+	scoreMoved     = 1
 )
 
 func (d *changedDir) score() int {
-	switch {
-	case d.added:
-		return scoreAdd
-	case d.moved:
-		return scoreMoved
-	case d.fixture:
-		return scoreChange
-	default:
-		return scoreGenerated
+	score := 0
+	if d.newDir {
+		score += scoreNewDir
 	}
+	if d.moved {
+		// The files of a moved dir all arrive as renames. Moving a test does not change
+		// what it does, so those renames do not also count as changes.
+		return score + scoreMoved
+	}
+	if d.fixture {
+		score += scoreChange
+	}
+	if d.generated {
+		score += scoreGenerated
+	}
+	return score
 }
 
 // changedDirs maps a test dir, relative to acceptance/, to how it changed.
@@ -308,14 +319,16 @@ func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
 		d := dirs.get(dir)
 		d.allVariants = true
 		d.filters = nil
-		if !isGeneratedFile(path, dir) {
+		if isGeneratedFile(path, dir) {
+			d.generated = true
+		} else {
 			d.fixture = true
 		}
 		// The status of the dir's script says how the dir itself changed.
 		if strings.HasSuffix(path, "/script") {
 			switch {
 			case status == "A":
-				d.added = true
+				d.newDir = true
 			case strings.HasPrefix(status, "R"):
 				d.moved = true
 			}
