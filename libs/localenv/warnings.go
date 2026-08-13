@@ -18,8 +18,9 @@ import (
 var depSpecRe = regexp.MustCompile(`^([A-Za-z0-9._-]+)\s*(.*)$`)
 
 // singleClauseRe parses one version clause: an operator and a dotted numeric
-// release. Pre/post/dev suffixes and wildcards are not modeled — a clause we
-// cannot parse this simply is treated as "unknown" and never yields a conflict.
+// release. A trailing "==X.Y.*" prefix wildcard is modeled by parseClause; pre/post/dev
+// suffixes are not — a clause we cannot parse this simply is treated as "unknown" and
+// never yields a conflict.
 var singleClauseRe = regexp.MustCompile(`^(>=|<=|==|~=|!=|<|>)?\s*([0-9]+(?:\.[0-9]+)*)`)
 
 // splitDepSpec returns the normalized package name and the version specifier

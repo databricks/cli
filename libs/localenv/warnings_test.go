@@ -199,8 +199,8 @@ dev = [{include-group = "my-spark-group"}]
 `)
 	assert.Equal(t, []string{WarnDBConnectPinDuplicated}, codes(detectWarnings(quotedKey, c)))
 
-	// A stray pin that already matches the env needs no reconciliation: it is removed
-	// as a pure duplicate, with no warning.
+	// A stray pin that already matches the env is not disjoint from it, so the gate
+	// leaves it in place and there is nothing to warn about.
 	matching := []byte(`[project]
 requires-python = "==3.12.*"
 

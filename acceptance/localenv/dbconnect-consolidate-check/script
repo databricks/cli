@@ -1,8 +1,8 @@
-# databricks-connect is fully owned by setup-local: a stray pin in
-# [project].dependencies, an optional-dependency extra, or another dependency group
-# would make uv unsatisfiable, so the merge removes them all and manages the single
-# pin in [dependency-groups].dev. The JSON diff shows every stray removed and one
-# W_DBCONNECT_CONSOLIDATED warning per removed pin, in resolution order.
+# Every stray databricks-connect pin here is disjoint from the managed version, so it
+# would make uv unsatisfiable and is removed — from [project].dependencies, an
+# optional-dependency extra, and another dependency group — leaving the single managed
+# pin in [dependency-groups].dev. The JSON diff shows each stray removed, with one
+# W_DBCONNECT_CONSOLIDATED warning per removed pin (in document order).
 cat > pyproject.toml <<'PY'
 [project]
 name = "demo"
