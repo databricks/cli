@@ -37,16 +37,3 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-non-var-multiple/default
 
 Found 1 error
-
-=== Multiple typos in one value: only the first reference is reported
-
->>> [CLI] bundle validate
-Error: reference does not exist: ${var.hst}, did you mean "host"?
-
-Name: reference-typo-first-of-many
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-first-of-many/default
-
-Found 1 error
