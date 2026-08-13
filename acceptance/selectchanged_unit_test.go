@@ -72,6 +72,18 @@ func TestClassifyChangedTestsFixtureBeatsOutputInSameDir(t *testing.T) {
 	assert.Equal(t, 1, dropped)
 }
 
+func TestClassifyChangedTestsNestedFixture(t *testing.T) {
+	// "out" is matched against the path relative to the test dir, so a file in a
+	// subdirectory is a fixture even when its own name starts with "out".
+	diff := diffLines(
+		"M\tacceptance/bundle/modified/subdir/outer.py",
+		"M\tacceptance/bundle/regenerated/output.txt",
+	)
+	changed, dropped := classifyChangedTests(diff, changedTestDirs, 1)
+	assert.Equal(t, map[string][]string{"bundle/modified": nil}, changed)
+	assert.Equal(t, 1, dropped)
+}
+
 func TestClassifyChangedTestsInvariantConfigRanksAsFixture(t *testing.T) {
 	// The invariant config is the fixture its dirs are generated from, so it outranks
 	// a dir whose output was regenerated.
