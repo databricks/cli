@@ -9,22 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// approvedFIPSModule is the frozen Go Cryptographic Module version that has
-// completed CMVP validation. GOFIPS140=latest also enables FIPS mode, but tracks
-// the in-tree source and moves with every Go release, so it leaves no fixed
-// artifact to cite; only a frozen version is accepted here.
 const approvedFIPSModule = "v1.0.0"
 
-// TestCLIBuiltWithFIPSModule asserts that the binary the acceptance suite just
-// exercised really was built against the validated module.
-//
-// Without this, the FIPS CI job would still pass if GOFIPS140 silently stopped
-// reaching the compiler -- the suite would run happily against an ordinary
-// build and report that FIPS "works". The setting is only observable in the
-// binary's own build info, so read it back from there.
-//
-// Skipped unless GOFIPS140 is set, so the default build is unaffected.
+// TestCLIBuiltWithFIPSModule asserts that the CLI was built against the validated
+// cryptographic module. Without it, CI would still pass if GOFIPS140 stopped reaching
+// the compiler: the suite would run against an ordinary build and report that FIPS works.
 func TestCLIBuiltWithFIPSModule(t *testing.T) {
+	// Required: the integration suite runs this package too (task integration passes
+	// ./acceptance), and it runs from eng-dev-ecosystem, which does not set GOFIPS140.
 	if os.Getenv("GOFIPS140") == "" {
 		t.Skip("not a FIPS build")
 	}
@@ -43,8 +35,6 @@ func TestCLIBuiltWithFIPSModule(t *testing.T) {
 	require.Contains(t, buildInfo, "GOFIPS140="+approvedFIPSModule,
 		"binary was not built against the approved FIPS module")
 
-	// GOFIPS140 links the module and defaults FIPS mode on. Both matter: a binary
-	// that links the module but leaves the mode off behaves like a plain build.
 	require.Contains(t, buildInfo, "DefaultGODEBUG=fips140=on",
 		"FIPS module is linked but FIPS mode is not enabled by default")
 

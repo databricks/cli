@@ -155,14 +155,8 @@ jobs:
       - name: Run tests
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
-          # Go picks its cryptographic module at build time, so which module a binary
-          # uses is a property of the build and not of the code. Released binaries are
-          # built with this same value, so testing without it would exercise a
-          # configuration we do not ship. Setting it here rather than in a separate job
-          # covers every OS in the matrix, which matters because the module's integrity
-          # self-check is written by object-format specific linker code (ELF, Mach-O,
-          # PE) and carries per-platform assembly. Pinned to a frozen version: only
-          # v1.0.0 has a CMVP certificate, and "latest" tracks the in-tree source.
+          # Pinned to a frozen version: only v1.0.0 has a CMVP certificate, and
+          # "latest" tracks the in-tree source.
           GOFIPS140: v1.0.0
           # On pull requests, run only a subset of acceptance subtests on the slower
           # windows/macOS cells so neither lands on the critical path to merge. An
