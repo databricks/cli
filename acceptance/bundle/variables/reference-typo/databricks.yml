@@ -3,7 +3,7 @@ bundle:
 
 variables:
   host:
-    default: https://example.com
+    default: https://example.test
 
 resources:
   jobs:
