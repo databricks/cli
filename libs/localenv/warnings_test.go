@@ -72,6 +72,52 @@ dev = ["databricks-connect~=16.1.0"]
 	assert.Empty(t, detectWarnings(user, c))
 }
 
+func TestDetectMergeWarningsStaleEnvironmentVersionOnClusterTarget(t *testing.T) {
+	// A cluster target (c.EnvironmentVersion == "") that finds a leftover serverless
+	// environment_version warns that the value is now stale.
+	user := []byte(`[project]
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = ["databricks-connect~=18.0.0"]
+
+[tool.databricks.environment]
+environment_version = "5"
+`)
+	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: "databricks-connect~=18.0.0", EnvironmentVersion: ""}
+	got := detectWarnings(user, c)
+	assert.Equal(t, []string{WarnStaleEnvironmentVersion}, codes(got))
+	assert.Contains(t, got[0].Message, `"5"`)
+}
+
+func TestDetectMergeWarningsNoStaleWarningForServerlessTarget(t *testing.T) {
+	// A serverless target manages the section (refreshes it), so an existing value
+	// is not stale and must not warn.
+	user := []byte(`[project]
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = ["databricks-connect~=18.0.0"]
+
+[tool.databricks.environment]
+environment_version = "4"
+`)
+	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: "databricks-connect~=18.0.0", EnvironmentVersion: "5"}
+	assert.NotContains(t, codes(detectWarnings(user, c)), WarnStaleEnvironmentVersion)
+}
+
+func TestDetectMergeWarningsNoStaleWarningWhenSectionAbsent(t *testing.T) {
+	// A cluster target with no existing section has nothing to go stale.
+	user := []byte(`[project]
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = ["databricks-connect~=18.0.0"]
+`)
+	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: "databricks-connect~=18.0.0", EnvironmentVersion: ""}
+	assert.NotContains(t, codes(detectWarnings(user, c)), WarnStaleEnvironmentVersion)
+}
+
 func TestDetectMergeWarningsUserConstraintConflict(t *testing.T) {
 	user := []byte(`[project]
 requires-python = "==3.12.*"

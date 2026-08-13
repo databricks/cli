@@ -480,6 +480,10 @@ func TestPipelineGreenfieldCreatesNewPyproject(t *testing.T) {
 	data, readErr := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
 	require.NoError(t, readErr)
 	assert.Contains(t, string(data), `"databricks-connect~=17.2.0",`)
+	// A serverless target records the environment version so the same project
+	// also runs in serverless Jobs (DECO-27998).
+	assert.Contains(t, string(data), "[tool.databricks.environment]")
+	assert.Contains(t, string(data), `environment_version = "4"`)
 	// No backup created when pyproject.toml did not previously exist.
 	assert.NoFileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 }

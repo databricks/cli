@@ -77,6 +77,17 @@ type userPyprojectTOML struct {
 	// Every group is decoded, not just dev: uv locks all declared groups, so a pin in
 	// any of them is subject to constraint-dependencies (see resolutionRequirements).
 	DependencyGroups map[string]any `toml:"dependency-groups"`
+	// Tool.Databricks.Environment.EnvironmentVersion is the serverless version the
+	// merge manages; it is read here only to warn when it is left stale on a cluster
+	// target. A non-string value here is malformed and, like any decode error, yields
+	// no warnings rather than a crash.
+	Tool struct {
+		Databricks struct {
+			Environment struct {
+				EnvironmentVersion string `toml:"environment_version"`
+			} `toml:"environment"`
+		} `toml:"databricks"`
+	} `toml:"tool"`
 }
 
 // devGroup is the dependency group whose databricks-connect pin the merge manages.
@@ -198,6 +209,19 @@ func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan
 	}
 
 	warnings = append(warnings, constraintConflicts(survivors, c.ConstraintDeps)...)
+
+	// A cluster target leaves c.EnvironmentVersion empty and does not manage the
+	// serverless environment section, so an environment_version left over from an
+	// earlier serverless run is neither refreshed nor removed. Warn that it is now
+	// stale rather than let it silently misdescribe the target to a downstream reader.
+	if c.EnvironmentVersion == "" {
+		if ev := strings.TrimSpace(p.Tool.Databricks.Environment.EnvironmentVersion); ev != "" {
+			warnings = append(warnings, Warning{
+				Code:    WarnStaleEnvironmentVersion,
+				Message: fmt.Sprintf("[tool.databricks.environment] environment_version %q is left from a serverless target but the current target is a cluster; it is not updated", ev),
+			})
+		}
+	}
 	return warnings
 }
 

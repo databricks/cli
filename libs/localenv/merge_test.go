@@ -452,10 +452,152 @@ func TestRenderFreshPyproject(t *testing.T) {
 	assert.Contains(t, s, managedMarkerStart)
 	assert.Contains(t, s, managedMarkerEnd)
 	assert.Contains(t, s, "pydantic~=2.10.6")
+	// A cluster target (no EnvironmentVersion) writes no [tool.databricks.environment].
+	assert.NotContains(t, s, "[tool.databricks.environment]")
 	// A fresh render is itself a no-op under MergeManaged (already fully managed).
 	merged, _, err := MergeManaged(out, testConstraints())
 	require.NoError(t, err)
 	assert.Equal(t, s, string(merged))
+}
+
+func TestRenderFreshPyprojectServerlessWritesEnvironment(t *testing.T) {
+	c := testConstraints()
+	c.EnvironmentVersion = "5"
+	out := RenderFreshPyproject("demo", c)
+	s := string(out)
+	assert.Contains(t, s, "[tool.databricks.environment]")
+	assert.Contains(t, s, `environment_version = "5"`)
+	requireValidTOML(t, out)
+	// A fresh render is itself a no-op under MergeManaged (already fully managed).
+	merged, _, err := MergeManaged(out, c)
+	require.NoError(t, err)
+	assert.Equal(t, s, string(merged))
+}
+
+func TestMergeInsertsDatabricksEnvironmentWhenAbsent(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`)
+	c := testConstraints()
+	c.EnvironmentVersion = "5"
+	out, regions, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, "[tool.databricks.environment]")
+	assert.Contains(t, s, `environment_version = "5"`)
+	assert.Contains(t, regions, regionDatabricksEnvironment)
+	requireValidTOML(t, out)
+	// Idempotent.
+	twice, _, err := MergeManaged(out, c)
+	require.NoError(t, err)
+	assert.Equal(t, s, string(twice))
+}
+
+func TestMergeReplacesExistingEnvironmentVersionPreservingComment(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.databricks.environment]
+environment_version = "4"  # pinned
+`)
+	c := testConstraints()
+	c.EnvironmentVersion = "5"
+	out, regions, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `environment_version = "5"  # pinned`)
+	assert.NotContains(t, s, `environment_version = "4"`)
+	assert.Contains(t, regions, regionDatabricksEnvironment)
+	// The table is refreshed in place, not duplicated.
+	assert.Equal(t, 1, countOccurrences(s, "[tool.databricks.environment]"))
+	requireValidTOML(t, out)
+}
+
+func TestMergeInsertsEnvironmentVersionKeyWhenTableExists(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.databricks.environment]
+# user note
+`)
+	c := testConstraints()
+	c.EnvironmentVersion = "5"
+	out, _, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `environment_version = "5"`)
+	assert.Contains(t, s, "# user note")
+	assert.Equal(t, 1, countOccurrences(s, "[tool.databricks.environment]"))
+	requireValidTOML(t, out)
+}
+
+func TestMergeEnvironmentNoopForClusterTarget(t *testing.T) {
+	// A cluster target leaves EnvironmentVersion empty: the section is never
+	// written, and an existing one is left untouched rather than removed.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.databricks.environment]
+environment_version = "4"
+`)
+	c := testConstraints() // EnvironmentVersion == "": cluster target.
+	out, regions, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	assert.Contains(t, string(out), `environment_version = "4"`)
+	assert.NotContains(t, regions, regionDatabricksEnvironment)
+}
+
+func TestMergeAddsEnvironmentToPreFeatureManagedFile(t *testing.T) {
+	// The common upgrade path: a file a pre-feature CLI wrote for a serverless
+	// target already carries the managed [tool.uv] marker block but no
+	// [tool.databricks.environment] section. Re-running the new CLI must add the
+	// section, keep exactly one managed block, and stay idempotent.
+	in := []byte(`[project]
+name = "demo"
+version = "0.0.0"
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = [
+    "databricks-connect~=17.2.0",
+]
+
+` + managedMarkerStart + `
+[tool.uv]
+constraint-dependencies = [
+    "pydantic~=2.10.6",
+    "anyio~=4.6.2",
+]
+` + managedMarkerEnd + `
+`)
+	c := testConstraints()
+	c.EnvironmentVersion = "5"
+	out, regions, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, "[tool.databricks.environment]")
+	assert.Contains(t, s, `environment_version = "5"`)
+	assert.Contains(t, regions, regionDatabricksEnvironment)
+	// The pre-existing managed [tool.uv] block is neither duplicated nor disturbed.
+	assert.Equal(t, 1, countOccurrences(s, managedMarkerStart))
+	assert.Equal(t, 1, countOccurrences(s, "[tool.databricks.environment]"))
+	requireValidTOML(t, out)
+	// Idempotent on the upgraded file.
+	twice, _, err := MergeManaged(out, c)
+	require.NoError(t, err)
+	assert.Equal(t, s, string(twice))
 }
 
 func TestMergeStripsMultiLineConstraintDepsWithBracketInFirstElement(t *testing.T) {

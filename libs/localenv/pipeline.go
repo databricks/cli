@@ -205,8 +205,10 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 
 	// Phase: merge — compute the merged pyproject.toml (in-memory, no writes yet).
+	// The serverless environment version (empty for cluster targets) is written
+	// into [tool.databricks.environment] so the project also runs in serverless Jobs.
 	p.report(ctx, PhaseMerge)
-	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, dbcPin)
+	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, dbcPin, compute.ServerlessEnvironmentVersion())
 	if err != nil {
 		return err
 	}
@@ -277,8 +279,9 @@ func (p *Pipeline) backupPath() string {
 // mergePlan computes the merged pyproject.toml bytes (without writing to disk),
 // decides greenfield vs. existing, and builds the Plan (populated only under
 // --dry-run). dbcPin is the databricks-connect pin to inject, or "" in
-// constraints-only mode.
-func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, dbcPin string) (merged []byte, greenfield bool, err error) {
+// constraints-only mode. envVersion is the serverless environment version to
+// write into [tool.databricks.environment], or "" for a cluster target.
+func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, dbcPin, envVersion string) (merged []byte, greenfield bool, err error) {
 	pyproject := p.pyprojectPath()
 	backup := p.backupPath()
 
@@ -305,9 +308,17 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	greenfield = baseBytes == nil
 
 	// The artifact drives the merge; in constraints-only mode we clear the
-	// databricks-connect pin so it is neither written nor asserted.
+	// databricks-connect pin so it is neither written nor asserted. envVersion is
+	// the resolved serverless version (empty for cluster targets).
+	//
+	// envVersion is deliberately NOT cleared in constraints-only mode: unlike the
+	// databricks-connect pin (a managed *dependency* the mode opts out of), the
+	// environment version records the resolved compute *target*, which the mode
+	// still resolves. Recording it keeps the target discoverable for VS Code and
+	// serverless Jobs even when dependency management is turned off.
 	effective := *c
 	effective.DatabricksConnect = dbcPin
+	effective.EnvironmentVersion = envVersion
 
 	var changedRegions []string
 	if greenfield {
@@ -317,6 +328,9 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		changedRegions = []string{regionRequiresPython, regionToolUv}
 		if dbcPin != "" {
 			changedRegions = append(changedRegions, regionDatabricksConnect)
+		}
+		if envVersion != "" {
+			changedRegions = append(changedRegions, regionDatabricksEnvironment)
 		}
 	} else {
 		merged, changedRegions, err = MergeManaged(baseBytes, effective)
