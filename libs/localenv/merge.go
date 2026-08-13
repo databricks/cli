@@ -1,6 +1,7 @@
 package localenv
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"regexp"
@@ -83,7 +84,7 @@ func planDBConnect(target []byte, c Constraints) dbconnectPlan {
 	// pass then runs on its output, so removed reflects the post-dev-merge state where
 	// the managed pin is already the dev group's first databricks-connect element.
 	merged, replaced, _ := mergeDatabricksConnect(slices.Clone(lines), c.DatabricksConnect)
-	_, removed, _ := removeStrayDatabricksConnect(merged)
+	_, removed, _ := removeStrayDatabricksConnect(merged, c.DatabricksConnect)
 	return dbconnectPlan{replacedDevPin: replaced, removed: removed}
 }
 
@@ -131,14 +132,13 @@ func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string
 	}
 
 	lines, _, dbcChanged := mergeDatabricksConnect(lines, c.DatabricksConnect)
-	// In the install flow, databricks-connect is fully owned by setup-local: after the
-	// managed pin lands in the dev group, remove every stray databricks-connect pin
-	// elsewhere so exactly one requirement survives (invariant: a stray pin in any
-	// resolvable location makes uv unsatisfiable). Skipped in constraints-only mode
-	// (empty pin), where databricks-connect is left untouched.
+	// In the install flow, after the managed pin lands in the dev group, remove any
+	// databricks-connect pin elsewhere that is disjoint from it — the pins that would
+	// otherwise make uv unsatisfiable. Compatible pins are left alone. Skipped in
+	// constraints-only mode (empty pin), where databricks-connect is left untouched.
 	strayChanged := false
 	if c.DatabricksConnect != "" {
-		lines, _, strayChanged = removeStrayDatabricksConnect(lines)
+		lines, _, strayChanged = removeStrayDatabricksConnect(lines, c.DatabricksConnect)
 	}
 	if dbcChanged || strayChanged {
 		regions = append(regions, regionDatabricksConnect)
@@ -426,7 +426,10 @@ func replaceDbconnectElement(code, elem string) (out, replaced string, ok bool) 
 
 // arrayKeyRe matches a "key = [" array assignment, capturing the key. The "[" must
 // be on the assignment line (TOML array syntax), so an inline table value ("= {")
-// or a scalar is not matched.
+// or a scalar is not matched. "." is allowed in the key so a dotted assignment
+// (optional-dependencies.extra = [...] inside [project]) is captured whole — as the
+// key "optional-dependencies.extra", which is intentionally not equal to "dependencies"
+// and so is skipped, rather than mistaken for the [project].dependencies array.
 var arrayKeyRe = regexp.MustCompile(`^\s*([A-Za-z0-9._-]+)\s*=\s*\[`)
 
 // arraySpan locates one "key = [ ... ]" array assignment: the key and the line
@@ -455,32 +458,33 @@ func arrayAssignmentsIn(lines []string, header, end int) []arraySpan {
 	return out
 }
 
-// removeStrayDatabricksConnect deletes every databricks-connect requirement the
-// merge does not manage — from [project].dependencies, every
-// [project.optional-dependencies] extra, and every [dependency-groups] group — while
-// keeping the first element of the literal dev array, which mergeDatabricksConnect
-// owns. It reports each deleted pin with its location.
+// removeStrayDatabricksConnect deletes the databricks-connect requirements that
+// provably cannot co-resolve with the managed env pin (envPin) — from
+// [project].dependencies, every [project.optional-dependencies] extra, and every
+// [dependency-groups] group. It reports each deleted pin with its location.
 //
-// databricks-connect is fully owned by setup-local in the install flow, so unlike
-// every other key the merge intentionally reaches into sibling dependency groups
-// here: a stray pin in ANY resolvable location makes uv unsatisfiable (the managed
-// dev pin cannot co-resolve with a disjoint one), so it must be removed everywhere.
-// This deliberately overrides the "sibling groups are user-owned and left untouched"
-// contract that scopes mergeDatabricksConnect (see devKeyRe).
+// Only a *disjoint* pin is removed (see dbconnectPinConflicts). That is the pin that
+// actually makes uv unsatisfiable — the bug this exists to fix — and it is the whole
+// justification for reaching into locations the merge otherwise leaves alone,
+// including [project].dependencies, which the default template compiles into the
+// built wheel's metadata: deleting a pin there is only warranted when the project
+// would not resolve or build as-is. A pin that co-resolves (databricks-connect>=15
+// against ~=17.2.0), carries no version, is marker-gated, or already equals envPin is
+// left untouched — there is nothing to fix, so the user's declaration stands. This
+// deliberately overrides, for disjoint pins only, the "sibling groups are user-owned
+// and left untouched" contract that scopes mergeDatabricksConnect (see devKeyRe).
 //
 // The removal is line-based and matches the same shapes the rewrite does: a
 // double-quoted element under a bare-key array in the [project], [project.optional-
-// dependencies], or [dependency-groups] tables. Three rarer-but-valid spellings are
-// out of its reach and left in place — a single-quoted pin, a pin under a quoted TOML
-// key ("qa group" = [...]), and a pin in an inline-table form of these tables. These
-// are not silent: detectMergeWarnings decodes the file fully, so a survivor whose
-// range is disjoint from the env pin is still surfaced as W_DBCONNECT_PIN_DUPLICATED
-// (an overlapping survivor resolves fine and needs no action).
-func removeStrayDatabricksConnect(lines []string) (out []string, removed []removedDBConnect, changed bool) {
+// dependencies], or [dependency-groups] tables. Rarer-but-valid spellings are out of
+// its reach and left in place — a single-quoted pin, a pin under a quoted TOML key
+// ("qa group" = [...]), and a pin in an inline-table or dotted sub-table form. These
+// are not silent: detectMergeWarnings decodes the file fully, so a disjoint survivor
+// is still surfaced as W_DBCONNECT_PIN_DUPLICATED.
+func removeStrayDatabricksConnect(lines []string, envPin string) (out []string, removed []removedDBConnect, changed bool) {
 	type target struct {
-		span      arraySpan
-		location  string
-		keepFirst bool
+		span     arraySpan
+		location string
 	}
 	var targets []target
 
@@ -489,18 +493,18 @@ func removeStrayDatabricksConnect(lines []string) (out []string, removed []remov
 			// Only [project].dependencies is a resolution requirement; other [project]
 			// arrays (keywords, classifiers, ...) never hold databricks-connect.
 			if a.key == "dependencies" {
-				targets = append(targets, target{a, "[project].dependencies", false})
+				targets = append(targets, target{a, "[project].dependencies"})
 			}
 		}
 	}
 	if h, e, ok := tableBounds(lines, "[project.optional-dependencies]"); ok {
 		for _, a := range arrayAssignmentsIn(lines, h, e) {
-			targets = append(targets, target{a, "[project.optional-dependencies]." + a.key, false})
+			targets = append(targets, target{a, "[project.optional-dependencies]." + a.key})
 		}
 	}
 	if h, e, ok := tableBounds(lines, "[dependency-groups]"); ok {
 		for _, a := range arrayAssignmentsIn(lines, h, e) {
-			targets = append(targets, target{a, "[dependency-groups]." + a.key, a.key == devGroup})
+			targets = append(targets, target{a, "[dependency-groups]." + a.key})
 		}
 	}
 	if len(targets) == 0 {
@@ -510,13 +514,13 @@ func removeStrayDatabricksConnect(lines []string) (out []string, removed []remov
 	// Rewrite spans in a single ascending pass so a line-count change from one edit
 	// does not shift the indices of the others. Spans in different tables never
 	// overlap, and arrayAssignmentsIn already returns each table's spans in order.
-	slices.SortFunc(targets, func(a, b target) int { return a.span.start - b.span.start })
+	slices.SortFunc(targets, func(a, b target) int { return cmp.Compare(a.span.start, b.span.start) })
 
 	out = make([]string, 0, len(lines))
 	prev := 0
 	for _, t := range targets {
 		out = append(out, lines[prev:t.span.start]...)
-		newSpan, pins := removeDbconnectFromArraySpan(lines[t.span.start:t.span.last+1], t.keepFirst)
+		newSpan, pins := removeDbconnectFromArraySpan(lines[t.span.start:t.span.last+1], envPin)
 		out = append(out, newSpan...)
 		for _, pin := range pins {
 			removed = append(removed, removedDBConnect{location: t.location, pin: pin})
@@ -525,27 +529,40 @@ func removeStrayDatabricksConnect(lines []string) (out []string, removed []remov
 	}
 	out = append(out, lines[prev:]...)
 
+	// out is fully built above; it is only returned when something was removed, so a
+	// no-op run returns the original slice unchanged.
 	if len(removed) == 0 {
 		return lines, nil, false
 	}
 	return out, removed, true
 }
 
-// removeDbconnectFromArraySpan removes databricks-connect elements from a single
-// array value spanning spanLines (single- or multi-line), returning the rewritten
-// lines and the removed pins. When keepFirst is set, the first databricks-connect
-// element is retained (the managed dev pin). It operates on top-level array elements
-// so a version range comma ("databricks-connect>=15,<16") or an inline table is not
-// split, and rejoining survivors preserves each element's own leading whitespace,
-// newline, and trailing comma.
-func removeDbconnectFromArraySpan(spanLines []string, keepFirst bool) (out, removed []string) {
+// dbconnectPinConflicts reports whether a databricks-connect pin provably cannot
+// co-resolve with the managed env pin — their version ranges are disjoint. A pin the
+// range model cannot compare (no version, a marker-gated requirement, an unparseable
+// or wildcard-only spelling) is not provably conflicting, so it is treated as
+// compatible and left in place. envPin, written by the merge, always parses.
+func dbconnectPinConflicts(pin, envPin string) bool {
+	_, pinSpec, pinOK := splitDepSpec(pin)
+	_, envSpec, envOK := splitDepSpec(envPin)
+	return pinOK && envOK && rangesDisjoint(pinSpec, envSpec)
+}
+
+// removeDbconnectFromArraySpan removes the databricks-connect elements that conflict
+// with envPin (see dbconnectPinConflicts) from a single array value spanning spanLines
+// (single- or multi-line), returning the rewritten lines and the removed pins. A
+// compatible databricks-connect element — including the managed dev pin, which equals
+// envPin and so never conflicts with itself — is left in place. It operates on
+// top-level array elements so a version range comma ("databricks-connect>=15,<16") or
+// an inline table is not split, and rejoining survivors preserves each element's own
+// leading whitespace, newline, and trailing comma.
+func removeDbconnectFromArraySpan(spanLines []string, envPin string) (out, removed []string) {
 	block := strings.Join(spanLines, "\n")
 	prefix, body, suffix, ok := arrayParts(block)
 	if !ok {
 		return spanLines, nil
 	}
 	var kept []string
-	seenFirst := false
 	// carry holds the leading comment/blank lines of a removed element. splitTopLevelElements
 	// breaks on commas, so a trailing comment left on the *previous* element's line lands as
 	// a leading comment line on this element's token; dropping the whole token would delete
@@ -558,12 +575,7 @@ func removeDbconnectFromArraySpan(spanLines []string, keepFirst bool) (out, remo
 	for _, elem := range splitTopLevelElements(body) {
 		elem = carry + elem
 		carry = ""
-		if pin, isDBC := dbconnectElementPin(elem); isDBC {
-			if keepFirst && !seenFirst {
-				seenFirst = true
-				kept = append(kept, elem)
-				continue
-			}
+		if pin, isDBC := dbconnectElementPin(elem); isDBC && dbconnectPinConflicts(pin, envPin) {
 			removed = append(removed, pin)
 			carry = leadingLinesBeforeElement(elem)
 			continue
@@ -579,7 +591,20 @@ func removeDbconnectFromArraySpan(spanLines []string, keepFirst bool) (out, remo
 	if strings.TrimSpace(carry) != "" {
 		kept = append(kept, carry+"\n")
 	}
-	return strings.Split(prefix+strings.Join(kept, ",")+suffix, "\n"), removed
+	// Removing the last element of a multi-line array would pull the closing "]" up onto
+	// the previous element's line (that element's token carried no trailing newline) and
+	// drop the array's trailing comma. When the array was multi-line (body ends in a
+	// newline) and a real element still remains, restore the trailing comma and the
+	// newline before "]" so the bracket keeps its own line and the magic trailing comma
+	// survives.
+	joined := strings.Join(kept, ",")
+	if strings.HasSuffix(body, "\n") && len(kept) > 0 && !strings.HasSuffix(joined, "\n") {
+		if !strings.HasSuffix(joined, ",") {
+			joined += ","
+		}
+		joined += "\n"
+	}
+	return strings.Split(prefix+joined+suffix, "\n"), removed
 }
 
 // leadingLinesBeforeElement returns the comment/blank lines that precede the value line

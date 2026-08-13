@@ -602,6 +602,74 @@ dev = ["databricks-connect~=16.0"]
 	requireValidTOML(t, out)
 }
 
+func TestMergeKeepsCompatibleDatabricksConnectPins(t *testing.T) {
+	// Only a databricks-connect pin that provably cannot co-resolve with the managed
+	// pin is removed. A pin that overlaps it, carries no version, or is marker-gated
+	// resolves fine, so it is left in place — the merge does not silently rewrite a
+	// user declaration (including [project].dependencies wheel metadata) that isn't
+	// broken. env pin here is ~=17.2.0.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+dependencies = [
+    "databricks-connect>=15",
+    "databricks-connect ; python_version < '3.13'",
+]
+
+[project.optional-dependencies]
+extra = ["databricks-connect"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+test = ["databricks-connect>=15,<20"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `"databricks-connect>=15",`, "an overlapping pin co-resolves and is kept")
+	assert.Contains(t, s, "python_version < '3.13'", "a marker-gated pin is not compared and is kept")
+	assert.Contains(t, s, `extra = ["databricks-connect"]`, "an unversioned pin is kept")
+	assert.Contains(t, s, `test = ["databricks-connect>=15,<20"]`, "an overlapping ranged pin in another group is kept")
+	assert.Contains(t, s, `"databricks-connect~=17.2.0"`, "the dev pin is still updated to the managed version")
+	requireValidTOML(t, out)
+}
+
+func TestMergeKeepsEnvEqualPinInProjectDeps(t *testing.T) {
+	// A [project].dependencies pin that already equals the managed version is not
+	// disjoint from it, so it is left in place — the only declaration in the wheel
+	// metadata is never silently deleted, and no consolidation warning is emitted.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+dependencies = ["databricks-connect~=17.2.0"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	assert.Contains(t, string(out), `dependencies = ["databricks-connect~=17.2.0"]`, "the env-equal pin is kept")
+	requireValidTOML(t, out)
+}
+
+func TestMergeKeepsClosingBracketOnItsOwnLine(t *testing.T) {
+	// Removing the last element of a multi-line array with no trailing comma on it must
+	// not pull the closing "]" up onto the previous element's line (a common uv-init shape).
+	in := []byte(`[project]
+requires-python = ">=3.10"
+dependencies = [
+    "databricks-dlt",
+    "pytest",
+    "databricks-connect==15.1.*"
+]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.NotContains(t, s, "databricks-connect==15.1.*")
+	assert.Contains(t, s, "\n    \"pytest\",\n]", "the closing bracket keeps its own line and the trailing comma survives")
+	assert.NotContains(t, s, `"pytest"]`, "the bracket is not pulled up")
+	requireValidTOML(t, out)
+}
+
 func TestMergeConstraintsOnlyLeavesDatabricksConnectUntouched(t *testing.T) {
 	// In constraints-only mode (empty DatabricksConnect) databricks-connect is not
 	// managed at all: no pin is inserted and no stray is removed, anywhere.

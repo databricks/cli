@@ -60,7 +60,7 @@
     },
     {
       "code": "W_DBCONNECT_CONSOLIDATED",
-      "message": "databricks-connect \"databricks-connect==15.0.0\" in [dependency-groups].spark is removed; it is managed in \"dev\" at the environment's \"databricks-connect~=17.2.0\""
+      "message": "databricks-connect \"databricks-connect==15.0.0\" in [dependency-groups].spark conflicts with the environment's \"databricks-connect~=17.2.0\" and is removed; it is managed in \"dev\""
     },
     {
       "code": "W_USER_CONSTRAINT_CONFLICT",

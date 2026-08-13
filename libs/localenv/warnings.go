@@ -231,13 +231,13 @@ func removeDBConnectPins(reqs []string, removed []removedDBConnect) []string {
 //   - replacedDevPin: the pin sitting directly in the dev group, rewritten in place to
 //     the env's version (WarnDBConnectPinOverridden).
 //   - removed: strays the consolidation pass deletes from [project].dependencies, an
-//     optional-dependency extra, or another group so exactly one pin survives
-//     (WarnDBConnectConsolidated). Reported for every removed pin, since the removal is
-//     a file edit the user should see regardless of whether the ranges overlapped.
+//     optional-dependency extra, or another group because their range is disjoint from
+//     the env pin — they would otherwise make uv unsatisfiable (WarnDBConnectConsolidated).
 //   - a databricks-connect pin the line-based merge cannot delete but uv still resolves
-//     — a single-quoted element — left beside the managed pin. Where its range is
-//     disjoint from the env's, uv cannot resolve at all (WarnDBConnectPinDuplicated), a
-//     distinct failure the user must fix by hand.
+//     — a spelling the passes do not reach (single-quoted element, quoted TOML key,
+//     inline-table or dotted sub-table form) — left beside the managed pin. Where its
+//     range is disjoint from the env's, uv cannot resolve at all
+//     (WarnDBConnectPinDuplicated), a distinct failure the user must fix by hand.
 //
 // The conditions are reported independently rather than as a first-match choice,
 // because a run can override the dev pin, consolidate strays, and still leave an
@@ -253,16 +253,14 @@ func dbconnectWarnings(plan dbconnectPlan, survivors []string, envPin string) []
 		})
 	}
 
+	// Every removed pin is disjoint from envPin (removeStrayDatabricksConnect only deletes
+	// those), so each is a real conflict the user should see — there is no equal-pin case
+	// to skip here.
 	for _, r := range plan.removed {
-		if strings.TrimSpace(r.pin) == envPin {
-			// Identical to the managed pin: the removal is pure deduplication, so there
-			// is nothing for the user to know or reconcile.
-			continue
-		}
 		warnings = append(warnings, Warning{
 			Code: WarnDBConnectConsolidated,
-			Message: fmt.Sprintf("databricks-connect %q in %s is removed; it is managed in %q at the environment's %q",
-				strings.TrimSpace(r.pin), r.location, devGroup, envPin),
+			Message: fmt.Sprintf("databricks-connect %q in %s conflicts with the environment's %q and is removed; it is managed in %q",
+				strings.TrimSpace(r.pin), r.location, envPin, devGroup),
 		})
 	}
 
