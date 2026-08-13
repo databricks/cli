@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
@@ -22,6 +23,23 @@ func (s *FakeWorkspace) ClusterPoliciesCreate(req Request) any {
 	s.ClusterPolicies[id] = policy
 
 	return Response{Body: compute.CreatePolicyResponse{PolicyId: id}}
+}
+
+func (s *FakeWorkspace) ClusterPoliciesList(req Request) any {
+	defer s.LockUnlock()()
+
+	ids := make([]string, 0, len(s.ClusterPolicies))
+	for id := range s.ClusterPolicies {
+		ids = append(ids, id)
+	}
+	slices.Sort(ids)
+
+	policies := make([]compute.Policy, 0, len(ids))
+	for _, id := range ids {
+		policies = append(policies, s.ClusterPolicies[id])
+	}
+
+	return Response{Body: compute.ListPoliciesResponse{Policies: policies}}
 }
 
 func (s *FakeWorkspace) ClusterPoliciesGet(req Request, policyId string) any {

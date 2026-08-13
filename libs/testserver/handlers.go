@@ -27,18 +27,7 @@ var TestMetastore = catalog.MetastoreAssignment{
 
 func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/policies/clusters/list", func(req Request) any {
-		return compute.ListPoliciesResponse{
-			Policies: []compute.Policy{
-				{
-					PolicyId: "5678",
-					Name:     "wrong-cluster-policy",
-				},
-				{
-					PolicyId: "9876",
-					Name:     "some-test-cluster-policy",
-				},
-			},
-		}
+		return req.Workspace.ClusterPoliciesList(req)
 	})
 
 	server.Handle("GET", "/api/2.0/instance-pools/list", func(req Request) any {

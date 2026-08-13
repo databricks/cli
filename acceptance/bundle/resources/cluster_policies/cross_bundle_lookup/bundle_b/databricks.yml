@@ -1,0 +1,19 @@
+bundle:
+  name: cluster_policy_consumer
+
+variables:
+  policy:
+    description: Resolve the policy created by bundle_a by name.
+    lookup:
+      cluster_policy: shared_lookup_policy
+
+resources:
+  jobs:
+    j:
+      name: consumer_job
+      tasks:
+        - task_key: main
+          new_cluster:
+            policy_id: ${var.policy}
+            spark_version: 13.3.x-scala2.12
+            num_workers: 1
