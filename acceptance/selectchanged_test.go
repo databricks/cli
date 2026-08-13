@@ -167,9 +167,12 @@ func classifyChangedTests(diff string, testDirs map[string]bool, limit int) (map
 			continue
 		}
 		result[dir] = nil // nil = all variants; overrides any prior config-scoped filter
-		// Everything starting with "out" is generated (output.txt, out.requests.txt,
-		// out.test.toml); the rest is a fixture the test is defined by.
-		if !strings.HasPrefix(filepath.Base(path), "out") {
+		// A file is generated output if its path relative to the test dir starts with
+		// "out" (output.txt, out.requests.txt, out.test.toml) — the same rule the
+		// harness uses to split inputs from outputs when it copies a test dir. Matching
+		// on the relative path and not the base name keeps a nested file such as
+		// subdir/outer.py a fixture. Everything else is a fixture the test is made of.
+		if !strings.HasPrefix(strings.TrimPrefix(path, "acceptance/"+dir+"/"), "out") {
 			fixture[dir] = true
 		}
 		// The status of a dir's script file says how the dir itself changed:
