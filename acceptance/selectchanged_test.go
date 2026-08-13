@@ -103,18 +103,24 @@ func selectChangedTests(t *testing.T, testDirs map[string]bool, limit int) map[s
 }
 
 // classifyChangedTests maps `git diff --name-status` output to test dirs, keeping at
-// most limit of them: added dirs first, then modified ones, then moved ones. It also
-// returns how many changed dirs the limit dropped.
+// most limit of them, in this order: added dirs, dirs with a changed fixture (script,
+// test.toml, databricks.yml, ...), dirs where only generated files changed (out*), and
+// finally moved dirs. It also returns how many changed dirs the limit dropped.
+//
+// Generated files rank below fixtures because a regenerated golden usually comes from a
+// change elsewhere in the tree and lands on hundreds of dirs at once, which would
+// otherwise fill the whole quota and crowd out the tests this branch actually edits.
 //
 // A changed invariant config (acceptance/bundle/invariant/configs/*.yml.tmpl)
 // maps to all invariant subdirs with an INPUT_CONFIG= filter, so touching
 // job.yml.tmpl re-enables all subdirs but only for their job.yml.tmpl variants.
 func classifyChangedTests(diff string, testDirs map[string]bool, limit int) (map[string][]string, int) {
-	// result accumulates dirs with their filters; added and moved record how each dir
-	// itself changed, so the cap can prefer added over modified over moved.
+	// result accumulates dirs with their filters; added, fixture and moved record how
+	// each dir changed, so the cap can rank them.
 	// nil filter slice = all variants run; non-nil = restricted to those filters.
 	result := map[string][]string{}
 	added := map[string]bool{}
+	fixture := map[string]bool{}
 	moved := map[string]bool{}
 
 	for line := range strings.SplitSeq(diff, "\n") {
@@ -139,6 +145,8 @@ func classifyChangedTests(diff string, testDirs map[string]bool, limit int) (map
 						if existing, ok := result[dir]; !ok || existing != nil {
 							result[dir] = append(result[dir], "INPUT_CONFIG="+configName)
 						}
+						// The config is the fixture these dirs are generated from.
+						fixture[dir] = true
 					}
 				}
 			}
@@ -159,6 +167,11 @@ func classifyChangedTests(diff string, testDirs map[string]bool, limit int) (map
 			continue
 		}
 		result[dir] = nil // nil = all variants; overrides any prior config-scoped filter
+		// Everything starting with "out" is generated (output.txt, out.requests.txt,
+		// out.test.toml); the rest is a fixture the test is defined by.
+		if !strings.HasPrefix(filepath.Base(path), "out") {
+			fixture[dir] = true
+		}
 		// The status of a dir's script file says how the dir itself changed:
 		// A means brand new, R (Rnnn) means moved here from another path.
 		if strings.HasSuffix(path, "/script") {
@@ -171,22 +184,25 @@ func classifyChangedTests(diff string, testDirs map[string]bool, limit int) (map
 		}
 	}
 
-	var addedDirs, modifiedDirs, movedDirs []string
+	var addedDirs, fixtureDirs, generatedDirs, movedDirs []string
 	for dir := range result {
 		switch {
 		case added[dir]:
 			addedDirs = append(addedDirs, dir)
 		case moved[dir]:
 			movedDirs = append(movedDirs, dir)
+		case fixture[dir]:
+			fixtureDirs = append(fixtureDirs, dir)
 		default:
-			modifiedDirs = append(modifiedDirs, dir)
+			generatedDirs = append(generatedDirs, dir)
 		}
 	}
 	slices.Sort(addedDirs)
-	slices.Sort(modifiedDirs)
+	slices.Sort(fixtureDirs)
+	slices.Sort(generatedDirs)
 	slices.Sort(movedDirs)
 
-	selected := slices.Concat(addedDirs, modifiedDirs, movedDirs)
+	selected := slices.Concat(addedDirs, fixtureDirs, generatedDirs, movedDirs)
 	dropped := 0
 	if len(selected) > limit {
 		dropped = len(selected) - limit
