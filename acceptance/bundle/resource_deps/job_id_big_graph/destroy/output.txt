@@ -13,6 +13,7 @@ Created jobs.independent2
 Created jobs.multi_child
 Created jobs.multi_parent1
 Created jobs.multi_parent2
+Files: 0 uploaded, 0 deleted
 Resources: 12 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --sort //jobs

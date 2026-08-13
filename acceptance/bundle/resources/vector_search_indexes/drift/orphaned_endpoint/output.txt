@@ -4,6 +4,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-index-orphaned-endpoint-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.vs_endpoint
 Created vector_search_indexes.my_index
+Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Simulate remote endpoint deletion (index is orphaned, still exists by name)
@@ -26,6 +27,7 @@ index drops all upserted vectors. Both can be expensive to rebuild:
   recreate resources.vector_search_indexes.my_index
 Created vector_search_endpoints.vs_endpoint
 Recreated vector_search_indexes.my_index
+Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 1 deleted, 0 unchanged
 
 >>> [CLI] vector-search-indexes get-index main.default.vs_index_[UNIQUE_NAME]

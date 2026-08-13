@@ -12,6 +12,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] vector-search-endpoints get-endpoint test-vs-endpoint-[UNIQUE_NAME]

@@ -23,6 +23,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-en
 Created postgres_branches.main
 Created postgres_endpoints.my_endpoint
 Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
@@ -50,6 +51,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
@@ -97,6 +99,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
 Updated postgres_endpoints.my_endpoint
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
@@ -129,6 +132,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
 Updated postgres_endpoints.my_endpoint
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/

@@ -15,6 +15,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/scripts_with_restr
 Executing 'postdeploy' script
 postdeploy value_from_env
 Files: 4 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 === With DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION=1, no envs are accessible
 >>> DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION=1 errcode [CLI] bundle deploy

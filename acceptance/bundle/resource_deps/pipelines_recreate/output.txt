@@ -9,6 +9,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.bar
 Created pipelines.foo
+Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //jobs //pipelines
@@ -35,6 +36,7 @@ properties such as the 'catalog' or 'storage' are changed:
   recreate resources.pipelines.foo
 Updated jobs.bar
 Recreated pipelines.foo
+Files: 0 uploaded, 0 deleted
 Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 
 >>> print_requests.py //jobs //pipelines
@@ -96,6 +98,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //jobs //pipelines

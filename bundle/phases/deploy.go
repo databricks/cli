@@ -148,21 +148,13 @@ func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Pl
 		}
 	}
 
-	// Report file sync separately from resources: a deploy that only changes
-	// business logic (a .py or .sql file) leaves every resource unchanged, so
-	// without this line its summary is all zeros and looks like a no-op.
-	if b.FileCounts.Uploaded > 0 || b.FileCounts.Deleted > 0 {
-		cmdio.LogString(ctx, fmt.Sprintf("Files: %d uploaded, %d deleted", b.FileCounts.Uploaded, b.FileCounts.Deleted))
-	}
+	// Report file sync separately from resources: a deploy that only changes business
+	// logic (a .py or .sql file) leaves every resource unchanged, so without this line
+	// its summary is all zeros and looks like a no-op. Both lines print unconditionally,
+	// including when every count is zero, so the shape of the output never varies.
+	cmdio.LogString(ctx, fmt.Sprintf("Files: %d uploaded, %d deleted", b.FileCounts.Uploaded, b.FileCounts.Deleted))
 
-	// Nothing to report when the plan is empty, which happens for a bundle with no
-	// resources at all. Any deployed resource lands in one of the counts, including
-	// unchanged, so a non-empty plan always prints.
 	counts := plan.CountActions()
-	if counts == (deployplan.ActionCounts{}) && plan.NotSelected == 0 {
-		return
-	}
-
 	summary := fmt.Sprintf("Resources: %d created, %d changed, %d deleted, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
 	// Gate on the plan's own NotSelected (not b.Select) so the suffix survives a
 	// deploy from a --plan file, where --select was applied at plan time and

@@ -11,6 +11,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-index-grants-[U
 Created vector_search_endpoints.my_endpoint
 Created vector_search_indexes.my_index
 Created vector_search_indexes.my_index.grants
+Files: 0 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan

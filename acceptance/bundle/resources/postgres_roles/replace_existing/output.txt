@@ -5,6 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/replace-existing-r
 Created postgres_branches.main
 Created postgres_projects.my_project
 Created postgres_roles.my_role
+Files: 0 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Unbind the role: it now exists on the branch but is no longer tracked by the bundle
@@ -20,6 +21,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/replace-existing-role-[UNIQUE_NAME]/default/files...
 Created postgres_roles.my_role
+Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 2 unchanged
 
 === Confirm the role is under management again

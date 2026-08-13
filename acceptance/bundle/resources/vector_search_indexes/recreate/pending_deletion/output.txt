@@ -4,6 +4,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint
 Created vector_search_indexes.my_index
+Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change embedding_dimension (recreate: DELETE then CREATE the same name)
@@ -17,6 +18,7 @@ Recreating a Delta Sync index re-runs the full embedding pipeline; recreating a 
 index drops all upserted vectors. Both can be expensive to rebuild:
   recreate resources.vector_search_indexes.my_index
 Recreated vector_search_indexes.my_index
+Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> print_requests.py --get //vector-search/indexes

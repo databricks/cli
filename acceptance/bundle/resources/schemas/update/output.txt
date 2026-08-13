@@ -2,6 +2,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created schemas.schema1
+Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //unity
@@ -22,6 +23,7 @@ schemas schema1 id='main.myschema' name='myschema' catalog_name='main' comment='
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated schemas.schema1
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //unity
@@ -36,6 +38,7 @@ schemas schema1 id='main.myschema' name='myschema' catalog_name='main' comment='
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated schemas.schema1
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //unity

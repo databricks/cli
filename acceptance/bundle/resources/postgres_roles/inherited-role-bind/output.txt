@@ -5,6 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/inherited-role-bin
 Created postgres_branches.main
 Created postgres_projects.my_project
 Created postgres_roles.my_role
+Files: 0 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Unbind the role: it now exists on the branch but is untracked
@@ -18,6 +19,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 === Re-deploy now succeeds: the role is managed, not re-created
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/inherited-role-bind-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 
 >>> [CLI] bundle destroy --auto-approve

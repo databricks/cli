@@ -6,10 +6,3 @@ RunsOnDbr = true
 Ignore = [
     "databricks.yml",
 ]
-
-# The dashboard is trashed out of band before destroy. Terraform refreshes it
-# away and reports "0 deleted", while direct still counts it as "1 deleted", so
-# normalize the divergent count to keep a single unified golden.
-[[Repls]]
-Old = 'Destroy: \d deleted\.'
-New = 'Destroy: [N] deleted.'

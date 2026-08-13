@@ -3,6 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-git-source-no-deployment/default/files...
 Created apps.myapp
+Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Plan is a no-op: git_source drift is skipped while the app has no active deployment

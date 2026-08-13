@@ -13,6 +13,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-br
 Created postgres_branches.hard_delete
 Created postgres_branches.soft_delete
 Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/test-pg-branch-hard-[UNIQUE_NAME]
