@@ -1,19 +1,21 @@
 // Command cmd prints the acceptance tests that DATABRICKS_TEST_SELECT_CHANGED would run,
-// either for the current branch or for the changed paths given as arguments. It is a way
-// to see what a change selects without running the suite. Run it from the repo root:
+// either for the current branch or for the paths given as arguments, together with the
+// score each test was picked by. It is a way to see what a change selects without running
+// the suite. Run it from the repo root:
 //
 //	go run ./acceptance/internal/selection/cmd
 //	go run ./acceptance/internal/selection/cmd -limit 5
 //	go run ./acceptance/internal/selection/cmd acceptance/bundle/invariant/configs/job.yml.tmpl
 //
-// An argument may carry a git status ("A:path" for an added file, "R100:old:new" for a
-// rename); without one the file counts as modified.
+// A bare path takes the status git reports for it: added for a path git does not track,
+// modified otherwise. Prefix a path to force one ("A:path", "M:path", "R100:old:new").
 package main
 
 import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -45,11 +47,11 @@ func main() {
 	}
 
 	fmt.Println(result.Counts())
-	for _, name := range result.Names() {
-		fmt.Println("   ", name)
+	for _, test := range result.Selected {
+		fmt.Printf("  %3d  %s\n", test.Score, test.Name())
 	}
-	if len(result.Tests) == 0 {
-		fmt.Println("    none of the changed files belong to a test dir")
+	if len(result.Selected) == 0 {
+		fmt.Println("       none of the changed files belong to a test dir")
 	}
 }
 
@@ -58,19 +60,39 @@ func main() {
 func diffFromArgs(args []string) string {
 	lines := make([]string, 0, len(args))
 	for _, arg := range args {
-		// The status prefix is optional: "A:path", "R100:old:new", or a plain "path".
 		status, rest, ok := strings.Cut(arg, ":")
 		if !ok {
-			status, rest = "M", arg
+			status, rest = "", arg
 		}
 		// A rename carries both paths ("R100:old:new"), which git separates by tabs.
 		paths := strings.Split(rest, ":")
 		for i, path := range paths {
 			paths[i] = strings.TrimPrefix(filepath.ToSlash(filepath.Clean(path)), "./")
 		}
+		if status == "" {
+			status = gitStatus(paths[0])
+		}
 		lines = append(lines, status+"\t"+strings.Join(paths, "\t"))
 	}
 	return strings.Join(lines, "\n")
+}
+
+// gitStatus is the status to assume for a path given without one: the status git reports
+// against the merge base if the path is changed there, otherwise "M" for a tracked path
+// and "A" for one git does not know, so a bare argument also stands for a hypothetical
+// change to an existing test or a brand new one.
+func gitStatus(path string) string {
+	out, err := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main", "--", path).Output()
+	if err == nil {
+		if fields := strings.Fields(string(out)); len(fields) > 0 {
+			return fields[0]
+		}
+	}
+
+	if exec.Command("git", "ls-files", "--error-unmatch", "--", path).Run() == nil {
+		return "M"
+	}
+	return "A"
 }
 
 func fatalf(format string, args ...any) {

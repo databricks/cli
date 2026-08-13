@@ -39,7 +39,7 @@ func TestFromDiffStatuses(t *testing.T) {
 		"bundle/added":    nil,
 		"bundle/modified": nil,
 		"bundle/moved":    nil,
-	}, result.Tests)
+	}, result.Tests())
 }
 
 func TestFromDiffPriority(t *testing.T) {
@@ -54,12 +54,32 @@ func TestFromDiffPriority(t *testing.T) {
 	scored := []string{"bundle/added", "bundle/modified", "bundle/moved", "bundle/regenerated"}
 	for limit := 1; limit <= len(scored); limit++ {
 		result := selection.FromDiff(diff, testDirs, limit)
-		assert.Len(t, result.Tests, limit)
+		assert.Len(t, result.Selected, limit)
 		assert.Equal(t, len(scored)-limit, result.Dropped, "limit=%d", limit)
 		for _, dir := range scored[:limit] {
-			assert.Contains(t, result.Tests, dir, "limit=%d", limit)
+			assert.Contains(t, result.Tests(), dir, "limit=%d", limit)
 		}
 	}
+}
+
+func TestFromDiffScores(t *testing.T) {
+	diff := diffLines(
+		"A\tacceptance/bundle/added/script",
+		"M\tacceptance/bundle/modified/script",
+		"R090\tacceptance/bundle/old/script\tacceptance/bundle/moved/script",
+		"M\tacceptance/bundle/regenerated/output.txt",
+	)
+	result := selection.FromDiff(diff, testDirs, 10)
+	scores := map[string]int{}
+	for _, test := range result.Selected {
+		scores[test.Dir] = test.Score
+	}
+	assert.Equal(t, map[string]int{
+		"bundle/added":       10,
+		"bundle/modified":    5,
+		"bundle/moved":       2,
+		"bundle/regenerated": -1,
+	}, scores)
 }
 
 func TestFromDiffFixtureBeatsOutputInSameDir(t *testing.T) {
@@ -70,7 +90,7 @@ func TestFromDiffFixtureBeatsOutputInSameDir(t *testing.T) {
 		"M\tacceptance/bundle/regenerated/out.requests.txt",
 	)
 	result := selection.FromDiff(diff, testDirs, 1)
-	assert.Equal(t, map[string][]string{"bundle/modified": nil}, result.Tests)
+	assert.Equal(t, map[string][]string{"bundle/modified": nil}, result.Tests())
 	assert.Equal(t, 1, result.Dropped)
 }
 
@@ -82,7 +102,7 @@ func TestFromDiffNestedFixture(t *testing.T) {
 		"M\tacceptance/bundle/regenerated/output.txt",
 	)
 	result := selection.FromDiff(diff, testDirs, 1)
-	assert.Equal(t, map[string][]string{"bundle/modified": nil}, result.Tests)
+	assert.Equal(t, map[string][]string{"bundle/modified": nil}, result.Tests())
 	assert.Equal(t, 1, result.Dropped)
 }
 
@@ -94,7 +114,7 @@ func TestFromDiffInvariantConfigRanksAsFixture(t *testing.T) {
 		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
 	)
 	result := selection.FromDiff(diff, testDirs, 2)
-	assert.NotContains(t, result.Tests, "bundle/regenerated")
+	assert.NotContains(t, result.Tests(), "bundle/regenerated")
 	assert.Equal(t, 1, result.Dropped)
 }
 
@@ -102,7 +122,7 @@ func TestFromDiffNestedDir(t *testing.T) {
 	// A file maps to the innermost test dir that owns it.
 	diff := diffLines("M\tacceptance/cmd/sync/nested/deeper/script")
 	result := selection.FromDiff(diff, testDirs, 10)
-	assert.Equal(t, map[string][]string{"cmd/sync/nested/deeper": nil}, result.Tests)
+	assert.Equal(t, map[string][]string{"cmd/sync/nested/deeper": nil}, result.Tests())
 }
 
 func TestFromDiffInvariantConfig(t *testing.T) {
@@ -112,7 +132,7 @@ func TestFromDiffInvariantConfig(t *testing.T) {
 	assert.Equal(t, map[string][]string{
 		"bundle/invariant/jobs": {"INPUT_CONFIG=job.yml.tmpl"},
 		"bundle/invariant/apps": {"INPUT_CONFIG=job.yml.tmpl"},
-	}, result.Tests)
+	}, result.Tests())
 }
 
 func TestFromDiffInvariantConfigAndDir(t *testing.T) {
@@ -127,11 +147,11 @@ func TestFromDiffInvariantConfigAndDir(t *testing.T) {
 	assert.Equal(t, map[string][]string{
 		"bundle/invariant/jobs": nil,
 		"bundle/invariant/apps": {"INPUT_CONFIG=job.yml.tmpl"},
-	}, result.Tests)
+	}, result.Tests())
 }
 
 func TestFromDiffEmptyDiff(t *testing.T) {
 	result := selection.FromDiff("", testDirs, 10)
-	assert.Empty(t, result.Tests)
+	assert.Empty(t, result.Tests())
 	assert.Zero(t, result.Dropped)
 }

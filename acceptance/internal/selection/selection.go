@@ -31,12 +31,32 @@ const (
 	invariantDirPrefix     = "bundle/invariant/"
 )
 
+// Test is one test the selection picked.
+type Test struct {
+	// Dir is the test dir, relative to acceptance/.
+	Dir string
+
+	// Filters restricts the run to the variants matching these KEY=value filters. A nil
+	// slice means every variant of the dir runs.
+	Filters []string
+
+	// Score is why the test was picked; see the score constants.
+	Score int
+}
+
+// Name is the test dir with its variant filters, as the log and the command print it.
+func (t Test) Name() string {
+	if t.Filters == nil {
+		return t.Dir
+	}
+	return t.Dir + "[" + strings.Join(t.Filters, ",") + "]"
+}
+
 // Result is the outcome of a selection.
 type Result struct {
-	// Tests maps a selected test dir to the variant filters it runs with. A nil slice
-	// means every variant of that dir runs; a non-nil slice restricts the run to the
-	// variants matching those filters.
-	Tests map[string][]string
+	// Selected lists the picked tests, highest score first and alphabetical within a
+	// score.
+	Selected []Test
 
 	// Dropped counts the changed tests that did not fit Limit.
 	Dropped int
@@ -45,28 +65,28 @@ type Result struct {
 	Limit int
 }
 
-// Counts says how many tests were selected and how many the limit cut.
-func (r Result) Counts() string {
-	return fmt.Sprintf("Selected %d changed tests (limit=%d, %d not selected)", len(r.Tests), r.Limit, r.Dropped)
+// Tests maps each selected test dir to the variant filters it runs with, the form the
+// acceptance harness looks tests up by.
+func (r Result) Tests() map[string][]string {
+	tests := make(map[string][]string, len(r.Selected))
+	for _, test := range r.Selected {
+		tests[test.Dir] = test.Filters
+	}
+	return tests
 }
 
-// Names lists the selected tests in sorted order, each with the variant filters it runs
-// with, if any.
-func (r Result) Names() []string {
-	names := make([]string, 0, len(r.Tests))
-	for dir, filters := range r.Tests {
-		if filters != nil {
-			dir += "[" + strings.Join(filters, ",") + "]"
-		}
-		names = append(names, dir)
-	}
-	slices.Sort(names)
-	return names
+// Counts says how many tests were selected and how many the limit cut.
+func (r Result) Counts() string {
+	return fmt.Sprintf("Selected %d changed tests (limit=%d, %d not selected)", len(r.Selected), r.Limit, r.Dropped)
 }
 
 // Summary is the whole outcome on one line, for the test log.
 func (r Result) Summary() string {
-	return r.Counts() + ": " + strings.Join(r.Names(), " ")
+	names := make([]string, 0, len(r.Selected))
+	for _, test := range r.Selected {
+		names = append(names, test.Name())
+	}
+	return r.Counts() + ": " + strings.Join(names, " ")
 }
 
 // ParseLimit reads the number of tests to select from a raw EnvVar value. An empty value
@@ -312,9 +332,9 @@ func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
 	dropped := max(len(selected)-limit, 0)
 	selected = selected[:len(selected)-dropped]
 
-	tests := make(map[string][]string, len(selected))
+	tests := make([]Test, 0, len(selected))
 	for _, dir := range selected {
-		tests[dir] = dirs[dir].filters
+		tests = append(tests, Test{Dir: dir, Filters: dirs[dir].filters, Score: dirs[dir].score()})
 	}
-	return Result{Tests: tests, Dropped: dropped, Limit: limit}
+	return Result{Selected: tests, Dropped: dropped, Limit: limit}
 }

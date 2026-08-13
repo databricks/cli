@@ -470,7 +470,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		result, err := selection.FromGit(testDirsSet, changedLimit)
 		require.NoError(t, err)
 		t.Log(result.Summary())
-		changedTests = result.Tests
+		changedTests = result.Tests()
 	}
 	subset.changed = changedTests
 
