@@ -197,13 +197,20 @@ jobs:
 
   # Go picks its cryptographic module at build time via GOFIPS140, so the module
   # a binary uses is a property of the build and not of the code. The regular
-  # test job builds without it, which leaves the FIPS module unexercised: FIPS
-  # mode narrows the cipher suites the TLS client offers, and nothing else here
-  # would notice if that broke a handshake or a hashing call. Build the CLI with
-  # the validated module and run the acceptance suite against it.
+  # test job builds without it, which leaves the frozen module unexercised: in
+  # FIPS mode every test binary runs the module's integrity check and
+  # known-answer self-tests at init, crypto/rand becomes a NIST DRBG, and
+  # generated keys get pairwise consistency tests. Build against the validated
+  # module so a module that cannot load or self-test on our toolchain fails here
+  # rather than for a user.
   #
-  # Linux only: the module is platform-independent, so a second OS would spend
-  # the wall-clock time to re-test the same crypto.
+  # This job does not cover TLS. The suite talks to local plaintext test servers,
+  # so the cipher suite narrowing FIPS mode applies to crypto/tls is only
+  # exercised by the integration tests, which reach a real workspace.
+  #
+  # Linux only as a cost trade-off, not because the other platforms are
+  # equivalent: the integrity self-check is object-format specific (ELF, Mach-O,
+  # PE) and the module carries per-platform assembly.
   test-fips:
     needs:
       - cleanups
