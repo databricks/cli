@@ -20,6 +20,7 @@ Error: the deployment requires destructive actions, but the current console does
 Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
 To proceed, use --auto-approve after reviewing the plan above.
 
+Files: 14 uploaded, 0 deleted
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/files...

@@ -13,6 +13,7 @@ This is a bug in the provider, which should be reported in the provider's own
 issue tracker.
 
 
+Files: 0 uploaded, 0 deleted
 
 Exit code: 1
 {

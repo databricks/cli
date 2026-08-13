@@ -18,6 +18,7 @@ API message: Fault injected by test.
 
 Error: planning failed
 
+Files: 1 uploaded, 0 deleted
 
 Exit code: 1
 
@@ -35,6 +36,7 @@ API message: Fault injected by test.
 
 Error: planning failed
 
+Files: 1 uploaded, 0 deleted
 
 Exit code: 1
 

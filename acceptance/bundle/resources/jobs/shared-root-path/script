@@ -6,3 +6,7 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
+
+# -q and -qq reduce the summary but must not hide the root-path warning.
+trace $CLI bundle deploy -q
+trace $CLI bundle deploy -qq

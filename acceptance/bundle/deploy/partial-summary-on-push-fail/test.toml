@@ -1,4 +1,4 @@
-# The deploy summary must not print when pushing resource state fails, so the
+# The resource summary must not print when pushing resource state fails, so the
 # fault is injected on the state upload (POST import-file). The path is fixed, so
 # the bundle name must be stable (test-bundle, not $UNIQUE_NAME).
 #

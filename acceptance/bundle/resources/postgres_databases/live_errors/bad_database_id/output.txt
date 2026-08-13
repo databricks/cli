@@ -6,6 +6,7 @@ HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Field database_id must match pattern ^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$, got 'Invalid_DB_ID'.
 
+Files: 0 uploaded, 0 deleted
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

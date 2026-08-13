@@ -13,6 +13,7 @@ Compute size updates are not supported in this update API. Please use the new
 update API instead.
 
 
+Files: 4 uploaded, 0 deleted
 
 Exit code: 1
 

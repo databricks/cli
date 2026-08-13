@@ -42,6 +42,7 @@ Error: cannot plan resources.schemas.foo: cannot resolve "${resources.catalogs.b
 
 Error: planning failed
 
+Files: 2 uploaded, 1 deleted
 
 === Test cleanup
 >>> [CLI] bundle destroy --auto-approve

@@ -127,12 +127,24 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 	}
 }
 
-// logDeploySummary prints the per-resource actions that were applied followed by
-// file and resource summary lines. -q drops the per-resource lines, -qq drops the
-// summary lines too. The past-tense verb is the short action name plus "d"
-// (create→Created, delete→Deleted, ...), capitalized to match the sentence case of
-// other output. "bundle plan" keeps the lower-case present tense, so the two are
-// still distinguishable at a glance.
+// logFileSummary reports what the file sync did. Separate from the resource summary
+// because a deploy that only changes business logic (a .py or .sql file) leaves every
+// resource unchanged, so without this line its summary is all zeros and looks like a
+// no-op. Called on the failure paths too: the files were uploaded before whatever
+// failed afterwards, so the count is accurate even then.
+func logFileSummary(ctx context.Context, b *bundle.Bundle) {
+	if b.Quiet >= bundle.QuietAll {
+		return
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("Files: %d uploaded, %d deleted", b.FileCounts.Uploaded, b.FileCounts.Deleted))
+}
+
+// logDeploySummary prints the per-resource actions that were applied followed by the
+// resource summary line. -q drops the per-resource lines, -qq drops the summary too.
+// The past-tense verb is the short action name plus "d" (create→Created,
+// delete→Deleted, ...), capitalized to match the sentence case of other output.
+// "bundle plan" keeps the lower-case present tense, so the two are still
+// distinguishable at a glance.
 func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	if b.Quiet >= bundle.QuietAll {
 		return
@@ -148,11 +160,7 @@ func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Pl
 		}
 	}
 
-	// Report file sync separately from resources: a deploy that only changes business
-	// logic (a .py or .sql file) leaves every resource unchanged, so without this line
-	// its summary is all zeros and looks like a no-op. Both lines print unconditionally,
-	// including when every count is zero, so the shape of the output never varies.
-	cmdio.LogString(ctx, fmt.Sprintf("Files: %d uploaded, %d deleted", b.FileCounts.Uploaded, b.FileCounts.Deleted))
+	logFileSummary(ctx, b)
 
 	counts := plan.CountActions()
 	summary := fmt.Sprintf("Resources: %d created, %d changed, %d deleted, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
@@ -235,6 +243,18 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
+	// From here on the files are uploaded, so report them however the rest of the
+	// deploy turns out. Deferred rather than repeated at each of the returns below, so
+	// that a new early return cannot silently drop it. On success logDeploySummary
+	// prints this line itself, between the per-resource lines and the resource summary,
+	// and sets the flag so the defer does not print it twice.
+	filesReported := false
+	defer func() {
+		if !filesReported {
+			logFileSummary(ctx, b)
+		}
+	}()
+
 	bundle.ApplySeqContext(ctx, b,
 		deploy.StateUpdate(),
 		deploy.StatePush(),
@@ -306,8 +326,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// precede (and appear to vouch for) the postdeploy script's output. Printed even
 	// if that script fails: the resources were already applied successfully by then,
 	// so the counts are accurate, and the script's error still propagates. Earlier
-	// failures return above without a summary, since the plan counts would then
-	// describe what was intended rather than what was applied.
+	// failures report the files only, since the plan counts would then describe what
+	// was intended rather than what was applied.
+	filesReported = true
 	logDeploySummary(ctx, b, plan)
 }
 

@@ -6,6 +6,7 @@ HTTP Status: 404 Not Found
 API error_code: NOT_FOUND
 API message: role not found; role_id:"does-not-exist" [TraceId: [TRACE_ID]]
 
+Files: 0 uploaded, 0 deleted
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
