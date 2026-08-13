@@ -3,7 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created schemas.schema1
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Plan is a no-op despite UC auto-populating managed properties
 >>> [CLI] bundle plan
@@ -30,7 +30,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === Redeploy is a no-op (no UpdateSchema call)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //unity
 json.method = "POST";

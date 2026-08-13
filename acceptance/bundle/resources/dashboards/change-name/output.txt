@@ -8,7 +8,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default/files...
 Created dashboards.my_dashboard
 Files: 7 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "display_name": "dashboard1",
   "lifecycle_state": "ACTIVE",
@@ -27,7 +27,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default/files...
 Updated dashboards.my_dashboard
 Files: 4 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 {
   "display_name": "dashboard2",
   "lifecycle_state": "ACTIVE",
@@ -43,4 +43,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

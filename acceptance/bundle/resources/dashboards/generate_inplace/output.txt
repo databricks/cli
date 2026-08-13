@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard-replace-[UNIQUE_NAME]/default/files...
 Created dashboards.already_exists
 Files: 6 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Get current dashboard
 "{\n  \"uiSettings\": {\n    \"theme\": {\n      \"widgetHeaderAlignment\": \"ALIGNMENT_UNSPECIFIED\"\n    }\n  }\n}\n"
@@ -44,4 +44,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dashboard-replace-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

@@ -38,7 +38,7 @@ Resources:
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default/files...
 Created sql_warehouses.test_sql_warehouse
 Files: 22 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Verify the create request
 >>> jq select(.method == "POST" and (.path | contains("/sql/warehouses"))) out.requests.txt
@@ -76,7 +76,7 @@ Resources:
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default/files...
 Updated sql_warehouses.test_sql_warehouse
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Verify the update request
 >>> jq select(.method == "POST" and (.path | contains("/sql/warehouses")) and (.body."name" == "sql_warehouse_name_2")) | del(.body.creator_name, .body.warehouse_type) out.requests.txt
@@ -114,7 +114,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted
 
 === Verify the destroy request
 >>> jq select(.method == "DELETE" and (.path | contains("/sql/warehouses"))) out.requests.txt

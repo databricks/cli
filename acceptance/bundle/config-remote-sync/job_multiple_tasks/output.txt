@@ -3,7 +3,7 @@ Created jobs.my_job
 Created jobs.no_tasks_job
 Created jobs.rename_task_job
 Files: 8 uploaded, 0 deleted
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify c_task, remove d_task, add e_task
 === Detect and save changes
@@ -74,9 +74,7 @@ Resource: resources.jobs.no_tasks_job
 
      rename_task_job:
 
->>> [CLI] bundle deploy -q
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Files: 3 uploaded, 0 deleted
+>>> [CLI] bundle deploy -qq
 
 === Rename b_task, replace a_task notebook_path, add synced_task
 === Detect task key rename
@@ -147,4 +145,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 3 deleted.
+Destroy: 3 deleted

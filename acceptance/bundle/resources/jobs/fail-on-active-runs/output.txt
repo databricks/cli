@@ -13,14 +13,14 @@ Validation OK!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-jobs-active-runs-test-[UNIQUE_NAME]/default/files...
 Created jobs.foo
 Files: 7 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Remove .databricks directory to simulate a fresh deployment
 === deploy empty bundle again
 >>> [CLI] bundle deploy --fail-on-active-runs
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-jobs-active-runs-test-[UNIQUE_NAME]/default/files...
 Files: 7 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -28,4 +28,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-jobs-active-runs-test-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

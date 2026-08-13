@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created clusters.test_cluster
 Files: 7 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Create a plan while cluster is running: should show resize
 
@@ -24,7 +24,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Resized clusters.test_cluster
 Files: 5 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //clusters/resize //clusters/edit
 {
@@ -62,4 +62,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

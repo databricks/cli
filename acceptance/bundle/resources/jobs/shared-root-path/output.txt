@@ -7,7 +7,7 @@ The bundle is configured to use /Workspace/Shared, which will give read/write ac
 Uploading bundle files to /Workspace/Shared/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created jobs.foo
 Files: 7 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 Warning: the bundle root path /Workspace/Shared/[USERNAME]/.bundle/[UNIQUE_NAME] is writable by all workspace users
@@ -19,4 +19,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Shared/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

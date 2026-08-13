@@ -4,7 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created genie_spaces.foo
 Created genie_spaces.foo.permissions
 Files: 5 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Permissions are set on the live space
 >>> [CLI] api get /api/2.0/permissions/genie/[GENIE_SPACE_ID]
@@ -75,4 +75,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

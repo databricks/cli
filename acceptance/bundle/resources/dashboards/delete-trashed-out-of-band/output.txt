@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/delete-trashed-out-of-band-[UNIQUE_NAME]/default/files...
 Created dashboards.dashboard1
 Files: 8 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "lifecycle_state": "ACTIVE",
   "parent_path": "/Users/[USERNAME]/.bundle/delete-trashed-out-of-band-[UNIQUE_NAME]/default/resources"
@@ -21,4 +21,4 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/delete-trashed-out-of-band-[UNIQUE_NAME]/default
 
-Destroy: [N] deleted.
+Destroy: 0 deleted

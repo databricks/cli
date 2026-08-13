@@ -5,7 +5,7 @@ Uploading code.tgz...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.job
 Files: 7 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Expecting code_source_path rewritten to the uploaded artifact remote path
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks[].ai_runtime_task out.requests.txt

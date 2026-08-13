@@ -3,7 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading immutable bundle snapshot...
 Created jobs.my_job
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 First snapshot path: /Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py
 
 === Add permissions and redeploy
@@ -23,7 +23,7 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
 Uploading immutable bundle snapshot...
 Updated jobs.my_job
 Created jobs.my_job.permissions
-Resources: 1 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
 Second snapshot path: /Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py
 
 === Verify snapshot path changed after permissions change
@@ -47,4 +47,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-perms-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

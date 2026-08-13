@@ -4,7 +4,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Created apps.myapp
 Files: 8 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //apps
 {
@@ -34,7 +34,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Updated apps.myapp
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //deployments
 {
@@ -60,7 +60,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Updated apps.myapp
 Files: 2 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Stop app externally, then deploy with started=false: app stays stopped
 >>> errcode [CLI] apps stop [UNIQUE_NAME]
@@ -74,7 +74,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Updated apps.myapp
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //apps
 {
@@ -106,7 +106,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Updated apps.myapp
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //apps
 {
@@ -143,4 +143,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

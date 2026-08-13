@@ -6,7 +6,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQU
 Created jobs.job_with_permissions
 Created jobs.job_with_permissions.permissions
 Files: 8 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -17,7 +17,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated jobs.job_with_permissions.permissions
 Files: 6 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> errcode [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -25,4 +25,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

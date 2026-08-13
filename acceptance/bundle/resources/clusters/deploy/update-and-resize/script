@@ -6,6 +6,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Deploy with -q throughout: the engines name this action differently (direct reports
+# resize, terraform update), so the per-resource line would diverge. The Resources:
+# summary agrees, so it is kept rather than using -qq.
 $CLI bundle plan > out.plan_.$DATABRICKS_BUNDLE_ENGINE.txt
 $CLI bundle plan -o json > out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy -q

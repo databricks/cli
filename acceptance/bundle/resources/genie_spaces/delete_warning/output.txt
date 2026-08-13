@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/genie-delete-warning-[UNIQUE_NAME]/default/files...
 Created genie_spaces.sales_analytics
 Files: 8 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Deploying without the genie space warns before deleting it (chat history loss)
 >>> [CLI] bundle deploy --auto-approve
@@ -14,9 +14,9 @@ The conversation history attached to a deleted space is permanently lost:
   delete resources.genie_spaces.sales_analytics
 Deleted genie_spaces.sales_analytics
 Files: 2 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 1 deleted, 0 unchanged.
+Resources: 0 created, 0 changed, 1 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/genie-delete-warning-[UNIQUE_NAME]/default
 
-Destroy: 0 deleted.
+Destroy: 0 deleted

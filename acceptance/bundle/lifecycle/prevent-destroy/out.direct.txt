@@ -46,7 +46,7 @@ properties such as the 'catalog' or 'storage' are changed:
 Recreated pipelines.my_pipelines
 Recreated schemas.my_schema
 Files: 3 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 2 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 2 deleted, 0 unchanged
 
 >>> errcode [CLI] bundle plan
 delete pipelines.my_pipelines
@@ -68,4 +68,4 @@ properties such as the 'catalog' or 'storage' are changed:
 Deleted pipelines.my_pipelines
 Deleted schemas.my_schema
 Files: 1 uploaded, 2 deleted
-Resources: 0 created, 0 changed, 2 deleted, 0 unchanged.
+Resources: 0 created, 0 changed, 2 deleted, 0 unchanged

@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-ssd-count-0-[UNIQUE_NAME]/default/files...
 Created clusters.test_cluster
 Files: 7 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Cluster should exist after bundle deployment:
 
@@ -13,4 +13,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-ssd-count-0-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

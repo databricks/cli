@@ -1,9 +1,7 @@
 
 >>> [CLI] bundle plan -o json
 
->>> [CLI] bundle deploy -q
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
-Files: 8 uploaded, 0 deleted
+>>> [CLI] bundle deploy -qq
 
 === Print the GET endpoint details
 {
@@ -13,9 +11,7 @@ Files: 8 uploaded, 0 deleted
 
 >>> [CLI] bundle plan -o json
 
->>> [CLI] bundle deploy -q
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
-Files: 6 uploaded, 0 deleted
+>>> [CLI] bundle deploy -qq
 
 === Print the GET endpoint details
 {
@@ -29,4 +25,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

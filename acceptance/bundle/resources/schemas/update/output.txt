@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created schemas.schema1
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //unity
 {
@@ -22,7 +22,7 @@ schemas schema1 id='main.myschema' name='myschema' catalog_name='main' comment='
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated schemas.schema1
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //unity
 json.method = "PATCH";
@@ -36,7 +36,7 @@ schemas schema1 id='main.myschema' name='myschema' catalog_name='main' comment='
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated schemas.schema1
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //unity
 json.method = "PATCH";

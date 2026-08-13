@@ -11,7 +11,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/file
 Created jobs.bar
 Created jobs.foo
 Files: 10 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Second summary, should have id and modified status should be absent
 >>> [CLI] bundle summary -o json
@@ -92,4 +92,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Destroy: 2 deleted.
+Destroy: 2 deleted

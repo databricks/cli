@@ -4,7 +4,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
 Created pipelines.my_pipeline
 Files: 6 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 >>> print_requests.py //api/2.0/pipelines
@@ -27,7 +27,7 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
 Updated pipelines.my_pipeline
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 >>> print_requests.py //api/2.0/pipelines
@@ -37,7 +37,7 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
 Updated pipelines.my_pipeline
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 >>> print_requests.py //api/2.0/pipelines
@@ -47,7 +47,7 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default/files...
 Updated pipelines.my_pipeline
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 >>> print_requests.py //api/2.0/pipelines
@@ -63,7 +63,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted
 
 >>> print_requests.py //api/2.0/pipelines
 {

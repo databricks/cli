@@ -35,7 +35,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQ
 Created jobs.sample_job
 Created pipelines.project_name_[UNIQUE_NAME]_etl
 Files: 21 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary -t dev
 Name: project_name_[UNIQUE_NAME]
@@ -99,7 +99,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
 
-Destroy: 2 deleted.
+Destroy: 2 deleted
 
 >>> [CLI] bundle validate -t prod
 Name: project_name_[UNIQUE_NAME]
@@ -295,7 +295,7 @@ Created jobs.sample_job.permissions
 Created pipelines.project_name_[UNIQUE_NAME]_etl
 Created pipelines.project_name_[UNIQUE_NAME]_etl.permissions
 Files: 21 uploaded, 0 deleted
-Resources: 4 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary -t prod
 Name: project_name_[UNIQUE_NAME]
@@ -499,4 +499,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod
 
-Destroy: 2 deleted.
+Destroy: 2 deleted

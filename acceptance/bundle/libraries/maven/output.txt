@@ -12,4 +12,4 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/maven/default/files...
 Created jobs.testjob
 Files: 7 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged

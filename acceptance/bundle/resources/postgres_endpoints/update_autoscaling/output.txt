@@ -23,7 +23,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-en
 Created postgres_branches.main
 Created postgres_endpoints.my_endpoint
 Created postgres_projects.my_project
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -50,7 +50,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
-Resources: 0 created, 0 changed, 0 deleted, 3 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -97,7 +97,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
 Updated postgres_endpoints.my_endpoint
-Resources: 0 created, 1 changed, 0 deleted, 2 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -129,7 +129,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
 Updated postgres_endpoints.my_endpoint
-Resources: 0 created, 1 changed, 0 deleted, 2 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -164,4 +164,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default
 
-Destroy: 3 deleted.
+Destroy: 3 deleted

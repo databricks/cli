@@ -37,15 +37,15 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/dev
 Created jobs.sample_job
 Created pipelines.X[UNIQUE_NAME]_etl
 Files: 23 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
-Destroy: 2 deleted.
+Destroy: 2 deleted
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/prod/files...
 Created jobs.sample_job
 Created jobs.sample_job.permissions
 Created pipelines.X[UNIQUE_NAME]_etl
 Created pipelines.X[UNIQUE_NAME]_etl.permissions
 Files: 25 uploaded, 0 deleted
-Resources: 4 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
-Destroy: 2 deleted.
+Destroy: 2 deleted

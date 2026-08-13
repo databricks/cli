@@ -1,7 +1,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
 Created jobs.multifile_job
 Files: 9 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Edit a task defined in the second included file
 === Sync
@@ -94,4 +94,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

@@ -24,14 +24,14 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[U
 Created jobs.my_job
 Created jobs.my_job.permissions
 Files: 8 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
 
 === bundle deploy --select schemas.my_schema
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default/files...
 Created schemas.my_schema
 Created schemas.my_schema.grants
 Files: 3 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
 
 >>> print_requests.py --sort //permissions
 {
@@ -76,4 +76,4 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted.
+Destroy: 2 deleted

@@ -7,7 +7,7 @@ Created registered_models.test_model
 Created sql_warehouses.test_warehouse
 Created volumes.test_volume
 Files: 7 uploaded, 0 deleted
-Resources: 7 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 7 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify both jobs
 === Detect and save changes
@@ -71,4 +71,4 @@ is removed from the catalog, but the underlying files are not deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 7 deleted.
+Destroy: 7 deleted

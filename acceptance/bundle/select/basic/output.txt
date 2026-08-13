@@ -27,7 +27,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAM
 Created jobs.bar
 Created jobs.foo
 Files: 8 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 1 not selected.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 1 not selected
 
 === Telemetry:
 select_used true
@@ -104,7 +104,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default/files...
 Created jobs.baz
 Files: 3 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 2 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py --sort //jobs
 {
@@ -138,4 +138,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default
 
-Destroy: 3 deleted.
+Destroy: 3 deleted

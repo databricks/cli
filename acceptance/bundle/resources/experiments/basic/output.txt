@@ -11,9 +11,7 @@ create experiments.my_experiment
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> [CLI] bundle deploy -q
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default/files...
-Files: 7 uploaded, 0 deleted
+>>> [CLI] bundle deploy -qq
 
 >>> [CLI] experiments get-experiment [NUMID]
 {
@@ -57,9 +55,7 @@ update experiments.my_experiment
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
->>> [CLI] bundle deploy -q
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default/files...
-Files: 2 uploaded, 0 deleted
+>>> [CLI] bundle deploy -qq
 
 >>> [CLI] experiments get-experiment [NUMID]
 {
@@ -103,9 +99,7 @@ recreate experiments.my_experiment
 
 Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
->>> [CLI] bundle deploy -q
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default/files...
-Files: 2 uploaded, 0 deleted
+>>> [CLI] bundle deploy -qq
 
 >>> [CLI] experiments get-experiment [NUMID]
 {
@@ -144,9 +138,7 @@ Files: 2 uploaded, 0 deleted
 
 >>> [CLI] bundle plan
 
->>> [CLI] bundle deploy -q
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default/files...
-Files: 3 uploaded, 0 deleted
+>>> [CLI] bundle deploy -qq
 
 >>> [CLI] experiments get-experiment [NUMID]
 {
@@ -186,4 +178,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created jobs.foo
 Files: 10 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Check that test file is in workspace
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py
@@ -45,7 +45,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Files: 8 uploaded, 2 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 === Check that removed files are not in the workspace anymore
 >>> errcode [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py
@@ -68,4 +68,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

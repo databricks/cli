@@ -91,7 +91,7 @@ Created jobs.model_training_job.permissions
 Created registered_models.model
 Created registered_models.model.grants
 Files: 26 uploaded, 0 deleted
-Resources: 8 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 8 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary --var catalog_name=main -o json
 Warning: expected a string value, found null
@@ -147,7 +147,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
 
-Destroy: 4 deleted.
+Destroy: 4 deleted
 
 >>> [CLI] schemas delete main.project_name_[UNIQUE_NAME]
 Warning: expected a string value, found null

@@ -8,7 +8,7 @@ Created schemas.my_schema.grants
 Created volumes.my_volume
 Created volumes.my_volume.grants
 Files: 5 uploaded, 0 deleted
-Resources: 6 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 6 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deployment migrate
 Success! Migrated 6 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
@@ -26,7 +26,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 6 unchanged
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 4 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 6 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 6 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 6 unchanged
@@ -39,7 +39,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 6 unchanged
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 2 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 6 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 6 unchanged
 
 >>> print_requests.py --get //unity-catalog/permissions
 

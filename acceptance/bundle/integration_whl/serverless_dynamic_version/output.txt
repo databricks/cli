@@ -7,7 +7,7 @@ Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created jobs.some_other_job
 Files: 18 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle run some_other_job
 Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[NUMID]
@@ -25,7 +25,7 @@ Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated jobs.some_other_job
 Files: 11 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle run some_other_job
 Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[NUMID]
@@ -42,4 +42,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

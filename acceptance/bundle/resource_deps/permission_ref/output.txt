@@ -16,4 +16,4 @@ Created jobs.job_a.permissions
 Created jobs.job_b
 Created jobs.job_b.permissions
 Files: 6 uploaded, 0 deleted
-Resources: 4 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged

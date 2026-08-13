@@ -8,7 +8,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/task-source/defaul
 Created jobs.git_job
 Created jobs.workspace_job
 Files: 9 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="git_job") | .body out.requests.txt
 
@@ -23,7 +23,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/task-source/default/files...
 Updated jobs.git_job
 Files: 5 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="git_job") | .body out.requests.txt
 

@@ -1,11 +1,14 @@
 bundle:
   name: test-bundle-$UNIQUE_NAME
 
-# The script writes out.after_first_deploy.* between the deploys, so without this
-# the later deploys' uploaded file count depends on which variant ran before.
+# This test deploys several times and reports how many files each deploy uploaded, so
+# nothing written between the deploys may end up in the synced tree: the script's own
+# out.after_first_deploy.*, and the test runner's output.txt / ACC_REPLS, which it keeps
+# appending to while the deploy runs.
 sync:
   exclude:
-    - out.*
+    - out*
+    - ACC_REPLS
 
 permissions:
   - level: CAN_MANAGE

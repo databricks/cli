@@ -4,7 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created schemas.myschema
 Created schemas.myschema.grants
 Files: 6 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //unity-catalog/permissions --sort
 {
@@ -44,7 +44,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated schemas.myschema.grants
 Files: 5 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //unity-catalog/permissions --sort
 {
@@ -78,4 +78,4 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

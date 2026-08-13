@@ -35,7 +35,7 @@ Resources:
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default/files...
 Created instance_pools.test_instance_pool
 Files: 6 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Verify the create request
 >>> jq select(.method == "POST" and (.path | contains("/instance-pools/create"))) out.requests.txt
@@ -70,7 +70,7 @@ Resources:
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default/files...
 Updated instance_pools.test_instance_pool
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Verify the update request
 >>> jq select(.method == "POST" and (.path | contains("/instance-pools/edit"))) out.requests.txt
@@ -106,7 +106,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted
 
 === Verify the destroy request
 >>> jq select(.method == "POST" and (.path | contains("/instance-pools/delete"))) out.requests.txt

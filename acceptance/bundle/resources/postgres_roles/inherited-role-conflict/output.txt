@@ -5,7 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/inherited-role-con
 Created postgres_branches.main
 Created postgres_projects.my_project
 Created postgres_roles.my_role
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Unbind the role: it now exists on the branch but is no longer tracked by the bundle
 >>> [CLI] bundle deployment unbind my_role
@@ -42,6 +42,6 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/inherited-role-conflict-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted.
+Destroy: 2 deleted
 
 Exit code: 1

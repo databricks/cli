@@ -6,4 +6,4 @@ Files: 6 uploaded, 0 deleted
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 0 deleted.
+Destroy: 0 deleted

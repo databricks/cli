@@ -15,7 +15,7 @@ Uploading bundle files to /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test
 Created jobs.foo
 Created jobs.foo.permissions
 Files: 9 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] permissions set jobs [NUMID] --json @take_ownership.json
 

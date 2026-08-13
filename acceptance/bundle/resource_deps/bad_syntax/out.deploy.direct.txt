@@ -2,6 +2,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created volumes.bar
 Created volumes.foo
 Files: 7 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 Unexpected success

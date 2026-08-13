@@ -5,7 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created models.mymodel
 Created models.mymodel.permissions
 Files: 6 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //permissions/registered-models
 {
@@ -33,7 +33,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 Updated models.mymodel
 Updated models.mymodel.permissions
 Files: 5 uploaded, 0 deleted
-Resources: 0 created, 2 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //permissions/registered-models
 {
@@ -59,4 +59,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

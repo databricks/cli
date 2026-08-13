@@ -4,7 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/genie-serialized-s
 Created genie_spaces.from_file
 Created genie_spaces.from_inline
 Files: 8 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -18,4 +18,4 @@ The conversation history attached to them is permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/genie-serialized-space-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted.
+Destroy: 2 deleted

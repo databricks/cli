@@ -36,7 +36,7 @@ Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created jobs.some_other_job
 Files: 19 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle run some_other_job --python-params param1,param2
 Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
@@ -53,4 +53,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

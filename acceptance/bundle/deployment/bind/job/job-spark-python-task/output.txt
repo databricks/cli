@@ -15,7 +15,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files...
 Updated jobs.foo
 Files: 7 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Read the pre-defined job:
 >>> [CLI] jobs get [NUMID]
@@ -44,7 +44,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]
 
-Destroy: 0 deleted.
+Destroy: 0 deleted
 
 === Read the pre-defined job again (expecting it still exists):
 >>> [CLI] jobs get [NUMID]

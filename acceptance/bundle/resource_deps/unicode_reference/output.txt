@@ -20,7 +20,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created jobs.foo
 Created jobs.变量
 Files: 5 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary
 Name: test-bundle

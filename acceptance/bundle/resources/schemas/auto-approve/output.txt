@@ -4,7 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/file
 Created pipelines.foo
 Created schemas.bar
 Files: 9 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Assert the schema is created
 >>> [CLI] schemas get main.test-schema-[UNIQUE_NAME]
@@ -78,7 +78,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Destroy: 2 deleted.
+Destroy: 2 deleted
 
 === Assert the schema is deleted
 Exit code: 1

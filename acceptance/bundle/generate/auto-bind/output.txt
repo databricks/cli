@@ -23,7 +23,7 @@ test.py
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]/files...
 Updated jobs.test_job
 Files: 9 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Destroy the bundle:
 >>> [CLI] bundle destroy --auto-approve
@@ -32,7 +32,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]
 
-Destroy: 1 deleted.
+Destroy: 1 deleted
 
 === Check that job is bound and does not exist after bundle is destroyed:
 >>> errcode [CLI] jobs get [NUMID] --output json

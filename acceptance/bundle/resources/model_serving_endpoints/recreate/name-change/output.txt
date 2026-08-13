@@ -5,7 +5,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created model_serving_endpoints.test_endpoint
 Files: 7 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //serving-endpoints
 {
@@ -42,7 +42,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Recreated model_serving_endpoints.test_endpoint
 Files: 5 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 1 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
 >>> print_requests.py //serving-endpoints
 {
@@ -81,4 +81,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

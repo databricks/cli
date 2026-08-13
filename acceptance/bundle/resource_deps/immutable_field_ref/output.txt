@@ -5,7 +5,7 @@ Created jobs.bar
 Created schemas.schema
 Created volumes.foo
 Files: 5 uploaded, 0 deleted
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> update_file.py databricks.yml comment1 comment2
 

@@ -42,7 +42,7 @@ Created postgres_catalogs.my_catalog
 Created postgres_projects.my_project
 Created postgres_synced_tables.my_table
 Created schemas.pipeline_storage
-Resources: 4 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-synced-table synced_tables/lakebase_test_[UNIQUE_NAME].public.trips_synced
 {
@@ -92,5 +92,5 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default
 
-Destroy: 4 deleted.
+Destroy: 4 deleted
 Cleaning up temporary source table

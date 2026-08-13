@@ -28,7 +28,7 @@ Files: 12 uploaded, 0 deleted
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/pipeline_and_deploy-[UNIQUE_NAME]/default
 
-Destroy: 0 deleted.
+Destroy: 0 deleted
 
 === Cleanup: delete the original pipeline and files
 >>> errcode [CLI] pipelines delete [PIPELINE_ID]

@@ -4,7 +4,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint
 Created vector_search_endpoints.my_endpoint.permissions
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //vector-search/endpoints //permissions
 
@@ -27,7 +27,7 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
 Updated vector_search_endpoints.my_endpoint
 Updated vector_search_endpoints.my_endpoint.permissions
-Resources: 0 created, 2 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //vector-search/endpoints //permissions
 
@@ -43,4 +43,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

@@ -28,7 +28,7 @@ Resources:
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-catalog-[UNIQUE_NAME]/default/files...
 Created postgres_catalogs.my_catalog
 Created postgres_projects.my_project
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-catalog catalogs/lakebase_test_[UNIQUE_NAME]
 {
@@ -70,4 +70,4 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-catalog-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted.
+Destroy: 2 deleted

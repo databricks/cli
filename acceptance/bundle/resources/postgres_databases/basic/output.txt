@@ -38,7 +38,7 @@ Created postgres_branches.main
 Created postgres_databases.my_database
 Created postgres_projects.my_project
 Created postgres_roles.owner
-Resources: 4 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-database projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database
 {
@@ -99,4 +99,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-[UNIQUE_NAME]/default
 
-Destroy: 4 deleted.
+Destroy: 4 deleted

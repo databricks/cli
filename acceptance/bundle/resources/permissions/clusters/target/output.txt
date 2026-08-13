@@ -62,6 +62,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/fi
 Created clusters.cluster1
 Created clusters.cluster1.permissions
 Files: 5 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //clusters

@@ -24,6 +24,6 @@ trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 # After deploying, both engines converge: the follow-up plan reports no changes.
 # The deploy summary itself still diverges here (terraform revokes the extra
 # privilege and reports 1 changed; direct sees no drift and reports it as
-# unchanged), so drop it to keep the output engine-stable.
-trace $CLI bundle deploy -q 2>&1 | grep -v '^Resources:'
+# unchanged), so deploy with -qq to keep the output engine-stable.
+trace $CLI bundle deploy -qq
 trace $CLI bundle plan

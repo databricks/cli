@@ -5,7 +5,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default/files...
 Created jobs.test_job
 Files: 6 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -13,7 +13,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted
 
 === Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)
 
@@ -21,7 +21,7 @@ Destroy: 1 deleted.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default/files...
 Created jobs.test_job
 Files: 7 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Machine A: any command that pulls remote state now fails
 

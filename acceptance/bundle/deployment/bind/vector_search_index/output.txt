@@ -19,7 +19,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] vector-search-indexes get-index main.default.test_vs_index_[UNIQUE_NAME]
 {
@@ -34,7 +34,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 0 deleted.
+Destroy: 0 deleted
 
 >>> [CLI] vector-search-indexes get-index main.default.test_vs_index_[UNIQUE_NAME]
 {

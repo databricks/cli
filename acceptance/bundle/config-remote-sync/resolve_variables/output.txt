@@ -2,7 +2,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQU
 Created jobs.my_job
 Created pipelines.my_pipeline
 Files: 7 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify pipeline environment dependencies
 === Add and replace parameters remotely
@@ -161,4 +161,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted.
+Destroy: 2 deleted

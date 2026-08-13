@@ -13,7 +13,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created pipelines.my_pipeline
 Created schemas.my_schema
 Files: 5 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -29,4 +29,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Destroy: 2 deleted.
+Destroy: 2 deleted

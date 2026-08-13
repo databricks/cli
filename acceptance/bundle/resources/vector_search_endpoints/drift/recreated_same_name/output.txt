@@ -4,7 +4,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-recreated-same-name-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint
 Created vector_search_endpoints.my_endpoint.permissions
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
 {
@@ -41,7 +41,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-recreated-same-name-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint.permissions
-Resources: 1 created, 0 changed, 0 deleted, 1 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
 {
@@ -60,4 +60,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-recreated-same-name-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

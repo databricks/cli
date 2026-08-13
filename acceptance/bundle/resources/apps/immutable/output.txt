@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy
 Uploading immutable bundle snapshot...
 Created apps.my_app
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle run my_app
 ✓ Getting the status of the app my-immutable-app

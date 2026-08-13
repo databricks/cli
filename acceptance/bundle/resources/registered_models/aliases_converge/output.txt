@@ -5,7 +5,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default/files...
 Created registered_models.my_registered_model
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Plan is a no-op: GET never echoes aliases, so they must not drift
 >>> [CLI] bundle plan
@@ -39,7 +39,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default/files...
 Updated registered_models.my_registered_model
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Re-plan after the edit converges: no further changes
 >>> [CLI] bundle plan
@@ -51,4 +51,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

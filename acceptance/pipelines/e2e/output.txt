@@ -20,7 +20,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/d
 Created jobs.sample_job
 Created pipelines.lakeflow_project_etl
 Files: 14 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 View your job sample_job here: [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
@@ -44,7 +44,7 @@ Pipeline configurations for this update:
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/files...
 Created pipelines.lakeflow_project_etl_2
 Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 2 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 2 unchanged
 View your job sample_job here: [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
@@ -113,4 +113,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev
 
-Destroy: 3 deleted.
+Destroy: 3 deleted

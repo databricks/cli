@@ -10,7 +10,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created jobs.job_with_permissions
 Created jobs.job_with_permissions.permissions
 Files: 6 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -116,7 +116,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated jobs.job_with_permissions.permissions
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged

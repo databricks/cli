@@ -35,7 +35,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default/files...
 Created alerts.myalert
 Files: 7 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] alerts-v2 get-alert [ALERT_ID]
 {
@@ -96,4 +96,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

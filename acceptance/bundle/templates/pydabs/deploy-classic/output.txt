@@ -23,4 +23,4 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_pydabs/dev/file
 Created jobs.sample_job
 Created pipelines.my_pydabs_etl
 Files: 22 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged

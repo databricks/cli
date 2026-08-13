@@ -33,7 +33,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-en
 Created postgres_branches.main
 Created postgres_endpoints.custom
 Created postgres_projects.my_project
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/custom
 {
@@ -88,4 +88,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-[UNIQUE_NAME]/default
 
-Destroy: 3 deleted.
+Destroy: 3 deleted

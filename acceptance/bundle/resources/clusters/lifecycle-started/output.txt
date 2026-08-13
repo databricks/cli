@@ -4,7 +4,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created clusters.mycluster
 Files: 7 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //clusters
 {
@@ -36,7 +36,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated clusters.mycluster
 Files: 2 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //clusters
 {
@@ -66,7 +66,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //clusters
 {
@@ -87,7 +87,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated clusters.mycluster
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //clusters
 {
@@ -107,4 +107,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

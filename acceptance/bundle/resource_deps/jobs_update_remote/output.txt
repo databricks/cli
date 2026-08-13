@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.bar
 Created jobs.foo
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //jobs
 {
@@ -73,7 +73,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Destroy: 2 deleted.
+Destroy: 2 deleted
 
 >>> print_requests.py //jobs
 {

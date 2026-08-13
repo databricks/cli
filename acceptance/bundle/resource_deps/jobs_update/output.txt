@@ -9,7 +9,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.bar
 Created jobs.foo
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //jobs
 
@@ -27,7 +27,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated jobs.foo
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //jobs
 
@@ -69,7 +69,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Destroy: 2 deleted.
+Destroy: 2 deleted
 
 >>> print_requests.py //jobs
 {

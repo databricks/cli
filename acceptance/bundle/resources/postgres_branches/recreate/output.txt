@@ -34,7 +34,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-recreate-[UNIQUE_NAME]/default/files...
 Created postgres_branches.main
 Created postgres_projects.my_project
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change branch_id (should trigger recreation in direct, update in terraform)
 >>> cat databricks.yml
@@ -69,7 +69,7 @@ This action will result in the deletion or recreation of the following Lakebase 
 All data stored in them will be permanently lost:
   recreate resources.postgres_branches.main
 Recreated postgres_branches.main
-Resources: 1 created, 0 changed, 1 deleted, 1 unchanged.
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 === Fetch new branch ID
 === Destroy and verify cleanup
@@ -88,7 +88,7 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-recreate-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted.
+Destroy: 2 deleted
 
 >>> [CLI] bundle destroy --auto-approve
 No active deployment found to destroy!

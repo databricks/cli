@@ -12,7 +12,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created jobs.bar
 Created jobs.foo
 Files: 7 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //jobs
 {
@@ -65,7 +65,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Deleted jobs.bar
 Deleted jobs.foo
 Files: 5 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 2 deleted, 0 unchanged.
+Resources: 0 created, 0 changed, 2 deleted, 0 unchanged
 
 >>> print_requests.py //jobs
 {
@@ -86,6 +86,6 @@ Resources: 0 created, 0 changed, 2 deleted, 0 unchanged.
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Destroy: 0 deleted.
+Destroy: 0 deleted
 
 >>> print_requests.py //jobs

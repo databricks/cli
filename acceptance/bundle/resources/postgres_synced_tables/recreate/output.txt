@@ -9,7 +9,7 @@ Created postgres_catalogs.my_catalog
 Created postgres_projects.my_project
 Created postgres_synced_tables.my_table
 Created schemas.pipeline_storage
-Resources: 4 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
 recreate postgres_synced_tables.my_table
@@ -19,7 +19,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 3 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default/files...
 Recreated postgres_synced_tables.my_table
-Resources: 1 created, 0 changed, 1 deleted, 3 unchanged.
+Resources: 1 created, 0 changed, 1 deleted, 3 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -37,5 +37,5 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default
 
-Destroy: 4 deleted.
+Destroy: 4 deleted
 Cleaning up temporary source table

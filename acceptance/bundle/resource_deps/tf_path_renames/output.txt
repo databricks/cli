@@ -10,7 +10,7 @@ Created jobs.src_git
 Created jobs.src_tasks
 Created pipelines.src_pipeline
 Files: 6 uploaded, 0 deleted
-Resources: 6 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 6 created, 0 changed, 0 deleted, 0 unchanged
 /path/to/wheel.whl
 main
 mycluster

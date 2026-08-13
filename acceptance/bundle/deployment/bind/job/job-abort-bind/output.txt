@@ -14,7 +14,7 @@ Exit code: 1
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files...
 Created jobs.foo
 Files: 7 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Check that job is not bound and not updated with config from bundle:
 >>> [CLI] jobs get [JOB_ID]

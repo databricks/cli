@@ -11,7 +11,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-index-grants-[U
 Created vector_search_endpoints.my_endpoint
 Created vector_search_indexes.my_index
 Created vector_search_indexes.my_index.grants
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
@@ -42,4 +42,4 @@ For Direct Access indexes, all upserted vectors are permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/vs-index-grants-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted.
+Destroy: 2 deleted

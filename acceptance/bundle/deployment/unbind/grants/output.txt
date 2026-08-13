@@ -4,7 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/file
 Created schemas.schema_1
 Created schemas.schema_1.grants
 Files: 6 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] grants get schema main.test-schema-[UNIQUE_NAME] --output json
 {
@@ -22,7 +22,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/file
 Created schemas.schema_1
 Created schemas.schema_1.grants
 Files: 1 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Grants should be the same as before unbind
 >>> [CLI] grants get schema main.test-schema-[UNIQUE_NAME] --output json
@@ -43,7 +43,7 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Destroy: 1 deleted.
+Destroy: 1 deleted
 
 >>> [CLI] schemas delete main.test-schema-[UNIQUE_NAME]
 0

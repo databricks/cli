@@ -12,7 +12,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 === Deploy bundle: Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated schemas.schema1
 Files: 6 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Read the pre-defined schema: {
   "full_name": "main.test-schema-[UUID]",
@@ -23,7 +23,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged.
 === Unbind the schema: 
 === Destroy the bundle: All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 0 deleted.
+Destroy: 0 deleted
 
 === Read the pre-defined schema again (expecting it still exists): {
   "full_name": "main.test-schema-[UUID]",

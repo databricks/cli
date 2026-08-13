@@ -7,7 +7,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-colla
 Created secret_scopes.my_scope
 Created secret_scopes.my_scope.permissions
 Files: 7 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] secrets list-scopes -o json
 {
@@ -27,4 +27,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-collapse-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

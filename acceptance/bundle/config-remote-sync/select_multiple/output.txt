@@ -3,7 +3,7 @@ Created jobs.job_a
 Created jobs.job_b
 Created jobs.job_c
 Files: 6 uploaded, 0 deleted
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify all three jobs remotely
 === Comma-separated selectors preview two of three resources
@@ -72,4 +72,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 3 deleted.
+Destroy: 3 deleted

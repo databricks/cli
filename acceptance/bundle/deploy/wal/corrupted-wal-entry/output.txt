@@ -12,7 +12,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-corrupted-test
 Created jobs.another_valid
 Created jobs.valid_job
 Files: 8 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary
 Name: wal-corrupted-test

@@ -1,9 +1,7 @@
 
 >>> [CLI] bundle plan -o json
 
->>> [CLI] bundle deploy -q
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/files...
-Files: 8 uploaded, 0 deleted
+>>> [CLI] bundle deploy -qq
 
 >>> print_state.py
 
@@ -16,6 +14,4 @@ Files: 8 uploaded, 0 deleted
 
 >>> [CLI] bundle plan
 
->>> [CLI] bundle deploy -q
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/files...
-Files: 5 uploaded, 0 deleted
+>>> [CLI] bundle deploy -qq

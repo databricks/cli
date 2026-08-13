@@ -12,7 +12,7 @@ Validation OK!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-replace-branch-[UNIQUE_NAME]/default/files...
 Created postgres_branches.production
 Created postgres_projects.my_project
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/production
 {

@@ -4,7 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remo
 Created schemas.grants_schema
 Created schemas.grants_schema.grants
 Files: 6 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] grants get schema main.schema_remove_principal_[UNIQUE_NAME]
 json.privilege_assignments[].principal = "[USERNAME]";
@@ -16,7 +16,7 @@ json.privilege_assignments[].privileges[] = "USE_SCHEMA";
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...
 Updated schemas.grants_schema.grants
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] grants get schema main.schema_remove_principal_[UNIQUE_NAME]
 
@@ -26,7 +26,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 2 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -40,4 +40,4 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

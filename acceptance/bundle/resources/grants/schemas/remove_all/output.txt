@@ -4,15 +4,13 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remo
 Created schemas.grants_schema
 Created schemas.grants_schema.grants
 Files: 6 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] grants get schema main.schema_remove_all_[UNIQUE_NAME]
 json.privilege_assignments[].principal = "deco-test-user@databricks.com";
 json.privilege_assignments[].privileges[] = "USE_SCHEMA";
 
->>> [CLI] bundle deploy -q
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-all-[UNIQUE_NAME]/default/files...
-Files: 3 uploaded, 0 deleted
+>>> [CLI] bundle deploy -qq
 
 >>> [CLI] grants get schema main.schema_remove_all_[UNIQUE_NAME]
 json = {};
@@ -26,4 +24,4 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-all-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

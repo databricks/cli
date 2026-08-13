@@ -6,7 +6,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/d
 Created pipelines.foo
 Created pipelines.foo.permissions
 Files: 8 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //pipeline
 
@@ -58,7 +58,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
 Updated pipelines.foo.permissions
 Files: 6 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //pipeline
 
@@ -73,7 +73,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
 Updated pipelines.foo.permissions
 Files: 5 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //pipeline
 
@@ -97,7 +97,7 @@ resources:
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
 Deleted pipelines.foo.permissions
 Files: 5 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 1 deleted, 1 unchanged.
+Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> print_requests.py //pipeline --sort
 
@@ -112,7 +112,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
 Created pipelines.foo.permissions
 Files: 4 uploaded, 1 deleted
-Resources: 1 created, 0 changed, 0 deleted, 1 unchanged.
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //pipeline
 
@@ -129,4 +129,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/permissions-test/default
 
-Destroy: 1 deleted.
+Destroy: 1 deleted

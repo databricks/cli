@@ -28,7 +28,7 @@ Resources:
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
 Created vector_search_endpoints.my_endpoint
 Created vector_search_indexes.my_index
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] vector-search-indexes get-index main.default.vs_index_[UNIQUE_NAME]
 {
@@ -68,4 +68,4 @@ For Direct Access indexes, all upserted vectors are permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted.
+Destroy: 2 deleted

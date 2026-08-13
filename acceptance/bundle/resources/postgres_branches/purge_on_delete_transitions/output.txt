@@ -4,7 +4,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pg-branch-purge-transitions-[UNIQUE_NAME]/default/files...
 Created postgres_branches.branch
 Created postgres_projects.proj
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> get_purge
 (unset)
@@ -13,7 +13,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged.
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pg-branch-purge-transitions-[UNIQUE_NAME]/default/files...
 Updated postgres_branches.branch
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> get_purge
 json.state.resources.postgres_branches.branch.state.purge_on_delete = true;
@@ -22,7 +22,7 @@ json.state.resources.postgres_branches.branch.state.purge_on_delete = true;
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pg-branch-purge-transitions-[UNIQUE_NAME]/default/files...
 Updated postgres_branches.branch
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged.
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> get_purge
 json.state.resources.postgres_branches.branch.state.purge_on_delete = false;
@@ -30,7 +30,7 @@ json.state.resources.postgres_branches.branch.state.purge_on_delete = false;
 === Step 4: remove the line again
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pg-branch-purge-transitions-[UNIQUE_NAME]/default/files...
-Resources: 0 created, 0 changed, 0 deleted, 2 unchanged.
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> get_purge
 json.state.resources.postgres_branches.branch.state.purge_on_delete = false;
