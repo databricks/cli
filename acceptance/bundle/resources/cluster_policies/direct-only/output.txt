@@ -1,0 +1,11 @@
+
+=== Deploy should fail in terraform mode
+>>> [CLI] bundle deploy
+Error: Cluster Policy resources are only supported with direct deployment mode
+  in databricks.yml:6:5
+
+Cluster Policy resources require direct deployment mode. Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' or set 'bundle.engine: direct' in your databricks.yml to use cluster_policy resources.
+Learn more at https://docs.databricks.com/dev-tools/bundles/direct
+
+
+Exit code: 1

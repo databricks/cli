@@ -1,0 +1,4 @@
+title "Deploy should fail in terraform mode"
+trace $CLI bundle deploy 2>&1 | contains.py \
+  "Cluster Policy resources are only supported with direct deployment mode" \
+  "DATABRICKS_BUNDLE_ENGINE"
