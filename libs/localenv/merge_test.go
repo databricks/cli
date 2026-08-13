@@ -488,7 +488,7 @@ dev = ["databricks-connect~=16.0.0"]
 	s := string(out)
 	assert.Contains(t, s, "[tool.databricks.environment]")
 	assert.Contains(t, s, `environment_version = "5"`)
-	assert.Contains(t, regions, "tool.databricks.environment")
+	assert.Contains(t, regions, regionDatabricksEnvironment)
 	requireValidTOML(t, out)
 	// Idempotent.
 	twice, _, err := MergeManaged(out, c)
@@ -513,7 +513,7 @@ environment_version = "4"  # pinned
 	s := string(out)
 	assert.Contains(t, s, `environment_version = "5"  # pinned`)
 	assert.NotContains(t, s, `environment_version = "4"`)
-	assert.Contains(t, regions, "tool.databricks.environment")
+	assert.Contains(t, regions, regionDatabricksEnvironment)
 	// The table is refreshed in place, not duplicated.
 	assert.Equal(t, 1, countOccurrences(s, "[tool.databricks.environment]"))
 	requireValidTOML(t, out)
@@ -556,7 +556,7 @@ environment_version = "4"
 	out, regions, err := MergeManaged(in, c)
 	require.NoError(t, err)
 	assert.Contains(t, string(out), `environment_version = "4"`)
-	assert.NotContains(t, regions, "tool.databricks.environment")
+	assert.NotContains(t, regions, regionDatabricksEnvironment)
 }
 
 func TestMergeAddsEnvironmentToPreFeatureManagedFile(t *testing.T) {
@@ -589,7 +589,7 @@ constraint-dependencies = [
 	s := string(out)
 	assert.Contains(t, s, "[tool.databricks.environment]")
 	assert.Contains(t, s, `environment_version = "5"`)
-	assert.Contains(t, regions, "tool.databricks.environment")
+	assert.Contains(t, regions, regionDatabricksEnvironment)
 	// The pre-existing managed [tool.uv] block is neither duplicated nor disturbed.
 	assert.Equal(t, 1, countOccurrences(s, managedMarkerStart))
 	assert.Equal(t, 1, countOccurrences(s, "[tool.databricks.environment]"))

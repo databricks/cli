@@ -178,7 +178,7 @@ func (c *ComputeInfo) Label() string {
 	switch {
 	case c.ServerlessVersion != "":
 		// ServerlessVersion is normalized to "v4"; drop the "v" for display.
-		return "serverless " + strings.TrimPrefix(c.ServerlessVersion, "v")
+		return "serverless " + c.ServerlessEnvironmentVersion()
 	case c.ClusterID != "":
 		return "cluster " + c.ClusterID
 	case c.SparkVersion != "":
@@ -274,6 +274,13 @@ const (
 	// groups — since constraint-dependencies applies to the whole resolution. Emitted
 	// only when the ranges are provably disjoint; ambiguous cases are not flagged.
 	WarnUserConstraintConflict = "W_USER_CONSTRAINT_CONFLICT"
+	// WarnStaleEnvironmentVersion: the target is a cluster, which does not manage the
+	// serverless environment section, but the file carries a [tool.databricks.environment]
+	// environment_version left over from an earlier serverless run. The value is not
+	// updated (cluster targets are a no-op there), so it now describes a target the
+	// project is no longer set up for — worth surfacing because VS Code and serverless
+	// Jobs read that section as a source of truth.
+	WarnStaleEnvironmentVersion = "W_STALE_ENVIRONMENT_VERSION"
 )
 
 // Result is the full outcome of a sync run and the root of the --json object

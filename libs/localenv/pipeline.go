@@ -310,6 +310,12 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	// The artifact drives the merge; in constraints-only mode we clear the
 	// databricks-connect pin so it is neither written nor asserted. envVersion is
 	// the resolved serverless version (empty for cluster targets).
+	//
+	// envVersion is deliberately NOT cleared in constraints-only mode: unlike the
+	// databricks-connect pin (a managed *dependency* the mode opts out of), the
+	// environment version records the resolved compute *target*, which the mode
+	// still resolves. Recording it keeps the target discoverable for VS Code and
+	// serverless Jobs even when dependency management is turned off.
 	effective := *c
 	effective.DatabricksConnect = dbcPin
 	effective.EnvironmentVersion = envVersion
