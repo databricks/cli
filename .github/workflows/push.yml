@@ -155,6 +155,15 @@ jobs:
       - name: Run tests
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
+          # Go picks its cryptographic module at build time, so which module a binary
+          # uses is a property of the build and not of the code. Released binaries are
+          # built with this same value, so testing without it would exercise a
+          # configuration we do not ship. Setting it here rather than in a separate job
+          # covers every OS in the matrix, which matters because the module's integrity
+          # self-check is written by object-format specific linker code (ELF, Mach-O,
+          # PE) and carries per-platform assembly. Pinned to a frozen version: only
+          # v1.0.0 has a CMVP certificate, and "latest" tracks the in-tree source.
+          GOFIPS140: v1.0.0
           # On pull requests, run only a subset of acceptance subtests on the slower
           # windows/macOS cells so neither lands on the critical path to merge. An
           # empty percentage disables subsetting, so Linux PRs and push-to-main run
@@ -194,63 +203,6 @@ jobs:
             echo "ERROR: detected changed or new files in the repository; Most likely you have out.test.toml files that are out of date. Run 'go test ./acceptance -run \"^TestAccept$\" -only-out-test-toml' to update."
             exit 1
           fi
-
-  # Go picks its cryptographic module at build time via GOFIPS140, so the module
-  # a binary uses is a property of the build and not of the code. The regular
-  # test job builds without it, which leaves the frozen module unexercised: in
-  # FIPS mode every test binary runs the module's integrity check and
-  # known-answer self-tests at init, crypto/rand becomes a NIST DRBG, and
-  # generated keys get pairwise consistency tests. Build against the validated
-  # module so a module that cannot load or self-test on our toolchain fails here
-  # rather than for a user.
-  #
-  # This job does not cover TLS. The suite talks to local plaintext test servers,
-  # so the cipher suite narrowing FIPS mode applies to crypto/tls is only
-  # exercised by the integration tests, which reach a real workspace.
-  #
-  # Linux only as a cost trade-off, not because the other platforms are
-  # equivalent: the integrity self-check is object-format specific (ELF, Mach-O,
-  # PE) and the module carries per-platform assembly.
-  test-fips:
-    needs:
-      - cleanups
-      - testmask
-
-    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
-    name: "task test (linux, fips)"
-    runs-on:
-      group: databricks-protected-runner-group-large
-      labels: linux-ubuntu-latest-large
-
-    defaults:
-      run:
-        shell: bash
-
-    permissions:
-      id-token: write
-      contents: read
-
-    steps:
-      - name: Checkout repository and submodules
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup build environment
-        uses: ./.github/actions/setup-build-environment
-        with:
-          cache-key: test-fips
-
-      - name: Run tests
-        env:
-          # Pinned to a frozen module version that has completed CMVP validation.
-          # "latest" also enables FIPS mode, but tracks the in-tree source and so
-          # moves with every Go release, leaving no fixed artifact to cite.
-          GOFIPS140: v1.0.0
-          ENVFILTER: DATABRICKS_BUNDLE_ENGINE=direct
-        run: go tool -modfile=tools/task/go.mod task test
-
-      - name: Summarize failed tests
-        if: ${{ failure() }}
-        run: uv run tools/summarize_failed_tests.py test-output.json | tee -a "$GITHUB_STEP_SUMMARY"
 
   test-exp-aitools:
     needs:
