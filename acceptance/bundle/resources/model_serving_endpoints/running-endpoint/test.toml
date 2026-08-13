@@ -1,6 +1,5 @@
 Timeout = '30m'
 Cloud = true
-Local = true
 CloudSlow = true
 RequiresUnityCatalog = true
 

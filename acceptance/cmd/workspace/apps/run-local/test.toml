@@ -1,5 +1,4 @@
 Cloud = false
-Local = true
 RecordRequests = false
 
 # The command is unrelated to bundle deployment, so run it once rather than per engine.

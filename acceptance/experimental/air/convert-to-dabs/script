@@ -1,0 +1,20 @@
+title "convert an AIR run YAML into a DABs bundle (in place, next to the source)"
+trace $CLI experimental air convert-to-dabs train.yaml
+
+title "emitted databricks.yml (code_source_path points at ./src; no code is copied)"
+trace cat databricks.yml
+
+title "the generated command.sh carries the run command"
+trace cat generated_artifacts/command.sh
+
+title "the emitted bundle validates"
+trace $CLI bundle validate
+
+title "re-converting refuses to clobber the generated bundle"
+errcode trace $CLI experimental air convert-to-dabs train.yaml
+
+title "--force overwrites it"
+trace $CLI experimental air convert-to-dabs train.yaml --force
+
+title "docker_image is not supported yet"
+errcode trace $CLI experimental air convert-to-dabs docker.yaml --output-dir generated-docker

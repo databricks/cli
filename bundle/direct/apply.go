@@ -75,7 +75,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
+	err = d.saveState(db, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -163,7 +163,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
 	} else {
-		err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
+		err = d.saveState(db, id, newState, d.DependsOn)
 		if err != nil {
 			return fmt.Errorf("saving state id=%s: %w", id, err)
 		}
@@ -208,7 +208,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
+	err = d.saveState(db, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -291,12 +291,21 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
+	err = d.saveState(db, id, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
 	return nil
+}
+
+// saveState saves a state with sensitive fields replaced by a placeholder value so secrets are never written
+// to disk in plaintext.
+func (d *DeploymentUnit) saveState(db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
+	if err := zeroSensitiveFields(d.Adapter, state); err != nil {
+		return fmt.Errorf("redacting state: %w", err)
+	}
+	return db.SaveState(d.ResourceKey, newID, state, dependsOn)
 }
 
 func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {

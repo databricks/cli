@@ -1029,6 +1029,8 @@ func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
 		"opencode":    false,
 		"copilot":     false,
 		"antigravity": false,
+		"pi":          true,
+		"gemini":      true,
 	}
 
 	for _, agent := range agents.Registry {

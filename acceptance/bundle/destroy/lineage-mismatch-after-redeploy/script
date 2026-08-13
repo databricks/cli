@@ -1,0 +1,36 @@
+# Reproduces the lineage mismatch a user hits when one machine destroys a bundle
+# and another machine (with no local state) redeploys it under the same name.
+#
+# Local state is scoped by target only (.databricks/bundle/<target>), while remote
+# state lives under ~/.bundle/<bundle name>/<target>/state. Destroy deletes the
+# remote state but leaves the local file (with its lineage) behind, so the next
+# fresh deploy elsewhere mints a brand-new lineage that no longer matches the
+# lingering local one.
+
+title "Machine A: deploy, then destroy (leaves local state with lineage L1 behind)\n"
+trace $CLI bundle deploy
+trace $CLI bundle destroy --auto-approve
+
+# Mask machine A's (local) lineage so the golden output is stable.
+LINEAGE_A=$(print_state.py | jq -r .lineage)
+add_repl.py "$LINEAGE_A" LINEAGE_A
+
+# Stash A's local state and wipe it so the next deploy behaves like a fresh machine.
+cp -r .databricks .databricks.machineA
+rm -rf .databricks
+
+title "Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)\n"
+trace $CLI bundle deploy
+
+# Mask machine B's (remote) lineage.
+LINEAGE_B=$(print_state.py | jq -r .lineage)
+add_repl.py "$LINEAGE_B" LINEAGE_B
+
+# Back on machine A: restore the stale local state that still carries L1.
+rm -rf .databricks
+mv .databricks.machineA .databricks
+
+title "Machine A: any command that pulls remote state now fails\n"
+trace musterr $CLI bundle plan
+trace musterr $CLI bundle deploy
+trace musterr $CLI bundle destroy --auto-approve

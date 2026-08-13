@@ -1056,7 +1056,14 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, createdID, newState)
 	require.NoError(t, err)
 	if remoteStateFromWaitCreate != nil {
+		// Re-read after the wait: the earlier remote can be stale for resources
+		// whose state settles while WaitAfterCreate blocks (e.g. job_runs).
+		remote, err = adapter.DoRead(ctx, createdID)
+		require.NoError(t, err)
 		require.Equal(t, remote, remoteStateFromWaitCreate)
+
+		remappedState, err = adapter.RemapState(remote)
+		require.NoError(t, err)
 	}
 
 	if adapter.HasDoUpdate() {

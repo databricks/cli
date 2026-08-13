@@ -1,4 +1,3 @@
-Local = true
 Cloud = false # Temporary disable cloud tests until the API is fully available
 RecordRequests = true
 EnvMatrix.READPLAN = ["", "1"]

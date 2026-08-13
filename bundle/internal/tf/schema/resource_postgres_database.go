@@ -8,7 +8,7 @@ type ResourcePostgresDatabaseProviderConfig struct {
 
 type ResourcePostgresDatabaseSpec struct {
 	PostgresDatabase string `json:"postgres_database,omitempty"`
-	Role             string `json:"role"`
+	Role             string `json:"role,omitempty"`
 }
 
 type ResourcePostgresDatabaseStatus struct {
