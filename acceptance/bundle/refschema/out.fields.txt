@@ -281,6 +281,7 @@ resources.catalogs.*.grants[*].privileges	[]catalog.Privilege	ALL
 resources.catalogs.*.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.cluster_policies.*.created_at_timestamp	int64	REMOTE
 resources.cluster_policies.*.creator_user_name	string	REMOTE
+resources.cluster_policies.*.definition	any	INPUT
 resources.cluster_policies.*.definition	string	ALL
 resources.cluster_policies.*.description	string	ALL
 resources.cluster_policies.*.id	string	INPUT
