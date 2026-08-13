@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -37,18 +36,14 @@ type validateConfigResponse struct {
 // have it, so a disabled or missing endpoint skips the check and lets submission
 // proceed (where the config is validated again, authoritatively). Only a
 // populated error list — a config the server actively rejected — blocks.
-func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig) error {
+func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string) error {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
 	var resp validateConfigResponse
-	headers := map[string]string(nil)
-	if id := env.Get(ctx, "AIR_LITESWAP_ID"); id != "" {
-		headers = map[string]string{"x-databricks-traffic-id": "testenv://liteswap/" + id}
-	}
-	err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, headers, nil, validateConfigRequest(cfg), &resp)
+	err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, nil, nil, validateConfigRequest(cfg, commandPath), &resp)
 	if err != nil {
 		if endpointUnavailable(err) {
 			return nil
@@ -61,12 +56,11 @@ func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *
 	return errors.New(formatConfigErrors(resp.Errors))
 }
 
-// validateConfigRequest builds the {task, run_options} body from the user's
-// config. It carries what the user wrote — the fields set only at submit time
-// (command_path, code_source_path) are absent, which the server treats as
-// optional; the pre-flight's job is the config-level rules. Absent optional
-// fields are omitted so the server doesn't validate values the user never set.
-func validateConfigRequest(cfg *runConfig) map[string]any {
+// validateConfigRequest builds the {task, run_options} body from the user's config. commandPath is
+// the workspace path where the command script will be uploaded; the caller computes it before this
+// call so the server can validate the real path. `parameters` is intentionally omitted: it is
+// free-form nested hyperparameters uploaded as a YAML file at submit, not the proto's string map.
+func validateConfigRequest(cfg *runConfig, commandPath string) map[string]any {
 	compute := map[string]any{}
 	if cfg.Compute != nil {
 		compute["accelerator_type"] = cfg.Compute.AcceleratorType
@@ -74,13 +68,10 @@ func validateConfigRequest(cfg *runConfig) map[string]any {
 	}
 	task := map[string]any{
 		"experiment":  cfg.ExperimentName,
-		"deployments": []any{map[string]any{"compute": compute}},
+		"deployments": []any{map[string]any{"command_path": commandPath, "compute": compute}},
 	}
 	putOpt(task, "mlflow_run", cfg.MLflowRunName)
 	putOpt(task, "mlflow_experiment_directory", cfg.MLflowExperimentDirectory)
-	if len(cfg.Parameters) > 0 {
-		task["parameters"] = cfg.Parameters
-	}
 
 	req := map[string]any{"task": task}
 	if runOptions := validateConfigRunOptions(cfg); len(runOptions) > 0 {
