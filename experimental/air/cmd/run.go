@@ -176,24 +176,28 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 	return cmd
 }
 
-// printSubmitResult writes the green success line and Job Run hyperlink. These
-// don't depend on the MLflow IDs, so they print before any MLflow poll. Color
-// and links degrade to plain text on non-rich terminals.
+// printSubmitResult writes the green success line and Job Run link. These don't
+// depend on the MLflow IDs, so they print before any MLflow poll. The link is
+// styled (blue, underlined) and clickable, matching the `air get` view, and
+// degrades to plain text on non-rich terminals.
 func printSubmitResult(ctx context.Context, out io.Writer, runIDStr, dashboardURL string) {
-	renderer, _ := cmdio.NewRenderer(ctx, out)
+	renderer, colorOn := cmdio.NewRenderer(ctx, out)
 	p := newPalette(renderer)
 
 	fmt.Fprintln(out, p.green.Render("Submitted workload with Job Run ID: "+runIDStr))
-	fmt.Fprintln(out, "View job run at: "+hyperlink(ctx, out, dashboardURL, dashboardURL))
+	fmt.Fprintln(out, "View job run at: "+link(colorOn, p.blue, dashboardURL, dashboardURL))
 }
 
-// printMLflowLinks appends the MLflow run and experiment hyperlinks once their
-// IDs are resolved.
+// printMLflowLinks appends the styled, clickable MLflow run and experiment links
+// once their IDs are resolved.
 func printMLflowLinks(ctx context.Context, out io.Writer, host string, ids *mlflowIdentifiers) {
+	renderer, colorOn := cmdio.NewRenderer(ctx, out)
+	p := newPalette(renderer)
+
 	runURL := mlflowRunURL(host, ids)
 	expURL := mlflowExperimentURL(host, ids)
-	fmt.Fprintln(out, "View MLflow run at: "+hyperlink(ctx, out, runURL, runURL))
-	fmt.Fprintln(out, "View MLflow experiment at: "+hyperlink(ctx, out, expURL, expURL))
+	fmt.Fprintln(out, "View MLflow run at: "+link(colorOn, p.blue, runURL, runURL))
+	fmt.Fprintln(out, "View MLflow experiment at: "+link(colorOn, p.blue, expURL, expURL))
 }
 
 // logsDividerWidth is the total display width of the --watch logs divider.
