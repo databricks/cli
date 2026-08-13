@@ -49,7 +49,7 @@ var destroyApprovalGroups = []approvalGroup{
 
 // logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
 // a note that datasets will be deleted as well.
-func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action, engine engine.EngineType) error {
+func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action, engine engine.EngineType, quiet bool) error {
 	pipelineDeletes := filterGroup(actions, "pipelines", deployplan.Delete)
 
 	var cascading, retaining []deployplan.Action
@@ -72,7 +72,7 @@ func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []
 		{deletePipelineWithCascadeMessage, cascading},
 		{deletePipelineNoCascadeMessage, retaining},
 	} {
-		if len(grp.actions) == 0 {
+		if len(grp.actions) == 0 || quiet {
 			continue
 		}
 		cmdio.LogString(ctx, grp.message)
@@ -96,7 +96,14 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 		return false, err
 	}
 
-	if len(deleteActions) > 0 {
+	// With --auto-approve there is no prompt, so this listing is informational and -qq
+	// suppresses it. Without --auto-approve we are about to ask for consent and the user
+	// must see what they are consenting to, so it prints at any -q level. The approval
+	// helpers below still run either way: they also validate (e.g. pipeline cascade
+	// lookups can fail), so skipping them would skip that.
+	quiet := b.AutoApprove && b.Quiet >= bundle.QuietAll
+
+	if len(deleteActions) > 0 && !quiet {
 		cmdio.LogString(ctx, "The following resources will be deleted:")
 		for _, a := range deleteActions {
 			if a.IsChildResource() {
@@ -107,13 +114,18 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 		cmdio.LogString(ctx, "")
 	}
 
-	logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
-	if err := logPipelineDeleteApproval(ctx, b, deleteActions, engine); err != nil {
+	if !quiet {
+		logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
+	}
+	// Called even when quiet: the cascade lookup can fail, and that error must surface.
+	if err := logPipelineDeleteApproval(ctx, b, deleteActions, engine, quiet); err != nil {
 		return false, err
 	}
 
-	cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
-	cmdio.LogString(ctx, "")
+	if !quiet {
+		cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
+		cmdio.LogString(ctx, "")
+	}
 
 	if b.AutoApprove {
 		return true, nil
@@ -175,7 +187,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	}
 
 	if !ok {
-		cmdio.LogString(ctx, "No active deployment found to destroy!")
+		cmdio.LogProgress(ctx, "No active deployment found to destroy!")
 		return
 	}
 

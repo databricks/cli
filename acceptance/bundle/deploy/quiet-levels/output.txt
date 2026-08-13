@@ -1,4 +1,17 @@
 
+=== plan: default prints the actions and the summary
+>>> [CLI] bundle plan
+create jobs.my_job
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== plan -q: summary only
+>>> [CLI] bundle plan -q
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== plan -qq: nothing
+>>> [CLI] bundle plan -qq
+
 === Default: per-resource lines, progress and summary
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
@@ -15,9 +28,30 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 === -qq: warnings and errors only
 >>> [CLI] bundle deploy -qq
 
->>> [CLI] bundle destroy --auto-approve -qq
+=== plan -qq stays silent when there is nothing to do
+>>> [CLI] bundle plan -qq
+
+=== destroy: default prints the approval list and the summary
+>>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
+Destroy: 1 deleted
+
+=== destroy -q: approval list and summary, same as default
+>>> [CLI] bundle deploy -qq
+
+>>> [CLI] bundle destroy --auto-approve -q
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+=== destroy --auto-approve -qq: nothing
+>>> [CLI] bundle deploy -qq
+
+>>> [CLI] bundle destroy --auto-approve -qq
