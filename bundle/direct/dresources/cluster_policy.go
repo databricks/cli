@@ -18,7 +18,13 @@ func (*ResourceClusterPolicy) New(client *databricks.WorkspaceClient) *ResourceC
 }
 
 func (*ResourceClusterPolicy) PrepareState(input *resources.ClusterPolicy) *compute.CreatePolicy {
-	return &input.CreatePolicy
+	cp := input.CreatePolicy
+	// The top-level Definition shadows the embedded string; ConfigureClusterPolicyDefinition
+	// has already normalized it to a JSON string by this point.
+	if s, ok := input.Definition.(string); ok {
+		cp.Definition = s
+	}
+	return &cp
 }
 
 // RemapState copies the config fields shared by Policy and CreatePolicy;

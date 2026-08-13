@@ -596,7 +596,7 @@
                     "properties": {
                       "definition": {
                         "description": "Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).",
-                        "$ref": "#/$defs/string"
+                        "$ref": "#/$defs/interface"
                       },
                       "description": {
                         "description": "Additional human-readable description of the cluster policy.",

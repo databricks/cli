@@ -14,6 +14,11 @@ import (
 type ClusterPolicy struct {
 	BaseResource
 	compute.CreatePolicy
+
+	// Shadows the embedded compute.CreatePolicy.Definition (a string). `any` lets the
+	// definition be authored as inline YAML; ConfigureClusterPolicyDefinition normalizes
+	// it to a JSON string before deploy.
+	Definition any `json:"definition,omitempty"`
 }
 
 func (s *ClusterPolicy) UnmarshalJSON(b []byte) error {
