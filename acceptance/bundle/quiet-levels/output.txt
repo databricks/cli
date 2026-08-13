@@ -1,7 +1,7 @@
 
-=== plan: default prints the actions and the summary
+=== plan: actions and summary
 >>> [CLI] bundle plan
-create jobs.my_job
+create experiments.my_experiment
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
@@ -12,40 +12,41 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 === plan -qq: nothing
 >>> [CLI] bundle plan -qq
 
-=== Default: per-resource lines, progress and summary
+=== deploy: per-resource lines, progress and summary
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Created jobs.my_job
-Files: 7 uploaded, 0 deleted
+Created experiments.my_experiment
+Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
-=== -q: summary only, no per-resource lines
+>>> [CLI] bundle destroy --auto-approve -qq
+
+=== deploy -q: summary only, no per-resource lines
 >>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
-=== -qq: warnings and errors only
+>>> [CLI] bundle destroy --auto-approve -qq
+
+=== deploy -qq: nothing
 >>> [CLI] bundle deploy -qq
 
-=== plan -qq stays silent when there is nothing to do
->>> [CLI] bundle plan -qq
-
-=== destroy: default prints the approval list and the summary
+=== destroy: approval list and summary
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.jobs.my_job
+  delete resources.experiments.my_experiment
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
 
-=== destroy -q: approval list and summary, same as default
+=== destroy -q: same as default, there are no per-resource lines to drop
 >>> [CLI] bundle deploy -qq
 
 >>> [CLI] bundle destroy --auto-approve -q
 The following resources will be deleted:
-  delete resources.jobs.my_job
+  delete resources.experiments.my_experiment
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
