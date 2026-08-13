@@ -1,0 +1,17 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve -qq
+}
+trap cleanup EXIT
+
+title "Default: per-resource lines, progress and summary"
+trace $CLI bundle deploy
+
+title "-q: summary only, no per-resource lines"
+update_file.py databricks.yml 'name: my-job' 'name: my-job-renamed'
+trace $CLI bundle deploy -q
+
+title "-qq: warnings and errors only"
+update_file.py databricks.yml 'name: my-job-renamed' 'name: my-job-again'
+trace $CLI bundle deploy -qq

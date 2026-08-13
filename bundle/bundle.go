@@ -37,6 +37,28 @@ import (
 
 const internalFolder = ".internal"
 
+// QuietLevel is how much of the informational output to suppress, controlled by
+// repeating -q. Warnings and errors are never suppressed.
+type QuietLevel int
+
+const (
+	// QuietNone prints everything.
+	QuietNone QuietLevel = iota
+
+	// QuietSummary (-q) drops the per-resource action lines, keeping the summary.
+	QuietSummary
+
+	// QuietAll (-qq) also drops the summary and the progress lines ("Uploading
+	// bundle files to ...", "Building ...", "Executing 'postdeploy' script"), so
+	// only warnings and errors remain.
+	QuietAll
+)
+
+// SuppressProgress reports whether progress and summary output should be skipped.
+func (b *Bundle) SuppressProgress() bool {
+	return b.Quiet >= QuietAll
+}
+
 // AiCodeSnapshotDir is the sync-relative dir the aicode mutator writes AI Runtime
 // code snapshots into. Force-included in sync (see GetSyncIncludePatterns) so user
 // ignore rules can't filter the deployed job's code_source_path archives out.
@@ -184,9 +206,10 @@ type Bundle struct {
 	// which runs on the migrated state, creates them.
 	MigratingToDirect bool
 
-	// Quiet suppresses the per-resource lines in plan/deploy output, leaving
-	// only the summary line. Set via the --quiet flag.
-	Quiet bool
+	// Quiet is the output verbosity reduction requested via -q/--quiet, which is
+	// repeatable: QuietSummary drops the per-resource lines, QuietAll additionally
+	// drops the summary and progress lines, leaving warnings and errors.
+	Quiet QuietLevel
 
 	// SkipLocalFileValidation makes path translation tolerant of missing local files.
 	// When set, TranslatePaths computes workspace paths without verifying files exist.

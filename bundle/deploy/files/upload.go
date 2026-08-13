@@ -25,11 +25,11 @@ func (m *upload) Name() string {
 
 func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
-		cmdio.LogString(ctx, "Source-linked deployment is enabled. Deployed resources reference the source files in your working tree instead of separate copies.")
+		cmdio.LogProgress(ctx, "Source-linked deployment is enabled. Deployed resources reference the source files in your working tree instead of separate copies.")
 		return nil
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Uploading bundle files to %s...", b.Config.Workspace.FilePath))
+	cmdio.LogProgress(ctx, fmt.Sprintf("Uploading bundle files to %s...", b.Config.Workspace.FilePath))
 	opts, err := GetSyncOptions(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)

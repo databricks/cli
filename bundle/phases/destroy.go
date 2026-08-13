@@ -148,7 +148,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 
 	bundle.ApplyContext(ctx, b, files.Delete())
 
-	if !logdiag.HasError(ctx) {
+	if !logdiag.HasError(ctx) && b.Quiet < bundle.QuietAll {
 		// Count top-level resources only, matching the approval list above (which
 		// skips children); this also keeps the count stable across engines. Gone
 		// resources are included: they are excluded from the approval prompt because
@@ -160,7 +160,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 				deleted++
 			}
 		}
-		cmdio.LogString(ctx, fmt.Sprintf("Destroy: %d deleted.", deleted))
+		cmdio.LogString(ctx, fmt.Sprintf("Destroy: %d deleted", deleted))
 	}
 }
 

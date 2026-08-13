@@ -27,11 +27,11 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	}
 
 	var force bool
-	var quiet bool
+	var quiet int
 	var clusterId string
 	var selectResources []string
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
-	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Only print the summary line, not the per-resource actions.")
+	cmd.Flags().CountVarP(&quiet, "quiet", "q", "Reduce output: -q prints only the summary, -qq prints nothing on success.")
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
@@ -76,7 +76,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 		case flags.OutputText:
 			// Print summary line and actions to stdout
 			totalChanges := counts.Create + counts.Change + counts.Delete
-			if totalChanges > 0 && !quiet {
+			if totalChanges > 0 && bundle.QuietLevel(quiet) < bundle.QuietSummary {
 				// Print all actions in the order they were processed
 				for _, action := range plan.GetActions() {
 					if action.ActionType == deployplan.Skip {
@@ -86,6 +86,9 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 					fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
 				}
 				fmt.Fprintln(out)
+			}
+			if bundle.QuietLevel(quiet) >= bundle.QuietAll {
+				break
 			}
 			// Note, this string should not be changed, "bundle deployment migrate" depends on this format:
 			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)

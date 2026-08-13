@@ -128,13 +128,17 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 }
 
 // logDeploySummary prints the per-resource actions that were applied followed by
-// file and resource summary lines. Per-resource lines are suppressed by --quiet.
-// The past-tense verb is the short action name plus "d" (create→Created,
-// delete→Deleted, ...), capitalized to match the sentence case of other output.
-// "bundle plan" keeps the lower-case present tense, so the two are still
-// distinguishable at a glance.
+// file and resource summary lines. -q drops the per-resource lines, -qq drops the
+// summary lines too. The past-tense verb is the short action name plus "d"
+// (create→Created, delete→Deleted, ...), capitalized to match the sentence case of
+// other output. "bundle plan" keeps the lower-case present tense, so the two are
+// still distinguishable at a glance.
 func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
-	if !b.Quiet {
+	if b.Quiet >= bundle.QuietAll {
+		return
+	}
+
+	if b.Quiet < bundle.QuietSummary {
 		for _, action := range plan.GetActions() {
 			if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
 				continue
@@ -166,7 +170,7 @@ func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Pl
 	if plan.NotSelected > 0 {
 		summary += fmt.Sprintf(", %d not selected", plan.NotSelected)
 	}
-	cmdio.LogString(ctx, summary+".")
+	cmdio.LogString(ctx, summary)
 }
 
 // uploadLibraries uploads libraries to the workspace.
