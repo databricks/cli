@@ -8,5 +8,5 @@ variables:
 resources:
   jobs:
     one:
-      # "hst" is a typo of the "host" variable defined above; the error suggests it.
+      # "hst" is a typo of the "host" variable defined above
       name: ${var.hst}
