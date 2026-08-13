@@ -9,14 +9,18 @@ import argparse
 import os
 from pathlib import Path
 
-ACC_REPLS = Path(os.environ["TEST_TMP_DIR"]) / "ACC_REPLS"
+ACC_REPLS = Path(os.environ["ACC_REPLS"])
 
 
 def get_repls():
     result = {}
     if ACC_REPLS.exists():
         for line in ACC_REPLS.open():
-            value, repl = line.strip().rsplit(":", 1)
+            line = line.strip()
+            # Skip the harness replacements; only the records added here can collide.
+            if not line or line.startswith("{"):
+                continue
+            value, repl = line.rsplit(":", 1)
             result[repl] = value
     return result
 
