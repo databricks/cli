@@ -63,11 +63,18 @@ func TestFromDiffPriority(t *testing.T) {
 }
 
 func TestFromDiffScores(t *testing.T) {
+	// Scores add up: a new dir counts as new (5) plus its fixtures (5) plus its goldens
+	// (1); a dir whose script and golden both changed counts 5+1. A moved dir scores the
+	// move alone, since the files it brings along are renames rather than changes.
 	diff := diffLines(
 		"A\tacceptance/bundle/added/script",
+		"A\tacceptance/bundle/added/output.txt",
 		"M\tacceptance/bundle/modified/script",
+		"M\tacceptance/bundle/modified/output.txt",
 		"R090\tacceptance/bundle/old/script\tacceptance/bundle/moved/script",
+		"R090\tacceptance/bundle/old/output.txt\tacceptance/bundle/moved/output.txt",
 		"M\tacceptance/bundle/regenerated/output.txt",
+		"M\tacceptance/bundle/untouched/databricks.yml",
 	)
 	result := selection.FromDiff(diff, testDirs, 10)
 	scores := map[string]int{}
@@ -75,10 +82,11 @@ func TestFromDiffScores(t *testing.T) {
 		scores[test.Dir] = test.Score
 	}
 	assert.Equal(t, map[string]int{
-		"bundle/added":       10,
-		"bundle/modified":    5,
-		"bundle/moved":       2,
-		"bundle/regenerated": -1,
+		"bundle/added":       11,
+		"bundle/modified":    6,
+		"bundle/untouched":   5,
+		"bundle/moved":       1,
+		"bundle/regenerated": 1,
 	}, scores)
 }
 
