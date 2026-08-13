@@ -12,11 +12,6 @@ Deployment complete!
 === Opt in via env var only: deploy migrates the state, ignoring the direct-only resource
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Warn: Direct engine requested in DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
-Warning: ignoring instance_pool resources in this deploy
-  in databricks.yml:5:19
-
-Instance Pool resources are only supported by the direct deployment engine, but the existing state uses terraform. They will be created by the next deploy, after the state is migrated to the direct engine.
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...

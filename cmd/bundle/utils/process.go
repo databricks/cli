@@ -189,12 +189,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 		cmd.SetContext(ctx)
 
+		b.MigratingToDirect = requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect()
+
 		// Announce the auto-migration path here (only on deploy) so the user
 		// isn't surprised when MigrateToDirect commits state changes at the
 		// end. PullResourcesState is shared with non-deploy commands like
 		// `bundle debug states`, which would otherwise print the same hint
 		// even though they will not migrate.
-		if opts.Deploy && requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect() {
+		if opts.Deploy && b.MigratingToDirect {
 			log.Warnf(ctx, "Direct engine requested in %s but the existing state uses %q. Deploying on %q; will attempt to migrate the state to the direct engine after this deploy.", requiredEngine.Source, stateDesc.Engine, stateDesc.Engine)
 		}
 
@@ -325,17 +327,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	if opts.PreDeployChecks {
-		// The state is about to be migrated to the direct engine, but this run still
-		// uses terraform, which cannot deploy direct-only resources. Drop them from
-		// the config so this run succeeds and the migration can proceed; the next
-		// deploy, which runs on the migrated state, creates them.
-		if requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect() {
-			bundle.ApplyContext(ctx, b, mutator.IgnoreDirectOnlyResources())
-			if logdiag.HasError(ctx) {
-				return b, stateDesc, root.ErrAlreadyPrinted
-			}
-		}
-
 		downgradeWarningToError := !opts.Deploy
 		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
 

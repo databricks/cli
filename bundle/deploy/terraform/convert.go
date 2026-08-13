@@ -8,11 +8,17 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform/tfdyn"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/log"
 )
 
 // BundleToTerraformWithDynValue converts resources in a bundle configuration
 // to the equivalent Terraform JSON representation.
-func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value) (*schema.Root, error) {
+//
+// Resource types without a terraform converter are only supported by the direct
+// engine. They are an error here, except when skipUnsupported is set: the state is
+// migrated to the direct engine right after this deploy, so they are skipped by
+// this run and deployed by the next one. See bundle.Bundle.MigratingToDirect.
+func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value, skipUnsupported bool) (*schema.Root, error) {
 	tfroot := schema.NewRoot()
 	tfroot.Provider = schema.NewProviders()
 
@@ -49,7 +55,11 @@ func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value) (*schema
 		// Lookup the converter based on the resource type.
 		c, ok := tfdyn.GetConverter(typ)
 		if !ok {
-			return dyn.InvalidValue, fmt.Errorf("no converter for resource type %s", typ)
+			if !skipUnsupported {
+				return dyn.InvalidValue, fmt.Errorf("no converter for resource type %s", typ)
+			}
+			log.Infof(ctx, "%s.%s: skipping, only supported by the direct engine; will be deployed after the state is migrated", typ, key)
+			return v, dyn.ErrSkip
 		}
 
 		// Convert resource to Terraform representation.

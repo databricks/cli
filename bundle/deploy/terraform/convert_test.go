@@ -21,7 +21,7 @@ import (
 func produceTerraformConfiguration(t *testing.T, config config.Root) *schema.Root {
 	vin, err := convert.FromTyped(config, dyn.NilValue)
 	require.NoError(t, err)
-	out, err := BundleToTerraformWithDynValue(t.Context(), vin)
+	out, err := BundleToTerraformWithDynValue(t.Context(), vin, false)
 	require.NoError(t, err)
 	return out
 }
@@ -588,7 +588,7 @@ func TestBundleToTerraformDeletedResources(t *testing.T) {
 
 	vin, err := convert.FromTyped(config, dyn.NilValue)
 	require.NoError(t, err)
-	out, err := BundleToTerraformWithDynValue(t.Context(), vin)
+	out, err := BundleToTerraformWithDynValue(t.Context(), vin, false)
 	require.NoError(t, err)
 
 	_, ok := out.Resource.Job["my_job1"]

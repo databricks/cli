@@ -12,23 +12,16 @@ Deployment complete!
 >>> update_file.py databricks.yml name: test-bundle name: test-bundle
   engine: direct
 
-=== Plan ignores the direct-only resource, since this run still uses terraform
+=== Plan skips the direct-only resource, since this run still uses terraform
 >>> [CLI] bundle plan
-Warning: ignoring instance_pool resources in this deploy
-  in databricks.yml:6:19
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
-Instance Pool resources are only supported by the direct deployment engine, but the existing state uses terraform. They will be created by the next deploy, after the state is migrated to the direct engine.
+>>> [CLI] bundle plan -o json
+json.plan.resources.instance_pools.pool.action = "skip";
 
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
-
-=== Deploy migrates the state, ignoring the direct-only resource
+=== Deploy migrates the state, skipping the direct-only resource
 >>> [CLI] bundle deploy
 Warn: Direct engine requested in bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
-Warning: ignoring instance_pool resources in this deploy
-  in databricks.yml:6:19
-
-Instance Pool resources are only supported by the direct deployment engine, but the existing state uses terraform. They will be created by the next deploy, after the state is migrated to the direct engine.
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...

@@ -8,10 +8,11 @@ title "Add a direct-only resource and opt in to the direct engine via config"
 trace update_file.py databricks.yml "#instance_pools" "instance_pools"
 trace update_file.py databricks.yml "name: test-bundle" $'name: test-bundle\n  engine: direct'
 
-title "Plan ignores the direct-only resource, since this run still uses terraform"
+title "Plan skips the direct-only resource, since this run still uses terraform"
 trace $CLI bundle plan
+trace $CLI bundle plan -o json | gron.py | grep instance_pools
 
-title "Deploy migrates the state, ignoring the direct-only resource"
+title "Deploy migrates the state, skipping the direct-only resource"
 trace $CLI bundle deploy
 trace print_migration_telemetry
 rm -f out.requests.txt
