@@ -19,8 +19,6 @@ Python in this codebase is written as scripts. Bias for conciseness.
 
 **RULE: Do not catch exceptions just to add a nicer message.** Only catch if you can add critical information the caller can't produce.
 
-**RULE: Avoid redundant comments.**
-
 **RULE: Keep code small and minimize abstractions.**
 
 **RULE: Format with `ruff format -n <path>` before committing.**

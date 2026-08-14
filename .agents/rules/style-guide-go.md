@@ -11,17 +11,6 @@ paths:
 
 Code you author should be consistent with the codebase and concise. The code should be self-documenting based on its function and variable names.
 
-**RULE: Document functions with a doc comment that starts with the function name and ends with a period.**
-
-```go
-// SomeFunc does something.
-func SomeFunc() {
-	...
-}
-```
-
-**RULE: Avoid redundant and verbose comments.** Only add a comment if it complements the code rather than repeating it.
-
 **RULE: Focus on making implementations as small and elegant as possible.** Avoid unnecessary loops and allocations. If dropping or relaxing a requirement would simplify things, ask the user about the trade-off.
 
 **RULE: Do not declare inline function closures just to name a repeated operation.** Extract it as a regular named function instead. Closures that capture local variables hide their dependencies, complicate reading, and can't be tested in isolation.
@@ -49,8 +38,6 @@ type myKeyType int
 ```
 
 **RULE: Define magic strings as named constants at the top of the file.** When a value is used in more than one place, define a package-level constant even if the literal is short. If a related value already has a constant in the same package, follow the existing pattern instead of introducing a parallel literal.
-
-**RULE: When integrating external tools or detecting environment variables, include source reference URLs as comments.** This lets future readers trace where the behavior came from.
 
 ### Control flow
 
