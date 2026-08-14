@@ -27,10 +27,31 @@ type PackageManager interface {
 	// strips pip, so seeding must run after every sync.
 	PostProvision(ctx context.Context, projectDir string) error
 
-	// Validate reads the Python minor version, the databricks-connect version, and
-	// the standalone pyspark version from the virtual environment inside projectDir.
-	// pysparkVersion is empty unless a standalone pyspark distribution is installed:
-	// databricks-connect vendors pyspark without registering a pyspark distribution,
-	// so a non-empty value means a separate pyspark sits on top of it (a collision).
-	Validate(ctx context.Context, projectDir string) (pythonVersion, dbconnectVersion, pysparkVersion string, err error)
+	// Validate inspects the provisioned virtual environment inside projectDir and
+	// returns what it observed (see VenvInfo). The caller decides which observations
+	// are acceptable.
+	Validate(ctx context.Context, projectDir string) (VenvInfo, error)
+}
+
+// VenvInfo is what the validate phase observed in the provisioned virtual environment.
+type VenvInfo struct {
+	// PythonMinor is the interpreter's "major.minor" (e.g. "3.12").
+	PythonMinor string
+	// DBConnect is the installed databricks-connect distribution version, "" if absent.
+	DBConnect string
+	// Pyspark is the installed standalone pyspark distribution version, "" if absent.
+	// databricks-connect vendors the pyspark package tree without registering a pyspark
+	// distribution, so a non-empty value means a separate pyspark distribution is
+	// installed on top of it.
+	Pyspark string
+	// DBConnectImportErr is the type name of the exception raised by `import
+	// databricks.connect` in the venv, or "" when the import succeeds. It is non-empty
+	// whenever the import raises — including ModuleNotFoundError when databricks-connect
+	// is not installed at all — so a reader must gate on DBConnect != "" before treating
+	// it as a collision signal. A *live* standalone-pyspark collision surfaces here as an
+	// ImportError, because the two share the pyspark namespace and the losing package's
+	// files are overwritten. A stale, orphaned pyspark dist-info left behind by an install
+	// that databricks-connect's files won does NOT set this — the import still succeeds —
+	// which is how the caller tells a broken collision from a harmless leftover.
+	DBConnectImportErr string
 }
