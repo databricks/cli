@@ -70,6 +70,24 @@ func TestPreflightValidateFailsOpenWhenNotFound(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestPreflightValidateFailsOpenOnServerError(t *testing.T) {
+	// A 5xx is a backend problem, not the user's config; blocking a submit on it
+	// isn't actionable, and submit re-validates anyway.
+	srv := validateServer(t, http.StatusInternalServerError,
+		`{"error_code":"INTERNAL_ERROR","message":"backend blew up"}`, nil)
+	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh")
+	assert.NoError(t, err)
+}
+
+func TestPreflightValidateBlocksOnClientError(t *testing.T) {
+	// A 4xx other than the fail-open cases means the request itself was rejected
+	// (e.g. the proto hook flagged a missing required field); surface it.
+	srv := validateServer(t, http.StatusBadRequest,
+		`{"error_code":"INVALID_PARAMETER_VALUE","message":"command_path is required"}`, nil)
+	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), baseRunConfig(), "/Workspace/Users/me/cmd.sh")
+	require.Error(t, err)
+}
+
 func TestValidateConfigRequestShape(t *testing.T) {
 	var gotReq map[string]any
 	srv := validateServer(t, http.StatusOK, `{}`, &gotReq)

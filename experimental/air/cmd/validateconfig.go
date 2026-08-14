@@ -34,8 +34,9 @@ type validateConfigResponse struct {
 //
 // It fails open: the endpoint is behind a SAFE flag and older workspaces do not
 // have it, so a disabled or missing endpoint skips the check and lets submission
-// proceed (where the config is validated again, authoritatively). Only a
-// populated error list — a config the server actively rejected — blocks.
+// proceed (where the config is validated again, authoritatively). A 5xx is a
+// backend problem, not the user's config, so it fails open too. Only a 4xx (the
+// server rejected the config) or a populated error list blocks.
 func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string) error {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
@@ -45,7 +46,7 @@ func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *
 	var resp validateConfigResponse
 	err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, nil, nil, validateConfigRequest(cfg, commandPath), &resp)
 	if err != nil {
-		if endpointUnavailable(err) {
+		if endpointUnavailable(err) || serverError(err) {
 			return nil
 		}
 		return fmt.Errorf("failed to validate config: %w", err)
@@ -114,6 +115,15 @@ func endpointUnavailable(err error) bool {
 	return ok && (apiErr.ErrorCode == "FEATURE_DISABLED" ||
 		apiErr.StatusCode == http.StatusNotFound ||
 		apiErr.StatusCode == http.StatusNotImplemented)
+}
+
+// serverError reports whether the failure is a 5xx: a backend problem, not the
+// user's config. The SDK already retries the transient subset (503, 429, IO
+// errors); a 5xx that still surfaces here fails open, since blocking a submit on
+// a backend blip isn't actionable and submit re-validates anyway.
+func serverError(err error) bool {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.StatusCode >= 500
 }
 
 // formatConfigErrors renders the field errors as one message, one problem per
