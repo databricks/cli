@@ -49,9 +49,12 @@ func (s stateFiler) Read(ctx context.Context, path string) (io.ReadCloser, error
 	}
 
 	var buf bytes.Buffer
-	// Read via the raw apiClient.Do (not the SDK's Workspace.Download) so
-	// auth.WorkspaceIDHeaders can drop the CLI-only "none" workspace-id sentinel
-	// that Download would send literally. See PR #6149 for the write-path equivalent.
+	// We read via the raw apiClient.Do so the workspace-id routing header goes
+	// through auth.WorkspaceIDHeaders, which drops the CLI-only "none" sentinel
+	// (auth.WorkspaceIDNone, written by `auth login --skip-workspace`). The SDK's
+	// Workspace client would forward that sentinel as a literal workspace id
+	// unless we special-cased it; reusing the shared helper here keeps the change
+	// small.
 	urlPath := "/api/2.0/workspace/export?path=" + url.QueryEscape(absPath) + "&direct_download=true"
 	err = s.apiClient.Do(ctx, http.MethodGet, urlPath, auth.WorkspaceIDHeaders(s.apiClient.Config), nil, nil, &buf)
 	if err != nil {
