@@ -92,7 +92,7 @@ jobs:
         env:
           TOOLCHAIN: ${{ steps.latest.outputs.toolchain }}
         run: |
-          echo "Bump Go toolchain to ${TOOLCHAIN}." \
+          echo "Bump Go toolchain to ${TOOLCHAIN#go}." \
             > ".nextchanges/dependency-updates/go-toolchain-${TOOLCHAIN}.md"
 
       - name: Show diff

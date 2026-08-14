@@ -1,1 +1,1 @@
-Bump Go toolchain to go1.26.6.
+Bump Go toolchain to 1.26.6.
