@@ -372,11 +372,9 @@ func newTestLogServer(t *testing.T, handler func(int, *websocket.Conn)) *httptes
 			t.Errorf("failed to upgrade connection: %v", err)
 			return
 		}
-		handlers.Add(1)
-		go func() {
-			defer handlers.Done()
+		handlers.Go(func() {
 			handler(id, conn)
-		}()
+		})
 	}))
 
 	t.Cleanup(func() {
