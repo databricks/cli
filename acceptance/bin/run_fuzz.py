@@ -204,11 +204,11 @@ def main():
 
     kinds = totals()
 
-    # All-rejected means the mutator/fixtures are broken; single-seed repro is exempt.
+    # Zero deploys is fine only when every seed is a gap. Single-seed repro is exempt.
     if count > 1 and not kinds:
         sys.exit("fuzz: no seeds ran")
-    if count > 1 and kinds["rejected"] == sum(kinds.values()):
-        sys.exit("fuzz: every seed was rejected; the mutator or fixtures are broken")
+    if count > 1 and not kinds["deployed"] and kinds["gap"] != sum(kinds.values()):
+        sys.exit("fuzz: no seed deployed; the mutator or fixtures are broken")
 
 
 if __name__ == "__main__":

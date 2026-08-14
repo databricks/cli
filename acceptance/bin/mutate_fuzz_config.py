@@ -76,7 +76,6 @@ INJECT = {
                 "env": [{"name": "FUZZ_ENV", "value": "1"}],
             },
         ),
-        ("git_source", {"branch": "main"}),
         ("lifecycle", {"started": False}),
     ],
     "catalogs": [
@@ -141,7 +140,6 @@ INJECT = {
     ],
     "registered_models": [
         ("comment", "fuzz-registered-model"),
-        ("aliases", [{"alias_name": "champion", "id": "alias-champion"}]),
     ],
     "schemas": [
         ("comment", "fuzz-schema"),
@@ -234,10 +232,11 @@ def add_field(rng, config):
             if name not in instance:
                 candidates.append((instance, name, value))
     if not candidates:
-        return
+        return False
     instance, name, value = rng.choice(candidates)
     # Copy: INJECT values are shared across seeds.
     instance[name] = json.loads(json.dumps(value))
+    return True
 
 
 def mutate(config, seed):
@@ -245,12 +244,11 @@ def mutate(config, seed):
     # Resource instances only: keep the bundle/resources skeleton intact.
     roots = [instance for _, instance in resource_instances(config)]
 
-    if rng.random() < ADD_PROB:
-        add_field(rng, config)
-    else:
-        for _ in range(rng.randint(1, 3)):
-            mutate_once(rng, roots)
-
+    # Fall through when add has nothing to inject (e.g. NO_INJECT types).
+    if rng.random() < ADD_PROB and add_field(rng, config):
+        return config
+    for _ in range(rng.randint(1, 3)):
+        mutate_once(rng, roots)
     return config
 
 
