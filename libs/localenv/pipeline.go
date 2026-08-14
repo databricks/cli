@@ -295,45 +295,64 @@ func (p *Pipeline) backupPath() string {
 	return filepath.Join(p.ProjectDir, backupFile)
 }
 
-// chooseBackupPath decides where the current pyproject.toml should be copied
-// before this run overwrites it. The first backup takes the canonical
-// pyproject.toml.bak name and, never being overwritten, stays the permanent
-// pristine pre-first-sync original; once it exists, every later modifying run
-// gets a distinct pyproject.toml.<timestamp>.bak so no earlier state is ever
-// clobbered. A returned error means the canonical .bak exists but could not be
-// stat'd: callers must not write, so an unreadable backup is never shadowed
-// (invariant 2). A not-exist stat is not an error — it is the first-backup case.
-func (p *Pipeline) chooseBackupPath() (string, error) {
+// timestampedBackupBase is the path stem for a non-first backup:
+// <projectDir>/pyproject.toml.<UTC timestamp>, to which ".bak" (or "-N.bak" on a
+// collision) is appended.
+func (p *Pipeline) timestampedBackupBase() string {
+	return filepath.Join(p.ProjectDir, pyprojectFile+"."+p.clock().UTC().Format(backupTimestampLayout))
+}
+
+// backupCurrent copies the current pyproject.toml content to a backup file
+// without ever overwriting an existing one, and returns the path it wrote. The
+// first backup takes the canonical pyproject.toml.bak name and, never being
+// overwritten, stays the permanent pristine pre-first-sync original; once that
+// exists, each call writes a distinct pyproject.toml.<timestamp>.bak (with a -N
+// suffix if that second-resolution name is already taken). Exclusive creation
+// (see writeNew) makes each write atomic, so a backup neither clobbers an earlier
+// one nor loses a race with a concurrent run to the same name (invariant 2). mode
+// is the source file's permission bits, preserved onto the backup.
+func (p *Pipeline) backupCurrent(content []byte, mode os.FileMode) (string, error) {
+	// Claim the canonical name for the first backup; if it already exists (or a
+	// concurrent run just claimed it), fall through to a timestamped name.
+	canonical := p.backupPath()
+	switch err := writeNew(canonical, content, mode); {
+	case err == nil:
+		return canonical, nil
+	case !errors.Is(err, os.ErrExist):
+		return "", err
+	}
+
+	base := p.timestampedBackupBase()
+	candidate := base + ".bak"
+	for i := 1; ; i++ {
+		// Only an already-taken name (os.ErrExist) advances to the next -N suffix, so
+		// the loop always terminates; any other error is a real I/O problem and is
+		// returned rather than spun on.
+		switch err := writeNew(candidate, content, mode); {
+		case err == nil:
+			return candidate, nil
+		case !errors.Is(err, os.ErrExist):
+			return "", err
+		}
+		candidate = fmt.Sprintf("%s-%d.bak", base, i)
+	}
+}
+
+// plannedBackupName previews the backup name a real run would create right now,
+// for --dry-run reporting only (no file is written): the canonical .bak when none
+// exists yet, else a timestamped name. It is best-effort — an unstattable
+// canonical .bak yields ("", err), which the dry-run caller treats as "no backup
+// to report" rather than failing the preview.
+func (p *Pipeline) plannedBackupName() (string, error) {
 	canonical := p.backupPath()
 	_, statErr := os.Stat(canonical)
 	switch {
 	case errors.Is(statErr, os.ErrNotExist):
 		return canonical, nil
 	case statErr == nil:
-		return p.timestampedBackupPath(), nil
+		return p.timestampedBackupBase() + ".bak", nil
 	default:
 		return "", statErr
-	}
-}
-
-// timestampedBackupPath returns a unique backup path of the form
-// pyproject.toml.<UTC timestamp>.bak. When a backup with that exact
-// second-resolution name already exists (two runs within the same second), a
-// -N suffix is appended until the name is free, so an earlier backup is never
-// overwritten.
-func (p *Pipeline) timestampedBackupPath() string {
-	base := filepath.Join(p.ProjectDir, pyprojectFile+"."+p.clock().UTC().Format(backupTimestampLayout))
-	candidate := base + ".bak"
-	for i := 1; ; i++ {
-		// Take the first name that does not already resolve to a file. A stat error
-		// other than not-exist means we can't confirm a collision here — stop rather
-		// than spin, and let the subsequent copy surface any real I/O problem. Only a
-		// nil error (the name is taken) advances to the next -N suffix, so the loop
-		// always terminates.
-		if _, err := os.Stat(candidate); err != nil {
-			return candidate
-		}
-		candidate = fmt.Sprintf("%s-%d.bak", base, i)
 	}
 }
 
@@ -434,7 +453,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		// for the first backup, else a fresh timestamped name (an unstattable .bak is
 		// skipped here; applyMerge fails the real run on it).
 		if !greenfield && !bytes.Equal(merged, baseBytes) {
-			if backupName, statErr := p.chooseBackupPath(); statErr == nil {
+			if backupName, statErr := p.plannedBackupName(); statErr == nil {
 				plan.WouldBackup = filepath.ToSlash(backupName)
 			}
 		}
@@ -449,19 +468,15 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 	pyproject := p.pyprojectPath()
 
 	if !greenfield {
-		// Decide where the backup would go before touching anything. An existing
-		// .bak that cannot be stat'd is fatal: never shadow or overwrite a backup we
-		// can't read (invariant 2). This runs before the no-op check so an unreadable
-		// backup fails the run rather than being silently skipped.
-		backup, statErr := p.chooseBackupPath()
-		if statErr != nil {
-			return p.fail(PhaseMerge, false, NewError(ErrMerge, statErr, "cannot stat backup %s", filepath.ToSlash(p.backupPath())))
-		}
-
-		// Read the current file: it is both the no-op comparison base and the backup
-		// source. A read error on an existing pyproject.toml (permission change,
+		// Stat and read the current file up front: its mode is preserved onto the
+		// backup and its content is both the no-op comparison base and the backup
+		// source. A stat/read error on an existing pyproject.toml (permission change,
 		// transient I/O, delete race) must not be swallowed — fail before any write.
 		// No disk mutation has happened yet.
+		info, statErr := os.Stat(pyproject)
+		if statErr != nil {
+			return p.fail(PhaseMerge, false, NewError(ErrMerge, statErr, "stat pyproject.toml %s failed", filepath.ToSlash(pyproject)))
+		}
 		current, readErr := os.ReadFile(pyproject)
 		if readErr != nil {
 			return p.fail(PhaseMerge, false, NewError(ErrMerge, readErr, "read pyproject.toml %s failed", filepath.ToSlash(pyproject)))
@@ -477,10 +492,11 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 		}
 
 		// A change will be written; back up the current content first (invariant 2).
-		// copyFile creates/truncates the backup path, so a failure mid-copy may leave
-		// a partial backup: report disk as mutated.
-		if err := copyFile(pyproject, backup); err != nil {
-			return p.fail(PhaseMerge, true, NewError(ErrMerge, err, "backup pyproject.toml failed"))
+		// backupCurrent creates a fresh file (never overwriting an existing backup),
+		// but a partial write mid-copy is possible: report disk as mutated on error.
+		backup, backupErr := p.backupCurrent(current, info.Mode().Perm())
+		if backupErr != nil {
+			return p.fail(PhaseMerge, true, NewError(ErrMerge, backupErr, "backup pyproject.toml failed"))
 		}
 		p.res.BackupPath = filepath.ToSlash(backup)
 	}
@@ -771,22 +787,22 @@ func sanitizeProjectName(name string) string {
 	return out
 }
 
-// copyFile copies src to dst, creating or overwriting dst. dst is created with
-// src's permission bits: the backup preserves a locked-down pyproject.toml
-// (e.g. 0o600 because it carries a private index URL) rather than widening it to
-// a hardcoded 0o644. os.WriteFile only applies the mode when it creates the
-// file, which is always the case for the freshly-created .bak.
-func copyFile(src, dst string) error {
-	info, err := os.Stat(src)
+// writeNew writes content to a newly created path, failing with os.ErrExist
+// rather than overwriting an existing file (O_EXCL). This is the no-clobber
+// primitive backups rely on: it can never destroy an earlier backup, and two
+// runs racing to the same name can't both succeed. mode sets the new file's
+// permission bits (subject to umask, as for any freshly created file), so a
+// backup preserves a locked-down pyproject.toml (e.g. 0o600 because it carries a
+// private index URL) rather than widening it to a hardcoded 0o644.
+func writeNew(path string, content []byte, mode os.FileMode) error {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, mode)
 	if err != nil {
-		return fmt.Errorf("stat %s: %w", src, err)
+		return err
 	}
-	data, err := os.ReadFile(src)
-	if err != nil {
-		return fmt.Errorf("read %s: %w", src, err)
+	_, werr := f.Write(content)
+	cerr := f.Close()
+	if werr != nil {
+		return werr
 	}
-	if err := os.WriteFile(dst, data, info.Mode().Perm()); err != nil {
-		return fmt.Errorf("write %s: %w", dst, err)
-	}
-	return nil
+	return cerr
 }

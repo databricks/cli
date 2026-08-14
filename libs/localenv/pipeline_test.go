@@ -577,7 +577,24 @@ func TestPipelineReRunDoesNotRewriteUnchangedPyproject(t *testing.T) {
 	assert.Equal(t, firstInfo.ModTime(), secondInfo.ModTime(), "unchanged pyproject.toml must not be rewritten")
 }
 
-func TestCopyFilePreservesMode(t *testing.T) {
+func TestWriteNewRefusesToOverwrite(t *testing.T) {
+	// writeNew is the no-clobber primitive backups rely on: it creates a file but
+	// must fail rather than overwrite an existing one, so an earlier backup is never
+	// destroyed (invariant 2) even if two runs pick the same name.
+	dir := t.TempDir()
+	dst := filepath.Join(dir, "pyproject.toml.bak")
+
+	require.NoError(t, writeNew(dst, []byte("first\n"), 0o644))
+	got, _ := os.ReadFile(dst)
+	require.Equal(t, "first\n", string(got))
+
+	err := writeNew(dst, []byte("second\n"), 0o644)
+	require.ErrorIs(t, err, os.ErrExist)
+	got, _ = os.ReadFile(dst)
+	assert.Equal(t, "first\n", string(got), "writeNew must never overwrite an existing file")
+}
+
+func TestWriteNewPreservesMode(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		// Windows does not honor Unix permission bits.
 		t.Skip("permission-bit preservation is Unix-only")
@@ -585,10 +602,8 @@ func TestCopyFilePreservesMode(t *testing.T) {
 	// A locked-down pyproject.toml (e.g. 0o600 because it carries a private index
 	// URL) must not be widened when copied to the backup.
 	dir := t.TempDir()
-	src := filepath.Join(dir, "pyproject.toml")
-	require.NoError(t, os.WriteFile(src, []byte("[project]\n"), 0o600))
 	dst := filepath.Join(dir, "pyproject.toml.bak")
-	require.NoError(t, copyFile(src, dst))
+	require.NoError(t, writeNew(dst, []byte("[project]\n"), 0o600))
 	info, err := os.Stat(dst)
 	require.NoError(t, err)
 	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
@@ -646,15 +661,15 @@ func TestPipelineUvMissingFailsAtPreflight(t *testing.T) {
 	assertPreflightFailure(t, res, err, ErrUvMissing)
 }
 
-func TestApplyMergeFailsOnUnstattableBackupWithoutOverwrite(t *testing.T) {
+func TestApplyMergeFailsOnUnreadableDirWithoutOverwritingBackup(t *testing.T) {
 	if runtime.GOOS == "windows" || os.Getuid() == 0 {
 		// chmod-based stat blocking does not apply for root or on Windows.
 		t.Skip("stat-permission enforcement not available")
 	}
-	// Both pyproject.toml and its .bak live in a project dir that is made
-	// unsearchable, so os.Stat of the backup fails with a permission error rather
-	// than not-exist — isolating applyMerge's "can't stat" branch. applyMerge is
-	// called directly, bypassing the writability preflight.
+	// The project dir is made unsearchable, so applyMerge's up-front stat of
+	// pyproject.toml fails with a permission error: the run must abort before any
+	// write, no disk mutation claimed, and the existing backup left untouched.
+	// applyMerge is called directly, bypassing the writability preflight.
 	dir := filepath.Join(t.TempDir(), "proj")
 	require.NoError(t, os.Mkdir(dir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte("[project]\n"), 0o644))
@@ -669,7 +684,7 @@ func TestApplyMergeFailsOnUnstattableBackupWithoutOverwrite(t *testing.T) {
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, PhaseMerge, pe.FailurePhase)
-	assert.False(t, pe.DiskMutated, "no write should have happened before the stat check")
+	assert.False(t, pe.DiskMutated, "no write should have happened before the up-front stat")
 
 	// The original backup must be intact.
 	require.NoError(t, os.Chmod(dir, 0o755))
