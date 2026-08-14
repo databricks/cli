@@ -1,0 +1,126 @@
+name: nextchanges PR link
+
+# A changelog fragment may reference the PR it came from. The reference is
+# optional (see .nextchanges/README.md) and easy to forget, so for every
+# fragment a PR *adds* this appends `(#<pr>)` where none exists yet, expands it
+# to a markdown link, and pushes the result onto the PR branch.
+#
+# `task links` (part of `task checks`) would otherwise fail the `lint` check on
+# an unexpanded `(#1234)`, so the expansion has to happen here rather than being
+# left to the release, which does not expand links either (see
+# render_nextchanges in internal/genkit/release_tagging.py).
+on:
+  pull_request:
+    # ready_for_review so a fragment added while the PR was a draft gets linked
+    # as soon as it's marked ready, rather than waiting for the next push.
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - ".nextchanges/*/*.md"
+
+# One run per PR: a second run pushing concurrently would commit onto a stale head.
+concurrency:
+  group: nextchanges-pr-link-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  add-link:
+    # The databricks org has an IP allow list, and GitHub-hosted runners are not
+    # on it: `gh api` from ubuntu-latest fails with HTTP 403. Every workflow here
+    # that calls the API runs on this group for the same reason.
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    # Drafts are left alone until they're marked ready (mirrors the
+    # !draft gate in maintainer-approval.yml). Forks: the head branch lives in
+    # the contributor's repository and is not ours to push to, so those PRs are
+    # left to review. The label is the escape hatch for an author who wants the
+    # fragment left exactly as written (mirrors 'override-changelog-guard' in
+    # changelog-guard.yml).
+    if: >-
+      !github.event.pull_request.draft &&
+      !github.event.pull_request.head.repo.fork &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-nextchanges-pr-link')
+
+    steps:
+      # Fetch with the default GITHUB_TOKEN, and persist-credentials: false so
+      # nothing is left in .git/config. The steps below execute tools/*.py from
+      # the PR branch, so no push credential may be reachable while they run;
+      # DECO_GITHUB_TOKEN is therefore scoped to the final step, which runs no
+      # code from the PR.
+      - name: Checkout PR branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          version: "0.8.9"
+
+      # Ask the API which files this PR adds rather than diffing locally: it is
+      # the same notion of "added" GitHub shows in the diff (against the merge
+      # base) and needs no full-history checkout.
+      # The file list is kept in RUNNER_TEMP so it never shows up in the working
+      # tree that the commit below is built from.
+      - name: List fragments added by this PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh api --paginate "repos/$REPO/pulls/$PR/files" \
+            --jq '.[] | select(.status == "added") | .filename' > "$RUNNER_TEMP/all_added.txt"
+          # Section fragments only: not the section READMEs, not
+          # .nextchanges/version, and nothing at another depth (which
+          # validate_nextchanges.py rejects anyway).
+          grep -E '^\.nextchanges/[^/]+/[^/]+\.md$' "$RUNNER_TEMP/all_added.txt" \
+            | grep -v '/README\.md$' > "$RUNNER_TEMP/added.txt" || true
+          cat "$RUNNER_TEMP/added.txt"
+
+      - name: Add missing PR references
+        env:
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [ ! -s "$RUNNER_TEMP/added.txt" ]; then
+            echo "This PR adds no changelog fragments; nothing to do."
+            exit 0
+          fi
+          # -d '\n': split the list on newlines only, so a fragment whose name
+          # contains a space stays one path. `--`: so a name that looks like a
+          # flag is still treated as a path.
+          xargs -d '\n' uv run tools/add_pr_links.py --pr "$PR" -- < "$RUNNER_TEMP/added.txt"
+          # Expand the `(#1234)` just added into the canonical markdown link,
+          # using the same script the `links` task runs.
+          xargs -d '\n' uv run tools/update_github_links.py -- < "$RUNNER_TEMP/added.txt"
+
+      - name: Commit
+        id: commit
+        run: |
+          if git diff --quiet; then
+            echo "Every added fragment already references a PR."
+            exit 0
+          fi
+          git diff
+          git config user.name "eng-dev-ecosystem-bot"
+          git config user.email "eng-dev-ecosystem-bot@users.noreply.github.com"
+          git commit -am "Add PR link to changelog fragments"
+          echo "pushable=true" >> "$GITHUB_OUTPUT"
+
+      # The only step holding a push credential, and the only one that runs no
+      # code from the PR branch. DECO_GITHUB_TOKEN is the eng-dev-ecosystem-bot
+      # PAT: a push authenticated with the default GITHUB_TOKEN does not fire the
+      # `synchronize` event, so required checks would never run on the commit
+      # above and the PR could not enter the merge queue.
+      - name: Push
+        if: steps.commit.outputs.pushable == 'true'
+        env:
+          TOKEN: ${{ secrets.DECO_GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.head_ref }}
+        run: |-
+          git push "https://x-access-token:$TOKEN@github.com/$REPO" "HEAD:refs/heads/$BRANCH"
