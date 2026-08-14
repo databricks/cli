@@ -46,7 +46,7 @@ func TestResolveNotFoundSuggestsCloseKey(t *testing.T) {
 	})
 
 	_, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
-	require.ErrorContains(t, err, `reference does not exist: ${hst}, did you mean "host"?`)
+	require.ErrorContains(t, err, "reference does not exist: ${hst}\n\ndid you mean:\n  ${host}")
 }
 
 func TestResolveWithNesting(t *testing.T) {

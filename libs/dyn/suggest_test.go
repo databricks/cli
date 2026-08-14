@@ -94,31 +94,71 @@ func TestDidYouMean(t *testing.T) {
 	}
 }
 
-func TestDidYouMeanSuffix(t *testing.T) {
+func TestDidYouMeanReferences(t *testing.T) {
 	tests := []struct {
-		name string
-		err  error
-		want string
+		name      string
+		err       error
+		reference string
+		want      string
 	}{
 		{
-			name: "no such key with suggestions",
-			err:  noSuchKeyError{p: NewPath(Key("hst")), suggestions: []string{"host"}},
-			want: `, did you mean "host"?`,
+			name:      "single suggestion",
+			err:       noSuchKeyError{p: NewPath(Key("variables"), Key("hst")), suggestions: []string{"host"}},
+			reference: "var.hst",
+			want:      "\n\ndid you mean:\n  ${var.host}",
 		},
 		{
-			name: "no such key without suggestions",
-			err:  noSuchKeyError{p: NewPath(Key("xyz"))},
-			want: "",
+			name:      "multiple suggestions",
+			err:       noSuchKeyError{p: NewPath(Key("variables"), Key("hst")), suggestions: []string{"host", "hosts"}},
+			reference: "var.hst",
+			want:      "\n\ndid you mean:\n  ${var.host}\n  ${var.hosts}",
 		},
 		{
-			name: "other error type",
-			err:  errors.New("some other error"),
-			want: "",
+			name:      "nested outer-key typo keeps suffix",
+			err:       noSuchKeyError{p: NewPath(Key("variables"), Key("clustr")), suggestions: []string{"cluster"}},
+			reference: "var.clustr.spark_version",
+			want:      "\n\ndid you mean:\n  ${var.cluster.spark_version}",
+		},
+		{
+			name:      "deep leaf typo keeps prefix",
+			err:       noSuchKeyError{p: NewPath(Key("variables"), Key("cluster"), Key("value"), Key("spark_versio")), suggestions: []string{"spark_version"}},
+			reference: "var.cluster.spark_versio",
+			want:      "\n\ndid you mean:\n  ${var.cluster.spark_version}",
+		},
+		{
+			name:      "index component preserved",
+			err:       noSuchKeyError{p: NewPath(Key("variables"), Key("librariez")), suggestions: []string{"libraries"}},
+			reference: "var.librariez[0].jar",
+			want:      "\n\ndid you mean:\n  ${var.libraries[0].jar}",
+		},
+		{
+			name:      "non-var prefix",
+			err:       noSuchKeyError{p: NewPath(Key("workspace"), Key("stot_path")), suggestions: []string{"root_path", "state_path"}},
+			reference: "workspace.stot_path",
+			want:      "\n\ndid you mean:\n  ${workspace.root_path}\n  ${workspace.state_path}",
+		},
+		{
+			name:      "no suggestions",
+			err:       noSuchKeyError{p: NewPath(Key("xyz"))},
+			reference: "var.xyz",
+			want:      "",
+		},
+		{
+			name:      "other error type",
+			err:       errors.New("some other error"),
+			reference: "var.xyz",
+			want:      "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, DidYouMeanSuffix(tt.err))
+			assert.Equal(t, tt.want, DidYouMeanReferences(tt.err, tt.reference))
 		})
 	}
+}
+
+func TestReplaceKeyFallsBackWhenKeyAbsent(t *testing.T) {
+	// The failed key is not present in the reference, so only the replacement
+	// itself is returned rather than a spliced reference.
+	assert.Equal(t, "host", replaceKey("var.foo", "missing", "host"))
 }

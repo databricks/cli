@@ -2,7 +2,10 @@
 === Typo of a defined variable: single suggestion
 
 >>> [CLI] bundle validate
-Error: reference does not exist: ${var.hst}, did you mean "host"?
+Error: reference does not exist: ${var.hst}
+
+did you mean:
+  ${var.host}
 
 Name: reference-typo
 Target: default
@@ -15,7 +18,11 @@ Found 1 error
 === Typo close to two defined variables: multiple suggestions
 
 >>> [CLI] bundle validate
-Error: reference does not exist: ${var.hst}, did you mean one of: "host", "hosts"?
+Error: reference does not exist: ${var.hst}
+
+did you mean:
+  ${var.host}
+  ${var.hosts}
 
 Name: reference-typo-multiple
 Target: default
@@ -28,7 +35,11 @@ Found 1 error
 === Typo in a non-variable reference (workspace field): multiple suggestions
 
 >>> [CLI] bundle validate
-Error: reference does not exist: ${workspace.stot_path}, did you mean one of: "root_path", "state_path"?
+Error: reference does not exist: ${workspace.stot_path}
+
+did you mean:
+  ${workspace.root_path}
+  ${workspace.state_path}
 
 Name: reference-typo-non-var-multiple
 Target: default
@@ -41,7 +52,10 @@ Found 1 error
 === Nested complex variable with multiple typos: only the first is reported
 
 >>> [CLI] bundle validate
-Error: reference does not exist: ${var.cluster.spark_versio}, did you mean "spark_version"?
+Error: reference does not exist: ${var.cluster.spark_versio}
+
+did you mean:
+  ${var.cluster.spark_version}
 
 Name: reference-typo-multiple-typos
 Target: default
@@ -54,7 +68,10 @@ Found 1 error
 === Two typos in one reference: lookup fails at the outermost key
 
 >>> [CLI] bundle validate
-Error: reference does not exist: ${var.clustr.spark_versio}, did you mean "cluster"?
+Error: reference does not exist: ${var.clustr.spark_versio}
+
+did you mean:
+  ${var.cluster.spark_versio}
 
 Name: reference-typo-double-nested-typo
 Target: default
@@ -67,7 +84,11 @@ Found 1 error
 === Two typos in one reference, outermost close to two variables: multiple suggestions
 
 >>> [CLI] bundle validate
-Error: reference does not exist: ${var.clustr.spark_versio}, did you mean one of: "cluster", "clusters"?
+Error: reference does not exist: ${var.clustr.spark_versio}
+
+did you mean:
+  ${var.cluster.spark_versio}
+  ${var.clusters.spark_versio}
 
 Name: reference-typo-double-nested-typo-multiple
 Target: default

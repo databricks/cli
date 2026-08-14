@@ -42,16 +42,18 @@ func IsNoSuchKeyError(err error) bool {
 	return ok
 }
 
-// DidYouMeanSuffix returns the "did you mean" clause for a noSuchKeyError, or an
-// empty string for any other error. Callers that rewrite the not-found message
-// (e.g. variable interpolation in libs/dyn/dynvar) use this to preserve the key
-// suggestions that would otherwise be lost when the original error is discarded.
-func DidYouMeanSuffix(err error) string {
+// DidYouMeanReferences returns a "did you mean" block of drop-in replacement
+// references for a noSuchKeyError, or "" for any other error. reference is the
+// original (pre-rewrite) reference text used to rebuild each suggestion. Used by
+// variable interpolation, which discards the original not-found error message.
+func DidYouMeanReferences(err error, reference string) string {
 	e, ok := errors.AsType[noSuchKeyError](err)
 	if !ok {
 		return ""
 	}
-	return didYouMean(e.suggestions)
+	// Last component of e.p is the failed key (same in original and rewritten space).
+	failedKey := e.p[len(e.p)-1].Key()
+	return didYouMeanReferences(reference, failedKey, e.suggestions)
 }
 
 type indexOutOfBoundsError struct {
