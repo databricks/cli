@@ -6,3 +6,12 @@ withdir multiple musterr trace $CLI bundle validate
 
 title "Typo in a non-variable reference (workspace field): multiple suggestions\n"
 withdir non-var-multiple musterr trace $CLI bundle validate
+
+title "Nested complex variable with multiple typos: only the first is reported\n"
+withdir multiple-typos musterr trace $CLI bundle validate
+
+title "Two typos in one reference: lookup fails at the outermost key\n"
+withdir double-nested-typo musterr trace $CLI bundle validate
+
+title "Two typos in one reference, outermost close to two variables: multiple suggestions\n"
+withdir double-nested-typo-multiple musterr trace $CLI bundle validate

@@ -37,3 +37,42 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-non-var-multiple/default
 
 Found 1 error
+
+=== Nested complex variable with multiple typos: only the first is reported
+
+>>> [CLI] bundle validate
+Error: reference does not exist: ${var.cluster.spark_versio}, did you mean "spark_version"?
+
+Name: reference-typo-multiple-typos
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-multiple-typos/default
+
+Found 1 error
+
+=== Two typos in one reference: lookup fails at the outermost key
+
+>>> [CLI] bundle validate
+Error: reference does not exist: ${var.clustr.spark_versio}, did you mean "cluster"?
+
+Name: reference-typo-double-nested-typo
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-double-nested-typo/default
+
+Found 1 error
+
+=== Two typos in one reference, outermost close to two variables: multiple suggestions
+
+>>> [CLI] bundle validate
+Error: reference does not exist: ${var.clustr.spark_versio}, did you mean one of: "cluster", "clusters"?
+
+Name: reference-typo-double-nested-typo-multiple
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-double-nested-typo-multiple/default
+
+Found 1 error
