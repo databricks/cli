@@ -289,10 +289,34 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 		return root, nil
 	})
 	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
+		diags = diags.Extend(resolveErrorDiags(err))
 	}
 
 	return hasUpdates, diags
+}
+
+// resolveErrorDiags renders "did you mean" suggestions as a diagnostic Detail so
+// libs/diag owns the multi-line formatting.
+func resolveErrorDiags(err error) diag.Diagnostics {
+	var refErr *dynvar.ReferenceError
+	if !errors.As(err, &refErr) || len(refErr.Suggestions) == 0 {
+		return diag.FromErr(err)
+	}
+
+	header := "did you mean:"
+	if len(refErr.Suggestions) > 1 {
+		header = "did you mean one of:"
+	}
+	detail := header
+	for _, ref := range refErr.Suggestions {
+		detail += "\n  ${" + ref + "}"
+	}
+
+	return diag.Diagnostics{{
+		Severity: diag.Error,
+		Summary:  refErr.Error(),
+		Detail:   detail,
+	}}
 }
 
 // selectivelyMutate applies a function to a subset of the configuration

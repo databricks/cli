@@ -42,18 +42,21 @@ func IsNoSuchKeyError(err error) bool {
 	return ok
 }
 
-// DidYouMeanReferences returns a "did you mean" block of drop-in replacement
-// references for a noSuchKeyError, or "" for any other error. reference is the
-// original (pre-rewrite) reference text used to rebuild each suggestion. Used by
-// variable interpolation, which discards the original not-found error message.
-func DidYouMeanReferences(err error, reference string) string {
+// SuggestedReferences returns drop-in replacement references for a noSuchKeyError
+// (nil otherwise), rebuilt by swapping the failed segment of reference for each
+// suggestion (e.g. "var.hst" -> ["var.host"]).
+func SuggestedReferences(err error, reference string) []string {
 	e, ok := errors.AsType[noSuchKeyError](err)
-	if !ok {
-		return ""
+	if !ok || len(e.suggestions) == 0 {
+		return nil
 	}
 	// Last component of e.p is the failed key (same in original and rewritten space).
 	failedKey := e.p[len(e.p)-1].Key()
-	return didYouMeanReferences(reference, failedKey, e.suggestions)
+	refs := make([]string, len(e.suggestions))
+	for i, s := range e.suggestions {
+		refs[i] = replaceKey(reference, failedKey, s)
+	}
+	return refs
 }
 
 type indexOutOfBoundsError struct {

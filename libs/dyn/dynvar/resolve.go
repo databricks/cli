@@ -37,6 +37,17 @@ func Resolve(in dyn.Value, fn Lookup) (out dyn.Value, err error) {
 	return resolver{in: in, fn: fn}.run()
 }
 
+// ReferenceError is returned for an unresolved variable reference. Suggestions
+// are carried as data so callers (which can import libs/diag) format them.
+type ReferenceError struct {
+	Reference   string   // original reference text, e.g. "var.hst"
+	Suggestions []string // corrected references, e.g. ["var.host", "var.hosts"]
+}
+
+func (e *ReferenceError) Error() string {
+	return fmt.Sprintf("reference does not exist: ${%s}", e.Reference)
+}
+
 type lookupResult struct {
 	v   dyn.Value
 	err error
@@ -215,9 +226,8 @@ func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
 	v, err := r.fn(p)
 	if err != nil {
 		if dyn.IsNoSuchKeyError(err) {
-			// Re-attach the key suggestions as drop-in references before the
-			// original not-found error is discarded.
-			err = fmt.Errorf("reference does not exist: ${%s}%s", key, dyn.DidYouMeanReferences(err, key))
+			// Carry suggestions as data; the caller formats them via libs/diag.
+			err = &ReferenceError{Reference: key, Suggestions: dyn.SuggestedReferences(err, key)}
 		}
 
 		// Cache the return value and return to the caller.

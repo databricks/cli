@@ -94,65 +94,65 @@ func TestDidYouMean(t *testing.T) {
 	}
 }
 
-func TestDidYouMeanReferences(t *testing.T) {
+func TestSuggestedReferences(t *testing.T) {
 	tests := []struct {
 		name      string
 		err       error
 		reference string
-		want      string
+		want      []string
 	}{
 		{
 			name:      "single suggestion",
 			err:       noSuchKeyError{p: NewPath(Key("variables"), Key("hst")), suggestions: []string{"host"}},
 			reference: "var.hst",
-			want:      "\n\ndid you mean:\n  ${var.host}",
+			want:      []string{"var.host"},
 		},
 		{
 			name:      "multiple suggestions",
 			err:       noSuchKeyError{p: NewPath(Key("variables"), Key("hst")), suggestions: []string{"host", "hosts"}},
 			reference: "var.hst",
-			want:      "\n\ndid you mean one of:\n  ${var.host}\n  ${var.hosts}",
+			want:      []string{"var.host", "var.hosts"},
 		},
 		{
 			name:      "nested outer-key typo keeps suffix",
 			err:       noSuchKeyError{p: NewPath(Key("variables"), Key("clustr")), suggestions: []string{"cluster"}},
 			reference: "var.clustr.spark_version",
-			want:      "\n\ndid you mean:\n  ${var.cluster.spark_version}",
+			want:      []string{"var.cluster.spark_version"},
 		},
 		{
 			name:      "deep leaf typo keeps prefix",
 			err:       noSuchKeyError{p: NewPath(Key("variables"), Key("cluster"), Key("value"), Key("spark_versio")), suggestions: []string{"spark_version"}},
 			reference: "var.cluster.spark_versio",
-			want:      "\n\ndid you mean:\n  ${var.cluster.spark_version}",
+			want:      []string{"var.cluster.spark_version"},
 		},
 		{
 			name:      "index component preserved",
 			err:       noSuchKeyError{p: NewPath(Key("variables"), Key("librariez")), suggestions: []string{"libraries"}},
 			reference: "var.librariez[0].jar",
-			want:      "\n\ndid you mean:\n  ${var.libraries[0].jar}",
+			want:      []string{"var.libraries[0].jar"},
 		},
 		{
 			name:      "non-var prefix",
 			err:       noSuchKeyError{p: NewPath(Key("workspace"), Key("stot_path")), suggestions: []string{"root_path", "state_path"}},
 			reference: "workspace.stot_path",
-			want:      "\n\ndid you mean one of:\n  ${workspace.root_path}\n  ${workspace.state_path}",
+			want:      []string{"workspace.root_path", "workspace.state_path"},
 		},
 		{
 			name:      "no suggestions",
 			err:       noSuchKeyError{p: NewPath(Key("xyz"))},
 			reference: "var.xyz",
-			want:      "",
+			want:      nil,
 		},
 		{
 			name:      "other error type",
 			err:       errors.New("some other error"),
 			reference: "var.xyz",
-			want:      "",
+			want:      nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, DidYouMeanReferences(tt.err, tt.reference))
+			assert.Equal(t, tt.want, SuggestedReferences(tt.err, tt.reference))
 		})
 	}
 }

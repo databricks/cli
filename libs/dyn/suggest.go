@@ -90,25 +90,6 @@ func didYouMean(suggestions []string) string {
 	}
 }
 
-// didYouMeanReferences formats a "did you mean" block listing each suggestion as
-// a full drop-in reference on its own line, with only the failed segment swapped.
-// Returns "" when there are no suggestions.
-func didYouMeanReferences(reference, failedKey string, suggestions []string) string {
-	if len(suggestions) == 0 {
-		return ""
-	}
-
-	lines := make([]string, len(suggestions))
-	for i, s := range suggestions {
-		lines[i] = "  ${" + replaceKey(reference, failedKey, s) + "}"
-	}
-	header := "did you mean:"
-	if len(suggestions) > 1 {
-		header = "did you mean one of:"
-	}
-	return "\n\n" + header + "\n" + strings.Join(lines, "\n")
-}
-
 // replaceKey returns reference with the component matching failedKey swapped for
 // replacement, or just replacement if reference can't be parsed or has no match.
 func replaceKey(reference, failedKey, replacement string) string {
