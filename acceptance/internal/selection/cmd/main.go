@@ -27,6 +27,10 @@ func main() {
 	root := flag.String("root", "acceptance", "path to the acceptance directory")
 	flag.Parse()
 
+	if *limit <= 0 {
+		fatalf("-limit must be a positive integer, got %d", *limit)
+	}
+
 	dirs, err := selection.FindTestDirs(*root)
 	if err != nil {
 		fatalf("cannot list test dirs in %s: %s", *root, err)
@@ -58,6 +62,8 @@ func main() {
 // diffFromArgs renders command line arguments as `git diff --name-status` lines, so the
 // same selection runs on them as on a real diff.
 func diffFromArgs(args []string) string {
+	changed := changedLines()
+
 	lines := make([]string, 0, len(args))
 	for _, arg := range args {
 		status, rest, ok := strings.Cut(arg, ":")
@@ -69,26 +75,45 @@ func diffFromArgs(args []string) string {
 		for i, path := range paths {
 			paths[i] = strings.TrimPrefix(filepath.ToSlash(filepath.Clean(path)), "./")
 		}
-		if status == "" {
-			status = gitStatus(paths[0])
+		if status != "" {
+			lines = append(lines, status+"\t"+strings.Join(paths, "\t"))
+			continue
 		}
-		lines = append(lines, status+"\t"+strings.Join(paths, "\t"))
+		// A path given without a status takes the line git reports for it, kept whole so a
+		// rename keeps both its status and its source path. A path git does not report as
+		// changed stands for a hypothetical change: modified when tracked, added when not.
+		if line, ok := changed[paths[0]]; ok {
+			lines = append(lines, line)
+			continue
+		}
+		lines = append(lines, gitStatus(paths[0])+"\t"+paths[0])
 	}
 	return strings.Join(lines, "\n")
 }
 
-// gitStatus is the status to assume for a path given without one: the status git reports
-// against the merge base if the path is changed there, otherwise "M" for a tracked path
-// and "A" for one git does not know, so a bare argument also stands for a hypothetical
-// change to an existing test or a brand new one.
-func gitStatus(path string) string {
-	out, err := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main", "--", path).Output()
-	if err == nil {
-		if fields := strings.Fields(string(out)); len(fields) > 0 {
-			return fields[0]
-		}
+// changedLines maps each path this branch changed to its whole `git diff --name-status`
+// line, keyed the way the diff names it now: the destination path of a rename, and the
+// path itself otherwise. A path filter cannot be used for this, because git only pairs a
+// rename when both of its paths are in the diff — asking about the destination alone
+// reports an addition.
+func changedLines() map[string]string {
+	out, err := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main").Output()
+	if err != nil {
+		fatalf("git diff --merge-base origin/main failed: %s", err)
 	}
 
+	lines := map[string]string{}
+	for line := range strings.SplitSeq(strings.TrimSpace(string(out)), "\n") {
+		if fields := strings.Split(line, "\t"); len(fields) >= 2 {
+			lines[fields[len(fields)-1]] = line
+		}
+	}
+	return lines
+}
+
+// gitStatus is the status to assume for a path git does not report as changed: "M" for a
+// tracked path and "A" for one git does not know.
+func gitStatus(path string) string {
 	if exec.Command("git", "ls-files", "--error-unmatch", "--", path).Run() == nil {
 		return "M"
 	}
