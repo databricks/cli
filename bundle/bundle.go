@@ -172,6 +172,14 @@ type Bundle struct {
 	// When non-empty, only the specified resources are included in deployment.
 	Select []string
 
+	// MigratingToDirect is set when the direct engine is requested but the existing
+	// state still uses terraform, so the state is migrated to the direct engine after
+	// this deploy. Resources that only the direct engine supports are skipped by this
+	// run rather than rejected: terraform cannot deploy them, and since terraform
+	// could never have deployed them they are absent from its state. The next deploy,
+	// which runs on the migrated state, creates them.
+	MigratingToDirect bool
+
 	// SkipLocalFileValidation makes path translation tolerant of missing local files.
 	// When set, TranslatePaths computes workspace paths without verifying files exist.
 	// Used by config-remote-sync: a user may modify resource paths remotely (e.g.,

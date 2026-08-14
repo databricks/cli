@@ -80,6 +80,11 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 			},
 		}},
 		CodeSourcePath: snap.CodeSourcePath,
+		// NOTE: docker_image_url is intentionally not set here yet. The field was
+		// added to jobs.AiRuntimeTask in databricks-sdk-go after v0.170.0, which the
+		// CLI has not bumped to. prepareDockerImage already verifies the image is
+		// registered; passing it on the task lands in the follow-up PR once the SDK
+		// bump + codegen is in.
 	}
 	if cfg.MLflowRunName != nil {
 		task.MlflowRun = *cfg.MLflowRunName
@@ -186,6 +191,15 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if err != nil {
 		return 0, "", err
 	}
+
+	// After the cheap workspace checks (a tag_policy=latest refresh can block for
+	// minutes) but before any upload, so a bad image wastes no artifact work.
+	if img := cfg.dockerImage(); img != nil {
+		if err := prepareDockerImage(ctx, w, img); err != nil {
+			return 0, "", err
+		}
+	}
+
 	runName := ""
 	if cfg.MLflowRunName != nil {
 		runName = *cfg.MLflowRunName

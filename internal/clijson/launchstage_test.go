@@ -31,6 +31,25 @@ func TestParseLaunchStage(t *testing.T) {
 	}
 }
 
+func TestMoreRestrictive(t *testing.T) {
+	// Ascending restrictiveness: GA < Public Preview < Public Beta < Private Preview.
+	ordered := []LaunchStage{
+		LaunchStageGA,
+		LaunchStagePublicPreview,
+		LaunchStagePublicBeta,
+		LaunchStagePrivatePreview,
+	}
+	for i, a := range ordered {
+		for j, b := range ordered {
+			assert.Equalf(t, i > j, MoreRestrictive(a, b), "MoreRestrictive(%q, %q)", a, b)
+		}
+	}
+
+	// The empty string ranks as GA, the implicit default.
+	assert.False(t, MoreRestrictive("", LaunchStageGA))
+	assert.True(t, MoreRestrictive(LaunchStagePublicBeta, ""))
+}
+
 // Every constant must be a member of LaunchStages, so a constant added without
 // updating the closed set (or vice versa) is caught here.
 func TestLaunchStagesContainsEveryConst(t *testing.T) {

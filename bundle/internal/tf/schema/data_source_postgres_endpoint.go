@@ -34,10 +34,8 @@ type DataSourcePostgresEndpointStatusGroup struct {
 }
 
 type DataSourcePostgresEndpointStatusHosts struct {
-	Host                string `json:"host,omitempty"`
-	ReadOnlyHost        string `json:"read_only_host,omitempty"`
-	ReadOnlyPooledHost  string `json:"read_only_pooled_host,omitempty"`
-	ReadWritePooledHost string `json:"read_write_pooled_host,omitempty"`
+	Host         string `json:"host,omitempty"`
+	ReadOnlyHost string `json:"read_only_host,omitempty"`
 }
 
 type DataSourcePostgresEndpointStatusSettings struct {
@@ -53,7 +51,6 @@ type DataSourcePostgresEndpointStatus struct {
 	EndpointType           string                                    `json:"endpoint_type,omitempty"`
 	Group                  *DataSourcePostgresEndpointStatusGroup    `json:"group,omitempty"`
 	Hosts                  *DataSourcePostgresEndpointStatusHosts    `json:"hosts,omitempty"`
-	LastActiveTime         string                                    `json:"last_active_time,omitempty"`
 	PendingState           string                                    `json:"pending_state,omitempty"`
 	Settings               *DataSourcePostgresEndpointStatusSettings `json:"settings,omitempty"`
 	SuspendTimeoutDuration string                                    `json:"suspend_timeout_duration,omitempty"`

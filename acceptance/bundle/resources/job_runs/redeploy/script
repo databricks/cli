@@ -8,12 +8,18 @@ title "initial deploy triggers the first run"
 trace $CLI bundle deploy
 trace $CLI bundle summary
 trace read_id.py my_job
+
+# Name the first run, so the second one below reads as [MY_RUN_ID_2] and the two
+# are told apart in the URLs and in the delete request.
+read_id.py my_run > /dev/null
+
 trace print_requests.py //jobs/run-now
 
 title "change the run configuration and redeploy"
 trace update_file.py databricks.yml "env: dev" "env: prod"
 trace $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"]'
 trace $CLI bundle deploy
+read_id.py my_run > /dev/null
 trace $CLI bundle summary
 
 title "the config change deleted the previous run and triggered a second, different run"

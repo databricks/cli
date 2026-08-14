@@ -256,7 +256,7 @@ func gatherConditions(ctx context.Context, cmd *cobra.Command) notifyConditions 
 	nonInteractive := !cmdio.HasIO(ctx) || cmdio.GetInteractiveMode(ctx) == cmdio.InteractiveModeNone
 	onRuntime := dbr.HasDetection(ctx) && dbr.RunsOnRuntime(ctx)
 	return notifyConditions{
-		developmentBuild: isDevelopmentBuild(build.GetInfo()),
+		developmentBuild: build.GetInfo().IsDevelopment(),
 		cacheDisabled:    cacheDisabled,
 		optedOut:         optedOut,
 		onRuntime:        onRuntime,

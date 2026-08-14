@@ -1,0 +1,53 @@
+
+>>> [CLI] environments setup-local --serverless-version 4 --dry-run --output json
+{
+  "schemaVersion": 1,
+  "command": "environments setup-local",
+  "ok": true,
+  "mode": "default",
+  "dryRun": true,
+  "compute": {
+    "source": "serverless",
+    "serverlessVersion": "v4",
+    "envKey": "serverless/serverless-v4"
+  },
+  "resolved": {
+    "pythonVersion": "3.12",
+    "artifactSource": "network"
+  },
+  "greenfield": true,
+  "plan": {
+    "wouldWrite": "[TEST_TMP_DIR]/pyproject.toml",
+    "wouldInstallPython": "3.12",
+    "diff": "--- pyproject.toml\n+++ pyproject.toml\n@@ -1 +1,20 @@\n+[project]\n+name = \"001\"\n+version = \"0.0.0\"\n+requires-python = \"\u003e=3.12\"\n+\n+[dependency-groups]\n+dev = [\n+    \"databricks-connect~=17.0\",\n+]\n+\n+[tool.databricks.environment]\n+environment_version = \"4\"\n+\n+# managed by databricks environments setup-local — do not edit\n+[tool.uv]\n+constraint-dependencies = [\n+    \"pyarrow\u003c19\",\n+    \"pandas\u003c3\",\n+]\n+# end managed by databricks environments setup-local\n"
+  },
+  "phases": [
+    {
+      "phase": "preflight",
+      "status": "ok"
+    },
+    {
+      "phase": "resolve",
+      "status": "ok"
+    },
+    {
+      "phase": "fetch",
+      "status": "ok"
+    },
+    {
+      "phase": "merge",
+      "status": "ok"
+    },
+    {
+      "phase": "provision",
+      "status": "ok"
+    },
+    {
+      "phase": "validate",
+      "status": "ok"
+    }
+  ],
+  "warnings": [],
+  "error": null,
+  "durationMs": [DURATION_MS]
+}

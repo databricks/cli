@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/hexops/gotextdiff"
@@ -53,6 +54,10 @@ type Pipeline struct {
 	Compute           ComputeClient
 	PM                PackageManager
 
+	// Progress, when non-nil, receives a PhaseStarted call as each phase begins.
+	// Left nil by callers that don't render progress (e.g. --output json).
+	Progress Reporter
+
 	// res accumulates phase statuses and result fields as the run progresses.
 	res *Result
 }
@@ -80,6 +85,11 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 	p.res.DryRun = p.Check
 	// Phases start as pending and flip to ok/error as the run progresses.
 	p.res.Phases = initialPhases()
+
+	// Stamp wall time from a defer so every exit path is covered — success, a phase
+	// failure, and the cancellation reclassification below all return through it.
+	start := time.Now()
+	defer func() { p.res.DurationMs = time.Since(start).Milliseconds() }()
 
 	if err := p.run(ctx); err != nil {
 		// A cancelled context means the user or parent interrupted us (SIGINT/
@@ -130,6 +140,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// before any other work so the failure flows through the phase/JSON reporting
 	// (a plain Cobra mutual-exclusion error would print no command JSON object,
 	// which the --output json consumer needs).
+	p.report(ctx, PhasePreflight)
 	if err := ValidateComputeFlags(p.Flags); err != nil {
 		return p.fail(PhasePreflight, false, NewError(ErrUsage, err, "invalid compute target flags"))
 	}
@@ -158,12 +169,14 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 
 	// Phase: resolve — compute target → environment key.
+	p.report(ctx, PhaseResolve)
 	compute, err := p.resolve(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Phase: fetch — constraint artifact for the resolved env key.
+	p.report(ctx, PhaseFetch)
 	c, err := p.fetch(ctx, compute)
 	if err != nil {
 		return err
@@ -187,12 +200,15 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 	p.res.Resolved = &ResolvedInfo{
 		PythonVersion:    pyMinor,
-		DBConnectVersion: versionFromPin(dbcPin),
+		DBConnectVersion: dbcVersionFromPin(dbcPin),
 		ArtifactSource:   artifactSource(c.FromCache),
 	}
 
 	// Phase: merge — compute the merged pyproject.toml (in-memory, no writes yet).
-	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, dbcPin)
+	// The serverless environment version (empty for cluster targets) is written
+	// into [tool.databricks.environment] so the project also runs in serverless Jobs.
+	p.report(ctx, PhaseMerge)
+	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, dbcPin, compute.ServerlessEnvironmentVersion())
 	if err != nil {
 		return err
 	}
@@ -213,11 +229,13 @@ func (p *Pipeline) run(ctx context.Context) error {
 	p.markOK(PhaseMerge, "")
 
 	// Phase: provision — ensure Python, run uv sync, seed pip.
+	p.report(ctx, PhaseProvision)
 	if err := p.provision(ctx, pyMinor); err != nil {
 		return err
 	}
 
 	// Phase: validate — assert the venv matches the target.
+	p.report(ctx, PhaseValidate)
 	return p.validate(ctx, pyMinor, dbcPin)
 }
 
@@ -261,8 +279,9 @@ func (p *Pipeline) backupPath() string {
 // mergePlan computes the merged pyproject.toml bytes (without writing to disk),
 // decides greenfield vs. existing, and builds the Plan (populated only under
 // --dry-run). dbcPin is the databricks-connect pin to inject, or "" in
-// constraints-only mode.
-func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, dbcPin string) (merged []byte, greenfield bool, err error) {
+// constraints-only mode. envVersion is the serverless environment version to
+// write into [tool.databricks.environment], or "" for a cluster target.
+func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, dbcPin, envVersion string) (merged []byte, greenfield bool, err error) {
 	pyproject := p.pyprojectPath()
 	backup := p.backupPath()
 
@@ -289,9 +308,17 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	greenfield = baseBytes == nil
 
 	// The artifact drives the merge; in constraints-only mode we clear the
-	// databricks-connect pin so it is neither written nor asserted.
+	// databricks-connect pin so it is neither written nor asserted. envVersion is
+	// the resolved serverless version (empty for cluster targets).
+	//
+	// envVersion is deliberately NOT cleared in constraints-only mode: unlike the
+	// databricks-connect pin (a managed *dependency* the mode opts out of), the
+	// environment version records the resolved compute *target*, which the mode
+	// still resolves. Recording it keeps the target discoverable for VS Code and
+	// serverless Jobs even when dependency management is turned off.
 	effective := *c
 	effective.DatabricksConnect = dbcPin
+	effective.EnvironmentVersion = envVersion
 
 	var changedRegions []string
 	if greenfield {
@@ -302,11 +329,22 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		if dbcPin != "" {
 			changedRegions = append(changedRegions, regionDatabricksConnect)
 		}
+		if envVersion != "" {
+			changedRegions = append(changedRegions, regionDatabricksEnvironment)
+		}
 	} else {
 		merged, changedRegions, err = MergeManaged(baseBytes, effective)
 		if err != nil {
 			return nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
 		}
+		// Surface merge-quality warnings (overridden, consolidated, or duplicated pins,
+		// conflicting user constraints) from the pre-merge file. Greenfield has nothing of
+		// the user's to override, so it is skipped. This runs for both dry-run and real
+		// runs so the --json consumer sees the same warnings either way. The databricks-connect
+		// edits come from the merge itself (planDBConnect), so a warning can never claim a
+		// rewrite or removal that did not happen.
+		p.res.Warnings = append(p.res.Warnings,
+			detectMergeWarnings(baseBytes, effective, planDBConnect(baseBytes, effective))...)
 	}
 
 	// Under --dry-run, build the plan (with a diff) for reporting. A real run does
@@ -478,6 +516,15 @@ func initialPhases() []PhaseStatus {
 	return phases
 }
 
+// report announces entry into a phase to the Progress reporter, if one is set,
+// and logs the transition at debug level so --debug keeps a phase-by-phase trail.
+func (p *Pipeline) report(ctx context.Context, name PhaseName) {
+	if p.Progress != nil {
+		p.Progress.PhaseStarted(name)
+	}
+	log.Debugf(ctx, CommandName+": entering phase %s", name)
+}
+
 // markOK marks a phase ok with an optional human-readable detail.
 func (p *Pipeline) markOK(name PhaseName, detail string) {
 	for i := range p.res.Phases {
@@ -555,6 +602,32 @@ func versionFromPin(pin string) string {
 // pin string such as "databricks-connect~=17.2.0". Returns "" if unparseable.
 func dbcMajorFromPin(pin string) string {
 	return majorVersion(versionFromPin(pin))
+}
+
+// dbcVersionFromPin returns the pin's version only when it is a concrete
+// major.minor.patch, so a range-only pin like "~=17.0" (serverless pins by
+// major, databricks/environments#15) reports "" rather than the "17.0" floor
+// nothing installs. Gating only the reported version keeps dbcMajorFromPin's raw
+// versionFromPin extraction intact for the real-run major assertion in validate.
+func dbcVersionFromPin(pin string) string {
+	v := versionFromPin(pin)
+	if !isFullVersion(v) {
+		return ""
+	}
+	return v
+}
+
+// isFullVersion reports whether v has at least three numeric dot-separated
+// components, e.g. "17.3.0" but not "17.0". This is not a PEP 440 validator:
+// only the leading major.minor.patch must be digit-terminated, so suffixed forms
+// like "17.3.0.dev1" or "17.3.0.post1" pass through unchecked. That is fine here
+// because real pins are either major-only (~=17.0) or a concrete GA (~=17.3.0).
+func isFullVersion(v string) bool {
+	parts := strings.Split(v, ".")
+	if len(parts) < 3 {
+		return false
+	}
+	return isAllDigits(parts[0]) && isAllDigits(parts[1]) && isAllDigits(parts[2])
 }
 
 // majorVersion returns the major portion of a version string (digits before the

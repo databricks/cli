@@ -3,6 +3,8 @@ package aitools
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -386,4 +388,49 @@ func TestUpdateScopeFlag(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
+	setupTestAgents(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	projectRoot := t.TempDir()
+	t.Chdir(projectRoot)
+	// Skills-only agents read project skills from their project config dirs; a
+	// home-based detection would miss these, so update must use DetectProjectInstalled.
+	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".pi", "skills", "databricks-core"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".gemini", "skills", "databricks-core"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".goose", "skills", "databricks-core"), 0o755))
+
+	ctx := cmdio.MockDiscard(t.Context())
+	dir, err := installer.ProjectSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, installer.SaveState(dir, &installer.InstallState{
+		SchemaVersion: 2,
+		Release:       "v0.2.5",
+		Scope:         installer.ScopeProject,
+		Skills:        map[string]string{"databricks-core": "0.2.5"},
+	}))
+
+	origUpdateSkills := updateSkillsFn
+	origUpdatePlugins := updatePluginsFn
+	t.Cleanup(func() {
+		updateSkillsFn = origUpdateSkills
+		updatePluginsFn = origUpdatePlugins
+	})
+	var names []string
+	updateSkillsFn = func(_ context.Context, _ installer.ManifestSource, targetAgents []*agents.Agent, _ installer.UpdateOptions) (*installer.UpdateResult, error) {
+		for _, agent := range targetAgents {
+			names = append(names, agent.Name)
+		}
+		return &installer.UpdateResult{}, nil
+	}
+	updatePluginsFn = func(context.Context, string, string) ([]installer.PluginUpdate, error) { return nil, nil }
+
+	cmd := NewUpdateCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--scope", "project"})
+	require.NoError(t, cmd.Execute())
+	assert.Contains(t, names, agents.NamePi)
+	assert.Contains(t, names, agents.NameGemini)
+	assert.Contains(t, names, agents.NameGoose)
 }

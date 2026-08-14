@@ -20,6 +20,36 @@ import (
 
 const missingJobGitProviderMessage = "git_source.git_provider must be one of: github,gitlab,bitbucketcloud,gitlabenterpriseedition,bitbucketserver,azuredevopsservices,githubenterprise,awscodecommit"
 
+// errNoCodeInWorkspace marks a task there is nothing to execute for, e.g. code
+// uploaded as a snapshot zip this server never unpacks. The gap is here, not in
+// the job, so the task succeeds.
+var errNoCodeInWorkspace = errors.New("task code is not in the workspace")
+
+// taskFailureMessage is what a real workspace reports for a task that failed: a
+// generic pointer at the run output, on both the task and the run. Measured on
+// serverless against a spark_python_task that raises. The run-level message wraps
+// it as "Task <key> failed with message: <this>." with a trailing period.
+const taskFailureMessage = "Workload failed, see run output for details"
+
+// taskFailure splits a failed task's output the way jobs/runs/get-output does:
+// error carries the exception, error_trace the traceback.
+type taskFailure struct {
+	message string
+	trace   string
+}
+
+func (e *taskFailure) Error() string {
+	return e.message
+}
+
+// newTaskFailure takes the exception from the last line of the task's output,
+// where a Python traceback ends, or err if the task wrote nothing.
+func newTaskFailure(err error, output string) *taskFailure {
+	trimmed := strings.TrimRight(output, "\r\n")
+	lastLine := strings.TrimSpace(trimmed[strings.LastIndex(trimmed, "\n")+1:])
+	return &taskFailure{message: cmp.Or(lastLine, err.Error()), trace: trimmed}
+}
+
 // venvPython returns the path to the Python executable in a venv.
 // On Unix: venv/bin/python
 // On Windows: venv\Scripts\python.exe
@@ -349,6 +379,13 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
+	// A resent request with the same non-empty token returns the run that token started.
+	if request.IdempotencyToken != "" {
+		if runId, ok := s.JobRunIdempotency[request.IdempotencyToken]; ok {
+			return Response{Body: jobs.RunNowResponse{RunId: runId}}
+		}
+	}
+
 	runId := nextID()
 	runName := "run-name"
 	if job.Settings != nil && job.Settings.Name != "" {
@@ -387,12 +424,20 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 				logs, err = s.executeSparkPythonTask(t)
 			}
 
-			if err != nil {
+			switch {
+			case errors.Is(err, errNoCodeInWorkspace):
+				// Nothing ran, so the task keeps its SUCCESS state.
+			case err != nil:
 				taskRun.State.ResultState = jobs.RunResultStateFailed
-				s.JobRunOutputs[taskRunId] = jobs.RunOutput{
-					Error: err.Error(),
+				taskRun.State.StateMessage = taskFailureMessage
+				runOutput := jobs.RunOutput{Error: err.Error()}
+				// A task this server could not even start (e.g. uv failed) has no
+				// traceback to report.
+				if failure, ok := errors.AsType[*taskFailure](err); ok {
+					runOutput.ErrorTrace = failure.trace
 				}
-			} else if logs != "" {
+				s.JobRunOutputs[taskRunId] = runOutput
+			case logs != "":
 				s.JobRunOutputs[taskRunId] = jobs.RunOutput{
 					Logs: logs,
 				}
@@ -410,6 +455,10 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		Tasks:                tasks,
 		JobParameters:        runJobParameters(job.Settings, request.JobParameters),
 		OverridingParameters: runOverridingParameters(request),
+	}
+
+	if request.IdempotencyToken != "" {
+		s.JobRunIdempotency[request.IdempotencyToken] = runId
 	}
 
 	return Response{Body: jobs.RunNowResponse{RunId: runId}}
@@ -599,7 +648,7 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 		}
 		data := s.files[whlPath].Data
 		if len(data) == 0 {
-			return "", fmt.Errorf("wheel file not found in workspace: %s", whlPath)
+			return "", fmt.Errorf("%w: wheel file not found in workspace: %s", errNoCodeInWorkspace, whlPath)
 		}
 		localPath := filepath.Join(env.dir, filepath.Base(whlPath))
 		if err := os.WriteFile(localPath, data, 0o644); err != nil {
@@ -618,7 +667,7 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 	}
 
 	if len(env.installedLibs) == 0 {
-		return "", errors.New("no wheel libraries found in task")
+		return "", fmt.Errorf("%w: no wheel libraries found in task", errNoCodeInWorkspace)
 	}
 
 	// Run the entry point using runpy with sys.argv[0] set to the package name,
@@ -638,7 +687,7 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return string(output), fmt.Errorf("wheel task execution failed: %s\n%s", err, output)
+		return string(output), newTaskFailure(err, string(output))
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
@@ -664,7 +713,7 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 		notebookData = s.files[notebookPath+".py"].Data
 	}
 	if len(notebookData) == 0 {
-		return "", fmt.Errorf("notebook not found in workspace: %s (also tried .py)", notebookPath)
+		return "", fmt.Errorf("%w: notebook not found in workspace: %s (also tried .py)", errNoCodeInWorkspace, notebookPath)
 	}
 
 	// Create a temporary Python environment for notebook execution
@@ -726,7 +775,7 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return string(output), fmt.Errorf("notebook task execution failed: %s\n%s", err, output)
+		return string(output), newTaskFailure(err, string(output))
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
@@ -750,7 +799,7 @@ func (s *FakeWorkspace) executeSparkPythonTask(task jobs.Task) (string, error) {
 
 	pythonData := s.files[pythonPath].Data
 	if len(pythonData) == 0 {
-		return "", fmt.Errorf("python file not found in workspace: %s", pythonPath)
+		return "", fmt.Errorf("%w: python file not found in workspace: %s", errNoCodeInWorkspace, pythonPath)
 	}
 
 	env, cleanup, err := s.getOrCreateClusterEnv(task)
@@ -772,7 +821,7 @@ func (s *FakeWorkspace) executeSparkPythonTask(task jobs.Task) (string, error) {
 
 	output, err := exec.Command(venvPython(env.venvDir), runArgs...).CombinedOutput()
 	if err != nil {
-		return string(output), fmt.Errorf("spark python task execution failed: %s\n%s", err, output)
+		return string(output), newTaskFailure(err, string(output))
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
@@ -848,6 +897,33 @@ func sparkVersionToPython(task jobs.Task) string {
 	return "3.10"
 }
 
+// terminateRun completes the run, rolling task outcomes up into the run-level
+// state the way the Jobs API does: one failed task fails the whole run, and the
+// run reports INTERNAL_ERROR in the deprecated life_cycle_state even though its
+// tasks are TERMINATED (status.state is TERMINATED with RUN_EXECUTION_ERROR).
+func terminateRun(run *jobs.Run) {
+	for i := range run.Tasks {
+		// Tasks that were never executed (jobs/runs/submit) are still running.
+		if run.Tasks[i].State.LifeCycleState != jobs.RunLifeCycleStateTerminated {
+			run.Tasks[i].State.LifeCycleState = jobs.RunLifeCycleStateTerminated
+			run.Tasks[i].State.ResultState = jobs.RunResultStateSuccess
+		}
+	}
+
+	run.State = &jobs.RunState{
+		LifeCycleState: jobs.RunLifeCycleStateTerminated,
+		ResultState:    jobs.RunResultStateSuccess,
+	}
+	for _, task := range run.Tasks {
+		if task.State.ResultState != jobs.RunResultStateSuccess {
+			run.State.LifeCycleState = jobs.RunLifeCycleStateInternalError
+			run.State.ResultState = task.State.ResultState
+			run.State.StateMessage = fmt.Sprintf("Task %s failed with message: %s.", task.TaskKey, taskFailureMessage)
+			return
+		}
+	}
+}
+
 func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 	runId := req.URL.Query().Get("run_id")
 	runIdInt, err := strconv.ParseInt(runId, 10, 64)
@@ -865,19 +941,10 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
-	// Simulate cloud behavior: first poll returns RUNNING, next returns TERMINATED SUCCESS.
+	// Simulate cloud behavior: first poll returns RUNNING, next the terminal state.
 	if run.State.LifeCycleState == jobs.RunLifeCycleStateRunning {
 		// Transition stored state to TERMINATED for the next poll.
-		run.State = &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			ResultState:    jobs.RunResultStateSuccess,
-		}
-		for i := range run.Tasks {
-			run.Tasks[i].State = &jobs.RunState{
-				LifeCycleState: jobs.RunLifeCycleStateTerminated,
-				ResultState:    jobs.RunResultStateSuccess,
-			}
-		}
+		terminateRun(&run)
 		s.JobRuns[runIdInt] = run
 
 		// Return RUNNING for this poll (before the transition).
@@ -889,6 +956,36 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 	}
 
 	return Response{Body: run}
+}
+
+// JobsCancelRun settles a run that is still going. The real API cancels
+// asynchronously; the caller polls runs/get either way.
+func (s *FakeWorkspace) JobsCancelRun(req Request) Response {
+	var request jobs.CancelRun
+	if err := json.Unmarshal(req.Body, &request); err != nil {
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
+	}
+
+	defer s.LockUnlock()()
+
+	run, ok := s.JobRuns[request.RunId]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	// A run that already finished keeps the outcome it reached.
+	if run.State.LifeCycleState == jobs.RunLifeCycleStateRunning {
+		run.State = &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateCanceled,
+		}
+		s.JobRuns[request.RunId] = run
+	}
+
+	return Response{}
 }
 
 func (s *FakeWorkspace) JobsDeleteRun(req Request) Response {

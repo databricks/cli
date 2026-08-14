@@ -1,5 +1,37 @@
 # Version changelog
 
+## Release v1.12.1 (2026-08-12)
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.166.0 to v0.170.0 ([#6251](https://github.com/databricks/cli/pull/6251)).
+
+
+## Release v1.12.0 (2026-08-12)
+
+### CLI
+
+ * `databricks aitools install` now supports Gemini CLI, installing Databricks agent skills into its skills directory.
+ * `databricks aitools install` now supports Pi, installing Databricks agent skills into its skills directory.
+ * A locally built CLI (`go build`, without release flags) now reports the next release version with a `-dev` prerelease, e.g. `1.12.0-dev+abcdef123456`, instead of `0.0.0-dev+abcdef123456`. The old string sorted below every published release even though a local build is newer than the latest release; the new one sorts above the latest release and below the release it will become, matching what goreleaser already produces for snapshot builds.
+ * Added the `databricks environments setup-local` command, which provisions (or updates) a local Python environment matched to a Databricks compute target. It resolves the target to an environment key, fetches the pinned Python version, databricks-connect version, and dependency constraints published for that key, then provisions a matched `.venv` with uv.
+
+### Bundles
+
+ * Added a `cascade_on_destroy` field to the pipeline resource to control whether destroying a pipeline also deletes its datasets (MVs, STs, Views). When unset, the server default applies; set `cascade_on_destroy: false` to retain the datasets on destroy. Supported with the direct deployment engine ([#5846](https://github.com/databricks/cli/pull/5846)).
+ * Fix `bundle.deployment.lock.force` being ignored. The `--force-lock` flag's default value overwrote the value configured in `databricks.yml`, so setting the field had no effect and a stale deployment lock could only be overridden with the flag. ([#6188](https://github.com/databricks/cli/pull/6188))
+ * direct: experimental `job_runs` now sends a CLI-managed idempotency token on every run-now, so an SDK retry after a lost response returns the same run. Configured `idempotency_token` values are rejected.
+ * direct: the experimental `job_runs` resource now waits for the triggered run to finish, so other resources can reference its outcome (e.g. `${resources.job_runs.nightly.state.result_state}`). A run that does not succeed fails the deploy, naming the failed task, and is run again on the next deploy. If a deploy is interrupted while waiting, the next one resumes waiting on the same run.
+ * direct: Fixed model serving `telemetry_config` drift and applied planned telemetry updates. Unsupported endpoint types now fail when telemetry is applied; create may still succeed because it drops the field ([#6106](https://github.com/databricks/cli/pull/6106)).
+ * The `cli_version` field in the direct engine's deployment state (`resources.json`) now records the CLI version that last wrote the state. Previously it kept the version of the CLI that first created the state.
+ * Add support for UC secrets resource ([#5861](https://github.com/databricks/cli/pull/5861))
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.166.0 to v0.169.0.
+ * Bump Terraform provider from v1.124.0 to v1.126.0 ([#6250](https://github.com/databricks/cli/pull/6250)).
+
+
 ## Release v1.11.0 (2026-08-06)
 
 ### CLI

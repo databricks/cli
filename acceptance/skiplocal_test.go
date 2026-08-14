@@ -9,19 +9,14 @@ import (
 	"testing"
 )
 
-// DATABRICKS_TEST_SKIPLOCAL skips acceptance tests on cloud runs. All tests already
-// run locally against the testserver; withchanged re-enables tests this branch touches.
+// Cloud PR runs set DATABRICKS_TEST_SKIPLOCAL=withchanged to skip acceptance
+// tests that already run locally, except those this branch touches.
 const (
 	SkipLocalEnvVar = "DATABRICKS_TEST_SKIPLOCAL"
 
-	// SkipLocalAll skips every acceptance test.
-	SkipLocalAll = "true"
-	// SkipLocalWithChanged skips acceptance tests except those added or changed
-	// relative to origin/main.
 	SkipLocalWithChanged = "withchanged"
 
-	// maxChangedLocalTests caps how many changed tests SkipLocalWithChanged re-enables,
-	// keeping the cloud run bounded. Added tests are preferred over modified ones.
+	// Cap re-enabled tests so cloud PR runs stay bounded; prefer added over modified.
 	maxChangedLocalTests = 50
 
 	invariantConfigsPrefix = "acceptance/bundle/invariant/configs/"
@@ -109,6 +104,15 @@ func selectChangedLocalTests(t *testing.T, testDirs map[string]bool) map[string]
 				}
 			}
 			continue
+		}
+
+		// test.toml and out.test.toml under the invariant tree regenerate
+		// automatically when INPUT_CONFIG changes; ignore them so they don't
+		// unlock all variants of every invariant subdir.
+		if strings.HasPrefix(path, "acceptance/"+invariantDirPrefix) {
+			if name := filepath.Base(path); name == "test.toml" || name == "out.test.toml" {
+				continue
+			}
 		}
 
 		dir := testDirForFile(path, testDirs)

@@ -4,6 +4,7 @@ bundle:
   name: {{.project_name}}
   uuid: {{bundle_uuid}}
   engine: direct
+{{- template "experimental_record_deployment_history" record_deployment_history}}
 
 include:
   - resources/*.yml

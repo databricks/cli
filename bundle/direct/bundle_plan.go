@@ -320,6 +320,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 	}
 
+	for resourceKey, entry := range plan.Plan {
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return nil, fmt.Errorf("redacting plan entry %s: %w", resourceKey, err)
+		}
+		if err := redactPlanEntry(adapter, entry); err != nil {
+			return nil, fmt.Errorf("redacting plan entry %s: %w", resourceKey, err)
+		}
+	}
+
 	return plan, nil
 }
 
@@ -1070,15 +1080,31 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return strings.Compare(a.Label, b.Label)
 		})
 
+		// Store an unredacted copy in the cache so Apply can deploy with the
+		// actual values. The original newStateConfig is redacted below and used
+		// only for the plan output.
+		stateType := adapter.StateType()
+		cacheCopyPtr := reflect.New(stateType.Elem())
+		cacheCopyPtr.Elem().Set(reflect.ValueOf(newStateConfig).Elem())
+		b.StateCache.Store(node, &structvar.StructVar{
+			Value: cacheCopyPtr.Interface(),
+			Refs:  refs,
+		})
+
+		// Redact sensitive fields before serialising. Sensitive values always come
+		// from bundle variables (enforced by ValidateSecretValueIsVariable), which
+		// are resolved before plan time, so SyncToJSON (called when cross-resource
+		// refs are resolved during planNode) will never re-serialise these fields.
+		if err := redactStruct(adapter, newStateConfig); err != nil {
+			return nil, fmt.Errorf("%s: cannot redact state: %w", node, err)
+		}
+
 		newState := &structvar.StructVar{
 			Value: newStateConfig,
 			Refs:  refs,
 		}
 
-		// Store in cache for use during planning phase
-		b.StateCache.Store(node, newState)
-
-		// Convert to JSON for serialization in plan
+		// Convert to JSON for serialization in plan (values already redacted above).
 		newStateJSON, err := newState.ToJSON()
 		if err != nil {
 			return nil, fmt.Errorf("%s: cannot serialize state: %w", node, err)

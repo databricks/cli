@@ -3,6 +3,8 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-job-parameters/default/files...
 Deploying resources...
+job run [MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+job run [MY_RUN_ID]: SUCCESS
 Updating deployment state...
 Deployment complete!
 
@@ -11,7 +13,8 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.2/jobs/run-now",
   "body": {
-    "job_id": [NUMID],
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID],
     "job_parameters": {
       "env": "prod"
     }
@@ -32,11 +35,11 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?w=[NUMID]
   Jobs:
     my_job:
       Name: my-job
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

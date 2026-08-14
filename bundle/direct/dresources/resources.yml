@@ -139,11 +139,46 @@ resources:
       - field: job_clusters[*].new_cluster.data_security_mode
 
   job_runs:
-    # A run is immutable and fire-once: re-trigger only on a local config change,
-    # never on remote drift. Both rules omit `field` to match every field (root;
-    # see TestFieldRuleOmittedIsRoot). `field: ""` would instead match nothing.
+    # Every jobs.RunNow field is listed, so nothing the request carries is drift.
+    # TestJobRunIgnoresEveryRequestField keeps the list in step with the SDK.
+    # result_state is not in the list: comparing it against the remote is what
+    # makes a run that has not succeeded visible to the plan.
     ignore_remote_changes:
-      - reason: immutable
+      - field: job_id
+        reason: immutable
+      # GetRun reports job_parameters resolved against the job's defaults, and
+      # nests the rest under overriding_parameters.
+      - field: dbt_commands
+        reason: effective_vs_requested
+      - field: jar_params
+        reason: effective_vs_requested
+      - field: job_parameters
+        reason: effective_vs_requested
+      - field: notebook_params
+        reason: effective_vs_requested
+      - field: pipeline_params
+        reason: effective_vs_requested
+      - field: python_named_params
+        reason: effective_vs_requested
+      - field: python_params
+        reason: effective_vs_requested
+      - field: spark_submit_params
+        reason: effective_vs_requested
+      - field: sql_params
+        reason: effective_vs_requested
+      # Fields the run-now request carries that GetRun never reports back.
+      - field: idempotency_token
+        reason: not_returned_by_api
+      - field: only
+        reason: not_returned_by_api
+      - field: performance_target
+        reason: not_returned_by_api
+      - field: queue
+        reason: not_returned_by_api
+    # A run is immutable and fire-once, so any change recreates it. Omitting
+    # `field` matches every field (root; see TestFieldRuleOmittedIsRoot).
+    # `field: ""` would instead match nothing. The one exception is a run that is
+    # still going, which ResourceJobRun.OverrideChangeDesc downgrades to an update.
     recreate_on_changes:
       - reason: immutable
 
@@ -285,6 +320,9 @@ resources:
       # Accepted on write but not returned by GET.
       - field: config.served_entities[*].burst_scaling_enabled
         reason: input_only
+      # table_names creates a profile and is not returned; inference_table_config round-trips.
+      - field: telemetry_config.table_names
+        reason: input_only
       # Write-only secrets: the backend stores them and returns the reference field, not the plaintext.
       - field: config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext
         reason: input_only
@@ -316,6 +354,9 @@ resources:
       - field: rate_limits
         reason: not_implemented
     backend_defaults:
+      # Remote-only telemetry is reported as a change at this parent path.
+      - field: telemetry_config
+
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383
       # common.CustomizeSchemaPath(m, "config", "served_entities", "name").SetComputed()
       - field: config.served_entities[*].name
@@ -551,6 +592,11 @@ resources:
       # DoRead operations use the correct ID and we do not end up with a persistent drift.
       - field: scope_name
         reason: id_changes
+
+  secrets:
+    sensitive_fields:
+      - field: value
+      - field: effective_value
 
   clusters:
     ignore_remote_changes:

@@ -3,6 +3,7 @@ package localenv
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // Command path components, defined once so a rename touches a single place
@@ -53,6 +54,14 @@ const (
 	PhaseProvision PhaseName = "provision"
 	PhaseValidate  PhaseName = "validate"
 )
+
+// Reporter receives phase-start notifications during a run so a caller can show
+// live progress (e.g. a spinner). It is intentionally minimal: the pipeline owns
+// success/failure reporting via the Result, and Reporter only marks entry into a
+// phase. A nil Reporter disables progress.
+type Reporter interface {
+	PhaseStarted(name PhaseName)
+}
 
 // Phase status values (spec §6.2).
 const (
@@ -161,6 +170,37 @@ type ComputeInfo struct {
 	SparkVersion string `json:"-"`
 }
 
+// Label returns a short, human-readable name for the resolved compute target,
+// for display in the text summary (e.g. "serverless 4", "cluster 0101-abc",
+// "DBR 15.4.x-scala2.12"). The precise environment key is still available in
+// --output json and --debug.
+func (c *ComputeInfo) Label() string {
+	switch {
+	case c.ServerlessVersion != "":
+		// ServerlessVersion is normalized to "v4"; drop the "v" for display.
+		return "serverless " + c.ServerlessEnvironmentVersion()
+	case c.ClusterID != "":
+		return "cluster " + c.ClusterID
+	case c.SparkVersion != "":
+		// Classic compute resolved from a --job-task carries no ClusterID (only the
+		// task's runtime), so without this case Label would fall through and print
+		// the internal "dbr/..." env key — exactly the detail the summary hides.
+		// Show the runtime instead, matching the "DBR <version>" phrasing used in help.
+		return "DBR " + c.SparkVersion
+	default:
+		return c.EnvKey
+	}
+}
+
+// ServerlessEnvironmentVersion returns the bare serverless environment version
+// (e.g. "5") to write into [tool.databricks.environment].environment_version.
+// ServerlessVersion is normalized to "vN", so the leading "v" is dropped to
+// match the documented bare-number form. It is empty for a cluster target
+// (which leaves ServerlessVersion unset), where the section is not managed.
+func (c *ComputeInfo) ServerlessEnvironmentVersion() string {
+	return strings.TrimPrefix(c.ServerlessVersion, "v")
+}
+
 // ResolvedInfo is the resolved environment definition (spec §6 "resolved").
 // DBConnectVersion is omitted in constraints-only mode.
 type ResolvedInfo struct {
@@ -189,11 +229,59 @@ type PhaseStatus struct {
 	Detail string `json:"-"`
 }
 
-// Warning is a non-fatal advisory surfaced in --json "warnings" (spec §6).
+// Warning is a non-fatal advisory surfaced in --json "warnings" (spec §6). Code
+// is a stable, categorical identifier from the closed set below; Message is
+// human-readable text for the text renderer and is not part of the contract.
 type Warning struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
+
+// Warning codes are the closed, categorical set surfaced in --json warnings[].
+// They let a consumer report a count and a code histogram (merge quality) without
+// parsing free-form text. All are emitted from the merge phase, where the fetched
+// env-owned pins can conflict with what the user already had.
+//
+// The messages are phrased in the present tense because the same detection runs
+// under --dry-run, where nothing has been written yet.
+const (
+	// WarnRequiresPythonOverridden: the user's [project].requires-python differs
+	// from the env's pin and is replaced by the managed value.
+	WarnRequiresPythonOverridden = "W_REQUIRES_PYTHON_OVERRIDDEN"
+	// WarnDBConnectPinOverridden: the user's databricks-connect pin sits directly in
+	// the dev group and is replaced by the managed value.
+	WarnDBConnectPinOverridden = "W_DBCONNECT_PIN_OVERRIDDEN"
+	// WarnDBConnectConsolidated: a databricks-connect pin the user had outside the
+	// managed dev entry — in [project].dependencies, an optional-dependency extra, or
+	// another dependency group — was disjoint from the environment's version and is
+	// removed, so what remains resolves. Only conflicting pins are removed; a pin that
+	// co-resolves, carries no version, or is marker-gated is left in place. Emitted once
+	// per removed pin. Informational: the merge makes the project resolvable.
+	WarnDBConnectConsolidated = "W_DBCONNECT_CONSOLIDATED"
+	// WarnDBConnectPinDuplicated: a databricks-connect pin of the user's is one the
+	// merge can neither rewrite nor remove — a spelling the line-based passes do not
+	// reach (a single-quoted element, a pin under a quoted TOML key, or an inline-table
+	// or dotted sub-table form) — so the managed pin lands in the dev group alongside
+	// it. Unlike an override this leaves two pins for one package and, where their
+	// ranges are disjoint, uv cannot resolve it — a distinct and worse outcome that
+	// needs a manual fix, so it carries its own code. It can accompany an override or a
+	// consolidation and persists across re-runs for as long as the survivor does.
+	WarnDBConnectPinDuplicated = "W_DBCONNECT_PIN_DUPLICATED"
+	// WarnUserConstraintConflict: a user dependency pins a package that the env's
+	// constraint-dependencies also constrains, to a provably non-overlapping version
+	// range (uv will fail to resolve). Every requirement uv locks is scanned —
+	// [project].dependencies, the optional-dependency extras, and all dependency
+	// groups — since constraint-dependencies applies to the whole resolution. Emitted
+	// only when the ranges are provably disjoint; ambiguous cases are not flagged.
+	WarnUserConstraintConflict = "W_USER_CONSTRAINT_CONFLICT"
+	// WarnStaleEnvironmentVersion: the target is a cluster, which does not manage the
+	// serverless environment section, but the file carries a [tool.databricks.environment]
+	// environment_version left over from an earlier serverless run. The value is not
+	// updated (cluster targets are a no-op there), so it now describes a target the
+	// project is no longer set up for — worth surfacing because VS Code and serverless
+	// Jobs read that section as a source of truth.
+	WarnStaleEnvironmentVersion = "W_STALE_ENVIRONMENT_VERSION"
+)
 
 // Result is the full outcome of a sync run and the root of the --json object
 // (spec §6). Field order matches the spec's schema so JSON key order is stable.
@@ -217,10 +305,9 @@ type Result struct {
 	Warnings      []Warning      `json:"warnings"`
 	Error         *PipelineError `json:"error"`
 	BackupPath    string         `json:"backupPath,omitempty"`
-	// DurationMs is part of the §6 contract but reserved for now: the pipeline
-	// does not measure wall time (a real clock would make acceptance goldens
-	// non-deterministic), so it is always emitted as 0 until timing is wired
-	// through a clock the tests can control.
+	// DurationMs is the pipeline's wall time in milliseconds (spec §6). It covers the
+	// CLI pipeline only; the extension measures its own end-to-end latency (process
+	// spawn, interpreter adoption) separately.
 	DurationMs int64 `json:"durationMs"`
 }
 
