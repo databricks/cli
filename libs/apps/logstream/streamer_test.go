@@ -363,6 +363,7 @@ func (f *flakyDialer) DialContext(ctx context.Context, urlStr string, requestHea
 func newTestLogServer(t *testing.T, handler func(int, *websocket.Conn)) *httptest.Server {
 	upgrader := websocket.Upgrader{}
 	var connCount atomic.Int32
+	var handlers sync.WaitGroup
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := int(connCount.Add(1))
@@ -371,12 +372,22 @@ func newTestLogServer(t *testing.T, handler func(int, *websocket.Conn)) *httptes
 			t.Errorf("failed to upgrade connection: %v", err)
 			return
 		}
-		go handler(id, conn)
+		handlers.Add(1)
+		go func() {
+			defer handlers.Done()
+			handler(id, conn)
+		}()
 	}))
 
 	t.Cleanup(func() {
+		// Close connections first so handlers blocked on the socket unblock, then
+		// wait for every handler goroutine to finish. Handlers assert with require
+		// on the *testing.T; without this wait a handler could call an assertion
+		// after the test completed, which panics the whole package test binary
+		// instead of failing the one test.
 		server.CloseClientConnections()
 		server.Close()
+		handlers.Wait()
 	})
 	return server
 }
