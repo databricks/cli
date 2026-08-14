@@ -31,19 +31,22 @@ func TestLogStreamerTailBufferFlushes(t *testing.T) {
 		for i := 1; i <= 3; i++ {
 			require.NoError(t, sendEntry(conn, float64(i), fmt.Sprintf("msg%d", i)))
 		}
-		time.Sleep(50 * time.Millisecond)
 		_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second))
 	})
 	defer server.Close()
 
 	buf := &bytes.Buffer{}
 	streamer := &logStreamer{
-		dialer:    &websocket.Dialer{},
-		url:       toWebSocketURL(server.URL),
-		token:     "test",
-		tail:      2,
-		follow:    false,
-		prefetch:  25 * time.Millisecond,
+		dialer: &websocket.Dialer{},
+		url:    toWebSocketURL(server.URL),
+		token:  "test",
+		tail:   2,
+		follow: false,
+		// No prefetch: the tail flushes deterministically on the clean connection
+		// close. A wall-clock prefetch timer races message delivery and flushes a
+		// partial buffer on a loaded runner (the prefetch-timer path is covered by
+		// TestLogStreamerTailFlushesWithoutFollow).
+		prefetch:  0,
 		writer:    buf,
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
