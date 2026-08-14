@@ -8,6 +8,10 @@ Pattern = "HEAD /"
 Response.Body = ''
 
 [[Server]]
+Pattern = "POST /api/2.0/ai-training/config:validate"
+Response.Body = '{}'
+
+[[Server]]
 Pattern = "POST /api/2.2/jobs/runs/submit"
 Response.Body = '''
 {"run_id": 555}

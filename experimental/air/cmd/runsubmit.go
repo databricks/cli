@@ -160,6 +160,27 @@ func withSpinner(ctx context.Context, show bool, msg string, fn func() error) er
 // returns the new run_id and its dashboard URL. showProgress enables the
 // stderr upload/packaging spinners (text mode only).
 func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (int64, string, error) {
+	// Compute the launch dir and command_path up front — a read-only workspace lookup plus a
+	// local path build, no writes yet — so the pre-flight validates the real command_path. The
+	// same path is reused for the upload and submit below, so the validated path is the submitted
+	// one.
+	base, err := userWorkspaceDir(ctx, w)
+	if err != nil {
+		return 0, "", err
+	}
+	runName := ""
+	if cfg.MLflowRunName != nil {
+		runName = *cfg.MLflowRunName
+	}
+	funcDir := cliLaunchDir(base, cfg.ExperimentName, runName)
+	commandPath := path.Join(funcDir, commandScriptName)
+
+	// Pre-flight the config server-side before any upload, so a bad config fails with the
+	// backend's field-level errors and no orphaned artifacts.
+	if err := preflightValidate(ctx, w, cfg, commandPath); err != nil {
+		return 0, "", err
+	}
+
 	// Resolve the idempotency token first so a bad key fails before any upload,
 	// and before the policy lookup below spends a round trip on it.
 	token, err := submitToken(idempotencyKey, cfg)
@@ -197,16 +218,6 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
-	base, err := userWorkspaceDir(ctx, w)
-	if err != nil {
-		return 0, "", err
-	}
-	runName := ""
-	if cfg.MLflowRunName != nil {
-		runName = *cfg.MLflowRunName
-	}
-	funcDir := cliLaunchDir(base, cfg.ExperimentName, runName)
-
 	fc, err := filer.NewWorkspaceFilesClient(w, funcDir)
 	if err != nil {
 		return 0, "", err
@@ -243,7 +254,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if !ok {
 		runtimeVersion = fileVersion
 	}
-	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
+	payload := buildSubmitPayload(cfg, commandPath, dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
 	payload.IdempotencyToken = token
 
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
