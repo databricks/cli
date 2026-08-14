@@ -227,17 +227,32 @@ func TestListModelInfoKeyOpensDetail(t *testing.T) {
 	assert.NotNil(t, cmd)
 }
 
+// detailLoadingModel returns a sized model in the detail-loading state, as if
+// the user just pressed `i` and the fetch is still in flight.
+func detailLoadingModel(t *testing.T) listModel {
+	t.Helper()
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
+	f := &runFetcher{ctx: t.Context(), w: newTestWorkspaceClient(t, "https://x.test")}
+	m := newListModel(r, f, testListRows(), false)
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	m = next.(listModel)
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("i")})
+	m = next.(listModel)
+	require.Equal(t, modeDetail, m.mode)
+	require.True(t, m.detailLoading)
+	return m
+}
+
 func TestListModelDetailPaneAndBack(t *testing.T) {
-	next, _ := testListModel(t).Update(tea.WindowSizeMsg{Width: 80, Height: 24})
-	m := next.(listModel)
+	m := detailLoadingModel(t)
 
 	// A resolved detailMsg fills the pane.
-	next, _ = m.Update(detailMsg{title: "Run details", body: "hello from the detail pane"})
+	next, _ := m.Update(detailMsg{title: "Run Details", body: "hello from the detail pane"})
 	m = next.(listModel)
 	require.Equal(t, modeDetail, m.mode)
 	assert.False(t, m.detailLoading)
 	view := m.View()
-	assert.Contains(t, view, "Run details")
+	assert.Contains(t, view, "Run Details")
 	assert.Contains(t, view, "hello from the detail pane")
 	assert.Contains(t, view, "esc back")
 
@@ -246,6 +261,21 @@ func TestListModelDetailPaneAndBack(t *testing.T) {
 	m = next.(listModel)
 	assert.Equal(t, modeList, m.mode)
 	assert.Contains(t, m.View(), "Run ID")
+}
+
+func TestListModelDetailLateMsgDropped(t *testing.T) {
+	m := detailLoadingModel(t)
+
+	// User escapes back to the list before the fetch resolves.
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = next.(listModel)
+	require.Equal(t, modeList, m.mode)
+
+	// The late result must be dropped, not snap the user back into the pane.
+	next, _ = m.Update(detailMsg{title: "Run Details", body: "late result"})
+	m = next.(listModel)
+	assert.Equal(t, modeList, m.mode)
+	assert.NotContains(t, m.View(), "late result")
 }
 
 func TestPadAndTruncate(t *testing.T) {

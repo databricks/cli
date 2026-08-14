@@ -193,6 +193,12 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case detailMsg:
+		// The fetch is async: if the user pressed esc back to the list before it
+		// resolved, drop the late result rather than snapping them into a pane
+		// they already dismissed.
+		if m.mode != modeDetail {
+			return m, nil
+		}
 		m.detailLoading = false
 		if msg.err != nil {
 			m.detailContent = fmt.Sprintf("Error: %v", msg.err)
@@ -202,7 +208,6 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.detailTitle = msg.title
 		m.viewport.SetContent(m.detailContent)
 		m.viewport.GotoTop()
-		m.mode = modeDetail
 		return m, nil
 
 	case tea.KeyMsg:
@@ -256,7 +261,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.fetcher != nil && len(m.rows) > 0 {
 				m.mode = modeDetail
 				m.detailLoading = true
-				m.detailTitle = "Run details"
+				m.detailTitle = "Run Details"
 				runID, _ := parseRunID(m.rows[m.cursor].RunID)
 				return m, m.fetchRunDetail(runID)
 			}
@@ -265,7 +270,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.fetcher != nil && len(m.rows) > 0 {
 				m.mode = modeDetail
 				m.detailLoading = true
-				m.detailTitle = "Logs snapshot"
+				m.detailTitle = "Logs Snapshot"
 				runID, _ := parseRunID(m.rows[m.cursor].RunID)
 				return m, m.fetchRunLogs(runID)
 			}
