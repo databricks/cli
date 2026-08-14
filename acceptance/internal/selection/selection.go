@@ -187,11 +187,12 @@ type changedDir struct {
 	// config change from narrowing the dir back down to one config.
 	allVariants bool
 
-	// newDir is set when the dir's script is new, so the whole test is new, and moved when
-	// the script arrived as a rename, so the test only changed location. The two are
-	// exclusive: a script is either added or renamed.
-	newDir bool
-	moved  bool
+	// newTest is set when the test itself is new: the dir's script is new, or a new
+	// invariant config adds a variant of the dir. moved is set when the script arrived as
+	// a rename, so the test only changed location. The two are exclusive: a script is
+	// either added or renamed.
+	newTest bool
+	moved   bool
 
 	// fixture is set when a file the test is made of changed, generated when a file the
 	// test produces changed (out*). A dir with only generated changes is one whose golden
@@ -206,7 +207,7 @@ type changedDir struct {
 // usually follows a change elsewhere in the tree and lands on hundreds of dirs at once,
 // which would otherwise fill the quota with tests this branch never edited.
 const (
-	scoreNewDir    = 5
+	scoreNewTest   = 5
 	scoreChange    = 5
 	scoreGenerated = 1
 	scoreMoved     = 1
@@ -214,8 +215,8 @@ const (
 
 func (d *changedDir) score() int {
 	score := 0
-	if d.newDir {
-		score += scoreNewDir
+	if d.newTest {
+		score += scoreNewTest
 	}
 	if d.moved {
 		// The files of a moved dir all arrive as renames. Moving a test does not change
@@ -293,8 +294,14 @@ func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
 					continue
 				}
 				d := dirs.get(dir)
-				// The config is the fixture these dirs are generated from.
+				// The config is the fixture these dirs are generated from, and a new
+				// config adds a variant of each of them. Its -init.sh / -cleanup.sh
+				// companions change how an existing variant runs, so only the config
+				// itself counts as a new test.
 				d.fixture = true
+				if status == "A" && strings.HasSuffix(path, configName) {
+					d.newTest = true
+				}
 				if !d.allVariants {
 					d.filters = append(d.filters, "INPUT_CONFIG="+configName)
 				}
@@ -328,7 +335,7 @@ func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
 		if strings.HasSuffix(path, "/script") {
 			switch {
 			case status == "A":
-				d.newDir = true
+				d.newTest = true
 			case strings.HasPrefix(status, "R"):
 				d.moved = true
 			}

@@ -126,6 +126,19 @@ func TestFromDiffInvariantConfigRanksAsFixture(t *testing.T) {
 	assert.Equal(t, 1, result.Dropped)
 }
 
+func TestFromDiffNewInvariantConfig(t *testing.T) {
+	// A new invariant config adds a variant of every invariant dir, so it scores as a new
+	// test on top of the fixture change. Changing an existing config, or adding one of its
+	// -init.sh companions, only changes how an existing variant runs.
+	for status, want := range map[string]int{"A": 10, "M": 5} {
+		result := selection.FromDiff(diffLines(status+"\tacceptance/bundle/invariant/configs/job.yml.tmpl"), testDirs, 10)
+		assert.Equal(t, want, result.Selected[0].Score, "status=%s", status)
+	}
+
+	result := selection.FromDiff(diffLines("A\tacceptance/bundle/invariant/configs/job.yml.tmpl-init.sh"), testDirs, 10)
+	assert.Equal(t, 5, result.Selected[0].Score)
+}
+
 func TestFromDiffNestedDir(t *testing.T) {
 	// A file maps to the innermost test dir that owns it.
 	diff := diffLines("M\tacceptance/cmd/sync/nested/deeper/script")
