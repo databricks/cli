@@ -1,2 +1,5 @@
 
 >>> go version -m [CLI]
+	build	-tags=fips140v1.0
+	build	DefaultGODEBUG=fips140=on
+	build	GOFIPS140=v1.0.0-c2097c7c
