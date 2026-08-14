@@ -779,6 +779,162 @@ dev = ["databricks-connect~=17.2.0"]
 	assert.Equal(t, string(original), string(bak))
 }
 
+// listBackups returns the basenames of every pyproject.toml backup in dir — the
+// canonical .bak plus any timestamped ones — for count/identity assertions.
+func listBackups(t *testing.T, dir string) []string {
+	t.Helper()
+	matches, err := filepath.Glob(filepath.Join(dir, "pyproject.toml.*.bak"))
+	require.NoError(t, err)
+	// The canonical pyproject.toml.bak does not match the ".*." glob, so add it
+	// explicitly when present.
+	if _, statErr := os.Stat(filepath.Join(dir, "pyproject.toml.bak")); statErr == nil {
+		matches = append(matches, filepath.Join(dir, "pyproject.toml.bak"))
+	}
+	names := make([]string, 0, len(matches))
+	for _, m := range matches {
+		names = append(names, filepath.Base(m))
+	}
+	return names
+}
+
+func TestPipelineReRunWritesTimestampedBackupKeepingOriginal(t *testing.T) {
+	dir := t.TempDir()
+	// The canonical .bak already holds the pristine pre-first-sync original.
+	original := []byte(`[project]
+name = "demo"
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml.bak"), original, 0o644))
+	// The live file is a prior sync's output the developer then edited: they reset a
+	// managed region (requires-python), so the coming merge will rewrite it —
+	// making this a real change, not a no-op.
+	live := []byte(`[project]
+name = "demo"
+requires-python = ">=3.9"
+dependencies = ["rich"]
+
+[dependency-groups]
+dev = ["databricks-connect~=17.2.0"]
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), live, 0o644))
+
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	fixed := time.Date(2024, 1, 1, 15, 30, 0, 0, time.UTC)
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+		nowFn: func() time.Time { return fixed },
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	require.True(t, res.OK)
+
+	// The canonical .bak is untouched — still the pristine original.
+	bak, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml.bak"))
+	assert.Equal(t, string(original), string(bak), "the pristine .bak must not be overwritten on a re-run")
+
+	// A timestamped backup captured the pre-run live content the merge overwrote.
+	wantName := "pyproject.toml." + fixed.Format(backupTimestampLayout) + ".bak"
+	assert.Equal(t, wantName, filepath.Base(res.BackupPath))
+	tsContent, err := os.ReadFile(res.BackupPath)
+	require.NoError(t, err)
+	assert.Equal(t, string(live), string(tsContent), "the timestamped backup must hold the pre-run content")
+
+	// Both backups coexist; the managed region was applied to the live file.
+	assert.ElementsMatch(t, []string{"pyproject.toml.bak", wantName}, listBackups(t, dir))
+	merged, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	assert.Contains(t, string(merged), `requires-python = "==3.12.*"`)
+}
+
+func TestPipelineNoOpReRunWritesNoNewBackup(t *testing.T) {
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	newPipe := func() *Pipeline {
+		return &Pipeline{
+			Mode: ModeDefault, ProjectDir: dir,
+			ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+			Flags:   ComputeFlags{Serverless: "v4"},
+			Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+		}
+	}
+
+	// First sync creates exactly the canonical .bak.
+	_, err := newPipe().Run(t.Context())
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"pyproject.toml.bak"}, listBackups(t, dir))
+
+	// A second, idempotent run changes nothing, so it must not write another backup.
+	res, err := newPipe().Run(t.Context())
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"pyproject.toml.bak"}, listBackups(t, dir), "a no-op re-run must not write a new backup")
+	assert.Empty(t, res.BackupPath, "a no-op re-run created no backup")
+}
+
+func TestApplyMergeSameInstantBackupsGetUniqueNames(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml.bak"), []byte("ORIGINAL\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte("current-1\n"), 0o644))
+
+	fixed := time.Date(2024, 1, 1, 15, 30, 0, 0, time.UTC)
+	p := &Pipeline{
+		ProjectDir: dir,
+		nowFn:      func() time.Time { return fixed },
+		res:        &Result{Phases: initialPhases()},
+	}
+
+	// First modifying apply: backs up "current-1" under a timestamped name.
+	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-1\n"), false))
+	first := p.res.BackupPath
+	require.NotEmpty(t, first)
+
+	// Second modifying apply at the SAME instant: backs up "merged-1" but must not
+	// collide with or overwrite the first timestamped backup.
+	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-2\n"), false))
+	second := p.res.BackupPath
+	require.NotEmpty(t, second)
+
+	assert.NotEqual(t, first, second, "same-instant backups must get distinct names")
+	c1, _ := os.ReadFile(first)
+	assert.Equal(t, "current-1\n", string(c1))
+	c2, _ := os.ReadFile(second)
+	assert.Equal(t, "merged-1\n", string(c2))
+	// The pristine .bak is still untouched.
+	bak, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml.bak"))
+	assert.Equal(t, "ORIGINAL\n", string(bak))
+	// Three backups now coexist: the original plus two timestamped.
+	assert.Len(t, listBackups(t, dir), 3)
+}
+
+func TestPipelineCheckFirstRunPlansCanonicalBackup(t *testing.T) {
+	// A --dry-run on an existing project that has never been synced (no .bak yet)
+	// must plan the canonical pyproject.toml.bak — the first backup a real run
+	// would create — and must not actually write it.
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, res.Plan)
+	assert.Equal(t, "pyproject.toml.bak", filepath.Base(res.Plan.WouldBackup))
+	assert.NoFileExists(t, filepath.Join(dir, "pyproject.toml.bak"), "--dry-run must not create the backup")
+}
+
 func TestPipelineUnreadableExistingIsNotTreatedAsGreenfield(t *testing.T) {
 	if runtime.GOOS == "windows" || os.Getuid() == 0 {
 		// chmod 000 does not block reads for root or on Windows.

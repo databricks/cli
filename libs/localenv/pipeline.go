@@ -24,6 +24,11 @@ const (
 	venvDir    = ".venv"
 )
 
+// backupTimestampLayout stamps the timestamp segment of a non-first backup
+// filename (pyproject.toml.<stamp>.bak). UTC, second resolution; the trailing Z
+// marks it as UTC. Kept as a named constant so the tests can pin the exact name.
+const backupTimestampLayout = "20060102T150405Z"
+
 // artifactSource values reported in --json resolved.artifactSource (spec §6).
 const (
 	artifactNetwork = "network"
@@ -60,6 +65,20 @@ type Pipeline struct {
 
 	// res accumulates phase statuses and result fields as the run progresses.
 	res *Result
+
+	// nowFn returns the current time, used only to stamp timestamped backup
+	// filenames. Left nil in production (defaults to time.Now via clock); tests
+	// inject a fixed clock so backup names are deterministic.
+	nowFn func() time.Time
+}
+
+// clock returns the current time, honoring an injected nowFn seam and falling
+// back to time.Now when unset.
+func (p *Pipeline) clock() time.Time {
+	if p.nowFn != nil {
+		return p.nowFn()
+	}
+	return time.Now()
 }
 
 // Run executes all pipeline phases in order and returns a fully populated Result.
@@ -271,9 +290,51 @@ func (p *Pipeline) pyprojectPath() string {
 	return filepath.Join(p.ProjectDir, pyprojectFile)
 }
 
-// backupPath returns the path to the pyproject.toml backup file.
+// backupPath returns the path to the canonical pyproject.toml backup file.
 func (p *Pipeline) backupPath() string {
 	return filepath.Join(p.ProjectDir, backupFile)
+}
+
+// chooseBackupPath decides where the current pyproject.toml should be copied
+// before this run overwrites it. The first backup takes the canonical
+// pyproject.toml.bak name and, never being overwritten, stays the permanent
+// pristine pre-first-sync original; once it exists, every later modifying run
+// gets a distinct pyproject.toml.<timestamp>.bak so no earlier state is ever
+// clobbered. A returned error means the canonical .bak exists but could not be
+// stat'd: callers must not write, so an unreadable backup is never shadowed
+// (invariant 2). A not-exist stat is not an error — it is the first-backup case.
+func (p *Pipeline) chooseBackupPath() (string, error) {
+	canonical := p.backupPath()
+	_, statErr := os.Stat(canonical)
+	switch {
+	case errors.Is(statErr, os.ErrNotExist):
+		return canonical, nil
+	case statErr == nil:
+		return p.timestampedBackupPath(), nil
+	default:
+		return "", statErr
+	}
+}
+
+// timestampedBackupPath returns a unique backup path of the form
+// pyproject.toml.<UTC timestamp>.bak. When a backup with that exact
+// second-resolution name already exists (two runs within the same second), a
+// -N suffix is appended until the name is free, so an earlier backup is never
+// overwritten.
+func (p *Pipeline) timestampedBackupPath() string {
+	base := filepath.Join(p.ProjectDir, pyprojectFile+"."+p.clock().UTC().Format(backupTimestampLayout))
+	candidate := base + ".bak"
+	for i := 1; ; i++ {
+		// Take the first name that does not already resolve to a file. A stat error
+		// other than not-exist means we can't confirm a collision here — stop rather
+		// than spin, and let the subsequent copy surface any real I/O problem. Only a
+		// nil error (the name is taken) advances to the next -N suffix, so the loop
+		// always terminates.
+		if _, err := os.Stat(candidate); err != nil {
+			return candidate
+		}
+		candidate = fmt.Sprintf("%s-%d.bak", base, i)
+	}
 }
 
 // mergePlan computes the merged pyproject.toml bytes (without writing to disk),
@@ -283,7 +344,6 @@ func (p *Pipeline) backupPath() string {
 // write into [tool.databricks.environment], or "" for a cluster target.
 func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, dbcPin, envVersion string) (merged []byte, greenfield bool, err error) {
 	pyproject := p.pyprojectPath()
-	backup := p.backupPath()
 
 	// The merge base is the live pyproject.toml, not the backup. MergeManaged
 	// rewrites only the three managed regions and preserves every other byte, and
@@ -367,13 +427,15 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 			ChangedRegions:     changedRegions,
 			WouldInstallPython: pyMinor,
 		}
-		// Report a backup only when a real run would actually write one: for an
-		// existing project with no .bak yet. On a re-run the .bak already exists and
-		// applyMerge keeps it (does not re-write), so claiming a backup here would
-		// describe a write that won't happen.
-		if !greenfield {
-			if _, statErr := os.Stat(backup); errors.Is(statErr, os.ErrNotExist) {
-				plan.WouldBackup = filepath.ToSlash(backup)
+		// Report a backup only when a real run would actually write one: an existing
+		// project whose merged output differs from what is on disk. A no-op re-run
+		// changes nothing and writes no backup, so claiming one here would describe a
+		// write that won't happen. Name it as applyMerge would — the canonical .bak
+		// for the first backup, else a fresh timestamped name (an unstattable .bak is
+		// skipped here; applyMerge fails the real run on it).
+		if !greenfield && !bytes.Equal(merged, baseBytes) {
+			if backupName, statErr := p.chooseBackupPath(); statErr == nil {
+				plan.WouldBackup = filepath.ToSlash(backupName)
 			}
 		}
 		p.res.Plan = plan
@@ -381,44 +443,46 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	return merged, greenfield, nil
 }
 
-// applyMerge writes the merged bytes to disk, backing up an existing
-// pyproject.toml first. From this point on, disk has been mutated.
+// applyMerge writes the merged bytes to disk, backing up the current
+// pyproject.toml first. From the backup copy onward, disk has been mutated.
 func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield bool) error {
 	pyproject := p.pyprojectPath()
-	backup := p.backupPath()
 
 	if !greenfield {
-		// Back up before modifying so the user's original is recoverable
-		// (invariant 2). Only create the backup when one does not already exist:
-		// on a re-run the existing .bak is the canonical original unmanaged state
-		// (mergePlan used it as the base), so overwriting it with the already-merged
-		// pyproject.toml would destroy that baseline.
-		_, statErr := os.Stat(backup)
-		switch {
-		case statErr == nil:
-			// Backup already exists — keep it as the canonical baseline.
-		case errors.Is(statErr, os.ErrNotExist):
-			// copyFile creates/truncates the backup path, so a failure mid-copy may
-			// leave a partial .bak: report disk as mutated.
-			if err := copyFile(pyproject, backup); err != nil {
-				return p.fail(PhaseMerge, true, NewError(ErrMerge, err, "backup pyproject.toml failed"))
-			}
-		default:
-			// An existing-but-unstattable backup must not be overwritten (that would
-			// destroy the recoverable original); fail before any write instead.
-			return p.fail(PhaseMerge, false, NewError(ErrMerge, statErr, "cannot stat backup %s", filepath.ToSlash(backup)))
+		// Decide where the backup would go before touching anything. An existing
+		// .bak that cannot be stat'd is fatal: never shadow or overwrite a backup we
+		// can't read (invariant 2). This runs before the no-op check so an unreadable
+		// backup fails the run rather than being silently skipped.
+		backup, statErr := p.chooseBackupPath()
+		if statErr != nil {
+			return p.fail(PhaseMerge, false, NewError(ErrMerge, statErr, "cannot stat backup %s", filepath.ToSlash(p.backupPath())))
 		}
-		p.res.BackupPath = filepath.ToSlash(backup)
 
-		// Skip the write when the merged output already matches what is on disk.
-		// On an idempotent re-run mergePlan reproduces the current file byte for
-		// byte, so rewriting it would only advance the mtime — spuriously
-		// invalidating file watchers and uv.lock freshness checks — without
-		// changing content. The backup above is untouched (the existing .bak is
-		// kept), so this leaves disk exactly as it was.
-		if current, readErr := os.ReadFile(pyproject); readErr == nil && bytes.Equal(current, mergedBytes) {
+		// Read the current file: it is both the no-op comparison base and the backup
+		// source. A read error on an existing pyproject.toml (permission change,
+		// transient I/O, delete race) must not be swallowed — fail before any write.
+		// No disk mutation has happened yet.
+		current, readErr := os.ReadFile(pyproject)
+		if readErr != nil {
+			return p.fail(PhaseMerge, false, NewError(ErrMerge, readErr, "read pyproject.toml %s failed", filepath.ToSlash(pyproject)))
+		}
+
+		// No-op: the merged output already matches disk. On an idempotent re-run
+		// mergePlan reproduces the current file byte for byte, so rewriting it would
+		// only advance the mtime — spuriously invalidating file watchers and uv.lock
+		// freshness checks — without changing content. Skip both the backup and the
+		// write, leaving disk (and every existing backup) exactly as it was.
+		if bytes.Equal(current, mergedBytes) {
 			return nil
 		}
+
+		// A change will be written; back up the current content first (invariant 2).
+		// copyFile creates/truncates the backup path, so a failure mid-copy may leave
+		// a partial backup: report disk as mutated.
+		if err := copyFile(pyproject, backup); err != nil {
+			return p.fail(PhaseMerge, true, NewError(ErrMerge, err, "backup pyproject.toml failed"))
+		}
+		p.res.BackupPath = filepath.ToSlash(backup)
 	}
 
 	if err := os.WriteFile(pyproject, mergedBytes, 0o644); err != nil {
