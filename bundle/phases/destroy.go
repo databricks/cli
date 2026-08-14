@@ -153,20 +153,22 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
-	// Remove the local state files now that the deployment is gone. Destroy only
-	// deletes the remote state; leaving a local state file behind keeps its
-	// lineage around, so a later fresh deploy of the same bundle (e.g. from
-	// another machine that has no local state) mints a new lineage that no longer
-	// matches this lingering one, and every subsequent command fails with a
-	// lineage mismatch. Both engines keep a lineage-bearing state file, so remove
-	// both regardless of which engine ran the destroy.
-	_, localDirectPath := b.StateFilenameDirect(ctx)
-	_, localTerraformPath := b.StateFilenameTerraform(ctx)
-	for _, path := range []string{localDirectPath, localTerraformPath} {
-		if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			logdiag.LogError(ctx, err)
-			return
-		}
+	// Remove the local state file now that the deployment is gone. Destroy only
+	// deletes the remote state; leaving the local file behind keeps its lineage
+	// around, so a later fresh deploy of the same bundle (e.g. from another
+	// machine that has no local state) mints a new lineage that no longer matches
+	// this lingering one, and every subsequent command fails with a lineage
+	// mismatch. Destroy runs on a single engine, so remove only that engine's
+	// state file.
+	var localStatePath string
+	if engine.IsDirect() {
+		_, localStatePath = b.StateFilenameDirect(ctx)
+	} else {
+		_, localStatePath = b.StateFilenameTerraform(ctx)
+	}
+	if err := os.Remove(localStatePath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	cmdio.LogString(ctx, "Destroy complete!")
