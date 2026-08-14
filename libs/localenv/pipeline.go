@@ -800,9 +800,15 @@ func writeNew(path string, content []byte, mode os.FileMode) error {
 		return err
 	}
 	_, werr := f.Write(content)
-	cerr := f.Close()
-	if werr != nil {
-		return werr
+	if err := errors.Join(werr, f.Close()); err != nil {
+		// The file was created but may not hold the whole content (e.g. ENOSPC
+		// mid-write). Remove it so a partial/empty file can't masquerade as a
+		// complete backup and, being O_EXCL-occupied, block a later run from
+		// reclaiming the same name — which would otherwise leave the canonical
+		// pyproject.toml.bak permanently truncated. Best-effort: if Remove also
+		// fails the filesystem is badly degraded and the write error is what matters.
+		_ = os.Remove(path)
+		return err
 	}
-	return cerr
+	return nil
 }
