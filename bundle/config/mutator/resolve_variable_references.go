@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/libs/dyn/merge"
 
@@ -289,10 +290,35 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 		return root, nil
 	})
 	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
+		diags = diags.Extend(resolveErrorDiags(err))
 	}
 
 	return hasUpdates, diags
+}
+
+// resolveErrorDiags renders "did you mean" suggestions as a diagnostic Detail so
+// libs/diag owns the multi-line formatting.
+func resolveErrorDiags(err error) diag.Diagnostics {
+	refErr, ok := errors.AsType[*dynvar.ReferenceError](err)
+	if !ok || len(refErr.Suggestions) == 0 {
+		return diag.FromErr(err)
+	}
+
+	header := "did you mean:"
+	if len(refErr.Suggestions) > 1 {
+		header = "did you mean one of:"
+	}
+	var detail strings.Builder
+	detail.WriteString(header)
+	for _, ref := range refErr.Suggestions {
+		detail.WriteString("\n  ${" + ref + "}")
+	}
+
+	return diag.Diagnostics{{
+		Severity: diag.Error,
+		Summary:  refErr.Error(),
+		Detail:   detail.String(),
+	}}
 }
 
 // selectivelyMutate applies a function to a subset of the configuration
