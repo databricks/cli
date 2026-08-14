@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/libs/dyn/merge"
 
@@ -298,8 +299,8 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 // resolveErrorDiags renders "did you mean" suggestions as a diagnostic Detail so
 // libs/diag owns the multi-line formatting.
 func resolveErrorDiags(err error) diag.Diagnostics {
-	var refErr *dynvar.ReferenceError
-	if !errors.As(err, &refErr) || len(refErr.Suggestions) == 0 {
+	refErr, ok := errors.AsType[*dynvar.ReferenceError](err)
+	if !ok || len(refErr.Suggestions) == 0 {
 		return diag.FromErr(err)
 	}
 
@@ -307,15 +308,16 @@ func resolveErrorDiags(err error) diag.Diagnostics {
 	if len(refErr.Suggestions) > 1 {
 		header = "did you mean one of:"
 	}
-	detail := header
+	var detail strings.Builder
+	detail.WriteString(header)
 	for _, ref := range refErr.Suggestions {
-		detail += "\n  ${" + ref + "}"
+		detail.WriteString("\n  ${" + ref + "}")
 	}
 
 	return diag.Diagnostics{{
 		Severity: diag.Error,
 		Summary:  refErr.Error(),
-		Detail:   detail,
+		Detail:   detail.String(),
 	}}
 }
 
