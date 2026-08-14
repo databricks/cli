@@ -10,7 +10,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/fs"
 	"maps"
 	"math/rand/v2"
 	"net/http"
@@ -104,13 +103,14 @@ const (
 	// Env var with the path to the file holding all replacements applied to the output.
 	// It is kept outside of the test directory, otherwise "bundle deploy" uploads it.
 	//
-	// The harness writes its own replacements there, one JSON object per line. Scripts add
-	// literal ones with the add_repl helper, which appends "<value>:<NAME>" lines:
+	// Every line is one replacement encoded as a JSON object: "Old" is a regular expression
+	// (written by the harness), "Literal" is a value to replace verbatim (appended by
+	// add_repl.py). The harness writes its own replacements first, then the scripts add theirs:
 	//
 	//   $ job_id=100200300
 	//   $ add_repl "$job_id" MY_JOB   # replaces 100200300 with [MY_JOB] in the output
 	//
-	// Both kinds are read back here (see loadUserReplacements) and by the python helpers
+	// The file is read back here (see loadScriptReplacements) and by the python helpers
 	// (see bin/repls.py).
 	ReplsEnvVar = "ACC_REPLS"
 )
@@ -911,6 +911,7 @@ func runTest(t *testing.T,
 		replsLines.WriteByte('\n')
 	}
 	testutil.WriteFile(t, replsPath, replsLines.String())
+	replsWritten := len(repls.Repls)
 
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
@@ -1012,7 +1013,7 @@ func runTest(t *testing.T,
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
 
-	loadUserReplacements(t, &repls, replsPath)
+	loadScriptReplacements(t, &repls, replsPath, replsWritten)
 
 	printedRepls := false
 
@@ -1816,28 +1817,32 @@ func setupTerraform(t *testing.T, cwd, buildDir string, repls *testdiff.Replacem
 	repls.SetPath(terraformExecPath, "[TERRAFORM]")
 }
 
-// loadUserReplacements adds replacements appended by the scripts to replsPath.
-// The JSON lines written there by the harness itself are already part of repls.
-func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, replsPath string) {
+// loadScriptReplacements adds the replacements appended to replsPath by the scripts.
+// The first offset lines were written by the harness itself and are already in repls.
+func loadScriptReplacements(t *testing.T, repls *testdiff.ReplacementsContext, replsPath string, offset int) {
 	b, err := os.ReadFile(replsPath)
-	if errors.Is(err, fs.ErrNotExist) {
-		return
-	}
 	require.NoError(t, err)
-	lines := strings.SplitSeq(string(b), "\n")
-	for line := range lines {
+	lines := strings.Split(string(b), "\n")
+	for _, line := range lines[min(offset, len(lines)):] {
 		line = strings.TrimSpace(line)
-		if len(line) == 0 || strings.HasPrefix(line, "{") {
+		if len(line) == 0 {
 			continue
 		}
-		items := strings.Split(line, ":")
-		if len(items) <= 1 {
-			t.Errorf("Error parsing %s: %#v", ReplsEnvVar, line)
+		// Scripts only add literal replacements; regular expressions come from the harness.
+		var entry struct {
+			Literal string
+			New     string
+			Order   int
+		}
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			t.Errorf("Error parsing %s: %#v: %s", ReplsEnvVar, line, err)
 			continue
 		}
-		repl := items[len(items)-1]
-		old := line[:len(line)-len(repl)-1]
-		repls.SetWithOrder(old, "["+repl+"]", -100)
+		if entry.Literal == "" || entry.New == "" {
+			t.Errorf("Incomplete entry in %s: %#v", ReplsEnvVar, line)
+			continue
+		}
+		repls.SetWithOrder(entry.Literal, entry.New, entry.Order)
 	}
 }
 

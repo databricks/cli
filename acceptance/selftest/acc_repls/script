@@ -1,6 +1,15 @@
 job_id=100200300
-echo "my job is $job_id"
-echo "$job_id:JOB_ID" >> "$ACC_REPLS"
-echo "ABCD:EFG:MY_TEXT" >> "$ACC_REPLS"
+add_repl "$job_id" JOB_ID
 
-grep ACC_REPLS script
+# Values that cannot be encoded as plain text: a colon, a leading curly brace, quotes and backslashes.
+add_repl "ABCD:EFG" MY_TEXT
+add_repl '{"a": 1}' CURLY
+add_repl 'back\slash "quoted"' TRICKY
+
+echo "my job is $job_id"
+echo "my text is ABCD:EFG"
+echo 'my json is {"a": 1}'
+echo 'my tricky value is back\slash "quoted"'
+
+# The JSON-encoded form of the value is replaced as well.
+echo '{"value": "back\\slash \"quoted\""}'

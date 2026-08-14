@@ -1,4 +1,5 @@
 my job is [JOB_ID]
-echo "$job_id:JOB_ID" >> "$ACC_REPLS"
-echo "[MY_TEXT]:MY_TEXT" >> "$ACC_REPLS"
-grep ACC_REPLS script
+my text is [MY_TEXT]
+my json is [CURLY]
+my tricky value is [TRICKY]
+{"value": "[TRICKY]"}
