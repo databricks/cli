@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -37,26 +36,6 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 		img = defaultDlRuntimeImage
 	}
 	return strings.TrimPrefix(img, "CLIENT-GPU-")
-}
-
-// environmentDependencies resolves the user's declared dependencies as a flat
-// list to carry inline on the serverless environment's spec.dependencies: the
-// inline list directly, or the dependencies read from a requirements file
-// (resolved against the config's directory). For file-form deps it also returns
-// the version declared inside that file, which selects the runtime image since
-// top-level environment.version is not allowed there. Returns nil when none are
-// declared.
-func environmentDependencies(cfg *runConfig, configPath string) (deps []string, fileVersion string, err error) {
-	if deps, ok := cfg.inlineDependencies(); ok {
-		return deps, "", nil
-	}
-	if reqPath, ok := cfg.requirementsFile(); ok {
-		if !filepath.IsAbs(reqPath) {
-			reqPath = filepath.Join(filepath.Dir(configPath), reqPath)
-		}
-		return readRequirementsDependencies(reqPath)
-	}
-	return nil, "", nil
 }
 
 // buildSubmitPayload assembles the runs/submit payload. commandPath is the
@@ -203,12 +182,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		}
 	}
 
-	// Resolve dependencies before any upload too, so a bad requirements file fails
-	// fast without leaving orphaned artifacts in the workspace.
-	deps, fileVersion, err := environmentDependencies(cfg, configPath)
-	if err != nil {
-		return 0, "", err
-	}
+	deps, _ := cfg.inlineDependencies()
 
 	experimentDir := ""
 	if cfg.MLflowExperimentDirectory != nil {
@@ -248,12 +222,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		}
 	}
 
-	// Top-level environment.version wins; for file-form deps it is disallowed, so
-	// fall back to the version declared inside the requirements file.
-	runtimeVersion, ok := cfg.runtimeVersion()
-	if !ok {
-		runtimeVersion = fileVersion
-	}
+	runtimeVersion, _ := cfg.runtimeVersion()
 	payload := buildSubmitPayload(cfg, commandPath, dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
 	payload.IdempotencyToken = token
 

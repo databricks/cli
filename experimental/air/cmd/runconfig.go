@@ -251,40 +251,29 @@ func (e *environmentConfig) validate() error {
 		return e.DockerImage.validate()
 	}
 
-	// version pins the client image version, which is only meaningful for an
-	// inline (list) dependency set — a requirements.yaml file carries its own.
-	if e.Version.set {
-		if e.Dependencies.set && !e.Dependencies.isList {
-			return errors.New("'environment.version' is only valid with inline dependencies (a list); when 'dependencies' points to a requirements.yaml file, set the version inside that file")
-		}
-		if !e.Dependencies.set {
-			return errors.New("'environment.version' requires inline 'dependencies' (a list of packages)")
-		}
+	// version pins the client image version, which is only meaningful alongside an
+	// inline dependency set.
+	if e.Version.set && !e.Dependencies.set {
+		return errors.New("'environment.version' requires inline 'dependencies' (a list of packages)")
 	}
 
 	return nil
 }
 
-// dependencies is environment.dependencies, which is polymorphic: a string is a
-// path to a requirements.yaml file; a list is an inline package list.
+// dependencies is environment.dependencies: an inline list of packages. A scalar
+// (e.g. a path to a requirements file) is rejected — the list may itself reference
+// a requirements.txt, but dependencies must be given as a list.
 type dependencies struct {
-	set    bool
-	isList bool
-	path   string
-	list   []string
+	set  bool
+	list []string
 }
 
 func (d *dependencies) UnmarshalYAML(node *yaml.Node) error {
-	switch node.Kind {
-	case yaml.ScalarNode:
-		d.set, d.isList = true, false
-		return node.Decode(&d.path)
-	case yaml.SequenceNode:
-		d.set, d.isList = true, true
-		return node.Decode(&d.list)
-	default:
-		return errors.New("environment.dependencies must be a string path or a list of packages")
+	if node.Kind != yaml.SequenceNode {
+		return errors.New("environment.dependencies must be a list of packages or reference a requirements.txt (see https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference). A direct file reference is not supported")
 	}
+	d.set = true
+	return node.Decode(&d.list)
 }
 
 // stringOrInt holds a scalar that may be a string or an integer in YAML

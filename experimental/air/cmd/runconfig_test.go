@@ -82,7 +82,7 @@ permissions:
 	require.NoError(t, err)
 	assert.Equal(t, gpuType8xH100, gpuType(cfg.Compute.AcceleratorType))
 	require.NotNil(t, cfg.Environment)
-	assert.True(t, cfg.Environment.Dependencies.isList)
+	assert.True(t, cfg.Environment.Dependencies.set)
 	assert.Equal(t, []string{"torch==2.3.0", "numpy"}, cfg.Environment.Dependencies.list)
 	assert.True(t, cfg.Environment.Version.set)
 	assert.Equal(t, "5", cfg.Environment.Version.raw)
@@ -94,18 +94,17 @@ permissions:
 	assert.Len(t, cfg.Permissions, 2)
 }
 
-// TestLoadRunConfig_PolymorphicFields exercises the str|list, str|int, and
-// bool|str unions decoded by custom UnmarshalYAML.
+// TestLoadRunConfig_PolymorphicFields exercises the str|int and bool|str unions
+// decoded by custom UnmarshalYAML, plus the rejection of the removed
+// dependencies string form.
 func TestLoadRunConfig_PolymorphicFields(t *testing.T) {
-	t.Run("dependencies as string path", func(t *testing.T) {
-		cfg, err := loadRunConfig(writeConfig(t, minimalConfig+`
+	t.Run("dependencies as string path is rejected", func(t *testing.T) {
+		_, err := loadRunConfig(writeConfig(t, minimalConfig+`
 environment:
   dependencies: requirements.yaml
 `))
-		require.NoError(t, err)
-		assert.True(t, cfg.Environment.Dependencies.set)
-		assert.False(t, cfg.Environment.Dependencies.isList)
-		assert.Equal(t, "requirements.yaml", cfg.Environment.Dependencies.path)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "must be a list of packages")
 	})
 
 	t.Run("git remote as bool true is rejected", func(t *testing.T) {
@@ -278,7 +277,7 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 			"docker image with deps conflicts",
 			environmentConfig{
 				DockerImage:  &dockerImageConfig{URL: "org/repo:tag"},
-				Dependencies: dependencies{set: true, isList: true, list: []string{"torch"}},
+				Dependencies: dependencies{set: true, list: []string{"torch"}},
 			},
 			"not allowed: dependencies",
 		},
@@ -286,14 +285,6 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 			"empty docker url",
 			environmentConfig{DockerImage: &dockerImageConfig{URL: "  "}},
 			"docker_image.url cannot be empty",
-		},
-		{
-			"version with file deps",
-			environmentConfig{
-				Version:      stringOrInt{set: true, raw: "5"},
-				Dependencies: dependencies{set: true, isList: false, path: "req.yaml"},
-			},
-			"only valid with inline dependencies",
 		},
 		{
 			"version without deps",
@@ -304,7 +295,7 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 			"version with inline deps ok",
 			environmentConfig{
 				Version:      stringOrInt{set: true, raw: "5"},
-				Dependencies: dependencies{set: true, isList: true, list: []string{"torch"}},
+				Dependencies: dependencies{set: true, list: []string{"torch"}},
 			},
 			"",
 		},
