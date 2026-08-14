@@ -189,8 +189,7 @@ type changedDir struct {
 
 	// newTest is set when the test itself is new: the dir's script is new, or a new
 	// invariant config adds a variant of the dir. moved is set when the script arrived as
-	// a rename, so the test only changed location. The two are exclusive: a script is
-	// either added or renamed.
+	// a rename, so the test only changed location. score treats them as exclusive.
 	newTest bool
 	moved   bool
 
@@ -215,13 +214,15 @@ const (
 
 func (d *changedDir) score() int {
 	score := 0
-	if d.newTest {
+	switch {
+	case d.newTest:
 		score += scoreNewTest
-	}
-	if d.moved {
+	case d.moved:
 		// The files of a moved dir all arrive as renames. Moving a test does not change
-		// what it does, so those renames do not also count as changes.
-		return score + scoreMoved
+		// what it does, so those renames do not also count as changes. A dir that is new
+		// and moved at once (a renamed invariant dir picking up a new config) is scored as
+		// new, since being new says more about it than the move does.
+		return scoreMoved
 	}
 	if d.fixture {
 		score += scoreChange
@@ -302,8 +303,18 @@ func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
 				if status == "A" && strings.HasSuffix(path, configName) {
 					d.newTest = true
 				}
-				if !d.allVariants {
-					d.filters = append(d.filters, "INPUT_CONFIG="+configName)
+				filter := "INPUT_CONFIG=" + configName
+				switch {
+				case d.allVariants:
+					// A change to the dir itself already runs every variant.
+				case len(d.filters) == 0:
+					d.filters = []string{filter}
+				case d.filters[0] != filter:
+					// The harness requires every filter to match (see checkEnvFilters), so
+					// two different INPUT_CONFIG values would skip every variant and the
+					// dir would run nothing. Run all of its variants instead.
+					d.allVariants = true
+					d.filters = nil
 				}
 			}
 			continue

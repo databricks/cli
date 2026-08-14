@@ -139,6 +139,48 @@ func TestFromDiffNewInvariantConfig(t *testing.T) {
 	assert.Equal(t, 5, result.Selected[0].Score)
 }
 
+func TestFromDiffTwoInvariantConfigs(t *testing.T) {
+	// The harness requires every filter to match, so two INPUT_CONFIG filters would skip
+	// every variant. Two changed configs run all variants of the invariant dirs instead.
+	diff := diffLines(
+		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
+		"M\tacceptance/bundle/invariant/configs/pipeline.yml.tmpl",
+	)
+	result := selection.FromDiff(diff, testDirs, 10)
+	assert.Equal(t, map[string][]string{
+		"bundle/invariant/jobs": nil,
+		"bundle/invariant/apps": nil,
+	}, result.Tests())
+}
+
+func TestFromDiffConfigAndItsInitScript(t *testing.T) {
+	// A config and its setup script name the same variant, so the filter is kept.
+	diff := diffLines(
+		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
+		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl-init.sh",
+	)
+	result := selection.FromDiff(diff, testDirs, 10)
+	assert.Equal(t, map[string][]string{
+		"bundle/invariant/jobs": {"INPUT_CONFIG=job.yml.tmpl"},
+		"bundle/invariant/apps": {"INPUT_CONFIG=job.yml.tmpl"},
+	}, result.Tests())
+}
+
+func TestFromDiffNewAndMovedAreExclusive(t *testing.T) {
+	// A moved invariant dir that also picks up a new config scores as new, not as new plus
+	// moved.
+	diff := diffLines(
+		"A\tacceptance/bundle/invariant/configs/job.yml.tmpl",
+		"R100\tacceptance/bundle/invariant/old/script\tacceptance/bundle/invariant/jobs/script",
+	)
+	result := selection.FromDiff(diff, testDirs, 10)
+	scores := map[string]int{}
+	for _, test := range result.Selected {
+		scores[test.Dir] = test.Score
+	}
+	assert.Equal(t, 10, scores["bundle/invariant/jobs"])
+}
+
 func TestFromDiffNestedDir(t *testing.T) {
 	// A file maps to the innermost test dir that owns it.
 	diff := diffLines("M\tacceptance/cmd/sync/nested/deeper/script")
