@@ -87,6 +87,14 @@ jobs:
             fi
           done < <(git ls-files '**/go.mod' 'go.mod')
 
+      - name: Add changelog fragment
+        if: steps.check.outputs.needed == 'true'
+        env:
+          TOOLCHAIN: ${{ steps.latest.outputs.toolchain }}
+        run: |
+          echo "Bump Go toolchain to ${TOOLCHAIN}." \
+            > ".nextchanges/dependency-updates/go-toolchain-${TOOLCHAIN}.md"
+
       - name: Show diff
         if: steps.check.outputs.needed == 'true'
         run: git diff
