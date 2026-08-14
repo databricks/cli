@@ -281,6 +281,15 @@ const (
 	// project is no longer set up for — worth surfacing because VS Code and serverless
 	// Jobs read that section as a source of truth.
 	WarnStaleEnvironmentVersion = "W_STALE_ENVIRONMENT_VERSION"
+	// WarnStandalonePysparkConflict: the user declares a standalone pyspark dependency
+	// while the environment installs databricks-connect. databricks-connect vendors its
+	// own pyspark (it ships the pyspark/ package tree rather than depending on the
+	// standalone distribution), so a separately declared pyspark resolves into the same
+	// namespace and the two overwrite each other — the environment then fails to start a
+	// session. This is a coexistence conflict, not a version one, so it is reported
+	// independent of the pyspark version pinned. Only in default mode, where the env
+	// manages databricks-connect and thus owns the vendored pyspark.
+	WarnStandalonePysparkConflict = "W_STANDALONE_PYSPARK_CONFLICT"
 )
 
 // Result is the full outcome of a sync run and the root of the --json object

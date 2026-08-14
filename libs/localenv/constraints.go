@@ -306,6 +306,18 @@ func isDatabricksConnectDep(entry string) bool {
 	return normalizePackageName(name) == "databricks-connect"
 }
 
+// isPysparkDep reports whether a dependency-group entry is the standalone pyspark
+// requirement, extracting the leading package name and comparing it under the same
+// PEP 503 normalization as isDatabricksConnectDep. It matches "pyspark" exactly and
+// not a distinct package such as "pyspark-stubs".
+func isPysparkDep(entry string) bool {
+	name := strings.TrimSpace(entry)
+	if i := depNameSepRe.FindStringIndex(name); i != nil {
+		name = name[:i[0]]
+	}
+	return normalizePackageName(name) == "pyspark"
+}
+
 // pep503SepRe matches runs of "-", "_", or "." for PEP 503 name normalization.
 var pep503SepRe = regexp.MustCompile(`[-_.]+`)
 
