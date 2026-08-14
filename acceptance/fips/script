@@ -1,1 +1,1 @@
-trace go version -m $CLI | grep -i fips140
+trace go version -m $CLI | grep -i fips140 | contains.py 'GOFIPS140=v1.0.0' 'DefaultGODEBUG=fips140=on'
