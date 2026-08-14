@@ -447,7 +447,7 @@ func TestWorkspaceFilesClientWriteTypeMismatchReason(t *testing.T) {
 		"details": []map[string]any{
 			{
 				"@type":    "type.googleapis.com/google.rpc.ErrorInfo",
-				"reason":   workspaceObjectTypeMismatchReason,
+				"reason":   "WORKSPACE_OBJECT_TYPE_MISMATCH",
 				"domain":   "workspace.databricks.com",
 				"metadata": map[string]string{"existing_type": "NOTEBOOK"},
 			},
