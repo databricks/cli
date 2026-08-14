@@ -207,9 +207,15 @@ func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan
 	// databricks-connect is left untouched).
 	if c.DatabricksConnect != "" {
 		warnings = append(warnings, dbconnectWarnings(plan, survivors, c.DatabricksConnect)...)
-		// Gated on the env managing databricks-connect: only then does it install the
-		// vendored pyspark a standalone one would collide with. In constraints-only mode
-		// the env installs no databricks-connect, so a standalone pyspark is harmless.
+	}
+
+	// A standalone pyspark collides with databricks-connect's vendored pyspark whenever
+	// databricks-connect ends up in the environment — whether the env manages it (default
+	// mode, c.DatabricksConnect set) or the user's own pyproject pins it (kept as-is in
+	// constraints-only mode, since mergeDatabricksConnect is a no-op on an empty managed
+	// value). Gate on its presence by either route, not on the mode, so this agrees with
+	// the validate hard-fail, which keys on the installed venv rather than the mode.
+	if c.DatabricksConnect != "" || len(dbconnectPins(survivors)) > 0 {
 		warnings = append(warnings, standalonePysparkWarnings(survivors)...)
 	}
 
@@ -334,7 +340,7 @@ func dbconnectPins(entries []string) []string {
 // of the version pinned. It is therefore reported without inspecting the specifier, and
 // once however many groups declare it — one collision to fix, and repeating it would
 // inflate the code histogram consumers build from warnings[]. The caller gates this on
-// the env managing databricks-connect.
+// databricks-connect being present in the resolved environment (by either route).
 func standalonePysparkWarnings(reqs []string) []Warning {
 	for _, r := range reqs {
 		if isPysparkDep(r) {

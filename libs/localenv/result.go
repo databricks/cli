@@ -287,8 +287,10 @@ const (
 	// standalone distribution), so a separately declared pyspark resolves into the same
 	// namespace and the two overwrite each other — the environment then fails to start a
 	// session. This is a coexistence conflict, not a version one, so it is reported
-	// independent of the pyspark version pinned. Only in default mode, where the env
-	// manages databricks-connect and thus owns the vendored pyspark.
+	// independent of the pyspark version pinned. Emitted whenever databricks-connect
+	// ends up in the resolved environment — whether the env manages it (default mode) or
+	// the user's own pyproject pins it (constraints-only mode) — so it agrees with the
+	// validate hard-fail, which keys on the installed venv rather than the mode.
 	WarnStandalonePysparkConflict = "W_STANDALONE_PYSPARK_CONFLICT"
 )
 
