@@ -451,9 +451,22 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 // populates the venv path. dbcPin is "" in constraints-only mode, where the DB
 // Connect assertion is skipped.
 func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string) error {
-	pyVer, dbcVer, err := p.PM.Validate(ctx, p.ProjectDir)
+	pyVer, dbcVer, pysparkVer, err := p.PM.Validate(ctx, p.ProjectDir)
 	if err != nil {
 		return p.fail(PhaseValidate, true, asPipelineError(err, ErrValidate, "validation failed"))
+	}
+
+	// A standalone pyspark installed alongside databricks-connect is a collision:
+	// databricks-connect vendors its own pyspark, so the two overwrite each other in
+	// the shared namespace and the environment fails to start a session (surfacing to
+	// users as an opaque Java or protobuf gencode error). Fail here — with the fix —
+	// rather than report a ready environment that cannot run. Keyed on both packages
+	// actually being present in the venv, not on the mode, so it also catches a
+	// pyspark pulled in transitively next to a databricks-connect the project already had.
+	if dbcVer != "" && pysparkVer != "" {
+		return p.fail(PhaseValidate, true, NewError(ErrValidate, nil,
+			"standalone pyspark %s is installed alongside databricks-connect %s; databricks-connect bundles its own pyspark and the two cannot coexist. Remove the standalone pyspark dependency from your project and re-run setup; if you need a local Spark session, keep it in a separate virtual environment",
+			pysparkVer, dbcVer))
 	}
 
 	// Assert the installed Python minor matches the target.

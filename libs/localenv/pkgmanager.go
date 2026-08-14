@@ -27,7 +27,10 @@ type PackageManager interface {
 	// strips pip, so seeding must run after every sync.
 	PostProvision(ctx context.Context, projectDir string) error
 
-	// Validate reads the Python minor version and databricks-connect version
-	// from the virtual environment inside projectDir.
-	Validate(ctx context.Context, projectDir string) (pythonVersion, dbconnectVersion string, err error)
+	// Validate reads the Python minor version, the databricks-connect version, and
+	// the standalone pyspark version from the virtual environment inside projectDir.
+	// pysparkVersion is empty unless a standalone pyspark distribution is installed:
+	// databricks-connect vendors pyspark without registering a pyspark distribution,
+	// so a non-empty value means a separate pyspark sits on top of it (a collision).
+	Validate(ctx context.Context, projectDir string) (pythonVersion, dbconnectVersion, pysparkVersion string, err error)
 }

@@ -27,15 +27,15 @@ const cancelPMStderr = "error: no solution found: databricks-connect==17.2 confl
 // below — a plain ">= 0" assertion would also hold for the unset field.
 const fetchDelay = 25 * time.Millisecond
 
-type fakePM struct{ py, dbc string }
+type fakePM struct{ py, dbc, pyspark string }
 
 func (fakePM) Name() string                                    { return "fake" }
 func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.0", nil }
 func (fakePM) EnsurePython(context.Context, string) error      { return nil }
 func (fakePM) Provision(context.Context, string, string) error { return nil }
 func (fakePM) PostProvision(context.Context, string) error     { return nil }
-func (f fakePM) Validate(context.Context, string) (string, string, error) {
-	return f.py, f.dbc, nil
+func (f fakePM) Validate(context.Context, string) (string, string, string, error) {
+	return f.py, f.dbc, f.pyspark, nil
 }
 
 // noProvisionPM fails any method that could touch the machine (install the
@@ -60,8 +60,8 @@ func (noProvisionPM) PostProvision(context.Context, string) error {
 	return errors.New("PostProvision must not be called under --dry-run")
 }
 
-func (noProvisionPM) Validate(context.Context, string) (string, string, error) {
-	return "", "", errors.New("Validate must not be called under --dry-run")
+func (noProvisionPM) Validate(context.Context, string) (string, string, string, error) {
+	return "", "", "", errors.New("Validate must not be called under --dry-run")
 }
 
 // uvMissingPM fails EnsureAvailable, simulating a machine where the package
@@ -879,6 +879,29 @@ func TestPipelineValidateRejectsUnparseablePin(t *testing.T) {
 	require.NotNil(t, res.Error)
 	assert.Equal(t, ErrValidate, res.Error.Code)
 	assert.Equal(t, PhaseValidate, res.Error.FailurePhase)
+}
+
+func TestPipelineValidateRejectsStandalonePyspark(t *testing.T) {
+	// A standalone pyspark installed alongside databricks-connect collides with the
+	// pyspark databricks-connect vendors, so the environment cannot start a session.
+	// validate must fail with actionable guidance rather than report a ready env.
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0", pyspark: "4.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.Error(t, err)
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrValidate, res.Error.Code)
+	assert.Equal(t, PhaseValidate, res.Error.FailurePhase)
+	assert.Contains(t, res.Error.Msg, "pyspark")
+	assert.Contains(t, res.Error.Msg, "databricks-connect")
 }
 
 func TestPipelineValidateRejectsUnparseableInstalledVersion(t *testing.T) {

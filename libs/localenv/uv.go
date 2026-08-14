@@ -139,17 +139,26 @@ func (m *uvManager) PostProvision(ctx context.Context, projectDir string) error 
 // installed (constraints-only mode), the second line is empty rather than an
 // error: PackageNotFoundError is caught so the probe never fails just because the
 // package is absent. The caller decides whether an empty version is acceptable.
-func (m *uvManager) Validate(ctx context.Context, projectDir string) (string, string, error) {
+func (m *uvManager) Validate(ctx context.Context, projectDir string) (string, string, string, error) {
 	// Each value is printed with a unique prefix so parsing greps for the prefix
 	// rather than relying on line position: any stray line uv or the interpreter
 	// writes to stdout (e.g. a warning) would otherwise shift a positional parse.
-	// A missing databricks-connect prints an empty DBC: value, not an error.
+	// A missing databricks-connect (or pyspark) prints an empty value, not an error.
+	//
+	// The pyspark probe reads distribution metadata, not the importable module:
+	// databricks-connect vendors the pyspark/ package tree without registering a
+	// pyspark distribution, so importlib.metadata.version("pyspark") resolves only
+	// when a standalone pyspark is separately installed — exactly the collision case.
 	pyCode := `import sys, importlib.metadata
 print(f"` + validatePyPrefix + `{sys.version_info.major}.{sys.version_info.minor}")
 try:
     print("` + validateDBCPrefix + `" + importlib.metadata.version("databricks-connect"))
 except importlib.metadata.PackageNotFoundError:
-    print("` + validateDBCPrefix + `")`
+    print("` + validateDBCPrefix + `")
+try:
+    print("` + validatePysparkPrefix + `" + importlib.metadata.version("pyspark"))
+except importlib.metadata.PackageNotFoundError:
+    print("` + validatePysparkPrefix + `")`
 	// Invoke the venv interpreter directly rather than `uv run`: `uv run` resolves
 	// the interpreter from an active VIRTUAL_ENV / CONDA_PREFIX when one is set
 	// (even with --no-project), which would validate whatever env the caller has
@@ -161,22 +170,25 @@ except importlib.metadata.PackageNotFoundError:
 		process.WithProcessGroup(),
 	)
 	if err != nil {
-		return "", "", uvFailure(ErrValidate, err, "venv python validation")
+		return "", "", "", uvFailure(ErrValidate, err, "venv python validation")
 	}
 	pyVer, ok := lineWithPrefix(out, validatePyPrefix)
 	if !ok || pyVer == "" {
-		return "", "", NewError(ErrValidate, nil, "unexpected output from uv run: %q", out)
+		return "", "", "", NewError(ErrValidate, nil, "unexpected output from uv run: %q", out)
 	}
-	// The databricks-connect value is empty when the package is not installed.
+	// The databricks-connect and pyspark values are empty when the package is not
+	// installed as a distribution of its own.
 	dbcVer, _ := lineWithPrefix(out, validateDBCPrefix)
-	return pyVer, dbcVer, nil
+	pysparkVer, _ := lineWithPrefix(out, validatePysparkPrefix)
+	return pyVer, dbcVer, pysparkVer, nil
 }
 
 // Validation output prefixes: uv run's stdout is grepped for these rather than
 // parsed positionally, so extra lines from uv or the interpreter don't break it.
 const (
-	validatePyPrefix  = "PYVER:"
-	validateDBCPrefix = "DBCVER:"
+	validatePyPrefix      = "PYVER:"
+	validateDBCPrefix     = "DBCVER:"
+	validatePysparkPrefix = "PYSPARKVER:"
 )
 
 // lineWithPrefix returns the trimmed remainder of the first line in out that
