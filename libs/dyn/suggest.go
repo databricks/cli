@@ -102,7 +102,11 @@ func didYouMeanReferences(reference, failedKey string, suggestions []string) str
 	for i, s := range suggestions {
 		lines[i] = "  ${" + replaceKey(reference, failedKey, s) + "}"
 	}
-	return "\n\ndid you mean:\n" + strings.Join(lines, "\n")
+	header := "did you mean:"
+	if len(suggestions) > 1 {
+		header = "did you mean one of:"
+	}
+	return "\n\n" + header + "\n" + strings.Join(lines, "\n")
 }
 
 // replaceKey returns reference with the component matching failedKey swapped for

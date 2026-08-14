@@ -111,7 +111,7 @@ func TestDidYouMeanReferences(t *testing.T) {
 			name:      "multiple suggestions",
 			err:       noSuchKeyError{p: NewPath(Key("variables"), Key("hst")), suggestions: []string{"host", "hosts"}},
 			reference: "var.hst",
-			want:      "\n\ndid you mean:\n  ${var.host}\n  ${var.hosts}",
+			want:      "\n\ndid you mean one of:\n  ${var.host}\n  ${var.hosts}",
 		},
 		{
 			name:      "nested outer-key typo keeps suffix",
@@ -135,7 +135,7 @@ func TestDidYouMeanReferences(t *testing.T) {
 			name:      "non-var prefix",
 			err:       noSuchKeyError{p: NewPath(Key("workspace"), Key("stot_path")), suggestions: []string{"root_path", "state_path"}},
 			reference: "workspace.stot_path",
-			want:      "\n\ndid you mean:\n  ${workspace.root_path}\n  ${workspace.state_path}",
+			want:      "\n\ndid you mean one of:\n  ${workspace.root_path}\n  ${workspace.state_path}",
 		},
 		{
 			name:      "no suggestions",

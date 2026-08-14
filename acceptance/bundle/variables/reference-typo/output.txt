@@ -20,7 +20,7 @@ Found 1 error
 >>> [CLI] bundle validate
 Error: reference does not exist: ${var.hst}
 
-did you mean:
+did you mean one of:
   ${var.host}
   ${var.hosts}
 
@@ -37,7 +37,7 @@ Found 1 error
 >>> [CLI] bundle validate
 Error: reference does not exist: ${workspace.stot_path}
 
-did you mean:
+did you mean one of:
   ${workspace.root_path}
   ${workspace.state_path}
 
@@ -86,7 +86,7 @@ Found 1 error
 >>> [CLI] bundle validate
 Error: reference does not exist: ${var.clustr.spark_versio}
 
-did you mean:
+did you mean one of:
   ${var.cluster.spark_versio}
   ${var.clusters.spark_versio}
 
