@@ -738,19 +738,12 @@ tasks:
     # No sources fingerprint: the window depends on FUZZ_* env vars Task can't see.
     cmds:
       - |
-        # Budget stops each variant; count is a ceiling. Drift on.
-        # Same day-of-epoch window as the nightly job.
         export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-10000}"
         export FUZZ_SEED_START="${FUZZ_SEED_START:-$(( $(date -u +%s) / 86400 * FUZZ_SEED_COUNT ))}"
         export FUZZ_CHECK_DRIFT="${FUZZ_CHECK_DRIFT:-1}"
         export FUZZ_TIME_BUDGET="${FUZZ_TIME_BUDGET:-900}"
-        # -count=1: only the script reads FUZZ_*; the cache would reuse another window.
-        # -keeptmp: keep LOG.repro under $TMPDIR/acceptance after a red run.
-        {{.GO_TOOL}} gotestsum \
-          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
-          --no-summary=skipped \
-          --packages ./acceptance/... \
-          -- -count=1 -keeptmp -timeout=${LOCAL_TIMEOUT:-90m} -run "TestAccept/bundle/fuzz"
+        # go test (not gotestsum): -keeptmp must follow the package list.
+        go test ./acceptance -count=1 -keeptmp -timeout=${LOCAL_TIMEOUT:-90m} -run "TestAccept/bundle/fuzz"
 
   # --- Integration tests ---
 
