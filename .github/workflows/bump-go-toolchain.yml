@@ -115,7 +115,7 @@ jobs:
           TOOLCHAIN: ${{ steps.latest.outputs.toolchain }}
           BRANCH: ${{ steps.cpr.outputs.pull-request-branch }}
           PR: ${{ steps.cpr.outputs.pull-request-number }}
-        run: |
+        run: |-
           git fetch origin "$BRANCH"
           git checkout -f -B "$BRANCH" FETCH_HEAD
           fragment=".nextchanges/dependency-updates/go-toolchain-${TOOLCHAIN}.md"
