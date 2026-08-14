@@ -1,4 +1,4 @@
-# Code conventions
+# Code Conventions
 
 Conventions that apply across the whole repository, regardless of language. Read this before you write or change code.
 
@@ -28,15 +28,15 @@ parentPath = "/Workspace" + parentPath
 
 ## Language- and domain-specific rules
 
-The rules above apply everywhere. Before touching files in these areas, also read the matching rule file under `.agent/rules/`. These are the source of the per-file rules that Cursor auto-attaches by glob; other agents (Claude Code included) don't auto-load them, so read them directly when your change falls in scope.
+The rules above apply everywhere. Before touching files in these areas, also read the matching rule file under `.agent/rules/`. These are the source of the per-file rules that Cursor auto-attaches by glob; other agents (Claude Code included) don't auto-load them, so read them directly when your change falls in scope. The paths below are representative — each rule file's `globs:`/`paths:` front matter is the authoritative list of what it covers, so consult it when unsure.
 
 | When you work on… | Read |
 | --- | --- |
 | Go code (`**/*.go`) | [.agent/rules/style-guide-go.md](.agent/rules/style-guide-go.md) |
 | Python code (`**/*.py`) | [.agent/rules/style-guide-py.md](.agent/rules/style-guide-py.md) |
 | Tests (`**/*_test.go`, `acceptance/**`, `integration/**`) | [.agent/rules/testing.md](.agent/rules/testing.md) |
-| Deploy telemetry (`libs/telemetry/**`, `bundle/metrics/**`, `bundle/phases/telemetry.go`) | [.agent/rules/telemetry.md](.agent/rules/telemetry.md) |
+| Deploy telemetry (`libs/telemetry/**`, `bundle/metrics/**`, `bundle/phases/telemetry.go`, `bundle/phases/resources_metadata.go`) | [.agent/rules/telemetry.md](.agent/rules/telemetry.md) |
 | Direct-engine resources (`bundle/direct/dresources/**/*.go`) | [.agent/rules/dresources.md](.agent/rules/dresources.md) |
 | Changelog entries (`CHANGELOG.md`, `.nextchanges/**`) | [.agent/rules/changelog.md](.agent/rules/changelog.md) |
-| Auto-generated files (`cmd/workspace/**`, `cmd/account/**`, `internal/mocks/**`, generated schemas) | [.agent/rules/auto-generated-files.md](.agent/rules/auto-generated-files.md) |
+| Auto-generated files (`cmd/workspace/**`, `cmd/account/**`, `internal/mocks/**`, acceptance test outputs under `acceptance/**`, generated schemas such as `.codegen/openapi.json`, generated Python under `python/databricks/bundles/**`) | [.agent/rules/auto-generated-files.md](.agent/rules/auto-generated-files.md) |
 | Template schema (`**/databricks_template_schema.json`) | [.agent/rules/databricks-template-schema-json.md](.agent/rules/databricks-template-schema-json.md) |
