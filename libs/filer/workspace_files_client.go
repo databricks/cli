@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
-	"net/url"
 	"path"
 	"slices"
 	"strings"
@@ -135,6 +134,12 @@ func (w *WorkspaceFilesClient) workspaceIDHeaders() map[string]string {
 }
 
 func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
+	// Workspace.Upload/Download forward cfg.WorkspaceID behind a bare != "" check,
+	// so normalize the "none" sentinel to "" to keep the SDK from routing on it.
+	if w.Config.WorkspaceID == auth.WorkspaceIDNone {
+		w.Config.WorkspaceID = ""
+	}
+
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, err
@@ -154,35 +159,29 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	// Remove leading "/" so we can use it in the URL.
-	overwrite := slices.Contains(mode, OverwriteIfExists)
-	urlPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/import-file/%s?overwrite=%t",
-		url.PathEscape(strings.TrimLeft(absPath, "/")),
-		overwrite,
-	)
-
 	// Buffer the file contents because we may need to retry below and we cannot read twice.
 	body, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
 
-	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.workspaceIDHeaders(), nil, body, nil)
+	// Upload with the SDK's multipart Workspace.Upload; format=AUTO lets the server
+	// classify each payload as file or notebook. The JSON-body workspace.Import caps
+	// content at 10 MB, the multipart form at the 500 MB workspace file limit.
+	opts := []workspace.UploadOption{workspace.UploadFormat(workspace.ImportFormatAuto)}
+	if slices.Contains(mode, OverwriteIfExists) {
+		opts = append(opts, workspace.UploadOverwrite())
+	}
+
+	err = w.workspaceClient.Workspace.Upload(ctx, absPath, bytes.NewReader(body), opts...)
 
 	// Return early on success.
 	if err == nil {
 		return nil
 	}
 
-	// Special handling of this error only if it is an API error.
-	aerr, ok := errors.AsType[*apierr.APIError](err)
-	if !ok {
-		return err
-	}
-
-	// This API returns a 404 if the parent directory does not exist.
-	if aerr.StatusCode == http.StatusNotFound {
+	// Parent directory does not exist.
+	if errors.Is(err, apierr.ErrNotFound) {
 		if !slices.Contains(mode, CreateParentDirectories) {
 			return noSuchDirectoryError{path.Dir(absPath)}
 		}
@@ -190,8 +189,8 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		// Create parent directory.
 		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
 		if err != nil {
-			if mkdirErr, ok := errors.AsType[*apierr.APIError](err); ok && mkdirErr.StatusCode == http.StatusForbidden {
-				return permissionError{absPath, mkdirErr}
+			if errors.Is(err, apierr.ErrPermissionDenied) {
+				return permissionError{absPath, err}
 			}
 			return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
 		}
@@ -200,9 +199,81 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
-	// This API returns 409 if the file already exists, when the object type is file
-	if aerr.StatusCode == http.StatusConflict {
+	// Path already taken. /workspace/import signals this with several
+	// status/error_code combinations, all verified against a real workspace, and
+	// each of the branches below handles one group of them:
+	//
+	//  - 400 RESOURCE_ALREADY_EXISTS — sequential conflict, no overwrite flag.
+	//    Example: "/Users/me/foo.txt already exists. Please pass overwrite=true
+	//    to overwrite it."
+	//
+	//  - 409, with ALREADY_EXISTS or with no error_code at all — concurrent
+	//    contention (observed in TestLock when five lockers race to write
+	//    deploy.lock). Example: "Node with name
+	//    /Users/me/.bundle/.../deploy.lock already exists. Please pass
+	//    overwrite=true to update it."
+	//
+	//  - 400 with no error_code — notebook conflict; detected by message marker
+	//    in the ErrBadRequest branch further below.
+	//
+	//  - 400 INVALID_PARAMETER_VALUE — overwrite=true on a path where the
+	//    existing object's node type differs from the upload. Two distinct
+	//    messages, both observed against aws-prod-ucws:
+	//
+	//    (a) "Cannot overwrite the asset at /Users/me/foo due to type mismatch
+	//        (asked: FILE, actual: NOTEBOOK)" — fires when the upload path is
+	//        the same as an existing NOTEBOOK and the new content has no
+	//        notebook header (so AUTO would store it as FILE), or the mirror
+	//        case with FILE/NOTEBOOK swapped.
+	//
+	//    (b) "Requested node type [FILE] is different from the existing node
+	//        type [NOTEBOOK]" — fires when /foo is already a NOTEBOOK (from a
+	//        prior /foo.py upload) and an overwrite-upload of regular content
+	//        targets /foo.py: AUTO would store the new content as FILE at
+	//        /foo.py, but the workspace treats /foo.py as the source view of
+	//        the existing /foo NOTEBOOK and rejects the type change.
+	//        Unlike (a), this message comes from the legacy webapp tree path
+	//        (webapp/.../tree/TreeBackendHelper.scala), not from WCS, so the
+	//        WCS-only ErrorInfo work below does not cover it.
+	//
+	//    The server refuses the overwrite even though the caller asked for
+	//    it; from the caller's perspective the path is occupied, so we
+	//    surface this as already-exists.
+	// ErrResourceConflict covers every 409 regardless of error_code, including
+	// the bare 409 the workspace returns with only a message. ErrAlreadyExists
+	// alone would miss those: it and ErrResourceConflict are siblings under the
+	// SDK's error mapping, so a 409 without an error_code unwraps to the parent
+	// only. ErrResourceAlreadyExists is listed separately because the
+	// RESOURCE_ALREADY_EXISTS case arrives as a 400, which no status mapping
+	// resolves to a conflict.
+	if errors.Is(err, apierr.ErrResourceConflict) || errors.Is(err, apierr.ErrResourceAlreadyExists) {
 		return fileAlreadyExistsError{absPath}
+	}
+	if errors.Is(err, apierr.ErrInvalidParameterValue) {
+		if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
+			// WCS attaches AIP-193 ErrorInfo with a stable reason to import
+			// path collisions (universe PR #2019174, WP-6031), so prefer
+			// branching on it over parsing the message.
+			if info := aerr.ErrorDetails().ErrorInfo; info != nil && info.Reason == "WORKSPACE_OBJECT_TYPE_MISMATCH" {
+				return fileAlreadyExistsError{absPath}
+			}
+			// Fallback for errors that carry no ErrorInfo. Two reasons this
+			// is still needed, both verified against a live workspace on
+			// 2026-08-04:
+			//
+			//  - Rollout lag: universe #2019174 merged 2026-06-03 with its
+			//    SAFE flag defaulting to true, but workspaces on an older WCS
+			//    build still return WCS-worded collisions without details.
+			//    That half is temporary.
+			//
+			//  - Message (b) above is thrown by webapp, which #2019174 never
+			//    touched, so it has no ErrorInfo regardless of WCS rollout.
+			//    Once the lag clears this can narrow to "node type" alone,
+			//    but it cannot be dropped until webapp attaches details too.
+			if strings.Contains(aerr.Message, "type mismatch") || strings.Contains(aerr.Message, "node type") {
+				return fileAlreadyExistsError{absPath}
+			}
+		}
 	}
 
 	// This API returns 400 if the file already exists when the object type is notebook.
@@ -211,16 +282,26 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	// "already exists." marker; the JSON error_code is empty in both. The new format
 	// might not have been rolled out to all workspaces yet, so we anchor on the shared
 	// marker and return absPath rather than parsing the message.
-	if aerr.StatusCode == http.StatusBadRequest && strings.Contains(aerr.Message, "already exists.") {
-		return fileAlreadyExistsError{absPath}
+	//
+	// An empty error_code unwraps to ErrBadRequest by status alone, so this is checked
+	// after the ErrInvalidParameterValue branch above rather than before it.
+	if errors.Is(err, apierr.ErrBadRequest) {
+		if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
+			if strings.Contains(aerr.Message, "already exists.") {
+				return fileAlreadyExistsError{absPath}
+			}
+		}
 	}
 
-	// This API returns StatusForbidden when you have read access but don't have write access to a file
-	if aerr.StatusCode == http.StatusForbidden {
-		return permissionError{absPath, aerr}
+	// Caller has read access but no write access.
+	if errors.Is(err, apierr.ErrPermissionDenied) {
+		return permissionError{absPath, err}
 	}
 
-	return err
+	// Any other failure (e.g. a server-side error with an empty message) is
+	// surfaced with the target path so the user can tell which upload failed;
+	// %w keeps the original error inspectable by callers.
+	return fmt.Errorf("failed to upload %s: %w", absPath, err)
 }
 
 func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {

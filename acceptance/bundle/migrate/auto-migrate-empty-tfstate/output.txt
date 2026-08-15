@@ -22,18 +22,18 @@ direct_migrated_via_config true
 
 === Sweep also affected the workspace: .backup uploaded, terraform.tfstate deleted
 
->>> print_requests.py //workspace-files/import-file //workspace/delete --sort
-"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml"
-"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.txt"
-"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt"
-"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/repls.json"
-"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/script"
-"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
-"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
-"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
-"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
-"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup"
+>>> print_requests.py //workspace/import //workspace/delete
+"POST /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml"
+"POST /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.txt"
+"POST /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt"
+"POST /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/repls.json"
+"POST /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/script"
+"POST /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+"POST /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+"POST /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
+"POST /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+"POST /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
+"POST /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup"
 "POST /api/2.0/workspace/delete"
 "POST /api/2.0/workspace/delete"
 "POST /api/2.0/workspace/delete"
