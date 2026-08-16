@@ -34,9 +34,9 @@ const operationStatusInProgress bundledeployments.OperationStatus = "OPERATION_S
 // recordedOperation is an applied resource operation, serialized and waiting to be
 // uploaded to the deployment metadata service (DMS).
 //
-// The payload is built on the apply worker rather than in the uploader so the
-// queue does not hold on to the live resource struct, and so a malformed state
-// fails the resource that produced it instead of the drain at the end of apply.
+// The payload is built on the apply worker rather than in the uploader so the sink
+// does not hold on to the live resource struct, and so a malformed state fails the
+// resource that produced it instead of the drain at the end of apply.
 type recordedOperation struct {
 	action     bundledeployments.OperationActionType
 	resourceID string
@@ -50,6 +50,11 @@ type recordedOperation struct {
 	// delete, where the resource no longer exists, and for a failure, where the
 	// resource was not written.
 	state json.RawMessage
+}
+
+// isFailure reports whether the operation records a resource that did not apply.
+func (op recordedOperation) isFailure() bool {
+	return op.status == bundledeployments.OperationStatusOperationStatusFailed
 }
 
 // newStateOperation describes a state write for upload. state is the serialized
@@ -223,7 +228,7 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 			SequenceId:   sequenceID,
 		}
 		fields := updatableFields
-		if op.status == bundledeployments.OperationStatusOperationStatusFailed {
+		if op.isFailure() {
 			// Mark the existing record failed and leave the rest of it alone; see
 			// failureFields. A failure that arrives before any operation exists still
 			// goes through CreateOperation below, carrying the prior state.

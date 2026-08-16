@@ -35,17 +35,17 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
-	// Operations are recorded with DMS from background workers so a resource's
-	// deploy is not held up by the CreateOperation round trip. The queue is
-	// drained below, once every apply worker has finished recording.
+	// Operations are recorded with DMS from one background goroutine so a resource's
+	// deploy is not held up by the CreateOperation round trip. It is drained below,
+	// once every apply worker has finished recording.
 	//
 	// The state DB records through it, so every state write becomes an operation and
 	// DMS mirrors the WAL.
-	opQueue := newOperationQueue(ctx, b.OpRec)
-	if opQueue != nil {
-		// Assigned only when non-nil: a nil *operationQueue in an interface is not a
+	opSink := newOperationSink(ctx, b.OpRec)
+	if opSink != nil {
+		// Assigned only when non-nil: a nil *operationSink in an interface is not a
 		// nil interface, so the state DB's nil check would not see it.
-		b.StateDB.SetOperationSink(opQueue)
+		b.StateDB.SetOperationSink(opSink)
 	}
 
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
@@ -79,7 +79,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		// Stop resource CRUD once uploading DMS state has failed.
-		if err := opQueue.firstErr(); err != nil {
+		if err := opSink.firstErr(); err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
 		}
@@ -109,7 +109,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			}
 			if err != nil {
 				_, priorState := priorRecord(&b.StateDB, resourceKey)
-				opQueue.recordFailure(ctx, resourceKey, action, deletedID, priorState, err)
+				opSink.recordFailure(ctx, resourceKey, action, deletedID, priorState, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -144,7 +144,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				// Both are empty for a create that never got an ID, which is what the
 				// service expects for a failed create.
 				priorID, priorState := priorRecord(&b.StateDB, resourceKey)
-				opQueue.recordFailure(ctx, resourceKey, action, priorID, priorState, err)
+				opSink.recordFailure(ctx, resourceKey, action, priorID, priorState, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -172,10 +172,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return true
 	})
 
-	// Wait for the queued operations before returning: the caller completes the
+	// Wait for the recorded operations before returning: the caller completes the
 	// DMS version right after, and a version must not be completed with uploads
 	// still in flight.
-	if err := opQueue.close(); err != nil {
+	if err := opSink.close(); err != nil {
 		logdiag.LogError(ctx, err)
 	}
 }
