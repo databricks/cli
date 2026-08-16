@@ -1,0 +1,30 @@
+# Create a job in the workspace
+NEW_JOB_ID=$($CLI jobs create --json '{"name": "test-bind-job", "environments": [{"environment_key": "default", "spec": {"client": "1"}}], "tasks": [{"task_key": "my_task", "environment_key": "default", "spark_python_task": {"python_file": "/Workspace/test.py"}}]}' | jq -r .job_id)
+add_repl.py $NEW_JOB_ID NEW_JOB_ID
+
+# Update the databricks.yml with the actual job ID
+update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$NEW_JOB_ID"
+
+# Deploy to bind the resource into state
+trace $CLI bundle deploy --auto-approve
+
+# Try to destroy - should fail because bind blocks reference resources in state
+trace musterr $CLI bundle destroy --auto-approve
+
+# Remove bind block and destroy to clean up
+python3 << 'PYSCRIPT'
+import re
+with open('databricks.yml', 'r') as f:
+    content = f.read()
+
+# Remove the bind block from the target (everything from "bind:" until the next top-level key or EOF)
+content = re.sub(r'\n    bind:.*', '', content, flags=re.DOTALL)
+
+with open('databricks.yml', 'w') as f:
+    f.write(content)
+PYSCRIPT
+
+# Remove .databricks directory that might cache old config
+rm -rf .databricks
+
+trace $CLI bundle destroy --auto-approve

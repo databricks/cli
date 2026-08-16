@@ -1,0 +1,19 @@
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-destroy-blocked/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> musterr [CLI] bundle destroy --auto-approve
+Error: cannot destroy with bind blocks that reference resources in the deployment state: resources.jobs.foo; remove the bind blocks from the target configuration or run 'bundle deployment unbind' before destroying
+
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-destroy-blocked/default
+
+Deleting files...
+Destroy complete!

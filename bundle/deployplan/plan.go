@@ -74,6 +74,7 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 
 type PlanEntry struct {
 	ID        string           `json:"id,omitempty"`
+	BindID    string           `json:"bind_id,omitempty"`
 	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
 	Action    ActionType       `json:"action,omitempty"`
 	// Gone is set on Delete entries when planning confirmed the resource no longer

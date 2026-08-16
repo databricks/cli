@@ -1,0 +1,3 @@
+# Override engine to terraform to test import block rejection
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["terraform"]

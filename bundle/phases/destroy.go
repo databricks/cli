@@ -3,16 +3,20 @@ package phases
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
@@ -152,6 +156,26 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	}
 }
 
+// errIfBoundResourcesInState rejects a destroy when any bind block currently
+// matches a resource in state: that resource was imported, not created by the
+// bundle, and a blanket destroy would delete a pre-existing workspace resource.
+func errIfBoundResourcesInState(stateDB *dstate.DeploymentState, bindConfig config.Bind) error {
+	var boundInState []string
+	bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
+		key := "resources." + resourceType + "." + resourceName
+		if entry, ok := stateDB.Data.State[key]; ok && entry.ID == bindID {
+			boundInState = append(boundInState, key)
+		}
+	})
+
+	if len(boundInState) == 0 {
+		return nil
+	}
+
+	slices.Sort(boundInState)
+	return fmt.Errorf("cannot destroy with bind blocks that reference resources in the deployment state: %s; remove the bind blocks from the target configuration or run 'bundle deployment unbind' before destroying", strings.Join(boundInState, ", "))
+}
+
 // The destroy phase deletes artifacts and resources.
 func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	log.Info(ctx, "Phase: destroy")
@@ -196,7 +220,17 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	var plan *deployplan.Plan
 	if engine.IsDirect() {
-		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
+		// Refuse to destroy when bind blocks point at resources that are currently
+		// in state: those are pre-existing workspace resources the user imported,
+		// and destroying them would silently delete data the bundle did not create.
+		if b.Target != nil && !b.Target.Bind.IsEmpty() {
+			if err := errIfBoundResourcesInState(&b.DeploymentBundle.StateDB, b.Target.Bind); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+		}
+
+		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil, nil)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

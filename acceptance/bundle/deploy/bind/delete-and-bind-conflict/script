@@ -1,0 +1,18 @@
+# Deploy foo to create it in state
+trace $CLI bundle deploy --auto-approve
+
+# Get the job ID from state
+JOB_ID=$(read_id.py foo)
+
+# Switch to a config that renames foo->bar and adds a bind block for bar
+# with the same job ID. This creates a conflict: foo is being deleted
+# (still in state) while bar is being bound with the same ID.
+cp databricks.yml databricks.yml.bak
+cp databricks_conflict.yml databricks.yml
+update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$JOB_ID"
+
+trace musterr $CLI bundle plan
+
+# Cleanup: restore original config and destroy
+cp databricks.yml.bak databricks.yml
+trace $CLI bundle destroy --auto-approve

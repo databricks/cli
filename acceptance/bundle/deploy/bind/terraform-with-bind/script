@@ -1,0 +1,2 @@
+# Import blocks should error with terraform engine
+trace musterr $CLI bundle plan

@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-duplicate-id/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> musterr [CLI] bundle plan
+Error: bind block for "resources.jobs.bar" has the same ID "[FOO_ID]" as existing resource "resources.jobs.foo"; remove the bind block or the conflicting resource
+  at targets.default.bind.jobs.bar
+
+Error: bind validation failed
+
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-duplicate-id/default
+
+Deleting files...
+Destroy complete!

@@ -1,0 +1,10 @@
+
+>>> musterr [CLI] bundle plan
+Error: bind block for "resources.jobs.bar" has the same ID "12345" as bind block(s) for resources.jobs.foo; each workspace resource can only be bound once
+  at targets.default.bind.jobs.bar
+
+Error: bind block for "resources.jobs.foo" has the same ID "12345" as bind block(s) for resources.jobs.bar; each workspace resource can only be bound once
+  at targets.default.bind.jobs.foo
+
+Error: bind validation failed
+
