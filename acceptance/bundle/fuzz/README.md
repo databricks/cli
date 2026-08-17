@@ -2,8 +2,9 @@ Harness over ../invariant: mutates curated configs and runs a real target script
 `run_fuzz.py` owns the seed loop (`seed.sh` per seed) and classifies deployed /
 rejected / gap / hang / bug. `FUZZ_TARGET` in test.toml picks the target.
 
-Each seed mutates a deploy-verified YAML base from `../invariant/configs/` and
-may inject a curated optional from INJECT.
+Each seed mutates a JSON snapshot in `bases/` of a deploy-verified config from
+`../invariant/configs/` and may inject a curated optional from INJECT. Regen with
+`./task generate-fuzz-bases`; `validate-generated` fails on drift.
 
 Helpers come from ../invariant/script.prepare (sourced explicitly; prepare/test.toml
 only merge along the directory chain). Server stubs are copied into test.toml;

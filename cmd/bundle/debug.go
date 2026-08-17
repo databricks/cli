@@ -10,7 +10,7 @@ func newDebugCommand() *cobra.Command {
 		Use:   "debug",
 		Short: "Debug information about bundles",
 		Long:  "Debug information about bundles",
-		// Hidden helpers for the VSCode extension and acceptance-test tooling.
+		// This command group is currently intended for the Databricks VSCode extension only
 		Hidden: true,
 	}
 	cmd.AddCommand(debug.NewTerraformCommand())
@@ -18,6 +18,5 @@ func newDebugCommand() *cobra.Command {
 	cmd.AddCommand(debug.NewStatesCommand())
 	cmd.AddCommand(debug.NewRenderTemplateSchemaCommand())
 	cmd.AddCommand(debug.NewListTargetsCommand())
-	cmd.AddCommand(debug.NewYamlToJSONCommand())
 	return cmd
 }

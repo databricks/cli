@@ -3,7 +3,7 @@
 Contract checks for mutate_fuzz_config. Failures go to stderr; stdout samples mutated
 configs so an algorithm change shows up as an acceptance output diff.
 
-- every MUTATE_BASES entry has a YAML fixture with one non-empty resource instance
+- every MUTATE_BASES entry has a JSON fixture with one non-empty resource instance
 - every base type has INJECT entries or a NO_INJECT reason, never both or neither
 - every INJECT field is a settable input in the committed reference schema
 - mutate(seed) is deterministic for every base
@@ -13,13 +13,12 @@ configs so an algorithm change shows up as an acceptance output diff.
 
 import json
 import os
-import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from mutate_fuzz_config import (
-    CONFIGS_DIR,
+    BASES_DIR,
     INJECT,
     MUTATE_BASES,
     NO_INJECT,
@@ -55,14 +54,14 @@ def main():
     failed = False
 
     for name in MUTATE_BASES:
-        path = os.path.join(CONFIGS_DIR, name + ".yml.tmpl")
+        path = os.path.join(BASES_DIR, name + ".json.tmpl")
         if not os.path.isfile(path):
-            sys.stderr.write(f"{name}: missing YAML fixture at {path}\n")
+            sys.stderr.write(f"{name}: missing JSON fixture at {path}\n")
             failed = True
             continue
         try:
             parsed = load_base(name)
-        except (OSError, json.JSONDecodeError, subprocess.CalledProcessError) as e:
+        except (OSError, json.JSONDecodeError) as e:
             sys.stderr.write(f"{name}: could not load fixture: {e}\n")
             failed = True
             continue

@@ -6,15 +6,13 @@ Destructive: delete/replace a field (token, dangerous scalar, or empty container
 Additive: inject one optional from INJECT that the base omits.
 Each seed picks exactly one mode so an additive finding maps to one catalog entry.
 
-Bases are deploy-verified YAML templates in bundle/invariant/configs/.
-Emits JSON on stdout; the bundle reads it as YAML 1.2.
+Bases are JSON snapshots of the invariant configs in fuzz/bases/ (regenerate with
+`./task generate-fuzz-bases`). Emits JSON on stdout; the bundle reads it as YAML 1.2.
 """
 
-import functools
 import json
 import os
 import random
-import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -46,7 +44,7 @@ DANGEROUS_INTS = [
 ]
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
-# Single-resource invariant configs.
+# Single-resource invariant configs; JSON snapshots in fuzz/bases/.
 MUTATE_BASES = [
     "app",
     "catalog",
@@ -63,7 +61,7 @@ MUTATE_BASES = [
     "volume",
 ]
 
-CONFIGS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bundle", "invariant", "configs")
+BASES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bundle", "fuzz", "bases")
 
 # Schema-valid optionals from past drift/reconcile findings (may still fail to deploy).
 INJECT = {
@@ -170,22 +168,10 @@ def dump_config(config):
     return json.dumps(config, indent=2, ensure_ascii=False) + "\n"
 
 
-# Cached because the checker loads every base ~180 times and each call is a CLI process.
-# Caches the pre-substitution JSON, so a caller still gets a fresh dict per load_base.
-@functools.cache
-def read_base(path):
-    return subprocess.run(
-        [os.environ["CLI"], "bundle", "debug", "yaml-to-json", path],
-        check=True,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-    ).stdout
-
-
 def load_base(name):
-    path = os.path.join(CONFIGS_DIR, name + ".yml.tmpl")
-    return json.loads(substitute_variables(read_base(path)))
+    path = os.path.join(BASES_DIR, name + ".json.tmpl")
+    with open(path) as f:
+        return json.loads(substitute_variables(f.read()))
 
 
 def collect(node, out):
