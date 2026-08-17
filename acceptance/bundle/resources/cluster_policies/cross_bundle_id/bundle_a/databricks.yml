@@ -1,8 +1,0 @@
-bundle:
-  name: cluster_policy_producer
-
-resources:
-  cluster_policies:
-    pol:
-      name: shared_policy
-      definition: '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'
