@@ -166,6 +166,34 @@ func TestOperationSinkCoalescedFailureKeepsTheStateItReplaces(t *testing.T) {
 	assert.Equal(t, "run did not succeed: FAILED", f.errorMessageFor("resources.job_runs.my_run"))
 }
 
+func TestOperationSinkCoalescedFailureDoesNotRevertToPriorState(t *testing.T) {
+	// An update that succeeded and then failed waiting carries the pre-deploy state,
+	// which the write it supersedes has already moved past. Sending that would record
+	// the resource as it was before the deploy, and the next plan would read it back as
+	// current. Once the write is uploaded the wire mask keeps it out; before that, this
+	// does.
+	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 2)}
+	s := newOperationSink(t.Context(), f)
+
+	recordState(t, s, "resources.jobs.busy", "v1")
+	assert.Equal(t, "resources.jobs.busy", <-f.started)
+
+	s.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Update}, "id-new", envelope(t, "after the update"))
+	s.recordFailure(t.Context(), "resources.jobs.foo", deployplan.Update, "id-old", envelope(t, "before the deploy"), errors.New("waiting after updating: timed out"))
+
+	close(f.block)
+	require.NoError(t, s.close())
+
+	assert.Equal(t, []string{
+		`resources.jobs.busy={"state":{"name":"v1"}}`,
+		`resources.jobs.foo={"state":{"name":"after the update"}}`,
+	}, f.recorded())
+	assert.Equal(t, "id-new", f.resourceIDFor("resources.jobs.foo"))
+	assert.Equal(t,
+		bundledeployments.OperationStatusOperationStatusFailed,
+		f.statusFor("resources.jobs.foo"))
+}
+
 func TestOperationSinkCoalescedDeleteStillClearsState(t *testing.T) {
 	// A delete legitimately carries no state, and coalescing must let it through: the
 	// resource is gone, and keeping the state it replaces would leave it listed.

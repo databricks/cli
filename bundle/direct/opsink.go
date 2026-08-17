@@ -134,14 +134,14 @@ func (s *operationSink) record(resourceKey string, op recordedOperation) {
 // coalesce folds a write that never got uploaded into the one replacing it. The newer
 // write describes the resource as it now stands, so its fields win.
 //
-// A failure is the exception: it carries the resource's state only when there was a
-// pre-deploy record to carry (see newFailedOperation), so a create that wrote state
-// and then failed would replace that state with nothing and drop the resource from the
-// deployment. Inherit what the superseded write recorded instead, since that is the
-// resource the failure is reporting on. The same reasoning applies on the wire when
-// the write did get uploaded; see failureFields.
+// A failure is the exception: it says why a resource stopped, not what it looks like,
+// so it keeps the state of the write it supersedes. Its own state comes from the
+// pre-deploy record (see newFailedOperation), which is either nothing - dropping the
+// resource from the deployment - or a state the write it replaces has already moved
+// past. This is the same rule the wire applies once the write is uploaded, where a
+// failure updates only status and error_message; see failureFields.
 func coalesce(older, newer recordedOperation) recordedOperation {
-	if newer.isFailure() && newer.state == nil && older.state != nil {
+	if newer.isFailure() && older.state != nil {
 		newer.state = older.state
 		newer.resourceID = older.resourceID
 	}
