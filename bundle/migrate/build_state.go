@@ -234,9 +234,10 @@ func BuildStateFromTF(
 		}
 
 		// Compact hashed_in_state fields (e.g. a dashboard's serialized_dashboard) so the
-		// migrated state matches what a native deploy writes; otherwise the first plan
-		// after migrating from Terraform would compare this raw value against the hashed
-		// config side and report a spurious change.
+		// migrated state is already small, rather than carrying the full contents until the
+		// next deploy rewrites them. This is not needed for correctness: the first plan after
+		// migrating compacts the saved state on read (CalculatePlan), so a raw value here
+		// would still compare equal against the compacted config side.
 		compacted, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
 		if err != nil {
 			return warningsSeen, fmt.Errorf("%s: compacting state: %w", node, err)

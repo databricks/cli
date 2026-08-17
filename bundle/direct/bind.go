@@ -146,10 +146,11 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			}
 		}
 
-		// Compact hashed_in_state fields (e.g. a dashboard's serialized_dashboard) so
-		// the state we persist here matches what a later deploy writes. Otherwise the
-		// next plan would compare this raw value against the hashed config side and
-		// report a spurious change on the resource we just bound.
+		// Compact hashed_in_state fields (e.g. a dashboard's serialized_dashboard) so the
+		// state we persist here is already small, rather than carrying the full contents
+		// until the next deploy rewrites them. This is not needed for correctness: the next
+		// plan compacts the saved state on read (CalculatePlan), so a raw value here would
+		// still compare equal against the compacted config side.
 		adapter, err := b.getAdapterForKey(resourceKey)
 		if err != nil {
 			os.Remove(tmpStatePath)
