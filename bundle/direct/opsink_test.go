@@ -183,6 +183,32 @@ func TestOperationSinkCoalescedFailureKeepsTheStateItReplaces(t *testing.T) {
 	assert.Equal(t, "run did not succeed: FAILED", f.errorMessageFor("resources.job_runs.my_run"))
 }
 
+func TestOperationSinkCoalescedFailureAfterADeleteKeepsTheResourceGone(t *testing.T) {
+	// A recreate's delete step writes no state, and the create that follows fails. Whether
+	// that delete was uploaded or is still waiting must not change what DMS ends up with:
+	// the resource was deleted, so the failure carries the delete's absent state rather
+	// than the pre-deploy state, and the resource stays gone.
+	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 2)}
+	s := newOperationSink(t.Context(), f)
+
+	recordState(t, s, "resources.jobs.busy", "v1")
+	assert.Equal(t, "resources.jobs.busy", <-f.started)
+
+	s.RecordOperation(t.Context(), "resources.schemas.foo", dstate.OperationInfo{Action: deployplan.Recreate, InProgress: true}, "old-id", nil)
+	s.recordFailure(t.Context(), "resources.schemas.foo", deployplan.Recreate, "old-id", envelope(t, "before the deploy"), errors.New("Catalog 'other' does not exist"))
+
+	close(f.block)
+	require.NoError(t, s.close())
+
+	assert.Equal(t, []string{
+		`resources.jobs.busy={"state":{"name":"v1"}}`,
+		`resources.schemas.foo=`,
+	}, f.recorded())
+	assert.Equal(t,
+		bundledeployments.OperationStatusOperationStatusFailed,
+		f.statusFor("resources.schemas.foo"))
+}
+
 func TestOperationSinkCoalescedFailureDoesNotRevertToPriorState(t *testing.T) {
 	// An update that succeeded and then failed waiting carries the pre-deploy state,
 	// which the write it supersedes has already moved past. Sending that would record

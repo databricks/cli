@@ -120,35 +120,35 @@ func TestOperationRecorderFailureAfterAStateWriteKeepsTheState(t *testing.T) {
 	assert.Empty(t, update.update.ResourceId)
 }
 
-func TestOperationRecorderFailureCarryingStateSendsIt(t *testing.T) {
-	// A recreate records its in-progress delete, which has no state, and then the create
-	// that replaces the resource. If the create's write is still waiting when the create
-	// fails, the failure carries that write's state (see coalesce) - and the update has
-	// to name state in the mask, or the service keeps the nothing the delete recorded and
-	// drops the resource from the deployment.
+func TestOperationRecorderFailedRecreateKeepsTheResourceGone(t *testing.T) {
+	// A recreate records its in-progress delete, which has no state, and then fails before
+	// the create writes any. The failure must not fill that gap with the pre-deploy state:
+	// the delete went through and the create did not, so the resource really is gone, and
+	// an operation with no state is how the deployment says so. The next plan creates it,
+	// which is what needs to happen.
 	f := &fakeOpClient{sequence: "2"}
 	r := newOperationRecorder(f, "dep-1", 2)
 
 	uploadOne(t, r, "resources.jobs.foo", deployplan.Recreate, "old-id", nil)
 
-	failed, err := newFailedOperation(deployplan.Recreate, "new-id", envelope(t, "the replacement"), errors.New("boom"))
+	failed, err := newFailedOperation(deployplan.Recreate, "old-id", envelope(t, "before the deploy"), errors.New("boom"))
 	require.NoError(t, err)
 	require.NoError(t, r.upload(t.Context(), "resources.jobs.foo", failed))
 
 	require.Len(t, f.calls, 2)
 	update := f.calls[1]
 	assert.Equal(t, "update", update.method)
-	assert.Equal(t, []string{"state", "error_message", "resource_id", "status"}, update.fields)
-	require.NotNil(t, update.update.State)
-	assert.Equal(t, "new-id", update.update.ResourceId)
+	assert.Equal(t, []string{"error_message", "status"}, update.fields)
+	assert.Nil(t, update.update.State)
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, update.update.Status)
+	assert.Equal(t, "boom", update.update.ErrorMessage)
 }
 
 func TestOperationRecorderFailureCarryingALaterWriteSendsIt(t *testing.T) {
 	// Two writes for one resource: the first is uploaded, the second is still waiting
-	// when the resource fails, so the failure carries it (see coalesce). That state is
-	// newer than what the service holds, so the update has to name state - leaving it out
-	// would keep the first write's state and the next plan would read back something this
-	// deploy has already moved past.
+	// when the resource fails, so the failure takes it over (see coalesce). The local
+	// state holds that second write, so the update has to name state - leaving it out
+	// would keep the first write's state, and the next plan reads DMS.
 	f := &fakeOpClient{sequence: "4"}
 	r := newOperationRecorder(f, "dep-1", 2)
 
@@ -169,9 +169,10 @@ func TestOperationRecorderFailureCarryingALaterWriteSendsIt(t *testing.T) {
 }
 
 func TestOperationRecorderFailureBeforeAnyWriteCarriesPriorState(t *testing.T) {
-	// Nothing has been recorded for the resource, so the failure creates the operation
-	// and has to carry the prior state itself - the resource still exists, and the
-	// service rejects an operation that records state without an id.
+	// Nothing was recorded for the resource in this version, so the failure creates the
+	// operation and carries the prior state: nothing touched the resource, so it is still
+	// there, and an operation without state would drop it from the deployment and have the
+	// next plan create a second one.
 	f := &fakeOpClient{sequence: "1"}
 	r := newOperationRecorder(f, "dep-1", 2)
 
@@ -230,6 +231,8 @@ func TestNewFailedOperationRecordsError(t *testing.T) {
 	assert.Equal(t, "cluster spec is invalid", op.errorMessage)
 	// The resource was never written, so there is no state to serve back for it.
 	assert.Nil(t, op.state)
+	// An update only marks the operation failed; see failedKeepingState.
+	assert.Equal(t, failedKeepingState, op.updateFields)
 }
 
 func TestNewFailedOperationRecordsPriorStateWithID(t *testing.T) {

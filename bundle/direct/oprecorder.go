@@ -47,9 +47,9 @@ type recordedOperation struct {
 	// failed, which the service enforces.
 	errorMessage string
 
-	// state is the serialized local config after the operation. It is nil for a
-	// delete, where the resource no longer exists, and for a failure, where the
-	// resource was not written.
+	// state is the serialized local config after the operation. It is nil for a delete,
+	// where the resource no longer exists, and for a failure it is the state from before
+	// the deploy - see newFailedOperation for when that reaches the service.
 	state json.RawMessage
 
 	// updateFields is the update mask to send if this operation updates one the service
@@ -62,22 +62,15 @@ type recordedOperation struct {
 // looks: everything an update is allowed to change.
 var describesResource = []string{"state", "error_message", "resource_id", "status"}
 
-// failedKeepingState is the update mask for a failure. A failure says why the
-// resource stopped rather than how it looks, and the state it reports is the pre-deploy
-// one - older than whatever a write already recorded - so it leaves state alone.
+// failedKeepingState is the update mask for a failure updating an operation this version
+// already recorded: mark it failed and leave state alone. That is right either way - state
+// means the resource is as it was written, and no state means a delete went through and
+// nothing replaced it, so the resource really is gone and the deployment should say so.
 var failedKeepingState = []string{"error_message", "status"}
 
 // isFailure reports whether the operation records a resource that did not apply.
 func (op recordedOperation) isFailure() bool {
 	return op.status == bundledeployments.OperationStatusOperationStatusFailed
-}
-
-// checkStateSize rejects a state the service will not accept.
-func checkStateSize(state json.RawMessage) error {
-	if len(state) > maxOperationStateSize {
-		return fmt.Errorf("serialized state is %d bytes, which exceeds the %d byte limit for recording deployment history", len(state), maxOperationStateSize)
-	}
-	return nil
 }
 
 // newStateOperation describes a state write for upload. state is the serialized
@@ -89,8 +82,8 @@ func newStateOperation(info dstate.OperationInfo, resourceID string, state json.
 		return recordedOperation{}, err
 	}
 
-	if err := checkStateSize(state); err != nil {
-		return recordedOperation{}, err
+	if len(state) > maxOperationStateSize {
+		return recordedOperation{}, fmt.Errorf("serialized state is %d bytes, which exceeds the %d byte limit for recording deployment history", len(state), maxOperationStateSize)
 	}
 
 	status := bundledeployments.OperationStatusOperationStatusSucceeded
@@ -110,12 +103,13 @@ func newStateOperation(info dstate.OperationInfo, resourceID string, state json.
 // newFailedOperation records an operation that did not apply, so the deployment
 // history says why a resource failed rather than just omitting it.
 //
-// priorState is the resource's state from before the deploy, carried through
-// unchanged: an action other than a create acts on a resource that still exists, and
-// the service rejects such an operation without state because dropping it would
-// leave DMS unable to describe a resource it still owns. It is nil for a create,
-// where there is no prior state and no resource to describe - which is also why the
-// resourceID may be empty for CREATE and RECREATE.
+// priorState is the resource's state from before the deploy, and only reaches the service
+// when this failure is the first thing recorded for the resource in this version: nothing
+// touched the resource, so it is still there and the deployment has to keep describing it
+// or the next plan creates a second one. Once this version has recorded an operation, that
+// operation says where the resource stands and the failure leaves its state alone - see
+// failedKeepingState. It is nil for a create, which has no prior state and no resource to
+// describe, which is also why the resourceID may be empty for CREATE and RECREATE.
 func newFailedOperation(action deployplan.ActionType, resourceID string, priorState json.RawMessage, cause error) (recordedOperation, error) {
 	actionType, err := deployActionToSDK(action)
 	if err != nil {
@@ -124,8 +118,8 @@ func newFailedOperation(action deployplan.ActionType, resourceID string, priorSt
 
 	// A guard: this state came back from the state DB, so it was within the limit when
 	// it was written.
-	if err := checkStateSize(priorState); err != nil {
-		return recordedOperation{}, err
+	if len(priorState) > maxOperationStateSize {
+		return recordedOperation{}, fmt.Errorf("serialized state is %d bytes, which exceeds the %d byte limit for recording deployment history", len(priorState), maxOperationStateSize)
 	}
 
 	message := cause.Error()
@@ -145,8 +139,7 @@ func newFailedOperation(action deployplan.ActionType, resourceID string, priorSt
 
 // priorRecord returns the resource's id and state from before this deploy, in the
 // same envelope form the success path uploads, or empty values when the resource has
-// no prior record (a create). A failed operation reports these unchanged: the resource
-// is whatever it was before the attempt.
+// no prior record (a create).
 //
 // Both come from the same pre-deploy entry because the service requires an id
 // alongside state: state describes a resource that exists, so it needs the id to say
@@ -178,14 +171,15 @@ type operationRecorder struct {
 	// "deployments/{deployment_id}/versions/{version_id}".
 	parent string
 
-	// mu guards recorded.
+	// mu guards sequenceIDs.
 	mu sync.Mutex
 
-	// recorded holds what the service has per resource key, which is how a resource
-	// already recorded in this version is recognised. The service names operations
+	// sequenceIDs holds the sequence id the service returned per resource key, which is
+	// both how a resource already recorded in this version is recognised and the
+	// concurrency precondition for updating it. The service names operations
 	// "operations/{resource_key}", so it keeps one per resource per version: the second
 	// write for a resource has to update that operation.
-	recorded map[string]recordedState
+	sequenceIDs map[string]string
 }
 
 // NewOperationRecorder returns an operationUploader backed by the DMS operations
@@ -199,20 +193,10 @@ func NewOperationRecorder(apiClient *client.DatabricksClient, deploymentID strin
 // operationClient.
 func newOperationRecorder(ops operationClient, deploymentID string, version int64) operationUploader {
 	return &operationRecorder{
-		ops:      ops,
-		parent:   fmt.Sprintf("deployments/%s/versions/%d", deploymentID, version),
-		recorded: make(map[string]recordedState),
+		ops:         ops,
+		parent:      fmt.Sprintf("deployments/%s/versions/%d", deploymentID, version),
+		sequenceIDs: make(map[string]string),
 	}
-}
-
-// recordedState is what the service holds for a resource in this version.
-type recordedState struct {
-	// sequenceID is echoed as the concurrency precondition on the next update.
-	sequenceID string
-
-	// hasState says whether the recorded operation describes the resource. A failure
-	// must not disturb that description, and must supply one when it is missing.
-	hasState bool
 }
 
 func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op recordedOperation) error {
@@ -240,29 +224,27 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 	}
 
 	r.mu.Lock()
-	has, recorded := r.recorded[dmsKey]
+	sequenceID, recorded := r.sequenceIDs[dmsKey]
 	r.mu.Unlock()
-
-	mask := op.updateFields
-	if !has.hasState {
-		// Nothing recorded describes the resource yet, so this operation has to, even a
-		// failure that would rather leave state alone: a resource recorded without state
-		// is dropped from the deployment, and the next plan creates it again.
-		mask = describesResource
-	}
 
 	var result operationResponse
 	var err error
 	if recorded {
-		// Only the masked fields and sequence_id are read on an update; action_type
-		// stays as the operation was created, so sending it would just be misleading.
-		result, err = r.ops.UpdateOperation(ctx, r.parent, dmsKey, mask, updateOperationRequest{
-			State:        operation.State,
+		update := updateOperationRequest{
 			ErrorMessage: operation.ErrorMessage,
-			ResourceId:   operation.ResourceId,
 			Status:       operation.Status,
-			SequenceId:   has.sequenceID,
-		})
+			SequenceId:   sequenceID,
+		}
+		// Send only what the mask names. The service would ignore the rest, and state is
+		// the largest field by far, so a failure that keeps the recorded state sends none.
+		if slices.Contains(op.updateFields, "state") {
+			update.State = operation.State
+			update.ResourceId = operation.ResourceId
+		}
+
+		// action_type stays as the operation was created, so sending it would just be
+		// misleading.
+		result, err = r.ops.UpdateOperation(ctx, r.parent, dmsKey, op.updateFields, update)
 	} else {
 		result, err = r.ops.CreateOperation(ctx, r.parent, dmsKey, operation)
 	}
@@ -270,16 +252,9 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 		return err
 	}
 
-	// Remember what the service now holds, so the next write for this resource updates
-	// rather than re-creates, and a failure can tell whether the resource is already
-	// described. A mask that left state out leaves whatever was there.
-	hasState := has.hasState
-	if slices.Contains(mask, "state") {
-		hasState = op.state != nil
-	}
-
+	// The next write for this resource updates this operation rather than re-creating it.
 	r.mu.Lock()
-	r.recorded[dmsKey] = recordedState{sequenceID: result.SequenceId, hasState: hasState}
+	r.sequenceIDs[dmsKey] = result.SequenceId
 	r.mu.Unlock()
 
 	return nil

@@ -134,23 +134,15 @@ func (s *operationSink) record(resourceKey string, op recordedOperation) {
 // coalesce replaces a waiting operation with the one that supersedes it. The newer one
 // says how the resource looks now, so its fields win.
 //
-// A failure is different, because it says why the resource stopped rather than how it
-// looks, and the state it carries is from before the deploy. Which state should reach
-// the service depends on whether the write it replaces got uploaded:
-//
-//   - Uploaded: the service already has the right state. The failure sends none, and
-//     updateMask leaves it out so it stays.
-//   - Not uploaded: nobody has told the service anything yet, so this failure is the
-//     only chance to. It takes the state of the write it replaces, and updateMask
-//     includes it.
-//
-// Either way the pre-deploy state is not what goes: it is older than the write.
+// A failure is the exception: it reports the state from before the deploy, while the write
+// it supersedes says what this deploy actually did to the resource. So the failure takes
+// that write's state over, along with the mask that writes it - present or absent, because
+// absent is what a recreate's delete step leaves and the resource really is gone. Waiting
+// or already uploaded, the write's state is what gets recorded either way.
 func coalesce(older, newer recordedOperation) recordedOperation {
-	if newer.isFailure() && older.state != nil {
+	if newer.isFailure() {
 		newer.state = older.state
 		newer.resourceID = older.resourceID
-		// The mask comes with the state: the failure is now reporting how the resource
-		// looks, so it has to say so rather than leave state alone.
 		newer.updateFields = older.updateFields
 	}
 	return newer
