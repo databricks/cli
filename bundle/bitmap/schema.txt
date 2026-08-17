@@ -3286,3 +3286,4 @@ resources.secrets.*.grants[*]
 resources.secrets.*.grants[*].principal
 resources.secrets.*.grants[*].privileges
 resources.secrets.*.grants[*].privileges[*]
+resources.pipelines.*.cascade_on_destroy
