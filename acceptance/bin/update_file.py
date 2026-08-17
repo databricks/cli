@@ -20,9 +20,8 @@ filename, old, new = sys.argv[1:]
 # call update_file.py on that file.
 assert filename != "output.txt"
 
-# newline="" preserves the file's existing line endings. Plain text mode on
-# Windows rewrites LF to CRLF, which makes sync treat the file as changed and
-# inflates "Files: N uploaded" counts in acceptance goldens.
+# newline="" keeps existing endings; text mode on Windows rewrites LF→CRLF
+# and makes sync treat the file as changed.
 with open(filename, newline="") as fobj:
     data = fobj.read()
 newdata = data.replace(old, new)
