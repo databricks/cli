@@ -9,6 +9,14 @@
 //
 // A bare path takes the status git reports for it: added for a path git does not track,
 // modified otherwise. Prefix a path to force one ("A:path", "M:path", "R100:old:new").
+//
+// Each line is a name go test accepts, so a selected test can be run as printed:
+//
+//	go test ./acceptance -run 'TestAccept/bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl'
+//
+// The variants come from each test's materialized config (out.test.toml), which already has
+// the excluded matrix values removed. Excludes that name a combination of variables are not
+// recorded there, so a listed variant can still turn out to be one the harness skips.
 package main
 
 import (
@@ -19,6 +27,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/BurntSushi/toml"
+
+	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/acceptance/internal/selection"
 )
 
@@ -52,13 +63,51 @@ func main() {
 
 	fmt.Println(result.Counts())
 	for _, test := range result.Selected {
-		for _, name := range test.Names() {
+		for _, name := range variantNames(*root, test) {
 			fmt.Printf("  %3d  %s\n", test.Score, name)
 		}
 	}
 	if len(result.Selected) == 0 {
 		fmt.Println("       none of the changed files belong to a test dir")
 	}
+}
+
+// variantNames returns the go test names of the selected test: one per variant of its dir
+// that the selection covers, or the dir alone when it has no variants.
+func variantNames(root string, test selection.Test) []string {
+	var filters []string
+	if test.Filter != "" {
+		filters = []string{test.Filter}
+	}
+
+	var names []string
+	for _, envset := range internal.ExpandEnvMatrix(envMatrix(root, test.Dir), nil, nil) {
+		if len(envset) == 0 {
+			// The harness runs a test without variants as a plain subtest of its dir.
+			return []string{test.Dir}
+		}
+		if selection.MatchesFilters(envset, filters) {
+			names = append(names, test.Dir+"/"+strings.Join(envset, "/"))
+		}
+	}
+	return names
+}
+
+// envMatrix reads the variant matrix of a test from its materialized config, the same file
+// the harness generates so that inherited settings are visible.
+func envMatrix(root, dir string) map[string][]string {
+	path := filepath.Join(root, dir, internal.MaterializedConfigFile)
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		// A test dir without a materialized config has no variants.
+		return nil
+	}
+
+	var config internal.TestConfig
+	if _, err := toml.Decode(string(contents), &config); err != nil {
+		fatalf("cannot parse %s: %s", path, err)
+	}
+	return config.EnvMatrix
 }
 
 // diffFromArgs renders command line arguments as `git diff --name-status` lines, so the

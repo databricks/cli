@@ -371,6 +371,12 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
+	// Built here rather than run with "go run" from a test: tests run with a sandboxed
+	// HOME, which has no module cache, so building inside one fails to resolve imports.
+	selectionPath := buildSelectionCmd(t, buildDir)
+	t.Setenv("SELECTION", selectionPath)
+	repls.SetPath(selectionPath, "[SELECTION]")
+
 	if !inprocessMode {
 		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
 		t.Setenv("CLI_293", cli293Path)
@@ -1060,9 +1066,9 @@ func runTest(t *testing.T,
 
 // checkEnvFilters skips the test if any env filter doesn't match testEnv. Filters that
 // share a key are alternatives, so INPUT_CONFIG=a together with INPUT_CONFIG=b runs both
-// variants rather than neither (see envMatchesFilters).
+// variants rather than neither (see selection.MatchesFilters).
 func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
-	if !envMatchesFilters(testEnv, envFilters) {
+	if !selection.MatchesFilters(testEnv, envFilters) {
 		t.Skipf("Skipping because test environment (%s) does not match filters (%s)",
 			strings.Join(testEnv, " "), strings.Join(envFilters, " "))
 	}
@@ -1302,6 +1308,21 @@ func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {
 	}
 
 	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch})
+	return execPath
+}
+
+// buildSelectionCmd builds the test selection command, so a test can run it the way a
+// developer does.
+func buildSelectionCmd(t *testing.T, buildDir string) string {
+	execPath := filepath.Join(buildDir, "selection"+exeSuffix)
+
+	args := []string{"go", "build", "-o", execPath, "./internal/selection/cmd"}
+	if runtime.GOOS == "windows" {
+		// See BuildCLI: VCS stamping fails on Windows.
+		args = append(args, "-buildvcs=false")
+	}
+	RunCommand(t, args, ".", nil)
+
 	return execPath
 }
 

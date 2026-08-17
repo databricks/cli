@@ -31,31 +31,28 @@ const (
 	invariantDirPrefix     = "bundle/invariant/"
 )
 
-// Test is one test the selection picked.
+// Test is one test the selection picked: a whole test dir, or one variant of it when only
+// some of its variants changed.
 type Test struct {
 	// Dir is the test dir, relative to acceptance/.
 	Dir string
 
-	// Filters restricts the run to the variants matching these KEY=value filters. A nil
-	// slice means every variant of the dir runs.
-	Filters []string
+	// Filter is the KEY=value the variant is selected by, empty when every variant of the
+	// dir runs. Each variant is picked, and scored, on its own: adding one invariant config
+	// makes that config's variant new without touching the others.
+	Filter string
 
 	// Score is why the test was picked; see the score constants.
 	Score int
 }
 
-// Names is the test as go test names it: the dir on its own when every variant runs, and
-// one name per variant when the selection is restricted to some of them.
-func (t Test) Names() []string {
-	if len(t.Filters) == 0 {
-		return []string{t.Dir}
+// Name is the test as go test names it, without the variants the selection says nothing
+// about (see MatchesFilters).
+func (t Test) Name() string {
+	if t.Filter == "" {
+		return t.Dir
 	}
-
-	names := make([]string, 0, len(t.Filters))
-	for _, filter := range t.Filters {
-		names = append(names, t.Dir+"/"+filter)
-	}
-	return names
+	return t.Dir + "/" + t.Filter
 }
 
 // Result is the outcome of a selection.
@@ -72,11 +69,17 @@ type Result struct {
 }
 
 // Tests maps each selected test dir to the variant filters it runs with, the form the
-// acceptance harness looks tests up by.
+// acceptance harness looks tests up by. A nil slice means every variant of the dir runs.
 func (r Result) Tests() map[string][]string {
 	tests := make(map[string][]string, len(r.Selected))
 	for _, test := range r.Selected {
-		tests[test.Dir] = test.Filters
+		if test.Filter == "" {
+			tests[test.Dir] = nil
+			continue
+		}
+		if filters, ok := tests[test.Dir]; !ok || filters != nil {
+			tests[test.Dir] = append(filters, test.Filter)
+		}
 	}
 	return tests
 }
@@ -90,7 +93,7 @@ func (r Result) Counts() string {
 func (r Result) Summary() string {
 	names := make([]string, 0, len(r.Selected))
 	for _, test := range r.Selected {
-		names = append(names, test.Names()...)
+		names = append(names, test.Name())
 	}
 	return r.Counts() + ": " + strings.Join(names, " ")
 }
@@ -108,6 +111,32 @@ func ParseLimit(raw string) (int, error) {
 	}
 
 	return limit, nil
+}
+
+// MatchesFilters reports whether envset satisfies every KEY=value filter. A filter matches
+// unless its key is present in envset with a different value. Filters that share a key are
+// alternatives: the environment has one value per key, so requiring each of them separately
+// would match nothing, while a selection naming several values of a key (one INPUT_CONFIG
+// per changed invariant config) means any of them.
+func MatchesFilters(envset, filters []string) bool {
+	envMap := make(map[string]string, len(envset))
+	for _, kv := range envset {
+		key, value, _ := strings.Cut(kv, "=")
+		envMap[key] = value
+	}
+
+	expected := make(map[string][]string, len(filters))
+	for _, filter := range filters {
+		key, value, _ := strings.Cut(filter, "=")
+		expected[key] = append(expected[key], value)
+	}
+
+	for key, values := range expected {
+		if actual, ok := envMap[key]; ok && !slices.Contains(values, actual) {
+			return false
+		}
+	}
+	return true
 }
 
 // FindTestDirs returns every test dir under root, named relative to root with forward
@@ -184,18 +213,18 @@ func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
 
 // changedDir records how one test dir changed and which of its variants should run.
 type changedDir struct {
-	// filters restricts the run to the variants matching these KEY=value filters.
-	// Empty means every variant of the dir runs.
-	filters []string
+	// filters holds one record per variant the dir is restricted to. Empty means every
+	// variant runs.
+	filters []variantFilter
 
 	// allVariants is set by a change to the dir itself, as opposed to a change to an
 	// invariant config the dir is generated from. It clears filters and keeps a later
 	// config change from narrowing the dir back down to one config.
 	allVariants bool
 
-	// newTest is set when the test itself is new: the dir's script is new, or a new
-	// invariant config adds a variant of the dir. moved is set when the script arrived as
-	// a rename, so the test only changed location. score treats them as exclusive.
+	// newTest is set when the dir's script is new, so the whole test is new. moved is set
+	// when the script arrived as a rename, so the test only changed location. score treats
+	// them as exclusive.
 	newTest bool
 	moved   bool
 
@@ -218,17 +247,16 @@ const (
 	scoreMoved     = 1
 )
 
-func (d *changedDir) score() int {
-	score := 0
-	switch {
-	case d.newTest:
-		score += scoreNewTest
-	case d.moved:
-		// The files of a moved dir all arrive as renames. Moving a test does not change
-		// what it does, so those renames do not also count as changes. A dir that is new
-		// and moved at once (a renamed invariant dir picking up a new config) is scored as
-		// new, since being new says more about it than the move does.
+func (d *changedDir) score(newVariant bool) int {
+	if d.moved {
+		// The files of a moved dir all arrive as renames. Moving a test does not change what
+		// it does, so those renames do not also count as changes.
 		return scoreMoved
+	}
+
+	score := 0
+	if d.newTest || newVariant {
+		score += scoreNewTest
 	}
 	if d.fixture {
 		score += scoreChange
@@ -239,8 +267,35 @@ func (d *changedDir) score() int {
 	return score
 }
 
+// variantFilter is one variant of a dir, selected because the invariant config it is
+// generated from changed.
+type variantFilter struct {
+	// env is the KEY=value the variant is selected by.
+	env string
+
+	// newVariant is set when the config is new, so this variant of the dir is new while its
+	// other variants are not.
+	newVariant bool
+}
+
 // changedDirs maps a test dir, relative to acceptance/, to how it changed.
 type changedDirs map[string]*changedDir
+
+// addFilter restricts the dir to one more variant, unless a change to the dir itself
+// already runs every variant. Repeating a variant (a config and its setup script) keeps the
+// stronger record.
+func (d *changedDir) addFilter(env string, newVariant bool) {
+	if d.allVariants {
+		return
+	}
+	for i, filter := range d.filters {
+		if filter.env == env {
+			d.filters[i].newVariant = filter.newVariant || newVariant
+			return
+		}
+	}
+	d.filters = append(d.filters, variantFilter{env: env, newVariant: newVariant})
+}
 
 func (c changedDirs) get(dir string) *changedDir {
 	if d, ok := c[dir]; ok {
@@ -301,20 +356,13 @@ func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
 					continue
 				}
 				d := dirs.get(dir)
-				// The config is the fixture these dirs are generated from, and a new
-				// config adds a variant of each of them. Its -init.sh / -cleanup.sh
-				// companions change how an existing variant runs, so only the config
-				// itself counts as a new test.
+				// The config is the fixture these dirs are generated from. A new config
+				// adds one variant of each dir, so only that variant is new; the
+				// -init.sh / -cleanup.sh companions of a config change how an existing
+				// variant runs.
 				d.fixture = true
-				if status == "A" && strings.HasSuffix(path, configName) {
-					d.newTest = true
-				}
-				// Filters that name the same key are alternatives (see envMatchesFilters),
-				// so several changed configs restrict the dir to their variants together.
-				filter := "INPUT_CONFIG=" + configName
-				if !d.allVariants && !slices.Contains(d.filters, filter) {
-					d.filters = append(d.filters, filter)
-				}
+				isNewConfig := status == "A" && strings.HasSuffix(path, configName)
+				d.addFilter("INPUT_CONFIG="+configName, isNewConfig)
 			}
 			continue
 		}
@@ -334,6 +382,8 @@ func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
 		}
 
 		d := dirs.get(dir)
+		// A change to the dir itself runs every variant, so any variant filter it picked up
+		// from a config change is dropped and a later one is ignored.
 		d.allVariants = true
 		d.filters = nil
 		if isGeneratedFile(path, dir) {
@@ -352,19 +402,25 @@ func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
 		}
 	}
 
-	// Sort by name first, then stably by descending score, so dirs that score the same
+	tests := make([]Test, 0, len(dirs))
+	for _, dir := range slices.Sorted(maps.Keys(dirs)) {
+		d := dirs[dir]
+		if len(d.filters) == 0 {
+			tests = append(tests, Test{Dir: dir, Score: d.score(false)})
+			continue
+		}
+		for _, filter := range d.filters {
+			tests = append(tests, Test{Dir: dir, Filter: filter.env, Score: d.score(filter.newVariant)})
+		}
+	}
+
+	// Sorted by name above, then stably by descending score, so tests that score the same
 	// stay alphabetical.
-	selected := slices.Sorted(maps.Keys(dirs))
-	slices.SortStableFunc(selected, func(a, b string) int {
-		return dirs[b].score() - dirs[a].score()
+	slices.SortStableFunc(tests, func(a, b Test) int {
+		return b.Score - a.Score
 	})
 
-	dropped := max(len(selected)-limit, 0)
-	selected = selected[:len(selected)-dropped]
-
-	tests := make([]Test, 0, len(selected))
-	for _, dir := range selected {
-		tests = append(tests, Test{Dir: dir, Filters: dirs[dir].filters, Score: dirs[dir].score()})
-	}
+	dropped := max(len(tests)-limit, 0)
+	tests = tests[:len(tests)-dropped]
 	return Result{Selected: tests, Dropped: dropped, Limit: limit}
 }
