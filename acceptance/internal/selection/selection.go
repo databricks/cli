@@ -44,12 +44,18 @@ type Test struct {
 	Score int
 }
 
-// Name is the test dir with its variant filters, as the log and the command print it.
-func (t Test) Name() string {
-	if t.Filters == nil {
-		return t.Dir
+// Names is the test as go test names it: the dir on its own when every variant runs, and
+// one name per variant when the selection is restricted to some of them.
+func (t Test) Names() []string {
+	if len(t.Filters) == 0 {
+		return []string{t.Dir}
 	}
-	return t.Dir + "[" + strings.Join(t.Filters, ",") + "]"
+
+	names := make([]string, 0, len(t.Filters))
+	for _, filter := range t.Filters {
+		names = append(names, t.Dir+"/"+filter)
+	}
+	return names
 }
 
 // Result is the outcome of a selection.
@@ -84,7 +90,7 @@ func (r Result) Counts() string {
 func (r Result) Summary() string {
 	names := make([]string, 0, len(r.Selected))
 	for _, test := range r.Selected {
-		names = append(names, test.Name())
+		names = append(names, test.Names()...)
 	}
 	return r.Counts() + ": " + strings.Join(names, " ")
 }
