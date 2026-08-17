@@ -88,9 +88,6 @@ func (s *operationSink) RecordOperation(ctx context.Context, resourceKey string,
 
 	op, err := newStateOperation(info, resourceID, state)
 	if err != nil {
-		// Fails the deploy, like an upload failure: the write is on disk locally, but
-		// DMS owns the resource set the next plan reads (see dstate.readDMSState), so
-		// leaving a resource unrecorded would have that plan create it a second time.
 		s.setErr(fmt.Errorf("recording operation for %s: %w", resourceKey, err))
 		return
 	}
@@ -99,8 +96,7 @@ func (s *operationSink) RecordOperation(ctx context.Context, resourceKey string,
 }
 
 // recordFailure records that applying a resource failed, so the deployment history
-// explains the failure instead of omitting the resource. It returns nothing: the
-// deploy is already failing, and a second error would mask the one the user needs.
+// explains the failure instead of omitting the resource.
 func (s *operationSink) recordFailure(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, priorState json.RawMessage, cause error) {
 	if s == nil {
 		return
@@ -195,7 +191,7 @@ func (s *operationSink) close() error {
 	return s.firstErr()
 }
 
-// setErr keeps the first upload error; later ones are dropped because one failure
+// setErr keeps the first recording error; later ones are dropped because one failure
 // is enough to fail the deploy.
 func (s *operationSink) setErr(err error) {
 	s.mu.Lock()
@@ -206,8 +202,8 @@ func (s *operationSink) setErr(err error) {
 	}
 }
 
-// firstErr returns the first upload error, or nil if every upload so far succeeded.
-// A nil sink (recording disabled) never errors.
+// firstErr returns the first recording error, or nil if everything so far was
+// recorded. A nil sink (recording disabled) never errors.
 func (s *operationSink) firstErr() error {
 	if s == nil {
 		return nil
