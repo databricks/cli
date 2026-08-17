@@ -21,12 +21,12 @@ trace $CLI bundle deploy -qq
 # SP and the real cloud SP. Sorting makes the recorded request stable across both.
 print_requests.py //serving-endpoints | gron.py --sort-arrays access_control_list > out.first-requests.$DATABRICKS_BUNDLE_ENGINE.txt
 
-echo "$ENDPOINT_NAME:ENDPOINT_NAME_1" >> ACC_REPLS
+add_repl "$ENDPOINT_NAME" ENDPOINT_NAME_1
 
 # Record the endpoint ID for the first endpoint
 get_output=$($CLI serving-endpoints get $ENDPOINT_NAME)
 endpoint_id=$(echo "$get_output" | jq -r '.id')
-echo "$endpoint_id:ENDPOINT_ID_1" >> ACC_REPLS
+add_repl "$endpoint_id" ENDPOINT_ID_1
 
 title "Print the GET endpoint details\n"
 echo "$get_output" | jq '{name, creator}'
@@ -37,12 +37,12 @@ trace $CLI bundle plan -o json | gron.py --sort-arrays __embed__ > out.second-pl
 trace $CLI bundle deploy -qq
 print_requests.py //serving-endpoints | gron.py --sort-arrays access_control_list > out.second-requests.$DATABRICKS_BUNDLE_ENGINE.txt
 
-echo "$ENDPOINT_NAME:ENDPOINT_NAME_2" >> ACC_REPLS
+add_repl "$ENDPOINT_NAME" ENDPOINT_NAME_2
 
 # Record the endpoint ID for the second endpoint
 get_output=$($CLI serving-endpoints get $ENDPOINT_NAME)
 endpoint_id=$(echo "$get_output" | jq -r '.id')
-echo "$endpoint_id:ENDPOINT_ID_2" >> ACC_REPLS
+add_repl "$endpoint_id" ENDPOINT_ID_2
 
 title "Print the GET endpoint details\n"
 echo "$get_output" | jq '{name, creator}'

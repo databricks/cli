@@ -15,7 +15,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard-perm-[UNIQUE_NAME]/default/files...
 Created dashboards.foo
 Created dashboards.foo.permissions
-Files: 8 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve

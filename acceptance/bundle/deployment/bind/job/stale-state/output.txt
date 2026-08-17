@@ -3,7 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/stale_state_test/default/files...
 Created jobs.job_1
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Step 2: Save stale local state (has only job_1, serial=1)

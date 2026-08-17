@@ -46,7 +46,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/scripts/default/fi
 Executing 'postdeploy' script
 from myscript.py 0 postdeploy: hello stdout!
 from myscript.py 0 postdeploy: hello stderr!
-Files: 12 uploaded, 0 deleted
+Files: 11 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> EXITCODE=0 POSTDEPLOY_EXITCODE=1 errcode [CLI] bundle deploy

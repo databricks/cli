@@ -1,6 +1,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
 Created jobs.multifile_job
-Files: 9 uploaded, 0 deleted
+Files: 8 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Edit a task defined in the second included file

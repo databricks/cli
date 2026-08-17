@@ -8,4 +8,4 @@ HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Invalid input: RPC CreateCatalog Field managedcatalog.CatalogInfo.name: name "" is not a valid name. Valid names cannot contain spaces, periods, forward slashes, or control characters.
 
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted

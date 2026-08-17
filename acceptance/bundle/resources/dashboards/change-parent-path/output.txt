@@ -7,7 +7,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/files...
 Created dashboards.my_dashboard
-Files: 7 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> retry [CLI] lakeview get [ORIGINAL_DASHBOARD_ID]
@@ -32,7 +32,7 @@ This action will result in the deletion or recreation of the following dashboard
 This will result in changed IDs and permanent URLs of the dashboards that will be recreated:
   recreate resources.dashboards.my_dashboard
 Recreated dashboards.my_dashboard
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
 >>> retry [CLI] lakeview get [NEW_DASHBOARD_ID]

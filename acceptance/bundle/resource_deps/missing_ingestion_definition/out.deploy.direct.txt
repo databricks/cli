@@ -1,6 +1,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: cannot create resources.pipelines.bar: cannot resolve "${resources.pipelines.foo.ingestion_definition.connection_name}": ingestion_definition: cannot access nil value
 
-Files: 8 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 
 Exit code: 1

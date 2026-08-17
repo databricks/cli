@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy -t dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
-Files: 5 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deploy -t prod
@@ -12,7 +12,7 @@ A common practice is to use a username or principal name in this path, i.e. use
   root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/prod/files...
-Files: 5 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> cat out.requests.txt

@@ -4,7 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created jobs.bar
 Created schemas.schema
 Created volumes.foo
-Files: 5 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> update_file.py databricks.yml comment1 comment2

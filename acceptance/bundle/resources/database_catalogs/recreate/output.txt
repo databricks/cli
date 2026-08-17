@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-recreate-[UNIQUE_NAME]/default/files...
 Created database_catalogs.my_catalog
 Created database_instances.my_instance
-Files: 7 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change an immutable catalog field: no update API, so the plan recreates it

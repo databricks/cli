@@ -5,7 +5,7 @@ Created pipelines.foo1
 Created pipelines.foo2
 Created pipelines.foo3
 Created pipelines.foo4
-Files: 7 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests

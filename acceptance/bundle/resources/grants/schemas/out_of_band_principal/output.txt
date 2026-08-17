@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-out-of-band-principal-[UNIQUE_NAME]/default/files...
 Created schemas.grants_schema
 Created schemas.grants_schema.grants
-Files: 7 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] grants update schema main.schema_out_of_band_principal_[UNIQUE_NAME] --json @update.json

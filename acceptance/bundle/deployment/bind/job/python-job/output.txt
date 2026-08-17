@@ -8,7 +8,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 >>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
 Updated jobs.job_1
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] jobs get [NUMID] --output json

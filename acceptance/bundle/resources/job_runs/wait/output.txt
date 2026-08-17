@@ -7,7 +7,7 @@ job run [MY_RUN_ID]: SUCCESS
 Created job_runs.my_run
 Created jobs.downstream_job
 Created jobs.my_job
-Files: 7 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> read_id.py my_run
@@ -25,7 +25,7 @@ resources.jobs.my_job skip
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Files: 2 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 
 >>> [CLI] bundle destroy --auto-approve

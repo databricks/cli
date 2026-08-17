@@ -44,7 +44,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created pipelines.bar
 Created pipelines.baz
 Created pipelines.foo
-Files: 5 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq -s [.[] | select(.path=="/api/2.0/pipelines" and .method=="POST") | .body.name] | sort out.requests.txt

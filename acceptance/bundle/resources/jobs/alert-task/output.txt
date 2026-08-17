@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alert-task-[UNIQUE_NAME]/default/files...
 Created jobs.my_job
-Files: 7 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] jobs get [JOB_ID]

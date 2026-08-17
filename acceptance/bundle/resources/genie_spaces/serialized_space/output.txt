@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/genie-serialized-space-[UNIQUE_NAME]/default/files...
 Created genie_spaces.from_file
 Created genie_spaces.from_inline
-Files: 8 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
