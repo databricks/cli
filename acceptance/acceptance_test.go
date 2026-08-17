@@ -1058,18 +1058,13 @@ func runTest(t *testing.T,
 	}
 }
 
-// checkEnvFilters skips the test if any env filter doesn't match testEnv.
+// checkEnvFilters skips the test if any env filter doesn't match testEnv. Filters that
+// share a key are alternatives, so INPUT_CONFIG=a together with INPUT_CONFIG=b runs both
+// variants rather than neither (see envMatchesFilters).
 func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
-	envMap := make(map[string]string, len(testEnv))
-	for _, kv := range testEnv {
-		key, value, _ := strings.Cut(kv, "=")
-		envMap[key] = value
-	}
-	for i, filter := range envFilters {
-		key, expected, _ := strings.Cut(filter, "=")
-		if actual, ok := envMap[key]; ok && actual != expected {
-			t.Skipf("Skipping because test environment %s=%s does not match ENVFILTER#%d: %s", key, actual, i, filter)
-		}
+	if !envMatchesFilters(testEnv, envFilters) {
+		t.Skipf("Skipping because test environment (%s) does not match filters (%s)",
+			strings.Join(testEnv, " "), strings.Join(envFilters, " "))
 	}
 }
 

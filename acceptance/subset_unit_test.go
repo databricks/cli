@@ -46,6 +46,20 @@ func TestSubsetChangedVariantFilter(t *testing.T) {
 	assert.NotEmpty(t, s.skipReason("bundle/invariant/x", []string{"INPUT_CONFIG=pipeline.yml.tmpl"}))
 }
 
+func TestSubsetChangedVariantFilterAlternatives(t *testing.T) {
+	// Filters naming the same key are alternatives, so the variants of both configs are
+	// kept rather than neither.
+	s := subsetSelector{
+		enabled: true,
+		pct:     0,
+		seed:    "seed",
+		changed: map[string][]string{"bundle/invariant/x": {"INPUT_CONFIG=job.yml.tmpl", "INPUT_CONFIG=pipeline.yml.tmpl"}},
+	}
+	assert.Empty(t, s.skipReason("bundle/invariant/x", []string{"INPUT_CONFIG=job.yml.tmpl"}))
+	assert.Empty(t, s.skipReason("bundle/invariant/x", []string{"INPUT_CONFIG=pipeline.yml.tmpl"}))
+	assert.NotEmpty(t, s.skipReason("bundle/invariant/x", []string{"INPUT_CONFIG=other.yml.tmpl"}))
+}
+
 func TestSubsetSeedDeterministic(t *testing.T) {
 	// Same seed selects the same subset; the decision does not depend on ordering.
 	a := subsetSelector{enabled: true, pct: 50, seed: "abc"}

@@ -1,0 +1,47 @@
+
+=== Changing a test
+
+>>> selection M:acceptance/mytest/script
+Selected 1 changed tests (limit=50, 0 not selected)
+    5  mytest
+
+=== Adding a test
+
+>>> selection A:acceptance/newtest/script
+Selected 1 changed tests (limit=50, 0 not selected)
+   10  newtest
+
+=== A regenerated golden scores below a changed fixture
+
+>>> selection M:acceptance/mytest/output.txt M:acceptance/newtest/script
+Selected 2 changed tests (limit=50, 0 not selected)
+    5  newtest
+    1  mytest
+
+=== Moving a test scores lowest
+
+>>> selection R100:acceptance/oldtest/script:acceptance/newtest/script M:acceptance/mytest/script
+Selected 2 changed tests (limit=50, 0 not selected)
+    5  mytest
+    1  newtest
+
+=== Touching an invariant config runs every invariant test, for that config only
+
+>>> selection M:acceptance/bundle/invariant/configs/job.yml.tmpl
+Selected 2 changed tests (limit=50, 0 not selected)
+    5  bundle/invariant/apps[INPUT_CONFIG=job.yml.tmpl]
+    5  bundle/invariant/jobs[INPUT_CONFIG=job.yml.tmpl]
+
+=== Adding one invariant config and touching two others
+
+>>> selection A:acceptance/bundle/invariant/configs/new.yml.tmpl M:acceptance/bundle/invariant/configs/job.yml.tmpl M:acceptance/bundle/invariant/configs/pipeline.yml.tmpl
+Selected 2 changed tests (limit=50, 0 not selected)
+   10  bundle/invariant/apps[INPUT_CONFIG=new.yml.tmpl,INPUT_CONFIG=job.yml.tmpl,INPUT_CONFIG=pipeline.yml.tmpl]
+   10  bundle/invariant/jobs[INPUT_CONFIG=new.yml.tmpl,INPUT_CONFIG=job.yml.tmpl,INPUT_CONFIG=pipeline.yml.tmpl]
+
+=== The limit keeps the highest scoring tests
+
+>>> selection -limit 2 A:acceptance/newtest/script M:acceptance/mytest/script M:acceptance/bundle/invariant/configs/job.yml.tmpl
+Selected 2 changed tests (limit=2, 2 not selected)
+   10  newtest
+    5  bundle/invariant/apps[INPUT_CONFIG=job.yml.tmpl]

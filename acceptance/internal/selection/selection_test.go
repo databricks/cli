@@ -140,16 +140,17 @@ func TestFromDiffNewInvariantConfig(t *testing.T) {
 }
 
 func TestFromDiffTwoInvariantConfigs(t *testing.T) {
-	// The harness requires every filter to match, so two INPUT_CONFIG filters would skip
-	// every variant. Two changed configs run all variants of the invariant dirs instead.
+	// Two changed configs restrict the invariant dirs to the variants of both, as filters
+	// naming the same key are alternatives.
 	diff := diffLines(
 		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
 		"M\tacceptance/bundle/invariant/configs/pipeline.yml.tmpl",
 	)
 	result := selection.FromDiff(diff, testDirs, 10)
+	both := []string{"INPUT_CONFIG=job.yml.tmpl", "INPUT_CONFIG=pipeline.yml.tmpl"}
 	assert.Equal(t, map[string][]string{
-		"bundle/invariant/jobs": nil,
-		"bundle/invariant/apps": nil,
+		"bundle/invariant/jobs": both,
+		"bundle/invariant/apps": both,
 	}, result.Tests())
 }
 
