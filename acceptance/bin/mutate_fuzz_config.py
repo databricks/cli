@@ -63,6 +63,16 @@ MUTATE_BASES = [
     "volume",
 ]
 
+# Keep in sync with acceptance/bundle/invariant/migrate/test.toml EnvMatrixExclude:
+# migrate seeds terraform first, so direct-only / known-drift bases cannot run there.
+MIGRATE_SKIP_BASES = frozenset(
+    {
+        "catalog",
+        "external_location",
+        "sql_warehouse",
+    }
+)
+
 CONFIGS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bundle", "invariant", "configs")
 
 # Schema-valid optionals from past drift/reconcile findings (may still fail to deploy).
@@ -241,12 +251,19 @@ def mutate(config, seed):
     return config
 
 
+def bases_for_target():
+    if os.environ.get("FUZZ_TARGET") == "migrate":
+        return [b for b in MUTATE_BASES if b not in MIGRATE_SKIP_BASES]
+    return MUTATE_BASES
+
+
 def main():
     # Windows stdout is often ANSI; UTF-8 probes need an explicit encoding.
     sys.stdout.reconfigure(encoding="utf-8")
 
     seed = int(os.environ["FUZZ_SEED"])
-    name = MUTATE_BASES[seed % len(MUTATE_BASES)]
+    bases = bases_for_target()
+    name = bases[seed % len(bases)]
     sys.stdout.write(dump_config(mutate(load_base(name), seed)))
 
 

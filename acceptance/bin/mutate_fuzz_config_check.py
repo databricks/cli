@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mutate_fuzz_config import (
     CONFIGS_DIR,
     INJECT,
+    MIGRATE_SKIP_BASES,
     MUTATE_BASES,
     NO_INJECT,
     dump_config,
@@ -89,6 +90,14 @@ def main():
                 f"{name}: resources.{rtype} needs INJECT entries or a NO_INJECT reason, not both or neither\n"
             )
             failed = True
+
+    unknown_skip = sorted(MIGRATE_SKIP_BASES - set(MUTATE_BASES))
+    if unknown_skip:
+        sys.stderr.write(f"MIGRATE_SKIP_BASES not in MUTATE_BASES: {unknown_skip}\n")
+        failed = True
+    if len(MUTATE_BASES) - len(MIGRATE_SKIP_BASES) < 1:
+        sys.stderr.write("MIGRATE_SKIP_BASES leaves no migrate bases\n")
+        failed = True
 
     # Unknown fields are only a warning; a typo deploys as a silent no-op inject.
     flags = field_flags()
