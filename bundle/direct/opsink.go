@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sync"
 
 	"github.com/databricks/cli/bundle/deployplan"
@@ -111,22 +112,47 @@ func (s *operationSink) record(resourceKey string, op recordedOperation) {
 	}
 }
 
-// coalesce merges an operation with the one that superseded it while still waiting. A later
-// write says everything about the resource, so it wins outright. A failure knows only why the
-// resource stopped, so the write is kept and the failure stamps its outcome onto it.
+// coalesce merges an operation with the one that superseded it while still waiting. Each
+// field comes from whichever operation claimed it in its mask, and the newer one wins when
+// both did; the merged mask is the union, so neither operation's fields get dropped.
+//
+// What a given operation claims is decided where it is built, not here - see
+// describesResource and failedKeepingState.
 func coalesce(older, newer recordedOperation) recordedOperation {
-	if !newer.isFailure() {
-		return newer
+	merged := older
+
+	// action_type is fixed when the operation is created, so no mask names it. An update
+	// that empties a resource records its write as a delete (see DeploymentUnit.Update), so
+	// the two can disagree; report what the plan set out to do.
+	merged.action = newer.action
+	merged.updateFields = unionFields(older.updateFields, newer.updateFields)
+
+	if slices.Contains(newer.updateFields, fieldState) {
+		merged.state = newer.state
+	}
+	if slices.Contains(newer.updateFields, fieldResourceID) {
+		merged.resourceID = newer.resourceID
+	}
+	if slices.Contains(newer.updateFields, fieldErrorMessage) {
+		merged.errorMessage = newer.errorMessage
+	}
+	if slices.Contains(newer.updateFields, fieldStatus) {
+		merged.status = newer.status
 	}
 
-	// Keeping the write keeps its state and mask - an absent state included, which is right:
-	// a recreate's delete really did remove the resource.
-	older.status = newer.status
-	older.errorMessage = newer.errorMessage
-	// An update that empties a resource records its write as a delete (see DeploymentUnit
-	// .Update), so the two can disagree. Report what the plan set out to do.
-	older.action = newer.action
-	return older
+	return merged
+}
+
+// unionFields returns every field either mask names, in describesResource's order so the
+// merged mask is deterministic on the wire.
+func unionFields(older, newer []string) []string {
+	merged := make([]string, 0, len(describesResource))
+	for _, field := range describesResource {
+		if slices.Contains(older, field) || slices.Contains(newer, field) {
+			merged = append(merged, field)
+		}
+	}
+	return merged
 }
 
 // take claims the operation waiting for resourceKey.

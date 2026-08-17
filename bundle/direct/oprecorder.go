@@ -58,20 +58,24 @@ type recordedOperation struct {
 	updateFields []string
 }
 
+// The fields an UpdateOperation may change. Any other path is rejected with
+// INVALID_PARAMETER_VALUE, so this is the full universe a mask can name.
+const (
+	fieldState        = "state"
+	fieldErrorMessage = "error_message"
+	fieldResourceID   = "resource_id"
+	fieldStatus       = "status"
+)
+
 // describesResource is the update mask for an operation that says how the resource
-// looks: everything an update is allowed to change.
-var describesResource = []string{"state", "error_message", "resource_id", "status"}
+// looks: everything an update is allowed to change. Its order is the canonical one.
+var describesResource = []string{fieldState, fieldErrorMessage, fieldResourceID, fieldStatus}
 
 // failedKeepingState is the update mask for a failure updating an operation this version
 // already recorded: mark it failed and leave state alone. That is right either way - state
 // means the resource is as it was written, and no state means a delete went through and
 // nothing replaced it, so the resource really is gone and the deployment should say so.
-var failedKeepingState = []string{"error_message", "status"}
-
-// isFailure reports whether the operation records a resource that did not apply.
-func (op recordedOperation) isFailure() bool {
-	return op.status == bundledeployments.OperationStatusOperationStatusFailed
-}
+var failedKeepingState = []string{fieldErrorMessage, fieldStatus}
 
 // newStateOperation describes a state write for upload. state is the serialized
 // RecordedState envelope the state DB just persisted, and nil for a delete, where
