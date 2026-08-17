@@ -2,11 +2,12 @@
 === first deploy triggers a run
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
-Deploying resources...
 job run [MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
 job run [MY_RUN_ID]: SUCCESS
-Updating deployment state...
-Deployment complete!
+Created job_runs.my_run
+Created jobs.my_job
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> read_id.py my_job
 [MY_JOB_ID]
@@ -29,11 +30,11 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
-Deploying resources...
 job run [MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
 job run [MY_RUN_ID_2]: SUCCESS
-Updating deployment state...
-Deployment complete!
+Recreated job_runs.my_run
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> [CLI] bundle summary
 Name: job-runs-on-bundle-deploy
@@ -77,9 +78,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //jobs/run-now
 
@@ -90,5 +90,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted
