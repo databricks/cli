@@ -1,0 +1,34 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Plan is a no-op immediately after deploy"
+trace $CLI bundle plan
+
+policy_id="$(read_id.py test_cluster_policy)"
+
+# Simulate an out-of-band change: edit the policy definition directly through the
+# API, the way an admin would in the UI, without touching databricks.yml. The
+# recorded bundle state is now stale, so the next plan must detect the drift.
+title "Edit the policy definition out of band"
+trace $CLI cluster-policies edit --json '{"policy_id":"'"$policy_id"'","name":"my_cluster_policy","definition":"{\"spark_version\":{\"type\":\"fixed\",\"value\":\"14.3.x-scala2.12\"}}"}'
+
+# Discard the out-of-band request so the verification below captures only the
+# reconciling edit issued by the redeploy.
+rm -f out.requests.txt
+
+title "Plan detects the drift"
+trace $CLI bundle plan
+
+title "Redeploy reconciles the policy back to the configured definition"
+trace $CLI bundle deploy
+
+title "Verify the edit request restored the configured definition"
+trace jq 'select(.method == "POST" and (.path | contains("/policies/clusters/edit")))' out.requests.txt
+
+title "Plan is a no-op again"
+trace $CLI bundle plan
