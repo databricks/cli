@@ -9,7 +9,8 @@ is stdlib-only Python, so it parses bases through `$YAML2JSON`
 
 Helpers come from ../invariant/script.prepare (sourced explicitly; prepare/test.toml
 only merge along the directory chain). Server stubs are copied into test.toml;
-script asserts stub parity. Unmodeled routes return `TESTSERVER_GAP` (gaps).
+script asserts every invariant `Pattern` is present. Unmodeled routes return
+`TESTSERVER_GAP` (gaps).
 
 A failure is a CLI bug. `LOG.repro` prints e.g.
 `ENVFILTER=FUZZ_TARGET=no_drift FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_CHECK_DRIFT=0 ./task test-fuzz`

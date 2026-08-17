@@ -6,9 +6,8 @@ Destructive: delete/replace a field (token, dangerous scalar, or empty container
 Additive: inject one optional from INJECT that the base omits.
 Each seed picks exactly one mode so an additive finding maps to one catalog entry.
 
-Bases are deploy-verified YAML templates in bundle/invariant/configs/, parsed via
-$YAML2JSON (stdlib Python cannot read YAML). Emits JSON on stdout; the bundle
-reads it as YAML 1.2.
+Bases live in bundle/invariant/configs/ and are parsed via $YAML2JSON (stdlib Python
+cannot read YAML). Emits JSON on stdout; the bundle reads it as YAML 1.2.
 """
 
 import json
@@ -46,7 +45,7 @@ DANGEROUS_INTS = [
 ]
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
-# Single-resource invariant configs.
+# Single-resource invariant configs; extend as more types prove mutable.
 MUTATE_BASES = [
     "app",
     "catalog",

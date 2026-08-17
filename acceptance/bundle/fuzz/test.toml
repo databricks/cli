@@ -4,7 +4,8 @@ Cloud = false
 # Nightly FUZZ_TIME_BUDGET plus the last seed's tail.
 Timeout = '20m'
 
-# Copied from ../invariant/test.toml (merge is directory-chain only); script asserts stub parity.
+# Copied from ../invariant/test.toml (merge is directory-chain only); script asserts every
+# Pattern there is present here.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 Ignore = [

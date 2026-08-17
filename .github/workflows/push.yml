@@ -437,11 +437,7 @@ jobs:
           cache-key: test-fuzz
 
       - name: Run tests
-        env:
-          # Ceiling; run_fuzz.py stops at FUZZ_TIME_BUDGET. Day-of-epoch keeps nightly windows disjoint.
-          FUZZ_SEED_COUNT: "10000"
         run: |
-          export FUZZ_SEED_START=$(( $(date -u +%s) / 86400 * FUZZ_SEED_COUNT ))
           go tool -modfile=tools/task/go.mod task test-fuzz
 
       - name: Summarize failure for triage
@@ -461,7 +457,7 @@ jobs:
             echo '```'
             echo
             echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            # -keeptmp workdirs; paste the real LOG.repro.
+            # Paste each failing variant's LOG.repro from the kept workdirs.
             echo
             while IFS= read -r repro; do
               echo

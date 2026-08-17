@@ -1,8 +1,7 @@
 # Shared setup for the invariant targets; each script keeps only the invariant it asserts.
 
 # Root of configs/ and data/. Callers outside this subtree set it before sourcing.
-# Exported: the fuzzer runs each seed in a fresh bash.
-export INVARIANT_DIR="${INVARIANT_DIR:-$TESTDIR/..}"
+INVARIANT_DIR="${INVARIANT_DIR:-$TESTDIR/..}"
 
 invariant_cleanup() {
     trace $CLI bundle destroy --auto-approve &> LOG.destroy
@@ -38,8 +37,7 @@ invariant_setup() {
 }
 
 # Goes through trace, so callers can prefix the command with VAR=val.
-# Runs unguarded by set -e so that a rejected config is still scanned for panics; the deploy's
-# exit code is re-raised afterwards, before INPUT_CONFIG_OK marks the config as accepted.
+# set -e is off so a failed deploy is still scanned for panics; the exit code is re-raised after.
 invariant_deploy() {
     local logfile="$1"
     shift

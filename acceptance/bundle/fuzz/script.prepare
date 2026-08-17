@@ -7,7 +7,7 @@ export INPUT_CONFIG=""
 
 source "$INVARIANT_DIR/script.prepare"
 
-# Mutator writes the config; validate is an isolated panic surface before deploy.
+# Mutator writes the config; validate runs on its own so a panic there is caught before deploy.
 invariant_render() {
     cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
 
@@ -27,7 +27,7 @@ invariant_render() {
 }
 
 # Plan-determinism oracle: exact no_drift false-positives on fake-server gaps.
-# Compare to 0: empty FUZZ_CHECK_DRIFT is re-defaulted to 1 by task test-fuzz.
+# Default 0 for the committed run; task test-fuzz and the nightly set 1.
 if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
     invariant_verify_no_drift() {
         set +e

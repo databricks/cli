@@ -99,7 +99,7 @@ def main():
         sys.stderr.write("MIGRATE_SKIP_BASES leaves no migrate bases\n")
         failed = True
 
-    # Unknown fields are only a warning; a typo deploys as a silent no-op inject.
+    # A typo would inject a field the bundle ignores, so the seed proves nothing.
     flags = field_flags()
     for rtype, fields in INJECT.items():
         for field, _ in fields:
