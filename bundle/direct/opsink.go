@@ -10,54 +10,39 @@ import (
 	"github.com/databricks/cli/bundle/direct/dstate"
 )
 
-// operationSinkQueueSize is how many resources may have an unrecorded state write
-// before the next one waits. Recording is deliberately not free: a deploy that ran far
-// ahead of the service would leave a long tail of resources applied but unrecorded, and
-// DMS is the source of truth for the next plan. At one waiting operation per resource
-// this bounds the lag to roughly the apply parallelism.
+// operationSinkQueueSize is how many resources may be waiting to be recorded before the
+// next write has to wait. Without a cap a deploy could finish far ahead of the service,
+// and DMS is what the next plan reads.
 const operationSinkQueueSize = 10
 
-// operationSink uploads recorded operations from one background goroutine, so a deploy
-// does not wait on every CreateOperation round trip and the service sees one request at
-// a time.
-//
-// The queue carries resource keys and pending holds the operation for each, which is
-// what makes coalescing fall out: a second write for a resource replaces the first in
-// the map, and the key already in the queue picks up whichever operation is there when
-// the uploader reaches it.
-//
-// close reports the first upload failure, which fails the deploy: DMS becomes the
-// source of truth (see dstate.readDMSState), so a missing record would make the next
-// deploy create a resource that already exists.
+// operationSink uploads operations one at a time on a background goroutine, so a deploy
+// never waits on a round trip. queue holds resource keys and pending holds the newest
+// operation per key, so a second write for a resource simply replaces the first.
 type operationSink struct {
 	uploader operationUploader
 
-	// queue carries the resource keys that have an operation waiting. A key is sent
-	// only when nothing was waiting for it, so a resource never occupies more than one
-	// slot; once the queue is full, recording waits for the uploader, which is what
-	// holds the deploy back. Callers must therefore record outside the state DB lock -
-	// see dstate.SaveState.
+	// queue holds the keys that have something waiting. One slot per resource, so a full
+	// queue means the deploy is that many resources ahead and the next write waits. Record
+	// outside the state DB lock, or that wait blocks every other resource too.
 	queue chan string
 
 	// done is closed once the uploader has drained the queue and returned.
 	done chan struct{}
 
-	// stopQueue closes the queue. Wrapped so close can be deferred and still checked
-	// at a specific point.
+	// stopQueue closes the queue, wrapped so close can safely run twice.
 	stopQueue func()
 
 	// mu guards the fields below.
 	mu sync.Mutex
 
-	// pending holds the operation waiting per resource key. A key is absent once the
-	// uploader has taken its operation.
+	// pending holds the newest operation per resource key, absent once the uploader takes it.
 	pending map[string]recordedOperation
 
 	err error
 }
 
-// newOperationSink starts the uploader, returning nil when uploader is nil (recording
-// off; every method is a no-op on a nil sink). ctx must outlive close.
+// newOperationSink starts the uploader. It returns nil when recording is off, and every
+// method is a no-op on a nil sink. ctx must outlive close.
 func newOperationSink(ctx context.Context, uploader operationUploader) *operationSink {
 	if uploader == nil {
 		return nil
@@ -75,12 +60,9 @@ func newOperationSink(ctx context.Context, uploader operationUploader) *operatio
 	return s
 }
 
-// RecordOperation implements dstate.OperationSink: every state write becomes an
-// operation, so DMS mirrors the WAL. state is already the serialized envelope, and
-// nil for a delete.
-//
-// An earlier upload failure does not stop this: every write is still recorded, best
-// effort, so DMS ends up as close to reality as it can get.
+// RecordOperation implements dstate.OperationSink, turning every state write into an
+// operation so DMS mirrors the local state. state is the serialized envelope, and nil for
+// a delete. An earlier failure does not stop it: keep recording, best effort.
 func (s *operationSink) RecordOperation(ctx context.Context, resourceKey string, info dstate.OperationInfo, resourceID string, state json.RawMessage) {
 	if s == nil {
 		return
@@ -95,8 +77,8 @@ func (s *operationSink) RecordOperation(ctx context.Context, resourceKey string,
 	s.record(resourceKey, op)
 }
 
-// recordFailure records that applying a resource failed, so the deployment history
-// explains the failure instead of omitting the resource.
+// recordFailure records that a resource did not apply, so the history says why rather
+// than leaving the resource out.
 func (s *operationSink) recordFailure(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, priorState json.RawMessage, cause error) {
 	if s == nil {
 		return
@@ -111,9 +93,8 @@ func (s *operationSink) recordFailure(ctx context.Context, resourceKey string, a
 	s.record(resourceKey, op)
 }
 
-// record makes op the operation waiting for resourceKey, waiting for the uploader when
-// the queue is full. Recording on a closed sink panics; every caller must have returned
-// before close.
+// record makes op the one waiting for resourceKey, waiting itself while the queue is
+// full. Recording after close panics, so every caller must return before close.
 func (s *operationSink) record(resourceKey string, op recordedOperation) {
 	s.mu.Lock()
 	waiting, queued := s.pending[resourceKey]
@@ -123,22 +104,16 @@ func (s *operationSink) record(resourceKey string, op recordedOperation) {
 	s.pending[resourceKey] = op
 	s.mu.Unlock()
 
-	// Already queued: the uploader reads the map when it reaches the key, so it picks
-	// up what was just stored without a second token - and without waiting, since a
-	// resource that is already represented in the queue is not running ahead.
+	// Already queued: the uploader reads the map when it gets to the key, so it picks up
+	// what was just stored. No second slot, and no waiting.
 	if !queued {
 		s.queue <- resourceKey
 	}
 }
 
-// coalesce replaces a waiting operation with the one that supersedes it. The newer one
-// says how the resource looks now, so its fields win.
-//
-// A failure is the exception: it reports the state from before the deploy, while the write
-// it supersedes says what this deploy actually did to the resource. So the failure takes
-// that write's state over, along with the mask that writes it - present or absent, because
-// absent is what a recreate's delete step leaves and the resource really is gone. Waiting
-// or already uploaded, the write's state is what gets recorded either way.
+// coalesce merges a write that superseded another still waiting. The newer one wins,
+// except a failure, which only carries pre-deploy state: it takes the superseded write's
+// state and mask instead - absent state included, since a recreate's delete did remove it.
 func coalesce(older, newer recordedOperation) recordedOperation {
 	if newer.isFailure() {
 		newer.state = older.state
@@ -164,23 +139,21 @@ func (s *operationSink) run(ctx context.Context) {
 	for resourceKey := range s.queue {
 		op, ok := s.take(resourceKey)
 		if !ok {
-			// A key is queued only when nothing is waiting for it, so this cannot
-			// happen; the check is here so a stray token could never upload a
-			// zero-valued operation.
+			// Unreachable: a key is queued only when nothing was waiting for it. Guard so
+			// a stray key could never upload a zero-valued operation.
 			continue
 		}
 
-		// Keep going after a failure, so one bad upload does not drop the records for
-		// every resource behind it.
+		// Keep going after a failure, so one bad upload does not drop everything behind it.
 		if err := s.uploader.upload(ctx, resourceKey, op); err != nil {
 			s.setErr(fmt.Errorf("recording operation for %s with the deployment metadata service: %w", resourceKey, err))
 		}
 	}
 }
 
-// close drains the recorded operations and returns the first upload error. Every
-// record caller must have returned first; calling close twice is safe, so it can be
-// deferred and still checked at a specific point.
+// close drains what is waiting and returns the first upload error, which fails the deploy:
+// DMS is the source of truth, so a missing record would have the next deploy create a
+// resource that already exists. Safe to call twice.
 func (s *operationSink) close() error {
 	if s == nil {
 		return nil
@@ -191,8 +164,7 @@ func (s *operationSink) close() error {
 	return s.firstErr()
 }
 
-// setErr keeps the first recording error; later ones are dropped because one failure
-// is enough to fail the deploy.
+// setErr keeps the first error; one failure is enough to fail the deploy.
 func (s *operationSink) setErr(err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -202,8 +174,7 @@ func (s *operationSink) setErr(err error) {
 	}
 }
 
-// firstErr returns the first recording error, or nil if everything so far was
-// recorded. A nil sink (recording disabled) never errors.
+// firstErr returns the first recording error, or nil. A nil sink never errors.
 func (s *operationSink) firstErr() error {
 	if s == nil {
 		return nil
