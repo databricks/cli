@@ -2,13 +2,13 @@
 >>> [CLI] bundle deploy -t one
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-compute-type/one/files...
 Created jobs.my_job
-Files: 8 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deploy -t two
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-compute-type/two/files...
 Created jobs.my_job
-Files: 8 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_telemetry_bool_values

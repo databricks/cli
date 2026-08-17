@@ -2,7 +2,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Warn: deploying resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from PUT /api/2.0/permissions/pipelines/[UUID]
 Created pipelines.foo
 Created pipelines.foo.permissions
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //api/2.0/permissions/pipelines

@@ -3,7 +3,7 @@
 Deploying project...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created apps.myapp
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 ✓ Getting the status of the app myapp
 ✓ App is in UNAVAILABLE state

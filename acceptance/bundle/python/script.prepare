@@ -7,4 +7,4 @@ if [ "$PYDAB_VERSION" = "current" ]; then
 else
   UV_ARGS="--with databricks-bundles==$PYDAB_VERSION"
 fi
-add_repl.py "$UV_ARGS" UV_ARGS
+add_repl "$UV_ARGS" UV_ARGS

@@ -12,7 +12,7 @@ Validation OK!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]/files...
 Created apps.test_app
 Created jobs.foo
-Files: 9 uploaded, 0 deleted
+Files: 8 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === App should exist after bundle deployment

@@ -12,7 +12,7 @@ title "Initial deployment"
 trace $CLI bundle deploy
 
 original_endpoint_uuid=$($CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq -r '.id')
-add_repl.py "$original_endpoint_uuid" "ORIGINAL_ENDPOINT_UUID"
+add_repl "$original_endpoint_uuid" "ORIGINAL_ENDPOINT_UUID"
 trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{id, name, endpoint_type}'
 
 title "Delete and recreate remotely with the same name"
@@ -20,7 +20,7 @@ trace $CLI vector-search-endpoints delete-endpoint "${endpoint_name}"
 trace $CLI vector-search-endpoints create-endpoint "${endpoint_name}" STANDARD | jq '{id, name, endpoint_type}'
 
 remote_recreated_endpoint_uuid=$($CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq -r '.id')
-add_repl.py "$remote_recreated_endpoint_uuid" "REMOTE_RECREATED_ENDPOINT_UUID"
+add_repl "$remote_recreated_endpoint_uuid" "REMOTE_RECREATED_ENDPOINT_UUID"
 trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{id, name, endpoint_type}'
 
 printf "Original endpoint UUID: %s\n" "$original_endpoint_uuid"

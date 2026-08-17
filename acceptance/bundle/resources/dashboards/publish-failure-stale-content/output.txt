@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
 Created dashboards.dashboard1
-Files: 8 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "display_name": "my dashboard",
@@ -32,7 +32,7 @@ HTTP Status: 400 Bad Request
 API error_code: INJECTED
 API message: Fault injected by test.
 
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 
 Exit code: 1
 
@@ -126,7 +126,7 @@ Exit code: 1
 >>> [CLI] bundle deploy --force
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
 Updated dashboards.dashboard1
-Files: 3 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //lakeview/dashboards

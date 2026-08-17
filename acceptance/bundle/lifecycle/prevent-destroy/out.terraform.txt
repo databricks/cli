@@ -41,8 +41,7 @@ the scope of the plan using the -target flag.
 
 Exit code: 1
 
->>> musterr [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
+>>> musterr [CLI] bundle deploy -qq
 Error: exit status 1
 
 Error: Instance cannot be destroyed
@@ -56,7 +55,6 @@ continue with the plan, either disable lifecycle.prevent_destroy or reduce
 the scope of the plan using the -target flag.
 
 
-Files: 3 uploaded, 0 deleted
 
 >>> errcode [CLI] bundle plan
 Error: exit status 1
@@ -85,8 +83,7 @@ the scope of the plan using the -target flag.
 
 Exit code: 1
 
->>> musterr [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
+>>> musterr [CLI] bundle deploy -qq
 Error: exit status 1
 
 Error: Instance cannot be destroyed
@@ -110,7 +107,6 @@ continue with the plan, either disable lifecycle.prevent_destroy or reduce
 the scope of the plan using the -target flag.
 
 
-Files: 2 uploaded, 0 deleted
 
 >>> errcode [CLI] bundle plan
 recreate pipelines.my_pipelines

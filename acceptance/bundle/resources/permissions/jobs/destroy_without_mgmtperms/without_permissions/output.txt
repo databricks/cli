@@ -13,7 +13,7 @@ No active deployment found to destroy!
 >>> as-test-sp [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created jobs.foo
-Files: 9 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] permissions set jobs [NUMID] --json @take_ownership.json

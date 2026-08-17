@@ -2,7 +2,7 @@
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy --var=job_name=Custom Job Name
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-var-test/dev/files...
 Created jobs.test_job
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deployment migrate --var=job_name=Custom Job Name
@@ -32,7 +32,7 @@ Destroy: 1 deleted
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy --var job_name=Custom Job Name
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-var-test/dev/files...
 Created jobs.test_job
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deployment migrate --var job_name=Custom Job Name

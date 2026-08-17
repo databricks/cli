@@ -9,7 +9,7 @@ trace $CLI bundle deploy
 GENIE_SPACE_ID=$($CLI bundle summary --output json | jq -r '.resources.genie_spaces.sales_analytics.id')
 
 # Capture the genie space ID as a replacement.
-echo "$GENIE_SPACE_ID:GENIE_SPACE_ID" >> ACC_REPLS
+add_repl "$GENIE_SPACE_ID" GENIE_SPACE_ID
 
 # Plan after deploy must be drift-free aside from input_only fields.
 # Without normalization the inline serialized_space leaves a map in the

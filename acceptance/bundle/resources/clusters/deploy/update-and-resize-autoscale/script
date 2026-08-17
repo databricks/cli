@@ -15,7 +15,7 @@ trace $CLI bundle deploy -q
 
 title "Cluster should exist with num_workers after bundle deployment:\n"
 CLUSTER_ID=$($CLI bundle summary -o json | jq -r '.resources.clusters.test_cluster.id')
-echo "$CLUSTER_ID:CLUSTER_ID" >> ACC_REPLS
+add_repl "$CLUSTER_ID" CLUSTER_ID
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'
 
 title "Terminating the cluster\n"

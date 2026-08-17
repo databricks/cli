@@ -9,7 +9,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test
 Created jobs.test_job
 Created pipelines.test_pipeline
 Created volumes.test_volume
-Files: 8 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deployment migrate
@@ -122,7 +122,7 @@ Created jobs.test_job
 Created pipelines.test_pipeline
 Created schemas.test_schema
 Created volumes.test_volume
-Files: 11 uploaded, 0 deleted
+Files: 10 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod

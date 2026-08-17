@@ -154,7 +154,7 @@ GOOD:
 ```bash
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to delete, 1 to update"
 trace print_requests.py //api/2.0/apps
-echo "$deployment_id:DEPLOYMENT_ID" >> ACC_REPLS
+add_repl "$deployment_id" DEPLOYMENT_ID
 ```
 
 BAD:
@@ -169,7 +169,7 @@ Available on `PATH` during test execution (from `acceptance/bin/`):
 - `print_requests.py //path [^//exclude] [--get] [--sort] [--unique] [--oneline] [--keep]`: print recorded HTTP requests matching path filters. Requires `RecordRequests = true` in `test.toml`. Excludes GET by default (`--get` includes them); clears `out.requests.txt` afterwards (`--keep` retains it). `^` prefix excludes a path; multiple positive filters are OR'd together. `--sort` orders output deterministically (use when the request set is order-independent), `--unique` collapses consecutive duplicates (e.g. repeated polls), `--oneline` prints one request per line.
 - `replace_ids.py [-t TARGET]`: read deployment state and add `[NAME_ID]` replacements for all resource IDs.
 - `read_id.py [-t TARGET] NAME`: read ID of a single resource from state, print it, and add a `[NAME_ID]` replacement.
-- `add_repl.py VALUE REPLACEMENT`: add a custom replacement (VALUE will be replaced with `[REPLACEMENT]` in output).
+- `add_repl VALUE REPLACEMENT`: add a custom replacement (VALUE will be replaced with `[REPLACEMENT]` in output). Wraps `add_repl.py`, which appends a JSON line to `$ACC_REPLS` — the file holding every replacement applied to the output, read back by the harness and by `diff.py` / `sort_lines.py --repl`. Always go through the helper; do not write `$ACC_REPLS` from a script.
 - `update_file.py FILENAME OLD NEW`: replace all occurrences of OLD with NEW in FILENAME. Errors if OLD is not found. Cannot be used on `output.txt`.
 - `find.py REGEX [--expect N]`: find files matching regex in current directory. `--expect N` asserts an exact count.
 - `diff.py DIR1 DIR2` or `diff.py FILE1 FILE2`: recursive diff with test replacements applied.

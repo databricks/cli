@@ -6,6 +6,6 @@ HTTP Status: 400 Bad Request
 API error_code: RESOURCE_DOES_NOT_EXIST
 API message: Warehouse doesnotexist does not exist
 
-Files: 10 uploaded, 0 deleted
+Files: 9 uploaded, 0 deleted
 
 Exit code: 1
