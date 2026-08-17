@@ -11,67 +11,62 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-// operationSink uploads recorded operations from one background goroutine, so a
-// deploy never waits on the CreateOperation round trip and the service sees one
-// request at a time. Two rules shape it:
+// operationSink uploads recorded operations from one background goroutine, so a deploy
+// never waits on the CreateOperation round trip and the service sees one request at a
+// time.
 //
-//   - Newest write wins. Each carries the resource's full state, so a write waiting
-//     behind an upload is replaced rather than queued ("coalesced"); see coalesce for
-//     the one field that is carried over instead.
-//   - Uploads happen while apply runs. firstErr is what stops the deploy: DMS becomes
-//     the source of truth (see dstate.readDMSState), so a missing record would make
-//     the next deploy create a resource that already exists.
+// The queue carries resource keys and pending holds the operation for each, which is
+// what makes coalescing fall out: a second write for a resource replaces the first in
+// the map, and the key already in the queue picks up whichever operation is there when
+// the uploader reaches it.
+//
+// close reports the first upload failure, which fails the deploy: DMS becomes the
+// source of truth (see dstate.readDMSState), so a missing record would make the next
+// deploy create a resource that already exists.
 type operationSink struct {
 	uploader operationUploader
+
+	// queue carries the resource keys that have an operation waiting. A key is sent
+	// only when nothing was waiting for it, so at most one token exists per resource
+	// and a queue sized for the deploy's resources cannot fill. That is what keeps
+	// recording from blocking, which matters because it runs while the state DB holds
+	// its lock - a blocked send there would stall every other resource's state write.
+	queue chan string
+
+	// done is closed once the uploader has drained the queue and returned.
+	done chan struct{}
+
+	// stopQueue closes the queue. Wrapped so close can be deferred and still checked
+	// at a specific point.
+	stopQueue func()
 
 	// mu guards the fields below.
 	mu sync.Mutex
 
-	// pending holds the one operation waiting per resource key. No key means nothing
-	// is waiting; a resource can write state more than once in a deploy (a recreate
-	// drops the entry, then saves the new resource) and the later write replaces the
-	// earlier one here.
+	// pending holds the operation waiting per resource key. A key is absent once the
+	// uploader has taken its operation.
 	pending map[string]recordedOperation
 
-	// closed stops the uploader once everything recorded before close has gone up.
-	closed bool
-
 	err error
-
-	// wake reports that pending may have work. Buffered so recording never blocks on
-	// the uploader, and only ever holds one token: a full buffer already means "look
-	// again", which is all the uploader needs to know.
-	wake chan struct{}
-
-	// done is closed when the uploader has drained pending and returned.
-	done chan struct{}
-
-	// signalClose tells the uploader to stop once pending is empty. Wrapped so close
-	// can be deferred and still checked at a specific point.
-	signalClose func()
 }
 
 // newOperationSink starts the uploader, returning nil when uploader is nil (recording
-// off; every method is a no-op on a nil sink). ctx must outlive close.
-func newOperationSink(ctx context.Context, uploader operationUploader) *operationSink {
+// off; every method is a no-op on a nil sink). resources is how many resource keys the
+// deploy can record, which is what the queue is sized for. ctx must outlive close.
+func newOperationSink(ctx context.Context, uploader operationUploader, resources int) *operationSink {
 	if uploader == nil {
 		return nil
 	}
 
 	s := &operationSink{
 		uploader: uploader,
-		pending:  make(map[string]recordedOperation),
-		wake:     make(chan struct{}, 1),
-		done:     make(chan struct{}),
+		// At least one slot: a zero-capacity queue would make the send block, which
+		// is the one thing the sizing above exists to prevent.
+		queue:   make(chan string, max(resources, 1)),
+		done:    make(chan struct{}),
+		pending: make(map[string]recordedOperation),
 	}
-	s.signalClose = sync.OnceFunc(func() {
-		s.mu.Lock()
-		s.closed = true
-		s.mu.Unlock()
-
-		// Wake the uploader so it notices, in case it is waiting on an empty pending.
-		s.notify()
-	})
+	s.stopQueue = sync.OnceFunc(func() { close(s.queue) })
 
 	go s.run(ctx)
 	return s
@@ -116,25 +111,21 @@ func (s *operationSink) recordFailure(ctx context.Context, resourceKey string, a
 	s.record(resourceKey, op)
 }
 
-// record makes op the operation waiting for resourceKey and wakes the uploader.
+// record makes op the operation waiting for resourceKey. Recording on a closed sink
+// panics; every caller must have returned before close.
 func (s *operationSink) record(resourceKey string, op recordedOperation) {
 	s.mu.Lock()
-	if waiting, ok := s.pending[resourceKey]; ok {
+	waiting, queued := s.pending[resourceKey]
+	if queued {
 		op = coalesce(waiting, op)
 	}
 	s.pending[resourceKey] = op
 	s.mu.Unlock()
 
-	s.notify()
-}
-
-// notify reports that there may be work, without ever blocking the caller. A dropped
-// send means a token is already buffered, which the uploader has yet to consume - and
-// it re-reads pending before it waits again, so it sees this operation either way.
-func (s *operationSink) notify() {
-	select {
-	case s.wake <- struct{}{}:
-	default:
+	// Already queued: the uploader reads the map when it reaches the key, so it picks
+	// up what was just stored without a second token.
+	if !queued {
+		s.queue <- resourceKey
 	}
 }
 
@@ -155,45 +146,37 @@ func coalesce(older, newer recordedOperation) recordedOperation {
 	return newer
 }
 
-// take claims the operation waiting for one resource. Which resource comes first is
-// unspecified: a resource has at most one operation waiting, so order matters only
-// within a resource, and there coalesce has already settled it.
-func (s *operationSink) take() (string, recordedOperation, bool) {
+// take claims the operation waiting for resourceKey.
+func (s *operationSink) take(resourceKey string) (recordedOperation, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for resourceKey, op := range s.pending {
-		delete(s.pending, resourceKey)
-		return resourceKey, op, true
-	}
-	return "", recordedOperation{}, false
+	op, ok := s.pending[resourceKey]
+	delete(s.pending, resourceKey)
+	return op, ok
 }
 
 func (s *operationSink) run(ctx context.Context) {
 	defer close(s.done)
 
-	for {
-		resourceKey, op, ok := s.take()
-		if ok {
-			// Keep going after a failure, so one bad upload does not drop the records
-			// for every resource behind it.
-			if err := s.uploader.upload(ctx, resourceKey, op); err != nil {
-				s.setErr(fmt.Errorf("recording operation for %s with the deployment metadata service: %w", resourceKey, err))
-			}
+	for resourceKey := range s.queue {
+		op, ok := s.take(resourceKey)
+		if !ok {
+			// A key is queued only when nothing is waiting for it, so this cannot
+			// happen; the check is here so a stray token could never upload a
+			// zero-valued operation.
 			continue
 		}
 
-		// Nothing waiting. Exiting only once pending is empty is what makes close a
-		// drain: everything recorded before it has been uploaded by the time it
-		// returns.
-		if s.isClosed() {
-			return
+		// Keep going after a failure, so one bad upload does not drop the records for
+		// every resource behind it.
+		if err := s.uploader.upload(ctx, resourceKey, op); err != nil {
+			s.setErr(fmt.Errorf("recording operation for %s with the deployment metadata service: %w", resourceKey, err))
 		}
-		<-s.wake
 	}
 }
 
-// close drains the pending operations and returns the first upload error. Every
+// close drains the recorded operations and returns the first upload error. Every
 // record caller must have returned first; calling close twice is safe, so it can be
 // deferred and still checked at a specific point.
 func (s *operationSink) close() error {
@@ -201,15 +184,9 @@ func (s *operationSink) close() error {
 		return nil
 	}
 
-	s.signalClose()
+	s.stopQueue()
 	<-s.done
 	return s.firstErr()
-}
-
-func (s *operationSink) isClosed() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.closed
 }
 
 // setErr keeps the first upload error; later ones are dropped because one failure

@@ -41,7 +41,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	//
 	// The state DB records through it, so every state write becomes an operation and
 	// DMS mirrors the WAL.
-	opSink := newOperationSink(ctx, b.OpRec)
+	opSink := newOperationSink(ctx, b.OpRec, len(plan.Plan))
 	if opSink != nil {
 		// Assigned only when non-nil: a nil *operationSink in an interface is not a
 		// nil interface, so the state DB's nil check would not see it.
