@@ -1,9 +1,5 @@
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-outside-bundle-root-[UNIQUE_NAME]/default/files...
-Created dashboards.dashboard1
-Files: 9 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+>>> [CLI] bundle deploy -qq
 
 >>> retry [CLI] lakeview get [DASHBOARD_ID]
 {
