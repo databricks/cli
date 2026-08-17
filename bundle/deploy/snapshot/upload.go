@@ -40,7 +40,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		}
 	}
 
-	cmdio.LogString(ctx, "Uploading immutable bundle snapshot...")
+	cmdio.LogProgress(ctx, "Uploading immutable bundle snapshot...")
 
 	zipContent, fileCount, err := BundleZip(ctx, b)
 	if err != nil {

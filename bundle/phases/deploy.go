@@ -3,7 +3,9 @@ package phases
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -76,10 +78,6 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 }
 
 func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType, requestedEngine engine.EngineSetting) {
-	// Core mutators that CRUD resources and modify deployment state. These
-	// mutators need informed consent if they are potentially destructive.
-	cmdio.LogString(ctx, "Deploying resources...")
-
 	// Apply resources and capture post-apply state.
 	// For direct: Finalize flushes the WAL to disk and returns the state;
 	// called even if Apply failed so partial progress is saved.
@@ -119,10 +117,6 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 		statemgmt.UploadStateForYamlSync(stateEngine),
 	)
 
-	if !logdiag.HasError(ctx) {
-		cmdio.LogString(ctx, "Deployment complete!")
-	}
-
 	// Once the deploy is complete, dry-run the migration to the direct engine
 	// and record the outcome in telemetry. If the user has opted in to the
 	// direct engine (via bundle.engine or DATABRICKS_BUNDLE_ENGINE) and the
@@ -131,6 +125,52 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 	if !stateEngine.IsDirect() && !logdiag.HasError(ctx) {
 		statemgmt.MigrateToDirect(ctx, b, requestedEngine)
 	}
+}
+
+// logFileSummary reports what the file sync did. Separate from the resource summary
+// because a deploy that only changes business logic (a .py or .sql file) leaves every
+// resource unchanged, so without this line its summary is all zeros and looks like a
+// no-op. Called on the failure paths too: the files were uploaded before whatever
+// failed afterwards, so the count is accurate even then.
+func logFileSummary(ctx context.Context, b *bundle.Bundle) {
+	if b.Quiet >= bundle.QuietAll {
+		return
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("Files: %d uploaded, %d deleted", b.FileCounts.Uploaded, b.FileCounts.Deleted))
+}
+
+// logDeploySummary prints the per-resource actions that were applied followed by the
+// resource summary line. -q drops the per-resource lines, -qq drops the summary too.
+// The past-tense verb is the short action name plus "d" (create→Created,
+// delete→Deleted, ...), capitalized to match the sentence case of other output.
+// "bundle plan" keeps the lower-case present tense, so the two are still
+// distinguishable at a glance.
+func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
+	if b.Quiet >= bundle.QuietAll {
+		return
+	}
+
+	if b.Quiet < bundle.QuietSummary {
+		for _, action := range plan.GetActions() {
+			if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
+				continue
+			}
+			verb := action.ActionType.StringShort() + "d"
+			cmdio.LogString(ctx, strings.ToUpper(verb[:1])+verb[1:]+" "+strings.TrimPrefix(action.ResourceKey, "resources."))
+		}
+	}
+
+	logFileSummary(ctx, b)
+
+	counts := plan.CountActions()
+	summary := fmt.Sprintf("Resources: %d created, %d changed, %d deleted, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
+	// Gate on the plan's own NotSelected (not b.Select) so the suffix survives a
+	// deploy from a --plan file, where --select was applied at plan time and
+	// b.Select is empty here. NotSelected is only ever set by FilterToSelected.
+	if plan.NotSelected > 0 {
+		summary += fmt.Sprintf(", %d not selected", plan.NotSelected)
+	}
+	cmdio.LogString(ctx, summary)
 }
 
 // uploadLibraries uploads libraries to the workspace.
@@ -203,6 +243,18 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
+	// From here on the files are uploaded, so report them however the rest of the
+	// deploy turns out. Deferred rather than repeated at each of the returns below, so
+	// that a new early return cannot silently drop it. On success logDeploySummary
+	// prints this line itself, between the per-resource lines and the resource summary,
+	// and sets the flag so the defer does not print it twice.
+	filesReported := false
+	defer func() {
+		if !filesReported {
+			logFileSummary(ctx, b)
+		}
+	}()
+
 	bundle.ApplySeqContext(ctx, b,
 		deploy.StateUpdate(),
 		deploy.StatePush(),
@@ -269,6 +321,15 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
+
+	// Report what was deployed, mirroring "bundle plan". Printed last so it does not
+	// precede (and appear to vouch for) the postdeploy script's output. Printed even
+	// if that script fails: the resources were already applied successfully by then,
+	// so the counts are accurate, and the script's error still propagates. Earlier
+	// failures report the files only, since the plan counts would then describe what
+	// was intended rather than what was applied.
+	filesReported = true
+	logDeploySummary(ctx, b, plan)
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {

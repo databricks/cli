@@ -10,7 +10,7 @@ trap cleanup EXIT
 trace $CLI bundle deploy
 
 ENDPOINT_ID=$($CLI bundle summary -o json | jq -r '.resources.model_serving_endpoints.test_endpoint.id')
-echo "$ENDPOINT_ID:ENDPOINT_ID" >> ACC_REPLS
+add_repl "$ENDPOINT_ID" ENDPOINT_ID
 trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '.ai_gateway'
 
 trace update_file.py databricks.yml 'catalog_name: "first-inference-catalog"' 'catalog_name: "second-inference-catalog"'

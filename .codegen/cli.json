@@ -3134,9 +3134,11 @@
     "billing.ActionConfigurationType": {
       "description": "Type of action that a budget alert executes when its threshold is crossed.",
       "enum": [
-        "EMAIL_NOTIFICATION"
+        "EMAIL_NOTIFICATION",
+        "BLOCK_USAGE"
       ],
       "enum_launch_stages": {
+        "BLOCK_USAGE": "PRIVATE_PREVIEW",
         "EMAIL_NOTIFICATION": "PUBLIC_PREVIEW"
       }
     },
@@ -3150,6 +3152,10 @@
           "description": "Databricks alert configuration ID.",
           "launch_stage": "PUBLIC_PREVIEW"
         },
+        "principal_overrides": {
+          "description": "Per-principal threshold overrides for this alert. Only applies to per-user alerts (`scope_type` = `ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER`); ignored for shared alerts.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "quantity_threshold": {
           "description": "The threshold for the budget alert to determine if it is in a triggered state. The number is evaluated based on `quantity_type`.",
           "launch_stage": "PUBLIC_PREVIEW"
@@ -3158,6 +3164,11 @@
           "description": "The way to calculate cost for this budget alert. This is what `quantity_threshold` is measured in.",
           "ref": "billing.AlertConfigurationQuantityType",
           "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "scope_type": {
+          "description": "How the alert threshold is evaluated. Determines whether spend is tracked in aggregate or per individual user.",
+          "ref": "billing.AlertConfigurationScopeType",
+          "launch_stage": "PRIVATE_PREVIEW"
         },
         "time_period": {
           "description": "The time window of usage data for the budget.",
@@ -3177,6 +3188,17 @@
       ],
       "enum_launch_stages": {
         "LIST_PRICE_DOLLARS_USD": "PUBLIC_PREVIEW"
+      }
+    },
+    "billing.AlertConfigurationScopeType": {
+      "description": "Evaluation scope for an alert configuration.",
+      "enum": [
+        "ALERT_CONFIGURATION_SCOPE_TYPE_SHARED",
+        "ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER"
+      ],
+      "enum_launch_stages": {
+        "ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER": "PRIVATE_PREVIEW",
+        "ALERT_CONFIGURATION_SCOPE_TYPE_SHARED": "PRIVATE_PREVIEW"
       }
     },
     "billing.AlertConfigurationTimePeriod": {
@@ -3221,6 +3243,11 @@
           "description": "Configured filters for this budget. These are applied to your account's usage to limit the scope of what is considered for this budget.\nLeave empty to include all usage for this account. All provided filters must be matched for usage to be included.",
           "ref": "billing.BudgetConfigurationFilter",
           "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "resource_type": {
+          "description": "The resource scope for this budget. Determines whether the budget tracks all resources or a specific resource.",
+          "ref": "billing.BudgetResourceType",
+          "launch_stage": "PRIVATE_PREVIEW"
         },
         "update_time": {
           "description": "Update time of this budget configuration.",
@@ -3315,6 +3342,17 @@
         }
       }
     },
+    "billing.BudgetResourceType": {
+      "description": "Resource scope for a budget configuration. Determines whether the budget tracks all\nresources or a specific resource.",
+      "enum": [
+        "BUDGET_RESOURCE_TYPE_ALL_RESOURCES",
+        "BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY"
+      ],
+      "enum_launch_stages": {
+        "BUDGET_RESOURCE_TYPE_ALL_RESOURCES": "PRIVATE_PREVIEW",
+        "BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY": "PRIVATE_PREVIEW"
+      }
+    },
     "billing.CreateBillingUsageDashboardRequest": {
       "fields": {
         "dashboard_type": {
@@ -3359,6 +3397,11 @@
           "description": "Configured filters for this budget. These are applied to your account's usage to limit the scope of what is considered for this budget.\nLeave empty to include all usage for this account. All provided filters must be matched for usage to be included.",
           "ref": "billing.BudgetConfigurationFilter",
           "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "resource_type": {
+          "description": "The resource scope for this budget. Determines whether the budget tracks all resources or a specific resource.",
+          "ref": "billing.BudgetResourceType",
+          "launch_stage": "PRIVATE_PREVIEW"
         }
       }
     },
@@ -3381,6 +3424,10 @@
           "description": "Configured actions for this alert. These define what happens when an alert enters a triggered state.",
           "launch_stage": "PUBLIC_PREVIEW"
         },
+        "principal_overrides": {
+          "description": "Per-principal threshold overrides for this alert. Only applies to per-user alerts (`scope_type` = `ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER`); ignored for shared alerts.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "quantity_threshold": {
           "description": "The threshold for the budget alert to determine if it is in a triggered state. The number is evaluated based on `quantity_type`.",
           "launch_stage": "PUBLIC_PREVIEW"
@@ -3389,6 +3436,11 @@
           "description": "The way to calculate cost for this budget alert. This is what `quantity_threshold` is measured in.",
           "ref": "billing.AlertConfigurationQuantityType",
           "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "scope_type": {
+          "description": "How the alert threshold is evaluated. Determines whether spend is tracked in aggregate or per individual user.",
+          "ref": "billing.AlertConfigurationScopeType",
+          "launch_stage": "PRIVATE_PREVIEW"
         },
         "time_period": {
           "description": "The time window of usage data for the budget.",
@@ -3813,6 +3865,19 @@
       }
     },
     "billing.PatchStatusResponse": {},
+    "billing.PrincipalOverride": {
+      "description": "Per-principal threshold override on a PER_USER alert: bumps the alert's quantity_threshold for one principal_id.",
+      "fields": {
+        "override_threshold": {
+          "description": "Dollar amount that overrides the parent alert's quantity_threshold for this principal.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "principal_id": {
+          "description": "Account-level principal id (user, group, or service principal).",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
     "billing.SortSpec": {
       "fields": {
         "descending": {
@@ -3862,6 +3927,11 @@
           "description": "Configured filters for this budget. These are applied to your account's usage to limit the scope of what is considered for this budget.\nLeave empty to include all usage for this account. All provided filters must be matched for usage to be included.",
           "ref": "billing.BudgetConfigurationFilter",
           "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "resource_type": {
+          "description": "The resource scope for this budget. Determines whether the budget tracks all resources or a specific resource.",
+          "ref": "billing.BudgetResourceType",
+          "launch_stage": "PRIVATE_PREVIEW"
         }
       }
     },
@@ -8581,6 +8651,14 @@
         }
       }
     },
+    "catalog.GrantOptions": {
+      "fields": {
+        "privileges": {
+          "description": "List of privileges to grant.\nWhen any of these privileges are requested, the policy will grant access\nif the principal and condition match.\nRequired on create and update.",
+          "launch_stage": "GA"
+        }
+      }
+    },
     "catalog.InferenceTableConfig": {
       "description": "Inference table configuration for payload logging on a model service.\n\n`parent` is always REQUIRED when the sub-message is set; the destination\nUC schema is needed to construct or rebind the payload TABLE regardless of\nwhether payload logging is currently active. Payload logging is active by\ndefault; set `disabled = true` to pause runtime logging without dropping the\ntable or the binding.",
       "fields": {
@@ -11524,6 +11602,14 @@
           "ref": "catalog.SecurableType",
           "launch_stage": "GA"
         },
+        "grant": {
+          "description": "Options for grant policies. Valid only if `policy_type` is `POLICY_TYPE_GRANT`.\nRequired on create and optional on update. When specified on update,\nthe new options will replace the existing options as a whole.",
+          "ref": "catalog.GrantOptions",
+          "launch_stage": "GA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
         "id": {
           "description": "Unique identifier of the policy. This field is output only and is generated by the system.",
           "launch_stage": "GA",
@@ -11594,10 +11680,12 @@
     "catalog.PolicyType": {
       "enum": [
         "POLICY_TYPE_ROW_FILTER",
-        "POLICY_TYPE_COLUMN_MASK"
+        "POLICY_TYPE_COLUMN_MASK",
+        "POLICY_TYPE_GRANT"
       ],
       "enum_launch_stages": {
         "POLICY_TYPE_COLUMN_MASK": "GA",
+        "POLICY_TYPE_GRANT": "GA",
         "POLICY_TYPE_ROW_FILTER": "GA"
       }
     },
@@ -159187,6 +159275,9 @@
                           "content": "POLICY_TYPE_COLUMN_MASK"
                         },
                         {
+                          "content": "POLICY_TYPE_GRANT"
+                        },
+                        {
                           "content": "POLICY_TYPE_ROW_FILTER"
                         }
                       ]
@@ -159278,6 +159369,9 @@
                       "enum": [
                         {
                           "content": "POLICY_TYPE_COLUMN_MASK"
+                        },
+                        {
+                          "content": "POLICY_TYPE_GRANT"
                         },
                         {
                           "content": "POLICY_TYPE_ROW_FILTER"
@@ -159379,6 +159473,9 @@
                         "content": "POLICY_TYPE_COLUMN_MASK"
                       },
                       {
+                        "content": "POLICY_TYPE_GRANT"
+                      },
+                      {
                         "content": "POLICY_TYPE_ROW_FILTER"
                       }
                     ]
@@ -159470,6 +159567,9 @@
                     "enum": [
                       {
                         "content": "POLICY_TYPE_COLUMN_MASK"
+                      },
+                      {
+                        "content": "POLICY_TYPE_GRANT"
                       },
                       {
                         "content": "POLICY_TYPE_ROW_FILTER"
@@ -159576,6 +159676,9 @@
                             "content": "POLICY_TYPE_COLUMN_MASK"
                           },
                           {
+                            "content": "POLICY_TYPE_GRANT"
+                          },
+                          {
                             "content": "POLICY_TYPE_ROW_FILTER"
                           }
                         ]
@@ -159667,6 +159770,9 @@
                         "enum": [
                           {
                             "content": "POLICY_TYPE_COLUMN_MASK"
+                          },
+                          {
+                            "content": "POLICY_TYPE_GRANT"
                           },
                           {
                             "content": "POLICY_TYPE_ROW_FILTER"
@@ -159789,6 +159895,16 @@
                 }
               },
               {
+                "name": "grant",
+                "description": "Options for grant policies. Valid only if `policy_type` is `POLICY_TYPE_GRANT`.\nRequired on create and optional on update. When specified on update,\nthe new options will replace the existing options as a whole.",
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "pascal_name": "GrantOptions",
+                  "is_object": true
+                }
+              },
+              {
                 "name": "id",
                 "description": "Unique identifier of the policy. This field is output only and is generated by the system.",
                 "is_computed": true,
@@ -159897,6 +160013,9 @@
                   "enum": [
                     {
                       "content": "POLICY_TYPE_COLUMN_MASK"
+                    },
+                    {
+                      "content": "POLICY_TYPE_GRANT"
                     },
                     {
                       "content": "POLICY_TYPE_ROW_FILTER"
@@ -160040,6 +160159,9 @@
                   "enum": [
                     {
                       "content": "POLICY_TYPE_COLUMN_MASK"
+                    },
+                    {
+                      "content": "POLICY_TYPE_GRANT"
                     },
                     {
                       "content": "POLICY_TYPE_ROW_FILTER"
@@ -160344,6 +160466,9 @@
                         "content": "POLICY_TYPE_COLUMN_MASK"
                       },
                       {
+                        "content": "POLICY_TYPE_GRANT"
+                      },
+                      {
                         "content": "POLICY_TYPE_ROW_FILTER"
                       }
                     ]
@@ -160435,6 +160560,9 @@
                     "enum": [
                       {
                         "content": "POLICY_TYPE_COLUMN_MASK"
+                      },
+                      {
+                        "content": "POLICY_TYPE_GRANT"
                       },
                       {
                         "content": "POLICY_TYPE_ROW_FILTER"
@@ -160826,6 +160954,9 @@
                           "content": "POLICY_TYPE_COLUMN_MASK"
                         },
                         {
+                          "content": "POLICY_TYPE_GRANT"
+                        },
+                        {
                           "content": "POLICY_TYPE_ROW_FILTER"
                         }
                       ]
@@ -160917,6 +161048,9 @@
                       "enum": [
                         {
                           "content": "POLICY_TYPE_COLUMN_MASK"
+                        },
+                        {
+                          "content": "POLICY_TYPE_GRANT"
                         },
                         {
                           "content": "POLICY_TYPE_ROW_FILTER"
@@ -161018,6 +161152,9 @@
                         "content": "POLICY_TYPE_COLUMN_MASK"
                       },
                       {
+                        "content": "POLICY_TYPE_GRANT"
+                      },
+                      {
                         "content": "POLICY_TYPE_ROW_FILTER"
                       }
                     ]
@@ -161109,6 +161246,9 @@
                     "enum": [
                       {
                         "content": "POLICY_TYPE_COLUMN_MASK"
+                      },
+                      {
+                        "content": "POLICY_TYPE_GRANT"
                       },
                       {
                         "content": "POLICY_TYPE_ROW_FILTER"
@@ -161242,6 +161382,9 @@
                             "content": "POLICY_TYPE_COLUMN_MASK"
                           },
                           {
+                            "content": "POLICY_TYPE_GRANT"
+                          },
+                          {
                             "content": "POLICY_TYPE_ROW_FILTER"
                           }
                         ]
@@ -161333,6 +161476,9 @@
                         "enum": [
                           {
                             "content": "POLICY_TYPE_COLUMN_MASK"
+                          },
+                          {
+                            "content": "POLICY_TYPE_GRANT"
                           },
                           {
                             "content": "POLICY_TYPE_ROW_FILTER"
@@ -161463,6 +161609,16 @@
                 }
               },
               {
+                "name": "grant",
+                "description": "Options for grant policies. Valid only if `policy_type` is `POLICY_TYPE_GRANT`.\nRequired on create and optional on update. When specified on update,\nthe new options will replace the existing options as a whole.",
+                "is_request_body_field": true,
+                "is_optional_object": true,
+                "entity": {
+                  "pascal_name": "GrantOptions",
+                  "is_object": true
+                }
+              },
+              {
                 "name": "id",
                 "description": "Unique identifier of the policy. This field is output only and is generated by the system.",
                 "is_computed": true,
@@ -161571,6 +161727,9 @@
                   "enum": [
                     {
                       "content": "POLICY_TYPE_COLUMN_MASK"
+                    },
+                    {
+                      "content": "POLICY_TYPE_GRANT"
                     },
                     {
                       "content": "POLICY_TYPE_ROW_FILTER"
@@ -161741,6 +161900,9 @@
                   "enum": [
                     {
                       "content": "POLICY_TYPE_COLUMN_MASK"
+                    },
+                    {
+                      "content": "POLICY_TYPE_GRANT"
                     },
                     {
                       "content": "POLICY_TYPE_ROW_FILTER"

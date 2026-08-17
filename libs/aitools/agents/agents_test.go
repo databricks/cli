@@ -19,6 +19,7 @@ func TestSkillsOnlyNamesMatchesRegistry(t *testing.T) {
 	// Skills-only agents (Plugin nil) are listed; plugin agents are not.
 	assert.Contains(t, names, "Pi")
 	assert.Contains(t, names, "Gemini CLI")
+	assert.Contains(t, names, "Goose")
 	assert.NotContains(t, names, "Claude Code")
 	for _, a := range Registry {
 		if a.Plugin != nil {
