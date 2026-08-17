@@ -255,9 +255,6 @@ func (r *Recorder) completeVersion(ctx context.Context, reason bundledeployments
 	return nil
 }
 
-// createDeploymentVersion ensures the deployment record exists, then creates a new
-// version under it: with no ID it creates the deployment, otherwise it reads the
-// existing one for the next version number.
 // PrepareDeployment makes sure the deployment exists and works out the version number
 // this deploy will create, without creating it. Both are needed before the plan, which
 // stamps them onto the resources it is computed from; the version itself is not created
