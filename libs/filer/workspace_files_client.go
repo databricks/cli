@@ -257,22 +257,22 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 			if info := aerr.ErrorDetails().ErrorInfo; info != nil && info.Reason == "WORKSPACE_OBJECT_TYPE_MISMATCH" {
 				return fileAlreadyExistsError{absPath}
 			}
-			// Fallback for collisions that reach us without ErrorInfo. WCS does
-			// attach ErrorInfo to the exception (flag enableImportCollisionErrorInfo,
-			// default-on), but the details don't yet reach the HTTP response for two
-			// independent reasons:
+			// Fallback for collisions that reach us without ErrorInfo. WCS attaches
+			// ErrorInfo to the exception (flag enableImportCollisionErrorInfo,
+			// default-on), but it doesn't yet reach the HTTP body, and two universe
+			// fixes are needed before this can drop:
 			//
-			//  - The /workspace/import HTTP edge (WorkspaceContentWebBackend) builds
-			//    its error body by hand as {error_code, message}, dropping details;
-			//    they are correct only on WCS's internal RPC responses. universe
-			//    #2429097 (WP-7085) routes the HTTP edge through the framework error
-			//    serializer instead, but behind a default-false SAFE flag
-			//    (enableWebBackendErrorDetailsPropagation) that still has to ramp, so
-			//    message (a) stays detail-less until it does.
+			//  - Both messages come over WCS's /workspace/import HTTP edge
+			//    (WorkspaceContentWebBackend), which hand-rolled its error body as
+			//    {error_code, message} and dropped details (they survive only on
+			//    WCS's internal RPC responses). #2429097 (WP-7085) routes that edge
+			//    through the framework serializer, behind a default-false SAFE flag
+			//    (enableWebBackendErrorDetailsPropagation) that still has to ramp.
 			//
-			//  - Message (b) is thrown bare by webapp's TreeBackendHelper with no
-			//    ErrorInfo attached, so #2429097 has nothing to serialize for it. It
-			//    can only be dropped once webapp attaches ErrorInfo at that throw site.
+			//  - Message (b) originates in webapp's TreeBackendHelper (reached from
+			//    WCS over gRPC, which preserves the detail) and was thrown bare, so
+			//    even with #2429097 there was nothing to serialize; #2437047 attaches
+			//    the ErrorInfo there. So (a) needs only #2429097; (b) needs both.
 			if strings.Contains(aerr.Message, "type mismatch") || strings.Contains(aerr.Message, "node type") {
 				return fileAlreadyExistsError{absPath}
 			}
