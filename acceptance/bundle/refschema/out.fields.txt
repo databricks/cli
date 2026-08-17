@@ -308,6 +308,7 @@ resources.cluster_policies.*.lifecycle.prevent_destroy	bool	INPUT
 resources.cluster_policies.*.max_clusters_per_user	int64	ALL
 resources.cluster_policies.*.modified_status	string	INPUT
 resources.cluster_policies.*.name	string	ALL
+resources.cluster_policies.*.policy_family_definition_overrides	any	INPUT
 resources.cluster_policies.*.policy_family_definition_overrides	string	ALL
 resources.cluster_policies.*.policy_family_id	string	ALL
 resources.cluster_policies.*.policy_id	string	REMOTE
