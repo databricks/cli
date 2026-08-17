@@ -282,7 +282,7 @@ func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID str
 	// which resource via resource_id. This applies to both succeeded and failed
 	// operations: a failed operation reports prior state to document what existed
 	// before the attempt failed.
-	if op.State != nil && op.ResourceId == "" {
+	if op.State != "" && op.ResourceId == "" {
 		return dmsInvalidArgument("resource_id is required for an operation that records state")
 	}
 
@@ -315,7 +315,7 @@ func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID str
 	// resource instead of listing one (OperationStorage.createOperation buffers a delete
 	// when the entity has no state). Together with the invariant that state requires a
 	// resource_id, that means a listed resource always has an id.
-	if op.State == nil {
+	if op.State == "" {
 		delete(d.resources, resourceKey)
 	} else {
 		d.resources[resourceKey] = bundledeployments.Resource{
@@ -436,7 +436,7 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 	// which resource via resource_id. This applies to both succeeded and failed
 	// operations: a failed operation reports prior state to document what existed
 	// before the attempt failed.
-	if after.State != nil && after.ResourceId == "" {
+	if after.State != "" && after.ResourceId == "" {
 		return dmsInvalidArgument("resource_id is required for an operation that records state")
 	}
 
@@ -462,7 +462,7 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 
 	// Mirror onto the resource set the same way CreateOperation does, so the read
 	// path reflects the newest write.
-	if existing.State == nil {
+	if existing.State == "" {
 		delete(d.resources, resourceKey)
 	} else {
 		d.resources[resourceKey] = bundledeployments.Resource{

@@ -35,3 +35,6 @@ EnvMatrixExclude.no_volume_path_job_ref = ["INPUT_CONFIG=volume_path_job_ref.yml
 # The 1000-task scale case is covered by no_drift. Running it here adds ~1.5 min
 # per variant (two full deploys at 1000 tasks) without incremental coverage.
 EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml.tmpl"]
+
+# secret resource is not supported on v0.293.0
+EnvMatrixExclude.no_secret = ["INPUT_CONFIG=secret.yml.tmpl"]

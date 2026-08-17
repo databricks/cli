@@ -8,4 +8,4 @@ experimental:
     prebuild: "python3 ./myscript.py 0 prebuild"
     postbuild: "python3 ./myscript.py 0 postbuild"
     predeploy: "python3 ./myscript.py 0 predeploy"
-    postdeploy: "python3 ./myscript.py 0 postdeploy"
+    postdeploy: "python3 ./myscript.py $POSTDEPLOY_EXITCODE postdeploy"

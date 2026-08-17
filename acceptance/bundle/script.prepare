@@ -29,7 +29,11 @@ nostamp() {
     #     same name is untouched.
     #   - "version_id": "". A terraform state dump carries that for a job it never stamped,
     #     and it is the test's own expected output, so `.value == ""` keeps it.
-    jq '((.. | objects | select(has("kind") and has("metadata_file_path")))
+    #
+    # Arguments are passed to jq, for callers whose input is not formatted the way jq
+    # formats by default: a state dump is printed verbatim from disk, so it needs
+    # --indent 1 to come back out unchanged.
+    jq "$@" '((.. | objects | select(has("kind") and has("metadata_file_path")))
          |= with_entries(select((.key | IN("deployment_id", "version_id")) == false or .value == "")))
         | ((.. | objects | .changes? | objects)
            |= with_entries(select(.key | IN("deployment.deployment_id", "deployment.version_id") | not)))

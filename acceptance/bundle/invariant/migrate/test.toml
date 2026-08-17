@@ -43,5 +43,7 @@ EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml
 # volume schema_name ("inconsistent final plan"). Covered by no_drift on direct.
 EnvMatrixExclude.no_volume_uppercase = ["INPUT_CONFIG=volume_uppercase_name.yml.tmpl"]
 
+EnvMatrixExclude.no_secret = ["INPUT_CONFIG=secret.yml.tmpl"]
+
 # Terraform types sampling_fraction as an integer and truncates 0.5; covered by no_drift.
 EnvMatrixExclude.no_model_serving_endpoint_telemetry = ["INPUT_CONFIG=model_serving_endpoint_telemetry.yml.tmpl"]

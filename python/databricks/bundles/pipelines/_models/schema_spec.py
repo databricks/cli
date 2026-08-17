@@ -47,9 +47,7 @@ class SchemaSpec:
 
     fanout_options: VariableOrOptional[IngestionPipelineDefinitionFanoutOptions] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Fanout options for multi-table routing from streaming sources.
+    [Beta] Fanout options for multi-table routing from streaming sources.
     When set, records are routed to destination tables based on a
     per-record routing key. The key value becomes the table name:
     {destination_catalog}.{destination_schema}.{key_value}.
@@ -98,9 +96,7 @@ class SchemaSpecDict(TypedDict, total=False):
 
     fanout_options: VariableOrOptional[IngestionPipelineDefinitionFanoutOptionsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Fanout options for multi-table routing from streaming sources.
+    [Beta] Fanout options for multi-table routing from streaming sources.
     When set, records are routed to destination tables based on a
     per-record routing key. The key value becomes the table name:
     {destination_catalog}.{destination_schema}.{key_value}.

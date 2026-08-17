@@ -2,9 +2,9 @@
 === Deploying from a git repo records where the source came from: the version carries git_info, workspace_info and the target's deployment_mode
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-provenance/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.foo
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //versions --sort
 {

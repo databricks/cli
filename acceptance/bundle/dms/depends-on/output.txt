@@ -2,9 +2,10 @@
 === Deploy a job that references another: depends_on is recorded alongside the config, since the reference is resolved to a literal in the config itself
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-depends-on/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.child
+Created jobs.parent
+Files: 4 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //versions/1/operations --sort
 {
@@ -43,5 +44,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-depends-on/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted

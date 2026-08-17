@@ -1030,6 +1030,8 @@ func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
 		"copilot":     false,
 		"antigravity": false,
 		"pi":          true,
+		"gemini":      true,
+		"goose":       true,
 	}
 
 	for _, agent := range agents.Registry {

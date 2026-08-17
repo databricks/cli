@@ -27,7 +27,9 @@ Old = '(\[PROCESS_KILLED\]\n\nExit code: )1'
 New = '${1}[KILLED]'
 
 # On Windows, no bash "Killed" message appears when CLI has produced output before termination.
-# Match the raw exit code 1 (Windows never gets 137 or [PROCESS_KILLED] marker first).
+# The kill lands during resource apply, right after the "Uploading bundle files"
+# line, so that line is immediately followed by "Exit code: 1" (a genuine error
+# exit prints an "Error:" line in between and is left untouched).
 [[Repls]]
-Old = '(Deploying resources\.\.\.)\n\nExit code: 1'
+Old = '(Uploading bundle files to [^\n]+)\n\nExit code: 1'
 New = "${1}\n[PROCESS_KILLED]\n\nExit code: [KILLED]"

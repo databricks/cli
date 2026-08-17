@@ -169,12 +169,12 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	if err != nil {
 		return nil, err
 	}
+	// The picked profile resolves into its own config, not the caller's cfg.
+	// Return the client (even on failure) so the caller renders errors against
+	// that config rather than the original, otherwise-empty one.
 	a, err = databricks.NewAccountClient(&databricks.Config{Profile: profile})
 	if err == nil {
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
-		if err != nil {
-			return nil, err
-		}
 	}
 	return a, err
 }
@@ -241,6 +241,11 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
 	a, err := accountClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
+		// A profile picked interactively resolves into the client's own config,
+		// not cfg; render against it so the error names the right profile.
+		if a != nil {
+			cfg = a.Config
+		}
 		return renderError(ctx, cfg, err)
 	}
 
@@ -315,12 +320,12 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	if err != nil {
 		return nil, err
 	}
+	// The picked profile resolves into its own config, not the caller's cfg.
+	// Return the client (even on failure) so the caller renders errors against
+	// that config rather than the original, otherwise-empty one.
 	w, err = databricks.NewWorkspaceClient(&databricks.Config{Profile: profile})
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
-		if err != nil {
-			return nil, err
-		}
 	}
 	return w, err
 }
@@ -371,6 +376,11 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
 	w, err := workspaceClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
+		// A profile picked interactively resolves into the client's own config,
+		// not cfg; render against it so the error names the right profile.
+		if w != nil {
+			cfg = w.Config
+		}
 		return renderError(ctx, cfg, err)
 	}
 

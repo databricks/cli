@@ -20,7 +20,6 @@ type DataSourceGroup struct {
 	InstanceProfiles        []string                       `json:"instance_profiles,omitempty"`
 	Members                 []string                       `json:"members,omitempty"`
 	Recursive               bool                           `json:"recursive,omitempty"`
-	Roles                   []string                       `json:"roles,omitempty"`
 	ServicePrincipals       []string                       `json:"service_principals,omitempty"`
 	Users                   []string                       `json:"users,omitempty"`
 	WorkspaceAccess         bool                           `json:"workspace_access,omitempty"`

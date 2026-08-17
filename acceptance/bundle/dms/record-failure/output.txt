@@ -2,7 +2,6 @@
 === A resource that fails to apply is recorded as a failed operation carrying the error, so the deployment history says why rather than omitting the resource
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record-failure/default/files...
-Deploying resources...
 Error: cannot create resources.jobs.doomed: cluster spec is invalid (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/create
@@ -10,6 +9,7 @@ HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: cluster spec is invalid
 
+Files: 5 uploaded, 0 deleted
 
 >>> print_requests.py //api/2.0/bundle --sort
 {

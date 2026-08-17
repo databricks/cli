@@ -312,7 +312,8 @@ func (a *Adapter) validate() error {
 	// If RemapState is implemented, validate its signature.
 	// Otherwise require remote type to equal state type so remapping isn't needed.
 	if a.remapState != nil {
-		validations = append(validations,
+		validations = append(
+			validations,
 			"RemapState input", a.remapState.InTypes[0], remoteType,
 			"RemapState return", a.remapState.OutTypes[0], stateType,
 		)
@@ -411,6 +412,15 @@ func (a *Adapter) ResourceConfig() *ResourceLifecycleConfig {
 
 func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
 	return a.generatedResourceConfig
+}
+
+// GetSensitiveFields returns the list of sensitive fields for the resource.
+func (a *Adapter) GetSensitiveFields() []string {
+	var fields []string
+	for _, r := range a.resourceConfig.SensitiveFields {
+		fields = append(fields, r.Field.String())
+	}
+	return fields
 }
 
 // FieldTriggersRecreate reports whether a local change to the field forces a

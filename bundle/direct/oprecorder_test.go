@@ -71,7 +71,7 @@ func TestOperationRecorderStripsResourcePrefix(t *testing.T) {
 	assert.Equal(t, "deployments/dep-1/versions/2", c.parent)
 	assert.Equal(t, bundledeployments.OperationActionTypeOperationActionTypeCreate, c.op.ActionType)
 	assert.Equal(t, "job-123", c.op.ResourceId)
-	require.NotNil(t, c.op.State)
+	require.NotEmpty(t, c.op.State)
 }
 
 func TestOperationRecorderUpdatesSecondWriteForSameResource(t *testing.T) {
@@ -90,7 +90,7 @@ func TestOperationRecorderUpdatesSecondWriteForSameResource(t *testing.T) {
 	assert.Equal(t, "jobs.foo", f.calls[1].resourceKey)
 	assert.Equal(t, "7", f.calls[1].update.SequenceId)
 	assert.Equal(t, "job-456", f.calls[1].update.ResourceId)
-	require.NotNil(t, f.calls[1].update.State)
+	require.NotEmpty(t, f.calls[1].update.State)
 }
 
 func TestOperationRecorderFailureAfterAStateWriteKeepsTheState(t *testing.T) {
@@ -116,7 +116,7 @@ func TestOperationRecorderFailureAfterAStateWriteKeepsTheState(t *testing.T) {
 	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, update.update.Status)
 	assert.Equal(t, "run did not succeed: FAILED", update.update.ErrorMessage)
 	// Neither is in the mask, so what the create recorded stands.
-	assert.Nil(t, update.update.State)
+	assert.Empty(t, update.update.State)
 	assert.Empty(t, update.update.ResourceId)
 }
 
@@ -139,7 +139,7 @@ func TestOperationRecorderFailedRecreateKeepsTheResourceGone(t *testing.T) {
 	update := f.calls[1]
 	assert.Equal(t, "update", update.method)
 	assert.Equal(t, []string{"error_message", "status"}, update.fields)
-	assert.Nil(t, update.update.State)
+	assert.Empty(t, update.update.State)
 	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, update.update.Status)
 	assert.Equal(t, "boom", update.update.ErrorMessage)
 }
@@ -163,8 +163,8 @@ func TestOperationRecorderFailureCarryingALaterWriteSendsIt(t *testing.T) {
 	require.Len(t, f.calls, 2)
 	update := f.calls[1]
 	assert.Equal(t, []string{"state", "error_message", "resource_id", "status"}, update.fields)
-	require.NotNil(t, update.update.State)
-	assert.Contains(t, string(*update.update.State), "second write")
+	require.NotEmpty(t, update.update.State)
+	assert.Contains(t, update.update.State, "second write")
 	assert.Equal(t, "id-1", update.update.ResourceId)
 }
 
@@ -183,7 +183,7 @@ func TestOperationRecorderFailureBeforeAnyWriteCarriesPriorState(t *testing.T) {
 	require.Len(t, f.calls, 1)
 	assert.Equal(t, "create", f.calls[0].method)
 	assert.Equal(t, "main.some_schema", f.calls[0].op.ResourceId)
-	require.NotNil(t, f.calls[0].op.State)
+	require.NotEmpty(t, f.calls[0].op.State)
 }
 
 func TestOperationRecorderTracksSequencePerResource(t *testing.T) {

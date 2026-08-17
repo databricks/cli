@@ -305,13 +305,52 @@ func (s *stringOrInt) UnmarshalYAML(node *yaml.Node) error {
 // dockerImageConfig is environment.docker_image.
 type dockerImageConfig struct {
 	URL string `yaml:"url"`
+	// "latest" re-checks the registry for the tag's newest digest each run;
+	// "auto" (default) reuses the existing registration.
+	TagPolicy string `yaml:"tag_policy"`
+	// Credentials for a private image that "latest" re-resolves; discovered from
+	// the local Docker config when unset.
+	CredentialsScope string `yaml:"credentials_scope"`
+	CredentialsKey   string `yaml:"credentials_key"`
 }
 
+const (
+	dockerTagPolicyAuto   = "auto"
+	dockerTagPolicyLatest = "latest"
+)
+
 func (d *dockerImageConfig) validate() error {
-	if strings.TrimSpace(d.URL) == "" {
+	// Store the trimmed values: URL rides the submitted task, and the credential
+	// pairing check below must not treat blank-but-present as set.
+	d.URL = strings.TrimSpace(d.URL)
+	d.CredentialsScope = strings.TrimSpace(d.CredentialsScope)
+	d.CredentialsKey = strings.TrimSpace(d.CredentialsKey)
+
+	if d.URL == "" {
 		return errors.New("docker_image.url cannot be empty")
 	}
+
+	switch strings.ToLower(strings.TrimSpace(d.TagPolicy)) {
+	case "", dockerTagPolicyAuto, dockerTagPolicyLatest:
+	default:
+		return fmt.Errorf("invalid docker_image.tag_policy %q: must be %q or %q", d.TagPolicy, dockerTagPolicyAuto, dockerTagPolicyLatest)
+	}
+
+	if (d.CredentialsScope != "") != (d.CredentialsKey != "") {
+		return errors.New("docker_image.credentials_scope and docker_image.credentials_key must be provided together")
+	}
+
+	// Credentials are only consulted when re-resolving the tag, so accepting them
+	// under the default policy would silently ignore them.
+	if d.CredentialsScope != "" && !d.wantsLatest() {
+		return fmt.Errorf("docker_image.credentials_scope/credentials_key only apply with tag_policy %q; the image is otherwise used as already registered", dockerTagPolicyLatest)
+	}
 	return nil
+}
+
+// wantsLatest reports whether the image should be re-resolved before the run.
+func (d *dockerImageConfig) wantsLatest() bool {
+	return strings.EqualFold(strings.TrimSpace(d.TagPolicy), dockerTagPolicyLatest)
 }
 
 // codeSourceConfig is the `code_source` block. Only the "snapshot" type exists.

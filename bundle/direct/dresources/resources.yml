@@ -593,6 +593,11 @@ resources:
       - field: scope_name
         reason: id_changes
 
+  secrets:
+    sensitive_fields:
+      - field: value
+      - field: effective_value
+
   clusters:
     ignore_remote_changes:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L361-L363

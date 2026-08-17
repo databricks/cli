@@ -2,9 +2,9 @@
 === Deploy a schema, so the deployment and its first version exist
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created schemas.foo
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //api/2.0/bundle --sort
 {
@@ -66,6 +66,7 @@ Error: the deployment requires destructive actions, but the current console does
 Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
 To proceed, use --auto-approve after reviewing the plan above.
 
+Files: 3 uploaded, 0 deleted
 
 === Nothing was recorded for the declined deploy - no version, so none to abort
 >>> print_requests.py //api/2.0/bundle --sort
@@ -79,5 +80,4 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

@@ -4,7 +4,7 @@ cat > pyproject.toml <<'PY'
 [project]
 name = "demo"
 requires-python = ">=3.10"
-dependencies = ["pyarrow==21.0.0"]
+dependencies = ["pyarrow==21.0.0", "pyspark>=3.5.0"]
 
 [dependency-groups]
 dev = ["databricks-connect~=16.0.0", {include-group = "spark"}]

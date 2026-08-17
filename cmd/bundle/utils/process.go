@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/dyn"
@@ -147,6 +148,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) { opts.InitFunc(b) })
 	}
 
+	// InitFunc is where -q is applied, so the quiet context can only be derived
+	// afterwards. Progress messages are emitted from mutators that receive only a
+	// context, not the bundle, so the level has to travel on the context too.
+	if b != nil && b.SuppressProgress() {
+		ctx = cmdio.WithQuiet(ctx)
+		cmd.SetContext(ctx)
+	}
+
 	if !opts.SkipInitialize {
 		t0 := time.Now()
 		phases.Initialize(ctx, b)
@@ -197,12 +206,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 		cmd.SetContext(ctx)
 
+		b.MigratingToDirect = requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect()
+
 		// Announce the auto-migration path here (only on deploy) so the user
 		// isn't surprised when MigrateToDirect commits state changes at the
 		// end. PullResourcesState is shared with non-deploy commands like
 		// `bundle debug states`, which would otherwise print the same hint
 		// even though they will not migrate.
-		if opts.Deploy && requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect() {
+		if opts.Deploy && b.MigratingToDirect {
 			log.Warnf(ctx, "Direct engine requested in %s but the existing state uses %q. Deploying on %q; will attempt to migrate the state to the direct engine after this deploy.", requiredEngine.Source, stateDesc.Engine, stateDesc.Engine)
 		}
 

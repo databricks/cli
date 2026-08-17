@@ -1,0 +1,36 @@
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# The script writes pyproject.toml as the merge input; --dry-run leaves it unchanged.
+Ignore = ["pyproject.toml"]
+
+[Env]
+DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
+
+# A cluster target does not manage [tool.databricks.environment], so a leftover
+# serverless environment_version is reported as stale.
+[[Server]]
+Pattern = "GET /api/2.1/clusters/list"
+Response.Body = '''
+{
+  "clusters": [
+    {"cluster_id": "cid-123", "cluster_name": "my-cluster", "spark_version": "15.4.x-scala2.12"}
+  ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /dbr/15.4.x-scala2.12/pyproject.toml"
+Response.Body = '''
+[project]
+requires-python = ">=3.11"
+
+[dependency-groups]
+dev = ["databricks-connect~=15.4.0"]
+
+[tool.uv]
+constraint-dependencies = ["pyarrow<19"]
+'''
+
+[[Repls]]
+Old = 'uv uv \S+(?: \([^)]+\))?'
+New = 'uv [UV_VERSION]'

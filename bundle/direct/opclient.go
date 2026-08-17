@@ -2,7 +2,6 @@ package direct
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -34,7 +33,7 @@ type operationResponse struct {
 // changes. action_type and resource_key are omitted: the service fixes them when
 // the operation is created and ignores them here.
 type updateOperationRequest struct {
-	State        *json.RawMessage                  `json:"state,omitempty"`
+	State        string                            `json:"state,omitempty"`
 	ErrorMessage string                            `json:"error_message,omitempty"`
 	ResourceId   string                            `json:"resource_id,omitempty"`
 	Status       bundledeployments.OperationStatus `json:"status,omitempty"`

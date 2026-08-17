@@ -7,8 +7,6 @@ experimental:
 sync:
   exclude:
     # Test framework files that are not part of the bundle source.
-    - "repls.json"
-    - "user_repls.json"
     - "script"
     - "*.toml"
 

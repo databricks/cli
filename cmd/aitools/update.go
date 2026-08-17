@@ -146,7 +146,7 @@ preview what would change without downloading.`,
 					if scope == installer.ScopeProject {
 						cwd, err := os.Getwd()
 						if err != nil {
-							return fmt.Errorf("failed to determine working directory: %w", err)
+							return err
 						}
 						targetAgents = mergeAgents(installed, agents.DetectProjectInstalled(cwd))
 					}
@@ -261,6 +261,7 @@ func printPluginCheckResults(ctx context.Context, state *installer.InstallState,
 	}
 }
 
+// mergeAgents concatenates two agent lists, skipping duplicate names.
 func mergeAgents(installed, project []*agents.Agent) []*agents.Agent {
 	seen := make(map[string]bool, len(installed))
 	merged := make([]*agents.Agent, 0, len(installed)+len(project))

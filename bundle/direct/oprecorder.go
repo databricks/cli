@@ -209,18 +209,9 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 		ResourceKey:  dmsKey,
 		Status:       op.status,
 		ErrorMessage: op.errorMessage,
-	}
-	if op.state != nil {
-		// DMS types state as a string, so the JSON goes on the wire as a quoted
-		// string rather than an embedded object. The SDK field is a json.RawMessage,
-		// so quote the payload here; sending the object directly is rejected with
-		// "Invalid value: {...} for expected type: STRING".
-		quoted, err := json.Marshal(string(op.state))
-		if err != nil {
-			return fmt.Errorf("serializing state: %w", err)
-		}
-		raw := json.RawMessage(quoted)
-		operation.State = &raw
+		// The service stores state as an opaque string, so the serialized envelope goes
+		// on the wire as-is. Empty means unset, which is what a delete records.
+		State: string(op.state),
 	}
 
 	r.mu.Lock()

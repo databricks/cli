@@ -56,6 +56,7 @@ continue with the plan, either disable lifecycle.prevent_destroy or reduce
 the scope of the plan using the -target flag.
 
 
+Files: 3 uploaded, 0 deleted
 
 >>> errcode [CLI] bundle plan
 Error: exit status 1
@@ -109,6 +110,7 @@ continue with the plan, either disable lifecycle.prevent_destroy or reduce
 the scope of the plan using the -target flag.
 
 
+Files: 2 uploaded, 0 deleted
 
 >>> errcode [CLI] bundle plan
 recreate pipelines.my_pipelines
@@ -127,9 +129,10 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating 
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   recreate resources.pipelines.my_pipelines
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Recreated pipelines.my_pipelines
+Recreated schemas.my_schema
+Files: 3 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 2 deleted, 0 unchanged
 
 >>> errcode [CLI] bundle plan
 delete pipelines.my_pipelines
@@ -148,6 +151,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating 
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   delete resources.pipelines.my_pipelines
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deleted pipelines.my_pipelines
+Deleted schemas.my_schema
+Files: 1 uploaded, 2 deleted
+Resources: 0 created, 0 changed, 2 deleted, 0 unchanged

@@ -2,9 +2,13 @@
 === Deploy several resources: operations are uploaded from background workers, so exactly one is recorded per resource no matter what order the uploads finish in. The serialized state is dropped from the output here; bundle/dms/record covers it.
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.five
+Created jobs.four
+Created jobs.one
+Created jobs.three
+Created jobs.two
+Files: 4 uploaded, 0 deleted
+Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //versions/1/operations --sort --del-body state --oneline
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations", "q": {"resource_key": "jobs.five"}, "body": {"action_type": "OPERATION_ACTION_TYPE_CREATE", "resource_id": "[NUMID]", "resource_key": "jobs.five", "status": "OPERATION_STATUS_SUCCEEDED"}}
@@ -16,9 +20,8 @@ Deployment complete!
 === Redeploy with no changes: nothing is applied, so no operations are recorded and only the version is opened and completed
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
 
 >>> print_requests.py //api/2.0/bundle --sort --oneline
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "2"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY", "target_name": "default", "display_name": "dms-multiple-resources", "previous_version_id": "1", "workspace_info": {"file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources/default/files", "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources/default"}}}

@@ -24,7 +24,7 @@ PIPELINE_ID=$($CLI pipelines create --json '{
   ]
 }' | jq -r '.pipeline_id')
 echo "Created pipeline"
-env -u MSYS_NO_PATHCONV add_repl.py "$PIPELINE_ID" PIPELINE_ID
+add_repl "$PIPELINE_ID" PIPELINE_ID
 
 cleanup() {
     title "Cleanup: delete the original pipeline and files"

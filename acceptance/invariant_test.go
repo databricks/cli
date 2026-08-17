@@ -23,8 +23,6 @@ const invariantConfigsDir = "bundle/invariant/configs"
 // the test fails if an entry here is actually covered, so the list only shrinks.
 var LackingInvariantTest = map[string]bool{
 	"quality_monitors": true,
-	"secrets":          true,
-	"secrets.grants":   true,
 }
 
 // TestInvariantConfigsCoverage ensures that the invariant test configs in

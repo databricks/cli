@@ -1,9 +1,20 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.chain_bottom
+Created jobs.chain_mid
+Created jobs.chain_top
+Created jobs.diamond_bottom
+Created jobs.diamond_left
+Created jobs.diamond_right
+Created jobs.diamond_top
+Created jobs.independent1
+Created jobs.independent2
+Created jobs.multi_child
+Created jobs.multi_parent1
+Created jobs.multi_parent2
+Files: 0 uploaded, 0 deleted
+Resources: 12 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --nostamp --sort //jobs
 {
@@ -278,12 +289,22 @@ Deployment complete!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deleted jobs.chain_bottom
+Deleted jobs.chain_mid
+Deleted jobs.chain_top
+Deleted jobs.diamond_bottom
+Deleted jobs.diamond_left
+Deleted jobs.diamond_right
+Deleted jobs.diamond_top
+Deleted jobs.independent1
+Deleted jobs.independent2
+Deleted jobs.multi_child
+Deleted jobs.multi_parent1
+Deleted jobs.multi_parent2
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 12 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 0 deleted

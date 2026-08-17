@@ -2,9 +2,9 @@
 === Deploy the schema, so there is an existing resource to update
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-failed-update/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created schemas.foo
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === An update that fails before writing any state records the state from before the deploy. Nothing touched the schema, so it still exists, and an operation without state would drop it from the deployment
 >>> update_file.py databricks.yml comment: v1 comment: v2
@@ -13,7 +13,6 @@ Deployment complete!
 
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-failed-update/default/files...
-Deploying resources...
 Error: cannot update resources.schemas.foo: updating id=main.dms_failed_update_schema: Fault injected by test. (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: PATCH [DATABRICKS_URL]/api/2.1/unity-catalog/schemas/main.dms_failed_update_schema
@@ -21,7 +20,7 @@ HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Fault injected by test.
 
-Updating deployment state...
+Files: 3 uploaded, 0 deleted
 
 >>> print_requests.py //api/2.0/bundle --sort
 {

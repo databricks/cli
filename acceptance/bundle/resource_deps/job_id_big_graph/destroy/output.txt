@@ -1,9 +1,20 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.chain_bottom
+Created jobs.chain_mid
+Created jobs.chain_top
+Created jobs.diamond_bottom
+Created jobs.diamond_left
+Created jobs.diamond_right
+Created jobs.diamond_top
+Created jobs.independent1
+Created jobs.independent2
+Created jobs.multi_child
+Created jobs.multi_parent1
+Created jobs.multi_parent2
+Files: 0 uploaded, 0 deleted
+Resources: 12 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --nostamp --sort //jobs
 {
@@ -291,5 +302,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 12 deleted
