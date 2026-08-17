@@ -3,10 +3,10 @@
 Seed loop for the invariant fuzzer. Invokes fuzz/seed.sh per seed and classifies each:
 
   deployed - deployed and the invariant held
-  rejected - CLI refused the config before deploy
+  rejected - validate --strict refused the config before deploy
   gap      - needs a route the testserver does not model
   hang     - exceeded FUZZ_SEED_TIMEOUT
-  bug      - panic, internal error, mutator failure, or failure after deploy
+  bug      - panic, internal error, mutator failure, or a deploy that failed or drifted
 
 Writes LOG.summary per seed; on bug/hang writes LOG.repro and exits non-zero.
 Stdout stays empty (the committed run asserts that).
@@ -130,6 +130,11 @@ def classify(seed_dir):
 
     if b"INPUT_CONFIG_OK" in read(seed_dir / "LOG.check"):
         return "bug", "failed after deploying; see the seed's LOG.* files"
+
+    # LOG.deploy* exists only once validate --strict passed, so a seed here is a
+    # config the CLI accepted and then failed to deploy.
+    if any(seed_dir.glob("LOG.deploy*")):
+        return "bug", "deploy failed after validate --strict; see the seed's LOG.* files"
 
     return "rejected", ""
 
