@@ -5,10 +5,22 @@ mkdir -p tree/mytest tree/newtest tree/bundle/invariant/jobs tree/bundle/invaria
 touch tree/mytest/script tree/mytest/output.txt tree/newtest/script
 touch tree/bundle/invariant/jobs/script tree/bundle/invariant/apps/script
 
+# The command reads each test's variants from its materialized config, the same file the
+# harness generates.
+for dir in tree/bundle/invariant/jobs tree/bundle/invariant/apps; do
+    cat > $dir/out.test.toml <<EOF
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.INPUT_CONFIG = ["job.yml.tmpl", "new.yml.tmpl", "pipeline.yml.tmpl"]
+EOF
+done
+cat > tree/mytest/out.test.toml <<EOF
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EOF
+
 # Each argument is a changed file: "M:" modified, "A:" added, "R100:old:new" moved. The
 # paths need not exist; only the tree of test dirs behind -root does.
 selection() {
-    go -C "$TESTROOT" run ./internal/selection/cmd -root "$PWD/tree" "$@"
+    "$SELECTION" -root "$PWD/tree" "$@"
 }
 
 title "Changing a test\n"
@@ -26,8 +38,8 @@ trace selection R100:acceptance/oldtest/script:acceptance/newtest/script M:accep
 title "Touching an invariant config runs every invariant test, for that config only\n"
 trace selection M:acceptance/bundle/invariant/configs/job.yml.tmpl
 
-title "Adding one invariant config and touching two others\n"
-trace selection A:acceptance/bundle/invariant/configs/new.yml.tmpl M:acceptance/bundle/invariant/configs/job.yml.tmpl M:acceptance/bundle/invariant/configs/pipeline.yml.tmpl
+title "Adding one invariant config and touching another: only the new variant is new\n"
+trace selection A:acceptance/bundle/invariant/configs/new.yml.tmpl M:acceptance/bundle/invariant/configs/job.yml.tmpl
 
 title "The limit keeps the highest scoring tests\n"
 trace selection -limit 2 A:acceptance/newtest/script M:acceptance/mytest/script M:acceptance/bundle/invariant/configs/job.yml.tmpl

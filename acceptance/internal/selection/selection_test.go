@@ -167,9 +167,9 @@ func TestFromDiffConfigAndItsInitScript(t *testing.T) {
 	}, result.Tests())
 }
 
-func TestFromDiffNewAndMovedAreExclusive(t *testing.T) {
-	// A moved invariant dir that also picks up a new config scores as new, not as new plus
-	// moved.
+func TestFromDiffMovedDirWithNewConfig(t *testing.T) {
+	// The move is a change to the dir itself, so it runs every variant, including the one
+	// the new config adds, and scores the move.
 	diff := diffLines(
 		"A\tacceptance/bundle/invariant/configs/job.yml.tmpl",
 		"R100\tacceptance/bundle/invariant/old/script\tacceptance/bundle/invariant/jobs/script",
@@ -177,9 +177,30 @@ func TestFromDiffNewAndMovedAreExclusive(t *testing.T) {
 	result := selection.FromDiff(diff, testDirs, 10)
 	scores := map[string]int{}
 	for _, test := range result.Selected {
-		scores[test.Dir] = test.Score
+		scores[test.Name()] = test.Score
 	}
-	assert.Equal(t, 10, scores["bundle/invariant/jobs"])
+	assert.Equal(t, 1, scores["bundle/invariant/jobs"])
+	assert.Nil(t, result.Tests()["bundle/invariant/jobs"])
+}
+
+func TestFromDiffNewConfigScoresOnlyItsVariant(t *testing.T) {
+	// Each variant is scored on its own: adding one config makes that config's variant new
+	// without making the variant of a config that was merely changed look new too.
+	diff := diffLines(
+		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
+		"A\tacceptance/bundle/invariant/configs/pipeline.yml.tmpl",
+	)
+	result := selection.FromDiff(diff, testDirs, 10)
+	scores := map[string]int{}
+	for _, test := range result.Selected {
+		scores[test.Name()] = test.Score
+	}
+	assert.Equal(t, map[string]int{
+		"bundle/invariant/apps/INPUT_CONFIG=job.yml.tmpl":      5,
+		"bundle/invariant/apps/INPUT_CONFIG=pipeline.yml.tmpl": 10,
+		"bundle/invariant/jobs/INPUT_CONFIG=job.yml.tmpl":      5,
+		"bundle/invariant/jobs/INPUT_CONFIG=pipeline.yml.tmpl": 10,
+	}, scores)
 }
 
 func TestFromDiffNestedDir(t *testing.T) {
