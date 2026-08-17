@@ -3,3 +3,12 @@ bundle:
 
 include:
   - resources/*.yml
+
+# Keep harness/generated files out of the sync so "Files: N uploaded" stays
+# stable across OSes (out.* grows during the script; script/test.toml are not
+# part of the bundle under test).
+sync:
+  exclude:
+    - "out*"
+    - "script"
+    - "test.toml"

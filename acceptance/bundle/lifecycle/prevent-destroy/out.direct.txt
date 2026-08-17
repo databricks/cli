@@ -13,7 +13,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
 Error: resources.pipelines.my_pipelines has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for resources.pipelines.my_pipelines
 
-Files: 3 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 
 >>> errcode [CLI] bundle plan
 recreate pipelines.my_pipelines
@@ -26,7 +26,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/de
 Error: resources.pipelines.my_pipelines has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for resources.pipelines.my_pipelines
 resources.schemas.my_schema has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for resources.schemas.my_schema
 
-Files: 2 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 
 >>> errcode [CLI] bundle plan
 recreate pipelines.my_pipelines
@@ -47,7 +47,7 @@ properties such as the 'catalog' or 'storage' are changed:
   recreate resources.pipelines.my_pipelines
 Recreated pipelines.my_pipelines
 Recreated schemas.my_schema
-Files: 3 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 2 deleted, 0 unchanged
 
 >>> errcode [CLI] bundle plan
@@ -69,5 +69,5 @@ properties such as the 'catalog' or 'storage' are changed:
   delete resources.pipelines.my_pipelines
 Deleted pipelines.my_pipelines
 Deleted schemas.my_schema
-Files: 1 uploaded, 2 deleted
+Files: 0 uploaded, 2 deleted
 Resources: 0 created, 0 changed, 2 deleted, 0 unchanged
