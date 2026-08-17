@@ -2,7 +2,7 @@
 >>> [CLI] bundle validate -o json
 {
   "pol": {
-    "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+    "definition": "{\"autotermination_minutes\":{\"maxValue\":120,\"minValue\":10,\"type\":\"range\"},\"enable_elastic_disk\":{\"type\":\"fixed\",\"value\":true},\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
     "name": "my_policy"
   }
 }
@@ -13,13 +13,13 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Native YAML definition serializes to the compact JSON string the API receives
+=== Native YAML definition serializes to compact JSON, preserving numbers and booleans as JSON types (not quoted strings)
 >>> print_requests.py //policies/clusters
 {
   "method": "POST",
   "path": "/api/2.0/policies/clusters/create",
   "body": {
-    "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+    "definition": "{\"autotermination_minutes\":{\"maxValue\":120,\"minValue\":10,\"type\":\"range\"},\"enable_elastic_disk\":{\"type\":\"fixed\",\"value\":true},\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
     "name": "my_policy"
   }
 }
