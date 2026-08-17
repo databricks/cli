@@ -111,16 +111,22 @@ func (s *operationSink) record(resourceKey string, op recordedOperation) {
 	}
 }
 
-// coalesce merges a write that superseded another still waiting. The newer one wins,
-// except a failure, which only carries pre-deploy state: it takes the superseded write's
-// state and mask instead - absent state included, since a recreate's delete did remove it.
+// coalesce merges an operation with the one that superseded it while still waiting. A later
+// write says everything about the resource, so it wins outright. A failure knows only why the
+// resource stopped, so the write is kept and the failure stamps its outcome onto it.
 func coalesce(older, newer recordedOperation) recordedOperation {
-	if newer.isFailure() {
-		newer.state = older.state
-		newer.resourceID = older.resourceID
-		newer.updateFields = older.updateFields
+	if !newer.isFailure() {
+		return newer
 	}
-	return newer
+
+	// Keeping the write keeps its state and mask - an absent state included, which is right:
+	// a recreate's delete really did remove the resource.
+	older.status = newer.status
+	older.errorMessage = newer.errorMessage
+	// An update that empties a resource records its write as a delete (see DeploymentUnit
+	// .Update), so the two can disagree. Report what the plan set out to do.
+	older.action = newer.action
+	return older
 }
 
 // take claims the operation waiting for resourceKey.

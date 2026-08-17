@@ -261,6 +261,44 @@ func TestOperationSinkCoalescedDeleteStillClearsState(t *testing.T) {
 		f.actionFor("resources.jobs.foo"))
 }
 
+func TestCoalesceLetsAWriteSupersedeAFailure(t *testing.T) {
+	// A failure is not the last word. If a resource were retried and then wrote state, that
+	// write describes the resource and has to win whole - its state, its id, and its mask,
+	// which names error_message so the recorded failure is cleared. The service rejects a
+	// succeeded operation that still carries an error.
+	failed, err := newFailedOperation(deployplan.Update, "id-old", envelope(t, "before"), errors.New("boom"))
+	require.NoError(t, err)
+	retried, err := newStateOperation(dstate.OperationInfo{Action: deployplan.Update}, "id-new", envelope(t, "after the retry"))
+	require.NoError(t, err)
+
+	got := coalesce(failed, retried)
+
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusSucceeded, got.status)
+	assert.Empty(t, got.errorMessage)
+	assert.Equal(t, "id-new", got.resourceID)
+	assert.JSONEq(t, string(envelope(t, "after the retry")), string(got.state))
+	assert.Equal(t, describesResource, got.updateFields)
+}
+
+func TestCoalesceKeepsTheWritesStateAndMask(t *testing.T) {
+	// The other direction: a failure contributes only its outcome, so the write's state, id
+	// and mask survive and the failure's own pre-deploy state is dropped as the older of the
+	// two. Action comes from the failure, which reports what the plan set out to do.
+	write, err := newStateOperation(dstate.OperationInfo{Action: deployplan.Delete}, "id-new", nil)
+	require.NoError(t, err)
+	failed, err := newFailedOperation(deployplan.Update, "id-old", envelope(t, "before"), errors.New("boom"))
+	require.NoError(t, err)
+
+	got := coalesce(write, failed)
+
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, got.status)
+	assert.Equal(t, "boom", got.errorMessage)
+	assert.Equal(t, "id-new", got.resourceID)
+	assert.Nil(t, got.state)
+	assert.Equal(t, describesResource, got.updateFields)
+	assert.Equal(t, bundledeployments.OperationActionTypeOperationActionTypeUpdate, got.action)
+}
+
 func TestOperationSinkRecordDuringUploadIsStillUploaded(t *testing.T) {
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 2)}
 	s := newOperationSink(t.Context(), f)
