@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -13,6 +14,20 @@ import (
 )
 
 type expand struct{}
+
+// Matches a pip extras suffix right after ".whl", e.g. "[train]" in "pkg.whl[train]".
+// Anchored so glob classes elsewhere (e.g. "pkg[12].whl") are left alone.
+var wheelExtrasRegex = regexp.MustCompile(`(?i)\.whl(\[[^\]]*\])$`)
+
+// splitWheelExtras splits a wheel path into its base and pip extras suffix (e.g. "[train]").
+func splitWheelExtras(path string) (string, string) {
+	m := wheelExtrasRegex.FindStringSubmatch(path)
+	if m == nil {
+		return path, ""
+	}
+	extras := m[1]
+	return strings.TrimSuffix(path, extras), extras
+}
 
 func matchError(p dyn.Path, l []dyn.Location, message string) diag.Diagnostic {
 	return diag.Diagnostic{
@@ -116,6 +131,9 @@ func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v 
 			continue
 		}
 
+		// Strip extras before globbing so "[...]" isn't read as a glob class, then re-append.
+		path, extras := splitWheelExtras(path)
+
 		matches, err := findMatches(ctx, b, path)
 		if err != nil {
 			diags = diags.Append(matchError(lp, dep.Locations(), err.Error()))
@@ -123,7 +141,7 @@ func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v 
 		}
 
 		for _, match := range matches {
-			output = append(output, dyn.NewValue(match, dep.Locations()))
+			output = append(output, dyn.NewValue(match+extras, dep.Locations()))
 		}
 	}
 
