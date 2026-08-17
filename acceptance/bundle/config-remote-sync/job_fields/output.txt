@@ -102,6 +102,7 @@ Resource: resources.jobs.my_job
   ],
   "files_changed_count": 1,
   "files_written_count": 1,
+  "backend_default_skipped_count": 0,
   "state_serial": 1,
   "state_lineage": "[UUID]",
   "state_source": "local",

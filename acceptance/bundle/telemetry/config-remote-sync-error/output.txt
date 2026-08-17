@@ -7,6 +7,7 @@ Exit code: 1
 >>> cat out.requests.txt
 {
   "engine": "terraform",
+  "backend_default_skipped_count": 0,
   "state_source": "local",
   "states_available_count": 0,
   "error_message": "state snapshot not available: resources state snapshot not found remotely at resources-config-sync-snapshot.json: state snapshot not found",

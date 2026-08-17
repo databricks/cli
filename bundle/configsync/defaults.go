@@ -67,6 +67,15 @@ var serverSideDefaults = map[string]any{
 	// configsync filtering is migrated to the direct engine lifecycle metadata.
 	"resources.jobs.*.tasks[*].new_cluster.custom_tags":      backendDefault,
 	"resources.jobs.*.tasks[*].new_cluster.cluster_log_conf": backendDefault,
+	// spark_env_vars is filled in remotely from sources the config cannot see: a
+	// cluster policy can inject the map or pin a single variable, and a pipeline's
+	// deployment spec is merged into the cluster spec on the backend. The values
+	// also routinely carry credentials (uv's UV_INDEX_<name>_PASSWORD convention),
+	// which must never be written into config. Both patterns are needed: matchParts
+	// only matches equal segment counts, so a policy pinning one variable produces a
+	// ...spark_env_vars.<NAME> path that the bare pattern does not cover.
+	"resources.jobs.*.tasks[*].new_cluster.spark_env_vars":   backendDefault,
+	"resources.jobs.*.tasks[*].new_cluster.spark_env_vars.*": backendDefault,
 
 	// Cluster fields (job_clusters)
 	"resources.jobs.*.job_clusters[*].new_cluster.aws_attributes":      alwaysSkip,
@@ -77,6 +86,8 @@ var serverSideDefaults = map[string]any{
 	"resources.jobs.*.job_clusters[*].new_cluster.single_user_name":    alwaysSkip,
 	"resources.jobs.*.job_clusters[*].new_cluster.custom_tags":         backendDefault, // see tasks[*].new_cluster.custom_tags
 	"resources.jobs.*.job_clusters[*].new_cluster.cluster_log_conf":    backendDefault, // see tasks[*].new_cluster.cluster_log_conf
+	"resources.jobs.*.job_clusters[*].new_cluster.spark_env_vars":      backendDefault, // see tasks[*].new_cluster.spark_env_vars
+	"resources.jobs.*.job_clusters[*].new_cluster.spark_env_vars.*":    backendDefault, // see tasks[*].new_cluster.spark_env_vars
 
 	// Standalone cluster fields
 	"resources.clusters.*.aws_attributes":      alwaysSkip,
@@ -88,6 +99,8 @@ var serverSideDefaults = map[string]any{
 	"resources.clusters.*.single_user_name":    alwaysSkip,
 	"resources.clusters.*.custom_tags":         backendDefault, // see jobs.*.tasks[*].new_cluster.custom_tags
 	"resources.clusters.*.cluster_log_conf":    backendDefault, // see jobs.*.tasks[*].new_cluster.cluster_log_conf
+	"resources.clusters.*.spark_env_vars":      backendDefault, // see jobs.*.tasks[*].new_cluster.spark_env_vars
+	"resources.clusters.*.spark_env_vars.*":    backendDefault, // see jobs.*.tasks[*].new_cluster.spark_env_vars
 
 	// Experiment fields
 	"resources.experiments.*.artifact_location": alwaysSkip,
@@ -131,34 +144,60 @@ var serverSideDefaults = map[string]any{
 // field is not in config/state, matching the behavior of shouldSkipBackendDefault
 // in the direct deployment engine.
 func shouldSkipField(path string, value any, hasConfigValue bool) bool {
+	expected, ok := lookupSkipRule(path)
+	if !ok {
+		return false
+	}
+	if _, ok := expected.(skipAlways); ok {
+		return true
+	}
+	if hasConfigValue {
+		return false
+	}
+	if _, ok := expected.(skipBackendDefault); ok {
+		return true
+	}
+	if _, ok := expected.(skipIfZeroOrNil); ok {
+		return value == nil || value == int64(0)
+	}
+	if marker, ok := expected.(skipIfEmptyOrDefault); ok {
+		m, ok := value.(map[string]any)
+		if !ok {
+			return false
+		}
+		if len(m) == 0 {
+			return true
+		}
+		return reflect.DeepEqual(m, marker.defaults)
+	}
+	return reflect.DeepEqual(value, expected)
+}
+
+// lookupSkipRule returns the serverSideDefaults marker whose pattern matches path.
+func lookupSkipRule(path string) (any, bool) {
 	for pattern, expected := range serverSideDefaults {
 		if matchPattern(pattern, path) {
-			if _, ok := expected.(skipAlways); ok {
-				return true
-			}
-			if hasConfigValue {
-				return false
-			}
-			if _, ok := expected.(skipBackendDefault); ok {
-				return true
-			}
-			if _, ok := expected.(skipIfZeroOrNil); ok {
-				return value == nil || value == int64(0)
-			}
-			if marker, ok := expected.(skipIfEmptyOrDefault); ok {
-				m, ok := value.(map[string]any)
-				if !ok {
-					return false
-				}
-				if len(m) == 0 {
-					return true
-				}
-				return reflect.DeepEqual(m, marker.defaults)
-			}
-			return reflect.DeepEqual(value, expected)
+			return expected, true
 		}
 	}
-	return false
+	return nil, false
+}
+
+// isBackendManagedSkip reports whether path is skipped only because it is a
+// backend-managed field absent from config. These skips are the ones worth
+// telling the user about: the remote value is real, so it is silently not synced
+// back and the next deploy pushes the stale local value over it. The other
+// server-side defaults fire on every run and carry no such consequence.
+func isBackendManagedSkip(path string, hasConfigValue bool) bool {
+	if hasConfigValue {
+		return false
+	}
+	expected, ok := lookupSkipRule(path)
+	if !ok {
+		return false
+	}
+	_, ok = expected.(skipBackendDefault)
+	return ok
 }
 
 func matchPattern(pattern, path string) bool {

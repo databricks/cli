@@ -54,6 +54,10 @@ type Stats struct {
 	// could not be attributed to a single source location.
 	SkippedChangesCount int64
 
+	// Changes dropped during detection because the field is backend-managed and
+	// absent from config, so its remote value is never synced back.
+	BackendDefaultSkippedCount int64
+
 	Restore RestoreStats
 
 	// Identity of the resource state the run actually read. Without these, a
@@ -295,6 +299,8 @@ func (s *Stats) LogTelemetry(ctx context.Context) {
 			SelectedResourceIDs:    s.SelectedResourceIDs,
 			ErrorMessage:           s.ErrorMessage,
 			ErrorCategory:          s.ErrorCategory,
+
+			BackendDefaultSkippedCount: s.BackendDefaultSkippedCount,
 		},
 	})
 }

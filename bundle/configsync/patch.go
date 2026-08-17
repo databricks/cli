@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
@@ -20,11 +21,14 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// ApplyChangesToYAML generates YAML files for the given field changes.
-func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange) ([]FileChange, error) {
+// ApplyChangesToYAML generates YAML files for the given field changes. The second
+// return value counts the changes left unapplied because their location in the
+// YAML cannot be written.
+func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange) ([]FileChange, int, error) {
 	originalFiles := make(map[string][]byte)
 	modifiedFiles := make(map[string][]byte)
 	fileFieldChanges := make(map[string][]FieldChange)
+	skipped := 0
 
 	for _, fieldChange := range fieldChanges {
 		filePath := fieldChange.FilePath
@@ -32,7 +36,7 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 		if _, exists := modifiedFiles[filePath]; !exists {
 			content, err := os.ReadFile(filePath)
 			if err != nil {
-				return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
+				return nil, 0, fmt.Errorf("failed to read file %s: %w", filePath, err)
 			}
 			originalFiles[filePath] = content
 			modifiedFiles[filePath] = preserveBlankLines(content)
@@ -40,7 +44,12 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 
 		modifiedContent, err := applyChange(ctx, modifiedFiles[filePath], fieldChange)
 		if err != nil {
-			return nil, fmt.Errorf("failed to apply change to file %s for a field %s: %w", filePath, fieldChange.WritePath, err)
+			if errors.Is(err, errUnwritableParent) {
+				log.Debugf(ctx, "config-remote-sync: skipping %s in %s: %v", fieldChange.WritePath, filePath, err)
+				skipped++
+				continue
+			}
+			return nil, 0, fmt.Errorf("failed to apply change to file %s for a field %s: %w", filePath, fieldChange.WritePath, err)
 		}
 
 		modifiedFiles[filePath] = modifiedContent
@@ -48,13 +57,16 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 	}
 
 	var result []FileChange
-	for filePath := range modifiedFiles {
+	// Iterating the applied changes rather than modifiedFiles leaves out a file
+	// whose every change was skipped: re-encoding it would report a modification
+	// that was never made.
+	for filePath, appliedChanges := range fileFieldChanges {
 		// TODO: A good alternative approach is to remove parent nodes during the Resolve phase,
 		// when all of their keys/items are removed, but this should be tested for edge cases.
 		// In this case flow style will never appear because empty nodes are never serialized and we won't need clearAddedFlowStyle
-		normalized, err := clearAddedFlowStyle(modifiedFiles[filePath], fileFieldChanges[filePath])
+		normalized, err := clearAddedFlowStyle(modifiedFiles[filePath], appliedChanges)
 		if err != nil {
-			return nil, fmt.Errorf("failed to normalize YAML style in %s: %w", filePath, err)
+			return nil, 0, fmt.Errorf("failed to normalize YAML style in %s: %w", filePath, err)
 		}
 		result = append(result, FileChange{
 			Path:            filePath,
@@ -67,12 +79,16 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 		return cmp.Compare(a.Path, b.Path)
 	})
 
-	return result, nil
+	return result, skipped, nil
 }
 
+// parentNode records what stands between a change and its destination: path is
+// the change itself, ancestorPath the deepest node the walk reached, and kind how
+// that node has to be materialized before the change can be applied.
 type parentNode struct {
-	path        yamlpatch.Path
-	missingPath yamlpatch.Path
+	path         yamlpatch.Path
+	ancestorPath yamlpatch.Path
+	kind         parentKind
 }
 
 // applyChange applies a single field change to YAML content.
@@ -115,10 +131,21 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 				Value: fieldChange.Change.Value,
 			}})
 
-			// Collect parent path errors for later retry
-			if patchErr != nil && isParentPathError(patchErr) {
-				if missingPath, extractErr := extractMissingPath(patchErr); extractErr == nil {
-					parentNodesToCreate = append(parentNodesToCreate, parentNode{path, missingPath})
+			// Collect not-yet-writable parents for later retry. The patcher reports
+			// a missing parent, an empty "key:" placeholder and a ${...} reference as
+			// three differently-worded errors from a third-party package, so the
+			// target node is inspected directly instead of matching on that text.
+			if patchErr != nil {
+				kind, ancestorPath, inspectErr := resolveParentNode(content, path)
+				if inspectErr != nil {
+					return nil, fmt.Errorf("failed to inspect parent of %s: %w", jsonPointer, inspectErr)
+				}
+				switch kind {
+				case parentAbsent, parentNull, parentVariable:
+					parentNodesToCreate = append(parentNodesToCreate, parentNode{path, ancestorPath, kind})
+				default:
+					// parentContainer means the parent is writable and the patch failed
+					// for an unrelated reason; a plain scalar parent is a genuine error.
 				}
 			}
 		default:
@@ -139,28 +166,42 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 		}
 	}
 
-	// If all attempts failed with parent path errors, try creating nested structures
+	// If all attempts failed because the parent is not a container yet, materialize
+	// it and write the change into it.
 	if !success && len(parentNodesToCreate) > 0 {
 		for _, errInfo := range parentNodesToCreate {
-			nestedValue := buildNestedMaps(errInfo.path, errInfo.missingPath, fieldChange.Change.Value)
+			if errInfo.kind == parentVariable {
+				// The node's value is owned by a variable: overwriting it destroys the
+				// indirection for every target that shares this file.
+				return nil, fmt.Errorf("%w at %s", errUnwritableParent, errInfo.ancestorPath.String())
+			}
+
+			nestedValue := buildNestedMaps(errInfo.path, errInfo.ancestorPath, fieldChange.Change.Value)
+
+			// An empty "key:" is a null scalar rather than a mapping, so the
+			// placeholder is replaced instead of added to.
+			opType := yamlpatch.OperationAdd
+			if errInfo.kind == parentNull {
+				opType = yamlpatch.OperationReplace
+			}
 
 			patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
 			modifiedContent, patchErr := patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
-				Type:  yamlpatch.OperationAdd,
-				Path:  errInfo.missingPath,
+				Type:  opType,
+				Path:  errInfo.ancestorPath,
 				Value: nestedValue,
 			}})
 
 			if patchErr == nil {
 				content = modifiedContent
 				firstErr = nil
-				log.Debugf(ctx, "Created nested structure at %s", errInfo.missingPath.String())
+				log.Debugf(ctx, "Created nested structure at %s", errInfo.ancestorPath.String())
 				break
 			}
 			if firstErr == nil {
 				firstErr = patchErr
 			}
-			log.Debugf(ctx, "Failed to create nested structure at %s: %v", errInfo.missingPath.String(), patchErr)
+			log.Debugf(ctx, "Failed to create nested structure at %s: %v", errInfo.ancestorPath.String(), patchErr)
 		}
 	}
 
@@ -174,15 +215,6 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 	return content, nil
 }
 
-// isParentPathError checks if error indicates missing parent path.
-func isParentPathError(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := err.Error()
-	return strings.Contains(msg, "parent path") && strings.Contains(msg, "does not exist")
-}
-
 // isPathNotFoundError checks if error indicates the path itself does not exist.
 func isPathNotFoundError(err error) bool {
 	if err == nil {
@@ -192,24 +224,122 @@ func isPathNotFoundError(err error) bool {
 	return strings.Contains(msg, "does not exist")
 }
 
-// extractMissingPath extracts the missing path from error message like:
-// "op add /a/b/c/d: parent path /a/b does not exist"
-// Returns: "/a/b"
-func extractMissingPath(err error) (yamlpatch.Path, error) {
-	msg := err.Error()
-	start := strings.Index(msg, "parent path ")
-	if start == -1 {
-		return nil, errors.New("could not find 'parent path' in error message")
-	}
-	start += len("parent path ")
+// errUnwritableParent reports that a change's parent node holds a variable
+// reference, so the change has no location that can be written.
+var errUnwritableParent = errors.New("parent value is a variable reference")
 
-	end := strings.Index(msg[start:], " does not exist")
-	if end == -1 {
-		return nil, errors.New("could not find 'does not exist' in error message")
+// parentKind classifies the node a change's parent path resolves to, which decides
+// whether the change can be written and how.
+type parentKind int
+
+const (
+	// parentContainer is a mapping or a sequence: the change can be applied as-is.
+	parentContainer parentKind = iota
+	// parentAbsent means the walk stopped before reaching the parent, so the
+	// intermediate nodes have to be created.
+	parentAbsent
+	// parentNull is an empty "key:", which YAML parses as a null scalar rather than
+	// as the empty mapping "key: {}" produces.
+	parentNull
+	// parentVariable is a scalar holding a ${...} reference.
+	parentVariable
+	// parentScalar is any other scalar, which nothing can be written underneath.
+	parentScalar
+)
+
+// resolveParentNode walks path in content and reports the kind of the deepest node
+// the walk reached along with that node's path, mirroring how the patcher resolves
+// the same path: the last path segment is the key being written, so only its
+// ancestors are traversed, and an absent node is reported at the path the patcher
+// names in its "parent path %s does not exist" error.
+func resolveParentNode(content []byte, path yamlpatch.Path) (parentKind, yamlpatch.Path, error) {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(content, &doc); err != nil {
+		return parentContainer, nil, fmt.Errorf("failed to parse YAML: %w", err)
 	}
 
-	pathStr := msg[start : start+end]
-	return yamlpatch.ParsePath(pathStr)
+	current := &doc
+	for i := range path {
+		if current == nil {
+			return parentAbsent, path[:i], nil
+		}
+		if kind := nodeKind(current); kind != parentContainer {
+			return kind, path[:i], nil
+		}
+		if i == len(path)-1 {
+			break
+		}
+		current = childNode(current, path[i])
+	}
+
+	return parentContainer, nil, nil
+}
+
+// nodeKind classifies a single node. Aliases are dereferenced because the patcher
+// does the same, so a change addressed through a YAML anchor stays writable.
+func nodeKind(node *yaml.Node) parentKind {
+	node = derefAlias(node)
+
+	switch node.Kind {
+	case yaml.DocumentNode:
+		// The patcher refuses a document that does not hold exactly one value.
+		if len(node.Content) != 1 {
+			return parentScalar
+		}
+		return parentContainer
+	case yaml.MappingNode, yaml.SequenceNode:
+		return parentContainer
+	case yaml.ScalarNode:
+		if node.Tag == "!!null" {
+			return parentNull
+		}
+		if dynvar.ContainsVariableReference(node.Value) {
+			return parentVariable
+		}
+		return parentScalar
+	default:
+		// Content that did not parse into a node at all (an empty file) is no more
+		// writable than a scalar; aliases are already dereferenced above.
+		return parentScalar
+	}
+}
+
+// childNode returns the node stored under key, or nil when the container has no
+// such child. It follows the lookup rules of the patcher's containers, including
+// reporting an empty document as an absent child rather than a null scalar.
+func childNode(node *yaml.Node, key string) *yaml.Node {
+	node = derefAlias(node)
+
+	switch node.Kind {
+	case yaml.DocumentNode:
+		if root := node.Content[0]; root.Kind != yaml.ScalarNode || root.Tag != "!!null" {
+			return root
+		}
+	case yaml.MappingNode:
+		// Content is [key1, val1, key2, val2, ...].
+		for i := 0; i+1 < len(node.Content); i += 2 {
+			if node.Content[i].Value == key {
+				return node.Content[i+1]
+			}
+		}
+	case yaml.SequenceNode:
+		// The "-" append marker and an out-of-range index both address an element
+		// that does not exist yet.
+		if idx, err := strconv.Atoi(key); err == nil && idx >= 0 && idx < len(node.Content) {
+			return node.Content[idx]
+		}
+	default:
+		// Only containers are walked into, so nothing else reaches this.
+	}
+
+	return nil
+}
+
+func derefAlias(node *yaml.Node) *yaml.Node {
+	for node != nil && node.Kind == yaml.AliasNode {
+		node = node.Alias
+	}
+	return node
 }
 
 // buildNestedMaps creates a nested map structure from targetPath to missingPath.

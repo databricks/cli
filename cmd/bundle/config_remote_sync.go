@@ -96,11 +96,12 @@ Examples:
 					return fmt.Errorf("failed to detect changes: %w", err)
 				}
 
-				changes, err := configsync.ExtractChanges(ctx, b, plan, stateDesc.Engine)
+				changes, backendManaged, err := configsync.ExtractChanges(ctx, b, plan, stateDesc.Engine)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to extract changes: %w", err)
 				}
+				stats.BackendDefaultSkippedCount = int64(backendManaged)
 				stats.CollectChangeStats(ctx, changes)
 
 				// Record the ids present in state and the ids requested: on failure
@@ -130,11 +131,12 @@ Examples:
 					log.Warnf(ctx, "variable restoration skipped: %v", err)
 				}
 
-				files, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
+				files, unwritable, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryYamlApplyFailed
 					return fmt.Errorf("failed to generate YAML files: %w", err)
 				}
+				stats.SkippedChangesCount += int64(unwritable)
 				stats.FilesChangedCount = int64(len(files))
 
 				if save {

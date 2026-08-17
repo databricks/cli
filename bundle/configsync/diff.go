@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -170,9 +171,12 @@ func isPermissionsOrGrantsSubResource(resourceKey string) bool {
 }
 
 // ExtractChanges extracts the map of remote-vs-config changes from a deploy
-// plan. engine selects the LocalEdit comparison below.
-func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (Changes, error) {
+// plan. engine selects the LocalEdit comparison below. The second return value
+// counts the changes dropped as backend-managed fields absent from config, which
+// are reported to the user rather than applied.
+func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (Changes, int, error) {
 	changes := make(Changes)
+	var backendManaged []string
 
 	for resourceKey, entry := range plan.Plan {
 		// permissions and grants are emitted as their own plan keys
@@ -196,9 +200,12 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 				fullPath := resourceKey + "." + path
 				change, err := convertChangeDesc(fullPath, changeDesc)
 				if err != nil {
-					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
+					return nil, 0, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
 				if change.Operation == OperationSkip {
+					if isBackendManagedSkip(fullPath, changeDesc.New != nil) {
+						backendManaged = append(backendManaged, fullPath)
+					}
 					continue
 				}
 				// On the direct engine the state snapshot holds real per-field
@@ -221,7 +228,13 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		log.Debugf(ctx, "Resource %s has %d changes", resourceKey, len(resourceChanges))
 	}
 
-	return changes, nil
+	if len(backendManaged) > 0 {
+		slices.Sort(backendManaged)
+		log.Warnf(ctx, "Not syncing %d field(s) managed outside the configuration (cluster policy or backend defaults): %s. Declare a field in the configuration to sync it from then on",
+			len(backendManaged), strings.Join(backendManaged, ", "))
+	}
+
+	return changes, len(backendManaged), nil
 }
 
 func ensureSnapshotAvailable(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) error {

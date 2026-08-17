@@ -3,11 +3,12 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Simulate a cluster policy injecting custom_tags and cluster_log_conf
+=== Simulate a cluster policy injecting custom_tags, cluster_log_conf and spark_env_vars
 These fields exist only remotely (the user never set them in config).
 A legitimate edit (max_concurrent_runs) is made too, to show real edits still sync.
 
 === Detect and save all changes
+Warn: Not syncing 6 field(s) managed outside the configuration (cluster policy or backend defaults): resources.jobs.job1.job_clusters[job_cluster_key='shared'].new_cluster.cluster_log_conf, resources.jobs.job1.job_clusters[job_cluster_key='shared'].new_cluster.custom_tags, resources.jobs.job1.job_clusters[job_cluster_key='shared'].new_cluster.spark_env_vars, resources.jobs.job1.tasks[task_key='own_cluster_task'].new_cluster.cluster_log_conf, resources.jobs.job1.tasks[task_key='own_cluster_task'].new_cluster.custom_tags, resources.jobs.job1.tasks[task_key='own_cluster_task'].new_cluster.spark_env_vars. Declare a field in the configuration to sync it from then on
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.job1

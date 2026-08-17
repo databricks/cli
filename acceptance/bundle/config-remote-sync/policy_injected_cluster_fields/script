@@ -10,7 +10,7 @@ trap cleanup EXIT
 $CLI bundle deploy
 job1_id="$(read_id.py job1)"
 
-title "Simulate a cluster policy injecting custom_tags and cluster_log_conf"
+title "Simulate a cluster policy injecting custom_tags, cluster_log_conf and spark_env_vars"
 echo
 echo "These fields exist only remotely (the user never set them in config)."
 echo "A legitimate edit (max_concurrent_runs) is made too, to show real edits still sync."
@@ -22,15 +22,19 @@ r["max_concurrent_runs"] = 5
 # field's value is irrelevant here — only that it exists remotely and not in config.
 policy_tags = {"CostCenter": "dev-1234", "Team": "finops"}
 policy_log_conf = {"dbfs": {"destination": "dbfs:/cluster-logs/dev"}}
+# spark_env_vars routinely carries credentials, so it must not be written to config.
+policy_env_vars = {"UV_INDEX_ACME_PASSWORD": "dev-secret"}
 
 for task in r.get("tasks", []):
     if "new_cluster" in task:
         task["new_cluster"]["custom_tags"] = dict(policy_tags)
         task["new_cluster"]["cluster_log_conf"] = dict(policy_log_conf)
+        task["new_cluster"]["spark_env_vars"] = dict(policy_env_vars)
 
 for jc in r.get("job_clusters", []):
     jc["new_cluster"]["custom_tags"] = dict(policy_tags)
     jc["new_cluster"]["cluster_log_conf"] = dict(policy_log_conf)
+    jc["new_cluster"]["spark_env_vars"] = dict(policy_env_vars)
 EOF
 
 title "Detect and save all changes"

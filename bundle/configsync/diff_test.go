@@ -285,8 +285,9 @@ func TestExtractChangesSkipsPermissionsAndGrants(t *testing.T) {
 
 	for _, eng := range []engine.EngineType{engine.EngineDirect, engine.EngineTerraform} {
 		t.Run(string(eng), func(t *testing.T) {
-			changes, err := ExtractChanges(ctx, &bundle.Bundle{}, plan, eng)
+			changes, backendManaged, err := ExtractChanges(ctx, &bundle.Bundle{}, plan, eng)
 			require.NoError(t, err)
+			require.Zero(t, backendManaged)
 
 			_, hasPerms := changes["resources.jobs.my_job.permissions"]
 			assert.False(t, hasPerms, "permissions sub-resource must be skipped")

@@ -56,11 +56,21 @@ type BundleConfigRemoteSyncEvent struct {
 
 	// Number of detected changes that were not written back because they could
 	// not be attributed to a single source location (e.g. a sequence element
-	// defined in both a top-level block and a target override). These are
+	// defined in both a top-level block and a target override) or because that
+	// location is not writable (a parent node holding a ${...} reference). These are
 	// counted in ChangesTotal: a nonzero value means the command reported
 	// changes it did not apply. Distinct from the "skip" operation filtered out
 	// during change detection, which never reaches ChangesTotal.
 	SkippedChangesCount int64 `json:"skipped_changes_count,omitempty"`
+
+	// Number of remote changes dropped during change detection because they land
+	// on a field the backend or a cluster policy manages (custom_tags,
+	// cluster_log_conf, spark_env_vars) and the field is absent from config.
+	// These never reach ChangesTotal. The count sizes how often a real remote
+	// value is deliberately not synced back, which is also how often the next
+	// deploy overwrites it with the local value. No omitempty: an explicit 0
+	// separates "nothing was dropped" from a CLI too old to report the field.
+	BackendDefaultSkippedCount int64 `json:"backend_default_skipped_count"`
 
 	// Variable-reference restoration counts for the two mechanisms that can
 	// write a current-target-scoped reference into a shared file (the source of
