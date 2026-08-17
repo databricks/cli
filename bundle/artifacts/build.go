@@ -82,7 +82,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 }
 
 func doBuild(ctx context.Context, artifactName string, a *config.Artifact) error {
-	cmdio.LogString(ctx, fmt.Sprintf("Building %s...", artifactName))
+	cmdio.LogProgress(ctx, fmt.Sprintf("Building %s...", artifactName))
 
 	var executor *exec.Executor
 	if a.Executable != "" {

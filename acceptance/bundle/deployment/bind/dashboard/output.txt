@@ -1,12 +1,11 @@
 
 >>> [CLI] bundle deployment bind dashboard1 [DASHBOARD_ID] --auto-approve
-Updating deployment state...
 Successfully bound dashboard with an id '[DASHBOARD_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated dashboards.dashboard1
+Files: 14 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] lakeview get [DASHBOARD_ID]
 {
@@ -26,13 +25,11 @@ Deployment complete!
 }
 
 >>> [CLI] bundle deployment unbind dashboard1
-Updating deployment state...
 
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 0 deleted
 
 >>> [CLI] lakeview get [DASHBOARD_ID]
 {

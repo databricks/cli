@@ -64,7 +64,7 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		} else {
 			relPath = filepath.ToSlash(relPath)
 		}
-		cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", relPath))
+		cmdio.LogProgress(ctx, fmt.Sprintf("Uploading %s...", relPath))
 		errs.Go(func() error {
 			return UploadFile(errCtx, source, u.client)
 		})

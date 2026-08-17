@@ -27,5 +27,7 @@ trace $CLI bundle plan
 
 trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-# Run destroy - should succeed even though dashboard is already trashed
-trace $CLI bundle destroy --auto-approve
+# Run destroy - should succeed even though dashboard is already trashed.
+# -qq drops the summary: terraform refreshes the trashed dashboard away and reports
+# "0 deleted" while direct still counts it as "1 deleted".
+trace $CLI bundle destroy --auto-approve -qq

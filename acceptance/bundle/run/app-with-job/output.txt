@@ -10,9 +10,10 @@ Validation OK!
 
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created apps.test_app
+Created jobs.foo
+Files: 9 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === App should exist after bundle deployment
 >>> [CLI] apps get app-[UNIQUE_NAME]
@@ -84,9 +85,8 @@ env:
 === Redeploy it again just to check that it can be redeployed
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -95,5 +95,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted

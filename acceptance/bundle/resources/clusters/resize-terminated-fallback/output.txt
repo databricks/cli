@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created clusters.test_cluster
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Create a plan while cluster is running: should show resize
 
@@ -22,9 +22,9 @@ Deployment complete!
 
 >>> [CLI] bundle deploy --plan plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Resized clusters.test_cluster
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //clusters/resize //clusters/edit
 {
@@ -62,5 +62,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

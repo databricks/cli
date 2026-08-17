@@ -1,9 +1,9 @@
 
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created pipelines.foo
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 === Remove resources from configuration to test auto-approve
@@ -22,6 +22,7 @@ Error: the deployment requires destructive actions, but the current console does
 Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
 To proceed, use --auto-approve after reviewing the plan above.
 
+Files: 1 uploaded, 1 deleted
 
 Exit code: 1
 
@@ -34,6 +35,6 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating 
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   delete resources.pipelines.foo
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deleted pipelines.foo
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 1 deleted, 0 unchanged

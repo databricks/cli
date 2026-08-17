@@ -1,18 +1,17 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created clusters.test_cluster
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -20,5 +19,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

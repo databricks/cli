@@ -1,9 +1,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created catalogs.bar
+Created schemas.foo
+Files: 8 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Assert the catalog is created
 >>> [CLI] catalogs get test-catalog-[UNIQUE_NAME]
@@ -41,6 +42,7 @@ Error: cannot plan resources.schemas.foo: cannot resolve "${resources.catalogs.b
 
 Error: planning failed
 
+Files: 2 uploaded, 1 deleted
 
 === Test cleanup
 >>> [CLI] bundle destroy --auto-approve
@@ -53,8 +55,7 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted
 
 === Assert the catalog is deleted
 Exit code: 1

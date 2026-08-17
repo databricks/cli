@@ -1,8 +1,8 @@
 
 >>> [CLI] bundle deploy -t dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
-Deploying resources...
-Deployment complete!
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deploy -t prod
 Recommendation: target with 'mode: production' should set 'workspace.root_path' to make sure only one copy is deployed
@@ -12,8 +12,8 @@ A common practice is to use a username or principal name in this path, i.e. use
   root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/prod/files...
-Deploying resources...
-Deployment complete!
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> cat out.requests.txt
 {

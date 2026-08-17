@@ -2,9 +2,9 @@
 === Deploy 1 (normal: creates the job and the committed state)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.test_job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Deploy 2 (planning fails, must not leave a WAL)
 >>> errcode [CLI] bundle deploy
@@ -18,6 +18,7 @@ API message: Fault injected by test.
 
 Error: planning failed
 
+Files: 1 uploaded, 0 deleted
 
 Exit code: 1
 
@@ -35,6 +36,7 @@ API message: Fault injected by test.
 
 Error: planning failed
 
+Files: 1 uploaded, 0 deleted
 
 Exit code: 1
 
@@ -43,6 +45,5 @@ Exit code: 1
 === Deploy 4 (fault expired: recovers and succeeds)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged

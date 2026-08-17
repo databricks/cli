@@ -4,9 +4,10 @@ Directory does not exist
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.foo
+Created pipelines.bar
+Files: 10 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Assert the snapshot file exists
 >>> find.py --expect 1 ^.databricks/bundle/default/sync-snapshots/[a-z0-9]+\.json
@@ -58,8 +59,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted
 
 === Assert pipeline is deleted
 >>> errcode [CLI] pipelines get [UUID]

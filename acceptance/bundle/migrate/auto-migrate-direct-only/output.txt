@@ -2,9 +2,9 @@
 === Deploy with terraform (instance_pools is commented out; terraform cannot deploy it)
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.job_a
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Add a direct-only resource and opt in to the direct engine via config
 >>> update_file.py databricks.yml #instance_pools instance_pools
@@ -23,11 +23,10 @@ json.plan.resources.instance_pools.pool.action = "skip";
 >>> [CLI] bundle deploy
 Warn: Direct engine requested in bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
 Migrating state to direct deployment engine (opted in via bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11)...
 Migrated 1 resource to direct deployment engine.
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_migration_telemetry
 direct_migrated_via_config true
@@ -40,9 +39,9 @@ Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created instance_pools.pool
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //instance-pools/create
 {
