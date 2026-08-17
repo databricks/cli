@@ -112,12 +112,35 @@ func TestOperationRecorderFailureAfterAStateWriteKeepsTheState(t *testing.T) {
 
 	update := f.calls[1]
 	assert.Equal(t, "update", update.method)
-	assert.Equal(t, failureFields, update.fields)
+	assert.Equal(t, []string{"error_message", "status"}, update.fields)
 	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, update.update.Status)
 	assert.Equal(t, "run did not succeed: FAILED", update.update.ErrorMessage)
 	// Neither is in the mask, so what the create recorded stands.
 	assert.Nil(t, update.update.State)
 	assert.Empty(t, update.update.ResourceId)
+}
+
+func TestOperationRecorderFailureCarryingStateSendsIt(t *testing.T) {
+	// A recreate records its in-progress delete, which has no state, and then the create
+	// that replaces the resource. If the create's write is still waiting when the create
+	// fails, the failure carries that write's state (see coalesce) - and the update has
+	// to name state in the mask, or the service keeps the nothing the delete recorded and
+	// drops the resource from the deployment.
+	f := &fakeOpClient{sequence: "2"}
+	r := newOperationRecorder(f, "dep-1", 2)
+
+	uploadOne(t, r, "resources.jobs.foo", deployplan.Recreate, "old-id", nil)
+
+	failed, err := newFailedOperation(deployplan.Recreate, "new-id", envelope(t, "the replacement"), errors.New("boom"))
+	require.NoError(t, err)
+	require.NoError(t, r.upload(t.Context(), "resources.jobs.foo", failed))
+
+	require.Len(t, f.calls, 2)
+	update := f.calls[1]
+	assert.Equal(t, "update", update.method)
+	assert.Equal(t, []string{"state", "error_message", "resource_id", "status"}, update.fields)
+	require.NotNil(t, update.update.State)
+	assert.Equal(t, "new-id", update.update.ResourceId)
 }
 
 func TestOperationRecorderFailureBeforeAnyWriteCarriesPriorState(t *testing.T) {

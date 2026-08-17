@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
@@ -147,15 +148,14 @@ type operationRecorder struct {
 	// "deployments/{deployment_id}/versions/{version_id}".
 	parent string
 
-	// mu guards sequenceIDs.
+	// mu guards recorded.
 	mu sync.Mutex
 
-	// sequenceIDs holds the last sequence_id the service returned per resource key,
-	// which is how a resource already recorded in this version is recognised. The
-	// service names operations "operations/{resource_key}", so it keeps one per
-	// resource per version: the second write for a resource has to update that
-	// operation, and echo this value as the concurrency precondition.
-	sequenceIDs map[string]string
+	// recorded holds what the service has per resource key, which is how a resource
+	// already recorded in this version is recognised. The service names operations
+	// "operations/{resource_key}", so it keeps one per resource per version: the second
+	// write for a resource has to update that operation.
+	recorded map[string]recordedState
 }
 
 // NewOperationRecorder returns an operationUploader backed by the DMS operations
@@ -169,23 +169,40 @@ func NewOperationRecorder(apiClient *client.DatabricksClient, deploymentID strin
 // operationClient.
 func newOperationRecorder(ops operationClient, deploymentID string, version int64) operationUploader {
 	return &operationRecorder{
-		ops:         ops,
-		parent:      fmt.Sprintf("deployments/%s/versions/%d", deploymentID, version),
-		sequenceIDs: make(map[string]string),
+		ops:      ops,
+		parent:   fmt.Sprintf("deployments/%s/versions/%d", deploymentID, version),
+		recorded: make(map[string]recordedState),
 	}
 }
 
-// updatableFields are the operation fields a later write for the same resource can
-// change. resource_id is included because a recreate learns a new one.
-var updatableFields = []string{"state", "error_message", "resource_id", "status"}
+// recordedState is what the service holds for a resource in this version.
+type recordedState struct {
+	// sequenceID is echoed as the concurrency precondition on the next update.
+	sequenceID string
 
-// failureFields are the fields a failure changes on an operation that already exists.
-// It deliberately leaves state and resource_id alone: the resource was written before
-// the step that failed, so what is already recorded describes something that exists,
-// and a failure carries no state of its own to replace it with. Including them would
-// clear both - the service takes the update mask literally - and a resource with no
-// state is dropped from the deployment, so the next plan would try to create it again.
-var failureFields = []string{"error_message", "status"}
+	// hasState says whether the recorded operation describes the resource. A failure
+	// must not disturb that description, and must supply one when it is missing.
+	hasState bool
+}
+
+// updateMask lists the fields an update changes. The service takes it literally: a
+// field named in the mask is written, a field left out keeps the value it had.
+//
+// A failure is the only operation that leaves anything out, and only when the service
+// already describes the resource. It says why the resource stopped, not how it looks,
+// and the state it carries is from before the deploy - older than whatever the write
+// recorded. Naming state would replace the newer description with that, or clear it
+// outright, and a resource with no state is dropped from the deployment, which has the
+// next plan create it again.
+//
+// When the service has no state - a recreate whose in-progress delete recorded none -
+// the failure is the only thing that can supply one, so it does.
+func updateMask(op recordedOperation, has recordedState) []string {
+	if op.isFailure() && has.hasState {
+		return []string{"error_message", "status"}
+	}
+	return []string{"state", "error_message", "resource_id", "status"}
+}
 
 func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op recordedOperation) error {
 	// The read path re-adds the prefix; see dstate.ResourceKeyPrefix.
@@ -212,34 +229,22 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 	}
 
 	r.mu.Lock()
-	sequenceID, recorded := r.sequenceIDs[dmsKey]
+	has, recorded := r.recorded[dmsKey]
 	r.mu.Unlock()
 
 	var result operationResponse
 	var err error
+	mask := updateMask(op, has)
 	if recorded {
 		// Only the masked fields and sequence_id are read on an update; action_type
 		// stays as the operation was created, so sending it would just be misleading.
-		body := updateOperationRequest{
+		result, err = r.ops.UpdateOperation(ctx, r.parent, dmsKey, mask, updateOperationRequest{
 			State:        operation.State,
 			ErrorMessage: operation.ErrorMessage,
 			ResourceId:   operation.ResourceId,
 			Status:       operation.Status,
-			SequenceId:   sequenceID,
-		}
-		fields := updatableFields
-		if op.isFailure() {
-			// Mark the existing record failed and leave the rest of it alone; see
-			// failureFields. A failure that arrives before any operation exists still
-			// goes through CreateOperation below, carrying the prior state.
-			fields = failureFields
-			body = updateOperationRequest{
-				ErrorMessage: operation.ErrorMessage,
-				Status:       operation.Status,
-				SequenceId:   sequenceID,
-			}
-		}
-		result, err = r.ops.UpdateOperation(ctx, r.parent, dmsKey, fields, body)
+			SequenceId:   has.sequenceID,
+		})
 	} else {
 		result, err = r.ops.CreateOperation(ctx, r.parent, dmsKey, operation)
 	}
@@ -247,10 +252,16 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 		return err
 	}
 
-	// Remember the sequence the service assigned, so the next write for this
-	// resource updates rather than re-creates.
+	// Remember what the service now holds, so the next write for this resource updates
+	// rather than re-creates, and a failure can tell whether the resource is already
+	// described. A mask that left state out leaves whatever was there.
+	hasState := op.state != nil
+	if recorded && !slices.Contains(mask, "state") {
+		hasState = has.hasState
+	}
+
 	r.mu.Lock()
-	r.sequenceIDs[dmsKey] = result.SequenceId
+	r.recorded[dmsKey] = recordedState{sequenceID: result.SequenceId, hasState: hasState}
 	r.mu.Unlock()
 
 	return nil
