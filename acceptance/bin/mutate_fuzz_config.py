@@ -6,13 +6,15 @@ Destructive: delete/replace a field (token, dangerous scalar, or empty container
 Additive: inject one optional from INJECT that the base omits.
 Each seed picks exactly one mode so an additive finding maps to one catalog entry.
 
-Bases are deploy-verified YAML templates in bundle/invariant/configs/.
-Emits JSON on stdout; the bundle reads it as YAML 1.2.
+Bases are deploy-verified YAML templates in bundle/invariant/configs/, parsed via
+$YAML2JSON (stdlib Python cannot read YAML). Emits JSON on stdout; the bundle
+reads it as YAML 1.2.
 """
 
 import json
 import os
 import random
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -170,8 +172,9 @@ def dump_config(config):
 
 def load_base(name):
     path = os.path.join(CONFIGS_DIR, name + ".yml.tmpl")
-    with open(path) as f:
-        return json.loads(substitute_variables(f.read()))
+    # Same loader as the bundle; substitute after parse so placeholders stay JSON strings.
+    result = subprocess.run([os.environ["YAML2JSON"], path], capture_output=True, check=True, text=True)
+    return json.loads(substitute_variables(result.stdout))
 
 
 def collect(node, out):

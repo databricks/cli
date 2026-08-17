@@ -13,6 +13,7 @@ configs so an algorithm change shows up as an acceptance output diff.
 
 import json
 import os
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -61,7 +62,7 @@ def main():
             continue
         try:
             parsed = load_base(name)
-        except (OSError, json.JSONDecodeError) as e:
+        except (OSError, subprocess.CalledProcessError, json.JSONDecodeError) as e:
             sys.stderr.write(f"{name}: could not load fixture: {e}\n")
             failed = True
             continue

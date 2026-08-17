@@ -3,8 +3,9 @@ Harness over ../invariant: mutates curated configs and runs a real target script
 rejected / gap / hang / bug. `FUZZ_TARGET` in test.toml picks the target.
 
 Each seed reads and mutates a deploy-verified YAML base from
-`../invariant/configs/` and may inject a curated optional from INJECT. These
-bases use JSON syntax (valid YAML 1.2) so the stdlib-only mutator can read them.
+`../invariant/configs/` and may inject a curated optional from INJECT. The mutator
+is stdlib-only Python, so it parses bases through `$YAML2JSON`
+(`acceptance/cmd/yaml2json`).
 
 Helpers come from ../invariant/script.prepare (sourced explicitly; prepare/test.toml
 only merge along the directory chain). Server stubs are copied into test.toml;
