@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files...
 Created jobs.foo
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === After the initial deploy the python_file exists
@@ -29,7 +29,7 @@ Error: Path (/Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/file
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files...
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py

@@ -6,7 +6,7 @@ Directory does not exist
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created jobs.foo
 Created pipelines.bar
-Files: 10 uploaded, 0 deleted
+Files: 9 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Assert the snapshot file exists

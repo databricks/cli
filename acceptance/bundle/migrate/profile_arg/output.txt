@@ -2,7 +2,7 @@
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
 Created jobs.test_job
-Files: 7 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deployment migrate -p non_existent321
@@ -19,7 +19,7 @@ To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.js
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files...
 Created jobs.test_job
 Created schemas.test_schema
-Files: 7 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deployment migrate -p non_existent321 -t prod

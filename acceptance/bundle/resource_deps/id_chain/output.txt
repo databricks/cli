@@ -19,7 +19,7 @@ Created jobs.b
 Created jobs.c
 Created jobs.d
 Created jobs.e
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests_short

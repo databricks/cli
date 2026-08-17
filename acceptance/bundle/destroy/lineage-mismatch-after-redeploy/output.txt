@@ -4,7 +4,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default/files...
 Created jobs.test_job
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
@@ -20,7 +20,7 @@ Destroy: 1 deleted
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default/files...
 Created jobs.test_job
-Files: 7 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Machine A: any command that pulls remote state now fails

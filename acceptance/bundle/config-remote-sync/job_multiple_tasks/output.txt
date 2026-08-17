@@ -2,7 +2,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQU
 Created jobs.my_job
 Created jobs.no_tasks_job
 Created jobs.rename_task_job
-Files: 8 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify c_task, remove d_task, add e_task

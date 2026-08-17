@@ -36,7 +36,7 @@ Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created clusters.test_cluster
 Created jobs.some_other_job
-Files: 16 uploaded, 0 deleted
+Files: 15 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle run some_other_job

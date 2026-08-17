@@ -4,7 +4,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created models.mymodel
 Created models.mymodel.permissions
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //permissions/registered-models
@@ -32,7 +32,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === Remove manager permission and description, deploy from planUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated models.mymodel
 Updated models.mymodel.permissions
-Files: 5 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //permissions/registered-models

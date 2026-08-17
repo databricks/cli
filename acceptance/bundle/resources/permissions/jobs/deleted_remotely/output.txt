@@ -5,7 +5,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-deleted-remotely/default/files...
 Created jobs.job_with_permissions
 Created jobs.job_with_permissions.permissions
-Files: 8 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //jobs/
@@ -109,7 +109,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-deleted-remotely/default/files...
 Updated jobs.job_with_permissions.permissions
-Files: 5 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //jobs/

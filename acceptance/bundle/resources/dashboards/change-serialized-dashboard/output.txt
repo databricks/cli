@@ -5,7 +5,7 @@ create dashboards.my_dashboard
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/files...
 Created dashboards.my_dashboard
-Files: 10 uploaded, 0 deleted
+Files: 9 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "display_name": "test dashboard",
@@ -26,7 +26,7 @@ update dashboards.my_dashboard
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/files...
 Updated dashboards.my_dashboard
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 {
   "display_name": "test dashboard",

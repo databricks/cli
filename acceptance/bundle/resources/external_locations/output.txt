@@ -14,7 +14,7 @@ Created catalogs.test_catalog
 Created catalogs.test_catalog.grants
 Created external_locations.test_location
 Created external_locations.test_location.grants
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 === Assert the catalog is created with grants

@@ -1,7 +1,7 @@
 Uploading dummy.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created jobs.my_job
-Files: 9 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify job fields remotely
@@ -64,7 +64,7 @@ Resource: resources.jobs.my_job
 -        - job_cluster_key: test_cluster
 +        - job_cluster_key: test_cluster_renamed
            new_cluster:
-             spark_version: [[DEFAULT_SPARK_VERSION]]
+             spark_version: [DEFAULT_SPARK_VERSION]
 @@ -34,5 +40,5 @@
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/notebook
@@ -73,7 +73,7 @@ Resource: resources.jobs.my_job
          - task_key: inline_cluster_task
            notebook_task:
 @@ -41,5 +47,7 @@
-             spark_version: [[DEFAULT_SPARK_VERSION]]
+             spark_version: [DEFAULT_SPARK_VERSION]
              node_type_id: [NODE_TYPE_ID]
 -            num_workers: 1
 +            num_workers: 2

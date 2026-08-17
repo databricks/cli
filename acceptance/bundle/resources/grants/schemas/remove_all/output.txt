@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-all-[UNIQUE_NAME]/default/files...
 Created schemas.grants_schema
 Created schemas.grants_schema.grants
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] grants get schema main.schema_remove_all_[UNIQUE_NAME]
