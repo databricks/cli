@@ -41,10 +41,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	//
 	// The state DB records through it, so every state write becomes an operation and
 	// DMS mirrors the WAL.
-	// Sized by the plan because every recorded key comes from it: makeGraph's nodes are
-	// its keys, the walk below iterates those, and each resource records under its own
-	// key. Recording relies on that to never block; see operationSink.queue.
-	opSink := newOperationSink(ctx, b.OpRec, len(plan.Plan))
+	opSink := newOperationSink(ctx, b.OpRec)
 	if opSink != nil {
 		// Assigned only when non-nil: a nil *operationSink in an interface is not a
 		// nil interface, so the state DB's nil check would not see it.

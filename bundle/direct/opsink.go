@@ -11,9 +11,16 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
+// operationSinkQueueSize is how many resources may have an unrecorded state write
+// before the next one waits. Recording is deliberately not free: a deploy that ran far
+// ahead of the service would leave a long tail of resources applied but unrecorded, and
+// DMS is the source of truth for the next plan. At one waiting operation per resource
+// this bounds the lag to roughly the apply parallelism.
+const operationSinkQueueSize = 10
+
 // operationSink uploads recorded operations from one background goroutine, so a deploy
-// never waits on the CreateOperation round trip and the service sees one request at a
-// time.
+// does not wait on every CreateOperation round trip and the service sees one request at
+// a time.
 //
 // The queue carries resource keys and pending holds the operation for each, which is
 // what makes coalescing fall out: a second write for a resource replaces the first in
@@ -27,10 +34,10 @@ type operationSink struct {
 	uploader operationUploader
 
 	// queue carries the resource keys that have an operation waiting. A key is sent
-	// only when nothing was waiting for it, so at most one token exists per resource
-	// and a queue sized for the deploy's resources cannot fill. That is what keeps
-	// recording from blocking, which matters because it runs while the state DB holds
-	// its lock - a blocked send there would stall every other resource's state write.
+	// only when nothing was waiting for it, so a resource never occupies more than one
+	// slot; once the queue is full, recording waits for the uploader, which is what
+	// holds the deploy back. Callers must therefore record outside the state DB lock -
+	// see dstate.SaveState.
 	queue chan string
 
 	// done is closed once the uploader has drained the queue and returned.
@@ -51,20 +58,17 @@ type operationSink struct {
 }
 
 // newOperationSink starts the uploader, returning nil when uploader is nil (recording
-// off; every method is a no-op on a nil sink). resources is how many resource keys the
-// deploy can record, which is what the queue is sized for. ctx must outlive close.
-func newOperationSink(ctx context.Context, uploader operationUploader, resources int) *operationSink {
+// off; every method is a no-op on a nil sink). ctx must outlive close.
+func newOperationSink(ctx context.Context, uploader operationUploader) *operationSink {
 	if uploader == nil {
 		return nil
 	}
 
 	s := &operationSink{
 		uploader: uploader,
-		// At least one slot: a zero-capacity queue would make the send block, which
-		// is the one thing the sizing above exists to prevent.
-		queue:   make(chan string, max(resources, 1)),
-		done:    make(chan struct{}),
-		pending: make(map[string]recordedOperation),
+		queue:    make(chan string, operationSinkQueueSize),
+		done:     make(chan struct{}),
+		pending:  make(map[string]recordedOperation),
 	}
 	s.stopQueue = sync.OnceFunc(func() { close(s.queue) })
 
@@ -111,8 +115,9 @@ func (s *operationSink) recordFailure(ctx context.Context, resourceKey string, a
 	s.record(resourceKey, op)
 }
 
-// record makes op the operation waiting for resourceKey. Recording on a closed sink
-// panics; every caller must have returned before close.
+// record makes op the operation waiting for resourceKey, waiting for the uploader when
+// the queue is full. Recording on a closed sink panics; every caller must have returned
+// before close.
 func (s *operationSink) record(resourceKey string, op recordedOperation) {
 	s.mu.Lock()
 	waiting, queued := s.pending[resourceKey]
@@ -123,7 +128,8 @@ func (s *operationSink) record(resourceKey string, op recordedOperation) {
 	s.mu.Unlock()
 
 	// Already queued: the uploader reads the map when it reaches the key, so it picks
-	// up what was just stored without a second token.
+	// up what was just stored without a second token - and without waiting, since a
+	// resource that is already represented in the queue is not running ahead.
 	if !queued {
 		s.queue <- resourceKey
 	}

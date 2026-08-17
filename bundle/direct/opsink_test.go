@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -101,7 +102,7 @@ func recordState(t *testing.T, s *operationSink, resourceKey, name string) {
 
 func TestOperationSinkUploadsEachOperation(t *testing.T) {
 	f := &fakeUploader{}
-	s := newOperationSink(t.Context(), f, 32)
+	s := newOperationSink(t.Context(), f)
 
 	for i := range 20 {
 		recordState(t, s, "resources.jobs.job"+strconv.Itoa(i), "n")
@@ -116,7 +117,7 @@ func TestOperationSinkCoalescesWritesBehindAnUpload(t *testing.T) {
 	// the resource's full state, so only the newest needs to go: the resource costs
 	// two requests rather than three.
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 2)}
-	s := newOperationSink(t.Context(), f, 32)
+	s := newOperationSink(t.Context(), f)
 
 	recordState(t, s, "resources.jobs.foo", "v1")
 	assert.Equal(t, "resources.jobs.foo", <-f.started)
@@ -139,7 +140,7 @@ func TestOperationSinkCoalescedFailureKeepsTheStateItReplaces(t *testing.T) {
 	// state with its own emptiness: a resource recorded without state is dropped from
 	// the deployment, so the next plan would create it a second time.
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 2)}
-	s := newOperationSink(t.Context(), f, 32)
+	s := newOperationSink(t.Context(), f)
 
 	// Occupy the uploader with an unrelated resource, so the two writes below both
 	// land in pending and coalesce.
@@ -169,7 +170,7 @@ func TestOperationSinkCoalescedDeleteStillClearsState(t *testing.T) {
 	// A delete legitimately carries no state, and coalescing must let it through: the
 	// resource is gone, and keeping the state it replaces would leave it listed.
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 2)}
-	s := newOperationSink(t.Context(), f, 32)
+	s := newOperationSink(t.Context(), f)
 
 	recordState(t, s, "resources.jobs.busy", "v1")
 	assert.Equal(t, "resources.jobs.busy", <-f.started)
@@ -191,7 +192,7 @@ func TestOperationSinkCoalescedDeleteStillClearsState(t *testing.T) {
 
 func TestOperationSinkRecordDuringUploadIsStillUploaded(t *testing.T) {
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 2)}
-	s := newOperationSink(t.Context(), f, 32)
+	s := newOperationSink(t.Context(), f)
 
 	recordState(t, s, "resources.jobs.foo", "v1")
 	assert.Equal(t, "resources.jobs.foo", <-f.started)
@@ -211,10 +212,49 @@ func TestOperationSinkRecordDuringUploadIsStillUploaded(t *testing.T) {
 	assert.Empty(t, s.pending)
 }
 
+func TestOperationSinkRecordWaitsWhenTheQueueIsFull(t *testing.T) {
+	// Recording holds the deploy back rather than letting it run arbitrarily far ahead
+	// of what the service has been told: once every slot holds a resource, the next
+	// write waits for the uploader.
+	// started is buffered for every upload: nothing reads it after the first, and an
+	// uploader blocked sending to it would never drain the queue.
+	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, operationSinkQueueSize+4)}
+	s := newOperationSink(t.Context(), f)
+
+	// One key is taken off the queue and stuck in the uploader; the rest fill it.
+	recordState(t, s, "resources.jobs.busy", "v1")
+	assert.Equal(t, "resources.jobs.busy", <-f.started)
+	for i := range operationSinkQueueSize {
+		recordState(t, s, "resources.jobs.job"+strconv.Itoa(i), "v1")
+	}
+
+	// The next distinct resource has nowhere to go until the uploader moves on. Called
+	// directly rather than through recordState: its assertions may only run on the
+	// test's own goroutine.
+	late := envelope(t, "v1")
+	blocked := make(chan struct{})
+	go func() {
+		s.RecordOperation(t.Context(), "resources.jobs.late", dstate.OperationInfo{Action: deployplan.Update}, "id-1", late)
+		close(blocked)
+	}()
+
+	select {
+	case <-blocked:
+		t.Fatal("recording did not wait for a full queue, so the deploy can outrun the service")
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	close(f.block)
+	<-blocked
+	require.NoError(t, s.close())
+
+	assert.Len(t, f.recorded(), operationSinkQueueSize+2)
+}
+
 func TestOperationSinkReturnsUploadError(t *testing.T) {
 	uploadErr := errors.New("boom")
 	f := &fakeUploader{err: uploadErr}
-	s := newOperationSink(t.Context(), f, 32)
+	s := newOperationSink(t.Context(), f)
 
 	recordState(t, s, "resources.jobs.foo", "v1")
 
@@ -228,7 +268,7 @@ func TestOperationSinkKeepsRecordingAfterUploadError(t *testing.T) {
 	// One failed upload must not drop the records for everything behind it, so DMS
 	// ends up as close to reality as it can get.
 	f := &fakeUploader{err: errors.New("boom")}
-	s := newOperationSink(t.Context(), f, 32)
+	s := newOperationSink(t.Context(), f)
 
 	recordState(t, s, "resources.jobs.foo", "v1")
 	recordState(t, s, "resources.jobs.bar", "v1")
@@ -239,7 +279,7 @@ func TestOperationSinkKeepsRecordingAfterUploadError(t *testing.T) {
 
 func TestOperationSinkFirstErrIsWhatStopsTheDeploy(t *testing.T) {
 	f := &fakeUploader{err: errors.New("boom")}
-	s := newOperationSink(t.Context(), f, 32)
+	s := newOperationSink(t.Context(), f)
 
 	assert.NoError(t, s.firstErr())
 
@@ -253,7 +293,7 @@ func TestOperationSinkFirstErrIsWhatStopsTheDeploy(t *testing.T) {
 
 func TestOperationSinkDropsUnsupportedAction(t *testing.T) {
 	f := &fakeUploader{}
-	s := newOperationSink(t.Context(), f, 32)
+	s := newOperationSink(t.Context(), f)
 
 	// Skip never reaches a sink; it is dropped with a warning rather than failing a
 	// resource that deployed fine.
@@ -265,7 +305,7 @@ func TestOperationSinkDropsUnsupportedAction(t *testing.T) {
 
 func TestOperationSinkDropsOversizedState(t *testing.T) {
 	f := &fakeUploader{}
-	s := newOperationSink(t.Context(), f, 32)
+	s := newOperationSink(t.Context(), f)
 
 	s.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Create}, "id-1", envelope(t, strings.Repeat("x", maxOperationStateSize)))
 	require.NoError(t, s.close())
@@ -275,7 +315,7 @@ func TestOperationSinkDropsOversizedState(t *testing.T) {
 
 func TestOperationSinkCloseIsIdempotent(t *testing.T) {
 	f := &fakeUploader{}
-	s := newOperationSink(t.Context(), f, 32)
+	s := newOperationSink(t.Context(), f)
 
 	recordState(t, s, "resources.jobs.foo", "v1")
 
@@ -294,5 +334,5 @@ func TestNilOperationSinkIsNoOp(t *testing.T) {
 
 func TestNewOperationSinkNilUploaderIsNil(t *testing.T) {
 	// Recording off: the sink is nil so the state DB's nil check leaves it unset.
-	assert.Nil(t, newOperationSink(t.Context(), nil, 32))
+	assert.Nil(t, newOperationSink(t.Context(), nil))
 }

@@ -136,6 +136,27 @@ func NewDatabase(lineage string, serial int) Database {
 // the bundle does not record deployment history.
 func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry, info OperationInfo) error {
 	db.AssertOpenedForWrite()
+
+	sink, recorded, err := db.saveStateEntry(key, newID, state, dependsOn)
+	if err != nil {
+		return err
+	}
+
+	// Recorded after the WAL write, so DMS never reports a state the deploy failed to
+	// persist locally, and outside the lock because recording applies backpressure:
+	// it waits when the service is behind, and waiting under db.mu would hold up every
+	// other resource's write rather than just this one.
+	if sink != nil {
+		sink.RecordOperation(ctx, key, info, newID, recorded)
+	}
+
+	return nil
+}
+
+// saveStateEntry writes the resource's state and returns the sink to report it to,
+// along with the serialized envelope to report, or a nil sink when the bundle does not
+// record deployment history.
+func (db *DeploymentState) saveStateEntry(key, newID string, state any, dependsOn []deployplan.DependsOnEntry) (OperationSink, json.RawMessage, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -145,7 +166,7 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 
 	jsonMessage, err := json.Marshal(state)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	entry := ResourceEntry{
@@ -156,32 +177,49 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 
 	err = appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	db.stateIDs[key] = newID
 
-	// Recorded after the WAL write, so DMS never reports a state the deploy failed to
-	// persist locally.
-	if db.sink != nil {
-		recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
-		if err != nil {
-			return err
-		}
-		db.sink.RecordOperation(ctx, key, info, newID, recorded)
+	if db.sink == nil {
+		return nil, nil, nil
 	}
 
-	return nil
+	// Serialized here, while the entry the WAL took is still to hand.
+	recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
+	if err != nil {
+		return nil, nil, err
+	}
+	return db.sink, recorded, nil
 }
 
 // DeleteState drops the resource's state entry. info distinguishes a real delete
 // from the intermediate drop a recreate performs, both of which are recorded.
 func (db *DeploymentState) DeleteState(ctx context.Context, key string, info OperationInfo) error {
 	db.AssertOpenedForWrite()
+
+	sink, deletedID, err := db.deleteStateEntry(key)
+	if err != nil {
+		return err
+	}
+
+	// State is nil: the resource no longer exists. Recorded outside the lock for the
+	// same reason as SaveState.
+	if sink != nil {
+		sink.RecordOperation(ctx, key, info, deletedID, nil)
+	}
+
+	return nil
+}
+
+// deleteStateEntry drops the resource's state entry and returns the sink to report it
+// to, along with the id it had, or a nil sink when there is nothing to report.
+func (db *DeploymentState) deleteStateEntry(key string) (OperationSink, string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
 	if db.Data.State == nil {
-		return nil
+		return nil, "", nil
 	}
 
 	// Read before the delete: DMS needs the id to say which resource went away.
@@ -189,16 +227,11 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, info Ope
 
 	err := appendJSONLine(db.walFile, WALEntry{Key: key})
 	if err != nil {
-		return err
+		return nil, "", err
 	}
 	delete(db.stateIDs, key)
 
-	// State is nil: the resource no longer exists.
-	if db.sink != nil {
-		db.sink.RecordOperation(ctx, key, info, deletedID, nil)
-	}
-
-	return nil
+	return db.sink, deletedID, nil
 }
 
 func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
