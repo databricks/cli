@@ -154,7 +154,7 @@ def fail(seed, seed_dir, kind, reason, prefix=""):
     Path("LOG.repro").write_text(
         f"fuzz: seed {seed} {reason}, reproduce with: {prefix}"
         f"ENVFILTER=FUZZ_TARGET={TARGET} FUZZ_SEED_START={seed} "
-        f"FUZZ_SEED_COUNT=1 FUZZ_CHECK_DRIFT={CHECK_DRIFT} task test-fuzz\n"
+        f"FUZZ_SEED_COUNT=1 FUZZ_CHECK_DRIFT={CHECK_DRIFT} ./task test-fuzz\n"
     )
     sys.exit(1)
 

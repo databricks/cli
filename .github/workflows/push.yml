@@ -458,7 +458,7 @@ jobs:
             echo "Use the failing variant's \`LOG.repro\`, or:"
             echo
             echo '```'
-            echo 'ENVFILTER=FUZZ_TARGET=<target> FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_CHECK_DRIFT=1 task test-fuzz'
+            echo 'ENVFILTER=FUZZ_TARGET=<target> FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_CHECK_DRIFT=1 ./task test-fuzz'
             echo '```'
             echo
             echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

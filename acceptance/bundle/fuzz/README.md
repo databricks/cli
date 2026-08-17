@@ -10,7 +10,7 @@ only merge along the directory chain). Server stubs are copied into test.toml;
 script asserts stub parity. Unmodeled routes return `TESTSERVER_GAP` (gaps).
 
 A failure is a CLI bug. `LOG.repro` prints e.g.
-`ENVFILTER=FUZZ_TARGET=no_drift FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_CHECK_DRIFT=0 task test-fuzz`
+`ENVFILTER=FUZZ_TARGET=no_drift FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_CHECK_DRIFT=0 ./task test-fuzz`
 (`ENVFILTER` because `FUZZ_TARGET` is a matrix key).
 
 `FUZZ_CHECK_DRIFT=0` (committed run) uses plan-determinism; `1` (`task test-fuzz` /
