@@ -291,25 +291,33 @@ func TestOperationSinkFirstErrIsWhatStopsTheDeploy(t *testing.T) {
 	assert.Error(t, s.firstErr())
 }
 
-func TestOperationSinkDropsUnsupportedAction(t *testing.T) {
+func TestOperationSinkFailsOnUnsupportedAction(t *testing.T) {
 	f := &fakeUploader{}
 	s := newOperationSink(t.Context(), f)
 
-	// Skip never reaches a sink; it is dropped with a warning rather than failing a
-	// resource that deployed fine.
+	// Skip never reaches a sink, so this is a programming error rather than anything a
+	// user did - but it still has to fail the deploy rather than pass silently, because
+	// the resource would be left out of the deployment.
 	s.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Skip}, "id-1", nil)
-	require.NoError(t, s.close())
 
+	err := s.close()
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "resources.jobs.foo")
 	assert.Empty(t, f.recorded())
 }
 
-func TestOperationSinkDropsOversizedState(t *testing.T) {
+func TestOperationSinkFailsOnOversizedState(t *testing.T) {
+	// The service will not take a state this large, so the resource cannot be recorded.
+	// Failing here says so, where reporting nothing would leave DMS without the resource
+	// and the next plan would create it again.
 	f := &fakeUploader{}
 	s := newOperationSink(t.Context(), f)
 
 	s.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Create}, "id-1", envelope(t, strings.Repeat("x", maxOperationStateSize)))
-	require.NoError(t, s.close())
 
+	err := s.close()
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "exceeds the 65536 byte limit")
 	assert.Empty(t, f.recorded())
 }
 

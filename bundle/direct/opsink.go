@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/libs/log"
 )
 
 // operationSinkQueueSize is how many resources may have an unrecorded state write
@@ -89,9 +88,10 @@ func (s *operationSink) RecordOperation(ctx context.Context, resourceKey string,
 
 	op, err := newStateOperation(info, resourceID, state)
 	if err != nil {
-		// The deploy already persisted this write locally, so failing it here would
-		// report an error about history for a resource that deployed fine.
-		log.Warnf(ctx, "Not recording operation for %s: %s", resourceKey, err)
+		// Fails the deploy, like an upload failure: the write is on disk locally, but
+		// DMS owns the resource set the next plan reads (see dstate.readDMSState), so
+		// leaving a resource unrecorded would have that plan create it a second time.
+		s.setErr(fmt.Errorf("recording operation for %s: %w", resourceKey, err))
 		return
 	}
 
@@ -108,7 +108,7 @@ func (s *operationSink) recordFailure(ctx context.Context, resourceKey string, a
 
 	op, err := newFailedOperation(action, resourceID, priorState, cause)
 	if err != nil {
-		log.Warnf(ctx, "Not recording failure for %s: %s", resourceKey, err)
+		s.setErr(fmt.Errorf("recording failure for %s: %w", resourceKey, err))
 		return
 	}
 
