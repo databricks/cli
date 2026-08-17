@@ -28,11 +28,12 @@ type RepositoryInfo struct {
 	WorktreeRoot string
 }
 
+// gitInfo holds the fields we read from get-status's git_info. Only id and path
+// are reliable: branch/commit/url are absent for git-in-data-plane folders (and
+// deprecated on the workspace API), so those are read from the Repos API by id.
 type gitInfo struct {
-	Branch       string `json:"branch"`
-	HeadCommitID string `json:"head_commit_id"`
-	Path         string `json:"path"`
-	URL          string `json:"url"`
+	ID   int64  `json:"id"`
+	Path string `json:"path"`
 }
 
 type response struct {
@@ -100,17 +101,25 @@ func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 		return result, err
 	}
 
-	// Check if GitInfo is present and extract relevant fields
 	gi := response.GitInfo
-	if gi != nil {
-		fixedPath := ensureWorkspacePrefix(gi.Path)
-		result.OriginURL = gi.URL
-		result.LatestCommit = gi.HeadCommitID
-		result.CurrentBranch = gi.Branch
-		result.WorktreeRoot = fixedPath
-	} else {
+	if gi == nil {
 		log.Infof(ctx, "Failed to load git info from %s", apiEndpoint)
+		return result, nil
 	}
+	result.WorktreeRoot = ensureWorkspacePrefix(gi.Path)
+
+	// get-status omits branch/commit/url for git-in-data-plane folders; only
+	// classic Repos return them inline, and those fields are being deprecated on
+	// the workspace API. Read them from the Repos API by id, which is
+	// authoritative for both folder types.
+	repo, err := w.Repos.GetByRepoId(ctx, gi.ID)
+	if err != nil {
+		log.Warnf(ctx, "failed to load git metadata from Repos API for %s: %s", result.WorktreeRoot, err)
+		return result, nil
+	}
+	result.OriginURL = repo.Url
+	result.LatestCommit = repo.HeadCommitId
+	result.CurrentBranch = repo.Branch
 
 	return result, nil
 }
