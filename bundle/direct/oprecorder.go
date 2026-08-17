@@ -51,11 +51,33 @@ type recordedOperation struct {
 	// delete, where the resource no longer exists, and for a failure, where the
 	// resource was not written.
 	state json.RawMessage
+
+	// updateFields is the update mask to send if this operation updates one the service
+	// already has. The service takes it literally: a field named here is written, a field
+	// left out keeps the value it had.
+	updateFields []string
 }
+
+// describesResource is the update mask for an operation that says how the resource
+// looks: everything an update is allowed to change.
+var describesResource = []string{"state", "error_message", "resource_id", "status"}
+
+// failedKeepingState is the update mask for a failure. A failure says why the
+// resource stopped rather than how it looks, and the state it reports is the pre-deploy
+// one - older than whatever a write already recorded - so it leaves state alone.
+var failedKeepingState = []string{"error_message", "status"}
 
 // isFailure reports whether the operation records a resource that did not apply.
 func (op recordedOperation) isFailure() bool {
 	return op.status == bundledeployments.OperationStatusOperationStatusFailed
+}
+
+// checkStateSize rejects a state the service will not accept.
+func checkStateSize(state json.RawMessage) error {
+	if len(state) > maxOperationStateSize {
+		return fmt.Errorf("serialized state is %d bytes, which exceeds the %d byte limit for recording deployment history", len(state), maxOperationStateSize)
+	}
+	return nil
 }
 
 // newStateOperation describes a state write for upload. state is the serialized
@@ -67,8 +89,8 @@ func newStateOperation(info dstate.OperationInfo, resourceID string, state json.
 		return recordedOperation{}, err
 	}
 
-	if len(state) > maxOperationStateSize {
-		return recordedOperation{}, fmt.Errorf("serialized state is %d bytes, which exceeds the %d byte limit for recording deployment history", len(state), maxOperationStateSize)
+	if err := checkStateSize(state); err != nil {
+		return recordedOperation{}, err
 	}
 
 	status := bundledeployments.OperationStatusOperationStatusSucceeded
@@ -77,10 +99,11 @@ func newStateOperation(info dstate.OperationInfo, resourceID string, state json.
 	}
 
 	return recordedOperation{
-		action:     actionType,
-		resourceID: resourceID,
-		status:     status,
-		state:      state,
+		action:       actionType,
+		resourceID:   resourceID,
+		status:       status,
+		state:        state,
+		updateFields: describesResource,
 	}, nil
 }
 
@@ -99,6 +122,12 @@ func newFailedOperation(action deployplan.ActionType, resourceID string, priorSt
 		return recordedOperation{}, err
 	}
 
+	// A guard: this state came back from the state DB, so it was within the limit when
+	// it was written.
+	if err := checkStateSize(priorState); err != nil {
+		return recordedOperation{}, err
+	}
+
 	message := cause.Error()
 	if len(message) > maxOperationErrorMessageSize {
 		message = message[:maxOperationErrorMessageSize]
@@ -110,6 +139,7 @@ func newFailedOperation(action deployplan.ActionType, resourceID string, priorSt
 		status:       bundledeployments.OperationStatusOperationStatusFailed,
 		errorMessage: message,
 		state:        priorState,
+		updateFields: failedKeepingState,
 	}, nil
 }
 
@@ -135,8 +165,8 @@ func priorRecord(db *dstate.DeploymentState, resourceKey string) (string, json.R
 	return entry.ID, raw
 }
 
-// operationUploader records an applied resource operation with DMS. Uploads run
-// on the operationQueue workers, off the apply path.
+// operationUploader records an applied resource operation with DMS. Uploads run on
+// the operationSink goroutine, off the apply path.
 type operationUploader interface {
 	upload(ctx context.Context, resourceKey string, op recordedOperation) error
 }
@@ -185,25 +215,6 @@ type recordedState struct {
 	hasState bool
 }
 
-// updateMask lists the fields an update changes. The service takes it literally: a
-// field named in the mask is written, a field left out keeps the value it had.
-//
-// A failure is the only operation that leaves anything out, and only when the service
-// already describes the resource. It says why the resource stopped, not how it looks,
-// and the state it carries is from before the deploy - older than whatever the write
-// recorded. Naming state would replace the newer description with that, or clear it
-// outright, and a resource with no state is dropped from the deployment, which has the
-// next plan create it again.
-//
-// When the service has no state - a recreate whose in-progress delete recorded none -
-// the failure is the only thing that can supply one, so it does.
-func updateMask(op recordedOperation, has recordedState) []string {
-	if op.isFailure() && has.hasState {
-		return []string{"error_message", "status"}
-	}
-	return []string{"state", "error_message", "resource_id", "status"}
-}
-
 func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op recordedOperation) error {
 	// The read path re-adds the prefix; see dstate.ResourceKeyPrefix.
 	dmsKey := strings.TrimPrefix(resourceKey, dstate.ResourceKeyPrefix)
@@ -232,9 +243,16 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 	has, recorded := r.recorded[dmsKey]
 	r.mu.Unlock()
 
+	mask := op.updateFields
+	if !has.hasState {
+		// Nothing recorded describes the resource yet, so this operation has to, even a
+		// failure that would rather leave state alone: a resource recorded without state
+		// is dropped from the deployment, and the next plan creates it again.
+		mask = describesResource
+	}
+
 	var result operationResponse
 	var err error
-	mask := updateMask(op, has)
 	if recorded {
 		// Only the masked fields and sequence_id are read on an update; action_type
 		// stays as the operation was created, so sending it would just be misleading.
@@ -255,9 +273,9 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 	// Remember what the service now holds, so the next write for this resource updates
 	// rather than re-creates, and a failure can tell whether the resource is already
 	// described. A mask that left state out leaves whatever was there.
-	hasState := op.state != nil
-	if recorded && !slices.Contains(mask, "state") {
-		hasState = has.hasState
+	hasState := has.hasState
+	if slices.Contains(mask, "state") {
+		hasState = op.state != nil
 	}
 
 	r.mu.Lock()

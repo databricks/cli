@@ -149,6 +149,9 @@ func coalesce(older, newer recordedOperation) recordedOperation {
 	if newer.isFailure() && older.state != nil {
 		newer.state = older.state
 		newer.resourceID = older.resourceID
+		// The mask comes with the state: the failure is now reporting how the resource
+		// looks, so it has to say so rather than leave state alone.
+		newer.updateFields = older.updateFields
 	}
 	return newer
 }

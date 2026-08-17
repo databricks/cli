@@ -112,6 +112,23 @@ func TestOperationSinkUploadsEachOperation(t *testing.T) {
 	assert.Len(t, f.recorded(), 20)
 }
 
+func TestOperationSinkKeepsUploadingAfterGoingIdle(t *testing.T) {
+	// The uploader parks on an empty queue instead of returning. Apply spends most of a
+	// deploy inside resource CRUD, so the queue is empty far more often than not, and an
+	// uploader that exited while idle would silently drop everything recorded after it.
+	f := &fakeUploader{}
+	s := newOperationSink(t.Context(), f)
+
+	recordState(t, s, "resources.jobs.foo", "v1")
+	require.Eventually(t, func() bool { return len(f.recorded()) == 1 }, 5*time.Second, time.Millisecond)
+
+	// The queue is drained and the uploader idle; what is recorded now still has to go.
+	recordState(t, s, "resources.jobs.bar", "v1")
+	require.NoError(t, s.close())
+
+	assert.Len(t, f.recorded(), 2)
+}
+
 func TestOperationSinkCoalescesWritesBehindAnUpload(t *testing.T) {
 	// Hold the uploader on the first write so the two behind it pile up. They carry
 	// the resource's full state, so only the newest needs to go: the resource costs
