@@ -140,6 +140,72 @@ dependencies = ["pyarrow==21.0.0", "requests>=2.0"]
 	assert.Equal(t, []string{WarnUserConstraintConflict}, codes(detectWarnings(user, tilde)))
 }
 
+func TestDetectMergeWarningsStandalonePysparkConflict(t *testing.T) {
+	// databricks-connect vendors its own pyspark, so a standalone pyspark the user
+	// declares collides with it in a shared environment. The warning fires whenever
+	// the env manages databricks-connect, independent of the pyspark version pinned,
+	// and sits after the databricks-connect warnings but before constraint conflicts.
+	user := []byte(`[project]
+requires-python = "==3.12.*"
+dependencies = ["pyspark>=3.5.0", "pyarrow==21.0.0"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.1.0"]
+`)
+	c := Constraints{
+		RequiresPython:    "==3.12.*",
+		DatabricksConnect: "databricks-connect~=18.0.0",
+		ConstraintDeps:    []string{"pyarrow<19"},
+	}
+	got := detectWarnings(user, c)
+	assert.Equal(t, []string{
+		WarnDBConnectPinOverridden,
+		WarnStandalonePysparkConflict,
+		WarnUserConstraintConflict,
+	}, codes(got))
+	assert.Contains(t, got[1].Message, "pyspark")
+	assert.Contains(t, got[1].Message, "databricks-connect")
+}
+
+func TestStandalonePysparkIgnoredInConstraintsOnly(t *testing.T) {
+	// In constraints-only mode the env does not install databricks-connect, so there
+	// is no vendored pyspark to collide with — a standalone pyspark is fine.
+	user := []byte(`[project]
+requires-python = "==3.12.*"
+dependencies = ["pyspark>=3.5.0"]
+`)
+	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: ""}
+	assert.Empty(t, detectWarnings(user, c))
+}
+
+func TestStandalonePysparkReportedOnce(t *testing.T) {
+	// pyspark declared in both [project].dependencies and a dependency group is one
+	// collision to fix, reported once so it does not inflate the code histogram.
+	user := []byte(`[project]
+requires-python = "==3.12.*"
+dependencies = ["PySpark == 4.2.0"]
+
+[dependency-groups]
+dev = ["pyspark", "databricks-connect~=18.0.0"]
+`)
+	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: "databricks-connect~=18.0.0"}
+	assert.Equal(t, []string{WarnStandalonePysparkConflict}, codes(detectWarnings(user, c)))
+}
+
+func TestStandalonePysparkFiresInConstraintsOnlyWhenUserPinsDBConnect(t *testing.T) {
+	// Constraints-only mode does not manage databricks-connect, but if the user's own
+	// pyproject pins it the merge leaves that pin in place (mergeDatabricksConnect is a
+	// no-op on an empty managed value), so uv still installs databricks-connect and a
+	// standalone pyspark still collides. The warning must fire — matching the validate
+	// hard-fail, which keys on the installed venv rather than the mode.
+	user := []byte(`[project]
+requires-python = "==3.12.*"
+dependencies = ["pyspark>=3.5.0", "databricks-connect~=18.0.0"]
+`)
+	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: ""}
+	assert.Equal(t, []string{WarnStandalonePysparkConflict}, codes(detectWarnings(user, c)))
+}
+
 func TestDetectMergeWarningsNoConflictWhenCompatible(t *testing.T) {
 	user := []byte(`[project]
 requires-python = "==3.12.*"
