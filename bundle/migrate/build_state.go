@@ -233,11 +233,8 @@ func BuildStateFromTF(
 			}
 		}
 
-		// Compact hashed_in_state fields (e.g. a dashboard's serialized_dashboard) so the
-		// migrated state is already small, rather than carrying the full contents until the
-		// next deploy rewrites them. This is not needed for correctness: the first plan after
-		// migrating compacts the saved state on read (CalculatePlan), so a raw value here
-		// would still compare equal against the compacted config side.
+		// Compact hashed_in_state fields so the migrated state stays small. Not needed for
+		// correctness — the first plan (CalculatePlan) compacts the saved state on read.
 		compacted, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
 		if err != nil {
 			return warningsSeen, fmt.Errorf("%s: compacting state: %w", node, err)
