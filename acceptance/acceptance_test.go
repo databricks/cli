@@ -1312,11 +1312,12 @@ func BuildYaml2Json(t *testing.T, buildDir, osName, arch string) string {
 		execPath += ".exe"
 	}
 
-	args := []string{"go", "build", "-o", execPath, "./acceptance/cmd/yaml2json"}
+	args := []string{"go", "build", "-o", execPath}
 	if osName == "windows" {
 		// Same as BuildCLI: "error obtaining VCS status: exit status 128" without this.
 		args = append(args, "-buildvcs=false")
 	}
+	args = append(args, "./acceptance/cmd/yaml2json")
 
 	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch})
 	return execPath
