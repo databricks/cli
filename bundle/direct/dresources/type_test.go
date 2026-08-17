@@ -57,8 +57,8 @@ var knownMissingInRemoteType = map[string][]string{
 		"usage_policy_id",
 	},
 	"job_runs": {
-		// Local-only trigger fingerprints stored in state.
-		"triggers",
+		// Local-only trigger fingerprints under lifecycle.
+		"lifecycle",
 	},
 }
 
@@ -85,6 +85,11 @@ var knownMissingInStateType = map[string][]string{
 	},
 	"sql_warehouses": {
 		"lifecycle.prevent_destroy",
+	},
+	"job_runs": {
+		// State stores trigger fingerprints, not the config trigger list / prevent_destroy.
+		"lifecycle.prevent_destroy",
+		"lifecycle.triggers[*]",
 	},
 	"dashboards": {
 		"file_path",

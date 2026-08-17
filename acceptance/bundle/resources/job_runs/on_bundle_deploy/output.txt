@@ -71,6 +71,18 @@ Resources:
   }
 }
 
+=== removing on_bundle_deploy shows no drift
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //jobs/run-now
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.job_runs.my_run

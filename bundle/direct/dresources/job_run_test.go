@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -345,7 +346,7 @@ func TestJobRunPrepareStateRequiresSuccess(t *testing.T) {
 func TestJobRunPrepareStateOnBundleDeploy(t *testing.T) {
 	t.Run("unset", func(t *testing.T) {
 		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{})
-		assert.Nil(t, state.Triggers)
+		assert.Nil(t, state.Lifecycle)
 	})
 
 	t.Run("armed", func(t *testing.T) {
@@ -356,11 +357,48 @@ func TestJobRunPrepareStateOnBundleDeploy(t *testing.T) {
 			},
 		}
 		first := (&ResourceJobRun{}).PrepareState(input)
-		require.NotNil(t, first.Triggers)
-		assert.NotEmpty(t, first.Triggers.OnBundleDeploy)
+		require.NotNil(t, first.Lifecycle)
+		require.NotNil(t, first.Lifecycle.Triggers)
+		assert.NotEmpty(t, first.Lifecycle.Triggers.OnBundleDeploy)
 
 		second := (&ResourceJobRun{}).PrepareState(input)
-		assert.NotEqual(t, first.Triggers.OnBundleDeploy, second.Triggers.OnBundleDeploy)
+		assert.NotEqual(t, first.Lifecycle.Triggers.OnBundleDeploy, second.Lifecycle.Triggers.OnBundleDeploy)
+	})
+}
+
+func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
+	r := &ResourceJobRun{}
+
+	t.Run("clearing lifecycle skips recreate", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    &JobRunLifecycleState{Triggers: &JobRunTriggersState{OnBundleDeploy: "old"}},
+			New:    nil,
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle"), change, nil))
+		assert.Equal(t, deployplan.Skip, change.Action)
+		assert.Equal(t, "trigger removed", change.Reason)
+	})
+
+	t.Run("clearing on_bundle_deploy leaf skips recreate", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    "old",
+			New:    "",
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_bundle_deploy"), change, nil))
+		assert.Equal(t, deployplan.Skip, change.Action)
+		assert.Equal(t, "trigger removed", change.Reason)
+	})
+
+	t.Run("fresh fingerprint still recreates", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    "old",
+			New:    "new",
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_bundle_deploy"), change, nil))
+		assert.Equal(t, deployplan.Recreate, change.Action)
 	})
 }
 

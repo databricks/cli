@@ -20,3 +20,14 @@ trace $CLI bundle summary
 title "second run-now after recreate"
 trace print_requests.py --keep //jobs/runs/delete
 trace print_requests.py //jobs/run-now
+
+title "removing on_bundle_deploy shows no drift"
+# Drop the lifecycle block so the next plan compares a nil fingerprint against
+# the UUID left in state; that must not recreate.
+update_file.py databricks.yml "      lifecycle:
+        triggers:
+          - on_bundle_deploy: true
+" ""
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now
