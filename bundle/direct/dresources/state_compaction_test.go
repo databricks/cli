@@ -124,6 +124,43 @@ func TestHashStateValue(t *testing.T) {
 	assert.NotEqual(t, stringHash, other)
 }
 
+// TestHashStateValueIsValueAgnostic verifies hashStateValue hashes any large value, not just
+// dashboard JSON, since a hashed_in_state field may hold arbitrary content (YAML, scripts, SQL).
+func TestHashStateValueIsValueAgnostic(t *testing.T) {
+	cases := map[string]any{
+		"yaml":          "resources:\n  jobs:\n    nightly:\n      name: nightly-etl\n      tasks:\n        - task_key: main\n          notebook_task:\n            notebook_path: ./main.py\n",
+		"bash_script":   "#!/usr/bin/env bash\nset -euo pipefail\nfor f in ./logs/*.log; do\n  echo \"processing $f\"\n  grep -c ERROR \"$f\" || true\ndone\n",
+		"python_script": "import sys\n\ndef main() -> None:\n    for line in sys.stdin:\n        print(line.rstrip().upper())\n\nif __name__ == \"__main__\":\n    main()\n",
+		"sql":           "SELECT user_id, COUNT(*) AS n FROM events WHERE ts > current_date - INTERVAL 7 DAYS GROUP BY user_id ORDER BY n DESC LIMIT 100",
+		"markdown":      "# Weekly report\n\nThis summarizes **activity** across all regions.\n\n- signups\n- active users\n- churn\n\nSee the appendix for methodology.\n",
+		"json_array":    `[{"id":1,"tags":["a","b"]},{"id":2,"tags":["c","d"]},{"id":3,"tags":["e","f"]}]`,
+		"non_string_map": map[string]any{
+			"query":  "SELECT * FROM t",
+			"params": []any{"alpha", "beta", "gamma"},
+			"limit":  100,
+			"nested": map[string]any{"a": 1, "b": 2, "c": 3},
+		},
+	}
+
+	for name, content := range cases {
+		t.Run(name, func(t *testing.T) {
+			hashed, err := hashStateValue(content)
+			require.NoError(t, err)
+			require.IsType(t, "", hashed)
+			assert.True(t, strings.HasPrefix(hashed.(string), stateHashPrefix))
+			assert.Len(t, hashed, stateHashPlaceholderLen)
+
+			again, err := hashStateValue(content)
+			require.NoError(t, err)
+			assert.Equal(t, hashed, again)
+
+			rehashed, err := hashStateValue(hashed)
+			require.NoError(t, err)
+			assert.Equal(t, hashed, rehashed)
+		})
+	}
+}
+
 // TestHashStateValueIdempotent verifies re-hashing an existing placeholder returns it
 // unchanged, so re-compacting an already-compact state does not double-hash.
 func TestHashStateValueIdempotent(t *testing.T) {
