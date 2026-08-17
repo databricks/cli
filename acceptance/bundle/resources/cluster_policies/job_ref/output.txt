@@ -1,9 +1,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_job_ref/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created cluster_policies.pol
+Created jobs.j
+Files: 4 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Deploy requests in dependency order: policy create precedes job create, job carries resolved policy id
 >>> print_requests.py //policies/clusters //jobs
@@ -50,9 +51,10 @@ Deployment complete!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_job_ref/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated cluster_policies.pol
+Updated jobs.j
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //policies/clusters //jobs
 {
@@ -103,8 +105,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster_policy_job_ref/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted
 
 >>> print_requests.py //policies/clusters //jobs
 {
