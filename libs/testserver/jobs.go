@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"strconv"
@@ -611,6 +612,16 @@ func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
 // For tasks using existing_cluster_id, the venv is cached per cluster to match
 // cloud behavior where libraries are cached on running clusters.
 // For serverless tasks (environment_key), dependencies are loaded from the environment spec.
+// wheelExtrasSuffix matches a trailing pip extras suffix on a wheel path, e.g.
+// "[train]" in "foo.whl[train]". Anchored right after ".whl" so it never touches
+// bracket groups elsewhere in the path.
+var wheelExtrasSuffix = regexp.MustCompile(`(?i)(\.whl)\[[^\]]*\]$`)
+
+// stripWheelExtras removes a trailing pip extras suffix from a wheel path.
+func stripWheelExtras(p string) string {
+	return wheelExtrasSuffix.ReplaceAllString(p, "$1")
+}
+
 func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, task jobs.Task) (string, error) {
 	env, cleanup, err := s.getOrCreateClusterEnv(task)
 	if err != nil {
@@ -643,19 +654,24 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 	// matching cloud behavior where same library path is not reinstalled.
 	var newWhlPaths []string
 	for _, whlPath := range whlPaths {
-		if env.installedLibs[whlPath] {
+		// A dependency may carry a pip extras suffix (e.g. "foo.whl[train]").
+		// The uploaded file is stored under the bare name, so strip the suffix to
+		// locate it. We install the bare wheel; extras only affect which transitive
+		// deps cloud pulls, which this offline install does not model.
+		filePath := stripWheelExtras(whlPath)
+		if env.installedLibs[filePath] {
 			continue
 		}
-		data := s.files[whlPath].Data
+		data := s.files[filePath].Data
 		if len(data) == 0 {
-			return "", fmt.Errorf("%w: wheel file not found in workspace: %s", errNoCodeInWorkspace, whlPath)
+			return "", fmt.Errorf("%w: wheel file not found in workspace: %s", errNoCodeInWorkspace, filePath)
 		}
-		localPath := filepath.Join(env.dir, filepath.Base(whlPath))
+		localPath := filepath.Join(env.dir, filepath.Base(filePath))
 		if err := os.WriteFile(localPath, data, 0o644); err != nil {
 			return "", fmt.Errorf("failed to write wheel file: %w", err)
 		}
 		newWhlPaths = append(newWhlPaths, localPath)
-		env.installedLibs[whlPath] = true
+		env.installedLibs[filePath] = true
 	}
 
 	if len(newWhlPaths) > 0 {
