@@ -52,7 +52,9 @@ func main() {
 
 	fmt.Println(result.Counts())
 	for _, test := range result.Selected {
-		fmt.Printf("  %3d  %s\n", test.Score, test.Name())
+		for _, name := range test.Names() {
+			fmt.Printf("  %3d  %s\n", test.Score, name)
+		}
 	}
 	if len(result.Selected) == 0 {
 		fmt.Println("       none of the changed files belong to a test dir")
