@@ -1,6 +1,7 @@
 Local = true
 Cloud = true
 RequiresUnityCatalog = true
+RequiresClassic = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.INPUT_CONFIG = [
   "alert.yml.tmpl",
