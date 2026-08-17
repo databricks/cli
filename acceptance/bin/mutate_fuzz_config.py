@@ -155,7 +155,7 @@ INJECT = {
     ],
 }
 
-# Audited-empty types (a missing INJECT key would look the same without this).
+# Audited-empty types (an absent INJECT key would look identical).
 NO_INJECT = {
     "secret_scopes": "only keyvault_metadata remains: Azure-only, conflicts with backend_type DATABRICKS",
 }

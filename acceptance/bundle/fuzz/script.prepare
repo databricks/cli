@@ -15,7 +15,7 @@ invariant_render() {
 
     cp databricks.yml LOG.config
 
-    # --strict: type/required warnings must reject, not deploy and fail mid-migrate.
+    # --strict: type/required warnings must reject before deploy.
     set +e
     trace $CLI bundle validate --strict &> LOG.validate
     local rc=$?
@@ -26,7 +26,7 @@ invariant_render() {
     fi
 }
 
-# Plan-determinism oracle when exact no_drift would false-positive on fake-server gaps.
+# Plan-determinism oracle: exact no_drift false-positives on fake-server gaps.
 # Compare to 0: empty FUZZ_CHECK_DRIFT is re-defaulted to 1 by task test-fuzz.
 if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
     invariant_verify_no_drift() {
@@ -40,7 +40,7 @@ if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
         cat LOG.plan2.err | contains.py '!panic:' '!internal error' > /dev/null
 
         if [ "$plan1_rc" -ne 0 ] || [ "$plan2_rc" -ne 0 ]; then
-            # Fail so classify() can tell gap from bug. Stderr is ignored (*.err), so copy it in.
+            # Stderr is ignored (*.err); copy into LOG.plan.failed for classify().
             if ! grep -q TESTSERVER_GAP LOG.plan1.err LOG.plan2.err; then
                 echo "bundle plan exited $plan1_rc and $plan2_rc" > LOG.plan.failed
                 cat LOG.plan1.err LOG.plan2.err >> LOG.plan.failed

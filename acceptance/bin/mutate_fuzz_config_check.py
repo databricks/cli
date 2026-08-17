@@ -90,7 +90,7 @@ def main():
             )
             failed = True
 
-    # Unknown fields are only a warning, so a typo would deploy as a silent no-op inject.
+    # Unknown fields are only a warning; a typo deploys as a silent no-op inject.
     flags = field_flags()
     for rtype, fields in INJECT.items():
         for field, _ in fields:

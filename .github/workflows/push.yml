@@ -438,13 +438,12 @@ jobs:
 
       - name: Run tests
         env:
-          # Ceiling; run_fuzz.py stops at FUZZ_TIME_BUDGET. Day-of-epoch avoids PR-run gaps.
+          # Ceiling; run_fuzz.py stops at FUZZ_TIME_BUDGET. Day-of-epoch keeps nightly windows disjoint.
           FUZZ_SEED_COUNT: "10000"
         run: |
           export FUZZ_SEED_START=$(( $(date -u +%s) / 86400 * FUZZ_SEED_COUNT ))
           go tool -modfile=tools/task/go.mod task test-fuzz
 
-      # Otherwise a red nightly is a failed check with no triage crumbs.
       - name: Summarize failure for triage
         if: ${{ failure() }}
         run: |
@@ -494,7 +493,7 @@ jobs:
   # The step checks `contains(needs.*.result, 'failure')` to fail if any dependency failed.
   # Reference: https://github.com/orgs/community/discussions/25970
   #
-  # test-fuzz is schedule-only (skipped on PRs); still list it so nightlies gate test-result.
+  # test-fuzz is schedule-only (skipped on PRs); listed so nightlies gate test-result.
   test-result:
     needs:
       - test
