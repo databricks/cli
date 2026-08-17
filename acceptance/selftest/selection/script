@@ -1,0 +1,33 @@
+# Build the fake acceptance tree the selection runs against. It cannot be committed:
+# a directory holding a file named "script" is a test case, so the harness would pick
+# these up as tests of their own.
+mkdir -p tree/mytest tree/newtest tree/bundle/invariant/jobs tree/bundle/invariant/apps
+touch tree/mytest/script tree/mytest/output.txt tree/newtest/script
+touch tree/bundle/invariant/jobs/script tree/bundle/invariant/apps/script
+
+# Each argument is a changed file: "M:" modified, "A:" added, "R100:old:new" moved. The
+# paths need not exist; only the tree of test dirs behind -root does.
+selection() {
+    go -C "$TESTROOT" run ./internal/selection/cmd -root "$PWD/tree" "$@"
+}
+
+title "Changing a test\n"
+trace selection M:acceptance/mytest/script
+
+title "Adding a test\n"
+trace selection A:acceptance/newtest/script
+
+title "A regenerated golden scores below a changed fixture\n"
+trace selection M:acceptance/mytest/output.txt M:acceptance/newtest/script
+
+title "Moving a test scores lowest\n"
+trace selection R100:acceptance/oldtest/script:acceptance/newtest/script M:acceptance/mytest/script
+
+title "Touching an invariant config runs every invariant test, for that config only\n"
+trace selection M:acceptance/bundle/invariant/configs/job.yml.tmpl
+
+title "Adding one invariant config and touching two others\n"
+trace selection A:acceptance/bundle/invariant/configs/new.yml.tmpl M:acceptance/bundle/invariant/configs/job.yml.tmpl M:acceptance/bundle/invariant/configs/pipeline.yml.tmpl
+
+title "The limit keeps the highest scoring tests\n"
+trace selection -limit 2 A:acceptance/newtest/script M:acceptance/mytest/script M:acceptance/bundle/invariant/configs/job.yml.tmpl

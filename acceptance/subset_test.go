@@ -3,6 +3,7 @@ package acceptance_test
 import (
 	"hash/fnv"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -108,18 +109,26 @@ func (s subsetSelector) isChanged(dir string, envset []string) bool {
 	return envMatchesFilters(envset, filters)
 }
 
-// envMatchesFilters reports whether envset satisfies every KEY=value filter, mirroring
-// the skip semantics of checkEnvFilters: a filter matches unless its key is present in
-// envset with a different value.
+// envMatchesFilters reports whether envset satisfies every KEY=value filter. A filter
+// matches unless its key is present in envset with a different value. Filters that share a
+// key are alternatives: the environment has one value per key, so requiring each of them
+// separately would match nothing, while a selection that names several values of a key
+// (e.g. one INPUT_CONFIG per changed invariant config) means any of them.
 func envMatchesFilters(envset, filters []string) bool {
 	envMap := make(map[string]string, len(envset))
 	for _, kv := range envset {
 		key, value, _ := strings.Cut(kv, "=")
 		envMap[key] = value
 	}
+
+	expected := make(map[string][]string, len(filters))
 	for _, filter := range filters {
-		key, expected, _ := strings.Cut(filter, "=")
-		if actual, ok := envMap[key]; ok && actual != expected {
+		key, value, _ := strings.Cut(filter, "=")
+		expected[key] = append(expected[key], value)
+	}
+
+	for key, values := range expected {
+		if actual, ok := envMap[key]; ok && !slices.Contains(values, actual) {
 			return false
 		}
 	}

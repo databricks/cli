@@ -62,7 +62,9 @@ func main() {
 // diffFromArgs renders command line arguments as `git diff --name-status` lines, so the
 // same selection runs on them as on a real diff.
 func diffFromArgs(args []string) string {
-	changed := changedLines()
+	// Looked up lazily: with a status on every argument the command needs no git at all,
+	// which is what lets a test drive it against a directory tree of its own.
+	var changed map[string]string
 
 	lines := make([]string, 0, len(args))
 	for _, arg := range args {
@@ -82,6 +84,9 @@ func diffFromArgs(args []string) string {
 		// A path given without a status takes the line git reports for it, kept whole so a
 		// rename keeps both its status and its source path. A path git does not report as
 		// changed stands for a hypothetical change: modified when tracked, added when not.
+		if changed == nil {
+			changed = changedLines()
+		}
 		if line, ok := changed[paths[0]]; ok {
 			lines = append(lines, line)
 			continue

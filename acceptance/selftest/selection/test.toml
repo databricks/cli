@@ -1,0 +1,9 @@
+# Test selection has nothing to do with the deployment engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
+
+# The fake acceptance tree the command runs against, built by the script.
+Ignore = ["tree"]
+
+# Git Bash rewrites an "A:..." argument as a Windows path (A: reads as a drive letter),
+# so the statuses would not survive to the command.
+GOOS.windows = false

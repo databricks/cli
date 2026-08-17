@@ -303,18 +303,11 @@ func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
 				if status == "A" && strings.HasSuffix(path, configName) {
 					d.newTest = true
 				}
+				// Filters that name the same key are alternatives (see envMatchesFilters),
+				// so several changed configs restrict the dir to their variants together.
 				filter := "INPUT_CONFIG=" + configName
-				switch {
-				case d.allVariants:
-					// A change to the dir itself already runs every variant.
-				case len(d.filters) == 0:
-					d.filters = []string{filter}
-				case d.filters[0] != filter:
-					// The harness requires every filter to match (see checkEnvFilters), so
-					// two different INPUT_CONFIG values would skip every variant and the
-					// dir would run nothing. Run all of its variants instead.
-					d.allVariants = true
-					d.filters = nil
+				if !d.allVariants && !slices.Contains(d.filters, filter) {
+					d.filters = append(d.filters, filter)
 				}
 			}
 			continue
