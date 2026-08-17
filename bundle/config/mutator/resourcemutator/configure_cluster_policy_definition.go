@@ -10,7 +10,8 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-const definitionFieldName = "definition"
+// jsonPolicyFields are the JSON-policy fields normalized from inline YAML to a JSON string.
+var jsonPolicyFields = []string{"definition", "policy_family_definition_overrides"}
 
 type configureClusterPolicyDefinition struct{}
 
@@ -33,30 +34,35 @@ func (c configureClusterPolicyDefinition) Apply(_ context.Context, b *bundle.Bun
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			def := v.Get(definitionFieldName)
+			for _, field := range jsonPolicyFields {
+				def := v.Get(field)
 
-			// Marshal an inline structured definition to a JSON string so both
-			// config-side and state-side carry the same plain string. Otherwise
-			// YAML decodes small ints as Go `int` while state JSON round-trip
-			// decodes them as `float64`, and structdiff reports false drift.
-			switch def.Kind() {
-			case dyn.KindInvalid, dyn.KindNil, dyn.KindString:
-				// KindInvalid means definition is absent; leave it for backend validation.
-				return v, nil
-			case dyn.KindMap, dyn.KindSequence:
-				jsonBytes, err := json.Marshal(def.AsAny())
-				if err != nil {
-					return dyn.InvalidValue, fmt.Errorf("failed to marshal inline definition: %w", err)
+				// Marshal an inline structured value to a JSON string so both
+				// config-side and state-side carry the same plain string. Otherwise
+				// YAML decodes small ints as Go `int` while state JSON round-trip
+				// decodes them as `float64`, and structdiff reports false drift.
+				switch def.Kind() {
+				case dyn.KindInvalid, dyn.KindNil, dyn.KindString:
+					// KindInvalid means the field is absent; leave it for backend validation.
+					continue
+				case dyn.KindMap, dyn.KindSequence:
+					jsonBytes, err := json.Marshal(def.AsAny())
+					if err != nil {
+						return dyn.InvalidValue, fmt.Errorf("failed to marshal inline %s: %w", field, err)
+					}
+					v, err = dyn.Set(v, field, dyn.V(string(jsonBytes)))
+					if err != nil {
+						return dyn.InvalidValue, err
+					}
+				default:
+					diags = diags.Append(diag.Diagnostic{
+						Severity:  diag.Error,
+						Summary:   fmt.Sprintf("%s must be a string, map, or sequence, got %s", field, def.Kind()),
+						Locations: def.Locations(),
+					})
 				}
-				return dyn.Set(v, definitionFieldName, dyn.V(string(jsonBytes)))
-			default:
-				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   fmt.Sprintf("definition must be a string, map, or sequence, got %s", def.Kind()),
-					Locations: def.Locations(),
-				})
-				return v, nil
 			}
+			return v, nil
 		})
 	})
 

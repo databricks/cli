@@ -19,10 +19,12 @@ func (*ResourceClusterPolicy) New(client *databricks.WorkspaceClient) *ResourceC
 
 func (*ResourceClusterPolicy) PrepareState(input *resources.ClusterPolicy) *compute.CreatePolicy {
 	cp := input.CreatePolicy
-	// The top-level Definition shadows the embedded string; ConfigureClusterPolicyDefinition
-	// has already normalized it to a JSON string by this point.
+	// Copy the shadow fields, already normalized to JSON strings by ConfigureClusterPolicyDefinition.
 	if s, ok := input.Definition.(string); ok {
 		cp.Definition = s
+	}
+	if s, ok := input.PolicyFamilyDefinitionOverrides.(string); ok {
+		cp.PolicyFamilyDefinitionOverrides = s
 	}
 	return &cp
 }

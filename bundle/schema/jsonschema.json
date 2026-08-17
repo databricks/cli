@@ -619,7 +619,7 @@
                       },
                       "policy_family_definition_overrides": {
                         "description": "Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).\nThe JSON document must be passed as a string and cannot be embedded in the requests.\n\nYou can use this to customize the policy definition inherited from the policy family.\nPolicy rules specified here are merged into the inherited policy definition.",
-                        "$ref": "#/$defs/string"
+                        "$ref": "#/$defs/interface"
                       },
                       "policy_family_id": {
                         "description": "ID of the policy family. The cluster policy's policy definition inherits the policy\nfamily's policy definition.\n\nCannot be used with `definition`. Use `policy_family_definition_overrides` instead to\ncustomize the policy definition.",

@@ -19,6 +19,10 @@ type ClusterPolicy struct {
 	// definition be authored as inline YAML; ConfigureClusterPolicyDefinition normalizes
 	// it to a JSON string before deploy.
 	Definition any `json:"definition,omitempty"`
+
+	// Shadows the embedded compute.CreatePolicy.PolicyFamilyDefinitionOverrides (a string),
+	// same as Definition: also a policy document authorable as inline YAML.
+	PolicyFamilyDefinitionOverrides any `json:"policy_family_definition_overrides,omitempty"`
 }
 
 func (s *ClusterPolicy) UnmarshalJSON(b []byte) error {

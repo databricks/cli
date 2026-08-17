@@ -1,0 +1,34 @@
+bundle:
+  name: cluster_policy_overrides
+
+resources:
+  cluster_policies:
+    # Overrides as a compact JSON string.
+    json_string:
+      name: policy_json_string
+      policy_family_id: personal-vm
+      policy_family_definition_overrides: '{"autotermination_minutes":{"type":"fixed","value":30}}'
+
+    # Overrides as a multiline block-scalar JSON string (preserved verbatim).
+    multiline:
+      name: policy_multiline
+      policy_family_id: personal-vm
+      policy_family_definition_overrides: |-
+        {
+          "autotermination_minutes": {
+            "type": "fixed",
+            "value": 30
+          }
+        }
+
+    # Overrides as native YAML (normalized to compact JSON, numbers/booleans kept as JSON types).
+    yaml:
+      name: policy_yaml
+      policy_family_id: personal-vm
+      policy_family_definition_overrides:
+        autotermination_minutes:
+          type: fixed
+          value: 30
+        enable_elastic_disk:
+          type: fixed
+          value: true
