@@ -29,7 +29,6 @@
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-app-already-exists/default/files...
-Deploying resources...
 Error: cannot create resources.apps.myapp: An app with the same name already exists: test-app-already-exists (409 RESOURCE_ALREADY_EXISTS)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/apps?no_compute=true
@@ -37,6 +36,7 @@ HTTP Status: 409 Conflict
 API error_code: RESOURCE_ALREADY_EXISTS
 API message: An app with the same name already exists: test-app-already-exists
 
+Files: 5 uploaded, 0 deleted
 
 >>> [CLI] apps delete test-app-already-exists
 {

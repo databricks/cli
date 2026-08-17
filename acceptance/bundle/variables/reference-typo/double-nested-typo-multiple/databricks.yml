@@ -1,0 +1,21 @@
+bundle:
+  name: reference-typo-double-nested-typo-multiple
+
+variables:
+  cluster:
+    type: complex
+    default:
+      spark_version: "13.2.x"
+  clusters:
+    type: complex
+    default:
+      spark_version: "13.2.x"
+
+resources:
+  jobs:
+    one:
+      # Two typos in a single reference across nesting layers, where the outermost
+      # key "clustr" is within distance 2 of both "cluster" and "clusters". The
+      # lookup fails at the outermost key, so both are suggested and the inner typo
+      # ("spark_versio") is never reached.
+      name: ${var.clustr.spark_versio}

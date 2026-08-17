@@ -1,1 +1,1 @@
-trace $CLI bundle deploy
+trace $CLI bundle deploy -qq

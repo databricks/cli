@@ -1,6 +1,6 @@
 This file provides guidance to AI assistants when working with code in this repository.
 
-Rules prefixed `**RULE:**` are mandatory. `GOOD:` and `BAD:` labels on code snippets mark patterns to follow and patterns to avoid. This convention is a common best practice for AI-assistant rule files and is used consistently across `AGENTS.md` and `.agent/rules/*.md`.
+Rules prefixed `**RULE:**` are mandatory. `GOOD:` and `BAD:` labels on code snippets mark patterns to follow and patterns to avoid. This convention is a common best practice for AI-assistant rule files and is used consistently across `AGENTS.md` and `.agents/rules/*.md`.
 
 # Project Overview
 
@@ -9,8 +9,6 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 # General Rules
 
 **RULE: When moving code from one place to another, don't unnecessarily change or omit parts.** Keep refactors separate from content changes so reviewers can tell them apart.
-
-**RULE: Do not modify or remove existing comments in code you didn't write.** Comments often encode non-obvious context (a bug reference, a workaround, a reason the code is shaped a certain way) that is lost if rewritten. Leave them alone unless the user explicitly asks for a change.
 
 **RULE: Prefer simplicity over cleverness. Avoid speculative fallbacks and default values.** If you catch yourself adding a fallback branch "just in case," identify the correct path and use only that one. Reviewers in this repo reject speculative flexibility.
 
@@ -92,24 +90,6 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 
 - Use `./task test-update` to regenerate acceptance test outputs after changes.
 - The CLI binary supports both `databricks` and `pipelines` command modes based on executable name.
-
-**RULE: Comments should explain "why", not "what".** Reviewers consistently reject comments that merely restate the code.
-
-**RULE: When code relies on a non-obvious invariant, workaround, or backend quirk, add a short comment stating the reason.** The inverse of the rule above: noise comments are bad, but missing comments are the single most common thing reviewers catch. Triggers include: API quirks (PATCH-like semantics, no get-by-name, stripped prefixes), fields intentionally included or excluded (output-only, etag, `ForceSendFields`), branches that look dead but are kept as guards, and tests where the expectation isn't obvious from the assertions.
-
-GOOD:
-
-```go
-// The Workspace API strips the "/Workspace" prefix from parent_path on GET,
-// so we re-add it here to match the local configuration.
-parentPath = "/Workspace" + parentPath
-```
-
-BAD:
-
-```go
-parentPath = "/Workspace" + parentPath
-```
 
 # Common Mistakes
 

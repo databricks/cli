@@ -3,7 +3,7 @@
 # only (.databricks/bundle/<target>), while remote state lives under
 # ~/.bundle/<bundle name>/<target>/state, so the two can diverge.
 #
-# Destroy removes the local state files, so no stale lineage is left behind: when
+# Destroy removes the local state file, so no stale lineage is left behind: when
 # machine A comes back after machine B's fresh deploy, it cleanly adopts the
 # remote state instead of failing with a lineage mismatch.
 
@@ -11,7 +11,7 @@ title "Machine A: deploy, then destroy\n"
 trace $CLI bundle deploy
 trace $CLI bundle destroy --auto-approve
 
-title "Destroy removed the local state files:\n"
+title "Destroy removed the local state file:\n"
 trace find.py '^.databricks/bundle/default/(resources.json|terraform/terraform.tfstate)$' --expect 0
 
 # Stash machine A's post-destroy local state and wipe it so the next deploy
@@ -24,7 +24,7 @@ trace $CLI bundle deploy
 
 # Mask machine B's (remote) lineage so the golden output is stable.
 LINEAGE_B=$(print_state.py | jq -r .lineage)
-add_repl.py "$LINEAGE_B" LINEAGE_B
+add_repl "$LINEAGE_B" LINEAGE_B
 
 # Back on machine A: restore the stashed local state.
 rm -rf .databricks

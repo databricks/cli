@@ -451,9 +451,25 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 // populates the venv path. dbcPin is "" in constraints-only mode, where the DB
 // Connect assertion is skipped.
 func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string) error {
-	pyVer, dbcVer, err := p.PM.Validate(ctx, p.ProjectDir)
+	info, err := p.PM.Validate(ctx, p.ProjectDir)
 	if err != nil {
 		return p.fail(PhaseValidate, true, asPipelineError(err, ErrValidate, "validation failed"))
+	}
+	pyVer, dbcVer := info.PythonMinor, info.DBConnect
+
+	// A standalone pyspark installed alongside databricks-connect collides only when the
+	// collision is *live*. databricks-connect vendors its own pyspark, so the two share
+	// the pyspark namespace and whichever install's files win the overwrite decide
+	// whether `import databricks.connect` works. When it does not, the environment
+	// genuinely cannot start a session (surfacing to users as an opaque Java or protobuf
+	// error), so fail here rather than report it ready. But a stale, orphaned pyspark
+	// dist-info left behind by an install databricks-connect's files won leaves the
+	// metadata probe reporting a pyspark version while the environment imports fine —
+	// failing on that would reject a working setup, so require an actual import failure.
+	if dbcVer != "" && info.Pyspark != "" && info.DBConnectImportErr != "" {
+		return p.fail(PhaseValidate, true, NewError(ErrValidate, nil,
+			"databricks-connect %s cannot be imported (%s) because a standalone pyspark %s is installed alongside it — they share the pyspark package and overwrite each other. Remove the standalone pyspark dependency from your project and re-run setup; if you need a local Spark session, keep it in a separate virtual environment",
+			dbcVer, info.DBConnectImportErr, info.Pyspark))
 	}
 
 	// Assert the installed Python minor matches the target.

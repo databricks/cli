@@ -35,7 +35,7 @@ type the path (e.g. `.nextchanges/cli/quickstart.md`), write a sentence, commit.
 | `.nextchanges/dependency-updates/` | Dependency updates |
 | `.nextchanges/api-changes/` | API Changes |
 
-See [`.agent/skills/pr-checklist/SKILL.md`](../.agent/skills/pr-checklist/SKILL.md)
+See [`.agents/skills/pr-checklist/SKILL.md`](../.agents/skills/pr-checklist/SKILL.md)
 for when an entry is warranted.
 
 ## How it's released
