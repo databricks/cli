@@ -35,9 +35,11 @@ func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]
 			remotePath := path.Join(uploadPath, filepath.Base(source))
 
 			for _, location := range locations {
-				v, err = dyn.SetByPath(v, location.configPath, dyn.NewValue(remotePath, []dyn.Location{location.location}))
+				// Re-append the extras suffix that was stripped before upload.
+				remotePathWithExtras := remotePath + location.extras
+				v, err = dyn.SetByPath(v, location.configPath, dyn.NewValue(remotePathWithExtras, []dyn.Location{location.location}))
 				if err != nil {
-					return v, fmt.Errorf("internal error: failed to update path %#v to %#v: %w", source, remotePath, err)
+					return v, fmt.Errorf("internal error: failed to update path %#v to %#v: %w", source, remotePathWithExtras, err)
 				}
 			}
 		}
@@ -86,10 +88,15 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]LocationToUpdate, err
 					return v, nil
 				}
 
+				// Split off any pip extras suffix so the upload targets the real
+				// file; the suffix is re-appended to the remote path afterwards.
+				source, extras := splitWheelExtras(source)
+
 				source = filepath.Join(b.SyncRootPath, source)
 				libs[source] = append(libs[source], LocationToUpdate{
 					configPath: p,
 					location:   v.Location(),
+					extras:     extras,
 				})
 
 				return v, nil
