@@ -1,13 +1,25 @@
-bundle:
-  name: test-bundle-$UNIQUE_NAME
-
-resources:
-  pipelines:
-    foo:
-      name: test-pipeline-$UNIQUE_NAME
-      libraries:
-        - file:
-            path: pipeline.py
-      permissions:
-        - level: CAN_VIEW
-          group_name: users
+{
+  "bundle": {
+    "name": "test-bundle-$UNIQUE_NAME"
+  },
+  "resources": {
+    "pipelines": {
+      "foo": {
+        "name": "test-pipeline-$UNIQUE_NAME",
+        "libraries": [
+          {
+            "file": {
+              "path": "pipeline.py"
+            }
+          }
+        ],
+        "permissions": [
+          {
+            "level": "CAN_VIEW",
+            "group_name": "users"
+          }
+        ]
+      }
+    }
+  }
+}

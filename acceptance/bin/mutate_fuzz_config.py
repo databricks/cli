@@ -6,8 +6,8 @@ Destructive: delete/replace a field (token, dangerous scalar, or empty container
 Additive: inject one optional from INJECT that the base omits.
 Each seed picks exactly one mode so an additive finding maps to one catalog entry.
 
-Bases are JSON snapshots of the invariant configs in fuzz/bases/ (regenerate with
-`./task generate-fuzz-bases`). Emits JSON on stdout; the bundle reads it as YAML 1.2.
+Bases are deploy-verified YAML templates in bundle/invariant/configs/.
+Emits JSON on stdout; the bundle reads it as YAML 1.2.
 """
 
 import json
@@ -44,7 +44,7 @@ DANGEROUS_INTS = [
 ]
 DANGEROUS = DANGEROUS_STRINGS + DANGEROUS_INTS
 
-# Single-resource invariant configs; JSON snapshots in fuzz/bases/.
+# Single-resource invariant configs.
 MUTATE_BASES = [
     "app",
     "catalog",
@@ -61,7 +61,7 @@ MUTATE_BASES = [
     "volume",
 ]
 
-BASES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bundle", "fuzz", "bases")
+CONFIGS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bundle", "invariant", "configs")
 
 # Schema-valid optionals from past drift/reconcile findings (may still fail to deploy).
 INJECT = {
@@ -169,7 +169,7 @@ def dump_config(config):
 
 
 def load_base(name):
-    path = os.path.join(BASES_DIR, name + ".json.tmpl")
+    path = os.path.join(CONFIGS_DIR, name + ".yml.tmpl")
     with open(path) as f:
         return json.loads(substitute_variables(f.read()))
 

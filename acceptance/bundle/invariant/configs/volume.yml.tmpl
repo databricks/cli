@@ -1,13 +1,22 @@
-bundle:
-  name: test-bundle-$UNIQUE_NAME
-
-resources:
-  volumes:
-    foo:
-      name: test-volume-$UNIQUE_NAME
-      catalog_name: main
-      schema_name: default
-      grants:
-        - principal: account users
-          privileges:
-            - READ_VOLUME
+{
+  "bundle": {
+    "name": "test-bundle-$UNIQUE_NAME"
+  },
+  "resources": {
+    "volumes": {
+      "foo": {
+        "name": "test-volume-$UNIQUE_NAME",
+        "catalog_name": "main",
+        "schema_name": "default",
+        "grants": [
+          {
+            "principal": "account users",
+            "privileges": [
+              "READ_VOLUME"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

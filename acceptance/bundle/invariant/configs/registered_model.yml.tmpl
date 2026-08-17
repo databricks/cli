@@ -1,13 +1,22 @@
-bundle:
-  name: test-bundle-$UNIQUE_NAME
-
-resources:
-  registered_models:
-    foo:
-      name: test-model-$UNIQUE_NAME
-      catalog_name: main
-      schema_name: default
-      grants:
-        - principal: account users
-          privileges:
-            - EXECUTE
+{
+  "bundle": {
+    "name": "test-bundle-$UNIQUE_NAME"
+  },
+  "resources": {
+    "registered_models": {
+      "foo": {
+        "name": "test-model-$UNIQUE_NAME",
+        "catalog_name": "main",
+        "schema_name": "default",
+        "grants": [
+          {
+            "principal": "account users",
+            "privileges": [
+              "EXECUTE"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

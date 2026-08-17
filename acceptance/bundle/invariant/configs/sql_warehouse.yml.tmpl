@@ -1,15 +1,23 @@
-bundle:
-  name: test-bundle-$UNIQUE_NAME
-
-resources:
-  sql_warehouses:
-    foo:
-      name: test-warehouse-$UNIQUE_NAME
-      cluster_size: 2X-Small
-      auto_stop_mins: 10
-      max_num_clusters: 1
-      min_num_clusters: 1
-      warehouse_type: CLASSIC
-      permissions:
-        - level: CAN_VIEW
-          group_name: users
+{
+  "bundle": {
+    "name": "test-bundle-$UNIQUE_NAME"
+  },
+  "resources": {
+    "sql_warehouses": {
+      "foo": {
+        "name": "test-warehouse-$UNIQUE_NAME",
+        "cluster_size": "2X-Small",
+        "auto_stop_mins": 10,
+        "max_num_clusters": 1,
+        "min_num_clusters": 1,
+        "warehouse_type": "CLASSIC",
+        "permissions": [
+          {
+            "level": "CAN_VIEW",
+            "group_name": "users"
+          }
+        ]
+      }
+    }
+  }
+}

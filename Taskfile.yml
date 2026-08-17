@@ -825,7 +825,6 @@ tasks:
       - task: generate-validation
       - task: generate-direct
       - task: pydabs-codegen
-      - task: generate-fuzz-bases
 
   # Subset of `generate` that reproduces byte-for-byte on a clean checkout. The
   # validate-generated-is-up-to-date CI job runs this followed by
@@ -847,7 +846,6 @@ tasks:
       - task: generate-validation
       - task: generate-direct
       - task: pydabs-codegen
-      - task: generate-fuzz-bases
 
   # Regenerates the CLI command stubs (cmd/workspace/**, cmd/account/**) and
   # .gitattributes from the checked-in .codegen/cli.json. No universe checkout,
@@ -954,19 +952,6 @@ tasks:
       - acceptance/bundle/refschema/out.fields.txt
     cmds:
       - go test ./acceptance -run TestAccept/bundle/refschema -update
-
-  # The mutator runs in stdlib-only python, so it reads JSON snapshots rather than
-  # the YAML. mutate_fuzz_config.py is a source because MUTATE_BASES selects them.
-  generate-fuzz-bases:
-    desc: Regenerate acceptance/bundle/fuzz/bases from the invariant configs
-    sources:
-      - acceptance/bundle/fuzz/gen_bases.py
-      - acceptance/bin/mutate_fuzz_config.py
-      - acceptance/bundle/invariant/configs/*.yml.tmpl
-    generates:
-      - acceptance/bundle/fuzz/bases/*.json.tmpl
-    cmds:
-      - uv run --script acceptance/bundle/fuzz/gen_bases.py
 
   # Upstream field documentation comes from the checked-in .codegen/cli.json;
   # bundle/internal/schema/annotations.yml carries the CLI-owned docs and
