@@ -257,19 +257,22 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 			if info := aerr.ErrorDetails().ErrorInfo; info != nil && info.Reason == "WORKSPACE_OBJECT_TYPE_MISMATCH" {
 				return fileAlreadyExistsError{absPath}
 			}
-			// Fallback for errors that carry no ErrorInfo. Two reasons this
-			// is still needed, both verified against a live workspace on
-			// 2026-08-04:
+			// Fallback for collisions that reach us without ErrorInfo. WCS does
+			// attach ErrorInfo to the exception (flag enableImportCollisionErrorInfo,
+			// default-on), but the details don't yet reach the HTTP response for two
+			// independent reasons:
 			//
-			//  - Rollout lag: universe #2019174 merged 2026-06-03 with its
-			//    SAFE flag defaulting to true, but workspaces on an older WCS
-			//    build still return WCS-worded collisions without details.
-			//    That half is temporary.
+			//  - The /workspace/import HTTP edge (WorkspaceContentWebBackend) builds
+			//    its error body by hand as {error_code, message}, dropping details;
+			//    they are correct only on WCS's internal RPC responses. universe
+			//    #2429097 (WP-7085) routes the HTTP edge through the framework error
+			//    serializer instead, but behind a default-false SAFE flag
+			//    (enableWebBackendErrorDetailsPropagation) that still has to ramp, so
+			//    message (a) stays detail-less until it does.
 			//
-			//  - Message (b) above is thrown by webapp, which #2019174 never
-			//    touched, so it has no ErrorInfo regardless of WCS rollout.
-			//    Once the lag clears this can narrow to "node type" alone,
-			//    but it cannot be dropped until webapp attaches details too.
+			//  - Message (b) is thrown bare by webapp's TreeBackendHelper with no
+			//    ErrorInfo attached, so #2429097 has nothing to serialize for it. It
+			//    can only be dropped once webapp attaches ErrorInfo at that throw site.
 			if strings.Contains(aerr.Message, "type mismatch") || strings.Contains(aerr.Message, "node type") {
 				return fileAlreadyExistsError{absPath}
 			}
