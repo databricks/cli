@@ -108,14 +108,21 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	state := &JobRunState{
 		RunNow:      input.RunNow,
 		ResultState: jobs.RunResultStateSuccess,
+		Lifecycle:   nil,
 	}
 	var triggers *JobRunTriggersState
 	if input.HasOnBundleDeploy() {
-		triggers = &JobRunTriggersState{OnBundleDeploy: uuid.NewString()}
+		triggers = &JobRunTriggersState{
+			OnBundleDeploy: uuid.NewString(),
+			OnFileChange:   nil,
+		}
 	}
 	if len(input.ResolvedFileTriggers) > 0 {
 		if triggers == nil {
-			triggers = &JobRunTriggersState{}
+			triggers = &JobRunTriggersState{
+				OnBundleDeploy: "",
+				OnFileChange:   nil,
+			}
 		}
 		triggers.OnFileChange = input.ResolvedFileTriggers
 	}
