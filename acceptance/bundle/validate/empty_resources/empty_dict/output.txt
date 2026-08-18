@@ -130,11 +130,11 @@ Warning: required field "schema_name" is not set
 
 === resources.dashboards.rname ===
 Error: dashboard display_name is required
-  at resources.dashboards.rname
+  at resources.dashboards.rname.display_name
   in databricks.yml:6:12
 
 Error: dashboard warehouse_id is required
-  at resources.dashboards.rname
+  at resources.dashboards.rname.warehouse_id
   in databricks.yml:6:12
 
 {
@@ -161,7 +161,7 @@ Error: app name is required
 
 === resources.sql_warehouses.rname ===
 Error: sql_warehouse name is required
-  at resources.sql_warehouses.rname
+  at resources.sql_warehouses.rname.name
   in databricks.yml:6:12
 
 {
