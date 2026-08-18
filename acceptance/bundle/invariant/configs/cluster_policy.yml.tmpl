@@ -6,3 +6,6 @@ resources:
     foo:
       name: test-cluster-policy-$UNIQUE_NAME
       definition: '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'
+      permissions:
+        - level: CAN_USE
+          group_name: users
