@@ -1,7 +1,7 @@
 package apps
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
@@ -35,7 +35,7 @@ func gitRepositoryFlags(cmd *cobra.Command, target **apps.GitRepository) func(*c
 		// The server requires both url and provider together, so fail early
 		// rather than shipping a half-populated repository it will reject.
 		if urlSet != providerSet {
-			return fmt.Errorf("--git-url and --git-provider must be set together")
+			return errors.New("--git-url and --git-provider must be set together")
 		}
 		*target = &apps.GitRepository{Url: url, Provider: provider}
 		return nil
@@ -67,7 +67,7 @@ func gitSourceFlags(cmd *cobra.Command, target **apps.GitSource) func(*cobra.Com
 		// A source-code path without a reference has no repository to resolve
 		// against — the reference is what selects the code to deploy.
 		if pathSet && !refSet {
-			return fmt.Errorf("--git-source-code-path requires one of --git-branch, --git-tag, or --git-commit")
+			return errors.New("--git-source-code-path requires one of --git-branch, --git-tag, or --git-commit")
 		}
 		*target = &apps.GitSource{
 			Branch:         branch,
