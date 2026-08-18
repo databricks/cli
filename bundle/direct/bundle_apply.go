@@ -79,7 +79,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
-		unitWait := unitMaxWait(maxWait, action, countBlockingDependents(g, resourceKey))
+		unitWait := unitMaxWait(maxWait, action, hasBlockingDependents(g, resourceKey))
 		if maxWait != maxWaitUnset && unitWait == maxWaitUnset {
 			log.Debugf(ctx, "Not capping wait for %s: other resources depend on it", resourceKey)
 		}

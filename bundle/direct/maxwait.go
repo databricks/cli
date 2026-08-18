@@ -35,7 +35,7 @@ func resourceMaxWait(ctx context.Context) (time.Duration, error) {
 	return time.Duration(seconds) * time.Second, nil
 }
 
-// countBlockingDependents returns how many nodes that run after resourceKey need it to have
+// hasBlockingDependents reports whether any node that runs after resourceKey needs it to have
 // reached its target state.
 //
 // Child nodes (.permissions, .grants) are excluded: they reference nothing but the parent's id
@@ -43,18 +43,17 @@ func resourceMaxWait(ctx context.Context) (time.Duration, error) {
 // before the wait even starts, so they attach to a resource that exists but is not yet
 // provisioned. Only a 4-segment key can have a 3-segment resource key as its prefix, so the
 // prefix test cannot match a sibling.
-func countBlockingDependents(g *dagrun.Graph, resourceKey string) int {
-	n := 0
+func hasBlockingDependents(g *dagrun.Graph, resourceKey string) bool {
 	for _, edge := range g.Adj[resourceKey] {
 		if !strings.HasPrefix(edge.To, resourceKey+".") {
-			n++
+			return true
 		}
 	}
-	return n
+	return false
 }
 
-// unitMaxWait returns the cap to apply to a single resource, given how many resources run
-// after it in the deployment graph.
+// unitMaxWait returns the cap to apply to a single resource, given whether anything that runs
+// after it in the deployment graph needs it provisioned.
 //
 // Deletes are capped regardless of dependents. The trade-off is accepted deliberately: state
 // is dropped before the wait, so a cut-short delete leaves the resource untracked while it is
@@ -64,8 +63,8 @@ func countBlockingDependents(g *dagrun.Graph, resourceKey string) int {
 //
 // Every other action is capped only when nothing depends on this resource, since a dependent
 // would otherwise act on a resource that has not reached its target state.
-func unitMaxWait(maxWait time.Duration, action deployplan.ActionType, dependents int) time.Duration {
-	if action == deployplan.Delete || dependents == 0 {
+func unitMaxWait(maxWait time.Duration, action deployplan.ActionType, hasDependents bool) time.Duration {
+	if action == deployplan.Delete || !hasDependents {
 		return maxWait
 	}
 	return maxWaitUnset

@@ -53,23 +53,23 @@ func TestUnitMaxWait(t *testing.T) {
 	const configured = 30 * time.Second
 
 	tests := []struct {
-		name       string
-		maxWait    time.Duration
-		action     deployplan.ActionType
-		dependents int
-		want       time.Duration
+		name          string
+		maxWait       time.Duration
+		action        deployplan.ActionType
+		hasDependents bool
+		want          time.Duration
 	}{
 		{name: "create without dependents is capped", maxWait: configured, action: deployplan.Create, want: configured},
-		{name: "create with dependents keeps full wait", maxWait: configured, action: deployplan.Create, dependents: 1, want: maxWaitUnset},
-		{name: "recreate with dependents keeps full wait", maxWait: configured, action: deployplan.Recreate, dependents: 1, want: maxWaitUnset},
-		{name: "delete ignores dependents", maxWait: configured, action: deployplan.Delete, dependents: 2, want: configured},
+		{name: "create with dependents keeps full wait", maxWait: configured, action: deployplan.Create, hasDependents: true, want: maxWaitUnset},
+		{name: "recreate with dependents keeps full wait", maxWait: configured, action: deployplan.Recreate, hasDependents: true, want: maxWaitUnset},
+		{name: "delete ignores dependents", maxWait: configured, action: deployplan.Delete, hasDependents: true, want: configured},
 		{name: "unset stays unset", maxWait: maxWaitUnset, action: deployplan.Create, want: maxWaitUnset},
-		{name: "unset stays unset for delete", maxWait: maxWaitUnset, action: deployplan.Delete, dependents: 2, want: maxWaitUnset},
+		{name: "unset stays unset for delete", maxWait: maxWaitUnset, action: deployplan.Delete, hasDependents: true, want: maxWaitUnset},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, unitMaxWait(tc.maxWait, tc.action, tc.dependents))
+			assert.Equal(t, tc.want, unitMaxWait(tc.maxWait, tc.action, tc.hasDependents))
 		})
 	}
 }
@@ -151,28 +151,28 @@ func waitForCtx(ctx context.Context) (struct{}, error) {
 	return struct{}{}, ctx.Err()
 }
 
-func TestCountBlockingDependents(t *testing.T) {
+func TestHasBlockingDependents(t *testing.T) {
 	const index = "resources.vector_search_indexes.foo"
 
 	tests := []struct {
 		name  string
 		edges []string
-		want  int
+		want  bool
 	}{
-		{name: "no dependents", want: 0},
-		{name: "grants child does not block", edges: []string{index + ".grants"}, want: 0},
-		{name: "permissions child does not block", edges: []string{index + ".permissions"}, want: 0},
-		{name: "another resource blocks", edges: []string{"resources.jobs.bar"}, want: 1},
+		{name: "no dependents", want: false},
+		{name: "grants child does not block", edges: []string{index + ".grants"}, want: false},
+		{name: "permissions child does not block", edges: []string{index + ".permissions"}, want: false},
+		{name: "another resource blocks", edges: []string{"resources.jobs.bar"}, want: true},
 		{
 			name:  "child and resource together",
 			edges: []string{index + ".grants", "resources.jobs.bar"},
-			want:  1,
+			want:  true,
 		},
 		{
 			// A sibling sharing a name prefix is not a child, so it must still block.
 			name:  "name-prefixed sibling blocks",
 			edges: []string{"resources.vector_search_indexes.foobar"},
-			want:  1,
+			want:  true,
 		},
 	}
 
@@ -183,7 +183,7 @@ func TestCountBlockingDependents(t *testing.T) {
 			for _, to := range tc.edges {
 				g.AddDirectedEdge(index, to, "label")
 			}
-			assert.Equal(t, tc.want, countBlockingDependents(g, index))
+			assert.Equal(t, tc.want, hasBlockingDependents(g, index))
 		})
 	}
 }
