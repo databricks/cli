@@ -28,12 +28,12 @@ recreate job_runs.my_run
 
 Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
->>> [CLI] bundle deploy
+=== bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
 job run [MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
 job run [MY_RUN_ID_2]: SUCCESS
 Recreated job_runs.my_run
-Files: 2 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> [CLI] bundle summary
@@ -76,9 +76,9 @@ Resources:
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
->>> [CLI] bundle deploy
+=== bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
-Files: 3 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //jobs/run-now
