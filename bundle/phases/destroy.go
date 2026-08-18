@@ -163,13 +163,14 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 
 	if !logdiag.HasError(ctx) && b.Quiet < bundle.QuietAll {
 		// Count top-level resources only, matching the approval list above (which
-		// skips children); this also keeps the count stable across engines. Gone
-		// resources are included: they are excluded from the approval prompt because
-		// they are not destructive, but destroying them does remove them from state,
-		// and "bundle deploy" likewise counts them as deleted.
+		// skips children and gone resources). A gone delete does not destroy
+		// anything: the resource is already absent remotely, or, like an immutable
+		// snapshot, cannot be deleted at all, so the delete only cleans up state.
+		// Counting it would overstate what was destroyed and disagree with the list
+		// of resources shown above.
 		deleted := 0
 		for _, a := range plan.GetActions() {
-			if a.ActionType == deployplan.Delete && !a.IsChildResource() {
+			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.Gone {
 				deleted++
 			}
 		}

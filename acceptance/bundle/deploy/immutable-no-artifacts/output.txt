@@ -122,4 +122,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-no-artifacts-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted
+Destroy: 1 deleted
