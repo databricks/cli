@@ -1,45 +1,28 @@
-# Build the fake acceptance tree the selection runs against. It cannot be committed:
-# a directory holding a file named "script" is a test case, so the harness would pick
-# these up as tests of their own.
-mkdir -p tree/mytest tree/newtest tree/bundle/invariant/jobs tree/bundle/invariant/apps
-touch tree/mytest/script tree/mytest/output.txt tree/newtest/script
-touch tree/bundle/invariant/jobs/script tree/bundle/invariant/apps/script
-
-# The command reads each test's variants from its materialized config, the same file the
-# harness generates.
-for dir in tree/bundle/invariant/jobs tree/bundle/invariant/apps; do
-    cat > $dir/out.test.toml <<EOF
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-EnvMatrix.INPUT_CONFIG = ["job.yml.tmpl", "new.yml.tmpl", "pipeline.yml.tmpl"]
-EOF
-done
-cat > tree/mytest/out.test.toml <<EOF
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-EOF
-
-# Each argument is a changed file: "M:" modified, "A:" added, "R100:old:new" moved. The
-# paths need not exist; only the tree of test dirs behind -root does.
+# The selection runs against the real acceptance tree, so every line it prints is a real
+# test name that can be passed to `go test -run`.
 selection() {
-    "$SELECTION" -root "$PWD/tree" "$@"
+    "$SELECTION" -root "$TESTROOT" "$@"
 }
 
+# Each argument is a changed file: "M:" modified, "A:" added, "R100:old:new" moved.
+
 title "Changing a test\n"
-trace selection M:acceptance/mytest/script
+trace selection M:acceptance/selftest/basic/script
 
 title "Adding a test\n"
-trace selection A:acceptance/newtest/script
+trace selection A:acceptance/selftest/basic/script
 
 title "A regenerated golden scores below a changed fixture\n"
-trace selection M:acceptance/mytest/output.txt M:acceptance/newtest/script
+trace selection M:acceptance/selftest/basic/output.txt M:acceptance/selftest/diff/script
 
 title "Moving a test scores lowest\n"
-trace selection R100:acceptance/oldtest/script:acceptance/newtest/script M:acceptance/mytest/script
+trace selection R100:acceptance/selftest/old/script:acceptance/selftest/basic/script M:acceptance/selftest/diff/script
 
 title "Touching an invariant config runs every invariant test, for that config only\n"
 trace selection M:acceptance/bundle/invariant/configs/job.yml.tmpl
 
 title "Adding one invariant config and touching another: only the new variant is new\n"
-trace selection A:acceptance/bundle/invariant/configs/new.yml.tmpl M:acceptance/bundle/invariant/configs/job.yml.tmpl
+trace selection A:acceptance/bundle/invariant/configs/pipeline.yml.tmpl M:acceptance/bundle/invariant/configs/job.yml.tmpl
 
 title "The limit keeps the highest scoring tests\n"
-trace selection -limit 2 A:acceptance/newtest/script M:acceptance/mytest/script M:acceptance/bundle/invariant/configs/job.yml.tmpl
+trace selection -limit 3 A:acceptance/selftest/basic/script M:acceptance/selftest/diff/script M:acceptance/bundle/invariant/configs/job.yml.tmpl

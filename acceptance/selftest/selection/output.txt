@@ -1,52 +1,76 @@
 
 === Changing a test
 
->>> selection M:acceptance/mytest/script
+>>> selection M:acceptance/selftest/basic/script
 Selected 1 changed tests (limit=50, 0 not selected)
-    5  mytest/DATABRICKS_BUNDLE_ENGINE=terraform
-    5  mytest/DATABRICKS_BUNDLE_ENGINE=direct
+    5  selftest/basic/DATABRICKS_BUNDLE_ENGINE=terraform
+    5  selftest/basic/DATABRICKS_BUNDLE_ENGINE=direct
 
 === Adding a test
 
->>> selection A:acceptance/newtest/script
+>>> selection A:acceptance/selftest/basic/script
 Selected 1 changed tests (limit=50, 0 not selected)
-   10  newtest
+   10  selftest/basic/DATABRICKS_BUNDLE_ENGINE=terraform
+   10  selftest/basic/DATABRICKS_BUNDLE_ENGINE=direct
 
 === A regenerated golden scores below a changed fixture
 
->>> selection M:acceptance/mytest/output.txt M:acceptance/newtest/script
+>>> selection M:acceptance/selftest/basic/output.txt M:acceptance/selftest/diff/script
 Selected 2 changed tests (limit=50, 0 not selected)
-    5  newtest
-    1  mytest/DATABRICKS_BUNDLE_ENGINE=terraform
-    1  mytest/DATABRICKS_BUNDLE_ENGINE=direct
+    5  selftest/diff/DATABRICKS_BUNDLE_ENGINE=terraform
+    5  selftest/diff/DATABRICKS_BUNDLE_ENGINE=direct
+    1  selftest/basic/DATABRICKS_BUNDLE_ENGINE=terraform
+    1  selftest/basic/DATABRICKS_BUNDLE_ENGINE=direct
 
 === Moving a test scores lowest
 
->>> selection R100:acceptance/oldtest/script:acceptance/newtest/script M:acceptance/mytest/script
+>>> selection R100:acceptance/selftest/old/script:acceptance/selftest/basic/script M:acceptance/selftest/diff/script
 Selected 2 changed tests (limit=50, 0 not selected)
-    5  mytest/DATABRICKS_BUNDLE_ENGINE=terraform
-    5  mytest/DATABRICKS_BUNDLE_ENGINE=direct
-    1  newtest
+    5  selftest/diff/DATABRICKS_BUNDLE_ENGINE=terraform
+    5  selftest/diff/DATABRICKS_BUNDLE_ENGINE=direct
+    1  selftest/basic/DATABRICKS_BUNDLE_ENGINE=terraform
+    1  selftest/basic/DATABRICKS_BUNDLE_ENGINE=direct
 
 === Touching an invariant config runs every invariant test, for that config only
 
 >>> selection M:acceptance/bundle/invariant/configs/job.yml.tmpl
-Selected 2 changed tests (limit=50, 0 not selected)
-    5  bundle/invariant/apps/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
-    5  bundle/invariant/jobs/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
+Selected 5 changed tests (limit=50, 0 not selected)
+    5  bundle/invariant/continue_293/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
+    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
+    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
+    5  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
+    5  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
+    5  bundle/invariant/migrate/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
+    5  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
+    5  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
 
 === Adding one invariant config and touching another: only the new variant is new
 
->>> selection A:acceptance/bundle/invariant/configs/new.yml.tmpl M:acceptance/bundle/invariant/configs/job.yml.tmpl
-Selected 4 changed tests (limit=50, 0 not selected)
-   10  bundle/invariant/apps/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=new.yml.tmpl
-   10  bundle/invariant/jobs/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=new.yml.tmpl
-    5  bundle/invariant/apps/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
-    5  bundle/invariant/jobs/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
+>>> selection A:acceptance/bundle/invariant/configs/pipeline.yml.tmpl M:acceptance/bundle/invariant/configs/job.yml.tmpl
+Selected 10 changed tests (limit=50, 0 not selected)
+   10  bundle/invariant/continue_293/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl
+   10  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl/READPLAN=
+   10  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl/READPLAN=1
+   10  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl/READPLAN=
+   10  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl/READPLAN=1
+   10  bundle/invariant/migrate/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl
+   10  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl/READPLAN=
+   10  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl/READPLAN=1
+    5  bundle/invariant/continue_293/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
+    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
+    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
+    5  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
+    5  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
+    5  bundle/invariant/migrate/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
+    5  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
+    5  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
 
 === The limit keeps the highest scoring tests
 
->>> selection -limit 2 A:acceptance/newtest/script M:acceptance/mytest/script M:acceptance/bundle/invariant/configs/job.yml.tmpl
-Selected 2 changed tests (limit=2, 2 not selected)
-   10  newtest
-    5  bundle/invariant/apps/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
+>>> selection -limit 3 A:acceptance/selftest/basic/script M:acceptance/selftest/diff/script M:acceptance/bundle/invariant/configs/job.yml.tmpl
+Selected 3 changed tests (limit=3, 4 not selected)
+   10  selftest/basic/DATABRICKS_BUNDLE_ENGINE=terraform
+   10  selftest/basic/DATABRICKS_BUNDLE_ENGINE=direct
+    5  bundle/invariant/continue_293/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
+    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
+    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
