@@ -354,6 +354,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	// Record operations under that version, so DMS holds the deployed resource state.
 	setOperationRecorder(ctx, b, recorder)
+	if logdiag.HasError(ctx) {
+		return
+	}
 	deployCore(ctx, b, plan, stateEngine, requestedEngine)
 
 	if logdiag.HasError(ctx) {

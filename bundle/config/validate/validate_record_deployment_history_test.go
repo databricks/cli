@@ -43,7 +43,7 @@ func TestValidateRecordDeploymentHistory(t *testing.T) {
 			}
 			require.Len(t, diags, 1)
 			assert.Equal(t, diag.Error, diags[0].Severity)
-			assert.Equal(t, "experimental.record_deployment_history is not supported yet", diags[0].Summary)
+			assert.Equal(t, "experimental.record_deployment_history is not supported yet; remove this setting from your bundle configuration", diags[0].Summary)
 			assert.Equal(t, recordDeploymentHistoryPath, diags[0].Paths[0].String())
 		})
 	}

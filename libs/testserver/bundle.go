@@ -401,6 +401,11 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED")
 	}
 
+	// Delete operations require resource_id. Create-flavored actions may lack an ID initially.
+	if after.ActionType == bundledeployments.OperationActionTypeOperationActionTypeDelete && after.ResourceId == "" {
+		return dmsInvalidArgument("resource_id is required for OPERATION_ACTION_TYPE_DELETE operations")
+	}
+
 	// An operation with state must identify its resource via resource_id,
 	// even for failed operations reporting prior state.
 	if after.State != "" && after.ResourceId == "" {

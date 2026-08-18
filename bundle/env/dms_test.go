@@ -39,3 +39,23 @@ func TestRecordsDeploymentHistory(t *testing.T) {
 	ctx := env.Set(t.Context(), RecordDeploymentHistoryVariable, "true")
 	assert.True(t, RecordsDeploymentHistory(ctx, false))
 }
+
+func TestForceAllowRecordDeploymentHistory(t *testing.T) {
+	for _, tc := range []struct {
+		value string
+		want  bool
+	}{
+		{"", false},
+		{"1", true},
+		{"yes", true},
+		{"true", true},
+		{"false", true}, // any non-empty value enables the escape hatch
+	} {
+		ctx := env.Set(t.Context(), ForceAllowRecordDeploymentHistoryVariable, tc.value)
+		assert.Equal(t, tc.want, ForceAllowRecordDeploymentHistory(ctx), "value %q", tc.value)
+	}
+}
+
+func TestForceAllowRecordDeploymentHistoryUnset(t *testing.T) {
+	assert.False(t, ForceAllowRecordDeploymentHistory(t.Context()))
+}

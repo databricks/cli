@@ -277,6 +277,9 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			return
 		}
 		setOperationRecorder(ctx, b, recorder)
+		if logdiag.HasError(ctx) {
+			return
+		}
 		destroyCore(ctx, b, plan, engine, recorder)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")

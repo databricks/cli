@@ -51,10 +51,14 @@ type fakeVersionRequest struct {
 // createVersionRequest), so the two use different signatures.
 type fakeVersions struct {
 	requests *[]fakeVersionRequest
+	err      error
 }
 
 func (f fakeVersions) CreateVersion(ctx context.Context, deploymentID, versionID string, body createVersionRequest) (*bundledeployments.Version, error) {
 	*f.requests = append(*f.requests, fakeVersionRequest{deploymentID: deploymentID, versionID: versionID, body: body})
+	if f.err != nil {
+		return nil, f.err
+	}
 	return &bundledeployments.Version{VersionId: versionID}, nil
 }
 
@@ -274,6 +278,36 @@ func TestRecorderCreateVersionUsesThePreparedNumber(t *testing.T) {
 	assert.Equal(t, "5", f.versions[0].versionID)
 	assert.Equal(t, "4", f.versions[0].body.PreviousVersionId)
 	assert.Equal(t, int64(5), r.Version())
+}
+
+func TestRecorderCreateVersionDetectsAbortedConflict(t *testing.T) {
+	f := &fakeDMS{
+		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
+			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "4"}, nil
+		},
+	}
+	// Simulate concurrency conflict: another deploy claimed the version number.
+	conflictErr := &apierr.APIError{
+		StatusCode: 409,
+		ErrorCode:  "ABORTED",
+	}
+	r := NewRecorder(RecorderOptions{
+		Service:      f,
+		Versions:     &fakeVersions{requests: &f.versions, err: conflictErr},
+		DeploymentID: "stored-id",
+		StatePath:    testStatePath,
+		Metadata:     Metadata{TargetName: "dev", DisplayName: testDisplayName},
+		VersionType:  VersionTypeDeploy,
+	})
+
+	require.NoError(t, r.PrepareDeployment(t.Context()))
+	err := r.CreateVersion(t.Context())
+
+	// Names the version that was taken and tells the user to retry, and keeps the
+	// underlying ABORTED so callers can still match on it.
+	assert.ErrorContains(t, err, "another deploy already claimed version 5")
+	assert.ErrorContains(t, err, "try again")
+	assert.ErrorIs(t, err, conflictErr)
 }
 
 func TestDeploymentIDFromName(t *testing.T) {

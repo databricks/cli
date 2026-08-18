@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -252,6 +253,74 @@ func TestNewFailedOperationTruncatesLongError(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, op.errorMessage, maxOperationErrorMessageSize)
+}
+
+func TestNewFailedOperationPreservesUTF8OnTruncation(t *testing.T) {
+	// The cut lands one byte into the emoji, so a byte-wise truncation would leave a partial
+	// rune behind and the service stores state and messages as strings.
+	msg := strings.Repeat("a", maxOperationErrorMessageSize-1) + "❌" + "x"
+
+	op, err := newFailedOperation(deployplan.Update, "job-123", nil, errors.New(msg))
+	require.NoError(t, err)
+
+	assert.True(t, utf8.ValidString(op.errorMessage))
+	// The whole emoji went, so the message is shorter than the limit rather than exactly it.
+	assert.Equal(t, strings.Repeat("a", maxOperationErrorMessageSize-1), op.errorMessage)
+}
+
+func TestOperationRecorderReturnsAPIErrors(t *testing.T) {
+	// A failed upload returns its error and leaves the recorded sequence id alone, so a later
+	// write for the same resource still updates the operation with the precondition the
+	// service last gave us rather than trying to create a second one.
+	failingClient := &failingOpClient{sequence: "9", failOn: 1}
+	r := newOperationRecorder(failingClient, "dep-1", 2)
+
+	uploadOne(t, r, "resources.jobs.foo", deployplan.Create, "job-1", envelope(t, "first"))
+
+	second, err := newStateOperation(dstate.OperationInfo{Action: deployplan.Update}, "job-2", envelope(t, "second"))
+	require.NoError(t, err)
+	err = r.upload(t.Context(), "resources.jobs.foo", second)
+	require.Error(t, err)
+	assert.Equal(t, "injected error", err.Error())
+
+	// The third write is what proves the sequence id survived the failure.
+	uploadOne(t, r, "resources.jobs.foo", deployplan.Update, "job-3", envelope(t, "third"))
+
+	require.Len(t, failingClient.calls, 3)
+	assert.Equal(t, "create", failingClient.calls[0].method)
+	assert.Equal(t, "update", failingClient.calls[1].method)
+	assert.Equal(t, "update", failingClient.calls[2].method)
+	assert.Equal(t, "9", failingClient.calls[2].update.SequenceId)
+}
+
+// failingOpClient fails the call at index failOn and reports sequence on the rest.
+type failingOpClient struct {
+	mu       sync.Mutex
+	calls    []fakeOpCall
+	sequence string
+	failOn   int
+}
+
+func (f *failingOpClient) CreateOperation(ctx context.Context, parent, resourceKey string, op bundledeployments.Operation) (operationResponse, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	callNum := len(f.calls)
+	f.calls = append(f.calls, fakeOpCall{method: "create", parent: parent, resourceKey: resourceKey, op: op})
+	if callNum == f.failOn {
+		return operationResponse{}, errors.New("injected error")
+	}
+	return operationResponse{SequenceId: f.sequence}, nil
+}
+
+func (f *failingOpClient) UpdateOperation(ctx context.Context, parent, resourceKey string, fields []string, body updateOperationRequest) (operationResponse, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	callNum := len(f.calls)
+	f.calls = append(f.calls, fakeOpCall{method: "update", parent: parent, resourceKey: resourceKey, update: body, fields: fields})
+	if callNum == f.failOn {
+		return operationResponse{}, errors.New("injected error")
+	}
+	return operationResponse{SequenceId: "2"}, nil
 }
 
 func TestDeployActionToSDK(t *testing.T) {

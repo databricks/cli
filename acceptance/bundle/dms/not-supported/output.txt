@@ -1,7 +1,7 @@
 
 === record_deployment_history is rejected: the service side is not ready for users yet
 >>> musterr [CLI] bundle validate
-Error: experimental.record_deployment_history is not supported yet
+Error: experimental.record_deployment_history is not supported yet; remove this setting from your bundle configuration
   at experimental.record_deployment_history
   in databricks.yml:5:30
 

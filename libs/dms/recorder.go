@@ -196,6 +196,11 @@ func (r *Recorder) CreateVersion(ctx context.Context) error {
 		WorkspaceInfo:     r.metadata.Workspace,
 	})
 	if err != nil {
+		// A 409 ABORTED means another deploy claimed this version number in between
+		// PrepareDeployment and here.
+		if isAbortedErr(err) {
+			return fmt.Errorf("another deploy already claimed version %s of this deployment, try again: %w", versionID, err)
+		}
 		return fmt.Errorf("failed to create deployment version: %w", err)
 	}
 

@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -101,6 +102,15 @@ func newFailedOperation(action deployplan.ActionType, resourceID string, priorSt
 	message := cause.Error()
 	if len(message) > maxOperationErrorMessageSize {
 		message = message[:maxOperationErrorMessageSize]
+		// The cut can land inside a rune, and the service stores a string. Drop the partial
+		// one: at most UTFMax-1 bytes of it can be left, so a message that was already
+		// invalid loses those bytes rather than being stripped away entirely.
+		for range utf8.UTFMax - 1 {
+			if utf8.ValidString(message) {
+				break
+			}
+			message = message[:len(message)-1]
+		}
 	}
 
 	return recordedOperation{

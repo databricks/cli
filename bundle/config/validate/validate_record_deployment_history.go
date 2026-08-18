@@ -33,7 +33,7 @@ func (v *validateRecordDeploymentHistory) Apply(ctx context.Context, b *bundle.B
 	}
 	return diag.Diagnostics{{
 		Severity:  diag.Error,
-		Summary:   recordDeploymentHistoryPath + " is not supported yet",
+		Summary:   recordDeploymentHistoryPath + " is not supported yet; remove this setting from your bundle configuration",
 		Paths:     []dyn.Path{dyn.MustPathFromString(recordDeploymentHistoryPath)},
 		Locations: b.Config.GetLocations(recordDeploymentHistoryPath),
 	}}

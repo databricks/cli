@@ -66,3 +66,52 @@ func TestFetchDeploymentResourcesRejectsMalformedState(t *testing.T) {
 	_, err := fetchDeploymentResources(t.Context(), f, "dep-1")
 	assert.ErrorContains(t, err, "interpreting state recorded for resources.jobs.foo")
 }
+
+func TestReadDMSStateReplacesLocalState(t *testing.T) {
+	// readDMSState should replace the file-derived state with what DMS has,
+	// even if the file has different resources.
+	src := &DMSSource{
+		Client: &fakeResourceLister{resources: []bundledeployments.Resource{
+			{ResourceKey: "jobs.foo", ResourceId: "dms-id", State: `{"state":{"name":"from-dms"}}`},
+		}},
+		DeploymentID: "dep-1",
+	}
+
+	var db DeploymentState
+	db.Data.State = map[string]ResourceEntry{
+		"resources.jobs.bar": {ID: "file-id", State: json.RawMessage(`{"name":"from-file"}`)},
+	}
+	db.stateIDs = map[string]string{"resources.jobs.bar": "file-id"}
+	db.Path = "test-path"
+
+	err := db.readDMSState(t.Context(), src)
+	require.NoError(t, err)
+
+	// State now reflects DMS, not the file.
+	assert.Equal(t, map[string]ResourceEntry{
+		"resources.jobs.foo": {ID: "dms-id", State: json.RawMessage(`{"name":"from-dms"}`)},
+	}, db.Data.State)
+	assert.Equal(t, map[string]string{"resources.jobs.foo": "dms-id"}, db.stateIDs)
+}
+
+func TestReadDMSStateAcceptsEmptyResourceList(t *testing.T) {
+	// An empty DMS response is valid: it means a successful deploy of nothing.
+	src := &DMSSource{
+		Client:       &fakeResourceLister{resources: []bundledeployments.Resource{}},
+		DeploymentID: "dep-1",
+	}
+
+	var db DeploymentState
+	db.Data.State = map[string]ResourceEntry{
+		"resources.jobs.bar": {ID: "file-id", State: json.RawMessage(`{"name":"from-file"}`)},
+	}
+	db.stateIDs = map[string]string{"resources.jobs.bar": "file-id"}
+	db.Path = "test-path"
+
+	err := db.readDMSState(t.Context(), src)
+	require.NoError(t, err)
+
+	// State is now empty, reflecting the empty DMS response.
+	assert.Empty(t, db.Data.State)
+	assert.Empty(t, db.stateIDs)
+}
