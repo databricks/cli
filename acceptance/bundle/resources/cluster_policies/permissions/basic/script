@@ -1,0 +1,22 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Validate: permissions parse onto the cluster policy"
+trace $CLI bundle validate -o json | jq ".resources.cluster_policies.test_cluster_policy.permissions"
+
+title "Deploy: policy created and CAN_USE grants applied"
+trace $CLI bundle deploy
+trace print_requests.py //permissions/cluster-policies
+
+trace $CLI bundle summary
+
+title "Plan is a no-op immediately after deploy"
+trace $CLI bundle plan
+
+title "Remove one grant and redeploy: the ACL is set again without it"
+grep -v TO_REMOVE databricks.yml > updated.yml && mv updated.yml databricks.yml
+trace $CLI bundle deploy
+trace print_requests.py //permissions/cluster-policies
