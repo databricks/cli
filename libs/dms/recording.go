@@ -206,7 +206,7 @@ func (r *recording) Start(ctx context.Context, staged []StagedOperation) (Operat
 	log.Infof(ctx, "Created deployment version: deployment=%s version=%s", r.deploymentID, version.VersionId)
 
 	return &operationWriter{
-		ops:          r.client.Operations,
+		client:       r.client,
 		deploymentID: r.deploymentID,
 		version:      r.versionNum,
 		sequenceIDs:  make(map[ResourceKey]string),

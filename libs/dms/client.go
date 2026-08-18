@@ -13,18 +13,15 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// Client is every call the CLI makes to DMS. Most go through the generated client; the two
-// the SDK cannot express are written by hand below, each with its own interface so a test
-// can capture what the CLI sends.
+// Client is every call the CLI makes to DMS, as methods below. Each one goes out through one
+// of two halves: the generated client for the calls it can express, and hand-written requests
+// for the two it cannot.
 type Client struct {
-	// Service is the generated client, used for every call it can express.
+	// Service is the generated client.
 	Service bundledeployments.BundleDeploymentsInterface
 
-	// Versions creates versions; see VersionCreator.
-	Versions VersionCreator
-
-	// Operations fills in staged operations; see OperationUpdater.
-	Operations OperationUpdater
+	// raw sends what the generated client cannot; see requester.
+	raw requester
 }
 
 // NewClient returns a Client for the workspace w.
@@ -33,8 +30,7 @@ func NewClient(w *databricks.WorkspaceClient) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	raw := &rawClient{client: api}
-	return &Client{Service: w.BundleDeployments, Versions: raw, Operations: raw}, nil
+	return &Client{Service: w.BundleDeployments, raw: &rawClient{client: api}}, nil
 }
 
 // deploymentName and versionName are the two resource-name formats the service uses. Every
@@ -78,7 +74,7 @@ func (c *Client) DeleteDeployment(ctx context.Context, deploymentID string) erro
 
 // CreateVersion claims the version and stages the operations body carries.
 func (c *Client) CreateVersion(ctx context.Context, deploymentID string, version int64, body CreateVersionRequest) (*bundledeployments.Version, error) {
-	return c.Versions.CreateVersion(ctx, deploymentID, strconv.FormatInt(version, 10), body)
+	return c.raw.CreateVersion(ctx, deploymentID, strconv.FormatInt(version, 10), body)
 }
 
 // CompleteVersion closes the version out, which is what stops the service expiring its lease.
@@ -98,9 +94,10 @@ func (c *Client) Heartbeat(ctx context.Context, deploymentID string, version int
 	return err
 }
 
-// UpdateOperation fills in one operation the version staged; see OperationUpdater.
+// UpdateOperation fills in one operation the version staged, and returns the sequence id the
+// next update for that resource must send.
 func (c *Client) UpdateOperation(ctx context.Context, deploymentID string, version int64, key ResourceKey, sequenceID string, update OperationUpdate) (string, error) {
-	return c.Operations.UpdateOperation(ctx, deploymentID, version, key, sequenceID, update)
+	return c.raw.UpdateOperation(ctx, deploymentID, version, key, sequenceID, update)
 }
 
 // deploymentIDFromName extracts the deployment ID from a DMS resource name of
@@ -113,19 +110,18 @@ func deploymentIDFromName(name string) (string, error) {
 	return id, nil
 }
 
-// VersionCreator creates a version under a deployment. Hand-written because the generated
-// struct has no previous_version_id, which the service needs as its concurrency check -
-// without it every deploy after the first is rejected.
-type VersionCreator interface {
+// requester sends the two requests the generated client cannot express, so a test can capture
+// what the CLI puts on the wire. Both are TODO(DMS): drop them once the spec catches up.
+type requester interface {
+	// CreateVersion is hand-written because the generated struct has no
+	// previous_version_id, which the service needs as its concurrency check - without it
+	// every deploy after the first is rejected.
 	CreateVersion(ctx context.Context, deploymentID, versionID string, body CreateVersionRequest) (*bundledeployments.Version, error)
-}
 
-// OperationUpdater fills in an operation the version staged, and returns the sequence id the
-// next update for that resource must send. Hand-written because the SDK types sequence_id as
-// an int64 while the service sends a JSON string. TODO(DMS): drop once the spec agrees.
-type OperationUpdater interface {
-	// sequenceID is the token the previous update for this resource returned, or 0 for the
-	// first, which is what staging leaves.
+	// UpdateOperation is hand-written because the SDK types sequence_id as an int64 while
+	// the service sends a JSON string, so it cannot read the response. sequenceID is the
+	// token the previous update for this resource returned, or 0 for the first, which is
+	// what staging leaves.
 	UpdateOperation(ctx context.Context, deploymentID string, version int64, key ResourceKey, sequenceID string, update OperationUpdate) (next string, err error)
 }
 

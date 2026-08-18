@@ -17,7 +17,7 @@ type OperationWriter interface {
 
 // operationWriter writes through the API, tracking the sequence id each resource is at.
 type operationWriter struct {
-	ops          OperationUpdater
+	client       *Client
 	deploymentID string
 	version      int64
 
@@ -35,7 +35,7 @@ func (w *operationWriter) Write(ctx context.Context, key ResourceKey, update Ope
 		sequenceID = stagedSequenceID
 	}
 
-	next, err := w.ops.UpdateOperation(ctx, w.deploymentID, w.version, key, sequenceID, update)
+	next, err := w.client.UpdateOperation(ctx, w.deploymentID, w.version, key, sequenceID, update)
 	if err != nil {
 		return err
 	}

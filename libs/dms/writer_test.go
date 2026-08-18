@@ -1,10 +1,8 @@
 package dms
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"sync"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
@@ -12,49 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// updaterCall is one call the writer made to the operations API.
-type updaterCall struct {
-	deploymentID string
-	version      int64
-	key          ResourceKey
-	sequenceID   string
-	update       OperationUpdate
-}
-
-// fakeUpdater reports sequence for every call, failing the one at index failOn.
-type fakeUpdater struct {
-	mu       sync.Mutex
-	calls    []updaterCall
-	sequence string
-	failOn   int
-}
-
-func newFakeUpdater(sequence string) *fakeUpdater {
-	return &fakeUpdater{sequence: sequence, failOn: -1}
-}
-
-func (f *fakeUpdater) UpdateOperation(ctx context.Context, deploymentID string, version int64, key ResourceKey, sequenceID string, update OperationUpdate) (string, error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	callNum := len(f.calls)
-	f.calls = append(f.calls, updaterCall{
-		deploymentID: deploymentID,
-		version:      version,
-		key:          key,
-		sequenceID:   sequenceID,
-		update:       update,
-	})
-	if callNum == f.failOn {
-		return "", errors.New("injected error")
-	}
-	return f.sequence, nil
-}
-
-// testWriter returns a writer for version 2 of dep-1, recording through f.
-func testWriter(f OperationUpdater) OperationWriter {
+// testWriter returns a writer for version 2 of dep-1, recording through raw.
+func testWriter(raw *fakeRaw) OperationWriter {
 	return &operationWriter{
-		ops:          f,
+		client:       &Client{raw: raw},
 		deploymentID: "dep-1",
 		version:      2,
 		sequenceIDs:  make(map[ResourceKey]string),
@@ -69,13 +28,13 @@ func writeState(t *testing.T, w OperationWriter, key ResourceKey, resourceID str
 }
 
 func TestWriterFirstWriteUpdatesTheStagedOperation(t *testing.T) {
-	f := newFakeUpdater("1")
+	f := newFakeRaw("1")
 	w := testWriter(f)
 
 	writeState(t, w, "jobs.foo", "job-123", json.RawMessage(`{"state":{}}`))
 
-	require.Len(t, f.calls, 1)
-	c := f.calls[0]
+	require.Len(t, f.updates, 1)
+	c := f.updates[0]
 	// The version already staged this operation, so the first write updates it and echoes
 	// the sequence id staging left.
 	assert.Equal(t, "dep-1", c.deploymentID)
@@ -88,35 +47,35 @@ func TestWriterFirstWriteUpdatesTheStagedOperation(t *testing.T) {
 func TestWriterSecondWriteEchoesTheServiceSequence(t *testing.T) {
 	// One operation per resource per version: the second write updates the same operation,
 	// echoing the sequence id the service returned as its precondition.
-	f := newFakeUpdater("7")
+	f := newFakeRaw("7")
 	w := testWriter(f)
 
 	writeState(t, w, "jobs.foo", "", nil)
 	writeState(t, w, "jobs.foo", "job-456", json.RawMessage(`{"state":{}}`))
 
-	require.Len(t, f.calls, 2)
-	assert.Equal(t, stagedSequenceID, f.calls[0].sequenceID)
-	assert.Equal(t, "7", f.calls[1].sequenceID)
+	require.Len(t, f.updates, 2)
+	assert.Equal(t, stagedSequenceID, f.updates[0].sequenceID)
+	assert.Equal(t, "7", f.updates[1].sequenceID)
 }
 
 func TestWriterTracksSequencePerResource(t *testing.T) {
 	// Each resource has its own staged operation, so each one's first write echoes the staged
 	// sequence id rather than a sequence another resource earned.
-	f := newFakeUpdater("1")
+	f := newFakeRaw("1")
 	w := testWriter(f)
 
 	writeState(t, w, "jobs.foo", "id-1", json.RawMessage(`{"state":{}}`))
 	writeState(t, w, "jobs.bar", "id-2", json.RawMessage(`{"state":{}}`))
 
-	require.Len(t, f.calls, 2)
-	assert.Equal(t, stagedSequenceID, f.calls[0].sequenceID)
-	assert.Equal(t, stagedSequenceID, f.calls[1].sequenceID)
+	require.Len(t, f.updates, 2)
+	assert.Equal(t, stagedSequenceID, f.updates[0].sequenceID)
+	assert.Equal(t, stagedSequenceID, f.updates[1].sequenceID)
 }
 
 func TestWriterErrorKeepsTheSequence(t *testing.T) {
 	// A failed write returns its error and leaves the recorded sequence id alone, so a later
 	// write for the same resource still carries the precondition the service last gave us.
-	f := newFakeUpdater("9")
+	f := newFakeRaw("9")
 	f.failOn = 1
 	w := testWriter(f)
 
@@ -130,8 +89,8 @@ func TestWriterErrorKeepsTheSequence(t *testing.T) {
 	// The third write is what proves the sequence id survived the failure.
 	writeState(t, w, "jobs.foo", "job-3", json.RawMessage(`{"state":{}}`))
 
-	require.Len(t, f.calls, 3)
-	assert.Equal(t, "9", f.calls[2].sequenceID)
+	require.Len(t, f.updates, 3)
+	assert.Equal(t, "9", f.updates[2].sequenceID)
 }
 
 func TestUpdateRequestSendsOnlyWhatTheMaskNames(t *testing.T) {

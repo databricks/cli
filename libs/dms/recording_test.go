@@ -34,32 +34,11 @@ type fakeDMS struct {
 
 	// captured requests
 	created   []bundledeployments.CreateDeploymentRequest
-	versions  []fakeVersionRequest
 	completed []bundledeployments.CompleteVersionRequest
 	deleted   []string
-}
 
-// fakeVersionRequest is a CreateVersion call captured by fakeVersions.
-type fakeVersionRequest struct {
-	deploymentID string
-	versionID    string
-	body         CreateVersionRequest
-}
-
-// fakeVersions captures CreateVersion calls. It is separate from fakeDMS because
-// the CLI does not create versions through the generated client (see
-// CreateVersionRequest), so the two use different signatures.
-type fakeVersions struct {
-	requests *[]fakeVersionRequest
-	err      error
-}
-
-func (f fakeVersions) CreateVersion(ctx context.Context, deploymentID, versionID string, body CreateVersionRequest) (*bundledeployments.Version, error) {
-	*f.requests = append(*f.requests, fakeVersionRequest{deploymentID: deploymentID, versionID: versionID, body: body})
-	if f.err != nil {
-		return nil, f.err
-	}
-	return &bundledeployments.Version{VersionId: versionID}, nil
+	// raw captures what the hand-written half of the client sent; see fakeRaw.
+	raw *fakeRaw
 }
 
 func (f *fakeDMS) CreateDeployment(ctx context.Context, req bundledeployments.CreateDeploymentRequest) (*bundledeployments.Deployment, error) {
@@ -90,7 +69,9 @@ func (f *fakeDMS) Heartbeat(ctx context.Context, req bundledeployments.Heartbeat
 
 // testClient wires a Recording to f, failing CreateVersion with versionErr when set.
 func testClient(f *fakeDMS, versionErr error) *Client {
-	return &Client{Service: f, Versions: fakeVersions{requests: &f.versions, err: versionErr}}
+	f.raw = newFakeRaw("1")
+	f.raw.versionErr = versionErr
+	return &Client{Service: f, raw: f.raw}
 }
 
 // startVersion creates the version and discards the writer, for a test that only asserts
@@ -117,17 +98,17 @@ func TestRecordingFirstDeployCreatesDeploymentWithServerAssignedID(t *testing.T)
 	assert.Equal(t, testStatePath, f.created[0].Deployment.InitialParentPath)
 
 	// The first version is 1, parented under the assigned deployment.
-	require.Len(t, f.versions, 1)
-	assert.Equal(t, "1", f.versions[0].versionID)
-	assert.Equal(t, "server-generated-id", f.versions[0].deploymentID)
+	require.Len(t, f.raw.versions, 1)
+	assert.Equal(t, "1", f.raw.versions[0].versionID)
+	assert.Equal(t, "server-generated-id", f.raw.versions[0].deploymentID)
 	assert.Equal(t, int64(1), r.Version())
 
 	// The service copies display_name onto the deployment's workspace node, which is
 	// where GetDeployment reads it from; a version that omits it leaves the deployment
 	// unnamed in the UI.
-	assert.Equal(t, testDisplayName, f.versions[0].body.DisplayName)
+	assert.Equal(t, testDisplayName, f.raw.versions[0].body.DisplayName)
 	// A first version supersedes nothing, so previous_version_id is unset.
-	assert.Empty(t, f.versions[0].body.PreviousVersionId)
+	assert.Empty(t, f.raw.versions[0].body.PreviousVersionId)
 
 	require.NoError(t, r.Finish(t.Context(), true))
 	require.Len(t, f.completed, 1)
@@ -148,12 +129,12 @@ func TestRecordingSubsequentDeployReusesDeploymentAndIncrementsVersion(t *testin
 
 	// No new deployment is created; the version increments to last_version_id + 1.
 	assert.Empty(t, f.created)
-	require.Len(t, f.versions, 1)
-	assert.Equal(t, "5", f.versions[0].versionID)
+	require.Len(t, f.raw.versions, 1)
+	assert.Equal(t, "5", f.raw.versions[0].versionID)
 	assert.Equal(t, "stored-id", r.DeploymentID())
 	// The version it supersedes is the concurrency check; without it the service
 	// rejects every deploy after the first.
-	assert.Equal(t, "4", f.versions[0].body.PreviousVersionId)
+	assert.Equal(t, "4", f.raw.versions[0].body.PreviousVersionId)
 }
 
 func TestRecordingGetDeploymentErrorFailsDeploy(t *testing.T) {
@@ -183,7 +164,7 @@ func TestRecordingMissingDeploymentIsInternalError(t *testing.T) {
 	_, err := r.Start(t.Context(), nil)
 	assert.ErrorContains(t, err, "internal error: no deployment found for the file with object id stored-id")
 	assert.Empty(t, f.created)
-	assert.Empty(t, f.versions)
+	assert.Empty(t, f.raw.versions)
 }
 
 func TestRecordingDestroyDeletesDeploymentOnSuccess(t *testing.T) {
@@ -195,7 +176,7 @@ func TestRecordingDestroyDeletesDeploymentOnSuccess(t *testing.T) {
 	r := NewRecording(RecordingOptions{Client: testClient(f, nil), DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDestroy})
 
 	startVersion(t, r, nil)
-	assert.Equal(t, bundledeployments.VersionTypeVersionTypeDestroy, f.versions[0].body.VersionType)
+	assert.Equal(t, bundledeployments.VersionTypeVersionTypeDestroy, f.raw.versions[0].body.VersionType)
 
 	require.NoError(t, r.Finish(t.Context(), true))
 	// A successful destroy deletes the deployment record.
@@ -275,7 +256,7 @@ func TestRecordingPrepareClaimsNoVersion(t *testing.T) {
 	require.NoError(t, r.Prepare(t.Context()))
 
 	assert.Equal(t, int64(5), r.Version())
-	assert.Empty(t, f.versions, "no version created")
+	assert.Empty(t, f.raw.versions, "no version created")
 
 	require.NoError(t, r.Finish(t.Context(), true))
 	assert.Empty(t, f.completed, "nothing to complete")
@@ -294,9 +275,9 @@ func TestRecordingStartUsesThePreparedNumber(t *testing.T) {
 
 	// The version created is the one the plan was stamped with, and it reports the
 	// version it supersedes so the service rejects a racing deploy.
-	require.Len(t, f.versions, 1)
-	assert.Equal(t, "5", f.versions[0].versionID)
-	assert.Equal(t, "4", f.versions[0].body.PreviousVersionId)
+	require.Len(t, f.raw.versions, 1)
+	assert.Equal(t, "5", f.raw.versions[0].versionID)
+	assert.Equal(t, "4", f.raw.versions[0].body.PreviousVersionId)
 	assert.Equal(t, int64(5), r.Version())
 }
 
@@ -329,18 +310,6 @@ func TestRecordingStartDetectsAbortedConflict(t *testing.T) {
 	assert.ErrorIs(t, err, conflictErr)
 }
 
-func TestDeploymentIDFromName(t *testing.T) {
-	id, err := deploymentIDFromName("deployments/abc-123")
-	require.NoError(t, err)
-	assert.Equal(t, "abc-123", id)
-
-	_, err = deploymentIDFromName("abc-123")
-	assert.Error(t, err)
-
-	_, err = deploymentIDFromName("deployments/")
-	assert.Error(t, err)
-}
-
 func TestRecordingStartStagesOperations(t *testing.T) {
 	// The version fixes its operation set, so what the caller passes has to reach the wire
 	// verbatim: the service has no API to add an operation later.
@@ -353,8 +322,8 @@ func TestRecordingStartStagesOperations(t *testing.T) {
 	}
 	startVersion(t, r, staged)
 
-	require.Len(t, f.versions, 1)
-	assert.Equal(t, staged, f.versions[0].body.Operations)
+	require.Len(t, f.raw.versions, 1)
+	assert.Equal(t, staged, f.raw.versions[0].body.Operations)
 }
 
 func TestRecordingStartReportsTheOperationCap(t *testing.T) {
