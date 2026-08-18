@@ -1,4 +1,3 @@
-# The golden asserts MLflow's message verbatim, so run on cloud to catch it drifting.
-Cloud = true
+# Empty names fail at validate; no cloud API call is made.
 RecordRequests = false
 Ignore = [".databricks"]

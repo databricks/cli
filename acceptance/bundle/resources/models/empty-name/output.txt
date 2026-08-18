@@ -1,0 +1,13 @@
+
+>>> musterr [CLI] bundle validate --strict
+Error: model name is required
+  at resources.models.mymodel
+  in databricks.yml:7:7
+
+Name: model-empty-name-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/model-empty-name-[UNIQUE_NAME]/default
+
+Found 1 error

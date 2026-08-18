@@ -245,6 +245,8 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	diags := errorForMissingFields(ctx, b)
 	diags = diags.Extend(errorForInvalidGrants(ctx, b))
 	diags = diags.Extend(errorForInvalidSecretScopePermissions(ctx, b))
+	diags = diags.Extend(errorForInvalidIdentifiers(ctx, b))
+	diags = diags.Extend(errorForIncompletePipelineLibraries(ctx, b))
 	if diags.HasError() {
 		return diags
 	}

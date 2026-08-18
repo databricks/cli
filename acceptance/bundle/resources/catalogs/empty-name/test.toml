@@ -1,9 +1,3 @@
-# The golden asserts UC's message verbatim, so run on cloud to catch it drifting.
-Cloud = true
-RequiresUnityCatalog = true
+# Empty names fail at validate; no cloud API call is made.
 RecordRequests = false
 Ignore = [".databricks"]
-
-# Terraform rejects catalog resources before any API call, so there is nothing to
-# assert on that engine.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

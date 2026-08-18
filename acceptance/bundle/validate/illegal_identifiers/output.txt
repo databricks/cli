@@ -1,0 +1,25 @@
+
+>>> [CLI] bundle validate --strict
+Error: model name is required
+  at resources.models.empty_model
+  in databricks.yml:7:7
+
+Error: model_serving_endpoint name must not contain control characters
+  at resources.model_serving_endpoints.newline_endpoint
+  in databricks.yml:18:7
+
+Error: volume name must not contain control characters
+  at resources.volumes.tab_volume
+  in databricks.yml:11:7
+
+Error: pipeline library file path is required
+  at resources.pipelines.incomplete_file.libraries[0].file
+  in databricks.yml:24:11
+
+Name: illegal-identifiers
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/illegal-identifiers/default
+
+Found 4 errors

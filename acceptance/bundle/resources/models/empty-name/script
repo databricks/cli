@@ -1,7 +1,4 @@
-# The deploy fails only after the files are uploaded, so $UNIQUE_NAME in the bundle
-# name keeps concurrent cloud legs apart and lets the sweeper find what is left.
+# Empty name is rejected at validate; deploy never reaches the create API.
 envsubst < databricks.yml.tmpl > databricks.yml
 
-# Both engines reach the create call, but terraform wraps the message in its own
-# output, so the goldens are per-engine.
-trace musterr $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace musterr $CLI bundle validate --strict
