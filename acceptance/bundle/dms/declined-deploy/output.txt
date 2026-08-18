@@ -6,7 +6,7 @@ Created schemas.foo
 Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //api/2.0/bundle --sort
+>>> print_requests.py --dms //api/2.0/bundle --sort
 {
   "method": "PATCH",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo",
@@ -74,7 +74,7 @@ To proceed, use --auto-approve after reviewing the plan above.
 Files: 3 uploaded, 0 deleted
 
 === Nothing was recorded for the declined deploy - no version, so none to abort
->>> print_requests.py //api/2.0/bundle --sort
+>>> print_requests.py --dms //api/2.0/bundle --sort
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

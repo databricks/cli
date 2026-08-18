@@ -4,4 +4,4 @@ trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_U
 
 title "The next deploy reuses the ID that node names and retries version 1, rather than creating a second deployment"
 trace musterr $CLI bundle deploy
-trace print_requests.py //api/2.0/bundle --get --oneline
+trace print_requests.py --dms //api/2.0/bundle --get --oneline

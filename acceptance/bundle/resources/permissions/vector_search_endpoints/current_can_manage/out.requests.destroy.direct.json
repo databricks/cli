@@ -2,15 +2,3 @@
   "method": "DELETE",
   "path": "/api/2.0/vector-search/endpoints/vs-permissions-endpoint"
 }
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/vector_search_endpoints.foo.permissions",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "resource_id": "/vector-search-endpoints/[UUID]",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
-  }
-}

@@ -14,16 +14,3 @@
     ]
   }
 }
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo.permissions",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "state": "{\"state\":{\"object_id\":\"/jobs/[NUMID]\",\"__embed__\":[{\"level\":\"IS_OWNER\",\"user_name\":\"other_user@databricks.com\"},{\"level\":\"CAN_MANAGE\",\"user_name\":\"[USERNAME]\"}]},\"depends_on\":[{\"node\":\"resources.jobs.foo\",\"label\":\"${resources.jobs.foo.id}\"}]}",
-    "resource_id": "/jobs/[NUMID]",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
-  }
-}

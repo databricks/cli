@@ -5,7 +5,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/d
 Files: 4 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //api/2.0/bundle --get
+>>> print_requests.py --dms //api/2.0/bundle --get
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
@@ -51,7 +51,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources/d
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //api/2.0/bundle --get
+>>> print_requests.py --dms //api/2.0/bundle --get
 {
   "method": "GET",
   "path": "/api/2.0/bundle/deployments/[NUMID]/resources"

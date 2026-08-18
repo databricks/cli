@@ -1,6 +1,6 @@
 title "Deploy a job that references another: depends_on is recorded alongside the config, since the reference is resolved to a literal in the config itself"
 trace $CLI bundle deploy
-trace print_requests.py //versions/1/operations --sort
+trace print_requests.py --dms //versions/1/operations --sort
 
 trace $CLI bundle destroy --auto-approve
 rm -f out.requests.txt

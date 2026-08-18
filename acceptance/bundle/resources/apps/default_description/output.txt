@@ -17,16 +17,3 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "name": "myappname"
   }
 }
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/apps.mykey",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "state": "{\"state\":{\"description\":\"\",\"name\":\"myappname\",\"source_code_path\":\"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files\"}}",
-    "resource_id": "myappname",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
-  }
-}

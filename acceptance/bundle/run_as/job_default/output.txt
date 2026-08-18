@@ -40,19 +40,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     ]
   }
 }
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.job_with_run_as",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"Untitled\",\"queue\":{\"enabled\":true},\"run_as\":{\"user_name\":\"deco-test-user@databricks.com\"},\"tasks\":[{\"new_cluster\":{\"node_type_id\":\"[NODE_TYPE_ID]\",\"num_workers\":1,\"spark_version\":\"13.3.x-snapshot-scala2.12\"},\"notebook_task\":{\"notebook_path\":\"/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files/test\"},\"task_key\":\"task_one\"}]}}",
-    "resource_id": "[NUMID]",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
-  }
-}
 
 >>> [CLI] jobs get [NUMID]
 {
@@ -103,19 +90,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
         }
       ]
     }
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.job_with_run_as",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"2\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"Untitled\",\"queue\":{\"enabled\":true},\"tasks\":[{\"new_cluster\":{\"node_type_id\":\"[NODE_TYPE_ID]\",\"num_workers\":1,\"spark_version\":\"13.3.x-snapshot-scala2.12\"},\"notebook_task\":{\"notebook_path\":\"/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files/test\"},\"task_key\":\"task_one\"}]}}",
-    "resource_id": "[NUMID]",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
   }
 }
 

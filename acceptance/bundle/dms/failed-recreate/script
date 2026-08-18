@@ -8,7 +8,7 @@ trace update_file.py databricks.yml "catalog_name: main" "catalog_name: other"
 trace fault.py "POST /api/2.1/unity-catalog/schemas" 400 0 1 INVALID_PARAMETER_VALUE
 trace musterr $CLI bundle deploy --auto-approve
 # Not sorted: the point of this test is the order the operations are recorded in.
-trace print_requests.py //api/2.0/bundle
+trace print_requests.py --dms //api/2.0/bundle
 
 title "The resource is not listed: state is what projects a resource, and the failed recreate left none"
 # The deployment ID is the workspace node's ID; read it back the way the CLI does.

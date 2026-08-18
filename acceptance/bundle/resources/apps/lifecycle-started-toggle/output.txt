@@ -18,19 +18,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "no_compute": "true"
   }
 }
-{
-  "body": {
-    "resource_id": "[UNIQUE_NAME]",
-    "sequence_id": "0",
-    "state": "{\"state\":{\"description\":\"my_app_description\",\"lifecycle\":{\"started\":false},\"name\":\"[UNIQUE_NAME]\",\"source_code_path\":\"/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-toggle-[UNIQUE_NAME]/default/files/app\"}}",
-    "status": "OPERATION_STATUS_SUCCEEDED"
-  },
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/apps.mykey",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  }
-}
 
 >>> errcode [CLI] apps get [UNIQUE_NAME]
 "STOPPED"
@@ -58,19 +45,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments"
 }
-{
-  "body": {
-    "resource_id": "[UNIQUE_NAME]",
-    "sequence_id": "0",
-    "state": "{\"state\":{\"description\":\"my_app_description\",\"lifecycle\":{\"started\":true},\"name\":\"[UNIQUE_NAME]\",\"source_code_path\":\"/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-toggle-[UNIQUE_NAME]/default/files/app\"}}",
-    "status": "OPERATION_STATUS_SUCCEEDED"
-  },
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/apps.mykey",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  }
-}
 
 >>> errcode [CLI] apps get [UNIQUE_NAME]
 "ACTIVE"
@@ -89,19 +63,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "body": {},
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/stop"
-}
-{
-  "body": {
-    "resource_id": "[UNIQUE_NAME]",
-    "sequence_id": "0",
-    "state": "{\"state\":{\"description\":\"my_app_description\",\"lifecycle\":{\"started\":false},\"name\":\"[UNIQUE_NAME]\",\"source_code_path\":\"/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-toggle-[UNIQUE_NAME]/default/files/app\"}}",
-    "status": "OPERATION_STATUS_SUCCEEDED"
-  },
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/operations/apps.mykey",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  }
 }
 
 >>> errcode [CLI] apps get [UNIQUE_NAME]

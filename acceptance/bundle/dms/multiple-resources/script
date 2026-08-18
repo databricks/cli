@@ -1,7 +1,7 @@
 title "Deploy several resources: operations are uploaded from background workers, so exactly one is recorded per resource no matter what order the uploads finish in. The serialized state is dropped from the output here; bundle/dms/record covers it."
 trace $CLI bundle deploy
-trace print_requests.py //versions/1/operations --sort --del-body state --oneline
+trace print_requests.py --dms //versions/1/operations --sort --del-body state --oneline
 
 title "Redeploy with no changes: nothing is applied, so no operations are recorded and only the version is opened and completed"
 trace $CLI bundle deploy
-trace print_requests.py //api/2.0/bundle --sort --oneline
+trace print_requests.py --dms //api/2.0/bundle --sort --oneline

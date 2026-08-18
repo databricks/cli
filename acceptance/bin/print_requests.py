@@ -132,7 +132,11 @@ result = read_json_many(test)
 assert result == [{"method": "GET"}, {"method": "POST"}], result
 
 
-def filter_requests(requests, path_filters, include_get, should_sort, unique=False, method_filter=None):
+# DMS_PATH is the deployment metadata service's prefix; see filter_requests.
+DMS_PATH = "/api/2.0/bundle"
+
+
+def filter_requests(requests, path_filters, include_get, should_sort, unique=False, method_filter=None, include_dms=False):
     """Filter requests based on method and path filters."""
     positive_filters = []
     negative_filters = []
@@ -144,6 +148,13 @@ def filter_requests(requests, path_filters, include_get, should_sort, unique=Fal
             negative_filters.append(f.removeprefix(NEGATE_PREFIX))
         else:
             sys.exit(f"Unrecognized filter: {f!r}")
+
+    # Deployment-history requests carry the resource key in the path
+    # (.../operations/jobs.foo), so a filter like //jobs matches them too and every test
+    # that records one resource type would pick these up in the recording run. Excluded
+    # unless --dms asks for them.
+    if not include_dms:
+        negative_filters.append(DMS_PATH)
 
     filtered_requests = []
     for req in requests:
@@ -203,6 +214,11 @@ def main():
     parser.add_argument("path_filters", nargs="*", help="Path substring filters")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable diagnostic messages")
     parser.add_argument("--get", action="store_true", help="Include GET requests (excluded by default)")
+    parser.add_argument(
+        "--dms",
+        action="store_true",
+        help="Include deployment-history requests (excluded by default; see filter_requests)",
+    )
     parser.add_argument("--keep", action="store_true", help="Keep out.requests.json file after processing")
     parser.add_argument("--sort", action="store_true", help="Sort requests before output")
     parser.add_argument(
@@ -261,7 +277,7 @@ def main():
         return
 
     requests = read_json_many(data)
-    filtered_requests = filter_requests(requests, args.path_filters, args.get, args.sort, args.unique, args.method)
+    filtered_requests = filter_requests(requests, args.path_filters, args.get, args.sort, args.unique, args.method, args.dms)
 
     for req in filtered_requests:
         body = req.get("body")

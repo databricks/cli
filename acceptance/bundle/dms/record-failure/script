@@ -1,6 +1,6 @@
 title "A resource that fails to apply is recorded as a failed operation carrying the error, so the deployment history says why rather than omitting the resource"
 trace musterr $CLI bundle deploy
-trace print_requests.py //api/2.0/bundle --sort
+trace print_requests.py --dms //api/2.0/bundle --sort
 
 title "The failed resource is not listed at all: state is what projects a resource, and a failed create records none, so a later deploy plans to create it rather than treating it as already deployed"
 # The deployment ID is the workspace node's ID; read it back the way the CLI does.

@@ -6,7 +6,7 @@ Created jobs.foo
 Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //versions --sort
+>>> print_requests.py --dms //versions --sort
 {
   "method": "PATCH",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo",

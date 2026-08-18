@@ -11,7 +11,7 @@ API message: cluster spec is invalid
 
 Files: 5 uploaded, 0 deleted
 
->>> print_requests.py //api/2.0/bundle --sort
+>>> print_requests.py --dms //api/2.0/bundle --sort
 {
   "method": "PATCH",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.doomed",

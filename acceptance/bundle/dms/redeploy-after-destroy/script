@@ -1,11 +1,11 @@
 title "Deploy, then destroy: the deployment record and its workspace node are both deleted, so nothing points at the destroyed deployment"
 trace $CLI bundle deploy
 trace $CLI bundle destroy --auto-approve
-print_requests.py //api/2.0/bundle --get > /dev/null
+print_requests.py --dms //api/2.0/bundle --get > /dev/null
 
 trace MSYS_NO_PATHCONV=1 musterr $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-redeploy-after-destroy/default/state/resources.deployment.json"
 
 title "Deploy again: with no node to resolve, a fresh deployment is created at version 1, with its own workspace node"
 trace $CLI bundle deploy
 trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-redeploy-after-destroy/default/state/resources.deployment.json" | jq '{object_type,path}'
-trace print_requests.py //api/2.0/bundle --get
+trace print_requests.py --dms //api/2.0/bundle --get

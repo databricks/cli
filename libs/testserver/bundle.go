@@ -416,20 +416,29 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 		return Response{StatusCode: 500, Body: map[string]string{"message": err.Error()}}
 	}
 
-	// Mirror onto the resource set the same way CreateOperation does, so the read
-	// path reflects the newest write.
-	if existing.State == "" {
-		delete(d.resources, resourceKey)
-	} else {
-		d.resources[resourceKey] = bundledeployments.Resource{
-			Name:           "deployments/" + deploymentID + "/resources/" + resourceKey,
-			ResourceKey:    resourceKey,
-			ResourceId:     existing.ResourceId,
-			ResourceType:   existing.ResourceType,
-			LastActionType: existing.ActionType,
-			LastVersionId:  versionID,
-			State:          existing.State,
+	// Only an update that names state moves the resource: naming it with no value clears
+	// it and removes the resource, and an update that leaves it out - a failure reporting
+	// its outcome - must not disturb what the deployment already holds. Every version
+	// stages its operations without state, so re-deriving this from the operation
+	// regardless of the mask would drop a resource whose deploy failed before writing.
+	if update["state"] {
+		if existing.State == "" {
+			delete(d.resources, resourceKey)
+		} else {
+			d.resources[resourceKey] = bundledeployments.Resource{
+				Name:           "deployments/" + deploymentID + "/resources/" + resourceKey,
+				ResourceKey:    resourceKey,
+				ResourceId:     existing.ResourceId,
+				ResourceType:   existing.ResourceType,
+				LastActionType: existing.ActionType,
+				LastVersionId:  versionID,
+				State:          existing.State,
+			}
 		}
+	} else if resource, projected := d.resources[resourceKey]; projected && update["resource_id"] {
+		// resource_id is mirrored too, for a resource the deployment still holds.
+		resource.ResourceId = existing.ResourceId
+		d.resources[resourceKey] = resource
 	}
 
 	return Response{Body: body}

@@ -6,7 +6,7 @@ Created schemas.foo
 Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //api/2.0/bundle
+>>> print_requests.py --dms //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
@@ -71,7 +71,7 @@ Recreated schemas.foo
 Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
->>> print_requests.py //api/2.0/bundle
+>>> print_requests.py --dms //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
@@ -141,7 +141,7 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
->>> print_requests.py //api/2.0/bundle
+>>> print_requests.py --dms //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions",

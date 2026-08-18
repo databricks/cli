@@ -1,6 +1,6 @@
 title "Deploy a schema, so the deployment and its first version exist"
 trace $CLI bundle deploy
-trace print_requests.py //api/2.0/bundle --sort
+trace print_requests.py --dms //api/2.0/bundle --sort
 
 title "A destructive change without --auto-approve is declined: this console cannot prompt"
 # Changing the catalog recreates the schema, which needs approval.
@@ -10,7 +10,7 @@ trace musterr $CLI bundle deploy
 title "Nothing was recorded for the declined deploy - no version, so none to abort"
 # The version number it would have used is left for the next deploy to take, so the
 # history has no entry that reads like a deploy which failed or did nothing.
-trace print_requests.py //api/2.0/bundle --sort
+trace print_requests.py --dms //api/2.0/bundle --sort
 
 trace $CLI bundle destroy --auto-approve
 rm -f out.requests.txt

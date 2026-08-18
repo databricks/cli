@@ -30,7 +30,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/state/resources.deployment.json"
 }
 
->>> print_requests.py //api/2.0/bundle --get
+>>> print_requests.py --dms //api/2.0/bundle --get
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",

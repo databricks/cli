@@ -17,54 +17,25 @@ DIFF  apps/current_can_manage/out.requests.destroy.direct.json
 +    "path": "/api/2.0/permissions/apps/foo"
 +  }
 +]
-DIFF  apps/other_can_manage/out.requests.deploy.direct.json
---- apps/other_can_manage/out.requests.deploy.direct.json
-+++ apps/other_can_manage/out.requests.deploy.terraform.json
-@@ -22,18 +22,5 @@
-     },
-     "method": "PUT",
-     "path": "/api/2.0/permissions/apps/foo"
--  },
--  {
--    "body": {
--      "resource_id": "/apps/foo",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"object_id/":/"/apps/foo/",/"__embed__/":[{/"level/":/"CAN_USE/",/"user_name/":/"viewer@example.com/"},{/"level/":/"CAN_MANAGE/",/"group_name/":/"data-team/"},{/"level/":/"CAN_MANAGE/",/"service_principal_name/":/"[UUID]/"},{/"level/":/"CAN_MANAGE/",/"user_name/":/"[USERNAME]/"}]},/"depends_on/":[{/"node/":/"resources.apps.foo/",/"label/":/"${resources.apps.foo.id}/"}]}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/apps.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
+MATCH apps/other_can_manage/out.requests.deploy.direct.json
 DIFF  apps/other_can_manage/out.requests.destroy.direct.json
 --- apps/other_can_manage/out.requests.destroy.direct.json
 +++ apps/other_can_manage/out.requests.destroy.terraform.json
-@@ -1,14 +1,14 @@
- [
-   {
-     "body": {
--      "resource_id": "/apps/foo",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
+@@ -1 +1,14 @@
+-[]+[
++  {
++    "body": {
 +      "access_control_list": [
 +        {
 +          "permission_level": "CAN_MANAGE",
 +          "user_name": "[USERNAME]"
 +        }
 +      ]
-     },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/apps.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
++    },
 +    "method": "PUT",
 +    "path": "/api/2.0/permissions/apps/foo"
-   }
- ]
++  }
++]
 MATCH clusters/current_can_manage/out.requests.deploy.direct.json
 DIFF  clusters/current_can_manage/out.requests.destroy.direct.json
 --- clusters/current_can_manage/out.requests.destroy.direct.json
@@ -84,48 +55,7 @@ DIFF  clusters/current_can_manage/out.requests.destroy.direct.json
 +    "path": "/api/2.0/permissions/clusters/[UUID]"
 +  }
 +]
-DIFF  clusters/target/out.requests.direct.json
---- clusters/target/out.requests.direct.json
-+++ clusters/target/out.requests.terraform.json
-@@ -12,19 +12,6 @@
-     },
-     "method": "POST",
-     "path": "/api/2.1/clusters/create"
--  },
--  {
--    "body": {
--      "resource_id": "[UUID]",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"autotermination_minutes/":60,/"cluster_name/":/"[dev [USERNAME]] test-cluster/",/"custom_tags/":{/"dev/":/"[USERNAME]/"},/"node_type_id/":/"[NODE_TYPE_ID]/",/"num_workers/":1,/"spark_version/":/"15.4.x-scala2.12/"}}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/clusters.cluster1",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   },
-   {
-     "body": {
-@@ -49,18 +36,5 @@
-     },
-     "method": "PUT",
-     "path": "/api/2.0/permissions/clusters/[UUID]"
--  },
--  {
--    "body": {
--      "resource_id": "/clusters/[UUID]",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"object_id/":/"/clusters/[UUID]/",/"__embed__/":[{/"level/":/"CAN_ATTACH_TO/",/"service_principal_name/":/"[UUID]/"},{/"level/":/"CAN_RESTART/",/"service_principal_name/":/"[UUID]/"},{/"level/":/"CAN_MANAGE/",/"service_principal_name/":/"[UUID]/"},{/"level/":/"CAN_MANAGE/",/"user_name/":/"[USERNAME]/"}]},/"depends_on/":[{/"node/":/"resources.clusters.cluster1/",/"label/":/"${resources.clusters.cluster1.id}/"}]}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/clusters.cluster1.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
+MATCH clusters/target/out.requests.direct.json
 MATCH dashboards/create/out.requests.deploy.direct.json
 DIFF  dashboards/create/out.requests.destroy.direct.json
 --- dashboards/create/out.requests.destroy.direct.json
@@ -138,54 +68,25 @@ DIFF  dashboards/create/out.requests.destroy.direct.json
 +    "path": "/api/2.0/permissions/dashboards/[FOO_ID]"
 +  }
 +]
-DIFF  database_instances/current_can_manage/out.requests.deploy.direct.json
---- database_instances/current_can_manage/out.requests.deploy.direct.json
-+++ database_instances/current_can_manage/out.requests.deploy.terraform.json
-@@ -22,18 +22,5 @@
-     },
-     "method": "PUT",
-     "path": "/api/2.0/permissions/database-instances/test-db-instance"
--  },
--  {
--    "body": {
--      "resource_id": "/database-instances/test-db-instance",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"object_id/":/"/database-instances/test-db-instance/",/"__embed__/":[{/"level/":/"CAN_USE/",/"user_name/":/"viewer@example.com/"},{/"level/":/"CAN_MANAGE/",/"group_name/":/"data-team/"},{/"level/":/"CAN_MANAGE/",/"service_principal_name/":/"[UUID]/"},{/"level/":/"CAN_MANAGE/",/"user_name/":/"[USERNAME]/"}]},/"depends_on/":[{/"node/":/"resources.database_instances.foo/",/"label/":/"${resources.database_instances.foo.id}/"}]}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/database_instances.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
+MATCH database_instances/current_can_manage/out.requests.deploy.direct.json
 DIFF  database_instances/current_can_manage/out.requests.destroy.direct.json
 --- database_instances/current_can_manage/out.requests.destroy.direct.json
 +++ database_instances/current_can_manage/out.requests.destroy.terraform.json
-@@ -1,14 +1,14 @@
- [
-   {
-     "body": {
--      "resource_id": "/database-instances/test-db-instance",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
+@@ -1 +1,14 @@
+-[]+[
++  {
++    "body": {
 +      "access_control_list": [
 +        {
 +          "permission_level": "CAN_MANAGE",
 +          "user_name": "[USERNAME]"
 +        }
 +      ]
-     },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/database_instances.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
++    },
 +    "method": "PUT",
 +    "path": "/api/2.0/permissions/database-instances/test-db-instance"
-   }
- ]
++  }
++]
 MATCH experiments/current_can_manage/out.requests.deploy.direct.json
 DIFF  experiments/current_can_manage/out.requests.destroy.direct.json
 --- experiments/current_can_manage/out.requests.destroy.direct.json
@@ -200,147 +101,64 @@ DIFF  experiments/current_can_manage/out.requests.destroy.direct.json
 +]
 DIRECT_ONLY genie_spaces/current_can_manage/out.requests.deploy.direct.json
 DIRECT_ONLY genie_spaces/current_can_manage/out.requests.destroy.direct.json
-DIFF  jobs/current_can_manage/out.requests.deploy.direct.json
---- jobs/current_can_manage/out.requests.deploy.direct.json
-+++ jobs/current_can_manage/out.requests.deploy.terraform.json
-@@ -22,18 +22,5 @@
-     },
-     "method": "PUT",
-     "path": "/api/2.0/permissions/jobs/[NUMID]"
--  },
--  {
--    "body": {
--      "resource_id": "/jobs/[NUMID]",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"object_id/":/"/jobs/[NUMID]/",/"__embed__/":[{/"level/":/"CAN_VIEW/",/"user_name/":/"viewer@example.com/"},{/"level/":/"CAN_MANAGE/",/"group_name/":/"data-team/"},{/"level/":/"CAN_MANAGE/",/"service_principal_name/":/"[UUID]/"},{/"level/":/"IS_OWNER/",/"user_name/":/"[USERNAME]/"}]},/"depends_on/":[{/"node/":/"resources.jobs.foo/",/"label/":/"${resources.jobs.foo.id}/"}]}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
+MATCH jobs/current_can_manage/out.requests.deploy.direct.json
 DIFF  jobs/current_can_manage/out.requests.destroy.direct.json
 --- jobs/current_can_manage/out.requests.destroy.direct.json
 +++ jobs/current_can_manage/out.requests.destroy.terraform.json
-@@ -1,14 +1,14 @@
- [
-   {
-     "body": {
--      "resource_id": "/jobs/[NUMID]",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
+@@ -1 +1,14 @@
+-[]+[
++  {
++    "body": {
 +      "access_control_list": [
 +        {
 +          "permission_level": "IS_OWNER",
 +          "user_name": "[USERNAME]"
 +        }
 +      ]
-     },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
++    },
 +    "method": "PUT",
 +    "path": "/api/2.0/permissions/jobs/[NUMID]"
-   }
- ]
++  }
++]
 DIFF  jobs/current_can_manage_run/out.destroy.requests.direct.json
 --- jobs/current_can_manage_run/out.destroy.requests.direct.json
 +++ jobs/current_can_manage_run/out.destroy.requests.terraform.json
-@@ -1,15 +1,15 @@
+@@ -1,4 +1,16 @@
  [
-   {
-     "body": {
--      "resource_id": "/jobs/[NUMID]",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
++  {
++    "body": {
 +      "access_control_list": [
 +        {
 +          "permission_level": "IS_OWNER",
 +          "user_name": "[USERNAME]"
 +        }
 +      ]
-     },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.interim_gold_layer_job.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
++    },
 +    "method": "PUT",
 +    "path": "/api/2.0/permissions/jobs/[NUMID]"
-   },
++  },
    {
      "body": {
-@@ -17,17 +17,5 @@
-     },
-     "method": "POST",
-     "path": "/api/2.2/jobs/delete"
--  },
--  {
--    "body": {
--      "resource_id": "[NUMID]",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.interim_gold_layer_job",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
-DIFF  jobs/current_is_owner/out.requests.deploy.direct.json
---- jobs/current_is_owner/out.requests.deploy.direct.json
-+++ jobs/current_is_owner/out.requests.deploy.terraform.json
-@@ -10,18 +10,5 @@
-     },
-     "method": "PUT",
-     "path": "/api/2.0/permissions/jobs/[NUMID]"
--  },
--  {
--    "body": {
--      "resource_id": "/jobs/[NUMID]",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"object_id/":/"/jobs/[NUMID]/",/"__embed__/":[{/"level/":/"IS_OWNER/",/"user_name/":/"[USERNAME]/"}]},/"depends_on/":[{/"node/":/"resources.jobs.foo/",/"label/":/"${resources.jobs.foo.id}/"}]}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
+       "job_id": "[NUMID]"
+EXACT jobs/current_is_owner/out.requests.deploy.direct.json
 DIFF  jobs/current_is_owner/out.requests.destroy.direct.json
 --- jobs/current_is_owner/out.requests.destroy.direct.json
 +++ jobs/current_is_owner/out.requests.destroy.terraform.json
-@@ -1,14 +1,14 @@
- [
-   {
-     "body": {
--      "resource_id": "/jobs/[NUMID]",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
+@@ -1 +1,14 @@
+-[]+[
++  {
++    "body": {
 +      "access_control_list": [
 +        {
 +          "permission_level": "IS_OWNER",
 +          "user_name": "[USERNAME]"
 +        }
 +      ]
-     },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
++    },
 +    "method": "PUT",
 +    "path": "/api/2.0/permissions/jobs/[NUMID]"
-   }
- ]
++  }
++]
 DIFF  jobs/delete_one/out.requests_destroy.direct.json
 --- jobs/delete_one/out.requests_destroy.direct.json
 +++ jobs/delete_one/out.requests_destroy.terraform.json
@@ -363,58 +181,29 @@ DIFF  jobs/delete_one/out.requests_destroy.direct.json
        "job_id": "[JOB_WITH_PERMISSIONS_ID]"
 EXACT jobs/empty_list/out.requests.deploy.direct.json
 EXACT jobs/empty_list/out.requests.destroy.direct.json
-DIFF  jobs/other_can_manage/out.requests.deploy.direct.json
---- jobs/other_can_manage/out.requests.deploy.direct.json
-+++ jobs/other_can_manage/out.requests.deploy.terraform.json
-@@ -22,18 +22,5 @@
-     },
-     "method": "PUT",
-     "path": "/api/2.0/permissions/jobs/[NUMID]"
--  },
--  {
--    "body": {
--      "resource_id": "/jobs/[NUMID]",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"object_id/":/"/jobs/[NUMID]/",/"__embed__/":[{/"level/":/"CAN_VIEW/",/"user_name/":/"viewer@example.com/"},{/"level/":/"CAN_MANAGE/",/"group_name/":/"data-team/"},{/"level/":/"CAN_MANAGE/",/"service_principal_name/":/"[UUID]/"},{/"level/":/"IS_OWNER/",/"user_name/":/"[USERNAME]/"}]},/"depends_on/":[{/"node/":/"resources.jobs.foo/",/"label/":/"${resources.jobs.foo.id}/"}]}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
+MATCH jobs/other_can_manage/out.requests.deploy.direct.json
 DIFF  jobs/other_can_manage/out.requests.destroy.direct.json
 --- jobs/other_can_manage/out.requests.destroy.direct.json
 +++ jobs/other_can_manage/out.requests.destroy.terraform.json
-@@ -1,14 +1,14 @@
- [
-   {
-     "body": {
--      "resource_id": "/jobs/[NUMID]",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
+@@ -1 +1,14 @@
+-[]+[
++  {
++    "body": {
 +      "access_control_list": [
 +        {
 +          "permission_level": "IS_OWNER",
 +          "user_name": "[USERNAME]"
 +        }
 +      ]
-     },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
++    },
 +    "method": "PUT",
 +    "path": "/api/2.0/permissions/jobs/[NUMID]"
-   }
- ]
++  }
++]
 DIFF  jobs/other_can_manage_run/out.destroy.requests.direct.json
 --- jobs/other_can_manage_run/out.destroy.requests.direct.json
 +++ jobs/other_can_manage_run/out.destroy.requests.terraform.json
-@@ -1,33 +1,21 @@
+@@ -1,4 +1,16 @@
  [
 +  {
 +    "body": {
@@ -431,83 +220,25 @@ DIFF  jobs/other_can_manage_run/out.destroy.requests.direct.json
    {
      "body": {
        "job_id": "[NUMID]"
-     },
-     "method": "POST",
-     "path": "/api/2.2/jobs/delete"
--  },
--  {
--    "body": {
--      "resource_id": "/jobs/[NUMID]",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.interim_gold_layer_job.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
--  },
--  {
--    "body": {
--      "resource_id": "[NUMID]",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.interim_gold_layer_job",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
-DIFF  jobs/other_is_owner/out.requests.deploy.direct.json
---- jobs/other_is_owner/out.requests.deploy.direct.json
-+++ jobs/other_is_owner/out.requests.deploy.terraform.json
-@@ -14,18 +14,5 @@
-     },
-     "method": "PUT",
-     "path": "/api/2.0/permissions/jobs/[NUMID]"
--  },
--  {
--    "body": {
--      "resource_id": "/jobs/[NUMID]",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"object_id/":/"/jobs/[NUMID]/",/"__embed__/":[{/"level/":/"IS_OWNER/",/"user_name/":/"other_user@databricks.com/"},{/"level/":/"CAN_MANAGE/",/"user_name/":/"[USERNAME]/"}]},/"depends_on/":[{/"node/":/"resources.jobs.foo/",/"label/":/"${resources.jobs.foo.id}/"}]}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
+EXACT jobs/other_is_owner/out.requests.deploy.direct.json
 DIFF  jobs/other_is_owner/out.requests.destroy.direct.json
 --- jobs/other_is_owner/out.requests.destroy.direct.json
 +++ jobs/other_is_owner/out.requests.destroy.terraform.json
-@@ -1,14 +1,14 @@
- [
-   {
-     "body": {
--      "resource_id": "/jobs/[NUMID]",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
+@@ -1 +1,14 @@
+-[]+[
++  {
++    "body": {
 +      "access_control_list": [
 +        {
 +          "permission_level": "IS_OWNER",
 +          "user_name": "[USERNAME]"
 +        }
 +      ]
-     },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
++    },
 +    "method": "PUT",
 +    "path": "/api/2.0/permissions/jobs/[NUMID]"
-   }
- ]
++  }
++]
 DIFF  jobs/update/out.requests_delete_all.direct.json
 --- jobs/update/out.requests_delete_all.direct.json
 +++ jobs/update/out.requests_delete_all.terraform.json
@@ -545,54 +276,25 @@ DIFF  jobs/update/out.requests_set_empty.direct.json
 +    "path": "/api/2.0/permissions/jobs/[JOB_WITH_PERMISSIONS_ID]"
 +  }
 +]
-DIFF  jobs/viewers/out.requests.deploy.direct.json
---- jobs/viewers/out.requests.deploy.direct.json
-+++ jobs/viewers/out.requests.deploy.terraform.json
-@@ -22,18 +22,5 @@
-     },
-     "method": "PUT",
-     "path": "/api/2.0/permissions/jobs/[NUMID]"
--  },
--  {
--    "body": {
--      "resource_id": "/jobs/[NUMID]",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"object_id/":/"/jobs/[NUMID]/",/"__embed__/":[{/"level/":/"CAN_VIEW/",/"user_name/":/"viewer@example.com/"},{/"level/":/"CAN_VIEW/",/"group_name/":/"data-team/"},{/"level/":/"CAN_VIEW/",/"service_principal_name/":/"[UUID]/"},{/"level/":/"IS_OWNER/",/"user_name/":/"[USERNAME]/"}]},/"depends_on/":[{/"node/":/"resources.jobs.foo/",/"label/":/"${resources.jobs.foo.id}/"}]}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
+MATCH jobs/viewers/out.requests.deploy.direct.json
 DIFF  jobs/viewers/out.requests.destroy.direct.json
 --- jobs/viewers/out.requests.destroy.direct.json
 +++ jobs/viewers/out.requests.destroy.terraform.json
-@@ -1,14 +1,14 @@
- [
-   {
-     "body": {
--      "resource_id": "/jobs/[NUMID]",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
+@@ -1 +1,14 @@
+-[]+[
++  {
++    "body": {
 +      "access_control_list": [
 +        {
 +          "permission_level": "IS_OWNER",
 +          "user_name": "[USERNAME]"
 +        }
 +      ]
-     },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
++    },
 +    "method": "PUT",
 +    "path": "/api/2.0/permissions/jobs/[NUMID]"
-   }
- ]
++  }
++]
 MATCH models/current_can_manage/out.requests.deploy.direct.json
 DIFF  models/current_can_manage/out.requests.destroy.direct.json
 --- models/current_can_manage/out.requests.destroy.direct.json
@@ -612,210 +314,43 @@ DIFF  models/current_can_manage/out.requests.destroy.direct.json
 +    "path": "/api/2.0/permissions/registered-models/[FOO_MODEL_ID]"
 +  }
 +]
-DIFF  pipelines/current_can_manage/out.requests.deploy.direct.json
---- pipelines/current_can_manage/out.requests.deploy.direct.json
-+++ pipelines/current_can_manage/out.requests.deploy.terraform.json
-@@ -22,18 +22,5 @@
-     },
-     "method": "PUT",
-     "path": "/api/2.0/permissions/pipelines/[UUID]"
--  },
--  {
--    "body": {
--      "resource_id": "/pipelines/[UUID]",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"object_id/":/"/pipelines/[UUID]/",/"__embed__/":[{/"level/":/"CAN_VIEW/",/"user_name/":/"viewer@example.com/"},{/"level/":/"CAN_MANAGE/",/"group_name/":/"data-team/"},{/"level/":/"CAN_MANAGE/",/"service_principal_name/":/"[UUID]/"},{/"level/":/"IS_OWNER/",/"user_name/":/"[USERNAME]/"}]},/"depends_on/":[{/"node/":/"resources.pipelines.foo/",/"label/":/"${resources.pipelines.foo.id}/"}]}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/pipelines.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
-DIFF  pipelines/current_can_manage/out.requests.destroy.direct.json
---- pipelines/current_can_manage/out.requests.destroy.direct.json
-+++ pipelines/current_can_manage/out.requests.destroy.terraform.json
-@@ -1,14 +1 @@
--[
--  {
--    "body": {
--      "resource_id": "/pipelines/[UUID]",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/pipelines.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
--  }
--]+[]
+MATCH pipelines/current_can_manage/out.requests.deploy.direct.json
+EXACT pipelines/current_can_manage/out.requests.destroy.direct.json
 EXACT pipelines/current_is_owner/out.requests.deploy.direct.json
 EXACT pipelines/current_is_owner/out.requests.destroy.direct.json
 EXACT pipelines/empty_list/out.requests.deploy.direct.json
 EXACT pipelines/empty_list/out.requests.destroy.direct.json
-DIFF  pipelines/other_can_manage/out.requests.deploy.direct.json
---- pipelines/other_can_manage/out.requests.deploy.direct.json
-+++ pipelines/other_can_manage/out.requests.deploy.terraform.json
-@@ -22,18 +22,5 @@
-     },
-     "method": "PUT",
-     "path": "/api/2.0/permissions/pipelines/[UUID]"
--  },
--  {
--    "body": {
--      "resource_id": "/pipelines/[UUID]",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"object_id/":/"/pipelines/[UUID]/",/"__embed__/":[{/"level/":/"CAN_VIEW/",/"user_name/":/"viewer@example.com/"},{/"level/":/"CAN_MANAGE/",/"group_name/":/"data-team/"},{/"level/":/"CAN_MANAGE/",/"service_principal_name/":/"[UUID]/"},{/"level/":/"IS_OWNER/",/"user_name/":/"[USERNAME]/"}]},/"depends_on/":[{/"node/":/"resources.pipelines.foo/",/"label/":/"${resources.pipelines.foo.id}/"}]}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/pipelines.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
-DIFF  pipelines/other_can_manage/out.requests.destroy.direct.json
---- pipelines/other_can_manage/out.requests.destroy.direct.json
-+++ pipelines/other_can_manage/out.requests.destroy.terraform.json
-@@ -1,14 +1 @@
--[
--  {
--    "body": {
--      "resource_id": "/pipelines/[UUID]",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/pipelines.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
--  }
--]+[]
-DIFF  pipelines/other_is_owner/out.requests.deploy.direct.json
---- pipelines/other_is_owner/out.requests.deploy.direct.json
-+++ pipelines/other_is_owner/out.requests.deploy.terraform.json
-@@ -14,18 +14,5 @@
-     },
-     "method": "PUT",
-     "path": "/api/2.0/permissions/pipelines/[UUID]"
--  },
--  {
--    "body": {
--      "resource_id": "/pipelines/[UUID]",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"object_id/":/"/pipelines/[UUID]/",/"__embed__/":[{/"level/":/"IS_OWNER/",/"user_name/":/"other_user@databricks.com/"},{/"level/":/"CAN_MANAGE/",/"user_name/":/"[USERNAME]/"}]},/"depends_on/":[{/"node/":/"resources.pipelines.foo/",/"label/":/"${resources.pipelines.foo.id}/"}]}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/pipelines.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
-DIFF  pipelines/other_is_owner/out.requests.destroy.direct.json
---- pipelines/other_is_owner/out.requests.destroy.direct.json
-+++ pipelines/other_is_owner/out.requests.destroy.terraform.json
-@@ -1,14 +1 @@
--[
--  {
--    "body": {
--      "resource_id": "/pipelines/[UUID]",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/pipelines.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
--  }
--]+[]
-DIFF  postgres_projects/current_can_manage/out.requests.deploy.direct.json
---- postgres_projects/current_can_manage/out.requests.deploy.direct.json
-+++ postgres_projects/current_can_manage/out.requests.deploy.terraform.json
-@@ -22,18 +22,5 @@
-     },
-     "method": "PUT",
-     "path": "/api/2.0/permissions/database-projects/test-project"
--  },
--  {
--    "body": {
--      "resource_id": "/database-projects/test-project",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"object_id/":/"/database-projects/test-project/",/"__embed__/":[{/"level/":/"CAN_USE/",/"user_name/":/"viewer@example.com/"},{/"level/":/"CAN_MANAGE/",/"group_name/":/"data-team/"},{/"level/":/"CAN_MANAGE/",/"service_principal_name/":/"[UUID]/"},{/"level/":/"CAN_MANAGE/",/"user_name/":/"[USERNAME]/"}]},/"depends_on/":[{/"node/":/"resources.postgres_projects.foo/",/"label/":/"${resources.postgres_projects.foo.project_id}/"}]}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/postgres_projects.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
+MATCH pipelines/other_can_manage/out.requests.deploy.direct.json
+EXACT pipelines/other_can_manage/out.requests.destroy.direct.json
+EXACT pipelines/other_is_owner/out.requests.deploy.direct.json
+EXACT pipelines/other_is_owner/out.requests.destroy.direct.json
+MATCH postgres_projects/current_can_manage/out.requests.deploy.direct.json
 DIFF  postgres_projects/current_can_manage/out.requests.destroy.direct.json
 --- postgres_projects/current_can_manage/out.requests.destroy.direct.json
 +++ postgres_projects/current_can_manage/out.requests.destroy.terraform.json
-@@ -1,14 +1,14 @@
- [
-   {
-     "body": {
--      "resource_id": "/database-projects/test-project",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
+@@ -1 +1,14 @@
+-[]+[
++  {
++    "body": {
 +      "access_control_list": [
 +        {
 +          "permission_level": "CAN_MANAGE",
 +          "user_name": "[USERNAME]"
 +        }
 +      ]
-     },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/postgres_projects.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
++    },
 +    "method": "PUT",
 +    "path": "/api/2.0/permissions/database-projects/test-project"
-   }
- ]
-DIFF  sql_warehouses/current_can_manage/out.requests.deploy.direct.json
---- sql_warehouses/current_can_manage/out.requests.deploy.direct.json
-+++ sql_warehouses/current_can_manage/out.requests.deploy.terraform.json
-@@ -22,18 +22,5 @@
-     },
-     "method": "PUT",
-     "path": "/api/2.0/permissions/sql/warehouses/[UUID]"
--  },
--  {
--    "body": {
--      "resource_id": "/sql/warehouses/[UUID]",
--      "sequence_id": "0",
--      "state": "{/"state/":{/"object_id/":/"/sql/warehouses/[UUID]/",/"__embed__/":[{/"level/":/"CAN_VIEW/",/"user_name/":/"viewer@example.com/"},{/"level/":/"CAN_MANAGE/",/"group_name/":/"data-team/"},{/"level/":/"CAN_MANAGE/",/"service_principal_name/":/"[UUID]/"},{/"level/":/"IS_OWNER/",/"user_name/":/"[USERNAME]/"}]},/"depends_on/":[{/"node/":/"resources.sql_warehouses.foo/",/"label/":/"${resources.sql_warehouses.foo.id}/"}]}",
--      "status": "OPERATION_STATUS_SUCCEEDED"
--    },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/sql_warehouses.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
-   }
- ]
++  }
++]
+MATCH sql_warehouses/current_can_manage/out.requests.deploy.direct.json
 DIFF  sql_warehouses/current_can_manage/out.requests.destroy.direct.json
 --- sql_warehouses/current_can_manage/out.requests.destroy.direct.json
 +++ sql_warehouses/current_can_manage/out.requests.destroy.terraform.json
-@@ -1,14 +1,18 @@
- [
-   {
-     "body": {
--      "resource_id": "/sql/warehouses/[UUID]",
--      "sequence_id": "0",
--      "status": "OPERATION_STATUS_SUCCEEDED"
+@@ -1 +1,18 @@
+-[]+[
++  {
++    "body": {
 +      "access_control_list": [
 +        {
 +          "permission_level": "CAN_MANAGE",
@@ -826,16 +361,11 @@ DIFF  sql_warehouses/current_can_manage/out.requests.destroy.direct.json
 +          "user_name": "[USERNAME]"
 +        }
 +      ]
-     },
--    "method": "PATCH",
--    "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/sql_warehouses.foo.permissions",
--    "q": {
--      "update_mask": "state,error_message,resource_id,status"
--    }
++    },
 +    "method": "PUT",
 +    "path": "/api/2.0/permissions/sql/warehouses/[UUID]"
-   }
- ]
++  }
++]
 EXACT target_permissions/out.requests_create.direct.json
 DIFF  target_permissions/out.requests_delete.direct.json
 --- target_permissions/out.requests_delete.direct.json

@@ -18,19 +18,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "spark_version": "15.4.x-scala2.12"
   }
 }
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/clusters.mycluster",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "state": "{\"state\":{\"autotermination_minutes\":60,\"cluster_name\":\"[UNIQUE_NAME]\",\"instance_pool_id\":\"[TEST_INSTANCE_POOL_ID]\",\"lifecycle\":{\"started\":true},\"num_workers\":1,\"spark_version\":\"15.4.x-scala2.12\"}}",
-    "resource_id": "[UUID]",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
-  }
-}
 
 >>> errcode [CLI] clusters get [UUID]
 "RUNNING"
@@ -64,19 +51,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "path": "/api/2.1/clusters/start",
   "body": {
     "cluster_id": "[UUID]"
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/clusters.mycluster",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "state": "{\"state\":{\"autotermination_minutes\":60,\"cluster_name\":\"[UNIQUE_NAME]\",\"instance_pool_id\":\"[TEST_INSTANCE_POOL_ID]\",\"lifecycle\":{\"started\":true},\"num_workers\":1,\"spark_version\":\"15.4.x-scala2.12\"}}",
-    "resource_id": "[UUID]",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
   }
 }
 
@@ -121,19 +95,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "path": "/api/2.1/clusters/start",
   "body": {
     "cluster_id": "[UUID]"
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/4/operations/clusters.mycluster",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "state": "{\"state\":{\"autotermination_minutes\":60,\"cluster_name\":\"[UNIQUE_NAME]\",\"instance_pool_id\":\"[TEST_INSTANCE_POOL_ID]\",\"lifecycle\":{\"started\":true},\"num_workers\":1,\"spark_version\":\"15.4.x-scala2.12\"}}",
-    "resource_id": "[UUID]",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
   }
 }
 

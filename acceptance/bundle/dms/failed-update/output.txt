@@ -6,7 +6,7 @@ Created schemas.foo
 Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
-=== An update that fails before writing any state records the state from before the deploy. Nothing touched the schema, so it still exists, and an operation without state would drop it from the deployment
+=== An update that fails before writing any state only marks its operation failed. It names no state, so the deployment keeps describing the schema the last successful version recorded - which is right, because nothing touched it
 >>> update_file.py databricks.yml comment: v1 comment: v2
 
 >>> fault.py PATCH /api/2.1/unity-catalog/schemas/* 400 0 1 INVALID_PARAMETER_VALUE
@@ -22,7 +22,7 @@ API message: Fault injected by test.
 
 Files: 3 uploaded, 0 deleted
 
->>> print_requests.py //api/2.0/bundle
+>>> print_requests.py --dms //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
@@ -67,12 +67,24 @@ Files: 3 uploaded, 0 deleted
   }
 }
 
-=== The schema is still listed, described as it was before the failed deploy
+=== The schema is still listed as the previous version left it, so the next plan updates it rather than creating a second one
 >>> MSYS_NO_PATHCONV=1 [CLI] api get /api/2.0/bundle/deployments/[NUMID]/resources
-{}
+{
+  "resources": [
+    {
+      "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+      "last_version_id": "1",
+      "name": "deployments/[NUMID]/resources/schemas.foo",
+      "resource_id": "main.dms_failed_update_schema",
+      "resource_key": "schemas.foo",
+      "resource_type": "",
+      "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_failed_update_schema\"}}"
+    }
+  ]
+}
 
 === Planning from DMS state alone updates the schema rather than creating a second one, which is what recording the prior state buys
 >>> [CLI] bundle plan
-create schemas.foo
+update schemas.foo
 
-Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged

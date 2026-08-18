@@ -107,19 +107,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     }
   }
 }
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.sample_job",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"job_clusters\":[{\"job_cluster_key\":\"job_cluster_autoscale\",\"new_cluster\":{\"autoscale\":{\"max_workers\":4,\"min_workers\":1},\"data_security_mode\":\"SINGLE_USER\",\"node_type_id\":\"[NODE_TYPE_ID]\",\"spark_version\":\"16.4.x-scala2.12\"}},{\"job_cluster_key\":\"job_cluster_autoscale_num_workers1\",\"new_cluster\":{\"autoscale\":{\"max_workers\":4,\"min_workers\":1},\"data_security_mode\":\"SINGLE_USER\",\"node_type_id\":\"[NODE_TYPE_ID]\",\"num_workers\":1,\"spark_version\":\"16.4.x-scala2.14\"}},{\"job_cluster_key\":\"job_cluster_num_workers1\",\"new_cluster\":{\"data_security_mode\":\"SINGLE_USER\",\"node_type_id\":\"[NODE_TYPE_ID]\",\"num_workers\":1,\"spark_version\":\"16.4.x-scala2.15\"}},{\"job_cluster_key\":\"job_cluster_num_workers0\",\"new_cluster\":{\"data_security_mode\":\"SINGLE_USER\",\"node_type_id\":\"[NODE_TYPE_ID]\",\"num_workers\":0,\"spark_version\":\"16.4.x-scala2.16\"}},{\"job_cluster_key\":\"job_cluster_default\",\"new_cluster\":{\"num_workers\":0,\"spark_version\":\"16.4.x-scala2.17\"}}],\"max_concurrent_runs\":1,\"name\":\"sample_job\",\"queue\":{\"enabled\":true},\"tasks\":[{\"notebook_task\":{\"notebook_path\":\"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/sample_notebook\",\"source\":\"WORKSPACE\"},\"task_key\":\"notebook_task\"}],\"trigger\":{\"pause_status\":\"UNPAUSED\",\"periodic\":{\"interval\":1,\"unit\":\"DAYS\"}}}}",
-    "resource_id": "[NUMID]",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
-  }
-}
 
 >>> [CLI] bundle plan
 Warning: Single node cluster is not correctly configured

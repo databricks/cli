@@ -25,7 +25,7 @@ API message: Fault injected by test.
 
 Files: 3 uploaded, 0 deleted
 
->>> print_requests.py //api/2.0/bundle
+>>> print_requests.py --dms //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions",

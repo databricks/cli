@@ -7,4 +7,4 @@ trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 
 
 title "A second deploy is a no-op too: no update request for either resource"
 trace $CLI bundle deploy
-trace print_requests.py //api/2.2/jobs //api/2.0/pipelines --sort
+trace print_requests.py --dms //api/2.2/jobs //api/2.0/pipelines --sort
