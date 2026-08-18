@@ -53,6 +53,10 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 
 		fields := generated.RequiredFields[pattern.String()]
 		for _, field := range fields {
+			// errorForInvalidIdentifiers already reports these as errors.
+			if missingIdentifierIsError(field) {
+				continue
+			}
 			vv := v.Get(field)
 			if vv.Kind() == dyn.KindInvalid || vv.Kind() == dyn.KindNil {
 				diags = diags.Append(diag.Diagnostic{
@@ -247,9 +251,7 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	diags = diags.Extend(errorForInvalidSecretScopePermissions(ctx, b))
 	diags = diags.Extend(errorForInvalidIdentifiers(ctx, b))
 	diags = diags.Extend(errorForIncompletePipelineLibraries(ctx, b))
-	if diags.HasError() {
-		return diags
-	}
+	// Collected even when there are errors, so one run reports every issue.
 	diags = diags.Extend(warnForMissingFields(ctx, b))
 	return diags
 }
