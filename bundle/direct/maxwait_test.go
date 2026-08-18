@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/bundle/deployplan"
 	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/env"
@@ -45,31 +44,6 @@ func TestResourceMaxWait(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, got)
-		})
-	}
-}
-
-func TestUnitMaxWait(t *testing.T) {
-	const configured = 30 * time.Second
-
-	tests := []struct {
-		name          string
-		maxWait       time.Duration
-		action        deployplan.ActionType
-		hasDependents bool
-		want          time.Duration
-	}{
-		{name: "create without dependents is capped", maxWait: configured, action: deployplan.Create, want: configured},
-		{name: "create with dependents keeps full wait", maxWait: configured, action: deployplan.Create, hasDependents: true, want: maxWaitUnset},
-		{name: "recreate with dependents keeps full wait", maxWait: configured, action: deployplan.Recreate, hasDependents: true, want: maxWaitUnset},
-		{name: "delete ignores dependents", maxWait: configured, action: deployplan.Delete, hasDependents: true, want: configured},
-		{name: "unset stays unset", maxWait: maxWaitUnset, action: deployplan.Create, want: maxWaitUnset},
-		{name: "unset stays unset for delete", maxWait: maxWaitUnset, action: deployplan.Delete, hasDependents: true, want: maxWaitUnset},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, unitMaxWait(tc.maxWait, tc.action, tc.hasDependents))
 		})
 	}
 }
@@ -140,8 +114,13 @@ func TestWaitCappedUnsetAddsNoDeadline(t *testing.T) {
 }
 
 func TestWaitCappedZeroDoesNotWait(t *testing.T) {
-	_, err := waitCapped(t.Context(), 0, "test resource", waitForCtx)
+	called := false
+	_, err := waitCapped(t.Context(), 0, "test resource", func(ctx context.Context) (struct{}, error) {
+		called = true
+		return struct{}{}, nil
+	})
 	require.NoError(t, err)
+	assert.False(t, called, "a zero cap must not call the wait at all")
 }
 
 // waitForCtx blocks until the context is done and reports its error, standing in for a wait

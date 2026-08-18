@@ -1,0 +1,64 @@
+
+=== Zero cap: the create wait is skipped entirely
+>>> DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=0 [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warn: deploying resources.clusters.my_cluster: Not waiting for creation of resources.clusters.my_cluster (DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=0); it may still be in progress
+Created clusters.my_cluster
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get --unique //clusters
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/create",
+  "body": {
+    "autotermination_minutes": 60,
+    "cluster_name": "test-cluster",
+    "node_type_id": "[NODE_TYPE_ID]",
+    "num_workers": 1,
+    "spark_version": "13.3.x-scala2.12"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.my_cluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
+
+=== No cap: the deployment polls until the cluster is RUNNING
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created clusters.my_cluster
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get --unique //clusters
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/create",
+  "body": {
+    "autotermination_minutes": 60,
+    "cluster_name": "test-cluster",
+    "node_type_id": "[NODE_TYPE_ID]",
+    "num_workers": 1,
+    "spark_version": "13.3.x-scala2.12"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/clusters/get",
+  "q": {
+    "cluster_id": "[UUID]"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.my_cluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

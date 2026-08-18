@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/cli/bundle/deployplan"
 	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/log"
@@ -52,24 +51,6 @@ func hasBlockingDependents(g *dagrun.Graph, resourceKey string) bool {
 	return false
 }
 
-// unitMaxWait returns the cap to apply to a single resource, given whether anything that runs
-// after it in the deployment graph needs it provisioned.
-//
-// Deletes are capped regardless of dependents. The trade-off is accepted deliberately: state
-// is dropped before the wait, so a cut-short delete leaves the resource untracked while it is
-// still tearing down, and the dependency deleted after it may then be rejected for still
-// having a child. Recreate's internal delete-wait is excluded structurally — it is the one
-// wait never routed through here, because it releases the name for the following create.
-//
-// Every other action is capped only when nothing depends on this resource, since a dependent
-// would otherwise act on a resource that has not reached its target state.
-func unitMaxWait(maxWait time.Duration, action deployplan.ActionType, hasDependents bool) time.Duration {
-	if action == deployplan.Delete || !hasDependents {
-		return maxWait
-	}
-	return maxWaitUnset
-}
-
 // waitCapped runs wait under maxWait. When the cap expires the wait is abandoned with a
 // warning instead of failing the deployment: state is written before the wait, so the
 // resource stays tracked and the next plan reconciles it. Genuine failures still propagate,
@@ -77,6 +58,14 @@ func unitMaxWait(maxWait time.Duration, action deployplan.ActionType, hasDepende
 func waitCapped[T any](ctx context.Context, maxWait time.Duration, description string, wait func(context.Context) (T, error)) (T, error) {
 	if maxWait == maxWaitUnset {
 		return wait(ctx)
+	}
+
+	if maxWait == 0 {
+		// Skip the call rather than starting a poll that is already out of time, which would
+		// spend one request to learn what the caller has already said it does not care about.
+		log.Warnf(ctx, "Not waiting for %s (%s=0); it may still be in progress", description, bundleenv.ResourceMaxWaitVariable)
+		var zero T
+		return zero, nil
 	}
 
 	waitCtx, cancel := context.WithTimeout(ctx, maxWait)
