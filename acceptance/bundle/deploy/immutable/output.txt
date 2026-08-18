@@ -70,12 +70,10 @@ Building python_artifact...
 
 >>> [CLI] bundle deploy
 Building python_artifact...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created internal_immutable_snapshots.immutable
 Created jobs.my_job
 Files: 0 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq .settings.tasks job.json
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
@@ -166,9 +164,10 @@ Building python_artifact...
 
 >>> [CLI] bundle deploy
 Building python_artifact...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Recreated internal_immutable_snapshots.immutable
+Updated jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 
 === Check that job uses a new snapshot: Snapshot changed as expected
 
@@ -178,4 +177,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted
+Destroy: 2 deleted
