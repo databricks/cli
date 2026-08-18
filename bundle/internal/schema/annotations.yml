@@ -1032,7 +1032,7 @@ resources:
                     If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.
                 "on_file_change":
                   "description": |-
-                    Path or glob under the sync root. Re-fire the run when any matched file's content changes. Incompatible with lifecycle.prevent_destroy.
+                    Path or glob under the sync root (filepath.Glob; `**` is not supported). Re-fire the run when a matched file's content changes, or when the set of matches appears or disappears. Incompatible with lifecycle.prevent_destroy.
         "python_named_params":
           "description": |-
             PLACEHOLDER
