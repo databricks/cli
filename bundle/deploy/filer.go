@@ -1,18 +1,15 @@
 package deploy
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"io/fs"
-	"net/http"
-	"net/url"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go"
 )
 
 // FilerFactory is a function that returns a filer.Filer.
@@ -21,8 +18,8 @@ type FilerFactory func(ctx context.Context, b *bundle.Bundle) (filer.Filer, erro
 type stateFiler struct {
 	filer filer.Filer
 
-	apiClient *client.DatabricksClient
-	root      filer.WorkspaceRootPath
+	workspaceClient *databricks.WorkspaceClient
+	root            filer.WorkspaceRootPath
 }
 
 func (s stateFiler) Delete(ctx context.Context, path string, mode ...filer.DeleteMode) error {
@@ -48,20 +45,8 @@ func (s stateFiler) Read(ctx context.Context, path string) (io.ReadCloser, error
 		return nil, fmt.Errorf("not a file: %s", absPath)
 	}
 
-	var buf bytes.Buffer
-	// We read via the raw apiClient.Do so the workspace-id routing header goes
-	// through auth.WorkspaceIDHeaders, which drops the CLI-only "none" sentinel
-	// (auth.WorkspaceIDNone, written by `auth login --skip-workspace`). The SDK's
-	// Workspace client would forward that sentinel as a literal workspace id
-	// unless we special-cased it; reusing the shared helper here keeps the change
-	// small.
-	urlPath := "/api/2.0/workspace/export?path=" + url.QueryEscape(absPath) + "&direct_download=true"
-	err = s.apiClient.Do(ctx, http.MethodGet, urlPath, auth.WorkspaceIDHeaders(s.apiClient.Config), nil, nil, &buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return io.NopCloser(&buf), nil
+	// Stream via the SDK's /workspace/export (direct_download=true); no 10 MB cap.
+	return s.workspaceClient.Workspace.Download(ctx, absPath)
 }
 
 func (s stateFiler) ReadDir(ctx context.Context, path string) ([]fs.DirEntry, error) {
@@ -80,19 +65,37 @@ func (s stateFiler) Write(ctx context.Context, path string, reader io.Reader, mo
 // Reads use the streaming /workspace/export API, which is officially supported,
 // scoped, and streams state files well beyond the 10 MB JSON export limit.
 func StateFiler(ctx context.Context, b *bundle.Bundle) (filer.Filer, error) {
-	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	w, err := stateWorkspaceClient(ctx, b)
 	if err != nil {
 		return nil, err
 	}
 
-	apiClient, err := client.New(b.WorkspaceClient(ctx).Config)
+	f, err := filer.NewWorkspaceFilesClient(w, b.Config.Workspace.StatePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create API client: %w", err)
+		return nil, err
 	}
 
 	return stateFiler{
-		filer:     f,
-		root:      filer.NewWorkspaceRootPath(b.Config.Workspace.StatePath),
-		apiClient: apiClient,
+		filer:           f,
+		root:            filer.NewWorkspaceRootPath(b.Config.Workspace.StatePath),
+		workspaceClient: w,
 	}, nil
+}
+
+// stateWorkspaceClient returns the bundle's workspace client, cloned with the CLI-only
+// "none" workspace-id sentinel stripped so Workspace.Download does not forward it as the
+// X-Databricks-Workspace-Id routing header.
+func stateWorkspaceClient(ctx context.Context, b *bundle.Bundle) (*databricks.WorkspaceClient, error) {
+	w := b.WorkspaceClient(ctx)
+	if w.Config.WorkspaceID != auth.WorkspaceIDNone {
+		return w, nil
+	}
+
+	// config.Config embeds a sync.Mutex, so use the SDK's copylocks-safe clone.
+	cfg, err := w.Config.NewWithWorkspaceHost(w.Config.Host)
+	if err != nil {
+		return nil, err
+	}
+	cfg.WorkspaceID = ""
+	return databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 }
