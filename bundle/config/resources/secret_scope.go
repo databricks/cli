@@ -13,11 +13,11 @@ type SecretScopePermissionLevel string
 
 const (
 	SecretScopePermissionLevelRead   SecretScopePermissionLevel = "READ"
-	SecretScopePermissionLevelManage SecretScopePermissionLevel = "MANAGE"
 	SecretScopePermissionLevelWrite  SecretScopePermissionLevel = "WRITE"
+	SecretScopePermissionLevelManage SecretScopePermissionLevel = "MANAGE"
 )
 
-// Values enables generated enum validation for secret scope permission levels.
+// Values enables generated enum validation. Order matches privilege rank (READ < WRITE < MANAGE).
 func (SecretScopePermissionLevel) Values() []SecretScopePermissionLevel {
 	return []SecretScopePermissionLevel{
 		SecretScopePermissionLevelRead,

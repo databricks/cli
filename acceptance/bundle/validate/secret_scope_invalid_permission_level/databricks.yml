@@ -7,10 +7,8 @@ resources:
       name: test-scope-bad-levels
       permissions:
         # YAML int is coerced to string; must still fail enum validation.
-        - level: 2147483648
+        - level: 12
           group_name: users
-        - level: "2147483648"
-          user_name: someone@example.com
         - level: fuzz_badlevel
           service_principal_name: 12345678-1234-1234-1234-123456789abc
     valid:

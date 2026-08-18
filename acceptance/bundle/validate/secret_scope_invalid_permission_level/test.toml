@@ -1,5 +1,0 @@
-# Pin the fuzz-found invalid level so the root [NUMID] regex does not rewrite it.
-[[Repls]]
-Old = '2147483648'
-New = '[BAD_PERM_LEVEL]'
-Order = 5

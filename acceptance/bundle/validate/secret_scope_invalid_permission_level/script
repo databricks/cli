@@ -1,5 +1,3 @@
-# Without --strict, invalid enum levels are warnings only.
+# Invalid levels warn (same as other enum fields); --strict must fail.
 trace $CLI bundle validate
-
-# With --strict, those warnings must fail validation.
 musterr trace $CLI bundle validate --strict
