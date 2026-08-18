@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,9 +44,7 @@ func (*resolveJobRunFileTriggers) Apply(_ context.Context, b *bundle.Bundle) dia
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d].on_file_change", name, i)
 			hashes, d := resolveFileTrigger(b, path, strings.TrimSpace(*t.OnFileChange))
 			diags = diags.Extend(d)
-			for k, v := range hashes {
-				out[k] = v
-			}
+			maps.Copy(out, hashes)
 		}
 		if len(out) == 0 {
 			jr.ResolvedFileTriggers = nil
