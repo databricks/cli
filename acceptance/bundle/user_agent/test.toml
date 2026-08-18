@@ -7,5 +7,4 @@ IncludeRequestHeaders = ["User-Agent"]
 # header the existing requests already cover, so the DMS run only adds entries to maintain.
 EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
 
-[Env]
-DATABRICKS_CACHE_ENABLED = 'false'
+Env.DATABRICKS_CACHE_ENABLED = 'false'

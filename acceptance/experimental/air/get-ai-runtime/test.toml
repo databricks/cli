@@ -1,10 +1,9 @@
 # On Windows, Git Bash rewrites the leading-/ workspace paths passed to
 # `workspace mkdirs`/`import` into C:/... paths; disable that conversion.
-[Env]
-MSYS_NO_PATHCONV = "1"
-
+Env.MSYS_NO_PATHCONV = "1"
 # The SDK occasionally probes host reachability with a HEAD request; stub it so
 # the test is deterministic.
+
 [[Server]]
 Pattern = "HEAD /"
 Response.Body = ''

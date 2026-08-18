@@ -1,0 +1,3 @@
+# Invalid levels warn (same as other enum fields); --strict must fail.
+trace $CLI bundle validate
+musterr trace $CLI bundle validate --strict

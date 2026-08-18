@@ -1,13 +1,12 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-[Env]
-DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
-
+Env.DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
 # Serverless pins databricks-connect by major (~=17.0) across every env
 # (environments#15), a compatible-release range rather than a concrete version.
 # Under --dry-run validate never runs, so dbconnectVersion must be omitted rather
 # than reporting the "17.0" floor nothing installs. This is the live serverless
 # shape; serverless-json covers the concrete full-pin path.
+
 [[Server]]
 Pattern = "GET /serverless/serverless-v4/pyproject.toml"
 Response.Body = '''

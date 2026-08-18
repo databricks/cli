@@ -5,8 +5,7 @@ IncludeRequestHeaders = ["User-Agent"]
 # legitimately grows. The number is the assertion here, so there is nothing to normalize.
 EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
 
-[Env]
-DATABRICKS_CACHE_ENABLED = 'false'
+Env.DATABRICKS_CACHE_ENABLED = 'false'
 
 [[Repls]]
 Old = '"execution_time_ms": \d{1,5},'
