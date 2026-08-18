@@ -157,3 +157,20 @@ func TestUpdateRequestSendsStateWhenNamed(t *testing.T) {
 	assert.JSONEq(t, `{"state":{"name":"foo"}}`, body.State)
 	assert.Equal(t, "job-1", body.ResourceId)
 }
+
+func TestUpdateRequestSendsEachFieldOnItsOwnMaskEntry(t *testing.T) {
+	// resource_id does not travel with state: a mask that names one and not the other sends
+	// exactly that.
+	update := OperationUpdate{
+		Fields:     FieldResourceID | FieldStatus,
+		State:      json.RawMessage(`{"state":{"name":"foo"}}`),
+		ResourceID: "job-1",
+		Status:     bundledeployments.OperationStatusOperationStatusSucceeded,
+	}
+
+	body := newUpdateRequest(update, "4")
+
+	assert.Empty(t, body.State)
+	assert.Equal(t, "job-1", body.ResourceId)
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusSucceeded, body.Status)
+}

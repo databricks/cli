@@ -21,7 +21,7 @@ type Resource struct {
 // ListResources returns every resource DMS holds for the deployment.
 func (c *Client) ListResources(ctx context.Context, deploymentID string) ([]Resource, error) {
 	it := c.Service.ListResources(ctx, bundledeployments.ListResourcesRequest{
-		Parent: "deployments/" + deploymentID,
+		Parent: deploymentName(deploymentID),
 	})
 
 	var out []Resource

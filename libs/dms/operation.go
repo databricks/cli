@@ -27,7 +27,7 @@ const StatusInProgress bundledeployments.OperationStatus = "OPERATION_STATUS_IN_
 // resource that produced it rather than the upload at the end of apply.
 type OperationUpdate struct {
 	// Fields is the mask to send. It is taken literally: a field named here is written,
-	// one left out keeps its value. See the package doc.
+	// one left out keeps the value it had.
 	Fields Fields
 
 	// State is the serialized state after the operation, and nil for a delete.

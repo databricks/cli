@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dms"
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
 type initializeDeploymentHistory struct{}
@@ -38,12 +37,15 @@ func (m *initializeDeploymentHistory) Apply(ctx context.Context, b *bundle.Bundl
 		return nil
 	}
 
+	client, err := dms.NewClient(w)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	// The ID came from a BUNDLE_DEPLOYMENT node that get-status returned, and by
 	// design the service has a deployment for every such node, so this get does not
 	// have a not-found case. last_version_id is empty until the first version.
-	dep, err := w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
-		Name: "deployments/" + deploymentID,
-	})
+	dep, err := client.GetDeployment(ctx, deploymentID)
 	if err != nil {
 		return diag.FromErr(err)
 	}

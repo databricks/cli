@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/internal/build"
@@ -174,12 +173,10 @@ func (r *recording) Start(ctx context.Context, staged []StagedOperation) (Operat
 		}
 	}
 
-	versionID := strconv.FormatInt(r.versionNum, 10)
-
-	// The server rejects this unless versionID exceeds last_version_id and
+	// The server rejects this unless the version number exceeds last_version_id and
 	// previous_version_id matches it, which is what makes claiming the number up front
 	// safe: a deploy that took it in the meantime is reported, not overwritten.
-	version, err := r.client.Versions.CreateVersion(ctx, r.deploymentID, versionID, CreateVersionRequest{
+	version, err := r.client.CreateVersion(ctx, r.deploymentID, r.versionNum, CreateVersionRequest{
 		CliVersion:        build.GetInfo().Version,
 		VersionType:       r.versionType,
 		TargetName:        r.metadata.TargetName,
@@ -199,13 +196,13 @@ func (r *recording) Start(ctx context.Context, staged []StagedOperation) (Operat
 		// A 409 ABORTED means another deploy claimed this version number in between
 		// Prepare and here.
 		if isAbortedErr(err) {
-			return nil, fmt.Errorf("another deploy already claimed version %s of this deployment, try again: %w", versionID, err)
+			return nil, fmt.Errorf("another deploy already claimed version %d of this deployment, try again: %w", r.versionNum, err)
 		}
 		return nil, fmt.Errorf("failed to create deployment version: %w", err)
 	}
 
 	r.versionCreated = true
-	r.stopHeartbeat = startHeartbeat(ctx, r.client.Service, r.deploymentID, versionID)
+	r.stopHeartbeat = startHeartbeat(ctx, r.client, r.deploymentID, r.versionNum)
 	log.Infof(ctx, "Created deployment version: deployment=%s version=%s", r.deploymentID, version.VersionId)
 
 	return &operationWriter{
@@ -230,25 +227,15 @@ func (r *recording) Finish(ctx context.Context, success bool) error {
 
 	r.stopHeartbeat()
 
-	versionIDStr := strconv.FormatInt(r.versionNum, 10)
-	versionName := fmt.Sprintf("deployments/%s/versions/%s", r.deploymentID, versionIDStr)
-
-	_, err := r.client.Service.CompleteVersion(ctx, bundledeployments.CompleteVersionRequest{
-		Name:             versionName,
-		CompletionReason: reason,
-	})
-	if err != nil {
+	if err := r.client.CompleteVersion(ctx, r.deploymentID, r.versionNum, reason); err != nil {
 		return err
 	}
-	log.Infof(ctx, "Completed deployment version: deployment=%s version=%s reason=%s", r.deploymentID, versionIDStr, reason)
+	log.Infof(ctx, "Completed deployment version: deployment=%s version=%d reason=%s", r.deploymentID, r.versionNum, reason)
 
 	// For destroy operations, delete the deployment record after the version
 	// completes successfully.
 	if reason == bundledeployments.VersionCompleteVersionCompleteSuccess && r.versionType == VersionTypeDestroy {
-		err = r.client.Service.DeleteDeployment(ctx, bundledeployments.DeleteDeploymentRequest{
-			Name: "deployments/" + r.deploymentID,
-		})
-		if err != nil {
+		if err := r.client.DeleteDeployment(ctx, r.deploymentID); err != nil {
 			return fmt.Errorf("failed to delete deployment: %w", err)
 		}
 	}
@@ -263,9 +250,7 @@ func (r *recording) resolveNextVersion(ctx context.Context) (versionID string, e
 		// The ID came from a BUNDLE_DEPLOYMENT node that get-status returned, and by
 		// design the service has a deployment for every such node, so a not-found
 		// here means that invariant is broken rather than anything the user did.
-		dep, getErr := r.client.Service.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
-			Name: "deployments/" + r.deploymentID,
-		})
+		dep, getErr := r.client.GetDeployment(ctx, r.deploymentID)
 		switch {
 		case errors.Is(getErr, apierr.ErrNotFound), errors.Is(getErr, apierr.ErrResourceDoesNotExist):
 			return "", fmt.Errorf("internal error: no deployment found for the file with object id %s: %w", r.deploymentID, getErr)
@@ -287,18 +272,9 @@ func (r *recording) resolveNextVersion(ctx context.Context) (versionID string, e
 		// First deploy: create the deployment so the server assigns an ID.
 		// initial_parent_path is required - the node the service creates under it is
 		// what ResolveDeploymentID reads back later.
-		dep, createErr := r.client.Service.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{
-			Deployment: bundledeployments.Deployment{
-				InitialParentPath: r.statePath,
-				TargetName:        r.metadata.TargetName,
-			},
-		})
+		id, createErr := r.client.CreateDeployment(ctx, r.statePath, r.metadata.TargetName)
 		if createErr != nil {
 			return "", fmt.Errorf("failed to create deployment: %w", createErr)
-		}
-		id, idErr := deploymentIDFromName(dep.Name)
-		if idErr != nil {
-			return "", idErr
 		}
 		r.deploymentID = id
 		versionID = "1"
@@ -307,21 +283,10 @@ func (r *recording) resolveNextVersion(ctx context.Context) (versionID string, e
 	return versionID, nil
 }
 
-// deploymentIDFromName extracts the deployment ID from a DMS resource name of
-// the form "deployments/{deployment_id}".
-func deploymentIDFromName(name string) (string, error) {
-	id, ok := strings.CutPrefix(name, "deployments/")
-	if !ok || id == "" {
-		return "", fmt.Errorf("unexpected deployment name %q from deployment metadata service", name)
-	}
-	return id, nil
-}
-
 // startHeartbeat starts a background goroutine that sends heartbeats to keep
 // the deployment version's lease alive. Returns a cancel function to stop it.
-func startHeartbeat(ctx context.Context, svc bundledeployments.BundleDeploymentsInterface, deploymentID, versionID string) context.CancelFunc {
+func startHeartbeat(ctx context.Context, client *Client, deploymentID string, version int64) context.CancelFunc {
 	ctx, cancel := context.WithCancel(ctx)
-	versionName := fmt.Sprintf("deployments/%s/versions/%s", deploymentID, versionID)
 
 	go func() {
 		ticker := time.NewTicker(defaultHeartbeatInterval)
@@ -332,7 +297,7 @@ func startHeartbeat(ctx context.Context, svc bundledeployments.BundleDeployments
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				_, err := svc.Heartbeat(ctx, bundledeployments.HeartbeatRequest{Name: versionName})
+				err := client.Heartbeat(ctx, deploymentID, version)
 				if err != nil {
 					// A 409 ABORTED is expected if the version was completed
 					// between the ticker firing and the heartbeat.
@@ -342,7 +307,7 @@ func startHeartbeat(ctx context.Context, svc bundledeployments.BundleDeployments
 					}
 					log.Warnf(ctx, "Failed to send deployment heartbeat: %v", err)
 				} else {
-					log.Debugf(ctx, "Deployment heartbeat sent: deployment=%s version=%s", deploymentID, versionID)
+					log.Debugf(ctx, "Deployment heartbeat sent: deployment=%s version=%d", deploymentID, version)
 				}
 			}
 		}
