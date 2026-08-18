@@ -29,14 +29,6 @@ type JobRun struct {
 	ResolvedJobID int64 `json:"resolved_job_id,omitempty" bundle:"internal"`
 }
 
-// GetLifecycle returns the job_runs lifecycle, including triggers.
-func (r *JobRun) GetLifecycle() LifecycleConfig {
-	if r.Lifecycle == nil {
-		return JobRunLifecycle{}
-	}
-	return *r.Lifecycle
-}
-
 // HasOnBundleDeploy reports whether any trigger re-fires on every deploy.
 func (r *JobRun) HasOnBundleDeploy() bool {
 	if r.Lifecycle == nil {
