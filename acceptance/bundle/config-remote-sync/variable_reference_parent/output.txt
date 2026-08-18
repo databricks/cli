@@ -11,7 +11,7 @@ written into that scalar node; the change is skipped while unrelated edits still
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
-  job_clusters[job_cluster_key='shared'].new_cluster.spark_conf['spark.executor.memory']: add
+  job_clusters[job_cluster_key='shared'].new_cluster.spark_conf['spark.executor.memory']: skip
   max_concurrent_runs: replace
 
 

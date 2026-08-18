@@ -50,13 +50,12 @@ resources:
 		},
 	}
 
-	fieldChanges, skipped, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, skipped, err := ResolveChanges(ctx, b, changes, LoadPreResolvedConfig(ctx, b))
 	require.NoError(t, err)
 	require.Empty(t, skipped)
 
-	fileChanges, skippedApply, err := ApplyChangesToYAML(ctx, b, fieldChanges)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
-	require.Empty(t, skippedApply)
 	require.Len(t, fileChanges, 1)
 
 	modified := fileChanges[0].ModifiedContent

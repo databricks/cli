@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
@@ -21,14 +20,11 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// ApplyChangesToYAML generates YAML files for the given field changes. It returns
-// the number of changes left unapplied because their parent in the file is a
-// variable reference (see parentIsVariableReference), so the caller can record them.
-func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange) ([]FileChange, int, error) {
+// ApplyChangesToYAML generates YAML files for the given field changes.
+func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange) ([]FileChange, error) {
 	originalFiles := make(map[string][]byte)
 	modifiedFiles := make(map[string][]byte)
 	fileFieldChanges := make(map[string][]FieldChange)
-	skipped := 0
 
 	for _, fieldChange := range fieldChanges {
 		filePath := fieldChange.FilePath
@@ -36,25 +32,15 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 		if _, exists := modifiedFiles[filePath]; !exists {
 			content, err := os.ReadFile(filePath)
 			if err != nil {
-				return nil, 0, fmt.Errorf("failed to read file %s: %w", filePath, err)
+				return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
 			}
 			originalFiles[filePath] = content
 			modifiedFiles[filePath] = preserveBlankLines(content)
 		}
 
-		// The field is nested inside a value written as a variable reference (e.g.
-		// spark_env_vars: ${var.env_vars}), which is a scalar in the file. A nested
-		// key or index cannot be written into it, so leave the change unapplied
-		// instead of failing the whole run.
-		if parentIsVariableReference(modifiedFiles[filePath], fieldChange.WritePath) {
-			log.Debugf(ctx, "config-remote-sync: skipping %s: parent is a variable reference", fieldChange.WritePath)
-			skipped++
-			continue
-		}
-
 		modifiedContent, err := applyChange(ctx, modifiedFiles[filePath], fieldChange)
 		if err != nil {
-			return nil, 0, fmt.Errorf("failed to apply change to file %s for a field %s: %w", filePath, fieldChange.WritePath, err)
+			return nil, fmt.Errorf("failed to apply change to file %s for a field %s: %w", filePath, fieldChange.WritePath, err)
 		}
 
 		modifiedFiles[filePath] = modifiedContent
@@ -68,7 +54,7 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 		// In this case flow style will never appear because empty nodes are never serialized and we won't need clearAddedFlowStyle
 		normalized, err := clearAddedFlowStyle(modifiedFiles[filePath], fileFieldChanges[filePath])
 		if err != nil {
-			return nil, 0, fmt.Errorf("failed to normalize YAML style in %s: %w", filePath, err)
+			return nil, fmt.Errorf("failed to normalize YAML style in %s: %w", filePath, err)
 		}
 		result = append(result, FileChange{
 			Path:            filePath,
@@ -81,59 +67,7 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 		return cmp.Compare(a.Path, b.Path)
 	})
 
-	return result, skipped, nil
-}
-
-// parentIsVariableReference reports whether the parent of writePath in content is
-// a scalar holding a variable reference (e.g. spark_env_vars: ${var.env_vars}).
-func parentIsVariableReference(content []byte, writePath string) bool {
-	node, err := structpath.ParsePath(writePath)
-	if err != nil {
-		return false
-	}
-	parts := node.AsSlice()
-	if len(parts) < 2 {
-		return false
-	}
-
-	var doc yaml.Node
-	if err := yaml.Unmarshal(content, &doc); err != nil {
-		return false
-	}
-	current := &doc
-	if current.Kind == yaml.DocumentNode && len(current.Content) > 0 {
-		current = current.Content[0]
-	}
-
-	for _, n := range parts[:len(parts)-1] {
-		if key, ok := n.StringKey(); ok {
-			if current.Kind != yaml.MappingNode {
-				return false
-			}
-			found := false
-			for i := 0; i+1 < len(current.Content); i += 2 {
-				if current.Content[i].Value == key {
-					current = current.Content[i+1]
-					found = true
-					break
-				}
-			}
-			if !found {
-				return false
-			}
-			continue
-		}
-		if idx, ok := n.Index(); ok {
-			if current.Kind != yaml.SequenceNode || idx < 0 || idx >= len(current.Content) {
-				return false
-			}
-			current = current.Content[idx]
-			continue
-		}
-		return false
-	}
-
-	return current.Kind == yaml.ScalarNode && dynvar.ContainsVariableReference(current.Value)
+	return result, nil
 }
 
 type parentNode struct {
