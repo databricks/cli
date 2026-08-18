@@ -1,10 +1,16 @@
 # A Git folder outside /Repos has Git CLI access, so the workspace API reports no
-# git metadata for it and it is read from the Repos API instead.
+# git metadata for it and it is read from the Repos API instead. Make that read
+# fail: the worktree root must still be reported, with the metadata left empty
+# rather than failing the command.
+#
+# Registered before MSYS_NO_PATHCONV is exported, which on Windows would rewrite
+# the path Git Bash passes for this helper's own script.
+fault.py "GET /api/2.0/repos/*" 403 0 1
+
+# Keep Git Bash from rewriting the /Workspace path passed to --path.
+export MSYS_NO_PATHCONV=1
+
 folder=/Workspace/Users/$CURRENT_USER_NAME/test-folder-$UNIQUE_NAME
 $CLI repos create https://github.com/databricks/bundle-examples gitHub --path "$folder" > /dev/null
-
-# Make that read fail: the worktree root must still be reported, with the
-# metadata left empty rather than failing the command.
-fault.py "GET /api/2.0/repos/*" 403 0 1
 
 trace $CLI bundle debug fetch-repository-info --path "$folder"
