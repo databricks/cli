@@ -1,11 +1,11 @@
 RecordRequests = false
 
 Env.DATABRICKS_WAREHOUSE_ID = "wh-test"
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
 # Non-alphabetical columns test JSON order preservation; the ragged second row tests
 # null padding, and the long note tests cell truncation.
-
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["direct"]
 [[Server]]
 Pattern = "POST /api/2.0/sql/statements"
 Response.Body = '''

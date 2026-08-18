@@ -1,6 +1,5 @@
 EnvMatrix.READPLAN = ["", "1"]
 
-[EnvMatrixExclude]
 # Secrets have sensitive fields (json:"-") that are stripped when a plan is serialized to JSON,
 # so deploying from a pre-computed plan file creates the secret with an empty value.
-no_secret_with_readplan = ["READPLAN=1", "INPUT_CONFIG=secret.yml.tmpl"]
+EnvMatrixExclude.no_secret_with_readplan = ["READPLAN=1", "INPUT_CONFIG=secret.yml.tmpl"]

@@ -16,5 +16,4 @@ Env.INJECT_STALE_ON_DIRECT = "1"
 Env.RETRY_MAX_ATTEMPTS = "20"
 Env.RETRY_INTERVAL_MS = "1000"
 
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

@@ -1,12 +1,12 @@
 RecordRequests = true
 
 Env.DATABRICKS_WAREHOUSE_ID = "wh-test"
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
 # The testserver's SQL Statement Execution API is matcher-driven and fails
 # unmatched statements by default; stub a canned result so the golden shows real
 # columns and rows. The SDK POSTs to the path without a trailing slash.
-
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["direct"]
 [[Server]]
 Pattern = "POST /api/2.0/sql/statements"
 Response.Body = '''

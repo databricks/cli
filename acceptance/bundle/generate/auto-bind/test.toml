@@ -12,5 +12,4 @@ Ignore = [
 # Setting this environment variable prevents that conversion on windows.
 Env.MSYS_NO_PATHCONV = "1"
 
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]

@@ -12,11 +12,10 @@ TimeoutCloud = "5m"
 # Setting this environment variable prevents that conversion on windows.
 Env.MSYS_NO_PATHCONV = "1"
 
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+
 # redact ?[ow]=[NUMID]. Different clouds can have different URL serialization, like [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID] vs [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]?o=[NUMID].
 [[Repls]]
 Old = '\?[ow]=\d+'
 New = ''
 Order = 0
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

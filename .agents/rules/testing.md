@@ -95,7 +95,9 @@ If the only reason for divergence is a server-side default that one engine sets 
 
 **RULE: `EnvMatrix.<VAR> = []` removes that variable from the inherited matrix** (see `ExpandEnvMatrix` in `acceptance/internal/config.go`). The root `test.toml` matrixes `DATABRICKS_BUNDLE_ENGINE = [terraform, direct]`, so a non-bundle test opts out of both engine runs with `EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []`. The `out.test.toml` snapshot of inherited values is generated and committed by design.
 
-**RULE: Write env and matrix variables in dotted form (`Env.<VAR> = "..."`, `EnvMatrix.<VAR> = [...]`) at the top of `test.toml`, not under an `[Env]` / `[EnvMatrix]` header.** In TOML every key after a `[EnvMatrix]` header belongs to that table until the next header — a blank line does not end it. So a top-level key like `Ignore` placed below `[EnvMatrix]` is silently parsed as `EnvMatrix.Ignore` (a bogus matrix variable) instead of the real top-level field, and the test runs with the field unset. Dotted form keeps each key's table explicit and is immune to ordering:
+**RULE: Write every map-valued setting in dotted form at the top of `test.toml`, never under a table header.** This covers `Env`, `EnvMatrix`, `EnvMatrixExclude`, `EnvRepl`, `GOOS` and `CloudEnvs` — e.g. `Env.MSYS_NO_PATHCONV = "1"`, `GOOS.windows = false`. In TOML every key after a `[EnvMatrix]` header belongs to that table until the next header — a blank line does not end it. So a top-level key like `Ignore` placed below `[EnvMatrix]` is silently parsed as `EnvMatrix.Ignore` (a bogus matrix variable) instead of the real top-level field, and the test runs with the field unset. Dotted form keeps each key's table explicit and is immune to ordering.
+
+`[[Repls]]` and `[[Server]]` are the exception: they are arrays of tables whose elements carry several keys each, so they keep the header form (as does `[Server.Response.Headers]`, which belongs to a `[[Server]]` element). Place dotted keys *above* the first such header — below one they would be captured by it, which is the same trap in reverse.
 
 GOOD:
 
