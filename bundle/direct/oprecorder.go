@@ -29,6 +29,10 @@ const maxOperationErrorMessageSize = 16 * 1024
 // (databricks-eng/universe#2394529).
 const operationStatusInProgress bundledeployments.OperationStatus = "OPERATION_STATUS_IN_PROGRESS"
 
+// stagedSequenceID is what CreateVersion leaves on every operation it stages, and so the
+// precondition for the first update of a resource.
+const stagedSequenceID = "0"
+
 // recordedOperation is an applied resource operation waiting to be uploaded. It is built on
 // the apply worker, not in the uploader, so a malformed state fails the resource that
 // produced it rather than the drain at the end of apply.
@@ -63,7 +67,7 @@ var failedKeepingState = []string{"error_message", "status"}
 // RecordedState envelope the state DB just persisted, and nil for a delete, where
 // the resource is gone. It errors when the state exceeds maxOperationStateSize.
 func newStateOperation(info dstate.OperationInfo, resourceID string, state json.RawMessage) (recordedOperation, error) {
-	actionType, err := deployActionToSDK(info.Action)
+	actionType, err := DeployActionToSDK(info.Action)
 	if err != nil {
 		return recordedOperation{}, err
 	}
@@ -87,17 +91,12 @@ func newStateOperation(info dstate.OperationInfo, resourceID string, state json.
 }
 
 // newFailedOperation records an operation that did not apply, so the history says why a
-// resource failed rather than omitting it. priorState (nil for a create, as resourceID may
-// also be) reaches the service only when nothing else was recorded for the resource yet.
-func newFailedOperation(action deployplan.ActionType, resourceID string, priorState json.RawMessage, cause error) (recordedOperation, error) {
-	actionType, err := deployActionToSDK(action)
+// resource failed rather than leaving it pending. It carries no state: the version staged the
+// operation already, so a failure only ever narrows an existing record.
+func newFailedOperation(action deployplan.ActionType, resourceID string, cause error) (recordedOperation, error) {
+	actionType, err := DeployActionToSDK(action)
 	if err != nil {
 		return recordedOperation{}, err
-	}
-
-	// A guard: the state DB accepted this state, so it was within the limit when written.
-	if len(priorState) > maxOperationStateSize {
-		return recordedOperation{}, fmt.Errorf("serialized state is %d bytes, which exceeds the %d byte limit for recording deployment history", len(priorState), maxOperationStateSize)
 	}
 
 	// Summarized, not cause.Error(): for an API failure that adds the status and error
@@ -121,25 +120,8 @@ func newFailedOperation(action deployplan.ActionType, resourceID string, priorSt
 		resourceID:   resourceID,
 		status:       bundledeployments.OperationStatusOperationStatusFailed,
 		errorMessage: message,
-		state:        priorState,
 		updateFields: failedKeepingState,
 	}, nil
-}
-
-// priorRecord returns the resource's id and state from before this deploy, in the envelope
-// form the success path uploads, or empty values when there is no prior record. Both come
-// from one entry: the service rejects state without an id.
-func priorRecord(db *dstate.DeploymentState, resourceKey string) (string, json.RawMessage) {
-	entry, ok := db.GetResourceEntry(resourceKey)
-	if !ok || len(entry.State) == 0 {
-		return "", nil
-	}
-
-	raw, err := json.Marshal(dstate.RecordedState{State: entry.State, DependsOn: entry.DependsOn})
-	if err != nil {
-		return "", nil
-	}
-	return entry.ID, raw
 }
 
 // operationUploader records an applied resource operation with DMS. Uploads run on
@@ -158,9 +140,9 @@ type operationRecorder struct {
 	// mu guards sequenceIDs.
 	mu sync.Mutex
 
-	// sequenceIDs holds the sequence id the service returned per resource key: both how an
-	// already-recorded resource is recognised and the precondition for updating it. The
-	// service keeps one operation per resource per version, so a second write must update it.
+	// sequenceIDs holds the sequence id the service last returned per resource key, echoed as
+	// the precondition on the next update. A key absent from the map has not been written yet,
+	// so its staged operation is still at stagedSequenceID.
 	sequenceIDs map[string]string
 }
 
@@ -197,35 +179,31 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 	}
 
 	r.mu.Lock()
-	sequenceID, recorded := r.sequenceIDs[dmsKey]
+	sequenceID, written := r.sequenceIDs[dmsKey]
 	r.mu.Unlock()
-
-	var result operationResponse
-	var err error
-	if recorded {
-		update := updateOperationRequest{
-			ErrorMessage: operation.ErrorMessage,
-			Status:       operation.Status,
-			SequenceId:   sequenceID,
-		}
-		// Send only what the mask names. The service would ignore the rest, and state is
-		// the largest field by far, so a failure that keeps the recorded state sends none.
-		if slices.Contains(op.updateFields, "state") {
-			update.State = operation.State
-			update.ResourceId = operation.ResourceId
-		}
-
-		// action_type stays as the operation was created, so sending it would just be
-		// misleading.
-		result, err = r.ops.UpdateOperation(ctx, r.parent, dmsKey, op.updateFields, update)
-	} else {
-		result, err = r.ops.CreateOperation(ctx, r.parent, dmsKey, operation)
+	if !written {
+		sequenceID = stagedSequenceID
 	}
+
+	update := updateOperationRequest{
+		ErrorMessage: operation.ErrorMessage,
+		Status:       operation.Status,
+		SequenceId:   sequenceID,
+	}
+	// Send only what the mask names. The service would ignore the rest, and state is the
+	// largest field by far, so a failure that keeps the recorded state sends none.
+	if slices.Contains(op.updateFields, "state") {
+		update.State = operation.State
+		update.ResourceId = operation.ResourceId
+	}
+
+	// action_type is fixed when the version stages the operation, so it is not sent.
+	result, err := r.ops.UpdateOperation(ctx, r.parent, dmsKey, op.updateFields, update)
 	if err != nil {
 		return err
 	}
 
-	// The next write for this resource updates this operation rather than re-creating it.
+	// The next write for this resource echoes the sequence id this one earned.
 	r.mu.Lock()
 	r.sequenceIDs[dmsKey] = result.SequenceId
 	r.mu.Unlock()
@@ -233,10 +211,10 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 	return nil
 }
 
-// deployActionToSDK maps a deployplan action to its DMS operation action type.
+// DeployActionToSDK maps a deployplan action to its DMS operation action type.
 // Only actions that mutate a resource are recordable; Skip and Undefined never
 // reach a recorder and are rejected rather than silently coerced.
-func deployActionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType, error) {
+func DeployActionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType, error) {
 	switch a {
 	case deployplan.Create:
 		return bundledeployments.OperationActionTypeOperationActionTypeCreate, nil

@@ -31,11 +31,10 @@ type updateOperationRequest struct {
 	SequenceId   string                            `json:"sequence_id,omitempty"`
 }
 
-// operationClient records operations under a deployment version. UpdateOperation
-// takes the fields to update, because a failure updates fewer of them than a state
-// write does.
+// operationClient fills in the operations a version staged. There is no create: the version
+// records the whole set at CreateVersion, so every write here narrows an existing operation,
+// and fields says which of them it changes.
 type operationClient interface {
-	CreateOperation(ctx context.Context, parent, resourceKey string, op bundledeployments.Operation) (operationResponse, error)
 	UpdateOperation(ctx context.Context, parent, resourceKey string, fields []string, body updateOperationRequest) (operationResponse, error)
 }
 
@@ -47,19 +46,6 @@ type apiOperationClient struct {
 // newAPIOperationClient returns an operationClient that posts to the DMS API.
 func newAPIOperationClient(c *client.DatabricksClient) operationClient {
 	return &apiOperationClient{client: c}
-}
-
-func (a *apiOperationClient) CreateOperation(ctx context.Context, parent, resourceKey string, op bundledeployments.Operation) (operationResponse, error) {
-	var result operationResponse
-	path := fmt.Sprintf("/api/2.0/bundle/%s/operations", parent)
-	err := a.client.Do(ctx, http.MethodPost, path,
-		auth.WorkspaceIDHeaders(a.client.Config),
-		map[string]any{"resource_key": resourceKey},
-		op, &result)
-	if err != nil {
-		return operationResponse{}, err
-	}
-	return result, nil
 }
 
 func (a *apiOperationClient) UpdateOperation(ctx context.Context, parent, resourceKey string, fields []string, body updateOperationRequest) (operationResponse, error) {

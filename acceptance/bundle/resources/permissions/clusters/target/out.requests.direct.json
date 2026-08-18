@@ -13,6 +13,19 @@
   }
 }
 {
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/clusters.cluster1",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "state": "{\"state\":{\"autotermination_minutes\":60,\"cluster_name\":\"[dev [USERNAME]] test-cluster\",\"custom_tags\":{\"dev\":\"[USERNAME]\"},\"node_type_id\":\"[NODE_TYPE_ID]\",\"num_workers\":1,\"spark_version\":\"15.4.x-scala2.12\"}}",
+    "resource_id": "[UUID]",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
+  }
+}
+{
   "method": "PUT",
   "path": "/api/2.0/permissions/clusters/[UUID]",
   "body": {
@@ -34,5 +47,18 @@
         "user_name": "[USERNAME]"
       }
     ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/clusters.cluster1.permissions",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "state": "{\"state\":{\"object_id\":\"/clusters/[UUID]\",\"__embed__\":[{\"level\":\"CAN_ATTACH_TO\",\"service_principal_name\":\"[UUID]\"},{\"level\":\"CAN_RESTART\",\"service_principal_name\":\"[UUID]\"},{\"level\":\"CAN_MANAGE\",\"service_principal_name\":\"[UUID]\"},{\"level\":\"CAN_MANAGE\",\"user_name\":\"[USERNAME]\"}]},\"depends_on\":[{\"node\":\"resources.clusters.cluster1\",\"label\":\"${resources.clusters.cluster1.id}\"}]}",
+    "resource_id": "/clusters/[UUID]",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
   }
 }

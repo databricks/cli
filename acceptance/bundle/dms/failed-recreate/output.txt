@@ -41,20 +41,25 @@ Files: 3 uploaded, 0 deleted
     "workspace_info": {
       "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-recreate/default/files",
       "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-recreate/default"
-    }
+    },
+    "operations": [
+      {
+        "resource_key": "schemas.foo",
+        "action_type": "OPERATION_ACTION_TYPE_RECREATE"
+      }
+    ]
   }
 }
 {
-  "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations",
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
   "q": {
-    "resource_key": "schemas.foo"
+    "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "action_type": "OPERATION_ACTION_TYPE_RECREATE",
     "resource_id": "main.dms_failed_recreate_schema",
-    "resource_key": "schemas.foo",
-    "status": "OPERATION_STATUS_IN_PROGRESS"
+    "status": "OPERATION_STATUS_IN_PROGRESS",
+    "sequence_id": "0"
   }
 }
 {

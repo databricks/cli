@@ -80,12 +80,12 @@ func (s *operationSink) RecordOperation(ctx context.Context, resourceKey string,
 
 // recordFailure records that a resource did not apply, so the history says why rather
 // than leaving the resource out.
-func (s *operationSink) recordFailure(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, priorState json.RawMessage, cause error) {
+func (s *operationSink) recordFailure(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, cause error) {
 	if s == nil {
 		return
 	}
 
-	op, err := newFailedOperation(action, resourceID, priorState, cause)
+	op, err := newFailedOperation(action, resourceID, cause)
 	if err != nil {
 		s.setErr(fmt.Errorf("recording failure for %s: %w", resourceKey, err))
 		return

@@ -105,8 +105,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				err = d.Destroy(ctx, &b.StateDB)
 			}
 			if err != nil {
-				_, priorState := priorRecord(&b.StateDB, resourceKey)
-				opSink.recordFailure(ctx, resourceKey, action, deletedID, priorState, err)
+				opSink.recordFailure(ctx, resourceKey, action, deletedID, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -138,10 +137,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			// each of its steps.
 			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			if err != nil {
-				// Both are empty for a create that never got an ID, which is what the
-				// service expects for a failed create.
-				priorID, priorState := priorRecord(&b.StateDB, resourceKey)
-				opSink.recordFailure(ctx, resourceKey, action, priorID, priorState, err)
+				// Empty for a create that never got an ID, and for a recreate whose delete
+				// step already dropped it.
+				failedID := b.StateDB.GetResourceID(resourceKey)
+				opSink.recordFailure(ctx, resourceKey, action, failedID, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}

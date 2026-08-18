@@ -22,3 +22,16 @@
     ]
   }
 }
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/postgres_projects.foo.permissions",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "state": "{\"state\":{\"object_id\":\"/database-projects/test-project\",\"__embed__\":[{\"level\":\"CAN_USE\",\"user_name\":\"viewer@example.com\"},{\"level\":\"CAN_MANAGE\",\"group_name\":\"data-team\"},{\"level\":\"CAN_MANAGE\",\"service_principal_name\":\"[UUID]\"},{\"level\":\"CAN_MANAGE\",\"user_name\":\"[USERNAME]\"}]},\"depends_on\":[{\"node\":\"resources.postgres_projects.foo\",\"label\":\"${resources.postgres_projects.foo.project_id}\"}]}",
+    "resource_id": "/database-projects/test-project",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
+  }
+}

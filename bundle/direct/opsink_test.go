@@ -165,7 +165,7 @@ func TestOperationSinkCoalescedFailureKeepsTheStateItReplaces(t *testing.T) {
 	s.RecordOperation(t.Context(), "resources.job_runs.my_run", dstate.OperationInfo{Action: deployplan.Create}, "run-1", envelope(t, "the run"))
 	// priorState and priorID are empty: the resource was created in this deploy, so
 	// there is no pre-deploy record to report.
-	s.recordFailure(t.Context(), "resources.job_runs.my_run", deployplan.Create, "", nil, errors.New("run did not succeed: FAILED"))
+	s.recordFailure(t.Context(), "resources.job_runs.my_run", deployplan.Create, "", errors.New("run did not succeed: FAILED"))
 
 	close(f.block)
 	require.NoError(t, s.close())
@@ -191,7 +191,7 @@ func TestOperationSinkCoalescedFailureAfterADeleteKeepsTheResourceGone(t *testin
 	assert.Equal(t, "resources.jobs.busy", <-f.started)
 
 	s.RecordOperation(t.Context(), "resources.schemas.foo", dstate.OperationInfo{Action: deployplan.Recreate, InProgress: true}, "old-id", nil)
-	s.recordFailure(t.Context(), "resources.schemas.foo", deployplan.Recreate, "old-id", envelope(t, "before the deploy"), errors.New("Catalog 'other' does not exist"))
+	s.recordFailure(t.Context(), "resources.schemas.foo", deployplan.Recreate, "old-id", errors.New("Catalog 'other' does not exist"))
 
 	close(f.block)
 	require.NoError(t, s.close())
@@ -216,7 +216,7 @@ func TestOperationSinkCoalescedFailureDoesNotRevertToPriorState(t *testing.T) {
 	assert.Equal(t, "resources.jobs.busy", <-f.started)
 
 	s.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Update}, "id-new", envelope(t, "after the update"))
-	s.recordFailure(t.Context(), "resources.jobs.foo", deployplan.Update, "id-old", envelope(t, "before the deploy"), errors.New("waiting after updating: timed out"))
+	s.recordFailure(t.Context(), "resources.jobs.foo", deployplan.Update, "id-old", errors.New("waiting after updating: timed out"))
 
 	close(f.block)
 	require.NoError(t, s.close())
@@ -259,7 +259,7 @@ func TestCoalesceLetsAWriteSupersedeAFailure(t *testing.T) {
 	// A failure is not the last word. A retry that writes state wins whole - state, id and
 	// mask - and the mask names error_message so the recorded failure is cleared. The service
 	// rejects a succeeded operation that still carries an error.
-	failed, err := newFailedOperation(deployplan.Update, "id-old", envelope(t, "before"), errors.New("boom"))
+	failed, err := newFailedOperation(deployplan.Update, "id-old", errors.New("boom"))
 	require.NoError(t, err)
 	retried, err := newStateOperation(dstate.OperationInfo{Action: deployplan.Update}, "id-new", envelope(t, "after the retry"))
 	require.NoError(t, err)
@@ -279,7 +279,7 @@ func TestCoalesceKeepsTheWritesStateAndMask(t *testing.T) {
 	// write as a delete, and the service keeps whichever action created the operation.
 	write, err := newStateOperation(dstate.OperationInfo{Action: deployplan.Delete}, "id-new", nil)
 	require.NoError(t, err)
-	failed, err := newFailedOperation(deployplan.Update, "id-old", envelope(t, "before"), errors.New("boom"))
+	failed, err := newFailedOperation(deployplan.Update, "id-old", errors.New("boom"))
 	require.NoError(t, err)
 
 	got := coalesce(write, failed)
@@ -435,7 +435,7 @@ func TestOperationSinkCloseIsIdempotent(t *testing.T) {
 func TestNilOperationSinkIsNoOp(t *testing.T) {
 	var s *operationSink
 	s.RecordOperation(t.Context(), "resources.jobs.foo", dstate.OperationInfo{Action: deployplan.Create}, "id-1", nil)
-	s.recordFailure(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", nil, errors.New("boom"))
+	s.recordFailure(t.Context(), "resources.jobs.foo", deployplan.Create, "id-1", errors.New("boom"))
 	assert.NoError(t, s.firstErr())
 	assert.NoError(t, s.close())
 }

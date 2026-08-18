@@ -29,21 +29,26 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "workspace_info": {
       "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/files",
       "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default"
-    }
+    },
+    "operations": [
+      {
+        "resource_key": "schemas.foo",
+        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+      }
+    ]
   }
 }
 {
-  "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo",
   "q": {
-    "resource_key": "schemas.foo"
+    "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "action_type": "OPERATION_ACTION_TYPE_CREATE",
-    "resource_id": "main.dms_partial_update_schema",
-    "resource_key": "schemas.foo",
     "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_partial_update_schema\"}}",
-    "status": "OPERATION_STATUS_SUCCEEDED"
+    "resource_id": "main.dms_partial_update_schema",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
   }
 }
 {
@@ -82,20 +87,25 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
     "workspace_info": {
       "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/files",
       "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default"
-    }
+    },
+    "operations": [
+      {
+        "resource_key": "schemas.foo",
+        "action_type": "OPERATION_ACTION_TYPE_RECREATE"
+      }
+    ]
   }
 }
 {
-  "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations",
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
   "q": {
-    "resource_key": "schemas.foo"
+    "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "action_type": "OPERATION_ACTION_TYPE_RECREATE",
     "resource_id": "main.dms_partial_update_schema",
-    "resource_key": "schemas.foo",
-    "status": "OPERATION_STATUS_IN_PROGRESS"
+    "status": "OPERATION_STATUS_IN_PROGRESS",
+    "sequence_id": "0"
   }
 }
 {
@@ -147,20 +157,25 @@ Destroy: 1 deleted
     "workspace_info": {
       "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/files",
       "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default"
-    }
+    },
+    "operations": [
+      {
+        "resource_key": "schemas.foo",
+        "action_type": "OPERATION_ACTION_TYPE_DELETE"
+      }
+    ]
   }
 }
 {
-  "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/operations",
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/operations/schemas.foo",
   "q": {
-    "resource_key": "schemas.foo"
+    "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "action_type": "OPERATION_ACTION_TYPE_DELETE",
     "resource_id": "other.dms_partial_update_schema",
-    "resource_key": "schemas.foo",
-    "status": "OPERATION_STATUS_SUCCEEDED"
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
   }
 }
 {

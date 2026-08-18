@@ -8,6 +8,19 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //versions --sort
 {
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-provenance/dev/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":4,\"name\":\"[dev [USERNAME]] foo\",\"queue\":{\"enabled\":true},\"tags\":{\"dev\":\"[USERNAME]\"}}}",
+    "resource_id": "[NUMID]",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
+  }
+}
+{
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
   "q": {
@@ -27,7 +40,13 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "workspace_info": {
       "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-provenance/dev/files",
       "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-provenance/dev"
-    }
+    },
+    "operations": [
+      {
+        "resource_key": "jobs.foo",
+        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+      }
+    ]
   }
 }
 {
@@ -35,20 +54,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
   "body": {
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
-  "q": {
-    "resource_key": "jobs.foo"
-  },
-  "body": {
-    "action_type": "OPERATION_ACTION_TYPE_CREATE",
-    "resource_id": "[NUMID]",
-    "resource_key": "jobs.foo",
-    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-provenance/dev/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":4,\"name\":\"[dev [USERNAME]] foo\",\"queue\":{\"enabled\":true},\"tags\":{\"dev\":\"[USERNAME]\"}}}",
-    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 

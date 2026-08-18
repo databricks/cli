@@ -9,7 +9,9 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
@@ -48,6 +50,29 @@ func newDeploymentRecorder(ctx context.Context, b *bundle.Bundle, eng engine.Eng
 		VersionType:  versionType,
 		Metadata:     deploymentMetadata(b),
 	}), nil
+}
+
+// stagedOperations lists the resources the plan will touch, for CreateVersion to stage an
+// operation each. Skipped and undefined actions are left out: nothing is applied for them, so
+// their operations would stay pending and the service would hold no state for them.
+func stagedOperations(plan *deployplan.Plan) ([]dms.StagedOperation, error) {
+	actions := plan.GetActions()
+	staged := make([]dms.StagedOperation, 0, len(actions))
+	for _, action := range actions {
+		if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
+			continue
+		}
+		actionType, err := direct.DeployActionToSDK(action.ActionType)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", action.ResourceKey, err)
+		}
+		staged = append(staged, dms.StagedOperation{
+			// The service wants the key without the CLI's "resources." prefix.
+			ResourceKey: strings.TrimPrefix(action.ResourceKey, dstate.ResourceKeyPrefix),
+			ActionType:  actionType,
+		})
+	}
+	return staged, nil
 }
 
 // recordsDeploymentHistory reports whether this bundle records deployment history,

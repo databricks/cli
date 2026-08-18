@@ -272,7 +272,12 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		}
 		// Record the DMS version now that the destroy is approved and the state WAL
 		// has been opened, then record each delete operation under it.
-		if err := recorder.CreateVersion(ctx); err != nil {
+		staged, err := stagedOperations(plan)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		if err := recorder.CreateVersion(ctx, staged); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}

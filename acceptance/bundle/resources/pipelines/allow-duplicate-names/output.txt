@@ -41,6 +41,19 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "name": "test-pipeline-same-name-[UNIQUE_NAME]"
   }
 }
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/pipelines.pipeline_one",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "state": "{\"state\":{\"allow_duplicate_names\":true,\"channel\":\"CURRENT\",\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/acc-bundle-deploy-pipeline-duplicate-names-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"edition\":\"ADVANCED\",\"libraries\":[{\"file\":{\"path\":\"/Workspace/Users/[USERNAME]/.bundle/acc-bundle-deploy-pipeline-duplicate-names-[UNIQUE_NAME]/default/files/foo.py\"}}],\"name\":\"test-pipeline-same-name-[UNIQUE_NAME]\"}}",
+    "resource_id": "[UUID]",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

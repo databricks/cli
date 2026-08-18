@@ -5,6 +5,6 @@ RecordRequests = false
 # Completed versions make DMS the source of truth; unrecorded resources get recreated.
 # Deploy must stop rather than continue creating.
 [[Server]]
-Pattern = "POST /api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/operations"
+Pattern = "PATCH /api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/operations/{resource_key}"
 Response.StatusCode = 500
 Response.Body = '''{"error_code": "INTERNAL_ERROR", "message": "Internal error"}'''

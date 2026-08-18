@@ -13,6 +13,18 @@ Files: 5 uploaded, 0 deleted
 
 >>> print_requests.py //api/2.0/bundle --sort
 {
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.doomed",
+  "q": {
+    "update_mask": "error_message,status"
+  },
+  "body": {
+    "error_message": "cluster spec is invalid (400 INVALID_PARAMETER_VALUE)",
+    "status": "OPERATION_STATUS_FAILED",
+    "sequence_id": "0"
+  }
+}
+{
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
   "body": {
@@ -34,7 +46,13 @@ Files: 5 uploaded, 0 deleted
     "workspace_info": {
       "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-failure/default/files",
       "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-failure/default"
-    }
+    },
+    "operations": [
+      {
+        "resource_key": "jobs.doomed",
+        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+      }
+    ]
   }
 }
 {
@@ -42,19 +60,6 @@ Files: 5 uploaded, 0 deleted
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
   "body": {
     "completion_reason": "VERSION_COMPLETE_FAILURE"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
-  "q": {
-    "resource_key": "jobs.doomed"
-  },
-  "body": {
-    "action_type": "OPERATION_ACTION_TYPE_CREATE",
-    "error_message": "cluster spec is invalid (400 INVALID_PARAMETER_VALUE)",
-    "resource_key": "jobs.doomed",
-    "status": "OPERATION_STATUS_FAILED"
   }
 }
 

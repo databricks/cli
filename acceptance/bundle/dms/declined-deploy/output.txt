@@ -8,6 +8,19 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //api/2.0/bundle --sort
 {
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_declined_deploy_schema\"}}",
+    "resource_id": "main.dms_declined_deploy_schema",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
+  }
+}
+{
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
   "body": {
@@ -29,7 +42,13 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "workspace_info": {
       "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy/default/files",
       "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy/default"
-    }
+    },
+    "operations": [
+      {
+        "resource_key": "schemas.foo",
+        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+      }
+    ]
   }
 }
 {
@@ -37,20 +56,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
   "body": {
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
-  "q": {
-    "resource_key": "schemas.foo"
-  },
-  "body": {
-    "action_type": "OPERATION_ACTION_TYPE_CREATE",
-    "resource_id": "main.dms_declined_deploy_schema",
-    "resource_key": "schemas.foo",
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_declined_deploy_schema\"}}",
-    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 

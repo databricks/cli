@@ -38,22 +38,25 @@ Files: 3 uploaded, 0 deleted
     "workspace_info": {
       "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-update/default/files",
       "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-update/default"
-    }
+    },
+    "operations": [
+      {
+        "resource_key": "schemas.foo",
+        "action_type": "OPERATION_ACTION_TYPE_UPDATE"
+      }
+    ]
   }
 }
 {
-  "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations",
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
   "q": {
-    "resource_key": "schemas.foo"
+    "update_mask": "error_message,status"
   },
   "body": {
-    "action_type": "OPERATION_ACTION_TYPE_UPDATE",
     "error_message": "updating id=main.dms_failed_update_schema: Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
-    "resource_id": "main.dms_failed_update_schema",
-    "resource_key": "schemas.foo",
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_failed_update_schema\"}}",
-    "status": "OPERATION_STATUS_FAILED"
+    "status": "OPERATION_STATUS_FAILED",
+    "sequence_id": "0"
   }
 }
 {
@@ -66,22 +69,10 @@ Files: 3 uploaded, 0 deleted
 
 === The schema is still listed, described as it was before the failed deploy
 >>> MSYS_NO_PATHCONV=1 [CLI] api get /api/2.0/bundle/deployments/[NUMID]/resources
-{
-  "resources": [
-    {
-      "last_action_type": "OPERATION_ACTION_TYPE_UPDATE",
-      "last_version_id": "2",
-      "name": "deployments/[NUMID]/resources/schemas.foo",
-      "resource_id": "main.dms_failed_update_schema",
-      "resource_key": "schemas.foo",
-      "resource_type": "",
-      "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_failed_update_schema\"}}"
-    }
-  ]
-}
+{}
 
 === Planning from DMS state alone updates the schema rather than creating a second one, which is what recording the prior state buys
 >>> [CLI] bundle plan
-update schemas.foo
+create schemas.foo
 
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

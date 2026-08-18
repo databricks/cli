@@ -347,9 +347,15 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	// Create the version the plan was stamped with. Doing it here rather than before
-	// the prompt means a declined deploy never claims a version number.
-	if err := recorder.CreateVersion(ctx); err != nil {
+	// Create the version the plan was stamped with, staging an operation for every resource
+	// it touches. Doing it here rather than before the prompt means a declined deploy never
+	// claims a version number.
+	staged, err := stagedOperations(plan)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	if err := recorder.CreateVersion(ctx, staged); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}

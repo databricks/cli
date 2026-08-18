@@ -30,6 +30,19 @@ You can access the app at data-app-123.cloud.databricksapps.com
   }
 }
 {
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/apps.data_app",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "state": "{\"state\":{\"config\":{\"command\":[\"streamlit\",\"run\",\"app.py\"],\"env\":[{\"name\":\"MY_EXAMPLE_SCHEMA\",\"value\":\"main\"},{\"name\":\"MY_EXAMPLE_JOB\",\"value\":\"example_job\"},{\"name\":\"MY_EXAMPLE_JOB_ID\",\"value\":\"[NUMID]\"},{\"name\":\"MY_EXAMPLE_VAR\",\"value\":\"example_value\"}]},\"description\":\"A Streamlit app that uses a SQL warehouse\",\"name\":\"data-app\",\"source_code_path\":\"/Workspace/Users/[USERNAME]/.bundle/resource-refs/default/files/app\"},\"depends_on\":[{\"node\":\"resources.jobs.example_job\",\"label\":\"${resources.jobs.example_job.id}\"},{\"node\":\"resources.jobs.example_job\",\"label\":\"${resources.jobs.example_job.name}\"},{\"node\":\"resources.schemas.example\",\"label\":\"${resources.schemas.example.catalog_name}\"}]}",
+    "resource_id": "data-app",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
+  }
+}
+{
   "method": "POST",
   "path": "/api/2.0/apps/data-app/start",
   "body": {}

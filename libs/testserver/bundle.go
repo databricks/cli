@@ -3,6 +3,7 @@ package testserver
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"path"
 	"slices"
 	"strconv"
@@ -13,6 +14,15 @@ import (
 )
 
 // Handlers for the Deployment Metadata Service (DMS) API under /api/2.0/bundle.
+
+// maxOperationsPerVersion mirrors the service's compiled-in default. A bundle past it cannot
+// be recorded, since the operation set is fixed when the version is created.
+const maxOperationsPerVersion = 800
+
+// operationStatusPending is what CreateVersion leaves on a staged operation. Declared here
+// because the SDK enum is generated from the OpenAPI spec, which trails the service proto.
+const operationStatusPending bundledeployments.OperationStatus = "OPERATION_STATUS_PENDING"
+
 // State is kept in FakeWorkspace.dmsDeployments, keyed by deployment ID.
 
 // dmsDeploymentNodeName is the workspace node name the service uses for deployments.
@@ -147,13 +157,19 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
 	}
 
-	// previous_version_id is absent from the generated struct, so read it separately.
-	var concurrency struct {
+	// previous_version_id and operations are absent from the generated struct, so read them
+	// separately.
+	var extra struct {
 		PreviousVersionId string `json:"previous_version_id"`
+		Operations        []struct {
+			ResourceKey string                                `json:"resource_key"`
+			ActionType  bundledeployments.OperationActionType `json:"action_type"`
+		} `json:"operations"`
 	}
-	if err := json.Unmarshal(req.Body, &concurrency); err != nil {
+	if err := json.Unmarshal(req.Body, &extra); err != nil {
 		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
 	}
+	concurrency := extra
 
 	defer s.LockUnlock()()
 
@@ -188,6 +204,31 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 		return dmsInvalidArgument("workspace_info.git_folder_path and workspace_info.bundle_root_path must be set together")
 	}
 
+	// A version records its whole operation set up front; there is no API to add one later.
+	if len(extra.Operations) > maxOperationsPerVersion {
+		return Response{
+			StatusCode: 429,
+			Body: map[string]string{
+				"error_code": "RESOURCE_EXHAUSTED",
+				"message":    fmt.Sprintf("a version may stage at most %d operations, got %d", maxOperationsPerVersion, len(extra.Operations)),
+			},
+		}
+	}
+	seen := make(map[string]bool, len(extra.Operations))
+	for _, staged := range extra.Operations {
+		switch {
+		case staged.ResourceKey == "":
+			return dmsInvalidArgument("operations.resource_key is required")
+		case !strings.Contains(staged.ResourceKey, "."):
+			return dmsInvalidArgument("operations.resource_key must have a known resource type prefix (e.g. 'jobs.', 'pipelines.'): " + staged.ResourceKey)
+		case staged.ActionType == "":
+			return dmsInvalidArgument("operations.action_type is required and must not be UNSPECIFIED for resource " + staged.ResourceKey)
+		case seen[staged.ResourceKey]:
+			return dmsInvalidArgument("operations must have distinct resource_keys; duplicate: " + staged.ResourceKey)
+		}
+		seen[staged.ResourceKey] = true
+	}
+
 	d.deployment.LastVersionId = versionID
 	version.Name = "deployments/" + deploymentID + "/versions/" + versionID
 	version.VersionId = versionID
@@ -201,6 +242,19 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 	d.deployment.DeploymentMode = version.DeploymentMode
 	d.deployment.GitInfo = version.GitInfo
 	d.deployment.WorkspaceInfo = version.WorkspaceInfo
+
+	// Each staged operation starts pending at sequence 0, and the CLI fills in its outcome
+	// with UpdateOperation as the resource is applied.
+	for _, staged := range extra.Operations {
+		opName := "deployments/" + deploymentID + "/versions/" + versionID + "/operations/" + staged.ResourceKey
+		d.operations[opName] = &bundledeployments.Operation{
+			Name:        opName,
+			ResourceKey: staged.ResourceKey,
+			ActionType:  staged.ActionType,
+			Status:      operationStatusPending,
+			SequenceId:  0,
+		}
+	}
 
 	return Response{Body: version}
 }
@@ -232,76 +286,6 @@ func (s *FakeWorkspace) CompleteVersion(req Request, deploymentID, versionID str
 
 func (s *FakeWorkspace) Heartbeat() Response {
 	return Response{Body: bundledeployments.HeartbeatResponse{}}
-}
-
-func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID string) Response {
-	resourceKey := req.URL.Query().Get("resource_key")
-
-	var op bundledeployments.Operation
-	if err := json.Unmarshal(req.Body, &op); err != nil {
-		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
-	}
-
-	defer s.LockUnlock()()
-
-	d, ok := s.dmsDeployments[deploymentID]
-	if !ok {
-		return dmsNotFound("deployment " + deploymentID)
-	}
-
-	// delete requires resource_id. Create-flavored actions may lack an ID.
-	if op.ActionType == bundledeployments.OperationActionTypeOperationActionTypeDelete && op.ResourceId == "" {
-		return dmsInvalidArgument("resource_id is required for OPERATION_ACTION_TYPE_DELETE operations")
-	}
-
-	failed := op.Status == bundledeployments.OperationStatusOperationStatusFailed
-	if !failed && op.ErrorMessage != "" {
-		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED")
-	}
-
-	// An operation with state must identify its resource via resource_id,
-	// even for failed operations reporting prior state.
-	if op.State != "" && op.ResourceId == "" {
-		return dmsInvalidArgument("resource_id is required for an operation that records state")
-	}
-
-	// One operation per resource per version; duplicates conflict.
-	opName := "deployments/" + deploymentID + "/versions/" + versionID + "/operations/" + resourceKey
-	if _, exists := d.operations[opName]; exists {
-		return Response{
-			StatusCode: 409,
-			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": "operation for " + resourceKey + " already exists in this version"},
-		}
-	}
-
-	op.Name = opName
-	op.ResourceKey = resourceKey
-	op.SequenceId = 1
-	d.operations[opName] = &op
-
-	// sequence_id is a JSON string on the wire but int64 in the SDK struct;
-	// build the response by hand to match what the CLI parses.
-	body, err := operationBody(&op)
-	if err != nil {
-		return Response{StatusCode: 500, Body: map[string]string{"message": err.Error()}}
-	}
-
-	// State projects a resource; no state deletes it. Together with the invariant
-	// that state requires resource_id, a listed resource always has an id.
-	if op.State == "" {
-		delete(d.resources, resourceKey)
-	} else {
-		d.resources[resourceKey] = bundledeployments.Resource{
-			Name:           "deployments/" + deploymentID + "/resources/" + resourceKey,
-			ResourceKey:    resourceKey,
-			ResourceId:     op.ResourceId,
-			ResourceType:   op.ResourceType,
-			LastActionType: op.ActionType,
-			LastVersionId:  versionID,
-			State:          op.State,
-		}
-	}
-	return Response{Body: body}
 }
 
 // operationBody renders an operation the way the service does: sequence_id as a

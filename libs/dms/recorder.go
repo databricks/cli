@@ -29,6 +29,19 @@ const (
 	VersionTypeDestroy VersionType = bundledeployments.VersionTypeVersionTypeDestroy
 )
 
+// StagedOperation is one resource the version will record an operation for. The service
+// creates it in OPERATION_STATUS_PENDING at sequence_id 0, and the CLI fills in the outcome
+// with UpdateOperation as the resource is applied.
+//
+// Hand-written for the same reason as createVersionRequest: the SDK is generated from the
+// OpenAPI spec, which does not carry this message yet.
+type StagedOperation struct {
+	// ResourceKey is the DMS form, without the CLI's "resources." prefix (e.g. "jobs.foo").
+	// The service requires a known resource-type prefix and rejects duplicates.
+	ResourceKey string                                `json:"resource_key"`
+	ActionType  bundledeployments.OperationActionType `json:"action_type"`
+}
+
 // createVersionRequest is the CreateVersion request body. Hand-written because the
 // generated struct has no previous_version_id, which the service needs as its
 // concurrency check - without it every deploy after the first is rejected.
@@ -48,6 +61,9 @@ type createVersionRequest struct {
 	// where it landed. The service denormalizes both onto the deployment.
 	GitInfo       *bundledeployments.GitInfo       `json:"git_info,omitempty"`
 	WorkspaceInfo *bundledeployments.WorkspaceInfo `json:"workspace_info,omitempty"`
+	// Operations is every resource this version will touch. The set is fixed here: the
+	// service has no API to add one later, so a resource left out cannot be recorded.
+	Operations []StagedOperation `json:"operations,omitempty"`
 }
 
 // versionCreator creates a version under a deployment. It exists because the
@@ -166,9 +182,10 @@ func (r *Recorder) Version() int64 {
 	return r.versionNum
 }
 
-// CreateVersion registers a new version with DMS, claiming it for the deployment.
-// Nil Recorder is a no-op.
-func (r *Recorder) CreateVersion(ctx context.Context) error {
+// CreateVersion registers a new version with DMS, claiming it for the deployment, and stages
+// an operation for every resource in operations. The set cannot be added to later, so a
+// resource left out here can never be recorded. Nil Recorder is a no-op.
+func (r *Recorder) CreateVersion(ctx context.Context, operations []StagedOperation) error {
 	if r == nil {
 		return nil
 	}
@@ -192,10 +209,16 @@ func (r *Recorder) CreateVersion(ctx context.Context) error {
 		DisplayName:       r.metadata.DisplayName,
 		PreviousVersionId: r.previousVersionID,
 		DeploymentMode:    r.metadata.Mode,
+		Operations:        operations,
 		GitInfo:           r.metadata.Git,
 		WorkspaceInfo:     r.metadata.Workspace,
 	})
 	if err != nil {
+		// The service caps how many operations one version may stage, so a bundle past the
+		// cap cannot be recorded at all. Say so rather than passing the raw API error on.
+		if isResourceExhaustedErr(err) {
+			return fmt.Errorf("this bundle deploys %d resources, more than the deployment metadata service records in one version: %w", len(operations), err)
+		}
 		// A 409 ABORTED means another deploy claimed this version number in between
 		// PrepareDeployment and here.
 		if isAbortedErr(err) {
@@ -371,6 +394,12 @@ func startHeartbeat(ctx context.Context, svc bundledeployments.BundleDeployments
 }
 
 // isAbortedErr reports whether err is an HTTP 409 ABORTED from the DMS API.
+// isResourceExhaustedErr reports whether the service refused the call for exceeding a quota.
+func isResourceExhaustedErr(err error) bool {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.ErrorCode == "RESOURCE_EXHAUSTED"
+}
+
 func isAbortedErr(err error) bool {
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	return ok && apiErr.StatusCode == http.StatusConflict && apiErr.ErrorCode == "ABORTED"

@@ -53,21 +53,26 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "workspace_info": {
       "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/files",
       "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default"
-    }
+    },
+    "operations": [
+      {
+        "resource_key": "jobs.foo",
+        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+      }
+    ]
   }
 }
 {
-  "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations",
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo",
   "q": {
-    "resource_key": "jobs.foo"
+    "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "action_type": "OPERATION_ACTION_TYPE_CREATE",
-    "resource_id": "[NUMID]",
-    "resource_key": "jobs.foo",
     "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-redeploy-after-destroy/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}",
-    "status": "OPERATION_STATUS_SUCCEEDED"
+    "resource_id": "[NUMID]",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
   }
 }
 {
