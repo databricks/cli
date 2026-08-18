@@ -1,13 +1,13 @@
 
 >>> [CLI] bundle validate
 Warning: invalid value "[BAD_PERM_LEVEL]" for enum field. Valid values are [READ WRITE MANAGE]
-  at resources.secret_scopes.bad_numeric_level.permissions[0].level
+  at resources.secret_scopes.bad_levels.permissions[0].level
 
 Warning: invalid value "[BAD_PERM_LEVEL]" for enum field. Valid values are [READ WRITE MANAGE]
-  at resources.secret_scopes.bad_numeric_string_level.permissions[0].level
+  at resources.secret_scopes.bad_levels.permissions[1].level
 
 Warning: invalid value "fuzz_badlevel" for enum field. Valid values are [READ WRITE MANAGE]
-  at resources.secret_scopes.bad_string_level.permissions[0].level
+  at resources.secret_scopes.bad_levels.permissions[2].level
 
 Name: test-bundle
 Target: default
@@ -19,13 +19,13 @@ Found 3 warnings
 
 >>> [CLI] bundle validate --strict
 Warning: invalid value "[BAD_PERM_LEVEL]" for enum field. Valid values are [READ WRITE MANAGE]
-  at resources.secret_scopes.bad_numeric_level.permissions[0].level
+  at resources.secret_scopes.bad_levels.permissions[0].level
 
 Warning: invalid value "[BAD_PERM_LEVEL]" for enum field. Valid values are [READ WRITE MANAGE]
-  at resources.secret_scopes.bad_numeric_string_level.permissions[0].level
+  at resources.secret_scopes.bad_levels.permissions[1].level
 
 Warning: invalid value "fuzz_badlevel" for enum field. Valid values are [READ WRITE MANAGE]
-  at resources.secret_scopes.bad_string_level.permissions[0].level
+  at resources.secret_scopes.bad_levels.permissions[2].level
 
 Name: test-bundle
 Target: default

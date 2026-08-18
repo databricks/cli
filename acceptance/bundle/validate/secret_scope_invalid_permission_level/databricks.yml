@@ -3,20 +3,14 @@ bundle:
 
 resources:
   secret_scopes:
-    bad_numeric_level:
-      name: test-scope-bad-numeric-level
+    bad_levels:
+      name: test-scope-bad-levels
       permissions:
         # YAML int is coerced to string; must still fail enum validation.
         - level: 2147483648
           group_name: users
-    bad_numeric_string_level:
-      name: test-scope-bad-numeric-string-level
-      permissions:
         - level: "2147483648"
           user_name: someone@example.com
-    bad_string_level:
-      name: test-scope-bad-string-level
-      permissions:
         - level: fuzz_badlevel
           service_principal_name: 12345678-1234-1234-1234-123456789abc
     valid:
