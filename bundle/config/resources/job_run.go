@@ -28,9 +28,9 @@ type JobRun struct {
 	// reference) lets state loading preserve that reference and its plan dependency.
 	ResolvedJobID int64 `json:"resolved_job_id,omitempty" bundle:"internal"`
 
-	// ResolvedFileTriggers is the per-file fingerprint map for on_file_change,
-	// computed under SyncRoot before plan. bundle:"internal" keeps it out of schema.
-	ResolvedFileTriggers map[string]JobRunFileFingerprint `json:"resolved_file_triggers,omitempty" bundle:"internal"`
+	// ResolvedFileTriggers is path → content hash for on_file_change, computed
+	// under SyncRoot before plan. bundle:"internal" keeps it out of schema.
+	ResolvedFileTriggers map[string]string `json:"resolved_file_triggers,omitempty" bundle:"internal"`
 }
 
 // HasOnBundleDeploy reports whether any trigger re-fires on every deploy.
@@ -56,19 +56,6 @@ func (r *JobRun) HasOnFileChange() bool {
 		}
 	}
 	return false
-}
-
-func (r *JobRun) OnFileChangePatterns() []string {
-	if r.Lifecycle == nil {
-		return nil
-	}
-	var patterns []string
-	for _, t := range r.Lifecycle.Triggers {
-		if t.OnFileChange != nil {
-			patterns = append(patterns, *t.OnFileChange)
-		}
-	}
-	return patterns
 }
 
 func (r *JobRun) UnmarshalJSON(b []byte) error {

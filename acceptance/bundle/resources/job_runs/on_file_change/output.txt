@@ -33,6 +33,17 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //jobs/run-now
 
+=== touch without content change plans nothing
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //jobs/run-now
+
 === editing the file re-fires
 >>> [CLI] bundle plan
 recreate job_runs.my_run
