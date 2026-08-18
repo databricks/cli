@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle/deployplan"
 	bundleenv "github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/stretchr/testify/assert"
@@ -148,4 +149,41 @@ func TestWaitCappedZeroDoesNotWait(t *testing.T) {
 func waitForCtx(ctx context.Context) (struct{}, error) {
 	<-ctx.Done()
 	return struct{}{}, ctx.Err()
+}
+
+func TestCountBlockingDependents(t *testing.T) {
+	const index = "resources.vector_search_indexes.foo"
+
+	tests := []struct {
+		name  string
+		edges []string
+		want  int
+	}{
+		{name: "no dependents", want: 0},
+		{name: "grants child does not block", edges: []string{index + ".grants"}, want: 0},
+		{name: "permissions child does not block", edges: []string{index + ".permissions"}, want: 0},
+		{name: "another resource blocks", edges: []string{"resources.jobs.bar"}, want: 1},
+		{
+			name:  "child and resource together",
+			edges: []string{index + ".grants", "resources.jobs.bar"},
+			want:  1,
+		},
+		{
+			// A sibling sharing a name prefix is not a child, so it must still block.
+			name:  "name-prefixed sibling blocks",
+			edges: []string{"resources.vector_search_indexes.foobar"},
+			want:  1,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := dagrun.NewGraph()
+			g.AddNode(index)
+			for _, to := range tc.edges {
+				g.AddDirectedEdge(index, to, "label")
+			}
+			assert.Equal(t, tc.want, countBlockingDependents(g, index))
+		})
+	}
 }

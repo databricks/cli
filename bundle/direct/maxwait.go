@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	bundleenv "github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/libs/dagrun"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/retries"
 )
@@ -31,6 +33,24 @@ func resourceMaxWait(ctx context.Context) (time.Duration, error) {
 		return maxWaitUnset, fmt.Errorf("invalid %s=%q: expected a non-negative number of seconds", bundleenv.ResourceMaxWaitVariable, v)
 	}
 	return time.Duration(seconds) * time.Second, nil
+}
+
+// countBlockingDependents returns how many nodes that run after resourceKey need it to have
+// reached its target state.
+//
+// Child nodes (.permissions, .grants) are excluded: they reference nothing but the parent's id
+// (see PrepareGrantsInputConfig and PreparePermissionsInputConfig), which DoCreate returns
+// before the wait even starts, so they attach to a resource that exists but is not yet
+// provisioned. Only a 4-segment key can have a 3-segment resource key as its prefix, so the
+// prefix test cannot match a sibling.
+func countBlockingDependents(g *dagrun.Graph, resourceKey string) int {
+	n := 0
+	for _, edge := range g.Adj[resourceKey] {
+		if !strings.HasPrefix(edge.To, resourceKey+".") {
+			n++
+		}
+	}
+	return n
 }
 
 // unitMaxWait returns the cap to apply to a single resource, given how many resources run

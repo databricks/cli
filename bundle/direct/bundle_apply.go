@@ -79,8 +79,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
-		// g.Adj holds the edges out of this node, i.e. the resources that run after it.
-		unitWait := unitMaxWait(maxWait, action, len(g.Adj[resourceKey]))
+		unitWait := unitMaxWait(maxWait, action, countBlockingDependents(g, resourceKey))
 		if maxWait != maxWaitUnset && unitWait == maxWaitUnset {
 			log.Debugf(ctx, "Not capping wait for %s: other resources depend on it", resourceKey)
 		}
