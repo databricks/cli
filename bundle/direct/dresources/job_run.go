@@ -38,8 +38,8 @@ var jobRunTriggerLocalPaths = []string{
 type JobRunTriggersState struct {
 	// Fresh UUID each plan while armed so Old!=New forces recreate.
 	OnBundleDeploy string `json:"on_bundle_deploy,omitempty"`
-	// Per-file fingerprints from ResolveJobRunFileTriggers; change to recreate.
-	OnFileChange map[string]resources.JobRunFileFingerprint `json:"on_file_change,omitempty"`
+	// Path → content hash from ResolveJobRunFileTriggers; change to recreate.
+	OnFileChange map[string]string `json:"on_file_change,omitempty"`
 }
 
 // JobRunLifecycleState holds local-only lifecycle fields persisted in state.

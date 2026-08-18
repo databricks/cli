@@ -198,12 +198,6 @@ resources:
     recreate_on_changes:
       - reason: immutable
 
-    # mtime is stored for the resolve fast path; content identity is the hash.
-    # Ignoring mtime-only local drift keeps touch from recreating the run.
-    ignore_local_changes:
-      - field: lifecycle.triggers.on_file_change[*].mtime_ns
-        reason: mtime_only_fingerprint
-
   pipelines:
     recreate_on_changes:
       - field: storage

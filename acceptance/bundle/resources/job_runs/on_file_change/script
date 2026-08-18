@@ -16,6 +16,12 @@ trace $CLI bundle plan
 trace $CLI bundle deploy
 trace print_requests.py //jobs/run-now
 
+title "touch without content change plans nothing"
+python -c "import os; os.utime('seed.txt', None)"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now
+
 title "editing the file re-fires"
 update_file.py seed.txt "v1" "v2"
 trace $CLI bundle plan

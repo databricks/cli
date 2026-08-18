@@ -17,7 +17,7 @@ import (
 )
 
 func TestResolveJobRunFileTriggers(t *testing.T) {
-	t.Run("matches files and fills fingerprints", func(t *testing.T) {
+	t.Run("matches files and fills hashes", func(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "a.txt"), []byte("hello"), 0o644))
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "b.txt"), []byte("world"), 0o644))
@@ -28,14 +28,13 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 		require.False(t, diags.HasError())
 
-		fps := b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers
-		require.Len(t, fps, 2)
-
-		assertFingerprint(t, fps["a.txt"], "hello")
-		assertFingerprint(t, fps["b.txt"], "world")
+		hashes := b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers
+		require.Len(t, hashes, 2)
+		assert.Equal(t, contentHash("hello"), hashes["a.txt"])
+		assert.Equal(t, contentHash("world"), hashes["b.txt"])
 	})
 
-	t.Run("no matches warns and stores sentinel", func(t *testing.T) {
+	t.Run("no matches warns and stores empty hash", func(t *testing.T) {
 		dir := t.TempDir()
 		pattern := "missing.txt"
 		b := bundleWithFileTrigger(dir, pattern)
@@ -46,12 +45,9 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 		assert.Equal(t, diag.Warning, diags[0].Severity)
 		assert.Contains(t, diags[0].Summary, `no files match "missing.txt"`)
 
-		fps := b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers
-		require.Len(t, fps, 1)
-		fp := fps["missing.txt"]
-		assert.Empty(t, fp.Hash)
-		assert.Equal(t, int64(-1), fp.Size)
-		assert.Zero(t, fp.MtimeNs)
+		hashes := b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers
+		require.Len(t, hashes, 1)
+		assert.Empty(t, hashes["missing.txt"])
 	})
 
 	t.Run("no file triggers is a no-op", func(t *testing.T) {
@@ -108,10 +104,10 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 		require.False(t, diags.HasError())
 
-		fps := b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers
-		require.Len(t, fps, 2)
-		assertFingerprint(t, fps["a.txt"], "aaa")
-		assertFingerprint(t, fps["subdir/x.py"], "bbb")
+		hashes := b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers
+		require.Len(t, hashes, 2)
+		assert.Equal(t, contentHash("aaa"), hashes["a.txt"])
+		assert.Equal(t, contentHash("bbb"), hashes["subdir/x.py"])
 	})
 
 	t.Run("pattern outside sync root is an error", func(t *testing.T) {
@@ -138,6 +134,17 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 		assert.Contains(t, diags[0].Summary, `matches no regular files`)
 		assert.Empty(t, b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers)
 	})
+
+	t.Run("trims pattern whitespace", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "seed.txt"), []byte("v1"), 0o644))
+		pattern := "  seed.txt  "
+		b := bundleWithFileTrigger(dir, pattern)
+
+		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
+		require.False(t, diags.HasError())
+		assert.Equal(t, contentHash("v1"), b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers["seed.txt"])
+	})
 }
 
 func bundleWithFileTrigger(syncRoot, pattern string) *bundle.Bundle {
@@ -159,10 +166,7 @@ func bundleWithFileTrigger(syncRoot, pattern string) *bundle.Bundle {
 	}
 }
 
-func assertFingerprint(t *testing.T, fp resources.JobRunFileFingerprint, content string) {
-	t.Helper()
+func contentHash(content string) string {
 	sum := sha256.Sum256([]byte(content))
-	assert.Equal(t, hex.EncodeToString(sum[:]), fp.Hash)
-	assert.Equal(t, int64(len(content)), fp.Size)
-	assert.NotZero(t, fp.MtimeNs)
+	return hex.EncodeToString(sum[:])
 }
