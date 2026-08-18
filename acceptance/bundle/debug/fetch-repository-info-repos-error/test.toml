@@ -1,0 +1,8 @@
+# Local only: the failure is injected into the testserver.
+Cloud = false
+
+# This exercises git.FetchRepositoryInfo, which is independent of the deploy engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# Keep Git Bash from rewriting the /Workspace path passed to --path.
+Env.MSYS_NO_PATHCONV = "1"
