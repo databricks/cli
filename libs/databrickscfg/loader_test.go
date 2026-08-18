@@ -48,6 +48,7 @@ func TestResolveNonAuthFromEnvSkipsHostAndAuth(t *testing.T) {
 	// workspace_id and account_id are routing identifiers, also skipped.
 	t.Setenv("DATABRICKS_WORKSPACE_ID", "env-workspace")
 	t.Setenv("DATABRICKS_ACCOUNT_ID", "env-account")
+	t.Setenv("DATABRICKS_GROUP_ID", "env-group")
 	t.Setenv("DATABRICKS_CLUSTER_ID", "env-cluster")
 
 	cfg := &config.Config{}
@@ -63,6 +64,7 @@ func TestResolveNonAuthFromEnvSkipsHostAndAuth(t *testing.T) {
 	assert.Empty(t, cfg.Cloud)
 	assert.Empty(t, cfg.WorkspaceID)
 	assert.Empty(t, cfg.AccountID)
+	assert.Empty(t, cfg.GroupID)
 	// Non-auth attributes are still populated from the environment.
 	assert.Equal(t, "env-cluster", cfg.ClusterID)
 }
@@ -77,6 +79,7 @@ func TestProfileAuthLoadersProfileWinsOverSteeringEnv(t *testing.T) {
 	t.Setenv("DATABRICKS_CLOUD", "azure")
 	t.Setenv("DATABRICKS_WORKSPACE_ID", "env-workspace")
 	t.Setenv("DATABRICKS_ACCOUNT_ID", "env-account")
+	t.Setenv("DATABRICKS_GROUP_ID", "env-group")
 
 	cfg := config.Config{
 		Loaders:    ProfileAuthLoaders,
@@ -95,6 +98,21 @@ func TestProfileAuthLoadersProfileWinsOverSteeringEnv(t *testing.T) {
 	assert.Empty(t, cfg.Cloud)
 	assert.Empty(t, cfg.WorkspaceID)
 	assert.Empty(t, cfg.AccountID)
+	assert.Empty(t, cfg.GroupID)
+}
+
+func TestProfileAuthLoadersProfileGroupIDWinsOverEnv(t *testing.T) {
+	cfgFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(cfgFile, []byte("[role]\nhost = https://workspace.test\ntoken = profile-token\ngroup_id = profile-group\n"), 0o600))
+	t.Setenv("DATABRICKS_GROUP_ID", "env-group")
+
+	cfg := config.Config{
+		Loaders:    ProfileAuthLoaders,
+		ConfigFile: cfgFile,
+		Profile:    "role",
+	}
+	require.NoError(t, cfg.EnsureResolved())
+	assert.Equal(t, "profile-group", cfg.GroupID)
 }
 
 func TestProfileAuthLoadersGapFillsHostFromEnv(t *testing.T) {

@@ -27,6 +27,11 @@ var authTemplate = `{{"Host:" | bold}} {{.Status.Details.Host}}
 {{- if .Status.Username}}
 {{"User:" | bold}} {{.Status.Username}}
 {{- end}}
+{{- if .Status.GroupID}}
+{{"Assumed group ID:" | bold}} {{.Status.GroupID}}
+{{- else}}
+{{"Assumed group ID:" | bold}} None (normal user permissions)
+{{- end}}
 {{"Authenticated with:" | bold}} {{.Status.Details.AuthType}}
 {{- if .Status.TokenStorage}}
 {{"Token storage:" | bold}} {{.Status.TokenStorage.Mode}}, {{.Status.TokenStorage.Location}} {{ printf "(from %s)" .Status.TokenStorage.Source | italic}}
@@ -35,6 +40,11 @@ var authTemplate = `{{"Host:" | bold}} {{.Status.Details.Host}}
 ` + configurationTemplate
 
 var errorTemplate = `Unable to authenticate: {{.Status.Error}}
+{{- if .Status.GroupID}}
+{{"Assumed group ID:" | bold}} {{.Status.GroupID}}
+{{- else}}
+{{"Assumed group ID:" | bold}} None (normal user permissions)
+{{- end}}
 {{- if .Status.TokenStorage}}
 {{"Token storage:" | bold}} {{.Status.TokenStorage.Mode}}, {{.Status.TokenStorage.Location}} {{ printf "(from %s)" .Status.TokenStorage.Source | italic}}
 {{- end}}
@@ -198,6 +208,7 @@ func successAuthStatus(ctx context.Context, cmd *cobra.Command, cfg *config.Conf
 		Details:      details,
 		Username:     username,
 		AccountID:    accountID,
+		GroupID:      cfg.GroupID,
 		TokenStorage: resolveTokenStorageInfo(ctx, details.AuthType),
 	}
 }
@@ -211,6 +222,7 @@ func errorAuthStatus(ctx context.Context, cmd *cobra.Command, cfg *config.Config
 		Status:       "error",
 		Error:        err,
 		Details:      details,
+		GroupID:      cfg.GroupID,
 		TokenStorage: resolveTokenStorageInfo(ctx, details.AuthType),
 	}
 }
@@ -243,6 +255,7 @@ type authStatus struct {
 	Error        error              `json:"error,omitempty"`
 	Username     string             `json:"username,omitempty"`
 	AccountID    string             `json:"account_id,omitempty"`
+	GroupID      string             `json:"-"`
 	Details      config.AuthDetails `json:"details"`
 	TokenStorage *tokenStorageInfo  `json:"token_storage,omitempty"`
 }

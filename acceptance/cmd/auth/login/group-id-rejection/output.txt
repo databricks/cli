@@ -1,0 +1,9 @@
+
+>>> errcode [CLI] auth login --profile role --group-id group-B
+Error: authorize: Post "[DATABRICKS_URL]/oidc/v1/token": http 403: {"error":"access_denied","error_description":"group role rejected"}
+
+Exit code: 1
+
+>>> cmp ./before.databrickscfg ./home/.databrickscfg
+
+>>> cmp ./before-token-cache.json ./home/.databricks/token-cache.json

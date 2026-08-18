@@ -2,6 +2,7 @@
 >>> [CLI] auth describe --profile u2m-profile
 Warn: [hostmetadata] failed to fetch host metadata for https://u2m-profile.databricks.test, will skip for 1m0s
 Unable to authenticate: error getting token: [KEYRING_LOOKUP_ERROR]
+Assumed group ID: None (normal user permissions)
 Token storage: secure, OS keyring (service: databricks-cli) (from default)
 -----
 Current configuration:

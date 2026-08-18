@@ -1,0 +1,16 @@
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[normal]
+host         = [DATABRICKS_URL]
+workspace_id = [NUMID]
+auth_type    = databricks-cli
+
+[__settings__]
+default_profile = normal
+
+[role]
+host         = [DATABRICKS_URL]
+workspace_id = [NUMID]
+group_id     = group-B
+auth_type    = databricks-cli

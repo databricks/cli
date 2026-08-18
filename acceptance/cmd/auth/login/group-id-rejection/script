@@ -1,0 +1,17 @@
+sethome "./home"
+
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
+mkdir -p "./home/.databricks"
+cp "./input-token-cache.json" "./home/.databricks/token-cache.json"
+cp "./home/.databrickscfg" "./before.databrickscfg"
+cp "./home/.databricks/token-cache.json" "./before-token-cache.json"
+
+export BROWSER="browser.py"
+export DATABRICKS_AUTH_STORAGE=plaintext
+export DATABRICKS_TEST_GROUP_ID="group-B"
+
+trace errcode $CLI auth login --profile role --group-id group-B
+
+# A rejected role must not change either persistent file.
+trace cmp "./before.databrickscfg" "./home/.databrickscfg"
+trace cmp "./before-token-cache.json" "./home/.databricks/token-cache.json"

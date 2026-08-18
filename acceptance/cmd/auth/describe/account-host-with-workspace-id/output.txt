@@ -4,6 +4,7 @@
 >>> [CLI] auth describe --profile acct-with-ws
 Host: [DATABRICKS_URL]
 Account ID: acct-123
+Assumed group ID: None (normal user permissions)
 Authenticated with: pat
 -----
 Current configuration:

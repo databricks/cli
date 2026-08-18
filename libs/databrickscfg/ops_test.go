@@ -570,6 +570,18 @@ func TestSaveToProfile_MergeSemantics(t *testing.T) {
 				"scopes":    "jobs,pipelines,clusters",
 			},
 		},
+		{
+			name:    "writes group ID",
+			profile: "role",
+			saves: []saveOp{
+				{cfg: &config.Config{Profile: "role", Host: "https://myworkspace.cloud.databricks.com", AuthType: "databricks-cli", GroupID: "group-123"}},
+			},
+			wantKeys: map[string]string{
+				"host":      "https://myworkspace.cloud.databricks.com",
+				"auth_type": "databricks-cli",
+				"group_id":  "group-123",
+			},
+		},
 	}
 
 	for _, tc := range testCases {

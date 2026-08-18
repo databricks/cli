@@ -1,0 +1,4 @@
+
+>>> [CLI] auth login --profile discovery-group --group-id group-A
+Opening login.databricks.com in your browser...
+Profile discovery-group was successfully saved

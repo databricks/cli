@@ -1,0 +1,9 @@
+sethome "./home"
+
+export BROWSER="discovery_browser.py"
+export DATABRICKS_TEST_GROUP_ID="group-A"
+
+trace $CLI auth login --profile discovery-group --group-id group-A
+
+mv "./home/.databrickscfg" "./out.databrickscfg"
+print_requests.py //does-not-exist

@@ -1,0 +1,11 @@
+Local = true
+Cloud = false
+Ignore = ["home", "before.databrickscfg", "before-token-cache.json"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+
+[[Server]]
+Pattern = "POST /oidc/v1/token"
+Response.StatusCode = 403
+Response.Body = '{"error":"access_denied","error_description":"group role rejected"}'
+[Server.Response.Headers]
+"Content-Type" = ["application/json"]

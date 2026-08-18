@@ -458,6 +458,45 @@ func TestSplitScopes(t *testing.T) {
 	}
 }
 
+func TestResolveGroupID(t *testing.T) {
+	existing := &profile.Profile{GroupID: "saved-group"}
+	tests := []struct {
+		name        string
+		flagValue   string
+		flagChanged bool
+		clear       bool
+		existing    *profile.Profile
+		want        string
+	}{
+		{
+			name:        "explicit overrides profile",
+			flagValue:   "new-group",
+			flagChanged: true,
+			existing:    existing,
+			want:        "new-group",
+		},
+		{
+			name:     "omitted preserves profile",
+			existing: existing,
+			want:     "saved-group",
+		},
+		{
+			name:     "clear removes profile value",
+			clear:    true,
+			existing: existing,
+		},
+		{
+			name: "no existing profile",
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, resolveGroupID(tt.flagValue, tt.flagChanged, tt.clear, tt.existing))
+		})
+	}
+}
+
 func TestRunHostDiscovery_NoHost(t *testing.T) {
 	ctx := t.Context()
 	args := &auth.AuthArguments{}
@@ -1020,6 +1059,105 @@ func TestDiscoveryLogin_ExplicitScopesOverrideExistingProfile(t *testing.T) {
 	assert.Equal(t, "all-apis", savedProfile.Scopes)
 }
 
+func TestDiscoveryLogin_GroupIDPersistence(t *testing.T) {
+	tests := []struct {
+		name         string
+		groupID      string
+		clearGroupID bool
+		existing     string
+		want         string
+	}{
+		{
+			name:     "explicit group overrides profile",
+			groupID:  "new-group",
+			existing: "saved-group",
+			want:     "new-group",
+		},
+		{
+			name:     "omitted group preserves profile",
+			groupID:  "saved-group",
+			existing: "saved-group",
+			want:     "saved-group",
+		},
+		{
+			name:         "clear group removes profile value",
+			clearGroupID: true,
+			existing:     "saved-group",
+			want:         "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			configPath := filepath.Join(t.TempDir(), ".databrickscfg")
+			contents := "[DISCOVERY]\nhost = https://old-workspace.example.com\nauth_type = databricks-cli\n"
+			if tt.existing != "" {
+				contents += "group_id = " + tt.existing + "\n"
+			}
+			require.NoError(t, os.WriteFile(configPath, []byte(contents), 0o600))
+			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+			oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+			require.NoError(t, err)
+			oauthArg.SetDiscoveredHost("https://workspace.example.com")
+			dc := &fakeDiscoveryClient{
+				oauthArg: oauthArg,
+				persistentAuth: &fakeDiscoveryPersistentAuth{
+					token: &oauth2.Token{AccessToken: "test-token"},
+				},
+				introspectionErr: errors.New("introspection failed"),
+			}
+
+			ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+			err = discoveryLogin(ctx, discoveryLoginInputs{
+				dc:              dc,
+				profileName:     "DISCOVERY",
+				timeout:         time.Second,
+				groupID:         tt.groupID,
+				clearGroupID:    tt.clearGroupID,
+				existingProfile: &profile.Profile{GroupID: tt.existing},
+				browserFunc:     func(string) error { return nil },
+				tokenStore:      newTestStore(),
+			})
+			require.NoError(t, err)
+
+			savedProfile := loadTestProfile(t, ctx, "DISCOVERY")
+			assert.Equal(t, tt.want, savedProfile.GroupID)
+		})
+	}
+}
+
+func TestDiscoveryLogin_OAuthFailureDoesNotModifyProfile(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), ".databrickscfg")
+	want := []byte("[DISCOVERY]\nhost = https://old-workspace.example.com\nauth_type = databricks-cli\ngroup_id = saved-group\n")
+	require.NoError(t, os.WriteFile(configPath, want, 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			challengeErr: errors.New("group role rejected"),
+		},
+	}
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     time.Second,
+		groupID:     "rejected-group",
+		browserFunc: func(string) error { return nil },
+		tokenStore:  newTestStore(),
+	})
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "login via login.databricks.com failed: group role rejected")
+
+	got, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
 func TestDiscoveryLogin_SPOGHostPopulatesAccountIDFromDiscovery(t *testing.T) {
 	// Start a mock server that returns SPOG discovery metadata.
 	server := newDiscoveryServer(t, map[string]any{
@@ -1279,4 +1417,22 @@ func TestLoginRejectsPositionalArgWithProfileFlag(t *testing.T) {
 	cmd.SetArgs([]string{"--profile", "myprofile", "https://example.com"})
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, `argument "https://example.com" cannot be combined with --host or --profile`)
+}
+
+func TestLoginRejectsGroupIDAndClearGroupID(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newLoginCommand(&auth.AuthArguments{})
+	cmd.Flags().String("profile", "", "")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--group-id", "group-123", "--clear-group-id"})
+	assert.EqualError(t, cmd.Execute(), "--group-id and --clear-group-id cannot be used together")
+}
+
+func TestLoginRejectsExplicitEmptyGroupID(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newLoginCommand(&auth.AuthArguments{})
+	cmd.Flags().String("profile", "", "")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--group-id="})
+	assert.EqualError(t, cmd.Execute(), "--group-id cannot be empty")
 }

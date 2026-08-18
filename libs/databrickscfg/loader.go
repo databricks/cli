@@ -106,6 +106,7 @@ const hostAttr = "host"
 var envAlwaysSkipAttrs = map[string]bool{
 	"workspace_id":  true,
 	"account_id":    true,
+	"group_id":      true,
 	"auth_type":     true,
 	"discovery_url": true,
 	"audience":      true,

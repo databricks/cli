@@ -31,6 +31,22 @@ if not destination_url:
 dest_parsed = urllib.parse.urlparse(destination_url)
 dest_params = urllib.parse.parse_qs(dest_parsed.query)
 
+expected_group_id = os.environ.get("DATABRICKS_TEST_GROUP_ID")
+if expected_group_id is not None:
+    top_level_group_ids = top_params.get("assume_group", [])
+    if top_level_group_ids:
+        sys.stderr.write(
+            f"Expected no top-level assume_group, got {top_level_group_ids!r}\n"
+        )
+        sys.exit(1)
+    group_ids = dest_params.get("assume_group", [])
+    expected_group_ids = [] if expected_group_id == "" else [expected_group_id]
+    if group_ids != expected_group_ids:
+        sys.stderr.write(
+            f"Expected nested assume_group values {expected_group_ids!r}, got {group_ids!r}\n"
+        )
+        sys.exit(1)
+
 redirect_uri = dest_params.get("redirect_uri", [None])[0]
 state = dest_params.get("state", [None])[0]
 

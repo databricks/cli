@@ -1,0 +1,38 @@
+sethome "./home"
+
+export BROWSER="browser.py"
+export DATABRICKS_AUTH_STORAGE=plaintext
+
+# An empty expected value opts into asserting that assume_group is absent.
+export DATABRICKS_TEST_GROUP_ID=""
+trace $CLI auth login --host $DATABRICKS_HOST --profile normal
+cp "./home/.databrickscfg" "./out.normal.databrickscfg"
+
+export DATABRICKS_TEST_GROUP_ID="group-A"
+trace $CLI auth login --host $DATABRICKS_HOST --profile role --group-id group-A
+cp "./home/.databrickscfg" "./out.role-a.databrickscfg"
+
+# Re-login preserves the saved group ID when neither group flag is present.
+export DATABRICKS_GROUP_ID="ambient-group"
+trace $CLI auth login --profile role
+cp "./home/.databrickscfg" "./out.role-a-preserved.databrickscfg"
+
+export DATABRICKS_TEST_GROUP_ID="group-B"
+trace $CLI auth login --profile role --group-id group-B
+cp "./home/.databrickscfg" "./out.role-b.databrickscfg"
+
+trace $CLI auth describe --profile role
+
+# Refresh uses the cached role token and does not select a group again.
+trace $CLI auth token --profile role --force-refresh | jq '{token_type}'
+trace jq -s '[.[] | select(.path == "/oidc/v1/token") | (.raw_body | contains("assume_group"))] | any' "$TEST_TMP_DIR/out.requests.txt"
+
+export DATABRICKS_TEST_GROUP_ID=""
+trace $CLI auth login --profile role --clear-group-id
+cp "./home/.databrickscfg" "./out.cleared.databrickscfg"
+
+trace $CLI auth describe --profile role
+
+# Normal and role profiles have distinct primary cache entries.
+trace jq -S '.tokens | keys | map(select(. == "normal" or . == "role"))' "./home/.databricks/token-cache.json"
+print_requests.py //does-not-exist

@@ -133,6 +133,8 @@ a new profile is created.
 	var configureServerless bool
 	var skipWorkspace bool
 	var scopes string
+	var groupID string
+	var clearGroupID bool
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
@@ -143,12 +145,23 @@ a new profile is created.
 		"Skip workspace selection for account-level access")
 	cmd.Flags().StringVar(&scopes, "scopes", "",
 		"Comma-separated list of OAuth scopes to request (defaults to 'all-apis')")
+	cmd.Flags().StringVar(&groupID, "group-id", "",
+		"ID of the Databricks group whose role to assume")
+	cmd.Flags().BoolVar(&clearGroupID, "clear-group-id", false,
+		"Clear the saved group ID and log in with normal user permissions")
 
 	cmd.PreRunE = profileHostConflictCheck
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
+		groupIDChanged := cmd.Flag("group-id").Changed
+		if groupIDChanged && clearGroupID {
+			return errors.New("--group-id and --clear-group-id cannot be used together")
+		}
+		if groupIDChanged && groupID == "" {
+			return errors.New("--group-id cannot be empty")
+		}
 
 		// Cluster and Serverless are mutually exclusive.
 		if configureCluster && configureServerless {
@@ -257,6 +270,7 @@ a new profile is created.
 		if err != nil {
 			return err
 		}
+		effectiveGroupID := resolveGroupID(groupID, groupIDChanged, clearGroupID, existingProfile)
 
 		// If no host is available from any source, use the discovery flow
 		// via login.databricks.com.
@@ -269,6 +283,8 @@ a new profile is created.
 				profileName:     profileName,
 				timeout:         loginTimeout,
 				scopes:          scopes,
+				groupID:         effectiveGroupID,
+				clearGroupID:    clearGroupID,
 				existingProfile: existingProfile,
 				browserFunc:     getBrowserFunc(cmd),
 				tokenStore:      tokenStore,
@@ -305,6 +321,9 @@ a new profile is created.
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
+		}
+		if effectiveGroupID != "" {
+			persistentAuthOpts = append(persistentAuthOpts, u2m.WithGroupID(effectiveGroupID))
 		}
 		persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 		if err != nil {
@@ -350,6 +369,9 @@ a new profile is created.
 		// from .well-known discovery, so stale values would be misleading).
 		clearKeys := oauthLoginClearKeys()
 		clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
+		if clearGroupID {
+			clearKeys = append(clearKeys, "group_id")
+		}
 
 		switch {
 		case configureCluster:
@@ -394,6 +416,7 @@ a new profile is created.
 				ConfigFile:          env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 				ServerlessComputeID: serverlessComputeID,
 				Scopes:              scopesList,
+				GroupID:             effectiveGroupID,
 			}, clearKeys...)
 			if err != nil {
 				return err
@@ -635,6 +658,8 @@ type discoveryLoginInputs struct {
 	profileName     string
 	timeout         time.Duration
 	scopes          string
+	groupID         string
+	clearGroupID    bool
 	existingProfile *profile.Profile
 	browserFunc     func(string) error
 	tokenStore      storage.Store
@@ -663,6 +688,9 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))
+	}
+	if in.groupID != "" {
+		opts = append(opts, u2m.WithGroupID(in.groupID))
 	}
 	discoveryHost := env.Get(ctx, discoveryHostEnvVar)
 	if discoveryHost != "" {
@@ -742,6 +770,9 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		"cluster_id",
 		"serverless_compute_id",
 	)
+	if in.clearGroupID {
+		clearKeys = append(clearKeys, "group_id")
+	}
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:     in.profileName,
 		Host:        discoveredHost,
@@ -749,6 +780,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		AccountID:   accountID,
 		WorkspaceID: workspaceID,
 		Scopes:      scopesList,
+		GroupID:     in.groupID,
 		ConfigFile:  configFile,
 	}, clearKeys...)
 	if err != nil {
@@ -760,6 +792,19 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 
 	cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", in.profileName))
 	return nil
+}
+
+func resolveGroupID(flagValue string, flagChanged, clear bool, existingProfile *profile.Profile) string {
+	if clear {
+		return ""
+	}
+	if flagChanged {
+		return flagValue
+	}
+	if existingProfile != nil {
+		return existingProfile.GroupID
+	}
+	return ""
 }
 
 // splitScopes splits a comma-separated scopes string into a trimmed slice.

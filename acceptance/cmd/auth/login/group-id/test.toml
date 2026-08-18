@@ -1,0 +1,19 @@
+Local = true
+Cloud = false
+RecordRequests = true
+Ignore = ["home"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+
+[[Server]]
+Pattern = "POST /oidc/v1/token"
+Response.Body = '''
+{
+  "access_token": "oauth-token",
+  "refresh_token": "oauth-refresh-token",
+  "expires_in": 3600,
+  "scope": "all-apis",
+  "token_type": "Bearer"
+}
+'''
+[Server.Response.Headers]
+"Content-Type" = ["application/json"]
