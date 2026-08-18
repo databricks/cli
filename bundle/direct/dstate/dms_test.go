@@ -65,13 +65,22 @@ func TestReadDMSStateUnwrapsEnvelope(t *testing.T) {
 }
 
 func TestReadDMSStateRejectsMalformedState(t *testing.T) {
+	// The good resource comes first, so the error lands mid-way: what the file loaded has to
+	// survive whole rather than end up half replaced.
 	f := &fakeResourceLister{resources: []bundledeployments.Resource{
+		{ResourceKey: "jobs.ok", ResourceId: "999", State: `{"state":{"name":"ok"}}`},
 		{ResourceKey: "jobs.foo", ResourceId: "123", State: "not json"},
 	}}
 
 	var db DeploymentState
+	db.Data.State = map[string]ResourceEntry{"resources.jobs.bar": {ID: "file-id"}}
+	db.stateIDs = map[string]string{"resources.jobs.bar": "file-id"}
+
 	err := db.readDMSState(t.Context(), &DMSSource{Client: testClient(f), DeploymentID: "dep-1"})
 	assert.ErrorContains(t, err, "interpreting state recorded for resources.jobs.foo")
+
+	assert.Equal(t, map[string]ResourceEntry{"resources.jobs.bar": {ID: "file-id"}}, db.Data.State)
+	assert.Equal(t, map[string]string{"resources.jobs.bar": "file-id"}, db.stateIDs)
 }
 
 func TestReadDMSStateReplacesLocalState(t *testing.T) {

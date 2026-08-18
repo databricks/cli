@@ -33,18 +33,21 @@ func (db *DeploymentState) readDMSState(ctx context.Context, src *DMSSource) err
 		return err
 	}
 
+	// Built first and assigned together, so a malformed envelope leaves the state as it was
+	// rather than half replaced.
 	resources := make(map[string]ResourceEntry, len(recorded))
-	db.stateIDs = make(map[string]string, len(recorded))
+	stateIDs := make(map[string]string, len(recorded))
 	for _, res := range recorded {
 		entry, err := stateEntry(res)
 		if err != nil {
 			return err
 		}
 		resources[res.Key.StateKey()] = entry
-		db.stateIDs[res.Key.StateKey()] = entry.ID
+		stateIDs[res.Key.StateKey()] = entry.ID
 	}
 
 	db.Data.State = resources
+	db.stateIDs = stateIDs
 	return nil
 }
 
