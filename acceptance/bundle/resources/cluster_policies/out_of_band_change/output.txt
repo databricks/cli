@@ -26,7 +26,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Verify the edit request restored the configured definition
->>> jq select(.method == "POST" and (.path | contains("/policies/clusters/edit"))) out.requests.txt
+>>> print_requests.py //policies/clusters/edit
 {
   "method": "POST",
   "path": "/api/2.0/policies/clusters/edit",

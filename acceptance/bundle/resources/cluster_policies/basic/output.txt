@@ -35,7 +35,7 @@ Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Verify the create request
->>> jq select(.method == "POST" and (.path | contains("/policies/clusters/create"))) out.requests.txt
+>>> print_requests.py //policies/clusters/create
 {
   "method": "POST",
   "path": "/api/2.0/policies/clusters/create",
@@ -67,7 +67,7 @@ Files: 3 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Verify the update request
->>> jq select(.method == "POST" and (.path | contains("/policies/clusters/edit"))) out.requests.txt
+>>> print_requests.py //policies/clusters/edit
 {
   "method": "POST",
   "path": "/api/2.0/policies/clusters/edit",
@@ -100,7 +100,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 === Verify the destroy request
->>> jq select(.method == "POST" and (.path | contains("/policies/clusters/delete"))) out.requests.txt
+>>> print_requests.py //policies/clusters/delete
 {
   "method": "POST",
   "path": "/api/2.0/policies/clusters/delete",

@@ -5,7 +5,7 @@ trace $CLI bundle summary
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm out.requests.txt
+    rm -f out.requests.txt
 }
 trap cleanup EXIT
 trace $CLI bundle deploy
@@ -15,7 +15,7 @@ trace $CLI bundle deploy
 read_id.py test_cluster_policy > /dev/null
 
 title "Verify the create request"
-trace jq 'select(.method == "POST" and (.path | contains("/policies/clusters/create")))' out.requests.txt
+trace print_requests.py //policies/clusters/create
 
 trace $CLI bundle summary
 
@@ -24,7 +24,7 @@ trace update_file.py databricks.yml my_cluster_policy my_cluster_policy_2
 trace $CLI bundle deploy
 
 title "Verify the update request"
-trace jq 'select(.method == "POST" and (.path | contains("/policies/clusters/edit")))' out.requests.txt
+trace print_requests.py //policies/clusters/edit
 
 trace $CLI bundle summary
 
@@ -32,6 +32,6 @@ title "Destroy the cluster policy"
 trace $CLI bundle destroy --auto-approve
 
 title "Verify the destroy request"
-trace jq 'select(.method == "POST" and (.path | contains("/policies/clusters/delete")))' out.requests.txt
+trace print_requests.py //policies/clusters/delete
 
 trace $CLI bundle summary
