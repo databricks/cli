@@ -37,7 +37,6 @@ const stagedSequenceID = "0"
 // the apply worker, not in the uploader, so a malformed state fails the resource that
 // produced it rather than the drain at the end of apply.
 type recordedOperation struct {
-	action     bundledeployments.OperationActionType
 	resourceID string
 	status     bundledeployments.OperationStatus
 
@@ -67,8 +66,9 @@ var failedKeepingState = []string{"error_message", "status"}
 // RecordedState envelope the state DB just persisted, and nil for a delete, where
 // the resource is gone. It errors when the state exceeds maxOperationStateSize.
 func newStateOperation(info dstate.OperationInfo, resourceID string, state json.RawMessage) (recordedOperation, error) {
-	actionType, err := DeployActionToSDK(info.Action)
-	if err != nil {
+	// The action is not recorded - the version stages it - but an unrecordable one means
+	// there is no operation to update, so fail the resource rather than the whole drain.
+	if _, err := DeployActionToSDK(info.Action); err != nil {
 		return recordedOperation{}, err
 	}
 
@@ -82,7 +82,6 @@ func newStateOperation(info dstate.OperationInfo, resourceID string, state json.
 	}
 
 	return recordedOperation{
-		action:       actionType,
 		resourceID:   resourceID,
 		status:       status,
 		state:        state,
@@ -94,8 +93,7 @@ func newStateOperation(info dstate.OperationInfo, resourceID string, state json.
 // resource failed rather than leaving it pending. It carries no state: the version staged the
 // operation already, so a failure only ever narrows an existing record.
 func newFailedOperation(action deployplan.ActionType, resourceID string, cause error) (recordedOperation, error) {
-	actionType, err := DeployActionToSDK(action)
-	if err != nil {
+	if _, err := DeployActionToSDK(action); err != nil {
 		return recordedOperation{}, err
 	}
 
@@ -116,7 +114,6 @@ func newFailedOperation(action deployplan.ActionType, resourceID string, cause e
 	}
 
 	return recordedOperation{
-		action:       actionType,
 		resourceID:   resourceID,
 		status:       bundledeployments.OperationStatusOperationStatusFailed,
 		errorMessage: message,
@@ -168,7 +165,6 @@ func (r *operationRecorder) upload(ctx context.Context, resourceKey string, op r
 	dmsKey := strings.TrimPrefix(resourceKey, dstate.ResourceKeyPrefix)
 
 	operation := bundledeployments.Operation{
-		ActionType:   op.action,
 		ResourceId:   op.resourceID,
 		ResourceKey:  dmsKey,
 		Status:       op.status,

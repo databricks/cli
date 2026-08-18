@@ -120,11 +120,7 @@ func coalesce(older, newer recordedOperation) recordedOperation {
 	merged.updateFields = unionFields(older.updateFields, newer.updateFields)
 
 	if slices.Contains(newer.updateFields, "state") {
-		// Claiming state means this operation last acted on the resource, so its action_type is
-		// the one to record. One that claims none only reports an outcome, and the service
-		// would keep the earlier action anyway - action_type is fixed once the operation exists.
 		merged.state = newer.state
-		merged.action = newer.action
 	}
 	if slices.Contains(newer.updateFields, "resource_id") {
 		merged.resourceID = newer.resourceID

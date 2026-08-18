@@ -26,7 +26,6 @@ type fakeUploader struct {
 
 	mu            sync.Mutex
 	uploads       []string
-	actions       map[string]bundledeployments.OperationActionType
 	resourceIDs   map[string]string
 	statuses      map[string]bundledeployments.OperationStatus
 	errorMessages map[string]string
@@ -42,13 +41,11 @@ func (f *fakeUploader) upload(ctx context.Context, resourceKey string, op record
 
 	f.mu.Lock()
 	f.uploads = append(f.uploads, resourceKey+"="+string(op.state))
-	if f.actions == nil {
-		f.actions = map[string]bundledeployments.OperationActionType{}
+	if f.resourceIDs == nil {
 		f.resourceIDs = map[string]string{}
 		f.statuses = map[string]bundledeployments.OperationStatus{}
 		f.errorMessages = map[string]string{}
 	}
-	f.actions[resourceKey] = op.action
 	f.resourceIDs[resourceKey] = op.resourceID
 	f.statuses[resourceKey] = op.status
 	f.errorMessages[resourceKey] = op.errorMessage
@@ -61,12 +58,6 @@ func (f *fakeUploader) recorded() []string {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return append([]string(nil), f.uploads...)
-}
-
-func (f *fakeUploader) actionFor(resourceKey string) bundledeployments.OperationActionType {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.actions[resourceKey]
 }
 
 func (f *fakeUploader) resourceIDFor(resourceKey string) string {
@@ -250,9 +241,6 @@ func TestOperationSinkCoalescedDeleteStillClearsState(t *testing.T) {
 		`resources.jobs.busy={"state":{"name":"v1"}}`,
 		`resources.jobs.foo=`,
 	}, f.recorded())
-	assert.Equal(t,
-		bundledeployments.OperationActionTypeOperationActionTypeDelete,
-		f.actionFor("resources.jobs.foo"))
 }
 
 func TestCoalesceLetsAWriteSupersedeAFailure(t *testing.T) {
@@ -275,8 +263,7 @@ func TestCoalesceLetsAWriteSupersedeAFailure(t *testing.T) {
 
 func TestCoalesceKeepsTheWritesStateAndMask(t *testing.T) {
 	// A failure claims only status and error_message, so the write's state, id and mask
-	// survive. The action is the write's too: an update that empties a resource records its
-	// write as a delete, and the service keeps whichever action created the operation.
+	// survive.
 	write, err := newStateOperation(dstate.OperationInfo{Action: deployplan.Delete}, "id-new", nil)
 	require.NoError(t, err)
 	failed, err := newFailedOperation(deployplan.Update, "id-old", errors.New("boom"))
@@ -289,7 +276,6 @@ func TestCoalesceKeepsTheWritesStateAndMask(t *testing.T) {
 	assert.Equal(t, "id-new", got.resourceID)
 	assert.Nil(t, got.state)
 	assert.Equal(t, describesResource, got.updateFields)
-	assert.Equal(t, bundledeployments.OperationActionTypeOperationActionTypeDelete, got.action)
 }
 
 func TestOperationSinkRecordDuringUploadIsStillUploaded(t *testing.T) {
