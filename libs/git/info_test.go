@@ -3,7 +3,6 @@ package git
 import (
 	"io/fs"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/dbr"
@@ -14,97 +13,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newFakeWorkspace returns a client for a fake workspace with a Git folder
-// created at repoPath. A Git folder under /Repos reports its metadata on
-// get-status, while one outside /Repos has Git CLI access and does not, which is
-// what makes the two paths through FetchRepositoryInfoAPI observable.
-func newFakeWorkspace(t *testing.T, repoPath string) *databricks.WorkspaceClient {
-	t.Helper()
+// The cases that resolve metadata successfully are covered end to end by
+// acceptance/bundle/debug/fetch-repository-info, which runs against both a fake
+// and a real workspace. What is left here is what that test cannot reach.
 
-	server := testserver.New(t)
-	testserver.AddDefaultHandlers(server)
-
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host:  server.URL,
-		Token: "testtoken",
-	})
-	require.NoError(t, err)
-
-	_, err = client.Repos.Create(t.Context(), workspace.CreateRepoRequest{
-		Url:      "https://github.com/databricks/cli",
-		Provider: "gitHub",
-		Path:     repoPath,
-	})
-	require.NoError(t, err)
-
-	return client
-}
-
-func TestFetchRepositoryInfoAPI_Repo(t *testing.T) {
-	const repoPath = "/Workspace/Repos/me@example.com/repo"
-	w := newFakeWorkspace(t, repoPath)
-
-	info, err := FetchRepositoryInfoAPI(t.Context(), repoPath, w)
-	require.NoError(t, err)
-
-	assert.Equal(t, repoPath, info.WorktreeRoot)
-	assert.Equal(t, "main", info.CurrentBranch)
-	assert.NotEmpty(t, info.LatestCommit)
-	assert.Equal(t, "https://github.com/databricks/cli", info.OriginURL)
-}
-
-// A Git folder with Git CLI access reports no metadata on get-status, so it is
-// read from the Repos API instead.
-func TestFetchRepositoryInfoAPI_GitCliFolder(t *testing.T) {
-	const folderPath = "/Workspace/Users/me@example.com/gitfolder"
-	w := newFakeWorkspace(t, folderPath)
-
-	info, err := FetchRepositoryInfoAPI(t.Context(), folderPath, w)
-	require.NoError(t, err)
-
-	assert.Equal(t, folderPath, info.WorktreeRoot)
-	assert.Equal(t, "main", info.CurrentBranch)
-	assert.NotEmpty(t, info.LatestCommit)
-	assert.Equal(t, "https://github.com/databricks/cli", info.OriginURL)
-}
-
-// A path inside a Git folder resolves the metadata of the folder root, which is
-// also reported as the worktree root.
-func TestFetchRepositoryInfoAPI_Subdirectory(t *testing.T) {
-	const folderPath = "/Workspace/Users/me@example.com/gitfolder"
-	w := newFakeWorkspace(t, folderPath)
-	require.NoError(t, w.Workspace.MkdirsByPath(t.Context(), folderPath+"/a/b"))
-
-	info, err := FetchRepositoryInfoAPI(t.Context(), folderPath+"/a/b", w)
-	require.NoError(t, err)
-
-	assert.Equal(t, folderPath, info.WorktreeRoot)
-	assert.Equal(t, "main", info.CurrentBranch)
-	assert.Equal(t, "https://github.com/databricks/cli", info.OriginURL)
-}
-
-// A path outside any Git folder has no metadata and is not an error.
-func TestFetchRepositoryInfoAPI_NotAGitFolder(t *testing.T) {
-	w := newFakeWorkspace(t, "/Workspace/Repos/me@example.com/repo")
-	dir := "/Workspace/Users/me@example.com/plain"
-	require.NoError(t, w.Workspace.MkdirsByPath(t.Context(), dir))
-
-	info, err := FetchRepositoryInfoAPI(t.Context(), dir, w)
-	require.NoError(t, err)
-
-	assert.Empty(t, info.WorktreeRoot)
-	assert.Empty(t, info.CurrentBranch)
-	assert.Empty(t, info.LatestCommit)
-	assert.Empty(t, info.OriginURL)
+func TestEnsureWorkspacePrefix(t *testing.T) {
+	// get-status reports git_info.path without the /Workspace mount prefix, so it
+	// is re-added to make the worktree root an absolute workspace path.
+	assert.Equal(t, "/Workspace/Repos/me/repo", ensureWorkspacePrefix("/Repos/me/repo"))
+	assert.Equal(t, "/Workspace/Repos/me/repo", ensureWorkspacePrefix("/Workspace/Repos/me/repo"))
 }
 
 // A path that does not exist is reported as fs.ErrNotExist, which
 // FetchRepositoryInfo normalizes to no repository rather than an error.
 func TestFetchRepositoryInfoAPI_MissingPath(t *testing.T) {
-	w := newFakeWorkspace(t, "/Workspace/Repos/me@example.com/repo")
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
+	require.NoError(t, err)
+
 	const missing = "/Workspace/Users/me@example.com/nope"
 
-	_, err := FetchRepositoryInfoAPI(t.Context(), missing, w)
+	_, err = FetchRepositoryInfoAPI(t.Context(), missing, w)
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{IsDbr: true, Version: "15.4"})
@@ -129,34 +60,21 @@ func TestFetchRepositoryInfoAPI_ReposGetFailure(t *testing.T) {
 	})
 	testserver.AddDefaultHandlers(server)
 
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host:  server.URL,
-		Token: "testtoken",
-	})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
 	require.NoError(t, err)
 
-	_, err = client.Repos.Create(t.Context(), workspace.CreateRepoRequest{
+	_, err = w.Repos.Create(t.Context(), workspace.CreateRepoRequest{
 		Url:      "https://github.com/databricks/cli",
 		Provider: "gitHub",
 		Path:     folderPath,
 	})
 	require.NoError(t, err)
 
-	info, err := FetchRepositoryInfoAPI(t.Context(), folderPath, client)
+	info, err := FetchRepositoryInfoAPI(t.Context(), folderPath, w)
 	require.NoError(t, err)
 
 	assert.Equal(t, folderPath, info.WorktreeRoot)
 	assert.Empty(t, info.CurrentBranch)
 	assert.Empty(t, info.LatestCommit)
 	assert.Empty(t, info.OriginURL)
-}
-
-// The workspace API strips the /Workspace prefix from git_info.path, so the
-// worktree root is reported with it re-added.
-func TestFetchRepositoryInfoAPI_WorktreeRootKeepsWorkspacePrefix(t *testing.T) {
-	w := newFakeWorkspace(t, "/Repos/me@example.com/repo")
-
-	info, err := FetchRepositoryInfoAPI(t.Context(), "/Repos/me@example.com/repo", w)
-	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(info.WorktreeRoot, "/Workspace/"), "got %q", info.WorktreeRoot)
 }

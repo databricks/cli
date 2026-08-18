@@ -6,7 +6,7 @@
 >>> [CLI] repos get /Workspace/Users/me@databricks.com/test-repo -o json
 {
   "branch": "main",
-  "head_commit_id": "77e0c1a3cba9bd6d8b5c9d0e2f4a6b8c1d3e5f70",
+  "head_commit_id": "0a1b2c3d4e5f6a7b8e7dadd73e50a69d8ba47d8f",
   "id": [NUMID],
   "path": "/Workspace/Users/me@databricks.com/test-repo",
   "provider": "gitHub",
