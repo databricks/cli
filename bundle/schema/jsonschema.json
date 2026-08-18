@@ -1311,6 +1311,10 @@
                       "on_bundle_deploy": {
                         "description": "If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.",
                         "$ref": "#/$defs/bool"
+                      },
+                      "on_file_change": {
+                        "description": "Path or glob under the sync root. Re-fire the run when any matched file's content changes. Incompatible with lifecycle.prevent_destroy.",
+                        "$ref": "#/$defs/string"
                       }
                     },
                     "additionalProperties": false
