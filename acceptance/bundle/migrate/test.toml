@@ -3,8 +3,9 @@ RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 Ignore = [".databricks"]
 
-# Tests set DATABRICKS_BUNDLE_ENGINE inline. Pin to ["direct"] so CI's engine
-# filter includes them without running the script twice.
+# Each test's script sets DATABRICKS_BUNDLE_ENGINE inline; pin the outer
+# matrix to ["direct"] so CI's engine filter includes these tests without
+# also running the same script twice per engine.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # These tests deploy on terraform and then migrate to direct. Recording is direct-only, so

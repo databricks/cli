@@ -128,8 +128,11 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 	}
 }
 
-// logFileSummary reports what the file sync did. Separate because a pure-code deploy
-// leaves all resources unchanged, so would appear as a no-op without this line.
+// logFileSummary reports what the file sync did. Separate from the resource summary
+// because a deploy that only changes business logic (a .py or .sql file) leaves every
+// resource unchanged, so without this line its summary is all zeros and looks like a
+// no-op. Called on the failure paths too: the files were uploaded before whatever
+// failed afterwards, so the count is accurate even then.
 func logFileSummary(ctx context.Context, b *bundle.Bundle) {
 	if b.Quiet >= bundle.QuietAll {
 		return

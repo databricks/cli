@@ -50,8 +50,12 @@ type Experimental struct {
 	// at which point we can deprecate or remove this field all together.
 	SkipNamePrefixForSchema bool `json:"skip_name_prefix_for_schema,omitempty"`
 
-	// RecordDeploymentHistory opts into the deployment metadata service (DMS).
-	// Only for bundles with no deployed resources yet; DMS becomes the source of truth for state.
+	// RecordDeploymentHistory opts the bundle into the deployment metadata
+	// service (DMS), which records deployment history and tracks what changed
+	// across deployments.
+	//
+	// Only for bundles with no deployed resources yet: DMS becomes the source of
+	// truth for their state.
 	RecordDeploymentHistory bool `json:"record_deployment_history,omitempty"`
 }
 

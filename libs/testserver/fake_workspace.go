@@ -233,8 +233,10 @@ type FakeWorkspace struct {
 	PostgresSyncedTables map[string]postgres.SyncedTable
 	PostgresOperations   map[string]postgres.Operation
 
-	// Branches and endpoints provisioned implicitly with their parent.
-	// Independent deletion is rejected; they delete only with the parent.
+	// Branches and endpoints that the server provisioned implicitly together
+	// with their parent (e.g. the production branch on a new project, or the
+	// primary endpoint on a new branch). The real backend rejects independent
+	// deletion of these — they go away only when the parent is deleted.
 	postgresImplicitBranches  map[string]bool
 	postgresImplicitEndpoints map[string]bool
 
