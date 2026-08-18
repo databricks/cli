@@ -550,6 +550,26 @@ resources:
         "lifecycle":
           "description": |-
             PLACEHOLDER
+        "permissions":
+          "description": |-
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "$fields":
+            "group_name":
+              "description": |-
+                The name of the group granted the permission level.
+            "level":
+              "description": |-
+                The permission level to apply. Cluster policies only support `CAN_USE`.
+            "service_principal_name":
+              "description": |-
+                The name of the service principal granted the permission level.
+            "user_name":
+              "description": |-
+                The name of the user granted the permission level.
     "clusters":
       "description": |-
         The cluster definitions for the bundle, where each key is the name of a cluster.

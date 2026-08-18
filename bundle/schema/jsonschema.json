@@ -624,6 +624,11 @@
                         "description": "Cluster Policy name requested by the user. This has to be unique. Length must be between 1 and 100\ncharacters.",
                         "$ref": "#/$defs/string"
                       },
+                      "permissions": {
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ClusterPolicyPermission",
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                      },
                       "policy_family_definition_overrides": {
                         "description": "Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).\nThe JSON document must be passed as a string and cannot be embedded in the requests.\n\nYou can use this to customize the policy definition inherited from the policy family.\nPolicy rules specified here are merged into the inherited policy definition.",
                         "$ref": "#/$defs/interface"
@@ -634,6 +639,39 @@
                       }
                     },
                     "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.ClusterPolicyPermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "description": "The name of the group granted the permission level.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "description": "The permission level to apply. Cluster policies only support `CAN_USE`.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterPolicyPermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "description": "The name of the service principal granted the permission level.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "description": "The name of the user granted the permission level.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
+                    ]
                   },
                   {
                     "type": "string",
@@ -5505,6 +5543,21 @@
                     "CAN_MANAGE",
                     "CAN_RESTART",
                     "CAN_ATTACH_TO"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.ClusterPolicyPermissionLevel": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Permission level",
+                  "enum": [
+                    "CAN_USE"
                   ]
                 },
                 {
@@ -15625,6 +15678,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ClusterPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.ClusterPolicyPermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ClusterPolicyPermission"
                       }
                     },
                     {
