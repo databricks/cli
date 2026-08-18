@@ -376,6 +376,41 @@ func TestJobRunPrepareStateOnBundleDeploy(t *testing.T) {
 	})
 }
 
+func TestJobRunPrepareStateOnFileChange(t *testing.T) {
+	fps := map[string]resources.JobRunFileFingerprint{
+		"a.txt": {Hash: "abc", Size: 3, MtimeNs: 1},
+	}
+
+	t.Run("unset", func(t *testing.T) {
+		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{})
+		assert.Nil(t, state.Lifecycle)
+	})
+
+	t.Run("armed", func(t *testing.T) {
+		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{
+			ResolvedFileTriggers: fps,
+		})
+		require.NotNil(t, state.Lifecycle)
+		require.NotNil(t, state.Lifecycle.Triggers)
+		assert.Equal(t, fps, state.Lifecycle.Triggers.OnFileChange)
+		assert.Empty(t, state.Lifecycle.Triggers.OnBundleDeploy)
+	})
+
+	t.Run("both triggers", func(t *testing.T) {
+		on := true
+		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{
+			Lifecycle: &resources.JobRunLifecycle{
+				Triggers: []resources.JobRunTrigger{{OnBundleDeploy: &on}},
+			},
+			ResolvedFileTriggers: fps,
+		})
+		require.NotNil(t, state.Lifecycle)
+		require.NotNil(t, state.Lifecycle.Triggers)
+		assert.NotEmpty(t, state.Lifecycle.Triggers.OnBundleDeploy)
+		assert.Equal(t, fps, state.Lifecycle.Triggers.OnFileChange)
+	})
+}
+
 func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 	r := &ResourceJobRun{}
 
@@ -401,6 +436,19 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 		assert.Equal(t, "trigger removed", change.Reason)
 	})
 
+	t.Run("clearing on_file_change leaf downgrades to update", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old: map[string]resources.JobRunFileFingerprint{
+				"a.txt": {Hash: "abc", Size: 3, MtimeNs: 1},
+			},
+			New: nil,
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change"), change, nil))
+		assert.Equal(t, deployplan.Update, change.Action)
+		assert.Equal(t, "trigger removed", change.Reason)
+	})
+
 	t.Run("fresh fingerprint still recreates", func(t *testing.T) {
 		change := &ChangeDesc{
 			Action: deployplan.Recreate,
@@ -408,6 +456,20 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 			New:    "new",
 		}
 		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_bundle_deploy"), change, nil))
+		assert.Equal(t, deployplan.Recreate, change.Action)
+	})
+
+	t.Run("changed on_file_change fingerprint still recreates", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old: map[string]resources.JobRunFileFingerprint{
+				"a.txt": {Hash: "old", Size: 1, MtimeNs: 1},
+			},
+			New: map[string]resources.JobRunFileFingerprint{
+				"a.txt": {Hash: "new", Size: 1, MtimeNs: 2},
+			},
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change"), change, nil))
 		assert.Equal(t, deployplan.Recreate, change.Action)
 	})
 }
@@ -447,6 +509,20 @@ func TestJobRunIgnoresEveryRequestField(t *testing.T) {
 	}
 
 	assert.False(t, ignoresRemoteChanges(ignored, "result_state"), "result_state must stay comparable against the remote")
+}
+
+func TestJobRunIgnoresMtimeOnlyFileTriggerDrift(t *testing.T) {
+	adapters, err := InitAll(nil)
+	require.NoError(t, err)
+	ignored := adapters["job_runs"].ResourceConfig().IgnoreLocalChanges
+	path := structpath.MustParsePath("lifecycle.triggers.on_file_change['seed.txt'].mtime_ns")
+	assert.True(t, slices.ContainsFunc(ignored, func(r FieldRule) bool {
+		return path.HasPatternPrefix(r.Field)
+	}), "mtime-only fingerprint drift must be ignored")
+	hashPath := structpath.MustParsePath("lifecycle.triggers.on_file_change['seed.txt'].hash")
+	assert.False(t, slices.ContainsFunc(ignored, func(r FieldRule) bool {
+		return hashPath.HasPatternPrefix(r.Field)
+	}), "hash changes must still recreate")
 }
 
 // ignoresRemoteChanges reports whether the rules suppress remote drift on field.
