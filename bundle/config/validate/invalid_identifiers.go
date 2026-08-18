@@ -11,48 +11,45 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-// errorForInvalidIdentifiers rejects empty and control-character names that the
-// backend (or URL layer) rejects with 400 / "invalid control character in URL".
+// errorForInvalidIdentifiers rejects empty, blank, or control-character identifiers.
 func errorForInvalidIdentifiers(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	for key, model := range b.Config.Resources.Models {
-		diags = diags.Extend(identifierDiag(b, "model", "name", model.Name, "resources.models."+key))
+		diags = diags.Extend(identifierDiag(b, "model", "name", model.Name, "resources.models."+key, true))
 	}
 	for key, catalog := range b.Config.Resources.Catalogs {
-		diags = diags.Extend(identifierDiag(b, "catalog", "name", catalog.Name, "resources.catalogs."+key))
+		diags = diags.Extend(identifierDiag(b, "catalog", "name", catalog.Name, "resources.catalogs."+key, true))
 	}
 	for key, schema := range b.Config.Resources.Schemas {
 		path := "resources.schemas." + key
-		diags = diags.Extend(identifierDiag(b, "schema", "name", schema.Name, path))
-		diags = diags.Extend(identifierDiag(b, "schema", "catalog_name", schema.CatalogName, path))
+		diags = diags.Extend(identifierDiag(b, "schema", "name", schema.Name, path, true))
+		diags = diags.Extend(identifierDiag(b, "schema", "catalog_name", schema.CatalogName, path, false))
 	}
 	for key, volume := range b.Config.Resources.Volumes {
 		path := "resources.volumes." + key
-		diags = diags.Extend(identifierDiag(b, "volume", "name", volume.Name, path))
-		diags = diags.Extend(identifierDiag(b, "volume", "catalog_name", volume.CatalogName, path))
-		diags = diags.Extend(identifierDiag(b, "volume", "schema_name", volume.SchemaName, path))
+		diags = diags.Extend(identifierDiag(b, "volume", "name", volume.Name, path, true))
+		diags = diags.Extend(identifierDiag(b, "volume", "catalog_name", volume.CatalogName, path, false))
+		diags = diags.Extend(identifierDiag(b, "volume", "schema_name", volume.SchemaName, path, false))
 	}
 	for key, loc := range b.Config.Resources.ExternalLocations {
-		diags = diags.Extend(identifierDiag(b, "external_location", "name", loc.Name, "resources.external_locations."+key))
+		diags = diags.Extend(identifierDiag(b, "external_location", "name", loc.Name, "resources.external_locations."+key, true))
 	}
 	for key, model := range b.Config.Resources.RegisteredModels {
 		path := "resources.registered_models." + key
-		diags = diags.Extend(identifierDiag(b, "registered_model", "name", model.Name, path))
-		diags = diags.Extend(identifierDiag(b, "registered_model", "catalog_name", model.CatalogName, path))
-		diags = diags.Extend(identifierDiag(b, "registered_model", "schema_name", model.SchemaName, path))
+		diags = diags.Extend(identifierDiag(b, "registered_model", "name", model.Name, path, true))
+		diags = diags.Extend(identifierDiag(b, "registered_model", "catalog_name", model.CatalogName, path, false))
+		diags = diags.Extend(identifierDiag(b, "registered_model", "schema_name", model.SchemaName, path, false))
 	}
 	for key, endpoint := range b.Config.Resources.ModelServingEndpoints {
-		diags = diags.Extend(identifierDiag(b, "model_serving_endpoint", "name", endpoint.Name, "resources.model_serving_endpoints."+key))
+		diags = diags.Extend(identifierDiag(b, "model_serving_endpoint", "name", endpoint.Name, "resources.model_serving_endpoints."+key, true))
 	}
 
 	sortDiagnostics(diags)
 	return diags
 }
 
-// errorForIncompletePipelineLibraries rejects file/notebook/glob entries with no path.
-// YAML like `file: {}` unmarshals to a non-nil struct with an empty path; the API
-// then returns 400 ("file paths must be set").
+// errorForIncompletePipelineLibraries rejects file, notebook, and glob entries without paths.
 func errorForIncompletePipelineLibraries(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
@@ -90,25 +87,38 @@ func errorForIncompletePipelineLibraries(_ context.Context, b *bundle.Bundle) di
 	return diags
 }
 
-func identifierDiag(b *bundle.Bundle, resource, field, value, locPath string) diag.Diagnostics {
-	reason := invalidIdentifierReason(value)
+func identifierDiag(b *bundle.Bundle, resource, field, value, resourcePath string, required bool) diag.Diagnostics {
+	reason := invalidIdentifierReason(value, required)
 	if reason == "" {
 		return nil
 	}
+
+	fieldPath := resourcePath + "." + field
+	locations := b.Config.GetLocations(fieldPath)
+	if len(locations) == 0 {
+		locations = b.Config.GetLocations(resourcePath)
+	}
+
 	return diag.Diagnostics{{
 		Severity:  diag.Error,
 		Summary:   fmt.Sprintf("%s %s %s", resource, field, reason),
-		Locations: b.Config.GetLocations(locPath),
-		Paths:     []dyn.Path{dyn.MustPathFromString(locPath)},
+		Locations: locations,
+		Paths:     []dyn.Path{dyn.MustPathFromString(fieldPath)},
 	}}
 }
 
-func invalidIdentifierReason(name string) string {
-	if strings.TrimSpace(name) == "" {
+func invalidIdentifierReason(value string, required bool) string {
+	if value == "" {
+		if !required {
+			return ""
+		}
 		return "is required"
 	}
-	if containsControlCharacter(name) {
+	if containsControlCharacter(value) {
 		return "must not contain control characters"
+	}
+	if strings.TrimSpace(value) == "" {
+		return "must not be blank"
 	}
 	return ""
 }

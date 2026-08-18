@@ -1,59 +1,32 @@
-Warning: required field "catalog_name" is not set
-  at resources.volumes.v2
-  in databricks.yml:10:7
-
-Warning: required field "catalog_name" is not set
-  at resources.volumes.v3
-  in databricks.yml:13:7
-
-Warning: required field "catalog_name" is not set
-  at resources.volumes.v1
-  in databricks.yml:7:7
-
-Warning: required field "name" is not set
-  at resources.volumes.v2
-  in databricks.yml:10:7
-
-Warning: required field "name" is not set
-  at resources.volumes.v3
-  in databricks.yml:13:7
-
-Warning: required field "name" is not set
-  at resources.volumes.v1
-  in databricks.yml:7:7
-
-Warning: required field "schema_name" is not set
-  at resources.volumes.v2
-  in databricks.yml:10:7
-
-Warning: required field "schema_name" is not set
-  at resources.volumes.v3
-  in databricks.yml:13:7
-
-Warning: required field "schema_name" is not set
-  at resources.volumes.v1
-  in databricks.yml:7:7
-
 Warning: invalid value "" for enum field. Valid values are [EXTERNAL MANAGED]
   at resources.volumes.v1.volume_type
-  in databricks.yml:7:20
+  in databricks.yml:10:20
 
 Warning: invalid value "already-set" for enum field. Valid values are [EXTERNAL MANAGED]
   at resources.volumes.v2.volume_type
-  in databricks.yml:10:20
+  in databricks.yml:16:20
 
 {
   "v1": {
-    "volume_path": "/Volumes///",
+    "catalog_name": "main",
+    "name": "v1",
+    "schema_name": "default",
+    "volume_path": "/Volumes/main/default/v1",
     "volume_type": ""
   },
   "v2": {
-    "volume_path": "/Volumes///",
+    "catalog_name": "main",
+    "name": "v2",
+    "schema_name": "default",
+    "volume_path": "/Volumes/main/default/v2",
     "volume_type": "already-set"
   },
   "v3": {
+    "catalog_name": "main",
     "comment": "hello",
-    "volume_path": "/Volumes///",
+    "name": "v3",
+    "schema_name": "default",
+    "volume_path": "/Volumes/main/default/v3",
     "volume_type": "MANAGED"
   }
 }

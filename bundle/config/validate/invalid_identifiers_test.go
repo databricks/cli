@@ -23,6 +23,9 @@ func TestRequiredRejectsEmptyAndControlCharIdentifiers(t *testing.T) {
 				Models: map[string]*resources.MlflowModel{
 					"empty": {CreateModelRequest: ml.CreateModelRequest{Name: ""}},
 				},
+				Catalogs: map[string]*resources.Catalog{
+					"blank": {CreateCatalog: catalog.CreateCatalog{Name: "   "}},
+				},
 				Volumes: map[string]*resources.Volume{
 					"ctrl": {
 						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
@@ -44,13 +47,15 @@ func TestRequiredRejectsEmptyAndControlCharIdentifiers(t *testing.T) {
 		},
 	}
 
-	diags := validate.Required().Apply(t.Context(), b)
+	diags := bundle.Apply(t.Context(), b, validate.Required())
 	require.True(t, diags.HasError())
 
-	summaries := diagSummaries(diags)
-	assert.Contains(t, summaries, "model name is required")
-	assert.Contains(t, summaries, "volume name must not contain control characters")
-	assert.Contains(t, summaries, "model_serving_endpoint name must not contain control characters")
+	assert.ElementsMatch(t, []string{
+		"catalog name must not be blank",
+		"model name is required",
+		"volume name must not contain control characters",
+		"model_serving_endpoint name must not contain control characters",
+	}, diagSummaries(diags))
 }
 
 func TestRequiredRejectsIncompletePipelineLibraries(t *testing.T) {
@@ -74,13 +79,58 @@ func TestRequiredRejectsIncompletePipelineLibraries(t *testing.T) {
 		},
 	}
 
-	diags := validate.Required().Apply(t.Context(), b)
+	diags := bundle.Apply(t.Context(), b, validate.Required())
 	require.True(t, diags.HasError())
 
-	summaries := diagSummaries(diags)
-	assert.Contains(t, summaries, "pipeline library file path is required")
-	assert.Contains(t, summaries, "pipeline library notebook path is required")
-	assert.Contains(t, summaries, "pipeline library glob include is required")
+	assert.ElementsMatch(t, []string{
+		"pipeline library file path is required",
+		"pipeline library notebook path is required",
+		"pipeline library glob include is required",
+	}, diagSummaries(diags))
+}
+
+func TestRequiredAcceptsValidIdentifiersAndPipelineLibraries(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Models: map[string]*resources.MlflowModel{
+					"model": {CreateModelRequest: ml.CreateModelRequest{Name: "model"}},
+				},
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline": {
+						CreatePipeline: pipelines.CreatePipeline{
+							Name: "pipeline",
+							Libraries: []pipelines.PipelineLibrary{
+								{File: &pipelines.FileLibrary{Path: "file.py"}},
+								{Notebook: &pipelines.NotebookLibrary{Path: "notebook.py"}},
+								{Glob: &pipelines.PathPattern{Include: "src/**"}},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	assert.Empty(t, bundle.Apply(t.Context(), b, validate.Required()))
+}
+
+func TestRequiredAcceptsMissingOptionalUCParents(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				RegisteredModels: map[string]*resources.RegisteredModel{
+					"model": {
+						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+							Name: "model",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	assert.Empty(t, bundle.Apply(t.Context(), b, validate.Required()))
 }
 
 func diagSummaries(diags diag.Diagnostics) []string {

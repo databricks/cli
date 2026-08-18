@@ -1,4 +1,0 @@
-# Empty name is rejected at validate; deploy never reaches the create API.
-envsubst < databricks.yml.tmpl > databricks.yml
-
-trace musterr $CLI bundle validate --strict

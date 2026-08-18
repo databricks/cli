@@ -1,5 +1,5 @@
 Error: model name is required
-  at resources.models.mymodel
+  at resources.models.mymodel.name
   in databricks.yml:6:14
 
 Name: test-bundle

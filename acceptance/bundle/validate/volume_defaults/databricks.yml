@@ -4,10 +4,19 @@ bundle:
 resources:
   volumes:
     v1:
+      name: v1
+      catalog_name: main
+      schema_name: default
       volume_type: ""
 
     v2:
+      name: v2
+      catalog_name: main
+      schema_name: default
       volume_type: "already-set"
 
     v3:
+      name: v3
+      catalog_name: main
+      schema_name: default
       comment: hello
