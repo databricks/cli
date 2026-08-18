@@ -24,9 +24,10 @@ const (
 	venvDir    = ".venv"
 )
 
-// backupTimestampLayout is the UTC, second-resolution stamp in a timestamped
-// backup name (pyproject.toml.<stamp>.bak); shared with tests that pin the name.
-const backupTimestampLayout = "20060102T150405Z"
+// backupTimestampLayout is the local-time, second-resolution stamp in a
+// timestamped backup name (pyproject.toml.<stamp>.bak); local so a reader can
+// tell at a glance when each backup was made. Shared with tests that pin the name.
+const backupTimestampLayout = "20060102T150405"
 
 // artifactSource values reported in --json resolved.artifactSource (spec §6).
 const (
@@ -292,10 +293,10 @@ func (p *Pipeline) backupPath() string {
 	return filepath.Join(p.ProjectDir, backupFile)
 }
 
-// timestampedBackupBase is the <projectDir>/pyproject.toml.<UTC timestamp> stem a
-// non-first backup name is built from.
+// timestampedBackupBase is the <projectDir>/pyproject.toml.<local timestamp> stem
+// a non-first backup name is built from.
 func (p *Pipeline) timestampedBackupBase() string {
-	return filepath.Join(p.ProjectDir, pyprojectFile+"."+p.clock().UTC().Format(backupTimestampLayout))
+	return filepath.Join(p.ProjectDir, pyprojectFile+"."+p.clock().Format(backupTimestampLayout))
 }
 
 // backupCurrent writes content to a backup of pyproject.toml and returns its
