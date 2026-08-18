@@ -15,8 +15,6 @@ Ignore = [
     '.databricks',
 ]
 
-# experimental.record_deployment_history is rejected outright (see
-# validate.ValidateRecordDeploymentHistory). These tests exercise the feature itself,
-# so they force allow it the same way DMS development does. bundle/dms/not-supported
-# covers the rejection.
+# experimental.record_deployment_history is normally rejected; these tests force-allow it
+# to exercise the feature. bundle/dms/not-supported covers the rejection path.
 Env.DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY = "1"

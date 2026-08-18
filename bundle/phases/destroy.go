@@ -159,10 +159,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
-	// Complete the version before deleting the remote files. The deployment is a
-	// node under the state directory, so files.Delete removes it and any later call
-	// fails with 404. CompleteVersion is idempotent, so the deferred call in Destroy
-	// is a no-op after this.
+	// Complete version before deleting remote files; the deployment node is under statePath.
 	if err := recorder.CompleteVersion(ctx, true); err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -206,10 +203,8 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		return
 	}
 
-	// Set up DMS recording of this destroy as a version. The version is not
-	// created until the destroy is approved (below), so a cancelled destroy
-	// records nothing; the deferred CompleteVersion is a no-op until then. It is
-	// deferred before lock.Release so it runs while the lock is still held.
+	// Set up DMS recording of this destroy. Version is created after approval; cancelled
+	// destroy records nothing. Deferred before lock.Release to hold the lock.
 	recorder, err := newDeploymentRecorder(ctx, b, engine, dms.VersionTypeDestroy)
 	if err != nil {
 		logdiag.LogError(ctx, err)

@@ -94,10 +94,8 @@ func TestOperationRecorderUpdatesSecondWriteForSameResource(t *testing.T) {
 }
 
 func TestOperationRecorderFailureAfterAStateWriteKeepsTheState(t *testing.T) {
-	// A create whose WaitAfterCreate fails has already written state for a resource
-	// that exists remotely. Updating the operation must only mark it failed: sending
-	// the failure's own empty state and id would clear both, and a resource with no
-	// state is dropped from the deployment, so the next plan would re-create it.
+	// The create wrote state for a resource that exists, then the wait failed. The update
+	// only marks it failed: sending empty state would drop the resource from the deployment.
 	f := &fakeOpClient{sequence: "3"}
 	r := newOperationRecorder(f, "dep-1", 2)
 
@@ -121,11 +119,8 @@ func TestOperationRecorderFailureAfterAStateWriteKeepsTheState(t *testing.T) {
 }
 
 func TestOperationRecorderFailedRecreateKeepsTheResourceGone(t *testing.T) {
-	// A recreate records its in-progress delete, which has no state, and then fails before
-	// the create writes any. The failure must not fill that gap with the pre-deploy state:
-	// the delete went through and the create did not, so the resource really is gone, and
-	// an operation with no state is how the deployment says so. The next plan creates it,
-	// which is what needs to happen.
+	// The recreate's delete is recorded with no state, and then the create fails. The failure
+	// must not fill that gap with the pre-deploy state: the resource really is gone.
 	f := &fakeOpClient{sequence: "2"}
 	r := newOperationRecorder(f, "dep-1", 2)
 
@@ -145,10 +140,8 @@ func TestOperationRecorderFailedRecreateKeepsTheResourceGone(t *testing.T) {
 }
 
 func TestOperationRecorderFailureCarryingALaterWriteSendsIt(t *testing.T) {
-	// Two writes for one resource: the first is uploaded, the second is still waiting
-	// when the resource fails, so the failure takes it over (see coalesce). The local
-	// state holds that second write, so the update has to name state - leaving it out
-	// would keep the first write's state, and the next plan reads DMS.
+	// Two writes, the first uploaded and the second still waiting when the resource failed,
+	// so the failure took it over. The update must name state or the first write's stands.
 	f := &fakeOpClient{sequence: "4"}
 	r := newOperationRecorder(f, "dep-1", 2)
 
@@ -169,10 +162,8 @@ func TestOperationRecorderFailureCarryingALaterWriteSendsIt(t *testing.T) {
 }
 
 func TestOperationRecorderFailureBeforeAnyWriteCarriesPriorState(t *testing.T) {
-	// Nothing was recorded for the resource in this version, so the failure creates the
-	// operation and carries the prior state: nothing touched the resource, so it is still
-	// there, and an operation without state would drop it from the deployment and have the
-	// next plan create a second one.
+	// Nothing was recorded yet, so the failure creates the operation and carries the prior
+	// state. Without it the resource is dropped and the next plan creates a second one.
 	f := &fakeOpClient{sequence: "1"}
 	r := newOperationRecorder(f, "dep-1", 2)
 

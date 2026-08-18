@@ -3,11 +3,8 @@ trace $CLI bundle deploy
 trace print_requests.py //api/2.0/bundle
 
 title "Recreate writes state twice - the entry is dropped, then the new resource is saved"
-# The service keeps one operation per resource per version, so both writes land on the
-# same one: the drop opens it as IN_PROGRESS carrying the deleted id but no state, and
-# the save that follows patches it to SUCCEEDED with the new id. A deploy that dies in
-# between therefore leaves the resource described as mid-recreate rather than as the
-# resource it already deleted.
+# One operation per resource per version; both writes land on the same one.
+# The drop opens it IN_PROGRESS, the save patches it to SUCCEEDED.
 trace update_file.py databricks.yml "catalog_name: main" "catalog_name: other"
 trace $CLI bundle deploy --auto-approve
 trace print_requests.py //api/2.0/bundle

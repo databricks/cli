@@ -233,10 +233,8 @@ type FakeWorkspace struct {
 	PostgresSyncedTables map[string]postgres.SyncedTable
 	PostgresOperations   map[string]postgres.Operation
 
-	// Branches and endpoints that the server provisioned implicitly together
-	// with their parent (e.g. the production branch on a new project, or the
-	// primary endpoint on a new branch). The real backend rejects independent
-	// deletion of these — they go away only when the parent is deleted.
+	// Branches and endpoints provisioned implicitly with their parent.
+	// Independent deletion is rejected; they delete only with the parent.
 	postgresImplicitBranches  map[string]bool
 	postgresImplicitEndpoints map[string]bool
 
@@ -248,10 +246,9 @@ type FakeWorkspace struct {
 	// deployment ID. Each record carries its versions and latest resource state.
 	dmsDeployments map[string]*dmsDeployment
 
-	// dmsDeploymentNodes maps deployment ID to the workspace node CreateDeployment
-	// registered for it. A deployment appears here before it has a record in
-	// dmsDeployments: the record is created by its first version, so the node is
-	// what makes an ID valid in between.
+	// dmsDeploymentNodes maps deployment ID to the workspace node CreateDeployment made for
+	// it. An ID appears here before dmsDeployments has a record, which its first version
+	// creates, so the node is what makes the ID valid in between.
 	dmsDeploymentNodes map[string]string
 }
 

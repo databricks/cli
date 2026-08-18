@@ -3,10 +3,8 @@ trace $CLI bundle deploy
 trace print_requests.py //api/2.0/bundle
 
 title "The deployment ID is the ID of the workspace node the service registered under initial_parent_path; the CLI stores nothing locally"
-# MSYS_NO_PATHCONV stops Git Bash on Windows from rewriting the leading-'/' path
-# into C:/Program Files/Git/Workspace/... before the CLI sees it. Set per command
-# rather than in test.toml: trace exports it in a subshell, so it cannot reach the
-# python helpers, whose PATH does need converting.
+# MSYS_NO_PATHCONV prevents Git Bash from rewriting the leading-/ path on Windows.
+# Set per command rather than test.toml so trace can export it to its subshell.
 trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record/default/state/resources.deployment.json" | jq '{object_type,path}'
 trace jq 'has("deployment_id")' .databricks/bundle/default/resources.json
 

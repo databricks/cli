@@ -1,10 +1,8 @@
 title "Deploy, then plan without touching anything: the deployment stamp must not show as drift"
 trace $CLI bundle deploy
 
-# Only the deploy phase stamps deployment.deployment_id (it is not known until the
-# version is claimed), so plan sees it in the state and in the workspace but not in the
-# local config. Without an ignore_local_changes rule that absence plans an update on a
-# job and a pipeline nobody edited.
+# Only deploy stamps deployment.deployment_id. Plan sees it in state but not in config,
+# so it must ignore it or report spurious changes.
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged"
 
 title "A second deploy is a no-op too: no update request for either resource"

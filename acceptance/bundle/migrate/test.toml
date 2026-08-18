@@ -3,13 +3,11 @@ RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 Ignore = [".databricks"]
 
-# Each test's script sets DATABRICKS_BUNDLE_ENGINE inline; pin the outer
-# matrix to ["direct"] so CI's engine filter includes these tests without
-# also running the same script twice per engine.
+# Tests set DATABRICKS_BUNDLE_ENGINE inline. Pin to ["direct"] so CI's engine
+# filter includes them without running the script twice.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-# These tests deploy on terraform first and then migrate to direct. Recording is a
-# direct-engine feature, so the resources the terraform half creates are recorded nowhere
-# and the migration reads state the service does not have. Migrating a deployment onto the
-# service is a story of its own; these tests are not it.
+# These tests deploy on terraform and then migrate to direct. Recording is direct-only, so
+# the terraform half is recorded nowhere and the migration reads state the service lacks.
+# Migrating an existing deployment onto the service is its own story.
 EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]

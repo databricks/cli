@@ -1,6 +1,3 @@
-# These tests apply a saved plan, which does not carry the deployment stamp: on a first
-# deploy there is no deployment to resolve when `bundle plan` runs, so the plan it writes
-# leaves the field unset and applying it plans an update the next time. Same reason as
-# EnvMatrixExclude.dms_no_readplan in acceptance/bundle/test.toml, which only covers the
-# tests that take the saved-plan path through the READPLAN matrix variable.
+# Saved plans don't carry the deployment stamp. Applying one plans an update on the next run.
+# See dms_no_readplan in acceptance/bundle/test.toml.
 EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]

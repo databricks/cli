@@ -40,10 +40,9 @@ func TestStateWritesRecordOperations(t *testing.T) {
 		want  []string
 	}{
 		{
-			// The service keeps one operation per resource per version, so the drop
-			// opens it (no state: the old resource is gone and the new one does not
-			// exist yet) and the save completes it. A deploy that stops in between
-			// leaves the resource described as mid-recreate.
+			// The service keeps one operation per resource per version, so the drop opens it
+			// with no state and the save completes it. A deploy that stops in between leaves
+			// the resource recorded as mid-recreate.
 			name: "recreate reports both of its writes",
 			write: func(t *testing.T, db *DeploymentState) {
 				require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "old"}, nil, OperationInfo{Action: deployplan.Create}))

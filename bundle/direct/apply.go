@@ -116,14 +116,8 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		log.Warnf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", d.ResourceKey, oldID, err)
 	}
 
-	// Drop the state entry so a subsequent failure of Create or WaitAfterDelete
-	// leaves no malformed (empty-ID) entry behind. The next plan will see "no
-	// state" and retry as Create.
-	//
-	// Recorded as a recreate, not a delete: if the create below fails, this is the
-	// operation DMS is left with, and it says the resource is mid-recreate rather
-	// than deliberately removed. In-progress for the same reason - the create that
-	// follows updates the same operation to succeeded.
+	// Drop state so failure doesn't leave a malformed empty-ID entry. Recorded as
+	// recreate not delete: if create below fails, DMS sees mid-recreate not removed.
 	err = db.DeleteState(ctx, d.ResourceKey, dstate.OperationInfo{Action: deployplan.Recreate, InProgress: true})
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
@@ -163,13 +157,9 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 	}
 
 	if empty {
-		// The update emptied the resource out (e.g. all grants revoked). Keeping an entry
-		// would report the node as tracked-and-unchanged forever, while a fresh deploy of
-		// the same config plans no node at all; drop it so the two agree.
-		//
-		// Recorded as a delete, not the update that caused it: the resource is no longer
-		// tracked, and DMS drops it from the deployment only for a delete. Recording an
-		// update would leave it listed with no state, which the next plan cannot read.
+		// The update emptied the resource (e.g. all grants revoked), so drop the entry: a
+		// fresh deploy of the same config would plan no node at all. Recorded as a delete,
+		// which is what it did to the state, rather than the update that caused it.
 		err = db.DeleteState(ctx, d.ResourceKey, dstate.OperationInfo{Action: deployplan.Delete})
 		if err != nil {
 			return fmt.Errorf("deleting state id=%s: %w", id, err)

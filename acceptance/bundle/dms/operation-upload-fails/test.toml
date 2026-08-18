@@ -2,10 +2,8 @@
 # failed, so recording them would make the output nondeterministic.
 RecordRequests = false
 
-# The service rejects every recorded operation. Deploy must stop rather than
-# create every remaining resource: a completed version makes DMS the source of
-# truth for resource state, so resources it has no record of would be created a
-# second time by the next deploy.
+# Completed versions make DMS the source of truth; unrecorded resources get recreated.
+# Deploy must stop rather than continue creating.
 [[Server]]
 Pattern = "POST /api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/operations"
 Response.StatusCode = 500

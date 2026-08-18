@@ -11,11 +11,8 @@ EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = ["", "true"]
 EnvMatrixExclude.dms_needs_direct = ["DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true", "DATABRICKS_BUNDLE_ENGINE=terraform"]
 EnvMatrixExclude.dms_local_only = ["DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true", "CONFIG_Cloud=true"]
 
-# A saved plan does not carry the deployment stamp. On a first deploy there is no
-# deployment to resolve when `bundle plan` runs, so the plan it writes leaves the field
-# unset; `deploy --plan` then creates the resources without it and the next plan reports
-# drift. Stamping at plan time would mean `bundle plan` creating the deployment record,
-# which is a design decision, so the saved-plan path is left out of the DMS run for now.
+# Saved plans don't carry the deployment stamp. A first plan writes the deployment record,
+# so `deploy --plan` creates resources without it and reports drift on the next plan.
 EnvMatrixExclude.dms_no_readplan = ["DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true", "READPLAN=1"]
 
 # Recording is gated off for users (see validate.ValidateRecordDeploymentHistory), so

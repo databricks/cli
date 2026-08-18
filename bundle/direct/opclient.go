@@ -11,27 +11,18 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// The CLI calls the operations API directly rather than through the generated
-// client because the SDK cannot read the response: it types sequence_id as an
-// int64, while the service sends it as a JSON string (proto3 encodes 64-bit ints
-// that way), so unmarshalling a CreateOperation response fails with
-// "invalid character '1' after top-level value". The write itself succeeds - the
-// status is 200 - so only the response parse is affected.
-//
-// TODO(DMS): this whole file goes away once the SDK types sequence_id as a string.
-// The fix belongs in the OpenAPI spec the SDK is generated from, not here; until then
-// every other DMS call still goes through the SDK, so keep the bypass to operations.
+// These calls bypass the SDK because it cannot read the response: it types sequence_id as
+// an int64 while the service sends a JSON string, so a CreateOperation response fails to
+// unmarshal. TODO(DMS): drop this file once the OpenAPI spec types the field as a string.
 
 // operationResponse is the part of an operation response the CLI reads back.
 type operationResponse struct {
-	// SequenceId is the concurrency token for the next update of this operation.
-	// Typed as a string because that is what the service sends; see above.
+	// SequenceId is the concurrency token for the next update, typed as the service sends it.
 	SequenceId string `json:"sequence_id,omitempty"`
 }
 
-// updateOperationRequest carries the fields a later write for the same resource
-// changes. action_type and resource_key are omitted: the service fixes them when
-// the operation is created and ignores them here.
+// updateOperationRequest carries the fields a later write for the same resource changes.
+// action_type and resource_key are left out: the service fixes them at creation.
 type updateOperationRequest struct {
 	State        string                            `json:"state,omitempty"`
 	ErrorMessage string                            `json:"error_message,omitempty"`

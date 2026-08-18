@@ -21,16 +21,9 @@ func (v *validateRecordDeploymentHistory) Name() string {
 	return "validate:validate_record_deployment_history"
 }
 
-// Apply rejects experimental.record_deployment_history.
-//
-// Recording deployment history is implemented end to end, but the service side is not
-// ready for users: the deployment metadata service is only deployed to dev and staging,
-// and reading state back needs the workspace APIs to expose the deployment's tree node,
-// which is still behind a flag. Enabling this today also makes DMS the source of truth
-// for resource state, so a bundle that turns it on cannot be turned back.
-//
-// DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY force allows it for the CLI's
-// own tests and for DMS development.
+// Apply rejects experimental.record_deployment_history. The feature is complete
+// but not yet exposed: DMS is dev/staging only, and turning it on makes DMS the
+// source of truth for state (irreversible). Force-allow via DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY for CLI tests.
 func (v *validateRecordDeploymentHistory) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.Config.Experimental == nil || !b.Config.Experimental.RecordDeploymentHistory {
 		return nil

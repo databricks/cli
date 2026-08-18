@@ -2,11 +2,8 @@ package env
 
 import "context"
 
-// ForceAllowRecordDeploymentHistoryVariable names the environment variable that force
-// allows experimental.record_deployment_history. It is deliberately undocumented: the
-// feature is complete but cannot be exposed to users yet (see
-// validate.ValidateRecordDeploymentHistory for why), and this variable exists so the
-// CLI's own tests and the developers working on DMS can exercise the code path meanwhile.
+// ForceAllowRecordDeploymentHistoryVariable force-allows the recording feature for CLI tests and DMS development.
+// Deliberately undocumented; see validate.ValidateRecordDeploymentHistory.
 const ForceAllowRecordDeploymentHistoryVariable = "DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY"
 
 // ForceAllowRecordDeploymentHistory reports whether the environment force allows

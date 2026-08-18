@@ -13,13 +13,8 @@ import (
 
 type initializeDeploymentHistory struct{}
 
-// InitializeDeploymentHistory populates bundle.deployment.history with the
-// deployment recorded by the deployment metadata service, for the output of the
-// 'bundle summary' command.
-//
-// NOTE: this makes extra API calls, so like InitializeURLs it should only be used
-// when the fields are needed. It is a no-op unless the bundle records deployment
-// history.
+// InitializeDeploymentHistory populates bundle.deployment.history from DMS for 'bundle summary'.
+// Makes extra API calls; only use when needed. No-op unless recording is on.
 func InitializeDeploymentHistory() bundle.Mutator {
 	return &initializeDeploymentHistory{}
 }

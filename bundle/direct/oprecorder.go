@@ -14,68 +14,48 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// maxOperationStateSize is the largest serialized state DMS accepts per
-// operation. Uploading more is rejected server-side, so fail early with a
-// message that names the resource.
+// maxOperationStateSize is the largest serialized state DMS accepts per operation. More is
+// rejected server-side, so fail early with a message naming the resource.
 const maxOperationStateSize = 64 * 1024
 
-// maxOperationErrorMessageSize is the largest error message DMS accepts per
-// operation. A longer message is truncated rather than rejected, so a failing
-// resource is still recorded with its error instead of the recording itself
-// failing and masking the error we are trying to report.
+// maxOperationErrorMessageSize is the largest error message DMS accepts. A longer one is
+// truncated rather than rejected, so recording cannot fail and hide the error it reports.
 const maxOperationErrorMessageSize = 16 * 1024
 
-// operationStatusInProgress marks an operation whose writes are not finished; see
-// dstate.OperationInfo.InProgress for when a write asks for it.
-//
-// Declared here rather than used from the SDK: the enum value is generated from the
-// OpenAPI spec, which trails the service proto (databricks-eng/universe#2394529).
+// operationStatusInProgress marks an operation whose writes are not finished. Not taken from
+// the SDK: the enum is generated from the OpenAPI spec, which trails the service proto
+// (databricks-eng/universe#2394529).
 const operationStatusInProgress bundledeployments.OperationStatus = "OPERATION_STATUS_IN_PROGRESS"
 
-// recordedOperation is an applied resource operation, serialized and waiting to be
-// uploaded to the deployment metadata service (DMS).
-//
-// The payload is built on the apply worker rather than in the uploader so the sink
-// does not hold on to the live resource struct, and so a malformed state fails the
-// resource that produced it instead of the drain at the end of apply.
+// recordedOperation is an applied resource operation waiting to be uploaded. It is built on
+// the apply worker, not in the uploader, so a malformed state fails the resource that
+// produced it rather than the drain at the end of apply.
 type recordedOperation struct {
 	action     bundledeployments.OperationActionType
 	resourceID string
 	status     bundledeployments.OperationStatus
 
-	// errorMessage is why the operation failed. It is set only when status is
-	// failed, which the service enforces.
+	// errorMessage is set only when status is failed, which the service enforces.
 	errorMessage string
 
-	// state is the serialized local config after the operation. It is nil for a delete,
-	// where the resource no longer exists, and for a failure it is the state from before
-	// the deploy - see newFailedOperation for when that reaches the service.
+	// state is the serialized config after the operation: nil for a delete, and the
+	// pre-deploy state for a failure (see newFailedOperation).
 	state json.RawMessage
 
-	// updateFields is the update mask to send if this operation updates one the service
-	// already has. The service takes it literally: a field named here is written, a field
-	// left out keeps the value it had.
+	// updateFields is the mask to send when updating an operation the service already has.
+	// It is taken literally: a field named here is written, one left out keeps its value.
 	updateFields []string
 }
 
-// The fields an UpdateOperation may change. Any other path is rejected with
-// INVALID_PARAMETER_VALUE, so this is the full universe a mask can name.
-const (
-	fieldState        = "state"
-	fieldErrorMessage = "error_message"
-	fieldResourceID   = "resource_id"
-	fieldStatus       = "status"
-)
+// describesResource is the update mask for an operation that says how the resource looks:
+// every field an update may change. Any other path is rejected with INVALID_PARAMETER_VALUE,
+// so this doubles as the canonical field list and order.
+var describesResource = []string{"state", "error_message", "resource_id", "status"}
 
-// describesResource is the update mask for an operation that says how the resource
-// looks: everything an update is allowed to change. Its order is the canonical one.
-var describesResource = []string{fieldState, fieldErrorMessage, fieldResourceID, fieldStatus}
-
-// failedKeepingState is the update mask for a failure updating an operation this version
-// already recorded: mark it failed and leave state alone. That is right either way - state
-// means the resource is as it was written, and no state means a delete went through and
+// failedKeepingState is the update mask for a failure: mark it failed and leave state alone.
+// State means the resource is as it was written; no state means a delete went through and
 // nothing replaced it, so the resource really is gone and the deployment should say so.
-var failedKeepingState = []string{fieldErrorMessage, fieldStatus}
+var failedKeepingState = []string{"error_message", "status"}
 
 // newStateOperation describes a state write for upload. state is the serialized
 // RecordedState envelope the state DB just persisted, and nil for a delete, where
@@ -104,24 +84,16 @@ func newStateOperation(info dstate.OperationInfo, resourceID string, state json.
 	}, nil
 }
 
-// newFailedOperation records an operation that did not apply, so the deployment
-// history says why a resource failed rather than just omitting it.
-//
-// priorState is the resource's state from before the deploy, and only reaches the service
-// when this failure is the first thing recorded for the resource in this version: nothing
-// touched the resource, so it is still there and the deployment has to keep describing it
-// or the next plan creates a second one. Once this version has recorded an operation, that
-// operation says where the resource stands and the failure leaves its state alone - see
-// failedKeepingState. It is nil for a create, which has no prior state and no resource to
-// describe, which is also why the resourceID may be empty for CREATE and RECREATE.
+// newFailedOperation records an operation that did not apply, so the history says why a
+// resource failed rather than omitting it. priorState (nil for a create, as resourceID may
+// also be) reaches the service only when nothing else was recorded for the resource yet.
 func newFailedOperation(action deployplan.ActionType, resourceID string, priorState json.RawMessage, cause error) (recordedOperation, error) {
 	actionType, err := deployActionToSDK(action)
 	if err != nil {
 		return recordedOperation{}, err
 	}
 
-	// A guard: this state came back from the state DB, so it was within the limit when
-	// it was written.
+	// A guard: the state DB accepted this state, so it was within the limit when written.
 	if len(priorState) > maxOperationStateSize {
 		return recordedOperation{}, fmt.Errorf("serialized state is %d bytes, which exceeds the %d byte limit for recording deployment history", len(priorState), maxOperationStateSize)
 	}
@@ -141,14 +113,9 @@ func newFailedOperation(action deployplan.ActionType, resourceID string, priorSt
 	}, nil
 }
 
-// priorRecord returns the resource's id and state from before this deploy, in the
-// same envelope form the success path uploads, or empty values when the resource has
-// no prior record (a create).
-//
-// Both come from the same pre-deploy entry because the service requires an id
-// alongside state: state describes a resource that exists, so it needs the id to say
-// which one. Reading the id from live state instead would return "" for a failed
-// recreate, whose delete step already dropped it, and the mismatch is rejected.
+// priorRecord returns the resource's id and state from before this deploy, in the envelope
+// form the success path uploads, or empty values when there is no prior record. Both come
+// from one entry: the service rejects state without an id.
 func priorRecord(db *dstate.DeploymentState, resourceKey string) (string, json.RawMessage) {
 	entry, ok := db.GetResourceEntry(resourceKey)
 	if !ok || len(entry.State) == 0 {
@@ -178,11 +145,9 @@ type operationRecorder struct {
 	// mu guards sequenceIDs.
 	mu sync.Mutex
 
-	// sequenceIDs holds the sequence id the service returned per resource key, which is
-	// both how a resource already recorded in this version is recognised and the
-	// concurrency precondition for updating it. The service names operations
-	// "operations/{resource_key}", so it keeps one per resource per version: the second
-	// write for a resource has to update that operation.
+	// sequenceIDs holds the sequence id the service returned per resource key: both how an
+	// already-recorded resource is recognised and the precondition for updating it. The
+	// service keeps one operation per resource per version, so a second write must update it.
 	sequenceIDs map[string]string
 }
 

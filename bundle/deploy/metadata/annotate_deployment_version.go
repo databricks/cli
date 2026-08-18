@@ -12,12 +12,9 @@ type annotateDeployment struct {
 	deploymentID string
 }
 
-// AnnotateDeployment stamps the DMS deployment onto every job and pipeline, so a
-// resource in the workspace points back at the deployment that produced it (which is
-// how lineage resolves a job to its bundle).
-//
-// It runs before the plan is computed, since a resource whose deployment is unset
-// locally but set in the workspace would otherwise show as drift.
+// AnnotateDeployment stamps the DMS deployment onto every job and pipeline, so a workspace
+// resource points back at the deployment that produced it - how lineage resolves a job to its
+// bundle. It runs before the plan, or the stamp would show as drift against local config.
 func AnnotateDeployment(deploymentID string) bundle.Mutator {
 	return &annotateDeployment{deploymentID: deploymentID}
 }
@@ -43,9 +40,8 @@ type annotateDeploymentVersion struct {
 	version int64
 }
 
-// AnnotateDeploymentVersion stamps the DMS version onto every job and pipeline. It
-// is separate from AnnotateDeployment because the version only exists once
-// CreateVersion has claimed one, which happens during deploy.
+// AnnotateDeploymentVersion stamps the DMS version onto every job and pipeline.
+// Separate from AnnotateDeployment because version only exists after CreateVersion runs.
 func AnnotateDeploymentVersion(version int64) bundle.Mutator {
 	return &annotateDeploymentVersion{version: version}
 }

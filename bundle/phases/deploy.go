@@ -128,11 +128,8 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 	}
 }
 
-// logFileSummary reports what the file sync did. Separate from the resource summary
-// because a deploy that only changes business logic (a .py or .sql file) leaves every
-// resource unchanged, so without this line its summary is all zeros and looks like a
-// no-op. Called on the failure paths too: the files were uploaded before whatever
-// failed afterwards, so the count is accurate even then.
+// logFileSummary reports what the file sync did. Separate because a pure-code deploy
+// leaves all resources unchanged, so would appear as a no-op without this line.
 func logFileSummary(ctx context.Context, b *bundle.Bundle) {
 	if b.Quiet >= bundle.QuietAll {
 		return
@@ -206,10 +203,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	// lock is acquired here
 	//
-	// Set up DMS recording of this deployment as a version. The version itself is
-	// created once the deploy is approved. CompleteVersion is deferred before
-	// lock.Release so it runs while the lock is still held (defers run
-	// last-in-first-out), and is a no-op until CreateVersion has run.
+	// The version is created only after approval; CompleteVersion is deferred before
+	// lock.Release and no-ops until then.
 	recorder, err := newDeploymentRecorder(ctx, b, stateEngine, dms.VersionTypeDeploy)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -281,13 +276,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	// Settle the deployment and the version number it will use before planning: the
-	// plan snapshots the resource config, so both have to be stamped on before it is
-	// computed or the applied resources would not carry them. The version itself is
-	// created after approval.
-	//
-	// This cannot move earlier: on a first deploy the deployment is registered under
-	// the state directory, which the upload above is what creates.
+	// Settle deployment and version before planning. Plan snapshots the config, so
+	// both must be stamped before it is computed. Version itself is created after approval.
 	if err := recorder.PrepareDeployment(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -343,12 +333,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	haveApproval, approvalErr := approvalForDeploy(ctx, b, plan)
 	if !haveApproval {
-		// No version was created, so there is nothing to complete: the deferred
-		// CompleteVersion is a no-op until CreateVersion has run. The version number
-		// this deploy would have used is simply left for the next one to take.
-		//
-		// Both outcomes land here - the user declining, and a console that cannot
-		// prompt at all, which returns an error instead.
+		// No version was created, so the deferred CompleteVersion is a no-op and the version
+		// number is left for the next deploy. Both the user declining and a console that
+		// cannot prompt land here.
 		if approvalErr != nil {
 			logdiag.LogError(ctx, approvalErr)
 			return

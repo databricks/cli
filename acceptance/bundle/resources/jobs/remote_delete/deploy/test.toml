@@ -1,7 +1,5 @@
 RecordRequests = false
 EnvMatrix.READPLAN = ["", "1"]
-# `bundle deploy --plan` applies the resource state the plan was saved with, and the plan
-# is written before the deployment version exists, so the deployment stamp never reaches
-# the applied resource and the next plan reports it as a change. Recording is skipped here
-# until the stamp is written into the saved plan too.
+# `bundle deploy --plan` applies pre-saved state; the stamp isn't written into the plan,
+# so the next plan reports it as a change. Recording skipped until stamp reaches saved plans.
 EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]

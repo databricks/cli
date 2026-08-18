@@ -15,13 +15,8 @@ import (
 // match DeploymentWhsClient.DEPLOYMENT_NODE_NAME on the service side.
 const DeploymentNodeName = "resources.deployment.json"
 
-// ResolveDeploymentID returns the DMS deployment ID for the bundle whose state
-// lives under statePath, or empty if it has never recorded a deployment.
-//
-// The CLI stores the ID nowhere: DMS registers the deployment as a workspace
-// node and that node's ID *is* the deployment ID, so a get-status is the lookup.
-// This keeps the workspace the single source of truth — a destroyed deployment
-// reports absent instead of leaving a dangling ID in the local state file.
+// ResolveDeploymentID returns the DMS deployment ID from the workspace node registered
+// under statePath, or empty if never recorded. The workspace node ID *is* the deployment ID.
 func ResolveDeploymentID(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, error) {
 	nodePath := path.Join(statePath, DeploymentNodeName)
 

@@ -152,10 +152,8 @@ func TestOperationSinkCoalescesWritesBehindAnUpload(t *testing.T) {
 }
 
 func TestOperationSinkCoalescedFailureKeepsTheStateItReplaces(t *testing.T) {
-	// A create writes state and then fails waiting for the resource to come up. If
-	// the failure catches the write before it is uploaded, it must not replace that
-	// state with its own emptiness: a resource recorded without state is dropped from
-	// the deployment, so the next plan would create it a second time.
+	// The create writes state and then fails before the upload. The failure must not replace
+	// that state with its own emptiness, which would drop the resource from the deployment.
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 2)}
 	s := newOperationSink(t.Context(), f)
 
@@ -184,10 +182,8 @@ func TestOperationSinkCoalescedFailureKeepsTheStateItReplaces(t *testing.T) {
 }
 
 func TestOperationSinkCoalescedFailureAfterADeleteKeepsTheResourceGone(t *testing.T) {
-	// A recreate's delete step writes no state, and the create that follows fails. Whether
-	// that delete was uploaded or is still waiting must not change what DMS ends up with:
-	// the resource was deleted, so the failure carries the delete's absent state rather
-	// than the pre-deploy state, and the resource stays gone.
+	// The recreate's delete writes no state. When the create then fails, the failure takes
+	// that absent state rather than the pre-deploy one, so the resource stays gone.
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 2)}
 	s := newOperationSink(t.Context(), f)
 
@@ -210,11 +206,9 @@ func TestOperationSinkCoalescedFailureAfterADeleteKeepsTheResourceGone(t *testin
 }
 
 func TestOperationSinkCoalescedFailureDoesNotRevertToPriorState(t *testing.T) {
-	// An update that succeeded and then failed waiting carries the pre-deploy state,
-	// which the write it supersedes has already moved past. Sending that would record
-	// the resource as it was before the deploy, and the next plan would read it back as
-	// current. Once the write is uploaded the wire mask keeps it out; before that, this
-	// does.
+	// An update that succeeded and then failed waiting carries the pre-deploy state, which the
+	// write it supersedes has moved past. Sending it would record the resource as it was before
+	// the deploy, and the next plan would read that back as current.
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, 2)}
 	s := newOperationSink(t.Context(), f)
 
@@ -262,10 +256,9 @@ func TestOperationSinkCoalescedDeleteStillClearsState(t *testing.T) {
 }
 
 func TestCoalesceLetsAWriteSupersedeAFailure(t *testing.T) {
-	// A failure is not the last word. If a resource were retried and then wrote state, that
-	// write describes the resource and has to win whole - its state, its id, and its mask,
-	// which names error_message so the recorded failure is cleared. The service rejects a
-	// succeeded operation that still carries an error.
+	// A failure is not the last word. A retry that writes state wins whole - state, id and
+	// mask - and the mask names error_message so the recorded failure is cleared. The service
+	// rejects a succeeded operation that still carries an error.
 	failed, err := newFailedOperation(deployplan.Update, "id-old", envelope(t, "before"), errors.New("boom"))
 	require.NoError(t, err)
 	retried, err := newStateOperation(dstate.OperationInfo{Action: deployplan.Update}, "id-new", envelope(t, "after the retry"))
@@ -281,9 +274,9 @@ func TestCoalesceLetsAWriteSupersedeAFailure(t *testing.T) {
 }
 
 func TestCoalesceKeepsTheWritesStateAndMask(t *testing.T) {
-	// The other direction: a failure contributes only its outcome, so the write's state, id
-	// and mask survive and the failure's own pre-deploy state is dropped as the older of the
-	// two. Action comes from the failure, which reports what the plan set out to do.
+	// A failure claims only status and error_message, so the write's state, id and mask
+	// survive. The action is the write's too: an update that empties a resource records its
+	// write as a delete, and the service keeps whichever action created the operation.
 	write, err := newStateOperation(dstate.OperationInfo{Action: deployplan.Delete}, "id-new", nil)
 	require.NoError(t, err)
 	failed, err := newFailedOperation(deployplan.Update, "id-old", envelope(t, "before"), errors.New("boom"))
@@ -296,7 +289,7 @@ func TestCoalesceKeepsTheWritesStateAndMask(t *testing.T) {
 	assert.Equal(t, "id-new", got.resourceID)
 	assert.Nil(t, got.state)
 	assert.Equal(t, describesResource, got.updateFields)
-	assert.Equal(t, bundledeployments.OperationActionTypeOperationActionTypeUpdate, got.action)
+	assert.Equal(t, bundledeployments.OperationActionTypeOperationActionTypeDelete, got.action)
 }
 
 func TestOperationSinkRecordDuringUploadIsStillUploaded(t *testing.T) {
@@ -322,11 +315,9 @@ func TestOperationSinkRecordDuringUploadIsStillUploaded(t *testing.T) {
 }
 
 func TestOperationSinkRecordWaitsWhenTheQueueIsFull(t *testing.T) {
-	// Recording holds the deploy back rather than letting it run arbitrarily far ahead
-	// of what the service has been told: once every slot holds a resource, the next
-	// write waits for the uploader.
-	// started is buffered for every upload: nothing reads it after the first, and an
-	// uploader blocked sending to it would never drain the queue.
+	// Recording holds the deploy back once every slot is taken. started is buffered for every
+	// upload: nothing reads it after the first, and an uploader blocked sending to it would
+	// never drain the queue.
 	f := &fakeUploader{block: make(chan struct{}), started: make(chan string, operationSinkQueueSize+4)}
 	s := newOperationSink(t.Context(), f)
 

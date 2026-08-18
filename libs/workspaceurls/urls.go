@@ -71,14 +71,8 @@ func ResourceTypes() []string {
 	return names
 }
 
-// DeploymentURL returns the workspace URL for a bundle deployment recorded with
-// the deployment metadata service, of the form
-//
-//	<host>/deployments/<deploymentID>?version=<version>
-//
-// The version pins the page to the deploy that produced it. It is separate from
-// ResourceURL because a deployment is not a bundle resource type: it has no entry
-// in resourceURLPatterns and takes a query parameter none of those do.
+// DeploymentURL returns the workspace URL for a bundle deployment:
+// <host>/deployments/<deploymentID>?version=<version>. Version pins the page to the deploy that produced it.
 func DeploymentURL(baseURL url.URL, deploymentID string, version int64) string {
 	if deploymentID == "" {
 		return ""

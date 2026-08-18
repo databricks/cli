@@ -35,16 +35,13 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
-	// Operations are recorded with DMS from one background goroutine so a resource's
-	// deploy is not held up by the CreateOperation round trip. It is drained below,
-	// once every apply worker has finished recording.
-	//
-	// The state DB records through it, so every state write becomes an operation and
-	// DMS mirrors the WAL.
+	// The state DB records every write through this sink, so DMS mirrors the WAL. Uploads run
+	// on one background goroutine, off the apply path, and are drained below once every
+	// worker has finished recording.
 	opSink := newOperationSink(ctx, b.OpRec)
 	if opSink != nil {
-		// Assigned only when non-nil: a nil *operationSink in an interface is not a
-		// nil interface, so the state DB's nil check would not see it.
+		// Only when non-nil: a nil *operationSink in an interface is not a nil interface, so
+		// the state DB's nil check would not see it.
 		b.StateDB.SetOperationSink(opSink)
 	}
 
@@ -137,8 +134,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 			// TODO: redo calcDiff to downgrade planned action if possible (?)
 			//
-			// Success is recorded by the state writes inside Deploy, so a resource that
-			// writes state more than once (a recreate) reports each step.
+			// Success is recorded by the state writes inside Deploy, so a recreate reports
+			// each of its steps.
 			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			if err != nil {
 				// Both are empty for a create that never got an ID, which is what the

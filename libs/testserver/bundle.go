@@ -15,10 +15,8 @@ import (
 // Handlers for the Deployment Metadata Service (DMS) API under /api/2.0/bundle.
 // State is kept in FakeWorkspace.dmsDeployments, keyed by deployment ID.
 
-// dmsDeploymentNodeName is the name of the workspace node the service creates
-// for every deployment. It must match DEPLOYMENT_NODE_NAME on the service side
-// (DeploymentWhsClient); the literal is repeated here rather than shared with
-// the CLI so a test would catch the CLI drifting from the service.
+// dmsDeploymentNodeName is the workspace node name the service uses for deployments.
+// It must match DEPLOYMENT_NODE_NAME on the service side (DeploymentWhsClient).
 const dmsDeploymentNodeName = "resources.deployment.json"
 
 // dmsUpdatableOperationFields are the update_mask paths UpdateOperation accepts. Any
@@ -39,11 +37,9 @@ type dmsDeployment struct {
 	// one per resource per version, so a resource written twice in a version updates
 	// its operation rather than adding another.
 	operations map[string]*bundledeployments.Operation
-	// lastSuccessfulVersionID is the highest version that completed
-	// successfully. The server advances last_successful_version_id only on
-	// success (unlike last_version_id), and the read path treats a non-empty
-	// value as "DMS owns the state". Tracked separately because the SDK
-	// Deployment struct does not yet carry the field (still stage:DEVELOPMENT).
+	// lastSuccessfulVersionID is the highest version completed successfully.
+	// The read path treats a non-empty value as "DMS owns the state";
+	// the SDK Deployment struct does not yet carry this field.
 	lastSuccessfulVersionID string
 }
 
@@ -77,10 +73,8 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 		},
 	}
 
-	// The record is created together with the node, so a get on it always resolves
-	// for a node that exists. It carries no version yet: last_version_id stays empty
-	// until the first CreateVersion, which is how a client that registers a
-	// deployment and then fails leaves a record with no versions.
+	// The record carries no version yet; last_version_id stays empty until
+	// the first CreateVersion. A failed registration leaves a record with no versions.
 	deploymentID := strconv.FormatInt(objectID, 10)
 	s.dmsDeploymentNodes[deploymentID] = nodePath
 
@@ -110,14 +104,9 @@ func (s *FakeWorkspace) GetDeployment(deploymentID string) Response {
 	return Response{Body: body}
 }
 
-// deploymentBody renders a deployment the way the real server does: the typed
-// fields plus last_successful_version_id, which the generated SDK struct does
-// not carry yet (still stage:DEVELOPMENT) but the read path reads off the raw
-// JSON.
-//
-// The extra field cannot be added by embedding Deployment in a wrapper struct:
-// Deployment has its own MarshalJSON, which is promoted to the wrapper and
-// silently drops any sibling field.
+// deploymentBody renders a deployment with last_successful_version_id, which
+// the SDK struct doesn't yet carry. Embedding in a wrapper won't work because
+// Deployment.MarshalJSON silently drops sibling fields.
 func deploymentBody(d *dmsDeployment) (map[string]any, error) {
 	raw, err := json.Marshal(d.deployment)
 	if err != nil {
@@ -173,9 +162,8 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 		return dmsNotFound("deployment " + deploymentID)
 	}
 
-	// Mirror the server-side checks: version_id must be numerically greater than
-	// the most recent version (not exactly one more), and previous_version_id must
-	// name that version, which is what detects a concurrent deploy.
+	// version_id must be numerically greater than the most recent version,
+	// and previous_version_id must name that version to detect concurrent deploys.
 	next, err := strconv.ParseInt(versionID, 10, 64)
 	if err != nil || next < 1 {
 		return dmsInvalidArgument("version_id must be a positive integer, got " + versionID)
@@ -191,15 +179,10 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 		return dmsAborted("previous_version_id is outdated; the deployment's most recent version is " + d.deployment.LastVersionId)
 	}
 
-	// Not modelled: the deployment lock. Creating a version takes one on the real
-	// service (VersionStorage.LOCK_DURATION_MS), which refuses a second deploy with
-	// "deployment N is locked by version M (lock expires at ...)" until a two-minute
-	// lease elapses without a heartbeat. Refusing purely on an in-flight version is
-	// wrong here: several tests kill the CLI mid-apply, which leaves the version
-	// in-progress forever, where the real service would let the lease expire. Modelling
-	// it needs the lease clock, and Version carries no heartbeat field to hang it on.
+	// Note: deployment lock not modelled. Tests kill the CLI mid-apply, leaving
+	// the version in-progress forever, whereas the real service lets the lease expire.
 
-	// bundle_root_path is relative to git_folder_path, so the service rejects a
+	// bundle_root_path is relative to git_folder_path, so the service rejects
 	// workspace_info that carries one without the other.
 	if ws := version.WorkspaceInfo; ws != nil && (ws.GitFolderPath == "") != (ws.BundleRootPath == "") {
 		return dmsInvalidArgument("workspace_info.git_folder_path and workspace_info.bundle_root_path must be set together")
@@ -266,9 +249,7 @@ func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID str
 		return dmsNotFound("deployment " + deploymentID)
 	}
 
-	// A delete carries no state, so resource_id is the only thing identifying which
-	// resource it refers to; the service rejects a delete without one. A failed
-	// delete is exempt only for create-flavored actions, which may not have an ID.
+	// delete requires resource_id. Create-flavored actions may lack an ID.
 	if op.ActionType == bundledeployments.OperationActionTypeOperationActionTypeDelete && op.ResourceId == "" {
 		return dmsInvalidArgument("resource_id is required for OPERATION_ACTION_TYPE_DELETE operations")
 	}
@@ -278,17 +259,13 @@ func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID str
 		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED")
 	}
 
-	// State describes a resource that exists, so an operation with state must identify
-	// which resource via resource_id. This applies to both succeeded and failed
-	// operations: a failed operation reports prior state to document what existed
-	// before the attempt failed.
+	// An operation with state must identify its resource via resource_id,
+	// even for failed operations reporting prior state.
 	if op.State != "" && op.ResourceId == "" {
 		return dmsInvalidArgument("resource_id is required for an operation that records state")
 	}
 
-	// The service names operations after the resource key, so it keeps one per
-	// resource per version: creating a second one for the same resource conflicts,
-	// and the caller has to use UpdateOperation instead.
+	// One operation per resource per version; duplicates conflict.
 	opName := "deployments/" + deploymentID + "/versions/" + versionID + "/operations/" + resourceKey
 	if _, exists := d.operations[opName]; exists {
 		return Response{
@@ -302,19 +279,15 @@ func (s *FakeWorkspace) CreateOperation(req Request, deploymentID, versionID str
 	op.SequenceId = 1
 	d.operations[opName] = &op
 
-	// The service sends sequence_id as a JSON string (proto3 encodes 64-bit ints
-	// that way) while the SDK struct types it as an int64, so the response is built
-	// by hand to match the wire format the CLI actually parses.
+	// sequence_id is a JSON string on the wire but int64 in the SDK struct;
+	// build the response by hand to match what the CLI parses.
 	body, err := operationBody(&op)
 	if err != nil {
 		return Response{StatusCode: 500, Body: map[string]string{"message": err.Error()}}
 	}
 
-	// Reflect the operation onto the deployment-level resource set the way the backend
-	// does: state is what projects a resource, so an operation without it removes the
-	// resource instead of listing one (OperationStorage.createOperation buffers a delete
-	// when the entity has no state). Together with the invariant that state requires a
-	// resource_id, that means a listed resource always has an id.
+	// State projects a resource; no state deletes it. Together with the invariant
+	// that state requires resource_id, a listed resource always has an id.
 	if op.State == "" {
 		delete(d.resources, resourceKey)
 	} else {
@@ -380,10 +353,8 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 	if updateMask == "" {
 		return dmsInvalidArgument("update_mask is required")
 	}
-	// Only the paths named in the mask are written; every other field of the stored
-	// operation is left as it is. A caller that omits state keeps the state already
-	// recorded, which is how a failure marks an operation failed without erasing the
-	// resource it had written.
+	// Only masked paths are written; other fields keep their values.
+	// Omitting state keeps the already-recorded state.
 	update := map[string]bool{}
 	for path := range strings.SplitSeq(updateMask, ",") {
 		path = strings.TrimSpace(path)
@@ -409,10 +380,8 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 		return dmsAborted("sequence_id is outdated; the operation is at " + strconv.FormatInt(existing.SequenceId, 10))
 	}
 
-	// The invariants hold over the operation the update leaves behind, not the request:
-	// a field the mask leaves out keeps the value it already had, so a failure that
-	// updates only status and error_message is checked against the state and id the
-	// earlier write recorded.
+	// Invariants check the operation after the update, not the request.
+	// The mask leaves unspecified fields unchanged.
 	after := *existing
 	if update["state"] {
 		after.State = op.State
@@ -432,10 +401,8 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED")
 	}
 
-	// State describes a resource that exists, so an operation with state must identify
-	// which resource via resource_id. This applies to both succeeded and failed
-	// operations: a failed operation reports prior state to document what existed
-	// before the attempt failed.
+	// An operation with state must identify its resource via resource_id,
+	// even for failed operations reporting prior state.
 	if after.State != "" && after.ResourceId == "" {
 		return dmsInvalidArgument("resource_id is required for an operation that records state")
 	}

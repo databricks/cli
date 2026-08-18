@@ -231,9 +231,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
 
-			// Recording makes the service the source of truth for resource state, so a
-			// deploy has to plan against what it holds rather than a local file that
-			// another machine's deploy may have left behind.
+			// Recording makes the service the source of truth for state.
 			var dmsSource *dstate.DMSSource
 			if env.RecordsDeploymentHistory(ctx, b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory) {
 				w := b.WorkspaceClient(ctx)
@@ -247,10 +245,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 					DeploymentID: deploymentID,
 				}
 
-				// Stamp the deployment onto the resources before anything diffs them.
-				// The workspace has it, so a plan that left it unset would report drift
-				// on a resource nobody touched. The version is stamped by the deploy
-				// phase instead, once it claims one.
+				// Stamp the deployment before anything diffs the resources: the workspace
+				// has it, so leaving it unset would report drift on an untouched resource.
+				// The deploy phase stamps the version, once it claims one.
 				bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(deploymentID))
 				if logdiag.HasError(ctx) {
 					return b, stateDesc, root.ErrAlreadyPrinted

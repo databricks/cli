@@ -20,18 +20,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// newDeploymentRecorder returns a dms.Recorder for the current deployment, or
-// nil when DMS recording does not apply. A nil recorder is a no-op, so callers
-// do not need to branch on it.
-//
-// Recording is enabled only when the bundle asks for it (see
-// recordsDeploymentHistory) AND the engine is direct: DMS resource state is tracked
-// per direct-engine deployment. Returning nil for terraform leaves those untouched.
-//
-// The deployment ID is resolved from the workspace, not local state (see
-// dms.ResolveDeploymentID). The lookup happens here, after the deployment lock is
-// held, so it sees any deployment a concurrent deploy created. It is empty on the
-// first recorded deploy, where the recorder creates the deployment instead.
+// newDeploymentRecorder returns a recorder for the deployment, or nil if recording
+// does not apply. Enabled only for direct engine and when the bundle opts in.
+// The deployment ID is resolved from the workspace node, empty on first deploy.
 func newDeploymentRecorder(ctx context.Context, b *bundle.Bundle, eng engine.EngineType, versionType dms.VersionType) (*dms.Recorder, error) {
 	if !recordsDeploymentHistory(ctx, b) {
 		return nil, nil
@@ -84,13 +75,8 @@ func setOperationRecorder(ctx context.Context, b *bundle.Bundle, recorder *dms.R
 	b.DeploymentBundle.OpRec = direct.NewOperationRecorder(apiClient, recorder.DeploymentID(), recorder.Version())
 }
 
-// logDeploymentVersion links to the version this deploy was recorded under, so the
-// user can follow it while the deploy runs rather than hunting for the ID afterwards.
-// A nil recorder means recording is off, and a zero version means the version was
-// never created.
-//
-// The workspace ID is left out of the URL: the page redirects correctly without it,
-// and omitting it keeps the line short enough to stay clickable in a terminal.
+// logDeploymentVersion logs the deployment version URL. Workspace ID is omitted
+// so the page stays clickable in a terminal and redirects correctly without it.
 func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, recorder *dms.Recorder) {
 	if recorder == nil || recorder.Version() == 0 {
 		return

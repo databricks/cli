@@ -112,31 +112,27 @@ func (s *operationSink) record(resourceKey string, op recordedOperation) {
 	}
 }
 
-// coalesce merges an operation with the one that superseded it while still waiting. Each
-// field comes from whichever operation claimed it in its mask, and the newer one wins when
-// both did; the merged mask is the union, so neither operation's fields get dropped.
-//
-// What a given operation claims is decided where it is built, not here - see
-// describesResource and failedKeepingState.
+// coalesce merges an operation with the one that superseded it while still waiting. Each field
+// comes from whichever operation claimed it in its mask, newer winning when both did, and the
+// mask is the union. What an operation claims is decided where it is built, not here.
 func coalesce(older, newer recordedOperation) recordedOperation {
 	merged := older
-
-	// action_type is fixed when the operation is created, so no mask names it. An update
-	// that empties a resource records its write as a delete (see DeploymentUnit.Update), so
-	// the two can disagree; report what the plan set out to do.
-	merged.action = newer.action
 	merged.updateFields = unionFields(older.updateFields, newer.updateFields)
 
-	if slices.Contains(newer.updateFields, fieldState) {
+	if slices.Contains(newer.updateFields, "state") {
+		// Claiming state means this operation last acted on the resource, so its action_type is
+		// the one to record. One that claims none only reports an outcome, and the service
+		// would keep the earlier action anyway - action_type is fixed once the operation exists.
 		merged.state = newer.state
+		merged.action = newer.action
 	}
-	if slices.Contains(newer.updateFields, fieldResourceID) {
+	if slices.Contains(newer.updateFields, "resource_id") {
 		merged.resourceID = newer.resourceID
 	}
-	if slices.Contains(newer.updateFields, fieldErrorMessage) {
+	if slices.Contains(newer.updateFields, "error_message") {
 		merged.errorMessage = newer.errorMessage
 	}
-	if slices.Contains(newer.updateFields, fieldStatus) {
+	if slices.Contains(newer.updateFields, "status") {
 		merged.status = newer.status
 	}
 

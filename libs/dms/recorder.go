@@ -79,10 +79,7 @@ func (a *apiVersionCreator) CreateVersion(ctx context.Context, deploymentID, ver
 	return &version, nil
 }
 
-// Recorder records a single deploy/destroy as a version with DMS. The server
-// assigns the deployment ID on the first deploy and later deploys reuse it; a
-// destroy deletes the record, so the next deploy starts over (see
-// ResolveDeploymentID).
+// Recorder records a deploy/destroy as a version with DMS. Server assigns ID on first deploy.
 type Recorder struct {
 	svc          bundledeployments.BundleDeploymentsInterface
 	versions     versionCreator
@@ -169,9 +166,8 @@ func (r *Recorder) Version() int64 {
 	return r.versionNum
 }
 
-// CreateVersion registers a new version with DMS, claiming it for the duration
-// of the deployment. A nil Recorder is a no-op, so callers can leave it nil
-// when recording is disabled.
+// CreateVersion registers a new version with DMS, claiming it for the deployment.
+// Nil Recorder is a no-op.
 func (r *Recorder) CreateVersion(ctx context.Context) error {
 	if r == nil {
 		return nil
@@ -186,10 +182,9 @@ func (r *Recorder) CreateVersion(ctx context.Context) error {
 
 	versionID := strconv.FormatInt(r.versionNum, 10)
 
-	// The server rejects the call unless versionID is numerically greater than
-	// last_version_id and previous_version_id matches it. That is what makes claiming
-	// the number up front safe: another deploy that took it between PrepareDeployment
-	// and here is reported rather than overwritten.
+	// The server rejects this unless versionID exceeds last_version_id and
+	// previous_version_id matches it, which is what makes claiming the number up front
+	// safe: a deploy that took it in the meantime is reported, not overwritten.
 	version, err := r.versions.CreateVersion(ctx, r.deploymentID, versionID, createVersionRequest{
 		CliVersion:        build.GetInfo().Version,
 		VersionType:       r.versionType,
@@ -255,10 +250,8 @@ func (r *Recorder) completeVersion(ctx context.Context, reason bundledeployments
 	return nil
 }
 
-// PrepareDeployment makes sure the deployment exists and works out the version number
-// this deploy will create, without creating it. Both are needed before the plan, which
-// stamps them onto the resources it is computed from; the version itself is not created
-// until CreateVersion, so a deploy the user declines never claims one.
+// PrepareDeployment ensures the deployment exists and determines the version number to create,
+// without creating it. Both are needed before planning; version itself is created by CreateVersion.
 func (r *Recorder) PrepareDeployment(ctx context.Context) error {
 	if r == nil {
 		return nil

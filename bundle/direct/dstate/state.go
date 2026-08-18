@@ -147,10 +147,9 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		return err
 	}
 
-	// Recorded after the WAL write, so DMS never reports a state the deploy failed to
-	// persist locally, and outside the lock because recording applies backpressure:
-	// it waits when the service is behind, and waiting under db.mu would hold up every
-	// other resource's write rather than just this one.
+	// Recorded after the WAL write, so DMS never reports state the deploy failed to persist,
+	// and outside the lock because recording waits when the service is behind - waiting under
+	// db.mu would hold up every other resource's write.
 	if sink != nil {
 		sink.RecordOperation(ctx, key, info, newID, recorded)
 	}
@@ -302,10 +301,9 @@ type DMSSource struct {
 	DeploymentID string
 }
 
-// Open reads the deployment state from disk (and recovers the WAL when
-// withRecovery is set). With a non-nil dmsSource, resources come from DMS rather
-// than the file. Lineage and serial always come from the file, since that is
-// what the write path increments.
+// Open reads the deployment state from disk, recovering the WAL when withRecovery is set.
+// With a non-nil dmsSource the resources come from DMS instead; lineage and serial still
+// come from the file, since that is what the write path increments.
 func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsSource *DMSSource) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -355,15 +353,9 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 	}
 
 	if dmsSource != nil {
-		// Only bundles that start out empty can be recorded. Once DMS owns a
-		// deployment it is authoritative for the whole resource set (see
-		// readDMSState), so pre-existing resources it never saw would look absent and
-		// get created a second time.
-		//
-		// TODO(DMS): allow this by upgrading the state in place, writing it at
-		// featureStateVersion with a feature flag plus a tombstone per resource so an
-		// older CLI refuses the state instead of deploying against resources it
-		// cannot see.
+		// Only empty bundles can be recorded. Once DMS owns the deployment, pre-existing
+		// resources it never saw would be created again. TODO: support migration via state
+		// upgrade with feature flag and per-resource tombstones.
 		if dmsSource.DeploymentID == "" && len(db.Data.State) > 0 {
 			// The remedy is ordered deliberately: this error also blocks destroy, so the
 			// setting has to come out first or there is no way to tear the bundle down.
