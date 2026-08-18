@@ -80,7 +80,17 @@ func resolveFileTriggers(b *bundle.Bundle, name string, patterns []string, prev 
 	out := make(map[string]resources.JobRunFileFingerprint)
 	for _, pattern := range patterns {
 		path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers", name)
-		matches, err := filepath.Glob(filepath.Join(b.SyncRootPath, filepath.FromSlash(pattern)))
+		localPattern := filepath.FromSlash(pattern)
+		// Keep fingerprints under SyncRoot; same IsLocal gate as translate_paths.
+		if !filepath.IsLocal(localPattern) {
+			diags = diags.Append(diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q is not under the sync root", pattern),
+				Locations: b.Config.GetLocations(path),
+			})
+			continue
+		}
+		matches, err := filepath.Glob(filepath.Join(b.SyncRootPath, localPattern))
 		if err != nil {
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
@@ -90,7 +100,7 @@ func resolveFileTriggers(b *bundle.Bundle, name string, patterns []string, prev 
 			continue
 		}
 		if len(matches) == 0 {
-			// Distinct state when the path/glob matches nothing (design doc).
+			// Distinct state when the path/glob matches nothing so appear/disappear recreates.
 			out[filepath.ToSlash(pattern)] = resources.JobRunFileFingerprint{
 				Size: missingFileSentinelSize,
 			}
@@ -101,6 +111,8 @@ func resolveFileTriggers(b *bundle.Bundle, name string, patterns []string, prev 
 			})
 			continue
 		}
+		regularMatches := 0
+		sawNonRegular := false
 		for _, match := range matches {
 			info, err := os.Stat(match)
 			if err != nil {
@@ -112,13 +124,15 @@ func resolveFileTriggers(b *bundle.Bundle, name string, patterns []string, prev 
 				continue
 			}
 			if !info.Mode().IsRegular() {
+				sawNonRegular = true
 				continue
 			}
+			regularMatches++
 			rel, err := filepath.Rel(b.SyncRootPath, match)
-			if err != nil {
+			if err != nil || !filepath.IsLocal(rel) {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: relative path for %q: %s", match, err),
+					Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: matched path %q is not under the sync root", match),
 					Locations: b.Config.GetLocations(path),
 				})
 				continue
@@ -134,6 +148,15 @@ func resolveFileTriggers(b *bundle.Bundle, name string, patterns []string, prev 
 				continue
 			}
 			out[key] = fp
+		}
+		// A directory-only match would otherwise leave ResolvedFileTriggers empty
+		// and silently disarm the trigger while config still sets on_file_change.
+		if regularMatches == 0 && sawNonRegular {
+			diags = diags.Append(diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q matches no regular files", pattern),
+				Locations: b.Config.GetLocations(path),
+			})
 		}
 	}
 	return out, diags
