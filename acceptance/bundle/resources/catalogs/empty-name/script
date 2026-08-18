@@ -1,5 +1,4 @@
-# The deploy fails only after the files are uploaded, so $UNIQUE_NAME in the bundle
-# name keeps concurrent cloud legs apart and lets the sweeper find what is left.
+# Empty name is rejected at validate; deploy never reaches the create API.
 envsubst < databricks.yml.tmpl > databricks.yml
 
-trace musterr $CLI bundle deploy
+trace musterr $CLI bundle validate --strict

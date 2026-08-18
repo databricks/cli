@@ -1,0 +1,24 @@
+bundle:
+  name: illegal-identifiers
+
+resources:
+  models:
+    empty_model:
+      name: ""
+
+  volumes:
+    tab_volume:
+      name: "tab\there"
+      catalog_name: main
+      schema_name: default
+      volume_type: MANAGED
+
+  model_serving_endpoints:
+    newline_endpoint:
+      name: "line1\nline2"
+
+  pipelines:
+    incomplete_file:
+      name: incomplete-file
+      libraries:
+        - file: {}
