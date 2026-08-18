@@ -1,8 +1,16 @@
 
 >>> [CLI] bundle validate
+Warning: required field "catalog_name" is not set
+  at resources.volumes.my_volume
+  in databricks.yml:25:7
+
 Warning: required field "job_id" is not set
   at resources.jobs.my_job_1.tasks[1].run_job_task
   in databricks.yml:20:24
+
+Warning: required field "schema_name" is not set
+  at resources.volumes.my_volume
+  in databricks.yml:25:7
 
 Warning: required field "source" is not set
   at artifacts.my_artifact.files[0]
@@ -14,4 +22,4 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 2 warnings
+Found 4 warnings

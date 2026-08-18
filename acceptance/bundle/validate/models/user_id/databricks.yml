@@ -4,4 +4,5 @@ bundle:
 resources:
   models:
     mymodel:
+      name: mymodel
       user_id: 123

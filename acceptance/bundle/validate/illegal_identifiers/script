@@ -1,3 +1,0 @@
-# Empty / control-char identifiers and incomplete pipeline libraries must fail
-# validate (not only deploy with a late API 400).
-musterr trace $CLI bundle validate --strict

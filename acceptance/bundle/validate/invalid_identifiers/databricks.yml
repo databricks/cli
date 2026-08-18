@@ -1,15 +1,25 @@
 bundle:
-  name: illegal-identifiers
+  name: invalid-identifiers
 
 resources:
   models:
     empty_model:
       name: ""
 
+  catalogs:
+    empty_catalog:
+      name: ""
+
   volumes:
     tab_volume:
       name: "tab\there"
       catalog_name: main
+      schema_name: default
+      volume_type: MANAGED
+
+    tab_catalog:
+      name: valid
+      catalog_name: "main\tcatalog"
       schema_name: default
       volume_type: MANAGED
 

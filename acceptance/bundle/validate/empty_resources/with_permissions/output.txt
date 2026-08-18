@@ -34,7 +34,7 @@
 
 === resources.models.rname ===
 Error: model name is required
-  at resources.models.rname
+  at resources.models.rname.name
   in databricks.yml:7:7
 
 {
@@ -57,16 +57,8 @@ Warning: unknown field: permissions
   at resources.registered_models.rname
   in databricks.yml:7:7
 
-Error: registered_model catalog_name is required
-  at resources.registered_models.rname
-  in databricks.yml:7:7
-
 Error: registered_model name is required
-  at resources.registered_models.rname
-  in databricks.yml:7:7
-
-Error: registered_model schema_name is required
-  at resources.registered_models.rname
+  at resources.registered_models.rname.name
   in databricks.yml:7:7
 
 {
@@ -103,12 +95,8 @@ Warning: unknown field: permissions
   at resources.schemas.rname
   in databricks.yml:7:7
 
-Error: schema catalog_name is required
-  at resources.schemas.rname
-  in databricks.yml:7:7
-
 Error: schema name is required
-  at resources.schemas.rname
+  at resources.schemas.rname.name
   in databricks.yml:7:7
 
 {
@@ -122,16 +110,8 @@ Warning: unknown field: permissions
   at resources.volumes.rname
   in databricks.yml:7:7
 
-Error: volume catalog_name is required
-  at resources.volumes.rname
-  in databricks.yml:7:7
-
 Error: volume name is required
-  at resources.volumes.rname
-  in databricks.yml:7:7
-
-Error: volume schema_name is required
-  at resources.volumes.rname
+  at resources.volumes.rname.name
   in databricks.yml:7:7
 
 {

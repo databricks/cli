@@ -18,3 +18,8 @@ resources:
         # job_id not being set should trigger a warning.
         - task_key: "task_key2"
           run_job_task:
+
+  # Catalog name and schema name are required.
+  volumes:
+    my_volume:
+      name: "baz"

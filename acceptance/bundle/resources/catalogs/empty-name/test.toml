@@ -1,3 +1,0 @@
-# Empty names fail at validate; no cloud API call is made.
-RecordRequests = false
-Ignore = [".databricks"]
