@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
@@ -105,38 +104,46 @@ func TestRequiredRejectsExplicitEmptyUCParentInDyn(t *testing.T) {
 	assert.Contains(t, diagSummaries(diags), "volume catalog_name is required")
 }
 
-func TestRequiredRejectsIncompletePipelineLibraries(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Pipelines: map[string]*resources.Pipeline{
-					"p": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Name: "p",
-							Libraries: []pipelines.PipelineLibrary{
-								{File: &pipelines.FileLibrary{}},
-								{Notebook: &pipelines.NotebookLibrary{}},
-								{Glob: &pipelines.PathPattern{}},
-								{File: &pipelines.FileLibrary{Path: "ok.py"}},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+func TestRequiredIdentifierValidationScope(t *testing.T) {
+	b := &bundle.Bundle{}
+	require.NoError(t, b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		return dyn.V(map[string]dyn.Value{
+			"bundle": dyn.V(map[string]dyn.Value{
+				"name": dyn.V(" \t"),
+			}),
+			"resources": dyn.V(map[string]dyn.Value{
+				"dashboards": dyn.V(map[string]dyn.Value{
+					"dashboard": dyn.V(map[string]dyn.Value{
+						"display_name": dyn.V("bad\nname"),
+						"warehouse_id": dyn.V("warehouse"),
+					}),
+				}),
+				"jobs": dyn.V(map[string]dyn.Value{
+					"job": dyn.V(map[string]dyn.Value{
+						"parameters": dyn.V([]dyn.Value{
+							dyn.V(map[string]dyn.Value{"default": dyn.V("value")}),
+						}),
+					}),
+				}),
+				"sql_warehouses": dyn.V(map[string]dyn.Value{
+					"warehouse": dyn.V(map[string]dyn.Value{
+						"name": dyn.V("   "),
+					}),
+				}),
+			}),
+		}), nil
+	}))
 
 	diags := bundle.Apply(t.Context(), b, validate.Required())
-	require.True(t, diags.HasError())
-
 	assert.ElementsMatch(t, []string{
-		"pipeline library file path is required",
-		"pipeline library notebook path is required",
-		"pipeline library glob include is required",
+		"bundle name must not contain control characters",
+		"dashboard display_name must not contain control characters",
+		"required field \"name\" is not set",
+		"sql_warehouse name must not be blank",
 	}, diagSummaries(diags))
 }
 
-func TestRequiredDoesNotPanicOnMetacharacterResourceKeys(t *testing.T) {
+func TestRequiredDoesNotPanicOnMetacharacterResourceKey(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -150,16 +157,6 @@ func TestRequiredDoesNotPanicOnMetacharacterResourceKeys(t *testing.T) {
 						},
 					},
 				},
-				Pipelines: map[string]*resources.Pipeline{
-					"weird[0]pipe": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Name: "p",
-							Libraries: []pipelines.PipelineLibrary{
-								{File: &pipelines.FileLibrary{}},
-							},
-						},
-					},
-				},
 			},
 		},
 	}
@@ -167,27 +164,14 @@ func TestRequiredDoesNotPanicOnMetacharacterResourceKeys(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, validate.Required())
 	require.True(t, diags.HasError())
 	assert.Contains(t, diagSummaries(diags), "volume name is required")
-	assert.Contains(t, diagSummaries(diags), "pipeline library file path is required")
 }
 
-func TestRequiredAcceptsValidIdentifiersAndPipelineLibraries(t *testing.T) {
+func TestRequiredAcceptsValidIdentifiers(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
 				Models: map[string]*resources.MlflowModel{
 					"model": {CreateModelRequest: ml.CreateModelRequest{Name: "model"}},
-				},
-				Pipelines: map[string]*resources.Pipeline{
-					"pipeline": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Name: "pipeline",
-							Libraries: []pipelines.PipelineLibrary{
-								{File: &pipelines.FileLibrary{Path: "file.py"}},
-								{Notebook: &pipelines.NotebookLibrary{Path: "notebook.py"}},
-								{Glob: &pipelines.PathPattern{Include: "src/**"}},
-							},
-						},
-					},
 				},
 			},
 		},
