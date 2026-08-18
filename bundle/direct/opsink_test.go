@@ -174,8 +174,9 @@ func TestOperationSinkCoalescedFailureKeepsTheStateItReplaces(t *testing.T) {
 }
 
 func TestOperationSinkCoalescedFailureAfterADeleteKeepsTheResourceGone(t *testing.T) {
-	// The recreate's delete writes no state. When the create then fails, the failure takes
-	// that absent state rather than the pre-deploy one, so the resource stays gone.
+	// A recreate's delete writes no state, and then the create fails. The failure claims no
+	// state either, so the delete's emptiness survives the merge - and the merged mask still
+	// names state, which is what tells the service the resource really is gone.
 	f := &fakeWriter{block: make(chan struct{}), started: make(chan dms.ResourceKey, 2)}
 	s := newOperationSink(t.Context(), f)
 
