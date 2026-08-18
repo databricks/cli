@@ -136,7 +136,9 @@ assert result == [{"method": "GET"}, {"method": "POST"}], result
 DMS_PATH = "/api/2.0/bundle"
 
 
-def filter_requests(requests, path_filters, include_get, should_sort, unique=False, method_filter=None, include_dms=False):
+def filter_requests(
+    requests, path_filters, include_get, should_sort, unique=False, method_filter=None, include_dms=False
+):
     """Filter requests based on method and path filters."""
     positive_filters = []
     negative_filters = []
@@ -277,7 +279,9 @@ def main():
         return
 
     requests = read_json_many(data)
-    filtered_requests = filter_requests(requests, args.path_filters, args.get, args.sort, args.unique, args.method, args.dms)
+    filtered_requests = filter_requests(
+        requests, args.path_filters, args.get, args.sort, args.unique, args.method, args.dms
+    )
 
     for req in filtered_requests:
         body = req.get("body")
