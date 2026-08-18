@@ -363,8 +363,15 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 	}
 }
 
-// DoUpdate finishes the wait an interrupted deploy abandoned.
-func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, config *JobRunState, _ *PlanEntry) (*JobRunRemote, error) {
+// DoUpdate rewrites state after a cleared trigger (no API call) or finishes the
+// wait an interrupted deploy abandoned.
+func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, config *JobRunState, entry *PlanEntry) (*JobRunRemote, error) {
+	// Clearing a trigger only drops its local-only fingerprint from state; wait on
+	// the run only when some other field changed.
+	if !entry.Changes.HasChangeExcept("lifecycle", "lifecycle.triggers", "lifecycle.triggers.on_bundle_deploy") {
+		config.ResultState = ""
+		return nil, nil
+	}
 	remote, err := r.waitForRun(ctx, id)
 	config.ResultState = ""
 	return remote, err
@@ -374,15 +381,15 @@ func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, config *JobRun
 // still going, so a run that may yet succeed is adopted and waited on. A run that
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
-// Clearing the local-only trigger fingerprint is skipped so removing
-// on_bundle_deploy does not recreate the run.
+// Clearing a trigger downgrades the recreate to a state-only update so the
+// fingerprint is dropped from state without re-firing the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
 	switch path.String() {
 	case "lifecycle", "lifecycle.triggers", "lifecycle.triggers.on_bundle_deploy":
-		// PrepareState nils Lifecycle when the trigger is unset; structdiff may
-		// report that at lifecycle, lifecycle.triggers, or the leaf.
+		// A cleared trigger sets New empty; structdiff may report it at lifecycle,
+		// lifecycle.triggers, or the leaf. DoUpdate treats these paths as no-ops.
 		if change.New == nil || change.New == "" {
-			change.Action = deployplan.Skip
+			change.Action = deployplan.Update
 			change.Reason = "trigger removed"
 		}
 		return nil
