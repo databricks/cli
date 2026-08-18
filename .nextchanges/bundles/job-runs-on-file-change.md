@@ -1,0 +1,1 @@
+direct: `resources.job_runs` can set `lifecycle.triggers.on_file_change` to a path or glob to re-fire the run when matched file contents change. Removing the trigger does not recreate the existing run.
