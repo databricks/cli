@@ -7,7 +7,7 @@ trace print_requests.py --nostamp --sort //jobs
 replace_ids.py
 
 # Sanity check plan after deploy
-trace $CLI bundle plan > out.plan_sanity.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle plan > out.plan_sanity.txt
 
 title "Destroy all via bundle destroy"
 trace $CLI bundle destroy --auto-approve
