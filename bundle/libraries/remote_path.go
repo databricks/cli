@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/patchwheel"
 )
 
 // ReplaceWithRemotePath updates all the libraries paths to point to the remote location
@@ -90,7 +91,7 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]LocationToUpdate, err
 
 				// Split off any pip extras suffix so the upload targets the real
 				// file; the suffix is re-appended to the remote path afterwards.
-				source, extras := splitWheelExtras(source)
+				source, extras := patchwheel.SplitWheelExtras(source)
 
 				source = filepath.Join(b.SyncRootPath, source)
 				libs[source] = append(libs[source], LocationToUpdate{

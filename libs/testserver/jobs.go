@@ -8,12 +8,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"slices"
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/patchwheel"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -612,16 +612,6 @@ func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
 // For tasks using existing_cluster_id, the venv is cached per cluster to match
 // cloud behavior where libraries are cached on running clusters.
 // For serverless tasks (environment_key), dependencies are loaded from the environment spec.
-// wheelExtrasSuffix matches a trailing pip extras suffix on a wheel path, e.g.
-// "[train]" in "foo.whl[train]". Anchored right after ".whl" so it never touches
-// bracket groups elsewhere in the path.
-var wheelExtrasSuffix = regexp.MustCompile(`(?i)(\.whl)\[[^\]]*\]$`)
-
-// stripWheelExtras removes a trailing pip extras suffix from a wheel path.
-func stripWheelExtras(p string) string {
-	return wheelExtrasSuffix.ReplaceAllString(p, "$1")
-}
-
 func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, task jobs.Task) (string, error) {
 	env, cleanup, err := s.getOrCreateClusterEnv(task)
 	if err != nil {
@@ -658,7 +648,7 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 		// The uploaded file is stored under the bare name, so strip the suffix to
 		// locate it. We install the bare wheel; extras only affect which transitive
 		// deps cloud pulls, which this offline install does not model.
-		filePath := stripWheelExtras(whlPath)
+		filePath, _ := patchwheel.SplitWheelExtras(whlPath)
 		if env.installedLibs[filePath] {
 			continue
 		}
