@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -19,6 +20,71 @@ func Required() bundle.Mutator {
 
 func (f *required) Name() string {
 	return "validate:required"
+}
+
+// warnForMissingFields reports fields marked as required by the OpenAPI spec.
+func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	trie := &dyn.TrieNode{}
+	for value := range generated.RequiredFields {
+		pattern, err := dyn.NewPatternFromString(value)
+		if err != nil {
+			return diag.FromErr(fmt.Errorf("invalid pattern %q for required field validation: %w", value, err))
+		}
+		if err := trie.Insert(pattern); err != nil {
+			return diag.FromErr(fmt.Errorf("failed to insert pattern %q into trie: %w", value, err))
+		}
+	}
+
+	var diags diag.Diagnostics
+	err := dyn.WalkReadOnly(b.Config.Value(), func(path dyn.Path, value dyn.Value) error {
+		pattern, ok := trie.SearchPath(path)
+		if !ok {
+			return nil
+		}
+		for _, field := range generated.RequiredFields[pattern.String()] {
+			if missingIdentifierIsError(pattern.String(), field) {
+				continue
+			}
+			v := value.Get(field)
+			if v.Kind() != dyn.KindInvalid && v.Kind() != dyn.KindNil {
+				continue
+			}
+			diags = diags.Append(diag.Diagnostic{
+				Severity:  diag.Warning,
+				Summary:   fmt.Sprintf("required field %q is not set", field),
+				Locations: value.Locations(),
+				Paths:     []dyn.Path{slices.Clone(path)},
+			})
+		}
+		return nil
+	})
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	return diags
+}
+
+// errorForMissingDashboardWarehouseID covers a backend requirement absent from OpenAPI.
+func errorForMissingDashboardWarehouseID(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.Diagnostics
+	for key, dashboard := range b.Config.Resources.Dashboards {
+		if dashboard.WarehouseId != "" {
+			continue
+		}
+		resourcePath := dyn.NewPath(
+			dyn.Key("resources"),
+			dyn.Key("dashboards"),
+			dyn.Key(key),
+		)
+		fieldPath := resourcePath.Append(dyn.Key("warehouse_id"))
+		diags = diags.Append(diag.Diagnostic{
+			Severity:  diag.Error,
+			Summary:   "dashboard warehouse_id is required",
+			Locations: locationsFor(b, fieldPath, resourcePath),
+			Paths:     []dyn.Path{fieldPath},
+		})
+	}
+	return diags
 }
 
 // sortDiagnostics orders diagnostics deterministically, since they are collected
@@ -136,10 +202,12 @@ func isMissingOrEmptySequence(v dyn.Value) bool {
 }
 
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := validateRequiredFields(ctx, b)
+	diags := validateIdentifiers(ctx, b)
+	diags = diags.Extend(errorForMissingDashboardWarehouseID(ctx, b))
 	diags = diags.Extend(errorForInvalidGrants(ctx, b))
 	diags = diags.Extend(errorForInvalidSecretScopePermissions(ctx, b))
 	diags = diags.Extend(errorForIncompletePipelineLibraries(ctx, b))
+	diags = diags.Extend(warnForMissingFields(ctx, b))
 	sortDiagnostics(diags)
 	return diags
 }
