@@ -1,0 +1,31 @@
+bundle:
+  name: cluster_policy_backend_normalization
+
+resources:
+  cluster_policies:
+    # Definition as a compact JSON string.
+    json_string:
+      name: probe_json_string
+      definition: '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'
+
+    # Definition as a multiline block-scalar JSON string.
+    multiline:
+      name: probe_multiline
+      definition: |-
+        {
+          "spark_version": {
+            "type": "fixed",
+            "value": "13.3.x-scala2.12"
+          }
+        }
+
+    # Definition as native YAML (normalized to compact JSON by the mutator before deploy).
+    yaml:
+      name: probe_yaml
+      definition:
+        spark_version:
+          type: fixed
+          value: 13.3.x-scala2.12
+        autotermination_minutes:
+          type: range
+          maxValue: 120

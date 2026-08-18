@@ -1,0 +1,39 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_backend_normalization/default/files...
+Created cluster_policies.json_string
+Created cluster_policies.multiline
+Created cluster_policies.yaml
+Files: 4 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== [json_string] definition returned by the backend (GET)
+>>> [CLI] cluster-policies get [JSON_STRING_ID] -o json
+{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}
+
+=== [multiline] definition returned by the backend (GET)
+>>> [CLI] cluster-policies get [MULTILINE_ID] -o json
+{
+  "spark_version": {
+    "type": "fixed",
+    "value": "13.3.x-scala2.12"
+  }
+}
+
+=== [yaml] definition returned by the backend (GET)
+>>> [CLI] cluster-policies get [YAML_ID] -o json
+{"autotermination_minutes":{"maxValue":120,"type":"range"},"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}
+
+=== Plan after deploy: any drift means the backend reformatted a definition
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.json_string
+  delete resources.cluster_policies.multiline
+  delete resources.cluster_policies.yaml
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster_policy_backend_normalization/default
+
+Destroy: 3 deleted
