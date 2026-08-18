@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
@@ -233,15 +232,20 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 			// Recording makes the service the source of truth for state.
 			var dmsSource *dstate.DMSSource
-			if env.RecordsDeploymentHistory(ctx, b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory) {
+			if b.RecordsDeploymentHistory(ctx) {
 				w := b.WorkspaceClient(ctx)
 				deploymentID, err := dms.ResolveDeploymentID(ctx, w, b.Config.Workspace.StatePath)
 				if err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
+				dmsClient, err := dms.NewClient(w)
+				if err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
 				dmsSource = &dstate.DMSSource{
-					Client:       w.BundleDeployments,
+					Client:       dmsClient,
 					DeploymentID: deploymentID,
 				}
 

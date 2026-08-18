@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +36,12 @@ func (f *fakeResourceLister) ListResources(ctx context.Context, req bundledeploy
 	)
 }
 
-func TestFetchDeploymentResourcesUnwrapsEnvelope(t *testing.T) {
+// testClient returns a DMS client that lists the resources f holds.
+func testClient(f *fakeResourceLister) *dms.Client {
+	return &dms.Client{Service: f}
+}
+
+func TestReadDMSStateUnwrapsEnvelope(t *testing.T) {
 	// The service stores state as an opaque string, so the envelope arrives verbatim.
 	envelope := `{"state":{"name":"foo"},"depends_on":[{"node":"resources.pipelines.bar","label":"${resources.pipelines.bar.id}"}]}`
 	f := &fakeResourceLister{resources: []bundledeployments.Resource{
@@ -43,8 +49,8 @@ func TestFetchDeploymentResourcesUnwrapsEnvelope(t *testing.T) {
 		{ResourceKey: "pipelines.bar", ResourceId: "456"},
 	}}
 
-	got, err := fetchDeploymentResources(t.Context(), f, "dep-1")
-	require.NoError(t, err)
+	var db DeploymentState
+	require.NoError(t, db.readDMSState(t.Context(), &DMSSource{Client: testClient(f), DeploymentID: "dep-1"}))
 
 	// depends_on comes back from the envelope, so a bundle whose local state was
 	// wiped still has the edges needed for delete ordering.
@@ -55,15 +61,16 @@ func TestFetchDeploymentResourcesUnwrapsEnvelope(t *testing.T) {
 			DependsOn: []deployplan.DependsOnEntry{{Node: "resources.pipelines.bar", Label: "${resources.pipelines.bar.id}"}},
 		},
 		"resources.pipelines.bar": {ID: "456"},
-	}, got)
+	}, db.Data.State)
 }
 
-func TestFetchDeploymentResourcesRejectsMalformedState(t *testing.T) {
+func TestReadDMSStateRejectsMalformedState(t *testing.T) {
 	f := &fakeResourceLister{resources: []bundledeployments.Resource{
 		{ResourceKey: "jobs.foo", ResourceId: "123", State: "not json"},
 	}}
 
-	_, err := fetchDeploymentResources(t.Context(), f, "dep-1")
+	var db DeploymentState
+	err := db.readDMSState(t.Context(), &DMSSource{Client: testClient(f), DeploymentID: "dep-1"})
 	assert.ErrorContains(t, err, "interpreting state recorded for resources.jobs.foo")
 }
 
@@ -71,9 +78,9 @@ func TestReadDMSStateReplacesLocalState(t *testing.T) {
 	// readDMSState should replace the file-derived state with what DMS has,
 	// even if the file has different resources.
 	src := &DMSSource{
-		Client: &fakeResourceLister{resources: []bundledeployments.Resource{
+		Client: testClient(&fakeResourceLister{resources: []bundledeployments.Resource{
 			{ResourceKey: "jobs.foo", ResourceId: "dms-id", State: `{"state":{"name":"from-dms"}}`},
-		}},
+		}}),
 		DeploymentID: "dep-1",
 	}
 
@@ -97,7 +104,7 @@ func TestReadDMSStateReplacesLocalState(t *testing.T) {
 func TestReadDMSStateAcceptsEmptyResourceList(t *testing.T) {
 	// An empty DMS response is valid: it means a successful deploy of nothing.
 	src := &DMSSource{
-		Client:       &fakeResourceLister{resources: []bundledeployments.Resource{}},
+		Client:       testClient(&fakeResourceLister{resources: []bundledeployments.Resource{}}),
 		DeploymentID: "dep-1",
 	}
 

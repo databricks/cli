@@ -10,41 +10,33 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
-	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/workspaceurls"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// newDeploymentRecorder returns a recorder for the deployment, or nil if recording
-// does not apply. Enabled only for direct engine and when the bundle opts in.
-// The deployment ID is resolved from the workspace node, empty on first deploy.
-func newDeploymentRecorder(ctx context.Context, b *bundle.Bundle, eng engine.EngineType, versionType dms.VersionType) (*dms.Recorder, error) {
-	if !recordsDeploymentHistory(ctx, b) {
-		return nil, nil
-	}
-	if !eng.IsDirect() {
-		return nil, nil
+// newRecording returns what this run records with DMS, or a disabled recording when
+// nothing is: recording needs the direct engine and the bundle's opt-in. The deployment ID
+// is resolved from the workspace node, and is empty on a first deploy.
+func newRecording(ctx context.Context, b *bundle.Bundle, eng engine.EngineType, versionType dms.VersionType) (dms.Recording, error) {
+	if !b.RecordsDeploymentHistory(ctx) || !eng.IsDirect() {
+		return dms.Disabled(), nil
 	}
 
+	w := b.WorkspaceClient(ctx)
 	statePath := b.Config.Workspace.StatePath
-	deploymentID, err := dms.ResolveDeploymentID(ctx, b.WorkspaceClient(ctx), statePath)
+	deploymentID, err := dms.ResolveDeploymentID(ctx, w, statePath)
 	if err != nil {
 		return nil, err
 	}
-	apiClient, err := client.New(b.WorkspaceClient(ctx).Config)
+	client, err := dms.NewClient(w)
 	if err != nil {
 		return nil, err
 	}
-	return dms.NewRecorder(dms.RecorderOptions{
-		Service:      b.WorkspaceClient(ctx).BundleDeployments,
-		Versions:     dms.NewAPIVersionCreator(apiClient),
+	return dms.NewRecording(dms.RecordingOptions{
+		Client:       client,
 		DeploymentID: deploymentID,
 		StatePath:    statePath,
 		VersionType:  versionType,
@@ -62,48 +54,54 @@ func stagedOperations(plan *deployplan.Plan) ([]dms.StagedOperation, error) {
 		if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
 			continue
 		}
-		actionType, err := direct.DeployActionToSDK(action.ActionType)
+		actionType, err := actionToSDK(action.ActionType)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", action.ResourceKey, err)
 		}
 		staged = append(staged, dms.StagedOperation{
-			// The service wants the key without the CLI's "resources." prefix.
-			ResourceKey: strings.TrimPrefix(action.ResourceKey, dstate.ResourceKeyPrefix),
+			ResourceKey: dms.KeyFromState(action.ResourceKey),
 			ActionType:  actionType,
 		})
 	}
 	return staged, nil
 }
 
-// recordsDeploymentHistory reports whether this bundle records deployment history,
-// from experimental.record_deployment_history or
-// DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY.
-func recordsDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
-	configured := b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory
-	return env.RecordsDeploymentHistory(ctx, configured)
+// actionToSDK maps a deployplan action to the DMS action type a staged operation records.
+// Only actions that mutate a resource are recordable; Skip and Undefined are rejected
+// rather than silently coerced.
+func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType, error) {
+	switch a {
+	case deployplan.Create:
+		return bundledeployments.OperationActionTypeOperationActionTypeCreate, nil
+	case deployplan.Update:
+		return bundledeployments.OperationActionTypeOperationActionTypeUpdate, nil
+	case deployplan.UpdateWithID:
+		return bundledeployments.OperationActionTypeOperationActionTypeUpdateWithId, nil
+	case deployplan.Recreate:
+		return bundledeployments.OperationActionTypeOperationActionTypeRecreate, nil
+	case deployplan.Resize:
+		return bundledeployments.OperationActionTypeOperationActionTypeResize, nil
+	case deployplan.Delete:
+		return bundledeployments.OperationActionTypeOperationActionTypeDelete, nil
+	default:
+		return "", fmt.Errorf("cannot record operation: unsupported action %q", a)
+	}
 }
 
-// setOperationRecorder points the deployment at the version the recorder claimed, so
-// the state writes during apply are recorded under it. A nil recorder means recording
-// is off and leaves the deployment's uploader unset.
-func setOperationRecorder(ctx context.Context, b *bundle.Bundle, recorder *dms.Recorder) {
-	if recorder == nil {
+// setOperationWriter has the state writes during apply recorded under the started version.
+// A disabled recording leaves the writer unset, which is also what keeps the state DB from
+// serializing an envelope for every write.
+func setOperationWriter(b *bundle.Bundle, recording dms.Recording, writer dms.OperationWriter) {
+	if !recording.Enabled() {
 		return
 	}
-
-	apiClient, err := client.New(b.WorkspaceClient(ctx).Config)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-
-	b.DeploymentBundle.OpRec = direct.NewOperationRecorder(apiClient, recorder.DeploymentID(), recorder.Version())
+	b.DeploymentBundle.OpRec = writer
 }
 
 // logDeploymentVersion logs the deployment version URL. Workspace ID is omitted
 // so the page stays clickable in a terminal and redirects correctly without it.
-func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, recorder *dms.Recorder) {
-	if recorder == nil || recorder.Version() == 0 {
+func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, recording dms.Recording) {
+	if recording.Version() == 0 {
 		return
 	}
 
@@ -112,11 +110,11 @@ func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, recorder *dms.R
 		// Only the link is lost, so report the version without it rather than failing
 		// a deploy over it.
 		log.Debugf(ctx, "Not linking to the recorded deployment: %s", err)
-		cmdio.LogString(ctx, fmt.Sprintf("Current Deployment Version: %s version %d", recorder.DeploymentID(), recorder.Version()))
+		cmdio.LogString(ctx, fmt.Sprintf("Current Deployment Version: %s version %d", recording.DeploymentID(), recording.Version()))
 		return
 	}
 
-	cmdio.LogString(ctx, "Current Deployment Version: "+workspaceurls.DeploymentURL(*baseURL, recorder.DeploymentID(), recorder.Version()))
+	cmdio.LogString(ctx, "Current Deployment Version: "+workspaceurls.DeploymentURL(*baseURL, recording.DeploymentID(), recording.Version()))
 }
 
 // deploymentMetadata describes the bundle this deploy came from and where it

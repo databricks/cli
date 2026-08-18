@@ -53,3 +53,29 @@ func TestStagedOperationsEmptyPlan(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, staged)
 }
+
+func TestActionToSDK(t *testing.T) {
+	cases := []struct {
+		action deployplan.ActionType
+		want   bundledeployments.OperationActionType
+	}{
+		{deployplan.Create, bundledeployments.OperationActionTypeOperationActionTypeCreate},
+		{deployplan.Update, bundledeployments.OperationActionTypeOperationActionTypeUpdate},
+		{deployplan.UpdateWithID, bundledeployments.OperationActionTypeOperationActionTypeUpdateWithId},
+		{deployplan.Recreate, bundledeployments.OperationActionTypeOperationActionTypeRecreate},
+		{deployplan.Resize, bundledeployments.OperationActionTypeOperationActionTypeResize},
+		{deployplan.Delete, bundledeployments.OperationActionTypeOperationActionTypeDelete},
+	}
+	for _, c := range cases {
+		got, err := actionToSDK(c.action)
+		require.NoError(t, err)
+		assert.Equal(t, c.want, got)
+	}
+
+	// Nothing is applied for these, so stagedOperations leaves them out rather than
+	// mapping them; the guard is here in case a new action type arrives without a mapping.
+	_, err := actionToSDK(deployplan.Skip)
+	assert.Error(t, err)
+	_, err = actionToSDK(deployplan.Undefined)
+	assert.Error(t, err)
+}

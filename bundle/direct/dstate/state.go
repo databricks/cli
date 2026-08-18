@@ -16,8 +16,8 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/google/uuid"
 )
 
@@ -136,10 +136,8 @@ func NewDatabase(lineage string, serial int) Database {
 	}
 }
 
-// SaveState records the resource's state after an operation was applied to it. info
-// is what the deployment metadata service reports for the write; it is ignored when
-// the bundle does not record deployment history.
-func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry, info OperationInfo) error {
+// SaveState records the resource's state after an operation was applied to it.
+func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
 	db.AssertOpenedForWrite()
 
 	sink, recorded, err := db.saveStateEntry(key, newID, state, dependsOn)
@@ -151,7 +149,7 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 	// and outside the lock because recording waits when the service is behind - waiting under
 	// db.mu would hold up every other resource's write.
 	if sink != nil {
-		sink.RecordOperation(ctx, key, info, newID, recorded)
+		sink.RecordOperation(ctx, key, false, newID, recorded)
 	}
 
 	return nil
@@ -197,9 +195,19 @@ func (db *DeploymentState) saveStateEntry(key, newID string, state any, dependsO
 	return db.sink, recorded, nil
 }
 
-// DeleteState drops the resource's state entry. info distinguishes a real delete
-// from the intermediate drop a recreate performs, both of which are recorded.
-func (db *DeploymentState) DeleteState(ctx context.Context, key string, info OperationInfo) error {
+// DeleteState drops the resource's state entry: the resource is gone.
+func (db *DeploymentState) DeleteState(ctx context.Context, key string) error {
+	return db.deleteState(ctx, key, false)
+}
+
+// DeleteStateForRecreate drops the resource's state entry as the first half of a recreate.
+// The operation is recorded as still in progress, so an interrupted deploy does not leave
+// the resource described as finished.
+func (db *DeploymentState) DeleteStateForRecreate(ctx context.Context, key string) error {
+	return db.deleteState(ctx, key, true)
+}
+
+func (db *DeploymentState) deleteState(ctx context.Context, key string, inProgress bool) error {
 	db.AssertOpenedForWrite()
 
 	sink, deletedID, err := db.deleteStateEntry(key)
@@ -210,7 +218,7 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, info Ope
 	// State is nil: the resource no longer exists. Recorded outside the lock for the
 	// same reason as SaveState.
 	if sink != nil {
-		sink.RecordOperation(ctx, key, info, deletedID, nil)
+		sink.RecordOperation(ctx, key, inProgress, deletedID, nil)
 	}
 
 	return nil
@@ -294,7 +302,7 @@ type (
 // service instead of the state file. Callers pass it only when the bundle set
 // experimental.record_deployment_history; a nil *DMSSource keeps Open file-only.
 type DMSSource struct {
-	Client bundledeployments.BundleDeploymentsInterface
+	Client *dms.Client
 
 	// DeploymentID is resolved from the deployment's workspace node (see
 	// dms.ResolveDeploymentID), and empty before the first recorded deploy.

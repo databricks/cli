@@ -208,13 +208,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	//
 	// The version is created only after approval; CompleteVersion is deferred before
 	// lock.Release and no-ops until then.
-	recorder, err := newDeploymentRecorder(ctx, b, stateEngine, dms.VersionTypeDeploy)
+	recording, err := newRecording(ctx, b, stateEngine, dms.VersionTypeDeploy)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 	defer func() {
-		if err := recorder.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
+		if err := recording.Finish(ctx, !logdiag.HasError(ctx)); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
@@ -281,16 +281,16 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	// Settle deployment and version before planning. Plan snapshots the config, so
 	// both must be stamped before it is computed. Version itself is created after approval.
-	if err := recorder.PrepareDeployment(ctx); err != nil {
+	if err := recording.Prepare(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
-	if recorder != nil {
+	if recording.Enabled() {
 		// The deployment ID is stamped earlier, when the state is opened; only the
 		// version is new here. A first deploy has no ID until now, so stamp both.
 		bundle.ApplySeqContext(ctx, b,
-			metadata.AnnotateDeployment(recorder.DeploymentID()),
-			metadata.AnnotateDeploymentVersion(recorder.Version()),
+			metadata.AnnotateDeployment(recording.DeploymentID()),
+			metadata.AnnotateDeploymentVersion(recording.Version()),
 		)
 		if logdiag.HasError(ctx) {
 			return
@@ -355,17 +355,15 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		logdiag.LogError(ctx, err)
 		return
 	}
-	if err := recorder.CreateVersion(ctx, staged); err != nil {
+	writer, err := recording.Start(ctx, staged)
+	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
-	logDeploymentVersion(ctx, b, recorder)
+	logDeploymentVersion(ctx, b, recording)
 
 	// Record operations under that version, so DMS holds the deployed resource state.
-	setOperationRecorder(ctx, b, recorder)
-	if logdiag.HasError(ctx) {
-		return
-	}
+	setOperationWriter(b, recording, writer)
 	deployCore(ctx, b, plan, stateEngine, requestedEngine)
 
 	if logdiag.HasError(ctx) {

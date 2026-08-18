@@ -135,7 +135,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType, recorder *dms.Recorder) {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType, recording dms.Recording) {
 	if engine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
 	} else {
@@ -160,7 +160,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	}
 
 	// Complete version before deleting remote files; the deployment node is under statePath.
-	if err := recorder.CompleteVersion(ctx, true); err != nil {
+	if err := recording.Finish(ctx, true); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
@@ -205,13 +205,13 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	// Set up DMS recording of this destroy. Version is created after approval; cancelled
 	// destroy records nothing. Deferred before lock.Release to hold the lock.
-	recorder, err := newDeploymentRecorder(ctx, b, engine, dms.VersionTypeDestroy)
+	recording, err := newRecording(ctx, b, engine, dms.VersionTypeDestroy)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 	defer func() {
-		if err := recorder.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
+		if err := recording.Finish(ctx, !logdiag.HasError(ctx)); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
@@ -277,15 +277,13 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			logdiag.LogError(ctx, err)
 			return
 		}
-		if err := recorder.CreateVersion(ctx, staged); err != nil {
+		writer, err := recording.Start(ctx, staged)
+		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
-		setOperationRecorder(ctx, b, recorder)
-		if logdiag.HasError(ctx) {
-			return
-		}
-		destroyCore(ctx, b, plan, engine, recorder)
+		setOperationWriter(b, recording, writer)
+		destroyCore(ctx, b, plan, engine, recording)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}

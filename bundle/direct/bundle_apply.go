@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -35,7 +34,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
-	// The state DB records every write through this sink, so DMS mirrors the WAL. Uploads run
+	// The state DB records every write through this sink, so DMS mirrors the WAL. Writes run
 	// on one background goroutine, off the apply path, and are drained below once every
 	// worker has finished recording.
 	opSink := newOperationSink(ctx, b.OpRec)
@@ -100,12 +99,12 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			if entry.Gone {
 				// Planning confirmed the resource is already deleted remotely; only
 				// remove it from the state, without calling the delete API.
-				err = b.StateDB.DeleteState(ctx, resourceKey, dstate.OperationInfo{Action: action})
+				err = b.StateDB.DeleteState(ctx, resourceKey)
 			} else {
 				err = d.Destroy(ctx, &b.StateDB)
 			}
 			if err != nil {
-				opSink.recordFailure(ctx, resourceKey, action, deletedID, err)
+				opSink.recordFailure(resourceKey, deletedID, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -140,7 +139,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				// Empty for a create that never got an ID, and for a recreate whose delete
 				// step already dropped it.
 				failedID := b.StateDB.GetResourceID(resourceKey)
-				opSink.recordFailure(ctx, resourceKey, action, failedID, err)
+				opSink.recordFailure(resourceKey, failedID, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}

@@ -43,18 +43,18 @@ type fakeDMS struct {
 type fakeVersionRequest struct {
 	deploymentID string
 	versionID    string
-	body         createVersionRequest
+	body         CreateVersionRequest
 }
 
 // fakeVersions captures CreateVersion calls. It is separate from fakeDMS because
 // the CLI does not create versions through the generated client (see
-// createVersionRequest), so the two use different signatures.
+// CreateVersionRequest), so the two use different signatures.
 type fakeVersions struct {
 	requests *[]fakeVersionRequest
 	err      error
 }
 
-func (f fakeVersions) CreateVersion(ctx context.Context, deploymentID, versionID string, body createVersionRequest) (*bundledeployments.Version, error) {
+func (f fakeVersions) CreateVersion(ctx context.Context, deploymentID, versionID string, body CreateVersionRequest) (*bundledeployments.Version, error) {
 	*f.requests = append(*f.requests, fakeVersionRequest{deploymentID: deploymentID, versionID: versionID, body: body})
 	if f.err != nil {
 		return nil, f.err
@@ -88,12 +88,25 @@ func (f *fakeDMS) Heartbeat(ctx context.Context, req bundledeployments.Heartbeat
 	return &bundledeployments.HeartbeatResponse{}, nil
 }
 
-func TestRecorderFirstDeployCreatesDeploymentWithServerAssignedID(t *testing.T) {
+// testClient wires a Recording to f, failing CreateVersion with versionErr when set.
+func testClient(f *fakeDMS, versionErr error) *Client {
+	return &Client{Service: f, Versions: fakeVersions{requests: &f.versions, err: versionErr}}
+}
+
+// startVersion creates the version and discards the writer, for a test that only asserts
+// what reached the service.
+func startVersion(t *testing.T, r Recording, staged []StagedOperation) {
+	t.Helper()
+	_, err := r.Start(t.Context(), staged)
+	require.NoError(t, err)
+}
+
+func TestRecordingFirstDeployCreatesDeploymentWithServerAssignedID(t *testing.T) {
 	f := &fakeDMS{assignedID: "server-generated-id"}
 	// A first deploy resolves no deployment ID from the workspace.
-	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
+	r := NewRecording(RecordingOptions{Client: testClient(f, nil), StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
 
-	require.NoError(t, r.CreateVersion(t.Context(), nil))
+	startVersion(t, r, nil)
 
 	// The server assigned the ID, and the recorder exposes it for the rest of the
 	// deploy (it parents the operations recorded under this version).
@@ -116,22 +129,22 @@ func TestRecorderFirstDeployCreatesDeploymentWithServerAssignedID(t *testing.T) 
 	// A first version supersedes nothing, so previous_version_id is unset.
 	assert.Empty(t, f.versions[0].body.PreviousVersionId)
 
-	require.NoError(t, r.CompleteVersion(t.Context(), true))
+	require.NoError(t, r.Finish(t.Context(), true))
 	require.Len(t, f.completed, 1)
 	assert.Equal(t, bundledeployments.VersionCompleteVersionCompleteSuccess, f.completed[0].CompletionReason)
 	assert.Empty(t, f.deleted)
 }
 
-func TestRecorderSubsequentDeployReusesDeploymentAndIncrementsVersion(t *testing.T) {
+func TestRecordingSubsequentDeployReusesDeploymentAndIncrementsVersion(t *testing.T) {
 	f := &fakeDMS{
 		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
 			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "4"}, nil
 		},
 	}
 	// A subsequent deploy passes the stored deployment ID.
-	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
+	r := NewRecording(RecordingOptions{Client: testClient(f, nil), DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
 
-	require.NoError(t, r.CreateVersion(t.Context(), nil))
+	startVersion(t, r, nil)
 
 	// No new deployment is created; the version increments to last_version_id + 1.
 	assert.Empty(t, f.created)
@@ -143,20 +156,20 @@ func TestRecorderSubsequentDeployReusesDeploymentAndIncrementsVersion(t *testing
 	assert.Equal(t, "4", f.versions[0].body.PreviousVersionId)
 }
 
-func TestRecorderGetDeploymentErrorFailsDeploy(t *testing.T) {
+func TestRecordingGetDeploymentErrorFailsDeploy(t *testing.T) {
 	f := &fakeDMS{
 		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
 			return nil, errors.New("boom")
 		},
 	}
-	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
+	r := NewRecording(RecordingOptions{Client: testClient(f, nil), DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
 
-	err := r.CreateVersion(t.Context(), nil)
+	_, err := r.Start(t.Context(), nil)
 	assert.ErrorContains(t, err, "failed to get deployment")
 	assert.Empty(t, f.created)
 }
 
-func TestRecorderMissingDeploymentIsInternalError(t *testing.T) {
+func TestRecordingMissingDeploymentIsInternalError(t *testing.T) {
 	// The service has a deployment for every BUNDLE_DEPLOYMENT node, so a not-found
 	// for a node get-status just returned is a broken invariant, not a state the
 	// deploy can recover from.
@@ -165,83 +178,90 @@ func TestRecorderMissingDeploymentIsInternalError(t *testing.T) {
 			return nil, fmt.Errorf("deployment: %w", apierr.ErrNotFound)
 		},
 	}
-	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
+	r := NewRecording(RecordingOptions{Client: testClient(f, nil), DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
 
-	err := r.CreateVersion(t.Context(), nil)
+	_, err := r.Start(t.Context(), nil)
 	assert.ErrorContains(t, err, "internal error: no deployment found for the file with object id stored-id")
 	assert.Empty(t, f.created)
 	assert.Empty(t, f.versions)
 }
 
-func TestRecorderDestroyDeletesDeploymentOnSuccess(t *testing.T) {
+func TestRecordingDestroyDeletesDeploymentOnSuccess(t *testing.T) {
 	f := &fakeDMS{
 		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
 			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "2"}, nil
 		},
 	}
-	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDestroy})
+	r := NewRecording(RecordingOptions{Client: testClient(f, nil), DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDestroy})
 
-	require.NoError(t, r.CreateVersion(t.Context(), nil))
+	startVersion(t, r, nil)
 	assert.Equal(t, bundledeployments.VersionTypeVersionTypeDestroy, f.versions[0].body.VersionType)
 
-	require.NoError(t, r.CompleteVersion(t.Context(), true))
+	require.NoError(t, r.Finish(t.Context(), true))
 	// A successful destroy deletes the deployment record.
 	require.Equal(t, []string{"deployments/stored-id"}, f.deleted)
 }
 
-func TestRecorderFailedDestroyKeepsDeployment(t *testing.T) {
+func TestRecordingFailedDestroyKeepsDeployment(t *testing.T) {
 	f := &fakeDMS{
 		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
 			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "2"}, nil
 		},
 	}
-	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDestroy})
+	r := NewRecording(RecordingOptions{Client: testClient(f, nil), DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDestroy})
 
-	require.NoError(t, r.CreateVersion(t.Context(), nil))
-	require.NoError(t, r.CompleteVersion(t.Context(), false))
+	startVersion(t, r, nil)
+	require.NoError(t, r.Finish(t.Context(), false))
 
 	assert.Equal(t, bundledeployments.VersionCompleteVersionCompleteFailure, f.completed[0].CompletionReason)
 	// A failed destroy leaves the deployment in place.
 	assert.Empty(t, f.deleted)
 }
 
-func TestRecorderCompleteVersionIsIdempotent(t *testing.T) {
+func TestRecordingFinishIsIdempotent(t *testing.T) {
 	// Destroy completes the version before deleting the remote files, because that
-	// deletes the deployment's node, and still defers CompleteVersion. The second
+	// deletes the deployment's node, and still defers Finish. The second
 	// call must not reach the server, which would fail with 404.
 	f := &fakeDMS{
 		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
 			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "2"}, nil
 		},
 	}
-	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDestroy})
+	r := NewRecording(RecordingOptions{Client: testClient(f, nil), DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDestroy})
 
-	require.NoError(t, r.CreateVersion(t.Context(), nil))
-	require.NoError(t, r.CompleteVersion(t.Context(), true))
-	require.NoError(t, r.CompleteVersion(t.Context(), true))
+	startVersion(t, r, nil)
+	require.NoError(t, r.Finish(t.Context(), true))
+	require.NoError(t, r.Finish(t.Context(), true))
 
 	assert.Len(t, f.completed, 1)
 	// The destroy deletes the deployment record once, not once per call.
 	assert.Equal(t, []string{"deployments/stored-id"}, f.deleted)
 }
 
-func TestNilRecorderIsNoOp(t *testing.T) {
-	var r *Recorder
-	assert.NoError(t, r.CreateVersion(t.Context(), nil))
-	assert.NoError(t, r.CompleteVersion(t.Context(), true))
+func TestDisabledRecordingIsNoOp(t *testing.T) {
+	r := Disabled()
+
+	require.NoError(t, r.Prepare(t.Context()))
+	writer, err := r.Start(t.Context(), []StagedOperation{{ResourceKey: "jobs.foo"}})
+	require.NoError(t, err)
+	require.NoError(t, r.Finish(t.Context(), true))
+
+	assert.False(t, r.Enabled())
 	assert.Empty(t, r.DeploymentID())
 	assert.Zero(t, r.Version())
+	// The writer it hands out records nothing, so a caller needs no nil check.
+	assert.NoError(t, writer.Write(t.Context(), "jobs.foo", OperationUpdate{}))
 }
 
-func TestRecorderCompleteVersionNoOpWithoutCreateVersion(t *testing.T) {
+func TestRecordingFinishIsNoOpWithoutStart(t *testing.T) {
 	f := &fakeDMS{}
-	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
-	// CompleteVersion before CreateVersion is a no-op (nothing was claimed).
-	require.NoError(t, r.CompleteVersion(t.Context(), true))
+	r := NewRecording(RecordingOptions{Client: testClient(f, nil), DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
+	// Finish before Start is a no-op (nothing was claimed).
+	require.NoError(t, r.Finish(t.Context(), true))
 	assert.Empty(t, f.completed)
 }
 
-func TestRecorderPrepareDeploymentClaimsNoVersion(t *testing.T) {
+func TestRecordingPrepareClaimsNoVersion(t *testing.T) {
 	// A deploy the user declines prepares but never creates: the version number is
 	// known, so the plan can be stamped with it, but no version exists to complete and
 	// the number is left for the next deploy to take.
@@ -250,27 +270,27 @@ func TestRecorderPrepareDeploymentClaimsNoVersion(t *testing.T) {
 			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "4"}, nil
 		},
 	}
-	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
+	r := NewRecording(RecordingOptions{Client: testClient(f, nil), DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
 
-	require.NoError(t, r.PrepareDeployment(t.Context()))
+	require.NoError(t, r.Prepare(t.Context()))
 
 	assert.Equal(t, int64(5), r.Version())
 	assert.Empty(t, f.versions, "no version created")
 
-	require.NoError(t, r.CompleteVersion(t.Context(), true))
+	require.NoError(t, r.Finish(t.Context(), true))
 	assert.Empty(t, f.completed, "nothing to complete")
 }
 
-func TestRecorderCreateVersionUsesThePreparedNumber(t *testing.T) {
+func TestRecordingStartUsesThePreparedNumber(t *testing.T) {
 	f := &fakeDMS{
 		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
 			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "4"}, nil
 		},
 	}
-	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
+	r := NewRecording(RecordingOptions{Client: testClient(f, nil), DeploymentID: "stored-id", StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
 
-	require.NoError(t, r.PrepareDeployment(t.Context()))
-	require.NoError(t, r.CreateVersion(t.Context(), nil))
+	require.NoError(t, r.Prepare(t.Context()))
+	startVersion(t, r, nil)
 
 	// The version created is the one the plan was stamped with, and it reports the
 	// version it supersedes so the service rejects a racing deploy.
@@ -280,7 +300,7 @@ func TestRecorderCreateVersionUsesThePreparedNumber(t *testing.T) {
 	assert.Equal(t, int64(5), r.Version())
 }
 
-func TestRecorderCreateVersionDetectsAbortedConflict(t *testing.T) {
+func TestRecordingStartDetectsAbortedConflict(t *testing.T) {
 	f := &fakeDMS{
 		getDeployment: func(id string) (*bundledeployments.Deployment, error) {
 			return &bundledeployments.Deployment{Name: "deployments/" + id, LastVersionId: "4"}, nil
@@ -291,17 +311,16 @@ func TestRecorderCreateVersionDetectsAbortedConflict(t *testing.T) {
 		StatusCode: 409,
 		ErrorCode:  "ABORTED",
 	}
-	r := NewRecorder(RecorderOptions{
-		Service:      f,
-		Versions:     &fakeVersions{requests: &f.versions, err: conflictErr},
+	r := NewRecording(RecordingOptions{
+		Client:       testClient(f, conflictErr),
 		DeploymentID: "stored-id",
 		StatePath:    testStatePath,
 		Metadata:     Metadata{TargetName: "dev", DisplayName: testDisplayName},
 		VersionType:  VersionTypeDeploy,
 	})
 
-	require.NoError(t, r.PrepareDeployment(t.Context()))
-	err := r.CreateVersion(t.Context(), nil)
+	require.NoError(t, r.Prepare(t.Context()))
+	_, err := r.Start(t.Context(), nil)
 
 	// Names the version that was taken and tells the user to retry, and keeps the
 	// underlying ABORTED so callers can still match on it.
@@ -322,30 +341,30 @@ func TestDeploymentIDFromName(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestRecorderCreateVersionStagesOperations(t *testing.T) {
+func TestRecordingStartStagesOperations(t *testing.T) {
 	// The version fixes its operation set, so what the caller passes has to reach the wire
 	// verbatim: the service has no API to add an operation later.
 	f := &fakeDMS{assignedID: "dep-1"}
-	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions}, StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
+	r := NewRecording(RecordingOptions{Client: testClient(f, nil), StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
 
 	staged := []StagedOperation{
 		{ResourceKey: "jobs.foo", ActionType: bundledeployments.OperationActionTypeOperationActionTypeCreate},
 		{ResourceKey: "pipelines.bar", ActionType: bundledeployments.OperationActionTypeOperationActionTypeDelete},
 	}
-	require.NoError(t, r.CreateVersion(t.Context(), staged))
+	startVersion(t, r, staged)
 
 	require.Len(t, f.versions, 1)
 	assert.Equal(t, staged, f.versions[0].body.Operations)
 }
 
-func TestRecorderCreateVersionReportsTheOperationCap(t *testing.T) {
+func TestRecordingStartReportsTheOperationCap(t *testing.T) {
 	// A bundle past the service's per-version cap cannot be recorded at all, so say how many
 	// resources it has rather than passing the raw quota error on.
 	quotaErr := &apierr.APIError{StatusCode: 429, ErrorCode: "RESOURCE_EXHAUSTED"}
 	f := &fakeDMS{assignedID: "dep-1"}
-	r := NewRecorder(RecorderOptions{Service: f, Versions: fakeVersions{requests: &f.versions, err: quotaErr}, StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
+	r := NewRecording(RecordingOptions{Client: testClient(f, quotaErr), StatePath: testStatePath, Metadata: Metadata{TargetName: "dev", DisplayName: testDisplayName}, VersionType: VersionTypeDeploy})
 
-	err := r.CreateVersion(t.Context(), []StagedOperation{
+	_, err := r.Start(t.Context(), []StagedOperation{
 		{ResourceKey: "jobs.foo", ActionType: bundledeployments.OperationActionTypeOperationActionTypeCreate},
 	})
 

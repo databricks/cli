@@ -78,7 +78,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = d.saveState(ctx, db, newID, newState, d.DependsOn, dstate.OperationInfo{Action: action})
+	err = d.saveState(ctx, db, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -122,7 +122,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	//
 	// Recorded as a recreate rather than a delete: if the create below fails, this is the
 	// operation DMS is left with, and it says the resource is mid-recreate.
-	err = db.DeleteState(ctx, d.ResourceKey, dstate.OperationInfo{Action: deployplan.Recreate, InProgress: true})
+	err = db.DeleteStateForRecreate(ctx, d.ResourceKey)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
@@ -167,12 +167,12 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		//
 		// Recorded as a delete, which is what it did to the state, not the update that
 		// caused it.
-		err = db.DeleteState(ctx, d.ResourceKey, dstate.OperationInfo{Action: deployplan.Delete})
+		err = db.DeleteState(ctx, d.ResourceKey)
 		if err != nil {
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
 	} else {
-		err = d.saveState(ctx, db, id, newState, d.DependsOn, dstate.OperationInfo{Action: deployplan.Update})
+		err = d.saveState(ctx, db, id, newState, d.DependsOn)
 		if err != nil {
 			return fmt.Errorf("saving state id=%s: %w", id, err)
 		}
@@ -217,7 +217,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = d.saveState(ctx, db, newID, newState, d.DependsOn, dstate.OperationInfo{Action: deployplan.UpdateWithID})
+	err = d.saveState(ctx, db, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -259,7 +259,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 		}
 	}
 
-	err = db.DeleteState(ctx, d.ResourceKey, dstate.OperationInfo{Action: deployplan.Delete})
+	err = db.DeleteState(ctx, d.ResourceKey)
 	if err != nil {
 		return fmt.Errorf("deleting state id=%s: %w", oldID, err)
 	}
@@ -300,7 +300,7 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = d.saveState(ctx, db, id, newState, d.DependsOn, dstate.OperationInfo{Action: deployplan.Resize})
+	err = d.saveState(ctx, db, id, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
@@ -310,11 +310,11 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 
 // saveState saves a state with sensitive fields replaced by a placeholder value so secrets are never written
 // to disk in plaintext.
-func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry, info dstate.OperationInfo) error {
+func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
 	if err := zeroSensitiveFields(d.Adapter, state); err != nil {
 		return fmt.Errorf("redacting state: %w", err)
 	}
-	return db.SaveState(ctx, d.ResourceKey, newID, state, dependsOn, info)
+	return db.SaveState(ctx, d.ResourceKey, newID, state, dependsOn)
 }
 
 func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {

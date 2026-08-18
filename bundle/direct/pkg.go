@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
@@ -45,10 +46,10 @@ type DeploymentBundle struct {
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
 
-	// OpRec uploads applied operations to DMS. Nil unless the bundle records deployment
-	// history, in which case the deploy phase sets it once CreateVersion has claimed a
-	// version. Apply drains it before returning.
-	OpRec operationUploader
+	// OpRec records applied operations with DMS. Nil unless the bundle records deployment
+	// history, in which case the deploy phase sets it once the version exists. Apply drains
+	// it before returning.
+	OpRec dms.OperationWriter
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.
