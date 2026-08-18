@@ -31,7 +31,7 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default/files...
 Created cluster_policies.test_cluster_policy
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Verify the create request
@@ -55,7 +55,7 @@ Resources:
   Cluster Policies:
     test_cluster_policy:
       Name: my_cluster_policy
-      URL:  [DATABRICKS_URL]/compute/policies/[UUID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[NUMID]
 
 === Update the cluster policy name
 >>> update_file.py databricks.yml my_cluster_policy my_cluster_policy_2
@@ -74,7 +74,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "body": {
     "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
     "name": "my_cluster_policy_2",
-    "policy_id": "[UUID]"
+    "policy_id": "[TEST_CLUSTER_POLICY_ID]"
   }
 }
 
@@ -88,7 +88,7 @@ Resources:
   Cluster Policies:
     test_cluster_policy:
       Name: my_cluster_policy_2
-      URL:  [DATABRICKS_URL]/compute/policies/[UUID]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[NUMID]
 
 === Destroy the cluster policy
 >>> [CLI] bundle destroy --auto-approve
@@ -105,7 +105,7 @@ Destroy: 1 deleted
   "method": "POST",
   "path": "/api/2.0/policies/clusters/delete",
   "body": {
-    "policy_id": "[UUID]"
+    "policy_id": "[TEST_CLUSTER_POLICY_ID]"
   }
 }
 

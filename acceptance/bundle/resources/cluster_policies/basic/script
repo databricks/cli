@@ -10,6 +10,10 @@ cleanup() {
 trap cleanup EXIT
 trace $CLI bundle deploy
 
+# Mask the server-assigned policy id: the real backend returns a hex id that the
+# built-in UUID replacement misses, so register it explicitly for cloud parity.
+read_id.py test_cluster_policy > /dev/null
+
 title "Verify the create request"
 trace jq 'select(.method == "POST" and (.path | contains("/policies/clusters/create")))' out.requests.txt
 
