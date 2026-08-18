@@ -26,10 +26,21 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
+// jobRunTriggerLocalPaths is shared by OverrideChangeDesc and DoUpdate so
+// clearing a trigger stays a state-only update in both places.
+var jobRunTriggerLocalPaths = []string{
+	"lifecycle",
+	"lifecycle.triggers",
+	"lifecycle.triggers.on_bundle_deploy",
+	"lifecycle.triggers.on_file_change",
+}
+
 // JobRunTriggersState is the persisted fingerprint of lifecycle.triggers.
 type JobRunTriggersState struct {
 	// Fresh UUID each plan while armed so Old!=New forces recreate.
 	OnBundleDeploy string `json:"on_bundle_deploy,omitempty"`
+	// Per-file fingerprints from ResolveJobRunFileTriggers; change to recreate.
+	OnFileChange map[string]resources.JobRunFileFingerprint `json:"on_file_change,omitempty"`
 }
 
 // JobRunLifecycleState holds local-only lifecycle fields persisted in state.
@@ -97,12 +108,19 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	state := &JobRunState{
 		RunNow:      input.RunNow,
 		ResultState: jobs.RunResultStateSuccess,
-		Lifecycle:   nil,
 	}
+	var triggers *JobRunTriggersState
 	if input.HasOnBundleDeploy() {
-		state.Lifecycle = &JobRunLifecycleState{
-			Triggers: &JobRunTriggersState{OnBundleDeploy: uuid.NewString()},
+		triggers = &JobRunTriggersState{OnBundleDeploy: uuid.NewString()}
+	}
+	if len(input.ResolvedFileTriggers) > 0 {
+		if triggers == nil {
+			triggers = &JobRunTriggersState{}
 		}
+		triggers.OnFileChange = input.ResolvedFileTriggers
+	}
+	if triggers != nil {
+		state.Lifecycle = &JobRunLifecycleState{Triggers: triggers}
 	}
 	return state
 }
@@ -370,7 +388,7 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, config *JobRunState, entry *PlanEntry) (*JobRunRemote, error) {
 	// Clearing a trigger only drops its local-only fingerprint from state; wait on
 	// the run only when some other field changed.
-	if !entry.Changes.HasChangeExcept("lifecycle", "lifecycle.triggers", "lifecycle.triggers.on_bundle_deploy") {
+	if !entry.Changes.HasChangeExcept(jobRunTriggerLocalPaths...) {
 		config.ResultState = ""
 		return nil, nil
 	}
@@ -386,8 +404,7 @@ func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, config *JobRun
 // Clearing a trigger downgrades the recreate to a state-only update so the
 // fingerprint is dropped from state without re-firing the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
-	switch path.String() {
-	case "lifecycle", "lifecycle.triggers", "lifecycle.triggers.on_bundle_deploy":
+	if slices.Contains(jobRunTriggerLocalPaths, path.String()) {
 		// A cleared trigger sets New empty; structdiff may report it at lifecycle,
 		// lifecycle.triggers, or the leaf. DoUpdate treats these paths as no-ops.
 		if change.New == nil || change.New == "" {
@@ -395,6 +412,8 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 			change.Reason = "trigger removed"
 		}
 		return nil
+	}
+	switch path.String() {
 	case "result_state":
 		// The planner passes no remote state when the run could not be read.
 		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {

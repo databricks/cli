@@ -26,7 +26,8 @@ import (
 func Initialize(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: initialize")
 
-	bundle.ApplySeqContext(ctx, b,
+	bundle.ApplySeqContext(
+		ctx, b,
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
@@ -190,6 +191,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
 		mutator.ValidateJobRunTriggers(),
+
+		// Expand on_file_change globs and hash matched files into ResolvedFileTriggers.
+		mutator.ResolveJobRunFileTriggers(),
 
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
