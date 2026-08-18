@@ -12,16 +12,14 @@ Ignore = [
 ]
 
 # The local run drives a real sshd, reliable only on Linux.
-[GOOS]
-  linux = true
-  darwin = false
-  windows = false
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false
 
 # No --name: the connection name is a hash of the (random) local host, so
 # normalize it to keep the submitted job payload deterministic.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
 [[Repls]]
 Old = 'databricks-cpu-[0-9a-f]{8}'
 New = "[CPU_CONN]"
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]

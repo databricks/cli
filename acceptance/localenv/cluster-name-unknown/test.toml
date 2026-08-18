@@ -1,12 +1,11 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-[Env]
-DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
-
+Env.DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
 # No active cluster matches the requested name, so name→ID resolution finds
 # nothing and errors as an actionable E_RESOLVE at the resolve phase. This is
 # the unknown-name counterpart to cluster-name-ambiguous; the two share the
 # single wrapping branch in GetClusterByName.
+
 [[Server]]
 Pattern = "GET /api/2.1/clusters/list"
 Response.Body = '''
