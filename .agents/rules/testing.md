@@ -91,11 +91,11 @@ acceptance/cmd/fs/cp/file-to-dir/
 
 If the only reason for divergence is a server-side default that one engine sets and the other doesn't, set the field explicitly in `databricks.yml` so both engines produce identical output. Don't paper over it with per-engine files.
 
-**RULE: On Windows, Git Bash auto-converts a leading-`/` path argument (e.g. `/api/2.0/...`) into a Windows path, so `$CLI` sees the wrong path and the testserver 404s.** Set `MSYS_NO_PATHCONV = "1"` in the test directory's `test.toml` under `[Env]`. Quoting the argument in bash does NOT help — the conversion is done by the Windows binary's argument processing. Precedent: `acceptance/cmd/workspace/export-dir-*/test.toml`.
+**RULE: On Windows, Git Bash auto-converts a leading-`/` path argument (e.g. `/api/2.0/...`) into a Windows path, so `$CLI` sees the wrong path and the testserver 404s.** Set `Env.MSYS_NO_PATHCONV = "1"` in the test directory's `test.toml`. Quoting the argument in bash does NOT help — the conversion is done by the Windows binary's argument processing. Precedent: `acceptance/cmd/workspace/export-dir-*/test.toml`.
 
 **RULE: `EnvMatrix.<VAR> = []` removes that variable from the inherited matrix** (see `ExpandEnvMatrix` in `acceptance/internal/config.go`). The root `test.toml` matrixes `DATABRICKS_BUNDLE_ENGINE = [terraform, direct]`, so a non-bundle test opts out of both engine runs with `EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []`. The `out.test.toml` snapshot of inherited values is generated and committed by design.
 
-**RULE: Write matrix variables in dotted form (`EnvMatrix.<VAR> = [...]`) at the top of `test.toml`, not under a `[EnvMatrix]` header.** In TOML every key after a `[EnvMatrix]` header belongs to that table until the next header — a blank line does not end it. So a top-level key like `Ignore` placed below `[EnvMatrix]` is silently parsed as `EnvMatrix.Ignore` (a bogus matrix variable) instead of the real top-level field, and the test runs with the field unset. Dotted form keeps each key's table explicit and is immune to ordering:
+**RULE: Write env and matrix variables in dotted form (`Env.<VAR> = "..."`, `EnvMatrix.<VAR> = [...]`) at the top of `test.toml`, not under an `[Env]` / `[EnvMatrix]` header.** In TOML every key after a `[EnvMatrix]` header belongs to that table until the next header — a blank line does not end it. So a top-level key like `Ignore` placed below `[EnvMatrix]` is silently parsed as `EnvMatrix.Ignore` (a bogus matrix variable) instead of the real top-level field, and the test runs with the field unset. Dotted form keeps each key's table explicit and is immune to ordering:
 
 GOOD:
 
