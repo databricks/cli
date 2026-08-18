@@ -145,9 +145,9 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		return err
 	}
 
-	// Recorded after the WAL write, so DMS never reports state the deploy failed to persist,
-	// and outside the lock because recording waits when the service is behind - waiting under
-	// db.mu would hold up every other resource's write.
+	// Recorded here, after the WAL write, so DMS never reports state the deploy failed to
+	// persist, and outside db.mu because recording waits when the service is behind - which is
+	// also why the sink comes back from the locked section rather than being read here.
 	if sink != nil {
 		sink.RecordOperation(ctx, key, false, newID, recorded)
 	}
