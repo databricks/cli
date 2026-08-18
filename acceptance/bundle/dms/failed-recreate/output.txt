@@ -25,19 +25,7 @@ API message: Fault injected by test.
 
 Files: 3 uploaded, 0 deleted
 
->>> print_requests.py //api/2.0/bundle --sort
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
-  "q": {
-    "update_mask": "error_message,status"
-  },
-  "body": {
-    "error_message": "Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
-    "status": "OPERATION_STATUS_FAILED",
-    "sequence_id": "1"
-  }
-}
+>>> print_requests.py //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
@@ -58,13 +46,6 @@ Files: 3 uploaded, 0 deleted
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
-  "body": {
-    "completion_reason": "VERSION_COMPLETE_FAILURE"
-  }
-}
-{
-  "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations",
   "q": {
     "resource_key": "schemas.foo"
@@ -74,6 +55,25 @@ Files: 3 uploaded, 0 deleted
     "resource_id": "main.dms_failed_recreate_schema",
     "resource_key": "schemas.foo",
     "status": "OPERATION_STATUS_IN_PROGRESS"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
+  "q": {
+    "update_mask": "error_message,status"
+  },
+  "body": {
+    "error_message": "Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
+    "status": "OPERATION_STATUS_FAILED",
+    "sequence_id": "1"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_FAILURE"
   }
 }
 

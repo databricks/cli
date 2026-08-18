@@ -22,7 +22,7 @@ API message: Fault injected by test.
 
 Files: 3 uploaded, 0 deleted
 
->>> print_requests.py //api/2.0/bundle --sort
+>>> print_requests.py //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
@@ -43,13 +43,6 @@ Files: 3 uploaded, 0 deleted
 }
 {
   "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
-  "body": {
-    "completion_reason": "VERSION_COMPLETE_FAILURE"
-  }
-}
-{
-  "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations",
   "q": {
     "resource_key": "schemas.foo"
@@ -61,6 +54,13 @@ Files: 3 uploaded, 0 deleted
     "resource_key": "schemas.foo",
     "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_failed_update_schema\"}}",
     "status": "OPERATION_STATUS_FAILED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_FAILURE"
   }
 }
 
