@@ -47,7 +47,7 @@ func NewFetchRepositoryInfoCommand() *cobra.Command {
 		// which cannot be detected off-cluster, so that path is selected explicitly.
 		fetch := git.FetchRepositoryInfo
 		if workspaceAPI {
-			fetch = git.FetchRepositoryInfoWorkspace
+			fetch = git.FetchRepositoryInfoAPI
 		}
 
 		info, err := fetch(ctx, path, w)

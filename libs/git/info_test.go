@@ -1,10 +1,12 @@
 package git
 
 import (
+	"io/fs"
 	"net/http"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -15,7 +17,7 @@ import (
 // newFakeWorkspace returns a client for a fake workspace with a Git folder
 // created at repoPath. A Git folder under /Repos reports its metadata on
 // get-status, while one outside /Repos has Git CLI access and does not, which is
-// what makes the two paths through fetchRepositoryInfoAPI observable.
+// what makes the two paths through FetchRepositoryInfoAPI observable.
 func newFakeWorkspace(t *testing.T, repoPath string) *databricks.WorkspaceClient {
 	t.Helper()
 
@@ -42,7 +44,7 @@ func TestFetchRepositoryInfoAPI_Repo(t *testing.T) {
 	const repoPath = "/Workspace/Repos/me@example.com/repo"
 	w := newFakeWorkspace(t, repoPath)
 
-	info, err := fetchRepositoryInfoAPI(t.Context(), repoPath, w)
+	info, err := FetchRepositoryInfoAPI(t.Context(), repoPath, w)
 	require.NoError(t, err)
 
 	assert.Equal(t, repoPath, info.WorktreeRoot)
@@ -57,7 +59,7 @@ func TestFetchRepositoryInfoAPI_GitCliFolder(t *testing.T) {
 	const folderPath = "/Workspace/Users/me@example.com/gitfolder"
 	w := newFakeWorkspace(t, folderPath)
 
-	info, err := fetchRepositoryInfoAPI(t.Context(), folderPath, w)
+	info, err := FetchRepositoryInfoAPI(t.Context(), folderPath, w)
 	require.NoError(t, err)
 
 	assert.Equal(t, folderPath, info.WorktreeRoot)
@@ -73,7 +75,7 @@ func TestFetchRepositoryInfoAPI_Subdirectory(t *testing.T) {
 	w := newFakeWorkspace(t, folderPath)
 	require.NoError(t, w.Workspace.MkdirsByPath(t.Context(), folderPath+"/a/b"))
 
-	info, err := fetchRepositoryInfoAPI(t.Context(), folderPath+"/a/b", w)
+	info, err := FetchRepositoryInfoAPI(t.Context(), folderPath+"/a/b", w)
 	require.NoError(t, err)
 
 	assert.Equal(t, folderPath, info.WorktreeRoot)
@@ -87,7 +89,7 @@ func TestFetchRepositoryInfoAPI_NotAGitFolder(t *testing.T) {
 	dir := "/Workspace/Users/me@example.com/plain"
 	require.NoError(t, w.Workspace.MkdirsByPath(t.Context(), dir))
 
-	info, err := FetchRepositoryInfoWorkspace(t.Context(), dir, w)
+	info, err := FetchRepositoryInfoAPI(t.Context(), dir, w)
 	require.NoError(t, err)
 
 	assert.Empty(t, info.WorktreeRoot)
@@ -96,11 +98,17 @@ func TestFetchRepositoryInfoAPI_NotAGitFolder(t *testing.T) {
 	assert.Empty(t, info.OriginURL)
 }
 
-// A path that does not exist is reported as no repository rather than an error.
+// A path that does not exist is reported as fs.ErrNotExist, which
+// FetchRepositoryInfo normalizes to no repository rather than an error.
 func TestFetchRepositoryInfoAPI_MissingPath(t *testing.T) {
 	w := newFakeWorkspace(t, "/Workspace/Repos/me@example.com/repo")
+	const missing = "/Workspace/Users/me@example.com/nope"
 
-	info, err := FetchRepositoryInfoWorkspace(t.Context(), "/Workspace/Users/me@example.com/nope", w)
+	_, err := FetchRepositoryInfoAPI(t.Context(), missing, w)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{IsDbr: true, Version: "15.4"})
+	info, err := FetchRepositoryInfo(ctx, missing, w)
 	require.NoError(t, err)
 	assert.Empty(t, info.WorktreeRoot)
 }
@@ -134,7 +142,7 @@ func TestFetchRepositoryInfoAPI_ReposGetFailure(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	info, err := fetchRepositoryInfoAPI(t.Context(), folderPath, client)
+	info, err := FetchRepositoryInfoAPI(t.Context(), folderPath, client)
 	require.NoError(t, err)
 
 	assert.Equal(t, folderPath, info.WorktreeRoot)
@@ -148,7 +156,7 @@ func TestFetchRepositoryInfoAPI_ReposGetFailure(t *testing.T) {
 func TestFetchRepositoryInfoAPI_WorktreeRootKeepsWorkspacePrefix(t *testing.T) {
 	w := newFakeWorkspace(t, "/Repos/me@example.com/repo")
 
-	info, err := fetchRepositoryInfoAPI(t.Context(), "/Repos/me@example.com/repo", w)
+	info, err := FetchRepositoryInfoAPI(t.Context(), "/Repos/me@example.com/repo", w)
 	require.NoError(t, err)
 	assert.True(t, strings.HasPrefix(info.WorktreeRoot, "/Workspace/"), "got %q", info.WorktreeRoot)
 }

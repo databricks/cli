@@ -49,34 +49,32 @@ type response struct {
 //     will be logged as warnings, RepositoryInfo is guaranteed to have non-empty WorktreeRoot and other fields on best effort basis.
 //   - In successful case, all fields are set to proper git repository metadata.
 func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
+	var info RepositoryInfo
+	var err error
 	if strings.HasPrefix(path, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
-		return FetchRepositoryInfoWorkspace(ctx, path, w)
+		info, err = FetchRepositoryInfoAPI(ctx, path, w)
+	} else {
+		info, err = fetchRepositoryInfoDotGit(ctx, path)
 	}
-	return ignoreNotExist(fetchRepositoryInfoDotGit(ctx, path))
-}
 
-// FetchRepositoryInfoWorkspace reads the metadata through the workspace API,
-// which is what FetchRepositoryInfo does on a Databricks Runtime. It is exported
-// so that `bundle debug fetch-repository-info --workspace-api` can exercise this
-// path off-runtime; nothing in the product calls it directly.
-func FetchRepositoryInfoWorkspace(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
-	return ignoreNotExist(fetchRepositoryInfoAPI(ctx, path, w))
-}
-
-// ignoreNotExist reports a missing path as empty info rather than an error.
-//
-// A path that does not exist just means there is no repository there, which
-// is not an error. Both backends report this as fs.ErrNotExist (the API
-// backend translates a workspace 404 to it), so it is normalized to a nil
-// error in a single place rather than special-cased by every caller.
-func ignoreNotExist(info RepositoryInfo, err error) (RepositoryInfo, error) {
+	// A path that does not exist just means there is no repository there, which
+	// is not an error. Both backends report this as fs.ErrNotExist (the API
+	// backend translates a workspace 404 to it), so it is normalized to a nil
+	// error in a single place rather than special-cased by every caller.
 	if errors.Is(err, fs.ErrNotExist) {
 		return info, nil
 	}
 	return info, err
 }
 
-func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
+// FetchRepositoryInfoAPI reads the metadata from the workspace API, which is what
+// FetchRepositoryInfo does on a Databricks Runtime. Exported so that
+// `bundle debug fetch-repository-info --workspace-api` can reach this path
+// off-runtime; the product calls it through FetchRepositoryInfo.
+//
+// A path that does not exist is reported as fs.ErrNotExist; callers that treat
+// that as "no repository here" must normalize it the way FetchRepositoryInfo does.
+func FetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
 	result := RepositoryInfo{}
 
 	apiClient, err := client.New(w.Config)
