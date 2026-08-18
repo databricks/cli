@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 type RepositoryInfo struct {
@@ -31,6 +32,7 @@ type RepositoryInfo struct {
 type gitInfo struct {
 	Branch       string `json:"branch"`
 	HeadCommitID string `json:"head_commit_id"`
+	ID           int64  `json:"id"`
 	Path         string `json:"path"`
 	URL          string `json:"url"`
 }
@@ -108,6 +110,21 @@ func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 		result.LatestCommit = gi.HeadCommitID
 		result.CurrentBranch = gi.Branch
 		result.WorktreeRoot = fixedPath
+
+		// A Git folder with Git CLI access does not store the git metadata on the
+		// workspace object, so get-status returns only the id and path for it. The
+		// Repos API still has the metadata, and git_info.id identifies the Git
+		// folder root even when the queried path is a subdirectory of it.
+		if gi.ID != 0 && gi.Branch == "" && gi.HeadCommitID == "" && gi.URL == "" {
+			repo, err := w.Repos.Get(ctx, workspace.GetRepoRequest{RepoId: gi.ID})
+			if err != nil {
+				log.Warnf(ctx, "failed to load git info for repo %d: %s", gi.ID, err)
+			} else {
+				result.OriginURL = repo.Url
+				result.LatestCommit = repo.HeadCommitId
+				result.CurrentBranch = repo.Branch
+			}
+		}
 	} else {
 		log.Infof(ctx, "Failed to load git info from %s", apiEndpoint)
 	}
