@@ -550,7 +550,9 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string, returnGitInfo boo
 
 	if returnGitInfo {
 		if repo, ok := s.gitFolderFor(cleaned); ok {
-			gi := gitInfoBlock{ID: repo.Id, Path: repo.Path}
+			// The real API reports the Git folder root without the /Workspace mount
+			// prefix, whichever spelling the folder was created with.
+			gi := gitInfoBlock{ID: repo.Id, Path: strings.TrimPrefix(repo.Path, "/Workspace")}
 			if isGitCliFolder(repo.Path) {
 				info.DirectoryInfo = &workspace.DirectoryInfo{IsGitFolder: true}
 			} else {

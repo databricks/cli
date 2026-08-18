@@ -129,7 +129,7 @@ func TestWorkspaceGetStatusGitInfoForGitCliFolder(t *testing.T) {
 
 	gitInfo, ok := body["git_info"].(map[string]any)
 	require.True(t, ok, "expected git_info in %v", body)
-	assert.Equal(t, "/Workspace/Users/me/gitfolder", gitInfo["path"])
+	assert.Equal(t, "/Users/me/gitfolder", gitInfo["path"])
 	assert.NotEmpty(t, gitInfo["id"])
 	assert.NotContains(t, gitInfo, "branch")
 	assert.NotContains(t, gitInfo, "head_commit_id")
