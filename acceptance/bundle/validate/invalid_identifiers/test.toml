@@ -1,2 +1,3 @@
 Cloud = false
+# Validation fails before the deployment engine is consulted.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
