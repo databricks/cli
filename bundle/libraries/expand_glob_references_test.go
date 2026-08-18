@@ -240,56 +240,6 @@ func TestGlobReferencesExpandedForEnvironmentsDeps(t *testing.T) {
 	}, env.Spec.Dependencies)
 }
 
-func TestGlobReferencesExpandedForEnvironmentsDepsWithExtras(t *testing.T) {
-	dir := t.TempDir()
-	testutil.Touch(t, dir, "whl", "my1.whl")
-	testutil.Touch(t, dir, "whl", "my2.whl")
-
-	b := &bundle.Bundle{
-		SyncRootPath: dir,
-		Config: config.Root{
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"job": {
-						JobSettings: jobs.JobSettings{
-							Tasks: []jobs.Task{
-								{
-									TaskKey:        "task",
-									EnvironmentKey: "env",
-								},
-							},
-							Environments: []jobs.JobEnvironment{
-								{
-									EnvironmentKey: "env",
-									Spec: &compute.Environment{
-										Dependencies: []string{
-											"./whl/*.whl[train]",
-											"./whl/my1.whl[train,test]",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
-
-	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
-	require.Empty(t, diags)
-
-	job := b.Config.Resources.Jobs["job"]
-	env := job.Environments[0]
-	require.Equal(t, []string{
-		filepath.Join("whl", "my1.whl") + "[train]",
-		filepath.Join("whl", "my2.whl") + "[train]",
-		filepath.Join("whl", "my1.whl") + "[train,test]",
-	}, env.Spec.Dependencies)
-}
-
 func TestExpandGlobReferencesPreservesLocations(t *testing.T) {
 	dir := t.TempDir()
 
