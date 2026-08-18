@@ -35,5 +35,3 @@ Workspace:
 
 Found 3 warnings
 Error: 3 warnings were found. Warnings are not allowed in strict mode
-
-Exit code: 1

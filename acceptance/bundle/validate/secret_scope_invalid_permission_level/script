@@ -2,4 +2,4 @@
 trace $CLI bundle validate
 
 # With --strict, those warnings must fail validation.
-errcode trace $CLI bundle validate --strict
+musterr trace $CLI bundle validate --strict
