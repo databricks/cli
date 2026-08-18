@@ -11,7 +11,7 @@ trace $CLI bundle deploy
 DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
 
 # Capture the dashboard ID as a replacement.
-echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
+add_repl "$DASHBOARD_ID" DASHBOARD_ID
 
 # Verify dashboard was deployed
 trace retry $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path}'

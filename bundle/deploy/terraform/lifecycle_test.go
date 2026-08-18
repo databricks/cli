@@ -46,7 +46,7 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 				}, nil),
 			}, nil)
 
-			tfroot, err := BundleToTerraformWithDynValue(ctx, vin)
+			tfroot, err := BundleToTerraformWithDynValue(ctx, vin, false)
 			require.NoError(t, err)
 
 			bytes, err := json.Marshal(tfroot.Resource)

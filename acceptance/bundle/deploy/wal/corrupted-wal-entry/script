@@ -1,8 +1,8 @@
 # Create pre-existing jobs in the testserver so WAL recovery triggers DoUpdate (reset) instead of DoCreate
 JOB1=$($CLI jobs create --json '{"name":"valid-job"}' | jq -r '.job_id')
 JOB2=$($CLI jobs create --json '{"name":"another-valid"}' | jq -r '.job_id')
-echo "$JOB1:JOB1_ID" >> ACC_REPLS
-echo "$JOB2:JOB2_ID" >> ACC_REPLS
+add_repl "$JOB1" JOB1_ID
+add_repl "$JOB2" JOB2_ID
 
 mkdir -p .databricks/bundle/default
 cp resources.json .databricks/bundle/default/

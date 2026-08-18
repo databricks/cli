@@ -53,6 +53,9 @@ Validation OK!
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+Created jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq .settings.tasks job.json
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
@@ -122,5 +125,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-no-artifacts-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

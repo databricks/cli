@@ -1,0 +1,24 @@
+# Every stray databricks-connect pin here is disjoint from the managed version, so it
+# would make uv unsatisfiable and is removed — from [project].dependencies, an
+# optional-dependency extra, and another dependency group — leaving the single managed
+# pin in [dependency-groups].dev. The JSON diff shows each stray removed, with one
+# W_DBCONNECT_CONSOLIDATED warning per removed pin (in document order).
+cat > pyproject.toml <<'PY'
+[project]
+name = "demo"
+requires-python = ">=3.10"
+dependencies = [
+    "databricks-dlt",
+    "databricks-connect==15.1.*",
+    "pytest",
+]
+
+[project.optional-dependencies]
+extra = ["databricks-connect==14.0.0"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+docs = ["databricks-connect==15.0.0"]
+PY
+
+trace $CLI environments setup-local --serverless-version 4 --dry-run --output json

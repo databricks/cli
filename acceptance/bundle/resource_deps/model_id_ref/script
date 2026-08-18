@@ -8,6 +8,6 @@ trace $CLI bundle deploy
 # precisely rather than by the broad [NUMID] pattern. The id comes from the API (independent
 # of the deploy engine), so terraform and direct must both resolve to this exact value.
 model_id=$($CLI model-registry get-model my-model | jq -r '.registered_model_databricks.id')
-add_repl.py "$model_id" MY_MODEL_ID
+add_repl "$model_id" MY_MODEL_ID
 
 trace print_requests.py //mlflow/registered-models/create //jobs/create --sort

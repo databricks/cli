@@ -5,9 +5,7 @@
 }
 
 >>> [CLI] bundle deployment bind cluster1 [TEST_DEFAULT_CLUSTER_ID] --auto-approve
-Updating deployment state...
 Successfully bound cluster with an id '[TEST_DEFAULT_CLUSTER_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deployment unbind cluster1
-Updating deployment state...

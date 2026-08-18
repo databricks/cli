@@ -205,8 +205,10 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 
 	// Phase: merge — compute the merged pyproject.toml (in-memory, no writes yet).
+	// The serverless environment version (empty for cluster targets) is written
+	// into [tool.databricks.environment] so the project also runs in serverless Jobs.
 	p.report(ctx, PhaseMerge)
-	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, dbcPin)
+	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, dbcPin, compute.ServerlessEnvironmentVersion())
 	if err != nil {
 		return err
 	}
@@ -277,8 +279,9 @@ func (p *Pipeline) backupPath() string {
 // mergePlan computes the merged pyproject.toml bytes (without writing to disk),
 // decides greenfield vs. existing, and builds the Plan (populated only under
 // --dry-run). dbcPin is the databricks-connect pin to inject, or "" in
-// constraints-only mode.
-func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, dbcPin string) (merged []byte, greenfield bool, err error) {
+// constraints-only mode. envVersion is the serverless environment version to
+// write into [tool.databricks.environment], or "" for a cluster target.
+func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, dbcPin, envVersion string) (merged []byte, greenfield bool, err error) {
 	pyproject := p.pyprojectPath()
 	backup := p.backupPath()
 
@@ -305,9 +308,17 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	greenfield = baseBytes == nil
 
 	// The artifact drives the merge; in constraints-only mode we clear the
-	// databricks-connect pin so it is neither written nor asserted.
+	// databricks-connect pin so it is neither written nor asserted. envVersion is
+	// the resolved serverless version (empty for cluster targets).
+	//
+	// envVersion is deliberately NOT cleared in constraints-only mode: unlike the
+	// databricks-connect pin (a managed *dependency* the mode opts out of), the
+	// environment version records the resolved compute *target*, which the mode
+	// still resolves. Recording it keeps the target discoverable for VS Code and
+	// serverless Jobs even when dependency management is turned off.
 	effective := *c
 	effective.DatabricksConnect = dbcPin
+	effective.EnvironmentVersion = envVersion
 
 	var changedRegions []string
 	if greenfield {
@@ -318,19 +329,22 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		if dbcPin != "" {
 			changedRegions = append(changedRegions, regionDatabricksConnect)
 		}
+		if envVersion != "" {
+			changedRegions = append(changedRegions, regionDatabricksEnvironment)
+		}
 	} else {
 		merged, changedRegions, err = MergeManaged(baseBytes, effective)
 		if err != nil {
 			return nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
 		}
-		// Surface merge-quality warnings (overridden or duplicated pins, conflicting
-		// user constraints) from the pre-merge file. Greenfield has nothing of the
-		// user's to override, so it is skipped. This runs for both dry-run and real
-		// runs so the --json consumer sees the same warnings either way. The pin the
-		// merge rewrote comes from the merge itself, so the warning can never claim a
-		// replacement that did not happen.
+		// Surface merge-quality warnings (overridden, consolidated, or duplicated pins,
+		// conflicting user constraints) from the pre-merge file. Greenfield has nothing of
+		// the user's to override, so it is skipped. This runs for both dry-run and real
+		// runs so the --json consumer sees the same warnings either way. The databricks-connect
+		// edits come from the merge itself (planDBConnect), so a warning can never claim a
+		// rewrite or removal that did not happen.
 		p.res.Warnings = append(p.res.Warnings,
-			detectMergeWarnings(baseBytes, effective, replacedDBConnectPin(baseBytes, effective))...)
+			detectMergeWarnings(baseBytes, effective, planDBConnect(baseBytes, effective))...)
 	}
 
 	// Under --dry-run, build the plan (with a diff) for reporting. A real run does
@@ -437,9 +451,25 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 // populates the venv path. dbcPin is "" in constraints-only mode, where the DB
 // Connect assertion is skipped.
 func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string) error {
-	pyVer, dbcVer, err := p.PM.Validate(ctx, p.ProjectDir)
+	info, err := p.PM.Validate(ctx, p.ProjectDir)
 	if err != nil {
 		return p.fail(PhaseValidate, true, asPipelineError(err, ErrValidate, "validation failed"))
+	}
+	pyVer, dbcVer := info.PythonMinor, info.DBConnect
+
+	// A standalone pyspark installed alongside databricks-connect collides only when the
+	// collision is *live*. databricks-connect vendors its own pyspark, so the two share
+	// the pyspark namespace and whichever install's files win the overwrite decide
+	// whether `import databricks.connect` works. When it does not, the environment
+	// genuinely cannot start a session (surfacing to users as an opaque Java or protobuf
+	// error), so fail here rather than report it ready. But a stale, orphaned pyspark
+	// dist-info left behind by an install databricks-connect's files won leaves the
+	// metadata probe reporting a pyspark version while the environment imports fine —
+	// failing on that would reject a working setup, so require an actual import failure.
+	if dbcVer != "" && info.Pyspark != "" && info.DBConnectImportErr != "" {
+		return p.fail(PhaseValidate, true, NewError(ErrValidate, nil,
+			"databricks-connect %s cannot be imported (%s) because a standalone pyspark %s is installed alongside it — they share the pyspark package and overwrite each other. Remove the standalone pyspark dependency from your project and re-run setup; if you need a local Spark session, keep it in a separate virtual environment",
+			dbcVer, info.DBConnectImportErr, info.Pyspark))
 	}
 
 	// Assert the installed Python minor matches the target.

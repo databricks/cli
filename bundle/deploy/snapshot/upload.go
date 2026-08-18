@@ -36,6 +36,8 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 
 	remoteRoot, err := uploader.GetSnapshotRootPath(ctx)
+
+	zipContent, fileCount, err := BundleZip(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}

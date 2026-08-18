@@ -10,7 +10,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/fs"
 	"maps"
 	"math/rand/v2"
 	"net/http"
@@ -93,8 +92,6 @@ const (
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
 	MaxFileSize      = 1_000_000
-	// Filename to save replacements to (used by diff.py)
-	ReplsFile = "repls.json"
 	// Filename for materialized config (used as golden file)
 	MaterializedConfigFile = "out.test.toml"
 
@@ -103,11 +100,19 @@ const (
 	// The tests the don't set SERVERLESS variable or set to empty string will also be run.
 	EnvFilterVar = "ENVFILTER"
 
-	// File where scripts can output custom replacements
-	// export $job_id=100200300
-	// $ echo "$job_id:MY_JOB" >> ACC_REPLS  # This will replace 100200300 with [MY_JOB] in the output
-	// TODO: this should be merged with repls.json functionality, currently these replacements are not parsed by diff.py
-	userReplacementsFilename = "ACC_REPLS"
+	// Env var with the path to the file holding all replacements applied to the output.
+	// It is kept outside of the test directory, otherwise "bundle deploy" uploads it.
+	//
+	// Every line is one replacement encoded as a JSON object: "Old" is a regular expression
+	// (written by the harness), "Literal" is a value to replace verbatim (appended by
+	// add_repl.py). The harness writes its own replacements first, then the scripts add theirs:
+	//
+	//   $ job_id=100200300
+	//   $ add_repl "$job_id" MY_JOB   # replaces 100200300 with [MY_JOB] in the output
+	//
+	// The file is read back here (see loadScriptReplacements) and by the python helpers
+	// (see bin/repls.py).
+	ReplsEnvVar = "ACC_REPLS"
 )
 
 var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
@@ -123,11 +128,6 @@ var Scripts = map[string]bool{
 	EntryPointScript: true,
 	CleanupScript:    true,
 	PrepareScript:    true,
-}
-
-var Ignored = map[string]bool{
-	ReplsFile:                true,
-	userReplacementsFilename: true,
 }
 
 func TestAccept(t *testing.T) {
@@ -888,6 +888,9 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
+	replsPath := filepath.Join(t.TempDir(), ReplsEnvVar)
+	cmd.Env = append(cmd.Env, ReplsEnvVar+"="+replsPath)
+
 	// populate CLOUD_ENV_BASE
 	envBase := getCloudEnvBase(cloudEnv)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV_BASE="+envBase)
@@ -898,10 +901,17 @@ func runTest(t *testing.T,
 	// User replacements:
 	repls.Repls = append(repls.Repls, config.Repls...)
 
-	// Save replacements to temp test directory so that it can be read by diff.py
-	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
-	require.NoError(t, err)
-	testutil.WriteFile(t, filepath.Join(tmpDir, ReplsFile), string(replsJson))
+	// Save replacements so that they can be read by the scripts (diff.py, sort_lines.py).
+	// One JSON object per line, because scripts append their own replacements to this file.
+	var replsLines strings.Builder
+	for _, repl := range repls.Repls {
+		line, err := json.Marshal(repl)
+		require.NoError(t, err)
+		replsLines.Write(line)
+		replsLines.WriteByte('\n')
+	}
+	testutil.WriteFile(t, replsPath, replsLines.String())
+	replsWritten := len(repls.Repls)
 
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
@@ -925,7 +935,7 @@ func runTest(t *testing.T,
 	// Disable the passive update notice explicitly. It is already suppressed
 	// implicitly (dev builds, non-TTY stderr, CI), but tests that run released
 	// binaries (e.g. -useversion) must never reach GitHub or print the notice
-	// into compared output. Tests can override this via [Env] in test.toml.
+	// into compared output. Tests can override this via Env.* in test.toml.
 	cmd.Env = append(cmd.Env, "DATABRICKS_CLI_DISABLE_UPDATE_CHECK=true")
 
 	// Neutralize Databricks-internal development-environment interference so
@@ -1003,7 +1013,7 @@ func runTest(t *testing.T,
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
 
-	loadUserReplacements(t, &repls, tmpDir)
+	loadScriptReplacements(t, &repls, replsPath, replsWritten)
 
 	printedRepls := false
 
@@ -1026,9 +1036,6 @@ func runTest(t *testing.T,
 			continue
 		}
 		if _, ok := outputs[relPath]; ok {
-			continue
-		}
-		if _, ok := Ignored[relPath]; ok {
 			continue
 		}
 		if config.CompiledIgnoreObject.MatchesPath(relPath) && !strings.HasPrefix(relPath, "out") {
@@ -1810,26 +1817,32 @@ func setupTerraform(t *testing.T, cwd, buildDir string, repls *testdiff.Replacem
 	repls.SetPath(terraformExecPath, "[TERRAFORM]")
 }
 
-func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {
-	b, err := os.ReadFile(filepath.Join(tmpDir, userReplacementsFilename))
-	if errors.Is(err, fs.ErrNotExist) {
-		return
-	}
+// loadScriptReplacements adds the replacements appended to replsPath by the scripts.
+// The first offset lines were written by the harness itself and are already in repls.
+func loadScriptReplacements(t *testing.T, repls *testdiff.ReplacementsContext, replsPath string, offset int) {
+	b, err := os.ReadFile(replsPath)
 	require.NoError(t, err)
-	lines := strings.SplitSeq(string(b), "\n")
-	for line := range lines {
+	lines := strings.Split(string(b), "\n")
+	for _, line := range lines[min(offset, len(lines)):] {
 		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue
 		}
-		items := strings.Split(line, ":")
-		if len(items) <= 1 {
-			t.Errorf("Error parsing %s: %#v", userReplacementsFilename, line)
+		// Scripts only add literal replacements; regular expressions come from the harness.
+		var entry struct {
+			Literal string
+			New     string
+			Order   int
+		}
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			t.Errorf("Error parsing %s: %#v: %s", ReplsEnvVar, line, err)
 			continue
 		}
-		repl := items[len(items)-1]
-		old := line[:len(line)-len(repl)-1]
-		repls.SetWithOrder(old, "["+repl+"]", -100)
+		if entry.Literal == "" || entry.New == "" {
+			t.Errorf("Incomplete entry in %s: %#v", ReplsEnvVar, line)
+			continue
+		}
+		repls.SetWithOrder(entry.Literal, entry.New, entry.Order)
 	}
 }
 

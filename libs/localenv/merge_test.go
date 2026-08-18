@@ -452,10 +452,152 @@ func TestRenderFreshPyproject(t *testing.T) {
 	assert.Contains(t, s, managedMarkerStart)
 	assert.Contains(t, s, managedMarkerEnd)
 	assert.Contains(t, s, "pydantic~=2.10.6")
+	// A cluster target (no EnvironmentVersion) writes no [tool.databricks.environment].
+	assert.NotContains(t, s, "[tool.databricks.environment]")
 	// A fresh render is itself a no-op under MergeManaged (already fully managed).
 	merged, _, err := MergeManaged(out, testConstraints())
 	require.NoError(t, err)
 	assert.Equal(t, s, string(merged))
+}
+
+func TestRenderFreshPyprojectServerlessWritesEnvironment(t *testing.T) {
+	c := testConstraints()
+	c.EnvironmentVersion = "5"
+	out := RenderFreshPyproject("demo", c)
+	s := string(out)
+	assert.Contains(t, s, "[tool.databricks.environment]")
+	assert.Contains(t, s, `environment_version = "5"`)
+	requireValidTOML(t, out)
+	// A fresh render is itself a no-op under MergeManaged (already fully managed).
+	merged, _, err := MergeManaged(out, c)
+	require.NoError(t, err)
+	assert.Equal(t, s, string(merged))
+}
+
+func TestMergeInsertsDatabricksEnvironmentWhenAbsent(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`)
+	c := testConstraints()
+	c.EnvironmentVersion = "5"
+	out, regions, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, "[tool.databricks.environment]")
+	assert.Contains(t, s, `environment_version = "5"`)
+	assert.Contains(t, regions, regionDatabricksEnvironment)
+	requireValidTOML(t, out)
+	// Idempotent.
+	twice, _, err := MergeManaged(out, c)
+	require.NoError(t, err)
+	assert.Equal(t, s, string(twice))
+}
+
+func TestMergeReplacesExistingEnvironmentVersionPreservingComment(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.databricks.environment]
+environment_version = "4"  # pinned
+`)
+	c := testConstraints()
+	c.EnvironmentVersion = "5"
+	out, regions, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `environment_version = "5"  # pinned`)
+	assert.NotContains(t, s, `environment_version = "4"`)
+	assert.Contains(t, regions, regionDatabricksEnvironment)
+	// The table is refreshed in place, not duplicated.
+	assert.Equal(t, 1, countOccurrences(s, "[tool.databricks.environment]"))
+	requireValidTOML(t, out)
+}
+
+func TestMergeInsertsEnvironmentVersionKeyWhenTableExists(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.databricks.environment]
+# user note
+`)
+	c := testConstraints()
+	c.EnvironmentVersion = "5"
+	out, _, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `environment_version = "5"`)
+	assert.Contains(t, s, "# user note")
+	assert.Equal(t, 1, countOccurrences(s, "[tool.databricks.environment]"))
+	requireValidTOML(t, out)
+}
+
+func TestMergeEnvironmentNoopForClusterTarget(t *testing.T) {
+	// A cluster target leaves EnvironmentVersion empty: the section is never
+	// written, and an existing one is left untouched rather than removed.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.databricks.environment]
+environment_version = "4"
+`)
+	c := testConstraints() // EnvironmentVersion == "": cluster target.
+	out, regions, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	assert.Contains(t, string(out), `environment_version = "4"`)
+	assert.NotContains(t, regions, regionDatabricksEnvironment)
+}
+
+func TestMergeAddsEnvironmentToPreFeatureManagedFile(t *testing.T) {
+	// The common upgrade path: a file a pre-feature CLI wrote for a serverless
+	// target already carries the managed [tool.uv] marker block but no
+	// [tool.databricks.environment] section. Re-running the new CLI must add the
+	// section, keep exactly one managed block, and stay idempotent.
+	in := []byte(`[project]
+name = "demo"
+version = "0.0.0"
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = [
+    "databricks-connect~=17.2.0",
+]
+
+` + managedMarkerStart + `
+[tool.uv]
+constraint-dependencies = [
+    "pydantic~=2.10.6",
+    "anyio~=4.6.2",
+]
+` + managedMarkerEnd + `
+`)
+	c := testConstraints()
+	c.EnvironmentVersion = "5"
+	out, regions, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, "[tool.databricks.environment]")
+	assert.Contains(t, s, `environment_version = "5"`)
+	assert.Contains(t, regions, regionDatabricksEnvironment)
+	// The pre-existing managed [tool.uv] block is neither duplicated nor disturbed.
+	assert.Equal(t, 1, countOccurrences(s, managedMarkerStart))
+	assert.Equal(t, 1, countOccurrences(s, "[tool.databricks.environment]"))
+	requireValidTOML(t, out)
+	// Idempotent on the upgraded file.
+	twice, _, err := MergeManaged(out, c)
+	require.NoError(t, err)
+	assert.Equal(t, s, string(twice))
 }
 
 func TestMergeStripsMultiLineConstraintDepsWithBracketInFirstElement(t *testing.T) {
@@ -507,9 +649,11 @@ func TestBracketDepthDeltaIgnoresStringsAndComments(t *testing.T) {
 	}
 }
 
-func TestMergeDatabricksConnectOnlyTouchesDevGroup(t *testing.T) {
-	// A databricks-connect pin in a sibling group (docs) must be left alone; only
-	// the dev group's entry is managed.
+func TestMergeConsolidatesDatabricksConnectFromSiblingGroup(t *testing.T) {
+	// databricks-connect is fully owned by setup-local in the install flow: a stray pin
+	// in a sibling group (docs) makes uv unsatisfiable, so it is removed and the managed
+	// pin lives only in dev. This deliberately overrides the "sibling groups untouched"
+	// rule that scopes mergeDatabricksConnect, but only for databricks-connect.
 	in := []byte(`[project]
 requires-python = ">=3.10"
 
@@ -522,9 +666,256 @@ dev = [
 	out, _, err := MergeManaged(in, testConstraints())
 	require.NoError(t, err)
 	s := string(out)
-	// docs untouched; dev updated to the managed pin.
-	assert.Contains(t, s, `docs = ["databricks-connect~=14.3"]`)
+	// docs consolidated (its db-connect removed); dev updated to the managed pin.
+	assert.Contains(t, s, `docs = []`)
+	assert.NotContains(t, s, `databricks-connect~=14.3`)
 	assert.Contains(t, s, `"databricks-connect~=17.2.0",`)
+	requireValidTOML(t, out)
+}
+
+func TestMergeConsolidatesDatabricksConnectFromProjectDeps(t *testing.T) {
+	// The reported bug: a template ships databricks-connect in [project].dependencies
+	// while the dev group carries a different pin, so uv cannot co-resolve them. The
+	// merge removes the [project].dependencies pin and manages db-connect only in dev.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+dependencies = [
+    "databricks-dlt",
+    "pytest",
+    "databricks-connect==15.1.*",
+]
+
+[dependency-groups]
+dev = [
+    "databricks-connect~=16.0",
+]
+`)
+	out, regions, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.NotContains(t, s, "databricks-connect==15.1.*", "the stray project.dependencies pin is removed")
+	assert.Contains(t, s, `"databricks-dlt",`, "sibling dependencies are preserved")
+	assert.Contains(t, s, `"pytest",`)
+	assert.Contains(t, s, `"databricks-connect~=17.2.0",`, "dev carries the single managed pin")
+	assert.Contains(t, regions, regionDatabricksConnect)
+	requireValidTOML(t, out)
+
+	// Idempotent: a second merge finds nothing to remove and produces identical bytes.
+	out2, _, err := MergeManaged(out, testConstraints())
+	require.NoError(t, err)
+	assert.Equal(t, string(out), string(out2))
+}
+
+func TestMergeConsolidatesDatabricksConnectEmptiesSingleLineArray(t *testing.T) {
+	// Removing the only element of a single-line array leaves a valid empty array,
+	// not a dangling comma.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+spark = ["databricks-connect==15.0.0"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, "spark = []", "the optional-dependency extra is emptied")
+	assert.NotContains(t, s, "databricks-connect==15.0.0")
+	requireValidTOML(t, out)
+}
+
+func TestMergeConsolidatesLeavesOtherElementsInArray(t *testing.T) {
+	// Only the databricks-connect element is removed from a mixed single-line array;
+	// the surviving elements and the array structure stay intact.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+dependencies = ["numpy", "databricks-connect==15.1.*", "pytest"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `dependencies = ["numpy", "pytest"]`)
+	assert.NotContains(t, s, "databricks-connect==15.1.*")
+	requireValidTOML(t, out)
+}
+
+func TestMergeKeepsCompatibleDatabricksConnectPins(t *testing.T) {
+	// Only a databricks-connect pin that provably cannot co-resolve with the managed
+	// pin is removed. A pin that overlaps it, carries no version, or is marker-gated
+	// resolves fine, so it is left in place — the merge does not silently rewrite a
+	// user declaration (including [project].dependencies wheel metadata) that isn't
+	// broken. env pin here is ~=17.2.0.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+dependencies = [
+    "databricks-connect>=15",
+    "databricks-connect ; python_version < '3.13'",
+]
+
+[project.optional-dependencies]
+extra = ["databricks-connect"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+test = ["databricks-connect>=15,<20"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `"databricks-connect>=15",`, "an overlapping pin co-resolves and is kept")
+	assert.Contains(t, s, "python_version < '3.13'", "a marker-gated pin is not compared and is kept")
+	assert.Contains(t, s, `extra = ["databricks-connect"]`, "an unversioned pin is kept")
+	assert.Contains(t, s, `test = ["databricks-connect>=15,<20"]`, "an overlapping ranged pin in another group is kept")
+	assert.Contains(t, s, `"databricks-connect~=17.2.0"`, "the dev pin is still updated to the managed version")
+	requireValidTOML(t, out)
+}
+
+func TestMergeKeepsEnvEqualPinInProjectDeps(t *testing.T) {
+	// A [project].dependencies pin that already equals the managed version is not
+	// disjoint from it, so it is left in place — the only declaration in the wheel
+	// metadata is never silently deleted, and no consolidation warning is emitted.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+dependencies = ["databricks-connect~=17.2.0"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	assert.Contains(t, string(out), `dependencies = ["databricks-connect~=17.2.0"]`, "the env-equal pin is kept")
+	requireValidTOML(t, out)
+}
+
+func TestMergeKeepsClosingBracketOnItsOwnLine(t *testing.T) {
+	// Removing the last element of a multi-line array with no trailing comma on it must
+	// not pull the closing "]" up onto the previous element's line (a common uv-init shape).
+	in := []byte(`[project]
+requires-python = ">=3.10"
+dependencies = [
+    "databricks-dlt",
+    "pytest",
+    "databricks-connect==15.1.*"
+]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.NotContains(t, s, "databricks-connect==15.1.*")
+	assert.Contains(t, s, "\n    \"pytest\",\n]", "the closing bracket keeps its own line and the trailing comma survives")
+	assert.NotContains(t, s, `"pytest"]`, "the bracket is not pulled up")
+	requireValidTOML(t, out)
+}
+
+func TestMergeConstraintsOnlyLeavesDatabricksConnectUntouched(t *testing.T) {
+	// In constraints-only mode (empty DatabricksConnect) databricks-connect is not
+	// managed at all: no pin is inserted and no stray is removed, anywhere.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+dependencies = ["databricks-connect==15.1.*"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+docs = ["databricks-connect~=14.3"]
+`)
+	c := Constraints{RequiresPython: "==3.12.*", ConstraintDeps: []string{"pydantic~=2.10.6"}}
+	out, regions, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, "databricks-connect==15.1.*", "project.dependencies pin left untouched")
+	assert.Contains(t, s, "databricks-connect~=16.0", "dev pin left untouched")
+	assert.Contains(t, s, "databricks-connect~=14.3", "sibling group left untouched")
+	assert.NotContains(t, regions, regionDatabricksConnect)
+	requireValidTOML(t, out)
+}
+
+func TestMergeConsolidatesStrayAfterCommentedElement(t *testing.T) {
+	// A stray databricks-connect element whose token carries a leading comment (from
+	// the previous element's trailing comment, or the opening "[" line) must still be
+	// removed. dbconnectElementPin scans the token per line so the leading comment does
+	// not hide the quoted requirement on the next line.
+	cases := map[string]string{
+		"trailing comment on previous element": `[project]
+requires-python = ">=3.10"
+dependencies = [
+    "pytest",  # test runner
+    "databricks-connect==15.1.*",
+]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+`,
+		"comment on the opening bracket line": `[project]
+requires-python = ">=3.10"
+dependencies = [  # runtime deps
+    "databricks-connect==15.1.*",
+    "pytest",
+]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+`,
+	}
+	// A comment on a surviving element (or the opening line) must be preserved; the
+	// removal only drops the databricks-connect element, not the neighbouring comment.
+	wantComment := map[string]string{
+		"trailing comment on previous element": "# test runner",
+		"comment on the opening bracket line":  "# runtime deps",
+	}
+	for name, in := range cases {
+		out, _, err := MergeManaged([]byte(in), testConstraints())
+		require.NoError(t, err, name)
+		s := string(out)
+		assert.NotContains(t, s, "databricks-connect==15.1.*", name)
+		assert.Contains(t, s, `"pytest",`, name)
+		assert.Contains(t, s, `"databricks-connect~=17.2.0"`, name)
+		assert.Contains(t, s, wantComment[name], name+": neighbouring comment must be preserved")
+		requireValidTOML(t, out)
+	}
+}
+
+func TestMergeConsolidatesSecondDevPinAfterCommentedManagedPin(t *testing.T) {
+	// The dev-group keepFirst dedup must also see through a comment: the managed pin
+	// carries a trailing comment, and the second databricks-connect on the next line
+	// must still be removed rather than shadowed by that comment.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = [
+    "databricks-connect~=16.0",  # managed by setup-local
+    "databricks-connect==15.0.0",
+]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `"databricks-connect~=17.2.0",`, "the managed pin is kept and updated")
+	assert.NotContains(t, s, "databricks-connect==15.0.0", "the second pin is removed")
+	assert.Contains(t, s, "# managed by setup-local", "the managed pin's comment is preserved")
+	requireValidTOML(t, out)
+}
+
+func TestMergeConsolidationSkipsIncludeGroupAndLiteralStrings(t *testing.T) {
+	// The removal matches double-quoted databricks-connect elements only, mirroring the
+	// rewrite: a PEP 735 include-group reference and a single-quoted pin are left alone.
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = [{include-group = "spark"}]
+spark = ['databricks-connect==15.0.0']
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, `{include-group = "spark"}`, "the include-group reference is preserved")
+	assert.Contains(t, s, `'databricks-connect==15.0.0'`, "the single-quoted pin is not removed")
 	requireValidTOML(t, out)
 }
 

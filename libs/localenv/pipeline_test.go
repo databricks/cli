@@ -27,15 +27,15 @@ const cancelPMStderr = "error: no solution found: databricks-connect==17.2 confl
 // below — a plain ">= 0" assertion would also hold for the unset field.
 const fetchDelay = 25 * time.Millisecond
 
-type fakePM struct{ py, dbc string }
+type fakePM struct{ py, dbc, pyspark, dbcImportErr string }
 
 func (fakePM) Name() string                                    { return "fake" }
 func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.0", nil }
 func (fakePM) EnsurePython(context.Context, string) error      { return nil }
 func (fakePM) Provision(context.Context, string, string) error { return nil }
 func (fakePM) PostProvision(context.Context, string) error     { return nil }
-func (f fakePM) Validate(context.Context, string) (string, string, error) {
-	return f.py, f.dbc, nil
+func (f fakePM) Validate(context.Context, string) (VenvInfo, error) {
+	return VenvInfo{PythonMinor: f.py, DBConnect: f.dbc, Pyspark: f.pyspark, DBConnectImportErr: f.dbcImportErr}, nil
 }
 
 // noProvisionPM fails any method that could touch the machine (install the
@@ -60,8 +60,8 @@ func (noProvisionPM) PostProvision(context.Context, string) error {
 	return errors.New("PostProvision must not be called under --dry-run")
 }
 
-func (noProvisionPM) Validate(context.Context, string) (string, string, error) {
-	return "", "", errors.New("Validate must not be called under --dry-run")
+func (noProvisionPM) Validate(context.Context, string) (VenvInfo, error) {
+	return VenvInfo{}, errors.New("Validate must not be called under --dry-run")
 }
 
 // uvMissingPM fails EnsureAvailable, simulating a machine where the package
@@ -480,6 +480,10 @@ func TestPipelineGreenfieldCreatesNewPyproject(t *testing.T) {
 	data, readErr := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
 	require.NoError(t, readErr)
 	assert.Contains(t, string(data), `"databricks-connect~=17.2.0",`)
+	// A serverless target records the environment version so the same project
+	// also runs in serverless Jobs (DECO-27998).
+	assert.Contains(t, string(data), "[tool.databricks.environment]")
+	assert.Contains(t, string(data), `environment_version = "4"`)
 	// No backup created when pyproject.toml did not previously exist.
 	assert.NoFileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 }
@@ -875,6 +879,52 @@ func TestPipelineValidateRejectsUnparseablePin(t *testing.T) {
 	require.NotNil(t, res.Error)
 	assert.Equal(t, ErrValidate, res.Error.Code)
 	assert.Equal(t, PhaseValidate, res.Error.FailurePhase)
+}
+
+func TestPipelineValidateRejectsStandalonePyspark(t *testing.T) {
+	// A LIVE collision: standalone pyspark installed alongside databricks-connect, and
+	// `import databricks.connect` fails as a result. The environment cannot start a
+	// session, so validate must fail with actionable guidance rather than report ready.
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0", pyspark: "4.2.0", dbcImportErr: "ImportError"},
+	}
+	res, err := p.Run(t.Context())
+	require.Error(t, err)
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrValidate, res.Error.Code)
+	assert.Equal(t, PhaseValidate, res.Error.FailurePhase)
+	assert.Contains(t, res.Error.Msg, "pyspark")
+	assert.Contains(t, res.Error.Msg, "databricks-connect")
+	assert.Contains(t, res.Error.Msg, "ImportError")
+}
+
+func TestPipelineValidateAllowsStalePysparkDistInfo(t *testing.T) {
+	// A standalone pyspark distribution is present in the metadata, but databricks-connect
+	// imports fine — its vendored files won the overwrite, leaving only an orphaned
+	// pyspark dist-info. The environment is functional, so validate must NOT hard-fail
+	// on the mere presence of pyspark metadata (regression guard for the false positive
+	// reported in review: install-order can leave a working env with a stale dist-info).
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags: ComputeFlags{Serverless: "v4"},
+		// pyspark present in metadata, but the import succeeds (dbcImportErr == "").
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0", pyspark: "4.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.OK)
 }
 
 func TestPipelineValidateRejectsUnparseableInstalledVersion(t *testing.T) {

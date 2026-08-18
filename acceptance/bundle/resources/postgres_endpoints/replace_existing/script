@@ -25,6 +25,6 @@ trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,
 # endpoint. Per-engine output is captured so regressions in either
 # engine's destroy flow show up in the diff.
 title "bundle destroy"
-$CLI bundle destroy --auto-approve > out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
+$CLI bundle destroy --auto-approve > out.destroy.txt 2>&1 || true
 
 trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json
