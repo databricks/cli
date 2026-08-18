@@ -6,6 +6,7 @@
 >>> [CLI] repos get [NUMID] -o json
 {
   "branch": "update-by-id",
+  "head_commit_id": "77e0c1a3cba9bd6d8b5c9d0e2f4a6b8c1d3e5f70",
   "id": [NUMID],
   "path": "/Repos/me@databricks.com/test-repo",
   "provider": "gitHub",
@@ -17,6 +18,7 @@
 >>> [CLI] repos get [NUMID] -o json
 {
   "branch": "update-by-path",
+  "head_commit_id": "77e0c1a3cba9bd6d8b5c9d0e2f4a6b8c1d3e5f70",
   "id": [NUMID],
   "path": "/Repos/me@databricks.com/test-repo",
   "provider": "gitHub",

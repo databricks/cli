@@ -49,18 +49,27 @@ type response struct {
 //     will be logged as warnings, RepositoryInfo is guaranteed to have non-empty WorktreeRoot and other fields on best effort basis.
 //   - In successful case, all fields are set to proper git repository metadata.
 func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
-	var info RepositoryInfo
-	var err error
 	if strings.HasPrefix(path, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
-		info, err = fetchRepositoryInfoAPI(ctx, path, w)
-	} else {
-		info, err = fetchRepositoryInfoDotGit(ctx, path)
+		return FetchRepositoryInfoWorkspace(ctx, path, w)
 	}
+	return ignoreNotExist(fetchRepositoryInfoDotGit(ctx, path))
+}
 
-	// A path that does not exist just means there is no repository there, which
-	// is not an error. Both backends report this as fs.ErrNotExist (the API
-	// backend translates a workspace 404 to it), so it is normalized to a nil
-	// error in a single place rather than special-cased by every caller.
+// FetchRepositoryInfoWorkspace reads the metadata through the workspace API,
+// which is what FetchRepositoryInfo does on a Databricks Runtime. It is exported
+// so that `bundle debug fetch-repository-info --workspace-api` can exercise this
+// path off-runtime; nothing in the product calls it directly.
+func FetchRepositoryInfoWorkspace(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
+	return ignoreNotExist(fetchRepositoryInfoAPI(ctx, path, w))
+}
+
+// ignoreNotExist reports a missing path as empty info rather than an error.
+//
+// A path that does not exist just means there is no repository there, which
+// is not an error. Both backends report this as fs.ErrNotExist (the API
+// backend translates a workspace 404 to it), so it is normalized to a nil
+// error in a single place rather than special-cased by every caller.
+func ignoreNotExist(info RepositoryInfo, err error) (RepositoryInfo, error) {
 	if errors.Is(err, fs.ErrNotExist) {
 		return info, nil
 	}

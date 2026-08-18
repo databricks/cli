@@ -1,6 +1,7 @@
 package testserver_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
@@ -62,4 +63,101 @@ func TestWorkspaceMkdirsRecursive(t *testing.T) {
 	for _, dir := range []string{"/a", "/a/b", "/a/b/c"} {
 		assert.Equal(t, 200, getStatus(t, server.URL, dir), dir)
 	}
+}
+
+func createRepo(t *testing.T, baseURL, path string) {
+	t.Helper()
+	body := `{"url":"https://github.com/databricks/cli","provider":"gitHub","path":"` + path + `"}`
+	req, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/repos", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer test-token")
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, 200, resp.StatusCode)
+}
+
+func getStatusBody(t *testing.T, baseURL, path string, returnGitInfo bool) map[string]any {
+	t.Helper()
+	url := baseURL + "/api/2.0/workspace/get-status?path=" + path
+	if returnGitInfo {
+		url += "&return_git_info=true"
+	}
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	req.Header.Set("Authorization", "Bearer test-token")
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, 200, resp.StatusCode)
+
+	var out map[string]any
+	dec := json.NewDecoder(resp.Body)
+	dec.UseNumber()
+	require.NoError(t, dec.Decode(&out))
+	return out
+}
+
+// A standard Git folder reports the full git metadata.
+func TestWorkspaceGetStatusGitInfoForRepo(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	createRepo(t, server.URL, "/Repos/me/myrepo")
+	body := getStatusBody(t, server.URL, "/Repos/me/myrepo", true)
+
+	assert.Equal(t, "REPO", body["object_type"])
+	gitInfo, ok := body["git_info"].(map[string]any)
+	require.True(t, ok, "expected git_info in %v", body)
+	assert.Equal(t, "main", gitInfo["branch"])
+	assert.NotEmpty(t, gitInfo["head_commit_id"])
+	assert.Equal(t, "https://github.com/databricks/cli", gitInfo["url"])
+	assert.Equal(t, "/Repos/me/myrepo", gitInfo["path"])
+}
+
+// A Git folder with Git CLI access reports only the id and path, and marks
+// itself through directory_info.
+func TestWorkspaceGetStatusGitInfoForGitCliFolder(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	createRepo(t, server.URL, "/Workspace/Users/me/gitfolder")
+	body := getStatusBody(t, server.URL, "/Workspace/Users/me/gitfolder", true)
+
+	assert.Equal(t, "DIRECTORY", body["object_type"])
+	dirInfo, ok := body["directory_info"].(map[string]any)
+	require.True(t, ok, "expected directory_info in %v", body)
+	assert.Equal(t, true, dirInfo["is_git_folder"])
+
+	gitInfo, ok := body["git_info"].(map[string]any)
+	require.True(t, ok, "expected git_info in %v", body)
+	assert.Equal(t, "/Workspace/Users/me/gitfolder", gitInfo["path"])
+	assert.NotEmpty(t, gitInfo["id"])
+	assert.NotContains(t, gitInfo, "branch")
+	assert.NotContains(t, gitInfo, "head_commit_id")
+	assert.NotContains(t, gitInfo, "url")
+}
+
+// A path inside a Git folder reports the containing folder, not itself.
+func TestWorkspaceGetStatusGitInfoForSubdirectory(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	createRepo(t, server.URL, "/Repos/me/myrepo")
+	mkdirs(t, server.URL, "/Repos/me/myrepo/a/b")
+	body := getStatusBody(t, server.URL, "/Repos/me/myrepo/a/b", true)
+
+	gitInfo, ok := body["git_info"].(map[string]any)
+	require.True(t, ok, "expected git_info in %v", body)
+	assert.Equal(t, "/Repos/me/myrepo", gitInfo["path"])
+}
+
+// git_info is only served when asked for, and never for a path outside a Git folder.
+func TestWorkspaceGetStatusGitInfoOmitted(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	createRepo(t, server.URL, "/Repos/me/myrepo")
+	assert.NotContains(t, getStatusBody(t, server.URL, "/Repos/me/myrepo", false), "git_info")
+
+	mkdirs(t, server.URL, "/other/dir")
+	assert.NotContains(t, getStatusBody(t, server.URL, "/other/dir", true), "git_info")
 }
