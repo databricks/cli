@@ -113,6 +113,31 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 		assertFingerprint(t, fps["a.txt"], "aaa")
 		assertFingerprint(t, fps["subdir/x.py"], "bbb")
 	})
+
+	t.Run("pattern outside sync root is an error", func(t *testing.T) {
+		dir := t.TempDir()
+		pattern := "../outside.txt"
+		b := bundleWithFileTrigger(dir, pattern)
+
+		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		assert.Contains(t, diags[0].Summary, `not under the sync root`)
+		assert.Empty(t, b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers)
+	})
+
+	t.Run("directory-only match is an error", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.MkdirAll(filepath.Join(dir, "migrations"), 0o755))
+		pattern := "migrations"
+		b := bundleWithFileTrigger(dir, pattern)
+
+		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		assert.Contains(t, diags[0].Summary, `matches no regular files`)
+		assert.Empty(t, b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers)
+	})
 }
 
 func bundleWithFileTrigger(syncRoot, pattern string) *bundle.Bundle {
