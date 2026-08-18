@@ -71,6 +71,37 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu8xH100, AcceleratorCount: 16}, at.Deployments[0].Compute)
 }
 
+func TestBuildSubmitPayloadDockerImage(t *testing.T) {
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
+		Environment: &environmentConfig{
+			DockerImage: &dockerImageConfig{URL: "nvcr.io/org/img:1.0"},
+		},
+	}
+
+	p := buildSubmitPayload(cfg, "/d/command.sh", "5", "", snapshotResult{}, nil)
+	require.Len(t, p.Tasks, 1)
+	require.NotNil(t, p.Tasks[0].AiRuntimeTask)
+	assert.Equal(t, "nvcr.io/org/img:1.0", p.Tasks[0].AiRuntimeTask.DockerImageUrl)
+}
+
+func TestBuildSubmitPayloadNoDockerImage(t *testing.T) {
+	// Without an environment.docker_image block the field stays empty (omitempty),
+	// so the runtime-managed environment is used.
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
+	}
+
+	p := buildSubmitPayload(cfg, "/d/command.sh", "5", "", snapshotResult{}, nil)
+	require.Len(t, p.Tasks, 1)
+	require.NotNil(t, p.Tasks[0].AiRuntimeTask)
+	assert.Empty(t, p.Tasks[0].AiRuntimeTask.DockerImageUrl)
+}
+
 func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
 	// max_retries unset defaults to 3 (matching the Python native path), so both
 	// retry fields are sent.
