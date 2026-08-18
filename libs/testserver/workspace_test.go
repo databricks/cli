@@ -90,31 +90,37 @@ func getStatusBody(t *testing.T, baseURL, path string, returnGitInfo bool) map[s
 	require.Equal(t, 200, resp.StatusCode)
 
 	var out map[string]any
-	dec := json.NewDecoder(resp.Body)
-	dec.UseNumber()
-	require.NoError(t, dec.Decode(&out))
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&out))
 	return out
 }
 
-// A standard Git folder reports the full git metadata.
+// How a Git folder is described on the wire: the object type, directory_info and
+// the presence of git_info. The acceptance tests read the resolved metadata
+// rather than the response, so these fields are only pinned here.
+
+// A standard Git folder keeps the REPO object type and reports the full metadata,
+// and only when it is asked for.
 func TestWorkspaceGetStatusGitInfoForRepo(t *testing.T) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
 
 	createRepo(t, server.URL, "/Repos/me/myrepo")
-	body := getStatusBody(t, server.URL, "/Repos/me/myrepo", true)
 
+	assert.NotContains(t, getStatusBody(t, server.URL, "/Repos/me/myrepo", false), "git_info")
+
+	body := getStatusBody(t, server.URL, "/Repos/me/myrepo", true)
 	assert.Equal(t, "REPO", body["object_type"])
+	assert.NotContains(t, body, "directory_info")
+
 	gitInfo, ok := body["git_info"].(map[string]any)
 	require.True(t, ok, "expected git_info in %v", body)
 	assert.Equal(t, "main", gitInfo["branch"])
 	assert.NotEmpty(t, gitInfo["head_commit_id"])
 	assert.Equal(t, "https://github.com/databricks/cli", gitInfo["url"])
-	assert.Equal(t, "/Repos/me/myrepo", gitInfo["path"])
 }
 
-// A Git folder with Git CLI access reports only the id and path, and marks
-// itself through directory_info.
+// A Git folder with Git CLI access is a DIRECTORY that marks itself through
+// directory_info, and reports only the id and path.
 func TestWorkspaceGetStatusGitInfoForGitCliFolder(t *testing.T) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
@@ -134,30 +140,4 @@ func TestWorkspaceGetStatusGitInfoForGitCliFolder(t *testing.T) {
 	assert.NotContains(t, gitInfo, "branch")
 	assert.NotContains(t, gitInfo, "head_commit_id")
 	assert.NotContains(t, gitInfo, "url")
-}
-
-// A path inside a Git folder reports the containing folder, not itself.
-func TestWorkspaceGetStatusGitInfoForSubdirectory(t *testing.T) {
-	server := testserver.New(t)
-	testserver.AddDefaultHandlers(server)
-
-	createRepo(t, server.URL, "/Repos/me/myrepo")
-	mkdirs(t, server.URL, "/Repos/me/myrepo/a/b")
-	body := getStatusBody(t, server.URL, "/Repos/me/myrepo/a/b", true)
-
-	gitInfo, ok := body["git_info"].(map[string]any)
-	require.True(t, ok, "expected git_info in %v", body)
-	assert.Equal(t, "/Repos/me/myrepo", gitInfo["path"])
-}
-
-// git_info is only served when asked for, and never for a path outside a Git folder.
-func TestWorkspaceGetStatusGitInfoOmitted(t *testing.T) {
-	server := testserver.New(t)
-	testserver.AddDefaultHandlers(server)
-
-	createRepo(t, server.URL, "/Repos/me/myrepo")
-	assert.NotContains(t, getStatusBody(t, server.URL, "/Repos/me/myrepo", false), "git_info")
-
-	mkdirs(t, server.URL, "/other/dir")
-	assert.NotContains(t, getStatusBody(t, server.URL, "/other/dir", true), "git_info")
 }
