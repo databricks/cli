@@ -1,0 +1,39 @@
+
+>>> [CLI] bundle validate
+Warning: invalid value "[BAD_PERM_LEVEL]" for enum field. Valid values are [READ WRITE MANAGE]
+  at resources.secret_scopes.bad_numeric_level.permissions[0].level
+
+Warning: invalid value "[BAD_PERM_LEVEL]" for enum field. Valid values are [READ WRITE MANAGE]
+  at resources.secret_scopes.bad_numeric_string_level.permissions[0].level
+
+Warning: invalid value "fuzz_badlevel" for enum field. Valid values are [READ WRITE MANAGE]
+  at resources.secret_scopes.bad_string_level.permissions[0].level
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 3 warnings
+
+>>> [CLI] bundle validate --strict
+Warning: invalid value "[BAD_PERM_LEVEL]" for enum field. Valid values are [READ WRITE MANAGE]
+  at resources.secret_scopes.bad_numeric_level.permissions[0].level
+
+Warning: invalid value "[BAD_PERM_LEVEL]" for enum field. Valid values are [READ WRITE MANAGE]
+  at resources.secret_scopes.bad_numeric_string_level.permissions[0].level
+
+Warning: invalid value "fuzz_badlevel" for enum field. Valid values are [READ WRITE MANAGE]
+  at resources.secret_scopes.bad_string_level.permissions[0].level
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 3 warnings
+Error: 3 warnings were found. Warnings are not allowed in strict mode
+
+Exit code: 1

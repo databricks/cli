@@ -1,0 +1,5 @@
+# Without --strict, invalid enum levels are warnings only.
+trace $CLI bundle validate
+
+# With --strict, those warnings must fail validation.
+errcode trace $CLI bundle validate --strict
