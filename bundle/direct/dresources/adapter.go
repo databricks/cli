@@ -39,6 +39,8 @@ type IResource interface {
 	// plus references that complete it but have no source in the config. resourceKey is the full node,
 	// e.g. "resources.jobs.foo.permissions". Sub-resources use it to reference their parent's id.
 	// Resources that don't implement it receive their config unchanged and contribute no references.
+	// Like the other resource methods, inputConfig is never nil, so it may be declared as a concrete
+	// pointer and dereferenced: nodes are discovered from the config tree, so the key always exists.
 	// Example: func (r *ResourceGrants) PrepareInputConfig(inputConfig *[]catalog.PrivilegeAssignment, resourceKey string) (*structvar.StructVar, error)
 	PrepareInputConfig(inputConfig any, resourceKey string) (*structvar.StructVar, error)
 
