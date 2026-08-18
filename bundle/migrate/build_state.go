@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -80,39 +79,12 @@ func BuildStateFromTF(
 			return warningsSeen, fmt.Errorf("%s: getting config: %w", node, err)
 		}
 
-		baseRefs := map[string]string{}
-
-		switch {
-		case strings.HasSuffix(node, ".permissions"):
-			var sv *structvar.StructVar
-			if strings.HasPrefix(node, "resources.secret_scopes.") {
-				typedConfig, ok := inputConfig.(*[]resources.SecretScopePermission)
-				if !ok {
-					return warningsSeen, fmt.Errorf("%s: expected *[]resources.SecretScopePermission, got %T", node, inputConfig)
-				}
-				sv, err = dresources.PrepareSecretScopeAclsInputConfig(*typedConfig, node)
-				if err != nil {
-					return warningsSeen, fmt.Errorf("%s: preparing secret scope ACLs config: %w", node, err)
-				}
-			} else {
-				sv, err = dresources.PreparePermissionsInputConfig(inputConfig, node)
-				if err != nil {
-					return warningsSeen, fmt.Errorf("%s: preparing permissions config: %w", node, err)
-				}
-			}
-			inputConfig = sv.Value
-			baseRefs = sv.Refs
-
-		case strings.HasSuffix(node, ".grants"):
-			sv, err := dresources.PrepareGrantsInputConfig(inputConfig, node)
-			if err != nil {
-				return warningsSeen, fmt.Errorf("%s: preparing grants config: %w", node, err)
-			}
-			inputConfig = sv.Value
-			baseRefs = sv.Refs
+		inputSV, err := adapter.PrepareInputConfig(inputConfig, node)
+		if err != nil {
+			return warningsSeen, fmt.Errorf("%s: PrepareInputConfig: %w", node, err)
 		}
 
-		newStateValue, err := adapter.PrepareState(inputConfig)
+		newStateValue, err := adapter.PrepareState(inputSV.Value)
 		if err != nil {
 			return warningsSeen, fmt.Errorf("%s: PrepareState: %w", node, err)
 		}
@@ -121,7 +93,7 @@ func BuildStateFromTF(
 		if err != nil {
 			return warningsSeen, fmt.Errorf("%s: extracting references: %w", node, err)
 		}
-		maps.Copy(refs, baseRefs)
+		maps.Copy(refs, inputSV.Refs)
 
 		sv := structvar.NewStructVar(newStateValue, refs)
 
