@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle debug fetch-repository-info --path /Workspace/Users/[USERNAME]/test-folder-[UNIQUE_NAME]
+Warn: failed to load git info for repo [NUMID]: Fault injected by test.
+{
+  "worktree_root": "/Workspace/Users/[USERNAME]/test-folder-[UNIQUE_NAME]",
+  "current_branch": "",
+  "latest_commit": "",
+  "origin_url": ""
+}

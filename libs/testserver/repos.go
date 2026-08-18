@@ -9,6 +9,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+// fakeHeadCommitID is the commit the fake reports a clone is checked out to.
+// Nothing is cloned here, so the remote's real HEAD is unknowable. The counting
+// prefix marks it as synthetic, so it is not mistaken for a real sha; it avoids
+// runs of three digits, which the test replacements would rewrite to [NUMID].
+const fakeHeadCommitID = "0a1b2c3d4e5f6a7b8e7dadd73e50a69d8ba47d8f"
+
 func (s *FakeWorkspace) ReposCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -25,11 +31,12 @@ func (s *FakeWorkspace) ReposCreate(req Request) Response {
 	id := strconv.FormatInt(repoId, 10)
 
 	repoInfo := workspace.RepoInfo{
-		Id:       repoId,
-		Path:     repoReq.Path,
-		Provider: repoReq.Provider,
-		Url:      repoReq.Url,
-		Branch:   "main",
+		Id:           repoId,
+		Path:         repoReq.Path,
+		Provider:     repoReq.Provider,
+		Url:          repoReq.Url,
+		Branch:       "main",
+		HeadCommitId: fakeHeadCommitID,
 	}
 
 	s.Repos[id] = repoInfo
