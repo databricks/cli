@@ -56,7 +56,7 @@ Files: 3 uploaded, 0 deleted
   },
   "body": {
     "action_type": "OPERATION_ACTION_TYPE_UPDATE",
-    "error_message": "updating id=main.dms_failed_update_schema: Fault injected by test.",
+    "error_message": "updating id=main.dms_failed_update_schema: Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
     "resource_id": "main.dms_failed_update_schema",
     "resource_key": "schemas.foo",
     "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_failed_update_schema\"}}",

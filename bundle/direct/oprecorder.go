@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
@@ -99,7 +100,9 @@ func newFailedOperation(action deployplan.ActionType, resourceID string, priorSt
 		return recordedOperation{}, fmt.Errorf("serialized state is %d bytes, which exceeds the %d byte limit for recording deployment history", len(priorState), maxOperationStateSize)
 	}
 
-	message := cause.Error()
+	// Summarized, not cause.Error(): for an API failure that adds the status and error
+	// code, which is often the most actionable part of the history.
+	message := diag.FormatAPIErrorSummary(cause)
 	if len(message) > maxOperationErrorMessageSize {
 		message = message[:maxOperationErrorMessageSize]
 		// The cut can land inside a rune, and the service stores a string. Drop the partial
