@@ -22,14 +22,22 @@ type SecretScopeAclsState struct {
 	Acls      []workspace.AclItem `json:"acls,omitempty"`
 }
 
-func PrepareSecretScopeAclsInputConfig(inputConfig []resources.SecretScopePermission, node string) (*structvar.StructVar, error) {
-	baseNode, ok := strings.CutSuffix(node, ".permissions")
+func (*ResourceSecretScopeAcls) New(client *databricks.WorkspaceClient) *ResourceSecretScopeAcls {
+	return &ResourceSecretScopeAcls{client: client}
+}
+
+func (*ResourceSecretScopeAcls) PrepareState(s *SecretScopeAclsState) *SecretScopeAclsState {
+	return s
+}
+
+func (*ResourceSecretScopeAcls) PrepareInputConfig(inputConfig *[]resources.SecretScopePermission, resourceKey string) (*structvar.StructVar, error) {
+	baseNode, ok := strings.CutSuffix(resourceKey, ".permissions")
 	if !ok {
-		return nil, fmt.Errorf("internal error: node %q does not end with .permissions", node)
+		return nil, fmt.Errorf("internal error: node %q does not end with .permissions", resourceKey)
 	}
 
-	acls := make([]workspace.AclItem, 0, len(inputConfig))
-	for _, elem := range inputConfig {
+	acls := make([]workspace.AclItem, 0, len(*inputConfig))
+	for _, elem := range *inputConfig {
 		acl := workspace.AclItem{
 			Permission: workspace.AclPermission(elem.Level),
 			Principal:  "",
@@ -53,14 +61,6 @@ func PrepareSecretScopeAclsInputConfig(inputConfig []resources.SecretScopePermis
 			"scope_name": "${" + baseNode + ".name}",
 		},
 	}, nil
-}
-
-func (*ResourceSecretScopeAcls) New(client *databricks.WorkspaceClient) *ResourceSecretScopeAcls {
-	return &ResourceSecretScopeAcls{client: client}
-}
-
-func (*ResourceSecretScopeAcls) PrepareState(s *SecretScopeAclsState) *SecretScopeAclsState {
-	return s
 }
 
 func aclItemKey(x workspace.AclItem) (string, string) {
