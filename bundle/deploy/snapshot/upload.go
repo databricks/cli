@@ -36,6 +36,9 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 
 	remoteRoot, err := uploader.GetSnapshotRootPath(ctx)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	if b.Config.Resources.Snapshots == nil {
 		b.Config.Resources.Snapshots = make(map[string]*resources.Snapshot)
