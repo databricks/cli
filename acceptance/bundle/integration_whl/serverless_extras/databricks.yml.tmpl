@@ -7,7 +7,7 @@ workspace:
 artifacts:
     my_test_code:
       type: whl
-      build: python3 setup.py bdist_wheel
+      build: uv build --wheel --no-build-isolation
 
 resources:
   jobs:
