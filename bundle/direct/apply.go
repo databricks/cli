@@ -80,8 +80,10 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
 
-	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
-		return d.Adapter.WaitAfterCreate(ctx, newID, newState)
+	waitRemoteState, err := waitCapped(ctx, d.MaxWait, "creation of "+d.ResourceKey, func(ctx context.Context) (any, error) {
+		return retryOnTransient(ctx, func() (any, error) {
+			return d.Adapter.WaitAfterCreate(ctx, newID, newState)
+		})
 	})
 	if err != nil {
 		return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
@@ -258,7 +260,11 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 	// Wait for asynchronous teardown after dropping state. Mirrors Recreate so
 	// the contract is the same regardless of whether the user triggered
 	// `bundle destroy` or a recreate.
-	err = d.Adapter.WaitAfterDelete(ctx, oldID)
+	// The two diverge once MaxWait is set: this wait is capped, Recreate's is not,
+	// because only Recreate needs the name released for the create that follows.
+	_, err = waitCapped(ctx, d.MaxWait, "deletion of "+d.ResourceKey, func(ctx context.Context) (struct{}, error) {
+		return struct{}{}, d.Adapter.WaitAfterDelete(ctx, oldID)
+	})
 	if err != nil {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}

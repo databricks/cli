@@ -1,0 +1,2 @@
+# DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT is read by the direct engine only.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

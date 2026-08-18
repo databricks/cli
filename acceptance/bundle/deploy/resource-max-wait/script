@@ -1,0 +1,11 @@
+title "A malformed value is rejected instead of falling back to the default wait"
+trace DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=1m musterr $CLI bundle deploy
+trace DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=-5 musterr $CLI bundle deploy
+
+title "A valid value deploys normally"
+trace DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=60 $CLI bundle deploy
+
+title "Zero means do not wait at all"
+trace DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=0 $CLI bundle deploy
+
+trace $CLI bundle destroy --auto-approve
