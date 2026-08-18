@@ -54,8 +54,9 @@ resources:
 	require.NoError(t, err)
 	require.Empty(t, skipped)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
+	fileChanges, skippedApply, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
+	require.Empty(t, skippedApply)
 	require.Len(t, fileChanges, 1)
 
 	modified := fileChanges[0].ModifiedContent

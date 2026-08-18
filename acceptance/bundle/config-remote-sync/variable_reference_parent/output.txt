@@ -1,0 +1,38 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.my_job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Inject a spark_conf key under a field defined as a complex variable
+spark_conf is set to a variable reference, so a remotely-added key cannot be
+written into that scalar node; the change is skipped while unrelated edits still sync.
+
+=== Detect and save all changes
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  job_clusters[job_cluster_key='shared'].new_cluster.spark_conf['spark.executor.memory']: add
+  max_concurrent_runs: replace
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -15,5 +15,5 @@
+   jobs:
+     my_job:
+-      max_concurrent_runs: 1
++      max_concurrent_runs: 5
+       job_clusters:
+         - job_cluster_key: shared
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

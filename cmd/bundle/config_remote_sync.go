@@ -130,11 +130,12 @@ Examples:
 					log.Warnf(ctx, "variable restoration skipped: %v", err)
 				}
 
-				files, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
+				files, applySkipped, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryYamlApplyFailed
 					return fmt.Errorf("failed to generate YAML files: %w", err)
 				}
+				stats.SkippedChangesCount += int64(applySkipped)
 				stats.FilesChangedCount = int64(len(files))
 
 				if save {
