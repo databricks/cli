@@ -187,7 +187,7 @@ destroy-bundle() {
     local exit_code=0
     trace $CLI bundle destroy --auto-approve "$@" || exit_code=$?
 
-    # root_path is configurable, so only the ~/.bundle/<name>/<target> layout is ours.
+    # Only ever clean up directories under .bundle.
     if [[ -n "$bundle_dir" && "$(basename "$(dirname "$bundle_dir")")" == ".bundle" ]]; then
         $CLI workspace delete "$bundle_dir" --recursive >>LOG.destroy-bundle 2>&1 || true
     fi
