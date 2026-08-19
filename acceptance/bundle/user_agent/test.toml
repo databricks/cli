@@ -2,5 +2,4 @@ Phase = 1
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 
-[Env]
-DATABRICKS_CACHE_ENABLED = 'false'
+Env.DATABRICKS_CACHE_ENABLED = 'false'

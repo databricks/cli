@@ -37,7 +37,7 @@ Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_
 Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
 Created job_runs.my_run
 Created jobs.my_job
-Files: 5 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deploy

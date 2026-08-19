@@ -6,14 +6,12 @@ RequiresWarehouse = true
 # recording off (inherited as true from the parent) to avoid flaky ordering.
 RecordRequests = false
 
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["direct"]
-
-[Env]
 # This test makes an out-of-band draft update and expects `bundle plan` to detect that a
 # republish is owed. The inherited eventual-consistency simulation would make the plan's
 # own read observe stale values and mask the change, so opt out of it here.
-INJECT_STALE_ON_DIRECT = "0"
+Env.INJECT_STALE_ON_DIRECT = "0"
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [[Repls]]
 Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+(Z|\+\d\d:\d\d)?)?Z'

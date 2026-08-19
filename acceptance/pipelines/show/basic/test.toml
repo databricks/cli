@@ -1,10 +1,8 @@
 RecordRequests = true
 
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["direct"]
+Env.DATABRICKS_WAREHOUSE_ID = "wh-test"
 
-[Env]
-DATABRICKS_WAREHOUSE_ID = "wh-test"
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # The testserver's SQL Statement Execution API is matcher-driven and fails
 # unmatched statements by default; stub a canned result so the golden shows real

@@ -1,0 +1,31 @@
+# Pin the rendered config field help. Any change to a `help:` struct tag on the
+# run YAML schema shows up as a diff here.
+
+# Plain -h must keep documenting the command itself, and advertise the config
+# path syntax so the feature is discoverable.
+title "command help"
+trace $CLI experimental air run --help
+
+title "schema overview"
+trace $CLI experimental air run -h config
+
+title "nested object lists its fields"
+trace $CLI experimental air run -h config.compute
+
+title "leaf field"
+trace $CLI experimental air run -h config.compute.accelerator_type
+
+title "conditionally required leaf"
+trace $CLI experimental air run -h config.environment.docker_image.url
+
+title "union field reports both accepted shapes"
+trace $CLI experimental air run -h config.code_source.snapshot.git.remote
+
+title "the config. prefix is optional"
+trace $CLI experimental air run -h compute.num_accelerators
+
+title "unknown field suggests the near match"
+trace $CLI experimental air run -h config.compute.acclerator_type
+
+title "free-form map keys are not schema fields"
+trace $CLI experimental air run -h config.parameters.learning_rate
