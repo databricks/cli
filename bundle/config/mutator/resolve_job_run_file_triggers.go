@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	libsync "github.com/databricks/cli/libs/sync"
 )
 
 // missingFileHash marks a pattern with no matching file so appear/disappear recreates.
@@ -30,8 +31,13 @@ func (*resolveJobRunFileTriggers) Name() string {
 	return "ResolveJobRunFileTriggers"
 }
 
-func (*resolveJobRunFileTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (*resolveJobRunFileTriggers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
+	syncable, d := syncableRelPaths(ctx, b)
+	if d.HasError() {
+		return d
+	}
+	diags = diags.Extend(d)
 	for name, jr := range b.Config.Resources.JobRuns {
 		if jr == nil || jr.Lifecycle == nil {
 			continue
@@ -42,7 +48,7 @@ func (*resolveJobRunFileTriggers) Apply(_ context.Context, b *bundle.Bundle) dia
 				continue
 			}
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d].on_file_change", name, i)
-			hashes, d := resolveFileTrigger(b, path, strings.TrimSpace(*t.OnFileChange))
+			hashes, d := resolveFileTrigger(b, path, strings.TrimSpace(*t.OnFileChange), syncable)
 			diags = diags.Extend(d)
 			maps.Copy(out, hashes)
 		}
@@ -55,7 +61,42 @@ func (*resolveJobRunFileTriggers) Apply(_ context.Context, b *bundle.Bundle) dia
 	return diags
 }
 
-func resolveFileTrigger(b *bundle.Bundle, loc, pattern string) (map[string]string, diag.Diagnostics) {
+// syncableRelPaths is the set of relative paths sync would upload.
+func syncableRelPaths(ctx context.Context, b *bundle.Bundle) (map[string]struct{}, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	needs := false
+	for _, jr := range b.Config.Resources.JobRuns {
+		if jr != nil && jr.HasOnFileChange() {
+			needs = true
+			break
+		}
+	}
+	if !needs {
+		return nil, diags
+	}
+
+	fl, err := libsync.NewFileList(ctx, b.WorktreeRoot, b.SyncRoot, b.Config.Sync.Paths, b.Config.Sync.Include, b.Config.Sync.Exclude)
+	if err != nil {
+		return nil, diags.Append(diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("lifecycle.triggers.on_file_change: list sync files: %s", err),
+		})
+	}
+	files, err := fl.Files(ctx)
+	if err != nil {
+		return nil, diags.Append(diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("lifecycle.triggers.on_file_change: list sync files: %s", err),
+		})
+	}
+	out := make(map[string]struct{}, len(files))
+	for _, f := range files {
+		out[filepath.ToSlash(f.Relative)] = struct{}{}
+	}
+	return out, diags
+}
+
+func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[string]struct{}) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := make(map[string]string)
 	localPattern := filepath.FromSlash(pattern)
@@ -84,6 +125,7 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string) (map[string]strin
 		})
 	}
 	regularMatches := 0
+	ignoredMatches := 0
 	sawNonRegular := false
 	for _, match := range matches {
 		info, err := os.Stat(match)
@@ -99,7 +141,6 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string) (map[string]strin
 			sawNonRegular = true
 			continue
 		}
-		regularMatches++
 		rel, err := filepath.Rel(b.SyncRootPath, match)
 		if err != nil || !filepath.IsLocal(rel) {
 			diags = diags.Append(diag.Diagnostic{
@@ -109,6 +150,12 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string) (map[string]strin
 			})
 			continue
 		}
+		// Same membership as sync: .gitignore and sync.exclude drop a glob match.
+		if _, ok := syncable[filepath.ToSlash(rel)]; !ok {
+			ignoredMatches++
+			continue
+		}
+		regularMatches++
 		hash, err := hashFile(match)
 		if err != nil {
 			diags = diags.Append(diag.Diagnostic{
@@ -122,10 +169,18 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string) (map[string]strin
 	}
 	// A directory-only match would otherwise leave ResolvedFileTriggers empty
 	// and silently disarm the trigger while config still sets on_file_change.
-	if regularMatches == 0 && sawNonRegular {
+	if regularMatches == 0 && sawNonRegular && ignoredMatches == 0 {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q matches no regular files", pattern),
+			Locations: b.Config.GetLocations(loc),
+		})
+	}
+	if len(out) == 0 && ignoredMatches > 0 {
+		out[filepath.ToSlash(pattern)] = missingFileHash
+		diags = diags.Append(diag.Diagnostic{
+			Severity:  diag.Warning,
+			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: no files match %q", pattern),
 			Locations: b.Config.GetLocations(loc),
 		})
 	}
