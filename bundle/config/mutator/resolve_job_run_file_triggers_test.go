@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -85,7 +86,10 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 		patB := "subdir/*.py"
 		b := &bundle.Bundle{
 			SyncRootPath: dir,
+			SyncRoot:     vfs.MustNew(dir),
+			WorktreeRoot: vfs.MustNew(dir),
 			Config: config.Root{
+				Sync: config.Sync{Paths: []string{"."}},
 				Resources: config.Resources{
 					JobRuns: map[string]*resources.JobRun{
 						"my_run": {
@@ -135,6 +139,38 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 		assert.Empty(t, b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers)
 	})
 
+	t.Run("skips gitignored files", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("skip.txt\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "keep.txt"), []byte("keep"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "skip.txt"), []byte("skip"), 0o644))
+
+		b := bundleWithFileTrigger(dir, "*.txt")
+		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
+		require.False(t, diags.HasError())
+
+		hashes := b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers
+		require.Len(t, hashes, 1)
+		assert.Equal(t, contentHash("keep"), hashes["keep.txt"])
+		assert.NotContains(t, hashes, "skip.txt")
+	})
+
+	t.Run("skips sync.exclude files", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "keep.txt"), []byte("keep"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "skip.txt"), []byte("skip"), 0o644))
+
+		b := bundleWithFileTrigger(dir, "*.txt")
+		b.Config.Sync.Exclude = []string{"skip.txt"}
+		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
+		require.False(t, diags.HasError())
+
+		hashes := b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers
+		require.Len(t, hashes, 1)
+		assert.Equal(t, contentHash("keep"), hashes["keep.txt"])
+		assert.NotContains(t, hashes, "skip.txt")
+	})
+
 	t.Run("trims pattern whitespace", func(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "seed.txt"), []byte("v1"), 0o644))
@@ -148,9 +184,13 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 }
 
 func bundleWithFileTrigger(syncRoot, pattern string) *bundle.Bundle {
+	root := vfs.MustNew(syncRoot)
 	return &bundle.Bundle{
 		SyncRootPath: syncRoot,
+		SyncRoot:     root,
+		WorktreeRoot: root,
 		Config: config.Root{
+			Sync: config.Sync{Paths: []string{"."}},
 			Resources: config.Resources{
 				JobRuns: map[string]*resources.JobRun{
 					"my_run": {
