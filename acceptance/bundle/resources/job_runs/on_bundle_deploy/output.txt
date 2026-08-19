@@ -28,6 +28,36 @@ recreate job_runs.my_run
 
 Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
+>>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
+{
+  "lifecycle": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": {
+      "triggers": {
+        "on_bundle_deploy": "[UUID]"
+      }
+    },
+    "new": {
+      "triggers": {
+        "on_bundle_deploy": "[UUID]"
+      }
+    }
+  },
+  "lifecycle.triggers.on_bundle_deploy": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": "[UUID]",
+    "new": "[UUID]"
+  },
+  "result_state": {
+    "action": "skip",
+    "reason": "remote_already_set",
+    "new": "SUCCESS",
+    "remote": "SUCCESS"
+  }
+}
+
 === bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
 job run [MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
@@ -77,6 +107,25 @@ Resources:
 update job_runs.my_run
 
 Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
+{
+  "lifecycle": {
+    "action": "update",
+    "reason": "trigger removed",
+    "old": {
+      "triggers": {
+        "on_bundle_deploy": "[UUID]"
+      }
+    }
+  },
+  "result_state": {
+    "action": "skip",
+    "reason": "remote_already_set",
+    "new": "SUCCESS",
+    "remote": "SUCCESS"
+  }
+}
 
 === bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
