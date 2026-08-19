@@ -119,14 +119,18 @@ Examples:
 					changes = configsync.FilterChanges(changes, selected)
 				}
 
-				fieldChanges, skipped, err := configsync.ResolveChanges(ctx, b, changes)
+				// Loaded once and shared: ResolveChanges uses it to skip changes whose
+				// parent is a variable reference, RestoreVariableReferences to restore refs.
+				preResolved := configsync.LoadPreResolvedConfig(ctx, b)
+
+				fieldChanges, skipped, err := configsync.ResolveChanges(ctx, b, changes, preResolved)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResolveFailed
 					return fmt.Errorf("failed to resolve field changes: %w", err)
 				}
 				stats.SkippedChangesCount = int64(skipped)
 
-				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges, &stats.Restore); err != nil {
+				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges, preResolved, &stats.Restore); err != nil {
 					log.Warnf(ctx, "variable restoration skipped: %v", err)
 				}
 
