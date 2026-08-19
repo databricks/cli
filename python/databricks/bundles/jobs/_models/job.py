@@ -17,10 +17,7 @@ from databricks.bundles.jobs._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,
 )
-from databricks.bundles.jobs._models.git_source import (
-    GitSource,
-    GitSourceParam,
-)
+from databricks.bundles.jobs._models.git_source import GitSource, GitSourceParam
 from databricks.bundles.jobs._models.job_cluster import JobCluster, JobClusterParam
 from databricks.bundles.jobs._models.job_email_notifications import (
     JobEmailNotifications,
@@ -57,6 +54,10 @@ from databricks.bundles.jobs._models.queue_settings import (
     QueueSettingsParam,
 )
 from databricks.bundles.jobs._models.task import Task, TaskParam
+from databricks.bundles.jobs._models.trigger_configuration import (
+    TriggerConfiguration,
+    TriggerConfigurationParam,
+)
 from databricks.bundles.jobs._models.trigger_settings import (
     TriggerSettings,
     TriggerSettingsParam,
@@ -210,6 +211,13 @@ class Job(Resource):
     trigger: VariableOrOptional[TriggerSettings] = None
     """
     A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
+    """
+
+    triggers: VariableOrList[TriggerConfiguration] = field(default_factory=list)
+    """
+    [Beta] List of triggers attached to this job. A run starts when any active trigger evaluates to true. Cannot be set in
+    the same request as the legacy `schedule`, `trigger`, or `continuous` fields. The 10-trigger cap is the design's
+    hard limit; rollout steps the effective cap 3 -> 5 -> 10 via internal validation during the preview.
     """
 
     usage_policy_id: VariableOrOptional[str] = None
@@ -373,6 +381,13 @@ class JobDict(TypedDict, total=False):
     trigger: VariableOrOptional[TriggerSettingsParam]
     """
     A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
+    """
+
+    triggers: VariableOrList[TriggerConfigurationParam]
+    """
+    [Beta] List of triggers attached to this job. A run starts when any active trigger evaluates to true. Cannot be set in
+    the same request as the legacy `schedule`, `trigger`, or `continuous` fields. The 10-trigger cap is the design's
+    hard limit; rollout steps the effective cap 3 -> 5 -> 10 via internal validation during the preview.
     """
 
     usage_policy_id: VariableOrOptional[str]

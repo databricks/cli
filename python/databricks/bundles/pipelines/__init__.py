@@ -2,6 +2,12 @@ __all__ = [
     "Adlsgen2Info",
     "Adlsgen2InfoDict",
     "Adlsgen2InfoParam",
+    "ApiSourceConnectorConfig",
+    "ApiSourceConnectorConfigDict",
+    "ApiSourceConnectorConfigParam",
+    "ApiSourceConnectorOptions",
+    "ApiSourceConnectorOptionsDict",
+    "ApiSourceConnectorOptionsParam",
     "AutoFullRefreshPolicy",
     "AutoFullRefreshPolicyDict",
     "AutoFullRefreshPolicyParam",
@@ -251,6 +257,16 @@ from databricks.bundles.pipelines._models.adlsgen2_info import (
     Adlsgen2Info,
     Adlsgen2InfoDict,
     Adlsgen2InfoParam,
+)
+from databricks.bundles.pipelines._models.api_source_connector_config import (
+    ApiSourceConnectorConfig,
+    ApiSourceConnectorConfigDict,
+    ApiSourceConnectorConfigParam,
+)
+from databricks.bundles.pipelines._models.api_source_connector_options import (
+    ApiSourceConnectorOptions,
+    ApiSourceConnectorOptionsDict,
+    ApiSourceConnectorOptionsParam,
 )
 from databricks.bundles.pipelines._models.auto_full_refresh_policy import (
     AutoFullRefreshPolicy,
