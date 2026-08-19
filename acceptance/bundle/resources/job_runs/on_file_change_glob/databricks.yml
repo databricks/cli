@@ -16,3 +16,4 @@ resources:
       lifecycle:
         triggers:
           - on_file_change: migrations/*
+          - on_file_change: mysubdir/*.txt

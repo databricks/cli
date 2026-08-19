@@ -6,7 +6,7 @@ Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_
 Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
 Created job_runs.my_run
 Created jobs.my_job
-Files: 8 uploaded, 0 deleted
+Files: 10 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> read_id.py my_job
@@ -23,12 +23,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === editing one matched file re-fires
->>> [CLI] bundle plan
-recreate job_runs.my_run
-
-Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
-
->>> changes
+>>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
   "lifecycle": {
     "action": "recreate",
@@ -37,15 +32,17 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
       "triggers": {
         "on_file_change": {
           "migrations/001.txt": "[FILE_HASH][0]",
-          "migrations/002.txt": "[FILE_HASH][1]"
+          "migrations/002.txt": "[FILE_HASH][1]",
+          "mysubdir/a.txt": "[FILE_HASH][2]"
         }
       }
     },
     "new": {
       "triggers": {
         "on_file_change": {
-          "migrations/001.txt": "[FILE_HASH][2]",
-          "migrations/002.txt": "[FILE_HASH][1]"
+          "migrations/001.txt": "[FILE_HASH][3]",
+          "migrations/002.txt": "[FILE_HASH][1]",
+          "mysubdir/a.txt": "[FILE_HASH][2]"
         }
       }
     }
@@ -54,48 +51,6 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][0]",
-    "new": "[FILE_HASH][2]"
-  },
-  "result_state": {
-    "action": "skip",
-    "reason": "remote_already_set",
-    "new": "SUCCESS",
-    "remote": "SUCCESS"
-  }
-}
-
-=== a new matching file re-fires
->>> [CLI] bundle plan
-recreate job_runs.my_run
-
-Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
-
->>> changes
-{
-  "lifecycle": {
-    "action": "recreate",
-    "reason": "immutable",
-    "old": {
-      "triggers": {
-        "on_file_change": {
-          "migrations/001.txt": "[FILE_HASH][0]",
-          "migrations/002.txt": "[FILE_HASH][1]"
-        }
-      }
-    },
-    "new": {
-      "triggers": {
-        "on_file_change": {
-          "migrations/001.txt": "[FILE_HASH][0]",
-          "migrations/002.txt": "[FILE_HASH][1]",
-          "migrations/003.txt": "[FILE_HASH][3]"
-        }
-      }
-    }
-  },
-  "lifecycle.triggers.on_file_change['migrations/003.txt']": {
-    "action": "recreate",
-    "reason": "immutable",
     "new": "[FILE_HASH][3]"
   },
   "result_state": {
@@ -106,13 +61,35 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
   }
 }
 
-=== removing a matched file re-fires
->>> [CLI] bundle plan
-recreate job_runs.my_run
+=== bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-glob/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
+Recreated job_runs.my_run
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
-Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+>>> print_requests.py --keep //jobs/runs/delete
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/delete",
+  "body": {
+    "run_id": [MY_RUN_ID]
+  }
+}
 
->>> changes
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+=== editing a file in a subdirectory re-fires
+>>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
   "lifecycle": {
     "action": "recreate",
@@ -120,15 +97,95 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
     "old": {
       "triggers": {
         "on_file_change": {
-          "migrations/001.txt": "[FILE_HASH][0]",
-          "migrations/002.txt": "[FILE_HASH][1]"
+          "migrations/001.txt": "[FILE_HASH][3]",
+          "migrations/002.txt": "[FILE_HASH][1]",
+          "mysubdir/a.txt": "[FILE_HASH][2]"
         }
       }
     },
     "new": {
       "triggers": {
         "on_file_change": {
-          "migrations/001.txt": "[FILE_HASH][0]"
+          "migrations/001.txt": "[FILE_HASH][3]",
+          "migrations/002.txt": "[FILE_HASH][1]",
+          "mysubdir/a.txt": "[FILE_HASH][4]"
+        }
+      }
+    }
+  },
+  "lifecycle.triggers.on_file_change['mysubdir/a.txt']": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": "[FILE_HASH][2]",
+    "new": "[FILE_HASH][4]"
+  },
+  "result_state": {
+    "action": "skip",
+    "reason": "remote_already_set",
+    "new": "SUCCESS",
+    "remote": "SUCCESS"
+  }
+}
+
+=== a new matching file re-fires
+>>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
+{
+  "lifecycle": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": {
+      "triggers": {
+        "on_file_change": {
+          "migrations/001.txt": "[FILE_HASH][3]",
+          "migrations/002.txt": "[FILE_HASH][1]",
+          "mysubdir/a.txt": "[FILE_HASH][2]"
+        }
+      }
+    },
+    "new": {
+      "triggers": {
+        "on_file_change": {
+          "migrations/001.txt": "[FILE_HASH][3]",
+          "migrations/002.txt": "[FILE_HASH][1]",
+          "migrations/003.txt": "[FILE_HASH][5]",
+          "mysubdir/a.txt": "[FILE_HASH][2]"
+        }
+      }
+    }
+  },
+  "lifecycle.triggers.on_file_change['migrations/003.txt']": {
+    "action": "recreate",
+    "reason": "immutable",
+    "new": "[FILE_HASH][5]"
+  },
+  "result_state": {
+    "action": "skip",
+    "reason": "remote_already_set",
+    "new": "SUCCESS",
+    "remote": "SUCCESS"
+  }
+}
+
+=== removing a matched file re-fires
+>>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
+{
+  "lifecycle": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": {
+      "triggers": {
+        "on_file_change": {
+          "migrations/001.txt": "[FILE_HASH][3]",
+          "migrations/002.txt": "[FILE_HASH][1]",
+          "mysubdir/a.txt": "[FILE_HASH][2]"
+        }
+      }
+    },
+    "new": {
+      "triggers": {
+        "on_file_change": {
+          "migrations/001.txt": "[FILE_HASH][3]",
+          "mysubdir/a.txt": "[FILE_HASH][2]"
         }
       }
     }
@@ -147,12 +204,74 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 }
 
 === editing a file below the glob does not re-fire
+>>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
+{
+  "lifecycle": {
+    "action": "skip",
+    "reason": "missing_in_remote",
+    "old": {
+      "triggers": {
+        "on_file_change": {
+          "migrations/001.txt": "[FILE_HASH][3]",
+          "migrations/002.txt": "[FILE_HASH][1]",
+          "mysubdir/a.txt": "[FILE_HASH][2]"
+        }
+      }
+    },
+    "new": {
+      "triggers": {
+        "on_file_change": {
+          "migrations/001.txt": "[FILE_HASH][3]",
+          "migrations/002.txt": "[FILE_HASH][1]",
+          "mysubdir/a.txt": "[FILE_HASH][2]"
+        }
+      }
+    }
+  },
+  "result_state": {
+    "action": "skip",
+    "reason": "remote_already_set",
+    "new": "SUCCESS",
+    "remote": "SUCCESS"
+  }
+}
+
+=== editing a gitignored file does not re-fire
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === ** is not recursive: it matches the same files as *
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+>>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
+{
+  "lifecycle": {
+    "action": "skip",
+    "reason": "missing_in_remote",
+    "old": {
+      "triggers": {
+        "on_file_change": {
+          "migrations/001.txt": "[FILE_HASH][3]",
+          "migrations/002.txt": "[FILE_HASH][1]",
+          "mysubdir/a.txt": "[FILE_HASH][2]"
+        }
+      }
+    },
+    "new": {
+      "triggers": {
+        "on_file_change": {
+          "migrations/001.txt": "[FILE_HASH][3]",
+          "migrations/002.txt": "[FILE_HASH][1]",
+          "mysubdir/a.txt": "[FILE_HASH][2]"
+        }
+      }
+    }
+  },
+  "result_state": {
+    "action": "skip",
+    "reason": "remote_already_set",
+    "new": "SUCCESS",
+    "remote": "SUCCESS"
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
