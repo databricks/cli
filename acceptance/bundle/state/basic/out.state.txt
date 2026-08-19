@@ -3,22 +3,6 @@
   "path": "/api/2.0/workspace/export",
   "q": {
     "direct_download": "true",
-    "path": "/Workspace/Users/[USERNAME]/.bundle/state/default/state/deploy.lock"
-  }
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/workspace/export",
-  "q": {
-    "direct_download": "true",
-    "path": "/Workspace/Users/[USERNAME]/.bundle/state/default/state/deploy.lock"
-  }
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/workspace/export",
-  "q": {
-    "direct_download": "true",
     "path": "/Workspace/Users/[USERNAME]/.bundle/state/default/state/STATE_FILENAME"
   }
 }
@@ -28,21 +12,5 @@
   "q": {
     "direct_download": "true",
     "path": "/Workspace/Users/[USERNAME]/.bundle/state/default/state/deployment.json"
-  }
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/workspace/export",
-  "q": {
-    "direct_download": "true",
-    "path": "/Workspace/Users/[USERNAME]/.bundle/state/default/state/deploy.lock"
-  }
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/workspace/export",
-  "q": {
-    "direct_download": "true",
-    "path": "/Workspace/Users/[USERNAME]/.bundle/state/default/state/deploy.lock"
   }
 }
