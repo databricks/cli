@@ -1,0 +1,23 @@
+BUNDLE_FILES="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/move-during-failed-deploy/default/files"
+
+title "Deploy 1: the job references src/main.py, which is uploaded to the workspace"
+trace $CLI bundle deploy
+trace $CLI workspace get-status "$BUNDLE_FILES/src/main.py" | jq '{object_type,path}'
+
+title "Move the referenced file and point the job at the new location"
+trace mv src/main.py src/renamed.py
+trace update_file.py databricks.yml src/main.py src/renamed.py
+
+title "Fail the job update. Files are still synced first, so main.py is deleted and\nrenamed.py uploaded before the failing jobs/reset."
+fault.py "POST /api/2.2/jobs/reset" 403 0 1
+trace musterr $CLI bundle deploy
+
+title "Broken state: the failed deploy already deleted the old file from the workspace"
+trace musterr $CLI workspace get-status "$BUNDLE_FILES/src/main.py"
+
+title "The new file was uploaded"
+trace $CLI workspace get-status "$BUNDLE_FILES/src/renamed.py" | jq '{object_type,path}'
+
+title "But the deployed job still points at the deleted file, so a run fails file-not-found"
+job_id=$(read_id.py foo)
+trace $CLI jobs get "$job_id" | jq '.settings.tasks[0].spark_python_task.python_file'
