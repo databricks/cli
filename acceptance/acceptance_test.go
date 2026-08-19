@@ -1316,11 +1316,13 @@ func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {
 func buildSelectionCmd(t *testing.T, buildDir string) string {
 	execPath := filepath.Join(buildDir, "selection"+exeSuffix)
 
-	args := []string{"go", "build", "-o", execPath, "./internal/selection/cmd"}
+	args := []string{"go", "build", "-o", execPath}
 	if runtime.GOOS == "windows" {
 		// See BuildCLI: VCS stamping fails on Windows.
 		args = append(args, "-buildvcs=false")
 	}
+	// The package path goes last: go build reads anything after it as another package.
+	args = append(args, "./internal/selection/cmd")
 	RunCommand(t, args, ".", nil)
 
 	return execPath
