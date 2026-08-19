@@ -25,5 +25,5 @@ trace $CLI bundle deploy
 trace print_requests.py --sort --del-field raw_body '//.air_snapshots/'
 
 title "destroy removes the deployed bundle (including the synced snapshots)\n"
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 rm out.requests.txt

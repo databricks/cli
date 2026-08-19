@@ -18,5 +18,5 @@ diff.py out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt out.deploy2.$DATABRICKS_BUNDLE_
 rm out.deploy2.$DATABRICKS_BUNDLE_ENGINE.txt
 trace print_requests.py //jobs
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 trace print_requests.py //jobs

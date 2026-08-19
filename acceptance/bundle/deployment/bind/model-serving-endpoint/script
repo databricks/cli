@@ -21,7 +21,7 @@ trace $CLI serving-endpoints get "${ENDPOINT_NAME}" | jq '{name, permission_leve
 
 trace $CLI bundle deployment unbind endpoint1
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 # Read the pre-defined serving-endpoint again (expecting it still exists and is not deleted):
 trace $CLI serving-endpoints get "${ENDPOINT_NAME}" | jq '{name, permission_level, route_optimized, state}'

@@ -10,5 +10,5 @@ mv $VARIANT databricks.yml
 title "Expecting all resources to have modified_status=deleted"
 trace $CLI bundle summary -o json | jq .resources
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 trace $CLI bundle summary -o json | jq .resources

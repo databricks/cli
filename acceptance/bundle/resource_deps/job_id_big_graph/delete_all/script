@@ -15,5 +15,5 @@ cp empty.yml databricks.yml
 trace $CLI bundle plan > out.plan_delete.txt
 trace $CLI bundle deploy
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 rm -f out.requests.txt

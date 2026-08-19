@@ -15,5 +15,5 @@ trace envsubst < job_update.json > tmp.json && mv tmp.json job_update.json
 trace $CLI jobs reset --json @job_update.json
 $CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 trace print_requests.py //jobs

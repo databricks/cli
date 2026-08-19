@@ -20,7 +20,7 @@ title "Unbind external location"
 trace $CLI bundle deployment unbind test_location
 
 title "Destroy bundle"
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 title "Read the pre-defined external location again (expecting it still exists): "
 trace $CLI external-locations get "test-location-$UNIQUE_NAME" | jq '{name, url, credential_name}'

@@ -47,7 +47,7 @@ trace cat resources/test_job_key.job.yml | grep "name: generate-job-${UNIQUE_NAM
 trace $CLI bundle deployment bind test_job_key $JOB_ID --auto-approve
 trace $CLI bundle deploy
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 title "Check that job is bound and does not exist after bundle is destroyed:"
 trace errcode $CLI jobs get "${JOB_ID}" --output json

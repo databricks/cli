@@ -14,5 +14,5 @@ trace $CLI bundle deploy
 # (foo's dependency on bar was removed in only_foo.yml), so execution order is non-deterministic.
 trace print_requests.py --sort //jobs > out.deploy2.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 trace print_requests.py //jobs

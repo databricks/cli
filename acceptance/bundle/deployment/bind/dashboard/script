@@ -22,7 +22,7 @@ trace $CLI lakeview get "${DASHBOARD_ID}" | jq --sort-keys '{display_name, lifec
 
 trace $CLI bundle deployment unbind dashboard1
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 # Read the pre-defined dashboard again (expecting it still exists and is not deleted):
 trace $CLI lakeview get "${DASHBOARD_ID}" | jq --sort-keys '{display_name, lifecycle_state, path, parent_path, serialized_dashboard} | .serialized_dashboard |= fromjson'

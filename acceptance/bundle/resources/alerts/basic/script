@@ -14,7 +14,7 @@ trace $CLI permissions get alertsv2 $alert_id | jq ".access_control_list.[]" -c 
 title "assert that no permanent drift happens"
 trace $CLI bundle plan
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 errcode trace $CLI alerts-v2 get-alert $alert_id
 

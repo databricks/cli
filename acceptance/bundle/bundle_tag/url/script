@@ -4,5 +4,5 @@ trace $CLI bundle plan
 trace $CLI bundle deploy
 trace print_requests.py //jobs
 trace $CLI bundle summary
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 trace print_requests.py //jobs

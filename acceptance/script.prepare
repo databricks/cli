@@ -166,6 +166,35 @@ as-test-sp() {
     "$@"
 }
 
+# destroy-bundle destroys the bundle and then removes the ~/.bundle/<name> directory it
+# was deployed under, so a destroy that only partially succeeded does not leave the tree
+# behind. Test bundle names are unique per run, so nothing ever reuses a leftover
+# directory and they pile up against the shared CI workspace's child-node limit.
+#
+# The `bundle destroy` invocation is traced exactly as a direct call would be, so
+# switching a test to this helper does not change its output. The extra cleanup runs only
+# against a real workspace and is best effort: it must never turn a passing test red.
+destroy-bundle() {
+    local bundle_dir=""
+    if [[ -n "$CLOUD_ENV" ]]; then
+        local root_path
+        root_path=$($CLI bundle validate -o json 2>>LOG.destroy-bundle | jq -r '.workspace.root_path // empty')
+        if [[ -n "$root_path" ]]; then
+            bundle_dir=$(dirname "$root_path")
+        fi
+    fi
+
+    local exit_code=0
+    trace $CLI bundle destroy --auto-approve "$@" || exit_code=$?
+
+    # root_path is configurable, so only the ~/.bundle/<name>/<target> layout is ours.
+    if [[ -n "$bundle_dir" && "$(basename "$(dirname "$bundle_dir")")" == ".bundle" ]]; then
+        $CLI workspace delete "$bundle_dir" --recursive >>LOG.destroy-bundle 2>&1 || true
+    fi
+
+    return $exit_code
+}
+
 readplanarg() {
     # Expands into "--plan <filename>" based on READPLAN env var
     # Use it with "bundle deploy" to configure two runs: once with saved plan and one without.

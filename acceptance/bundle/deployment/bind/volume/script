@@ -25,6 +25,6 @@ trace $CLI volumes read "${VOLUME_FULL_NAME}" | jq '{catalog_name, full_name, sc
 
 trace $CLI bundle deployment unbind volume1
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 trace $CLI volumes read "${VOLUME_FULL_NAME}" | jq '{catalog_name, full_name, schema_name, volume_type}'

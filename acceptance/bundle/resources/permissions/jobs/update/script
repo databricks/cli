@@ -48,6 +48,6 @@ trace $CLI bundle plan -o json > out.plan_set_empty.$DATABRICKS_BUNDLE_ENGINE.js
 trace $CLI bundle deploy
 trace print_requests.py //jobs/ > out.requests_set_empty.$DATABRICKS_BUNDLE_ENGINE.json
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 trace print_requests.py //jobs/ > out.requests_destroy.$DATABRICKS_BUNDLE_ENGINE.json
 #rm -fr .databricks

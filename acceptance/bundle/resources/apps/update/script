@@ -24,5 +24,5 @@ trace print_requests >> out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle plan
 trace $CLI bundle summary
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 trace print_requests >> out.requests.$DATABRICKS_BUNDLE_ENGINE.json
