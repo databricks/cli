@@ -64,9 +64,9 @@ func recordState(t *testing.T, s *operationSink, resourceKey, name string) {
 }
 
 func TestOperationSinkKeepsWritingAfterGoingIdle(t *testing.T) {
-	// The writer parks on an empty queue instead of returning. Apply spends most of a
-	// deploy inside resource CRUD, so the queue is empty far more often than not, and a
-	// writer that exited while idle would silently drop everything recorded after it.
+	// The writer parks on an empty queue instead of returning. Apply can spend long stretches
+	// inside resource CRUD with nothing to record, and a writer that exited while idle would
+	// silently drop everything recorded after it.
 	f := &fakeWriter{}
 	s := newOperationSink(t.Context(), f)
 
