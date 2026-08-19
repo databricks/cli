@@ -1,0 +1,2 @@
+title "What a user sees when an operation cannot be recorded"
+trace errcode $CLI bundle deploy
