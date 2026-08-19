@@ -141,6 +141,18 @@
   "method": "POST",
   "path": "/api/2.0/workspace/delete",
   "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default",
     "recursive": true
   }

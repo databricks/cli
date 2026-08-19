@@ -1,0 +1,7 @@
+bundle:
+  name: test-bundle
+
+targets:
+  dev:
+    default: true
+  prod:
