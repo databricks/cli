@@ -285,7 +285,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		logdiag.LogError(ctx, err)
 		return
 	}
-	if recording.Enabled() {
+	if recording.Version() != 0 {
 		// The deployment ID is stamped earlier, when the state is opened; only the
 		// version is new here. A first deploy has no ID until now, so stamp both.
 		bundle.ApplySeqContext(ctx, b,
@@ -363,7 +363,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	logDeploymentVersion(ctx, b, recording)
 
 	// Record operations under that version, so DMS holds the deployed resource state.
-	setOperationWriter(b, recording, writer)
+	b.DeploymentBundle.OpRec = writer
 	deployCore(ctx, b, plan, stateEngine, requestedEngine)
 
 	if logdiag.HasError(ctx) {

@@ -30,10 +30,6 @@ const (
 // stages, and their outcomes. A disabled recording is a no-op throughout, so callers do not
 // branch on whether recording is on.
 type Recording interface {
-	// Enabled reports whether anything is recorded. Only a caller that would otherwise do
-	// pointless work - serializing state on every write - needs to ask.
-	Enabled() bool
-
 	// Prepare settles the deployment and the version number this run will create, without
 	// creating it. Both are needed before the plan, which the version number is stamped onto.
 	Prepare(ctx context.Context) error
@@ -46,8 +42,9 @@ type Recording interface {
 	Version() int64
 
 	// Start creates the version, staging an operation for each resource, and returns the
-	// writer that fills them in. The staged set is fixed here: the service has no call to
-	// add one later, so a resource left out can never be recorded.
+	// writer that fills them in - nil when nothing is recorded, which is what leaves the state
+	// DB without a sink. The staged set is fixed here: the service has no call to add one
+	// later, so a resource left out can never be recorded.
 	Start(ctx context.Context, staged []StagedOperation) (OperationWriter, error)
 
 	// Finish completes the version. It is a no-op before Start, which is what lets a caller
@@ -104,18 +101,17 @@ func Disabled() Recording {
 	return disabled{}
 }
 
-// disabled records nothing. Its Prepare leaves no deployment and no version, so DeploymentID
-// and Version stay empty for a caller that stamps them onto resources.
+// disabled records nothing. Its Prepare leaves no deployment and no version, and its Start no
+// writer, so a caller that stamps a version or installs the writer finds nothing to install.
 type disabled struct{}
 
-func (disabled) Enabled() bool                      { return false }
 func (disabled) Prepare(context.Context) error      { return nil }
 func (disabled) DeploymentID() string               { return "" }
 func (disabled) Version() int64                     { return 0 }
 func (disabled) Finish(context.Context, bool) error { return nil }
 
 func (disabled) Start(context.Context, []StagedOperation) (OperationWriter, error) {
-	return noopWriter{}, nil
+	return nil, nil
 }
 
 // recording records with the service.
@@ -142,8 +138,6 @@ type recording struct {
 	completed bool
 }
 
-func (r *recording) Enabled() bool { return true }
-
 func (r *recording) DeploymentID() string { return r.deploymentID }
 
 func (r *recording) Version() int64 { return r.versionNum }
@@ -165,8 +159,9 @@ func (r *recording) Prepare(ctx context.Context) error {
 
 // Start implements Recording.
 func (r *recording) Start(ctx context.Context, staged []StagedOperation) (OperationWriter, error) {
-	// A deploy calls Prepare first, because it needs the version number to stamp onto the
-	// plan. A destroy has no such need, so settle it here instead.
+	// A deploy calls Prepare itself, because the resources the plan is computed from are
+	// stamped with the version number. A destroy creates a version too, but stamps nothing, so
+	// it has no reason to settle the deployment any earlier than here.
 	if r.versionNum == 0 {
 		if err := r.Prepare(ctx); err != nil {
 			return nil, err

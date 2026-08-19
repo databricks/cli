@@ -47,10 +47,3 @@ func (w *operationWriter) Write(ctx context.Context, key ResourceKey, update Ope
 
 	return nil
 }
-
-// noopWriter is the writer of a disabled recording: nothing is staged, so nothing is written.
-type noopWriter struct{}
-
-func (noopWriter) Write(context.Context, ResourceKey, OperationUpdate) error {
-	return nil
-}

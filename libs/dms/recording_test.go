@@ -227,11 +227,10 @@ func TestDisabledRecordingIsNoOp(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, r.Finish(t.Context(), true))
 
-	assert.False(t, r.Enabled())
 	assert.Empty(t, r.DeploymentID())
 	assert.Zero(t, r.Version())
-	// The writer it hands out records nothing, so a caller needs no nil check.
-	assert.NoError(t, writer.Write(t.Context(), "jobs.foo", OperationUpdate{}))
+	// No writer, which is what leaves the state DB without a sink and nothing to stamp.
+	assert.Nil(t, writer)
 }
 
 func TestRecordingFinishIsNoOpWithoutStart(t *testing.T) {

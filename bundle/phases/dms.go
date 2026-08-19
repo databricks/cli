@@ -88,16 +88,6 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 	}
 }
 
-// setOperationWriter has the state writes during apply recorded under the started version.
-// A disabled recording leaves the writer unset, which is also what keeps the state DB from
-// serializing an envelope for every write.
-func setOperationWriter(b *bundle.Bundle, recording dms.Recording, writer dms.OperationWriter) {
-	if !recording.Enabled() {
-		return
-	}
-	b.DeploymentBundle.OpRec = writer
-}
-
 // logDeploymentVersion logs the deployment version URL. Workspace ID is omitted
 // so the page stays clickable in a terminal and redirects correctly without it.
 func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, recording dms.Recording) {

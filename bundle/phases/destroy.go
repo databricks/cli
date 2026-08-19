@@ -282,7 +282,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			logdiag.LogError(ctx, err)
 			return
 		}
-		setOperationWriter(b, recording, writer)
+		b.DeploymentBundle.OpRec = writer
 		destroyCore(ctx, b, plan, engine, recording)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
