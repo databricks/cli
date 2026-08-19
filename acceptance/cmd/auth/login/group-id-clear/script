@@ -5,6 +5,7 @@ export BROWSER="browser.py"
 export DATABRICKS_AUTH_STORAGE=plaintext
 export DATABRICKS_TEST_GROUP_ID=""
 
+# Clearing omits assume_group from OAuth and removes group_id from the profile.
 trace $CLI auth login --profile role --clear-group-id
 
 mv "./home/.databrickscfg" "./out.databrickscfg"

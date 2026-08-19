@@ -5,6 +5,7 @@ export BROWSER="browser.py"
 export DATABRICKS_AUTH_STORAGE=plaintext
 export DATABRICKS_TEST_GROUP_ID="group-B"
 
+# An explicit group replaces the group already saved in the profile.
 trace $CLI auth login --profile role --group-id group-B
 
 mv "./home/.databrickscfg" "./out.databrickscfg"

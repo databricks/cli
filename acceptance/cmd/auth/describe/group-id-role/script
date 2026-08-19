@@ -5,4 +5,5 @@ mkdir -p "./home/.databricks"
 cp "./input-token-cache.json" "./home/.databricks/token-cache.json"
 export DATABRICKS_AUTH_STORAGE=plaintext
 
+# The saved role is reported alongside the authenticated user identity.
 trace $CLI auth describe --profile role

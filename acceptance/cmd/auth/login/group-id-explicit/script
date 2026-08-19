@@ -4,6 +4,7 @@ export BROWSER="browser.py"
 export DATABRICKS_AUTH_STORAGE=plaintext
 export DATABRICKS_TEST_GROUP_ID="group-A"
 
+# The browser helper verifies the explicit group is sent exactly once.
 trace $CLI auth login --host $DATABRICKS_HOST --profile role --group-id group-A
 
 mv "./home/.databrickscfg" "./out.databrickscfg"

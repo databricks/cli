@@ -6,5 +6,7 @@ cp "./input-token-cache.json" "./home/.databricks/token-cache.json"
 export DATABRICKS_AUTH_STORAGE=plaintext
 
 trace $CLI auth token --profile role --force-refresh | jq '{token_type}'
+# Refresh must use grant_type=refresh_token without resending assume_group.
 trace jq -s 'map(select(.path == "/oidc/v1/token")) | length == 1 and (.[0].raw_body | contains("grant_type=refresh_token")) and (.[0].raw_body | contains("assume_group") | not)' "$TEST_TMP_DIR/out.requests.txt"
+# Consume the recorded requests so they are not treated as test output.
 print_requests.py //does-not-exist

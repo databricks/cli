@@ -3,7 +3,9 @@ sethome "./home"
 export BROWSER="discovery_browser.py"
 export DATABRICKS_TEST_GROUP_ID="group-A"
 
+# The browser helper verifies assume_group appears only inside destination_url.
 trace $CLI auth login --profile discovery-group --group-id group-A
 
 mv "./home/.databrickscfg" "./out.databrickscfg"
+# Consume the recorded requests so they are not treated as test output.
 print_requests.py //does-not-exist

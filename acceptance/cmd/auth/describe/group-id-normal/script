@@ -5,4 +5,5 @@ mkdir -p "./home/.databricks"
 cp "./input-token-cache.json" "./home/.databricks/token-cache.json"
 export DATABRICKS_AUTH_STORAGE=plaintext
 
+# A profile without group_id is reported as using normal user permissions.
 trace $CLI auth describe --profile normal

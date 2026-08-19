@@ -6,6 +6,7 @@ export DATABRICKS_AUTH_STORAGE=plaintext
 export DATABRICKS_GROUP_ID="ambient-group"
 export DATABRICKS_TEST_GROUP_ID="group-A"
 
+# Omitting the flag preserves the profile group and ignores the ambient SDK value.
 trace $CLI auth login --profile role
 
 mv "./home/.databrickscfg" "./out.databrickscfg"
