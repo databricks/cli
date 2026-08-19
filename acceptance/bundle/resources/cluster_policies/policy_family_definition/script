@@ -1,0 +1,19 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+# The backend computes `definition` from the policy family and returns it on read,
+# even though the config leaves definition empty. Because definition is declared as
+# a backend default, the server-computed value must not register as drift: without
+# it every plan would show an update and every deploy would re-issue an edit.
+title "Plan is a no-op after deploy (server-computed definition is not drift)"
+trace $CLI bundle plan
+
+title "Redeploy issues no edit"
+rm -f out.requests.txt
+trace $CLI bundle deploy
+trace print_requests.py //policies/clusters/edit

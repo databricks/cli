@@ -8,12 +8,25 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
+// policyFamilyDefinition mimics the real backend: a policy created from a policy
+// family has its definition computed from the family and returned on read, even
+// though the config never sets definition. One fixed key is enough to reproduce a
+// non-empty server-computed definition so tests exercise the backend_defaults
+// suppression for definition (see resources.yml cluster_policies).
+func policyFamilyDefinition(familyID string) string {
+	return fmt.Sprintf(`{"policy_family":{"type":"fixed","value":%q}}`, familyID)
+}
+
 func (s *FakeWorkspace) ClusterPoliciesCreate(req Request) any {
 	// Unmarshal into the stored (GET) type directly: CreatePolicy and Policy
 	// share JSON field names, so every config field is carried over.
 	var policy compute.Policy
 	if err := json.Unmarshal(req.Body, &policy); err != nil {
 		return Response{StatusCode: 400, Body: fmt.Sprintf("request parsing error: %s", err)}
+	}
+
+	if policy.Definition == "" && policy.PolicyFamilyId != "" {
+		policy.Definition = policyFamilyDefinition(policy.PolicyFamilyId)
 	}
 
 	defer s.LockUnlock()()
@@ -75,6 +88,9 @@ func (s *FakeWorkspace) ClusterPoliciesEdit(req Request) any {
 	policy.MaxClustersPerUser = request.MaxClustersPerUser
 	policy.PolicyFamilyDefinitionOverrides = request.PolicyFamilyDefinitionOverrides
 	policy.PolicyFamilyId = request.PolicyFamilyId
+	if policy.Definition == "" && policy.PolicyFamilyId != "" {
+		policy.Definition = policyFamilyDefinition(policy.PolicyFamilyId)
+	}
 	s.ClusterPolicies[request.PolicyId] = policy
 
 	return Response{}
