@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -969,37 +968,12 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
-		baseRefs := map[string]string{}
-
-		if strings.HasSuffix(node, ".permissions") {
-			var inputConfigStructVar *structvar.StructVar
-			var err error
-
-			if strings.HasPrefix(node, "resources.secret_scopes.") {
-				typedConfig, ok := inputConfig.(*[]resources.SecretScopePermission)
-				if !ok {
-					return nil, fmt.Errorf("%s: expected *[]resources.SecretScopePermission, got %T", prefix, inputConfig)
-				}
-				inputConfigStructVar, err = dresources.PrepareSecretScopeAclsInputConfig(*typedConfig, node)
-			} else {
-				inputConfigStructVar, err = dresources.PreparePermissionsInputConfig(inputConfig, node)
-			}
-
-			if err != nil {
-				return nil, err
-			}
-			inputConfig = inputConfigStructVar.Value
-			baseRefs = inputConfigStructVar.Refs
-		} else if strings.HasSuffix(node, ".grants") {
-			inputConfigStructVar, err := dresources.PrepareGrantsInputConfig(inputConfig, node)
-			if err != nil {
-				return nil, err
-			}
-			inputConfig = inputConfigStructVar.Value
-			baseRefs = inputConfigStructVar.Refs
+		inputStructVar, err := adapter.PrepareInputConfig(inputConfig, node)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
-		newStateConfig, err := adapter.PrepareState(inputConfig)
+		newStateConfig, err := adapter.PrepareState(inputStructVar.Value)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
@@ -1025,7 +999,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("failed to read references from config for %s: %w", node, err)
 		}
 
-		maps.Copy(refs, baseRefs)
+		maps.Copy(refs, inputStructVar.Refs)
 
 		var dependsOn []deployplan.DependsOnEntry
 		for _, reference := range refs {

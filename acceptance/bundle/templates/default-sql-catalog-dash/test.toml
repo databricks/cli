@@ -1,5 +1,0 @@
-[[Repls]]
-# On Windows $TESTDIR expands with backslashes; normalize them so the diff.py
-# path in output.txt matches across platforms.
-Old = '\\'
-New = '/'
