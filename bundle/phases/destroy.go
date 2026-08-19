@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
-	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
@@ -222,12 +221,6 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	var plan *deployplan.Plan
 	if engine.IsDirect() {
-		if b.IsImmutableFolder() {
-			bundle.ApplyContext(ctx, b, snapshot.PlanUpload(true))
-			if logdiag.HasError(ctx) {
-				return
-			}
-		}
 		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
 		if err != nil {
 			logdiag.LogError(ctx, err)

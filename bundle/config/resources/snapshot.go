@@ -65,12 +65,15 @@ func (s *Snapshot) GetName() string {
 }
 
 func (s *Snapshot) GetURL() string {
-	// Skipping URL initialization for snapshots
+	// A snapshot is a workspace folder owned by the project's service principal, so
+	// a browser URL is constructible from its path. We don't surface one yet:
+	// workspaceurls has no folder-path helper, and the path is only known during
+	// deploy (its content hash depends on ZipContent, which is empty otherwise).
 	return ""
 }
 
 func (s *Snapshot) InitializeURL(_ url.URL) {
-	// Secret scopes do not have a URL
+	// See GetURL: no browser URL is surfaced for the snapshot folder yet.
 }
 
 func (s *Snapshot) GetLifecycle() LifecycleConfig {

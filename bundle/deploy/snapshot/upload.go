@@ -19,8 +19,9 @@ type snapshotUpload struct {
 	skipZip bool
 }
 
-// PlanUpload returns a mutator that builds the bundle zip, uploads it via
-// /api/2.0/repos/snapshots, and registers the snapshot as an internal resource.
+// PlanUpload returns a mutator that registers the immutable snapshot as an internal
+// resource. Unless skipZip is set, it also builds the bundle zip and stages it in
+// memory on the resource; the zip is uploaded when the resource is created on apply.
 func PlanUpload(skipZip bool) bundle.Mutator {
 	return &snapshotUpload{skipZip: skipZip}
 }
@@ -95,12 +96,12 @@ func SyncZipContent(b *bundle.Bundle) {
 var bundleIDNamespace = uuid.MustParse("4b4e4b5a-3c3d-4e4f-8b8c-9d9e9f0a0b0c")
 
 // BundleID returns a stable UUID that identifies the bundle deployment.
-// It is derived deterministically from the bundle name, target, and workspace host
-// so that every CLI invocation for the same deployment produces the same value.
-// This is used as the path prefix for immutable snapshots in the workspace.
+// It is derived deterministically from workspace.state_path, which is the
+// canonical unique identifier for a deployment (name, target, and workspace root
+// are all encoded in it). Two bundles with the same name and target but different
+// workspace.state_path values get distinct IDs.
 func BundleID(b *bundle.Bundle) string {
-	key := b.Config.Bundle.Name + "/" + b.Config.Bundle.Target + "/" + b.Config.Workspace.Host
-	return uuid.NewSHA1(bundleIDNamespace, []byte(key)).String()
+	return uuid.NewSHA1(bundleIDNamespace, []byte(b.Config.Workspace.StatePath)).String()
 }
 
 // BuildACL constructs the access_control_list for the snapshot upload.

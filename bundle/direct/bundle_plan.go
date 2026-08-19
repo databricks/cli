@@ -781,7 +781,7 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	adapter, err := b.getAdapterForKey(targetResourceKey)
 	if err != nil {
-		return nil, fmt.Errorf("internal error: %s: unknown resource type %q", targetResourceKey, targetGroup)
+		return nil, fmt.Errorf("internal error: %s: %w", targetResourceKey, err)
 	}
 
 	configValidErr := structaccess.ValidatePath(reflect.TypeOf(localConfig), fieldPath)

@@ -56,9 +56,10 @@ func NewSnapshotClient(w *databricks.WorkspaceClient) (*SnapshotClient, error) {
 	return &SnapshotClient{workspaceClient: w, client: c}, nil
 }
 
-// Upload uploads zipContent as an immutable snapshot identified by snapshotID.
-// snapshotID is the SHA-256 of the zip and is used by the server as the
-// content-addressed path component. acl grants CAN_READ to each listed principal.
+// Upload uploads zipContent as an immutable snapshot. The server derives the
+// content-addressed path from the SHA-256 of the zip, and acl grants CAN_READ to
+// each listed principal. path is reserved for forthcoming API support for a
+// caller-specified upload location; it is not sent yet.
 func (c *SnapshotClient) Upload(ctx context.Context, path, bundleID string, acl []ACLEntry, zipContent []byte) (*SnapshotInfo, error) {
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
