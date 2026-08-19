@@ -4,7 +4,7 @@ package terraform_dabs_map
 
 // alerts / databricks_alert_v2: 5 dabs-only
 // alerts / databricks_alert_v2: 3 tf-only
-// apps / databricks_app: 16 dabs-only
+// apps / databricks_app: 17 dabs-only
 // apps / databricks_app: 1 tf-only
 // clusters / databricks_cluster: 1 dabs-only
 // clusters / databricks_cluster: 25 tf-only
@@ -13,13 +13,13 @@ package terraform_dabs_map
 // experiments / databricks_mlflow_experiment: 6 dabs-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 20 dabs-only
+// jobs / databricks_job: 53 dabs-only
 // jobs / databricks_job: 258 tf-only
 // model_serving_endpoints / databricks_model_serving: 6 dabs-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 68 dabs-only
+// pipelines / databricks_pipeline: 87 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
@@ -108,6 +108,7 @@ var DABsOnlyFields = map[string]FieldSet{
 				"value_from": {}, // apps.*.config.env.value_from
 			},
 		},
+		"forward_user_access_token": {},
 		"git_source": {
 			"branch": {}, // apps.*.git_source.branch
 			"commit": {}, // apps.*.git_source.commit
@@ -151,8 +152,16 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 		"tasks": {
+			"ai_runtime_task": {
+				"docker_image_url":         {}, // jobs.*.tasks.ai_runtime_task.docker_image_url
+				"mlflow_artifact_location": {}, // jobs.*.tasks.ai_runtime_task.mlflow_artifact_location
+			},
 			"for_each_task": {
 				"task": {
+					"ai_runtime_task": {
+						"docker_image_url":         {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.docker_image_url
+						"mlflow_artifact_location": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.mlflow_artifact_location
+					},
 					"for_each_task": {
 						"concurrency": {}, // jobs.*.tasks.for_each_task.task.for_each_task.concurrency
 						"inputs":      {}, // jobs.*.tasks.for_each_task.task.for_each_task.inputs
@@ -174,6 +183,43 @@ var DABsOnlyFields = map[string]FieldSet{
 				"sql_query_id": {}, // jobs.*.trigger.sql_condition.sql_query_id
 				"trigger_mode": {}, // jobs.*.trigger.sql_condition.trigger_mode
 				"warehouse_id": {}, // jobs.*.trigger.sql_condition.warehouse_id
+			},
+		},
+		"triggers": {
+			"continuous": {
+				"task_retry_mode": {}, // jobs.*.triggers.continuous.task_retry_mode
+			},
+			"file_arrival": {
+				"min_time_between_triggers_seconds": {}, // jobs.*.triggers.file_arrival.min_time_between_triggers_seconds
+				"url":                               {}, // jobs.*.triggers.file_arrival.url
+				"wait_after_last_change_seconds":    {}, // jobs.*.triggers.file_arrival.wait_after_last_change_seconds
+			},
+			"model": {
+				"aliases":                           {}, // jobs.*.triggers.model.aliases
+				"condition":                         {}, // jobs.*.triggers.model.condition
+				"min_time_between_triggers_seconds": {}, // jobs.*.triggers.model.min_time_between_triggers_seconds
+				"securable_name":                    {}, // jobs.*.triggers.model.securable_name
+				"wait_after_last_change_seconds":    {}, // jobs.*.triggers.model.wait_after_last_change_seconds
+			},
+			"pause_status": {}, // jobs.*.triggers.pause_status
+			"periodic": {
+				"interval": {}, // jobs.*.triggers.periodic.interval
+				"unit":     {}, // jobs.*.triggers.periodic.unit
+			},
+			"schedule": {
+				"quartz_cron_expression": {}, // jobs.*.triggers.schedule.quartz_cron_expression
+				"timezone_id":            {}, // jobs.*.triggers.schedule.timezone_id
+			},
+			"sql_condition": {
+				"sql_query_id": {}, // jobs.*.triggers.sql_condition.sql_query_id
+				"trigger_mode": {}, // jobs.*.triggers.sql_condition.trigger_mode
+				"warehouse_id": {}, // jobs.*.triggers.sql_condition.warehouse_id
+			},
+			"table_update": {
+				"condition":                         {}, // jobs.*.triggers.table_update.condition
+				"min_time_between_triggers_seconds": {}, // jobs.*.triggers.table_update.min_time_between_triggers_seconds
+				"table_names":                       {}, // jobs.*.triggers.table_update.table_names
+				"wait_after_last_change_seconds":    {}, // jobs.*.triggers.table_update.wait_after_last_change_seconds
 			},
 		},
 	},
@@ -206,12 +252,27 @@ var DABsOnlyFields = map[string]FieldSet{
 				},
 				"schema": {
 					"connector_options": {
+						"api_source_connector_options": {
+							"options": {
+								"*": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.api_source_connector_options.options.*
+							},
+						},
 						"google_ads_options": {
 							"custom_report_options": {
 								"metrics":         {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.google_ads_options.custom_report_options.metrics
 								"resource":        {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.google_ads_options.custom_report_options.resource
 								"resource_fields": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.google_ads_options.custom_report_options.resource_fields
 								"segments":        {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.google_ads_options.custom_report_options.segments
+							},
+						},
+						"kafka_options": {
+							"key_transformer": {
+								"input_column":  {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.input_column
+								"output_column": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.output_column
+							},
+							"value_transformer": {
+								"input_column":  {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.input_column
+								"output_column": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.output_column
 							},
 						},
 						"meta_ads_options": {
@@ -245,7 +306,8 @@ var DABsOnlyFields = map[string]FieldSet{
 					"fanout_options": {
 						"fanout_by": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.fanout_by
 						"transforms": {
-							"format": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.format
+							"format":       {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.format
+							"input_column": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.input_column
 							"json_options": {
 								"as_variant":            {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.as_variant
 								"schema":                {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema
@@ -253,6 +315,7 @@ var DABsOnlyFields = map[string]FieldSet{
 								"schema_file_path":      {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema_file_path
 								"schema_hints":          {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema_hints
 							},
+							"output_column": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.output_column
 						},
 					},
 					"table_configuration": {
@@ -261,12 +324,27 @@ var DABsOnlyFields = map[string]FieldSet{
 				},
 				"table": {
 					"connector_options": {
+						"api_source_connector_options": {
+							"options": {
+								"*": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.api_source_connector_options.options.*
+							},
+						},
 						"google_ads_options": {
 							"custom_report_options": {
 								"metrics":         {}, // pipelines.*.ingestion_definition.objects.table.connector_options.google_ads_options.custom_report_options.metrics
 								"resource":        {}, // pipelines.*.ingestion_definition.objects.table.connector_options.google_ads_options.custom_report_options.resource
 								"resource_fields": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.google_ads_options.custom_report_options.resource_fields
 								"segments":        {}, // pipelines.*.ingestion_definition.objects.table.connector_options.google_ads_options.custom_report_options.segments
+							},
+						},
+						"kafka_options": {
+							"key_transformer": {
+								"input_column":  {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.input_column
+								"output_column": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.output_column
+							},
+							"value_transformer": {
+								"input_column":  {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.input_column
+								"output_column": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.output_column
 							},
 						},
 						"meta_ads_options": {
@@ -299,6 +377,13 @@ var DABsOnlyFields = map[string]FieldSet{
 					},
 					"table_configuration": {
 						"source_metadata_column": {}, // pipelines.*.ingestion_definition.objects.table.table_configuration.source_metadata_column
+					},
+				},
+			},
+			"source_configurations": {
+				"api_source_connector_config": {
+					"configs": {
+						"*": {}, // pipelines.*.ingestion_definition.source_configurations.api_source_connector_config.configs.*
 					},
 				},
 			},

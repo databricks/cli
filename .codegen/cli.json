@@ -1312,6 +1312,10 @@
             "OUTPUT_ONLY"
           ]
         },
+        "forward_user_access_token": {
+          "description": "Forward the user's access token to the app. Requires stopping and starting app compute to take effect.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "git_repository": {
           "description": "Git repository configuration for app deployments. When specified, deployments can\nreference code from this repository by providing only the git reference (branch, tag, or commit).",
           "ref": "apps.GitRepository",
@@ -2196,6 +2200,10 @@
         },
         "description": {
           "launch_stage": "GA"
+        },
+        "forward_user_access_token": {
+          "description": "Forward the user's access token to the app. Requires stopping and starting app compute to take effect.",
+          "launch_stage": "PRIVATE_PREVIEW"
         },
         "git_repository": {
           "ref": "apps.GitRepository",
@@ -3138,7 +3146,7 @@
         "BLOCK_USAGE"
       ],
       "enum_launch_stages": {
-        "BLOCK_USAGE": "PRIVATE_PREVIEW",
+        "BLOCK_USAGE": "PUBLIC_BETA",
         "EMAIL_NOTIFICATION": "PUBLIC_PREVIEW"
       }
     },
@@ -3154,7 +3162,7 @@
         },
         "principal_overrides": {
           "description": "Per-principal threshold overrides for this alert. Only applies to per-user alerts (`scope_type` = `ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER`); ignored for shared alerts.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "quantity_threshold": {
           "description": "The threshold for the budget alert to determine if it is in a triggered state. The number is evaluated based on `quantity_type`.",
@@ -3168,7 +3176,7 @@
         "scope_type": {
           "description": "How the alert threshold is evaluated. Determines whether spend is tracked in aggregate or per individual user.",
           "ref": "billing.AlertConfigurationScopeType",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "time_period": {
           "description": "The time window of usage data for the budget.",
@@ -3197,8 +3205,8 @@
         "ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER"
       ],
       "enum_launch_stages": {
-        "ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER": "PRIVATE_PREVIEW",
-        "ALERT_CONFIGURATION_SCOPE_TYPE_SHARED": "PRIVATE_PREVIEW"
+        "ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER": "PUBLIC_BETA",
+        "ALERT_CONFIGURATION_SCOPE_TYPE_SHARED": "PUBLIC_BETA"
       }
     },
     "billing.AlertConfigurationTimePeriod": {
@@ -3247,7 +3255,7 @@
         "resource_type": {
           "description": "The resource scope for this budget. Determines whether the budget tracks all resources or a specific resource.",
           "ref": "billing.BudgetResourceType",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "update_time": {
           "description": "Update time of this budget configuration.",
@@ -3349,8 +3357,8 @@
         "BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY"
       ],
       "enum_launch_stages": {
-        "BUDGET_RESOURCE_TYPE_ALL_RESOURCES": "PRIVATE_PREVIEW",
-        "BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY": "PRIVATE_PREVIEW"
+        "BUDGET_RESOURCE_TYPE_ALL_RESOURCES": "PUBLIC_BETA",
+        "BUDGET_RESOURCE_TYPE_UNITY_AI_GATEWAY": "PUBLIC_BETA"
       }
     },
     "billing.CreateBillingUsageDashboardRequest": {
@@ -3401,7 +3409,7 @@
         "resource_type": {
           "description": "The resource scope for this budget. Determines whether the budget tracks all resources or a specific resource.",
           "ref": "billing.BudgetResourceType",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -3426,7 +3434,7 @@
         },
         "principal_overrides": {
           "description": "Per-principal threshold overrides for this alert. Only applies to per-user alerts (`scope_type` = `ALERT_CONFIGURATION_SCOPE_TYPE_PER_USER`); ignored for shared alerts.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "quantity_threshold": {
           "description": "The threshold for the budget alert to determine if it is in a triggered state. The number is evaluated based on `quantity_type`.",
@@ -3440,7 +3448,7 @@
         "scope_type": {
           "description": "How the alert threshold is evaluated. Determines whether spend is tracked in aggregate or per individual user.",
           "ref": "billing.AlertConfigurationScopeType",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "time_period": {
           "description": "The time window of usage data for the budget.",
@@ -3870,11 +3878,11 @@
       "fields": {
         "override_threshold": {
           "description": "Dollar amount that overrides the parent alert's quantity_threshold for this principal.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         },
         "principal_id": {
           "description": "Account-level principal id (user, group, or service principal).",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -3931,7 +3939,7 @@
         "resource_type": {
           "description": "The resource scope for this budget. Determines whether the budget tracks all resources or a specific resource.",
           "ref": "billing.BudgetResourceType",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -4108,7 +4116,7 @@
           ]
         },
         "created_by": {
-          "description": "The user who created the deployment (email or principal name).",
+          "description": "The user who created the deployment (email or principal name). Empty if authoritative\ndeployment metadata does not identify a creator or the principal cannot be resolved.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
@@ -4202,7 +4210,7 @@
           ]
         },
         "updated_by": {
-          "description": "The user who most recently updated the deployment (email or principal name).",
+          "description": "The user who most recently updated the deployment (email or principal name). Empty if\nauthoritative deployment metadata does not identify a modifier or the principal cannot be\nresolved.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
@@ -4336,7 +4344,7 @@
     "bundledeployments.ListDeploymentsRequest": {
       "fields": {
         "page_size": {
-          "description": "The maximum number of deployments to return. The service may return\nfewer than this value.\nIf unspecified, at most 20 deployments will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
+          "description": "The maximum number of deployments to return. The service may return\nfewer than this value.\nIf unspecified, at most 20 deployments will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -4510,7 +4518,7 @@
           ]
         },
         "resource_id": {
-          "description": "ID of the actual resource in the workspace (e.g. the job ID, pipeline ID).\nOptional at creation: CREATE and RECREATE operations produce a new resource\nwhose ID is not yet known when the operation is recorded. Mutable: may be\nfilled in (or corrected) later via UpdateOperation once the ID is known.",
+          "description": "ID of the actual resource in the workspace (e.g. the job ID, pipeline ID).\nRequired whenever `state` is set, because state records a resource that\nexists. A CREATE or RECREATE that has not produced its resource yet records\nneither. Mutable: may be filled in (or corrected) later via UpdateOperation\nonce the ID is known.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -4539,7 +4547,7 @@
           ]
         },
         "state": {
-          "description": "Serialized local config state after the operation. Should be unset for\ndelete operations. Mutable: may be updated after creation via\nUpdateOperation. When updating, the caller must echo the last-observed\n`sequence_id` as a concurrency precondition.\n\nOpaque to this service: the string is stored and returned unchanged. This is\ndeliberately not google.protobuf.Value, whose only numeric case is\n`double number_value`, so parsing the client's JSON into it rewrites every\ninteger as a double - `1` reads back as `1.0`, which no longer deserializes\ninto an integer field - and silently loses precision above 2^53, which is\nwithin range for IDs the client records.\n\nA string rather than bytes: the payload is always UTF-8 JSON, and proto3 JSON\nmaps bytes to base64, which inflates every request and response by a third\nand makes state unreadable in logs and API responses. Both generate the same\nOpenAPI schema (\"type\": \"string\"), so the SDKs are identical either way.",
+          "description": "Serialized local config state after the operation. Its presence records\nwhether the resource still exists, so an operation that records no state\nremoves its resource from the deployment. It may be unset only for an\noperation that left no resource behind: a `DELETE` that succeeded, or a\n`CREATE` or `RECREATE` that failed. It is required otherwise, including for\na failed `DELETE`, whose resource survives.\n\nMutable: may be updated after creation via UpdateOperation. When updating,\nthe caller must echo the last-observed `sequence_id` as a concurrency\nprecondition.\n\nOpaque to this service: the string is stored and returned unchanged. This is\ndeliberately not google.protobuf.Value, whose only numeric case is\n`double number_value`, so parsing the client's JSON into it rewrites every\ninteger as a double - `1` reads back as `1.0`, which no longer deserializes\ninto an integer field - and silently loses precision above 2^53, which is\nwithin range for IDs the client records.\n\nA string rather than bytes: the payload is always UTF-8 JSON, and proto3 JSON\nmaps bytes to base64, which inflates every request and response by a third\nand makes state unreadable in logs and API responses. Both generate the same\nOpenAPI schema (\"type\": \"string\"), so the SDKs are identical either way.",
           "launch_stage": "PRIVATE_PREVIEW",
           "behaviors": [
             "OPTIONAL"
@@ -5762,6 +5770,7 @@
         "DATABRICKS",
         "SALESFORCE",
         "BIGQUERY",
+        "NETSUITE",
         "WORKDAY_RAAS",
         "HIVE_METASTORE",
         "GA4_RAW_DATA",
@@ -5796,6 +5805,7 @@
         "JDBC": "PUBLIC_PREVIEW",
         "META_MARKETING": "PUBLIC_BETA",
         "MYSQL": "GA",
+        "NETSUITE": "GA",
         "ORACLE": "GA",
         "OUTLOOK": "PUBLIC_BETA",
         "POSTGRESQL": "GA",
@@ -8446,17 +8456,7 @@
         }
       }
     },
-    "catalog.GetMcpServiceRequest": {
-      "fields": {
-        "include_browse": {
-          "description": "Whether to include MCP services for which the principal can only access\nselective metadata.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        }
-      }
-    },
+    "catalog.GetMcpServiceRequest": {},
     "catalog.GetMetastoreRequest": {},
     "catalog.GetMetastoreSummaryResponse": {
       "fields": {
@@ -8540,28 +8540,8 @@
         }
       }
     },
-    "catalog.GetModelProviderServiceRequest": {
-      "fields": {
-        "include_browse": {
-          "description": "Whether to include provider services for which the principal can only\naccess selective metadata.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        }
-      }
-    },
-    "catalog.GetModelServiceRequest": {
-      "fields": {
-        "include_browse": {
-          "description": "Whether to include model services for which the principal can only access\nselective metadata.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        }
-      }
-    },
+    "catalog.GetModelProviderServiceRequest": {},
+    "catalog.GetModelServiceRequest": {},
     "catalog.GetModelVersionRequest": {
       "fields": {
         "include_aliases": {
@@ -8620,7 +8600,17 @@
         }
       }
     },
-    "catalog.GetSecretRequest": {},
+    "catalog.GetSecretRequest": {
+      "fields": {
+        "include_value": {
+          "description": "Whether to include the secret value in the response. Defaults to false. Requires the\n**READ_SECRET** privilege.",
+          "launch_stage": "GA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
     "catalog.GetStorageCredentialRequest": {},
     "catalog.GetTableRequest": {
       "fields": {
@@ -9028,13 +9018,6 @@
     },
     "catalog.ListMcpServicesRequest": {
       "fields": {
-        "include_browse": {
-          "description": "Whether to include MCP services for which the principal can only access\nselective metadata.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
         "page_size": {
           "description": "Maximum number of MCP services to return. Defaults to 100 when unset or 0;\nthe maximum is 100. Use `next_page_token` to retrieve additional pages.",
           "launch_stage": "PUBLIC_BETA",
@@ -9116,13 +9099,6 @@
     },
     "catalog.ListModelProviderServicesRequest": {
       "fields": {
-        "include_browse": {
-          "description": "Whether to include provider services for which the principal can only\naccess selective metadata.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
         "page_size": {
           "description": "Maximum number of provider services to return. Defaults to 100 when unset or\n0; the maximum is 100. Use `next_page_token` to retrieve additional pages.",
           "launch_stage": "PUBLIC_BETA",
@@ -9180,13 +9156,6 @@
     },
     "catalog.ListModelServicesRequest": {
       "fields": {
-        "include_browse": {
-          "description": "Whether to include model services for which the principal can only access\nselective metadata.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
-        },
         "page_size": {
           "description": "Maximum number of model services to return. Defaults to 100 when unset or 0;\nthe maximum is 100. Use `next_page_token` to retrieve additional pages.",
           "launch_stage": "PUBLIC_BETA",
@@ -9693,13 +9662,6 @@
     "catalog.McpService": {
       "description": "A governed MCP server registration in Unity Catalog. Acts as a container\nsecurable that references an MCP server -- customer-external via a UC\nConnection, or Databricks-hosted via an internal server -- and\nexposes its tools for discovery, authorization, and invocation.",
       "fields": {
-        "browse_only": {
-          "description": "Whether the caller sees only metadata available through the BROWSE\nprivilege.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OUTPUT_ONLY"
-          ]
-        },
         "comment": {
           "description": "User-provided description.",
           "launch_stage": "PUBLIC_BETA",
@@ -9924,13 +9886,6 @@
     "catalog.ModelProviderService": {
       "description": "A governed external model-provider connection stored in Unity Catalog (e.g.\nan OpenAI API account, an Azure OpenAI deployment, an Amazon Bedrock\naccount). Owns the provider type and the auth/configuration the platform\nneeds to invoke that provider, and is referenced from\n`ExternalModelConfig.model_provider_service` on a ModelService.\n\nOne ModelProviderService can back many ModelServices (e.g. an `openai_prod`\nprovider serving multiple models); a single ModelService can fan out across\nmultiple ModelProviderServices for traffic split or failover.",
       "fields": {
-        "browse_only": {
-          "description": "Whether the caller sees only metadata available through the BROWSE\nprivilege.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OUTPUT_ONLY"
-          ]
-        },
         "comment": {
           "description": "User-provided description.",
           "launch_stage": "PUBLIC_BETA",
@@ -10141,7 +10096,7 @@
       "description": "Direct form of Amazon Bedrock provider config.\n\nAuthentication is one of two mutually exclusive modes, exactly one of which\nmust be supplied on Create:\n- Access keys: set `aws_access_key`, leave `service_credential` unset.\n- UC service credential: set `service_credential.name` to the AIP-122\nresource-name form `credentials/{name}`, leave `aws_access_key` unset. The\ncredential value lives in UC and is referenced by name, not held on this\nmessage.\nSetting more than one mode is rejected.",
       "fields": {
         "aws_access_key": {
-          "description": "AWS access-key-pair auth. Mutually exclusive with `service_credential`.\nSupersedes the flat `aws_access_key_id` / `aws_secret_access_key` fields.",
+          "description": "AWS access-key-pair auth. Mutually exclusive with `service_credential`.",
           "ref": "catalog.ModelProviderServiceConfigAwsAccessKey",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
@@ -10275,7 +10230,7 @@
           ]
         },
         "entra_service_principal": {
-          "description": "Entra ID (service principal) auth. Mutually exclusive with `api_key` and\n`service_credential`. Supersedes the flat `tenant_id` / `client_id` /\n`client_secret` fields.",
+          "description": "Entra ID (service principal) auth. Mutually exclusive with `api_key` and\n`service_credential`.",
           "ref": "catalog.ModelProviderServiceConfigEntraServicePrincipal",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
@@ -10442,7 +10397,7 @@
           ]
         },
         "entra_service_principal": {
-          "description": "Entra ID (service principal) auth. Mutually exclusive with `api_key` and\n`service_credential`. Supersedes the flat `tenant_id` / `client_id` /\n`client_secret` fields.",
+          "description": "Entra ID (service principal) auth. Mutually exclusive with `api_key` and\n`service_credential`.",
           "ref": "catalog.ModelProviderServiceConfigEntraServicePrincipal",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
@@ -10539,13 +10494,6 @@
     "catalog.ModelService": {
       "description": "A governed AI Gateway endpoint in Unity Catalog that routes inference\nrequests to one or more model destinations (for example a foundation model\nor an external LLM reached through a ModelProviderService). Applies\ncentralized access control, rate limits, guardrails, and auditing to the\ntraffic it serves.",
       "fields": {
-        "browse_only": {
-          "description": "Whether the caller sees only metadata available through the BROWSE\nprivilege.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OUTPUT_ONLY"
-          ]
-        },
         "comment": {
           "description": "User-provided description.",
           "launch_stage": "PUBLIC_BETA",
@@ -11598,7 +11546,7 @@
           ]
         },
         "for_securable_type": {
-          "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+          "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
           "ref": "catalog.SecurableType",
           "launch_stage": "GA"
         },
@@ -17738,7 +17686,7 @@
         },
         "java_dependencies": {
           "description": "List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.",
-          "launch_stage": "PUBLIC_PREVIEW",
+          "launch_stage": "GA",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -23615,11 +23563,11 @@
         "auto_tagging_mode": {
           "description": "Whether auto-tagging is enabled or disabled for this classification tag.",
           "ref": "dataclassification.AutoTaggingConfigAutoTaggingMode",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "PUBLIC_PREVIEW"
         },
         "classification_tag": {
           "description": "The Classification Tag. For built-in classes this is a system tag (e.g., \"class.name\",\n\"class.location\"); for custom classes it is a user-defined governance tag key.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "PUBLIC_PREVIEW"
         }
       }
     },
@@ -23630,8 +23578,8 @@
         "AUTO_TAGGING_ENABLED"
       ],
       "enum_launch_stages": {
-        "AUTO_TAGGING_DISABLED": "PUBLIC_BETA",
-        "AUTO_TAGGING_ENABLED": "PUBLIC_BETA"
+        "AUTO_TAGGING_DISABLED": "PUBLIC_PREVIEW",
+        "AUTO_TAGGING_ENABLED": "PUBLIC_PREVIEW"
       }
     },
     "dataclassification.CatalogConfig": {
@@ -23639,7 +23587,7 @@
       "fields": {
         "auto_tag_configs": {
           "description": "List of auto-tagging configurations for this catalog.\nEmpty list means no auto-tagging is enabled.",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -23647,7 +23595,7 @@
         "excluded_schemas": {
           "description": "Schemas to exclude from the scan, each named relative to the parent catalog.\nIf specified, all schemas except the specified ones will be scanned.\nMutually exclusive with `included_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
           "ref": "dataclassification.CatalogConfigSchemaNames",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
@@ -23655,14 +23603,14 @@
         "included_schemas": {
           "description": "Schemas to include in the scan, each named relative to the parent catalog.\nIf specified, only listed schemas will be scanned.\nMutually exclusive with `excluded_schemas`: only one may be set per request.\nIf neither `included_schemas` nor `excluded_schemas` is set, all schemas are scanned.",
           "ref": "dataclassification.CatalogConfigSchemaNames",
-          "launch_stage": "PUBLIC_BETA",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OPTIONAL"
           ]
         },
         "name": {
           "description": "Resource name in the format: catalogs/{catalog_name}/config.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "PUBLIC_PREVIEW"
         }
       }
     },
@@ -23671,7 +23619,7 @@
       "fields": {
         "names": {
           "description": "Schema names, each relative to the parent catalog. Must not be empty.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "PUBLIC_PREVIEW"
         }
       }
     },
@@ -23680,7 +23628,7 @@
         "catalog_config": {
           "description": "The configuration to create.",
           "ref": "dataclassification.CatalogConfig",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "PUBLIC_PREVIEW"
         }
       }
     },
@@ -23691,11 +23639,11 @@
         "catalog_config": {
           "description": "The configuration to apply to the catalog.\nThe name field in catalog_config identifies which resource to update.",
           "ref": "dataclassification.CatalogConfig",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "PUBLIC_PREVIEW"
         },
         "update_mask": {
           "description": "Field mask specifying which fields to update.",
-          "launch_stage": "PUBLIC_BETA"
+          "launch_stage": "PUBLIC_PREVIEW"
         }
       }
     },
@@ -27478,24 +27426,19 @@
         "account_sp_status": {
           "description": "The activity status of a service principal in a Databricks account.",
           "ref": "iamv2.State",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
+          "launch_stage": "PUBLIC_BETA"
         },
         "application_id": {
-          "description": "Application ID of the service principal.",
+          "description": "Application ID of the service principal. Set at creation time and cannot be changed\nafterwards; when omitted, the server generates one.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
+            "IMMUTABLE",
             "OPTIONAL"
           ]
         },
         "display_name": {
           "description": "Display name of the service principal.",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
+          "launch_stage": "PUBLIC_BETA"
         },
         "external_id": {
           "description": "ExternalId of the service principal in the customer's IdP.",
@@ -27563,10 +27506,7 @@
         "account_user_status": {
           "description": "The activity status of a user in a Databricks account.",
           "ref": "iamv2.State",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
+          "launch_stage": "PUBLIC_BETA"
         },
         "external_id": {
           "description": "ExternalId of the user in the customer's IdP.",
@@ -27577,10 +27517,7 @@
         },
         "full_name": {
           "ref": "iamv2.UserFullName",
-          "launch_stage": "PUBLIC_BETA",
-          "behaviors": [
-            "OPTIONAL"
-          ]
+          "launch_stage": "PUBLIC_BETA"
         },
         "user_id": {
           "description": "Internal userId of the user in Databricks.",
@@ -27593,8 +27530,7 @@
           "description": "Username/email of the user.",
           "launch_stage": "PUBLIC_BETA",
           "behaviors": [
-            "IMMUTABLE",
-            "OPTIONAL"
+            "IMMUTABLE"
           ]
         }
       }
@@ -27763,9 +27699,23 @@
           "description": "Deployment specs for this task. Exactly one deployment is currently\nsupported (a single entry where every node runs the same command); this\nis a current-Preview constraint. Role-split workloads (driver + worker,\nparameter server, separate eval node, etc.) with multiple entries are the\neventual intent but not yet supported.",
           "launch_stage": "PUBLIC_PREVIEW"
         },
+        "docker_image_url": {
+          "description": "Optional Docker image URL for a custom container image. When set,\nthe task runs on the specified container image instead of the default\nDatabricks client image. Format:\n`{organization}/{repository}:{tag}`",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
         "experiment": {
           "description": "MLflow experiment name for this run. If an experiment with this name\nalready exists under the calling user, the run is appended to it;\notherwise a new experiment is created. To target a specific MLflow\nstorage location (for example, when running as a service principal), set\n`mlflow_experiment_directory`.",
           "launch_stage": "PUBLIC_PREVIEW"
+        },
+        "mlflow_artifact_location": {
+          "description": "Optional root location for MLflow artifacts logged by the run.\nIf this field isn't specified the default artifact location will be in dbfs\ni.e. `dbfs:/databricks/mlflow-tracking/\u003cexperiment_id\u003e/...`\nIf dbfs access is restricted or UC is preferred this can be a custom location in UC:\n`dbfs:/Volumes/\u003ccatalog\u003e/\u003cschema\u003e/\u003cvolume\u003e/...`\nThe location should be unique for each experiment.",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
         },
         "mlflow_experiment_directory": {
           "description": "Optional workspace directory under which the MLflow experiment named in\n`experiment` is created. Must start with `/Workspace`. Set this when\nrunning as a service principal that has no default user directory; for\nregular users the experiment defaults to the user's home directory.",
@@ -27910,6 +27860,13 @@
           "description": "Settings for this job and all of its runs. These settings can be updated using the `resetJob` method.",
           "ref": "jobs.JobSettings",
           "launch_stage": "GA"
+        },
+        "trigger_details": {
+          "description": "Per-trigger runtime information for the multi-trigger surface. Same length\nand order as `JobSettings.triggers`; `trigger_details[i]` corresponds to\n`triggers[i]`. Sub-fields (`state`, `history`) are populated independently\nbased on the `GetJob.include_trigger_state` / `include_trigger_history` flags.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
         },
         "trigger_state": {
           "description": "State of the trigger associated with the job.",
@@ -28361,6 +28318,29 @@
         }
       }
     },
+    "jobs.ContinuousTriggerConfiguration": {
+      "description": "Continuous trigger. Stripped-down counterpart to `ContinuousSettings`: `pause_status` is owned by the enclosing\n`TriggerConfiguration` and intentionally omitted here.",
+      "fields": {
+        "task_retry_mode": {
+          "description": "Whether the continuous job applies task-level retries. Defaults to NEVER.",
+          "ref": "jobs.TaskRetryMode",
+          "launch_stage": "PUBLIC_BETA"
+        }
+      }
+    },
+    "jobs.ContinuousTriggerState": {
+      "fields": {
+        "consecutive_failures": {
+          "launch_stage": "PUBLIC_BETA"
+        },
+        "is_backing_off": {
+          "launch_stage": "PUBLIC_BETA"
+        },
+        "next_attempt_ms": {
+          "launch_stage": "PUBLIC_BETA"
+        }
+      }
+    },
     "jobs.CreateJob": {
       "fields": {
         "access_control_list": {
@@ -28476,6 +28456,13 @@
           "ref": "jobs.TriggerSettings",
           "launch_stage": "GA"
         },
+        "triggers": {
+          "description": "List of triggers attached to this job. A run starts when any active trigger evaluates to true. Cannot be set in\nthe same request as the legacy `schedule`, `trigger`, or `continuous` fields. The 10-trigger cap is the design's\nhard limit; rollout steps the effective cap 3 -\u003e 5 -\u003e 10 via internal validation during the preview.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
         "usage_policy_id": {
           "description": "The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_usage_policy_id` for the usage policy used by this workload.",
           "launch_stage": "PRIVATE_PREVIEW"
@@ -28515,6 +28502,19 @@
         "timezone_id": {
           "description": "A Java timezone ID. The schedule for a job is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.",
           "launch_stage": "GA"
+        }
+      }
+    },
+    "jobs.CronTriggerConfiguration": {
+      "description": "Cron schedule trigger. Stripped-down counterpart to `CronSchedule`: `pause_status` and `sql_condition` are owned\nby the enclosing `TriggerConfiguration` and intentionally omitted here.",
+      "fields": {
+        "quartz_cron_expression": {
+          "description": "A Cron expression using Quartz syntax that describes the schedule for this trigger. See\n[Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details.",
+          "launch_stage": "PUBLIC_BETA"
+        },
+        "timezone_id": {
+          "description": "A Java timezone ID. The schedule is resolved with respect to this timezone. See\n[Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details.",
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -29178,6 +29178,13 @@
           "ref": "jobs.JobSettings",
           "launch_stage": "GA"
         },
+        "trigger_details": {
+          "description": "Per-trigger runtime information for the multi-trigger surface. Same length\nand order as `JobSettings.triggers`; `trigger_details[i]` corresponds to\n`triggers[i]`. Sub-fields (`state`, `history`) are populated independently\nbased on the `GetJob.include_trigger_state` / `include_trigger_history` flags.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
         "trigger_state": {
           "description": "State of the trigger associated with the job.",
           "ref": "jobs.TriggerStateProto",
@@ -29579,6 +29586,13 @@
           "ref": "jobs.TriggerSettings",
           "launch_stage": "GA"
         },
+        "triggers": {
+          "description": "List of triggers attached to this job. A run starts when any active trigger evaluates to true. Cannot be set in\nthe same request as the legacy `schedule`, `trigger`, or `continuous` fields. The 10-trigger cap is the design's\nhard limit; rollout steps the effective cap 3 -\u003e 5 -\u003e 10 via internal validation during the preview.",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
         "usage_policy_id": {
           "description": "The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_usage_policy_id` for the usage policy used by this workload.",
           "launch_stage": "PRIVATE_PREVIEW"
@@ -29864,6 +29878,9 @@
         "MODEL_VERSION_READY": "PRIVATE_PREVIEW"
       }
     },
+    "jobs.ModelTriggerState": {
+      "description": "Runtime state for a model trigger. Currently empty because model triggers do not\nexpose any trigger-specific runtime state."
+    },
     "jobs.NotebookOutput": {
       "fields": {
         "result": {
@@ -29922,6 +29939,45 @@
         "UNPAUSED": "GA"
       }
     },
+    "jobs.PerTriggerState": {
+      "description": "Per-trigger runtime state for the multi-trigger surface. Mirrors `TriggerConfiguration`'s\ntrigger-type variants 1:1; each entry sets exactly one variant matching the corresponding\ntrigger's type. Variants with no runtime state today (`schedule`, `model`) are emitted as\nempty messages.",
+      "fields": {
+        "continuous": {
+          "ref": "jobs.ContinuousTriggerState",
+          "launch_stage": "PUBLIC_BETA"
+        },
+        "file_arrival": {
+          "ref": "jobs.FileArrivalTriggerState",
+          "launch_stage": "PUBLIC_BETA"
+        },
+        "model": {
+          "ref": "jobs.ModelTriggerState",
+          "launch_stage": "PUBLIC_BETA"
+        },
+        "pause_status": {
+          "description": "Whether this trigger is paused or not. Mirrors the configured pause_status.",
+          "ref": "jobs.PauseStatus",
+          "launch_stage": "PUBLIC_BETA"
+        },
+        "periodic": {
+          "ref": "jobs.PeriodicTriggerState",
+          "launch_stage": "PUBLIC_BETA"
+        },
+        "schedule": {
+          "ref": "jobs.ScheduleTriggerState",
+          "launch_stage": "PUBLIC_BETA"
+        },
+        "sql_condition": {
+          "description": "State for SQL condition evaluation, can coexist with other trigger states.",
+          "ref": "jobs.SqlConditionState",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "table_update": {
+          "ref": "jobs.TableTriggerState",
+          "launch_stage": "PUBLIC_BETA"
+        }
+      }
+    },
     "jobs.PerformanceTarget": {
       "description": "PerformanceTarget defines how performant (lower latency) or cost efficient the execution of run on serverless compute should be.\nThe performance mode on the job or pipeline should map to a performance setting that is passed to Cluster Manager\n(see cluster-common PerformanceTarget).",
       "enum": [
@@ -29958,6 +30014,13 @@
         "HOURS": "GA",
         "MINUTES": "GA",
         "WEEKS": "GA"
+      }
+    },
+    "jobs.PeriodicTriggerState": {
+      "fields": {
+        "next_run_time": {
+          "launch_stage": "PUBLIC_BETA"
+        }
       }
     },
     "jobs.PipelineParams": {
@@ -31369,6 +31432,9 @@
         "WORKFLOW_RUN": "Workflow run. A run created with [dbutils.notebook.run](/dev-tools/databricks-utils.html#dbutils-workflow)."
       }
     },
+    "jobs.ScheduleTriggerState": {
+      "description": "Runtime state for a schedule trigger. Currently empty because schedule triggers\ndo not expose any trigger-specific runtime state."
+    },
     "jobs.Source": {
       "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\\\nfrom the local Databricks workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in Databricks workspace.\n* `GIT`: SQL file is located in cloud Git provider.",
       "enum": [
@@ -32506,6 +32572,131 @@
         "CLOUD_FAILURE": "The run was terminated because of an issue with your cloud provider.",
         "INTERNAL_ERROR": "An error occurred in the \u003cDatabricks\u003e platform. Please look at the [status page](https://status.databricks.com/) or contact support if the issue persists.",
         "SUCCESS": "The run terminated without any issues"
+      }
+    },
+    "jobs.TriggerConfiguration": {
+      "description": "A single trigger attached to a job via `JobSettings.triggers`. Exactly one of the trigger-type fields\n(`periodic`, `schedule`, `continuous`, `file_arrival`, `table_update`, `model`) must be set; mutual exclusivity\nis enforced in the API handler rather than via `oneof` so that codegen, validation, and JSON serialization\nacross SDKs and Terraform behave consistently.",
+      "fields": {
+        "continuous": {
+          "description": "Continuous trigger configuration.",
+          "ref": "jobs.ContinuousTriggerConfiguration",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "file_arrival": {
+          "description": "File arrival trigger configuration.",
+          "ref": "jobs.FileArrivalTriggerConfiguration",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "model": {
+          "description": "Model trigger configuration.",
+          "ref": "jobs.ModelTriggerConfiguration",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "pause_status": {
+          "description": "Whether this trigger is paused. Defaults to UNPAUSED when unset; the server always returns an explicit value on read.",
+          "ref": "jobs.PauseStatus",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "periodic": {
+          "description": "Trigger type: exactly one must be set; mutual exclusivity is enforced in the API handler\nPeriodic trigger configuration.",
+          "ref": "jobs.PeriodicTriggerConfiguration",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "schedule": {
+          "description": "Cron schedule trigger configuration.",
+          "ref": "jobs.CronTriggerConfiguration",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "sql_condition": {
+          "description": "Optional SQL condition that gates whether this trigger fires.",
+          "ref": "jobs.SqlConditionConfiguration",
+          "launch_stage": "PRIVATE_PREVIEW",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        },
+        "table_update": {
+          "description": "Table update trigger configuration.",
+          "ref": "jobs.TableUpdateTriggerConfiguration",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OPTIONAL"
+          ]
+        }
+      }
+    },
+    "jobs.TriggerDetails": {
+      "description": "Per-trigger runtime details returned by `GetJob`. Same length and order as\n`JobSettings.triggers`; sub-fields are populated independently based on the\ncorresponding `GetJob.include_trigger_state` / `include_trigger_history` flags.",
+      "fields": {
+        "history": {
+          "description": "Recent evaluation history. Populated when `GetJob.include_trigger_history` is set.",
+          "ref": "jobs.TriggerHistory",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        },
+        "state": {
+          "description": "Current runtime state. Populated when `GetJob.include_trigger_state` is set.",
+          "ref": "jobs.PerTriggerState",
+          "launch_stage": "PUBLIC_BETA",
+          "behaviors": [
+            "OUTPUT_ONLY"
+          ]
+        }
+      }
+    },
+    "jobs.TriggerEvaluation": {
+      "fields": {
+        "description": {
+          "description": "Human-readable description of the trigger evaluation result. Explains why the trigger evaluation triggered or did not trigger a run, or failed.",
+          "launch_stage": "PUBLIC_BETA"
+        },
+        "run_id": {
+          "description": "The ID of the run that was triggered by the trigger evaluation. Only returned if a run was triggered.",
+          "launch_stage": "PUBLIC_BETA"
+        },
+        "timestamp": {
+          "description": "Timestamp at which the trigger was evaluated.",
+          "launch_stage": "PUBLIC_BETA"
+        }
+      }
+    },
+    "jobs.TriggerHistory": {
+      "fields": {
+        "last_failed": {
+          "description": "The last time the trigger failed to evaluate.",
+          "ref": "jobs.TriggerEvaluation",
+          "launch_stage": "PUBLIC_BETA"
+        },
+        "last_not_triggered": {
+          "description": "The last time the trigger was evaluated but did not trigger a run.",
+          "ref": "jobs.TriggerEvaluation",
+          "launch_stage": "PUBLIC_BETA"
+        },
+        "last_triggered": {
+          "description": "The last time the run was triggered due to a file arrival.",
+          "ref": "jobs.TriggerEvaluation",
+          "launch_stage": "PUBLIC_BETA"
+        }
       }
     },
     "jobs.TriggerInfo": {
@@ -41031,6 +41222,24 @@
         }
       }
     },
+    "pipelines.ApiSourceConnectorConfig": {
+      "description": "Top-level configuration for API Source connectors with arbitrary configuration.",
+      "fields": {
+        "configs": {
+          "description": "Arbitrary key-value configuration values for the API Source connector.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
+    "pipelines.ApiSourceConnectorOptions": {
+      "description": "Options for API Source connectors with arbitrary configuration.",
+      "fields": {
+        "options": {
+          "description": "Arbitrary key-value configuration options for the API Source connector.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
     "pipelines.ApplyEnvironmentRequest": {},
     "pipelines.ApplyEnvironmentRequestResponse": {},
     "pipelines.AutoFullRefreshPolicy": {
@@ -41226,6 +41435,11 @@
     "pipelines.ConnectorOptions": {
       "description": "Wrapper message for source-specific options to support multiple connector types",
       "fields": {
+        "api_source_connector_options": {
+          "description": "Connector-specific options for API Source connectors.",
+          "ref": "pipelines.ApiSourceConnectorOptions",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "confluence_options": {
           "ref": "pipelines.ConfluenceConnectorOptions",
           "launch_stage": "PUBLIC_PREVIEW"
@@ -41272,7 +41486,7 @@
         },
         "zendesk_support_options": {
           "ref": "pipelines.ZendeskSupportOptions",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -42225,7 +42439,7 @@
         "SQLSERVER": "PUBLIC_PREVIEW",
         "TERADATA": "PUBLIC_PREVIEW",
         "WORKDAY_RAAS": "PUBLIC_PREVIEW",
-        "ZENDESK": "PRIVATE_PREVIEW"
+        "ZENDESK": "PUBLIC_BETA"
       }
     },
     "pipelines.JiraConnectorOptions": {
@@ -43530,6 +43744,11 @@
     },
     "pipelines.SourceConfig": {
       "fields": {
+        "api_source_connector_config": {
+          "description": "Connector-specific top-level configuration for API Source connectors.",
+          "ref": "pipelines.ApiSourceConnectorConfig",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "catalog": {
           "description": "Catalog-level source configuration parameters",
           "ref": "pipelines.SourceCatalogConfig",
@@ -43859,9 +44078,17 @@
           "ref": "pipelines.TransformerFormat",
           "launch_stage": "PUBLIC_BETA"
         },
+        "input_column": {
+          "description": "Optional input column to transform. When set, the transformer reads\nfrom this column instead of the default source column.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "json_options": {
           "ref": "pipelines.JsonTransformerOptions",
           "launch_stage": "PUBLIC_BETA"
+        },
+        "output_column": {
+          "description": "Optional output column name. When set, the transformed result is\nwritten to this column instead of replacing the input column.",
+          "launch_stage": "PRIVATE_PREVIEW"
         }
       }
     },
@@ -43924,7 +44151,7 @@
         "mode": {
           "description": "Indicates whether the update is either part of a continuous job run, or running in legacy continuous pipeline mode.\nReturned only for GetUpdate; not populated in ListUpdates responses.",
           "ref": "pipelines.UpdateMode",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "GA"
         },
         "parameters": {
           "description": "Key/value map of parameters used to initiate the update",
@@ -44009,8 +44236,8 @@
         "CONTINUOUS"
       ],
       "enum_launch_stages": {
-        "CONTINUOUS": "PRIVATE_PREVIEW",
-        "DEFAULT": "PRIVATE_PREVIEW"
+        "CONTINUOUS": "GA",
+        "DEFAULT": "GA"
       }
     },
     "pipelines.UpdateStateInfo": {
@@ -44061,7 +44288,7 @@
       "fields": {
         "start_date": {
           "description": "(Optional) Start date in YYYY-MM-DD format for the initial sync.\nThis determines the earliest date from which to sync historical data.",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_BETA"
         }
       }
     },
@@ -49862,6 +50089,7 @@
         "GPU_LARGE",
         "MULTIGPU_MEDIUM",
         "CPU_LARGE",
+        "GPU_XLARGE_8",
         "GPU_XLARGE",
         "CPU_MEDIUM"
       ],
@@ -49873,6 +50101,7 @@
         "GPU_MEDIUM": "GA",
         "GPU_SMALL": "GA",
         "GPU_XLARGE": "PUBLIC_BETA",
+        "GPU_XLARGE_8": "PUBLIC_BETA",
         "MULTIGPU_MEDIUM": "GA"
       }
     },
@@ -50260,6 +50489,7 @@
         "GPU_LARGE",
         "MULTIGPU_MEDIUM",
         "CPU_LARGE",
+        "GPU_XLARGE_8",
         "GPU_XLARGE",
         "CPU_MEDIUM"
       ],
@@ -50271,6 +50501,7 @@
         "GPU_MEDIUM": "GA",
         "GPU_SMALL": "GA",
         "GPU_XLARGE": "PUBLIC_BETA",
+        "GPU_XLARGE_8": "PUBLIC_BETA",
         "MULTIGPU_MEDIUM": "GA"
       }
     },
@@ -50282,9 +50513,12 @@
           "launch_stage": "PUBLIC_PREVIEW"
         },
         "table_names": {
-          "description": "The Unity Catalog tables to which endpoint telemetry (logs, traces, and metrics) is exported.\nProvide this to create a new telemetry profile for the endpoint from the given tables.",
+          "description": "The Unity Catalog tables to which endpoint telemetry (logs, traces, and metrics) is exported.\nProvide this to create a new telemetry profile for the endpoint from the given tables.\nThis field selects the tables when writing a telemetry configuration; it is not returned when\nreading one. Responses identify the resulting profile with `telemetry_profile_id` instead.",
           "ref": "serving.UnityCatalogTableNames",
-          "launch_stage": "PUBLIC_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW",
+          "behaviors": [
+            "INPUT_ONLY"
+          ]
         },
         "telemetry_profile_id": {
           "description": "The ID of an existing telemetry profile to apply to this endpoint. Provide this to reuse a\ntelemetry profile that has already been created, instead of specifying table_names.",
@@ -50905,7 +51139,7 @@
         },
         "gcp_endpoint": {
           "ref": "settings.GcpEndpoint",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW"
         },
         "group_id": {
           "description": "Not used by customer-managed private endpoint services.\n\nThe sub-resource type (group ID) of the target resource.\nNote that to connect to workspace root storage (root DBFS), you need two endpoints, one for blob and one for dfs.",
@@ -51137,10 +51371,12 @@
     "settings.CustomerFacingIngressNetworkPolicyCrossWorkspaceAccessRestrictionMode": {
       "enum": [
         "FULL_ACCESS",
-        "RESTRICTED_ACCESS"
+        "RESTRICTED_ACCESS",
+        "LEGACY_MODE"
       ],
       "enum_launch_stages": {
         "FULL_ACCESS": "PRIVATE_PREVIEW",
+        "LEGACY_MODE": "PRIVATE_PREVIEW",
         "RESTRICTED_ACCESS": "PRIVATE_PREVIEW"
       }
     },
@@ -52320,16 +52556,25 @@
     },
     "settings.GcpEndpoint": {
       "fields": {
+        "all_vpc_sc_services": {
+          "description": "All Google APIs that support VPC Service Controls (a subset of all Google APIs).",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
+        "google_api_endpoints": {
+          "description": "Selected Google API hostnames, e.g. \"storage.googleapis.com\", \"bigquery.googleapis.com\".",
+          "ref": "settings.GoogleApiEndpoints",
+          "launch_stage": "PRIVATE_PREVIEW"
+        },
         "psc_endpoint_uri": {
           "description": "Output only. The URI of the created PSC endpoint.",
-          "launch_stage": "PRIVATE_PREVIEW",
+          "launch_stage": "PUBLIC_PREVIEW",
           "behaviors": [
             "OUTPUT_ONLY"
           ]
         },
         "service_attachment": {
           "description": "The full url of the target service attachment.\nExample:\nprojects/my-gcp-project/regions/us-east4/serviceAttachments/my-service-attachment",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW"
         }
       }
     },
@@ -52574,6 +52819,15 @@
       }
     },
     "settings.GetWorkspaceNetworkOptionRequest": {},
+    "settings.GoogleApiEndpoints": {
+      "description": "Wrapper for a list of Google API hostnames. Wrapped in a message because\nproto3 oneof does not support repeated fields directly.",
+      "fields": {
+        "endpoints": {
+          "description": "Google API hostnames, e.g. \"storage.googleapis.com\",\n\"bigquery.googleapis.com\". Use \"googleapis.com\" to cover all Google APIs.",
+          "launch_stage": "PRIVATE_PREVIEW"
+        }
+      }
+    },
     "settings.IpAccessListInfo": {
       "description": "Definition of an IP Access list",
       "fields": {
@@ -53056,7 +53310,7 @@
         },
         "gcp_endpoint": {
           "ref": "settings.GcpEndpoint",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW"
         },
         "group_id": {
           "description": "Not used by customer-managed private endpoint services.\n\nThe sub-resource type (group ID) of the target resource.\nNote that to connect to workspace root storage (root DBFS), you need two endpoints, one for blob and one for dfs.",
@@ -53994,7 +54248,7 @@
         },
         "gcp_endpoint": {
           "ref": "settings.GcpEndpoint",
-          "launch_stage": "PRIVATE_PREVIEW"
+          "launch_stage": "PUBLIC_PREVIEW"
         },
         "resource_names": {
           "description": "Only used by private endpoints towards AWS S3 service.\n\nThe globally unique S3 bucket names that will be accessed via the VPC endpoint.\nThe bucket names must be in the same region as the NCC/endpoint service.\nWhen updating this field, we perform full update on this field. Please ensure a full list of desired\nresource_names is provided.",
@@ -65815,15 +66069,6 @@
                 }
               },
               {
-                "name": "browse_only",
-                "description": "Whether the caller sees only metadata available through the BROWSE\nprivilege.",
-                "is_output_only": true,
-                "is_request_body_field": true,
-                "entity": {
-                  "is_bool": true
-                }
-              },
-              {
                 "name": "comment",
                 "description": "User-provided description.",
                 "is_request_body_field": true,
@@ -66067,15 +66312,6 @@
                 }
               },
               {
-                "name": "browse_only",
-                "description": "Whether the caller sees only metadata available through the BROWSE\nprivilege.",
-                "is_output_only": true,
-                "is_request_body_field": true,
-                "entity": {
-                  "is_bool": true
-                }
-              },
-              {
                 "name": "comment",
                 "description": "User-provided description.",
                 "is_request_body_field": true,
@@ -66316,15 +66552,6 @@
                 "is_query": true,
                 "entity": {
                   "is_string": true
-                }
-              },
-              {
-                "name": "browse_only",
-                "description": "Whether the caller sees only metadata available through the BROWSE\nprivilege.",
-                "is_output_only": true,
-                "is_request_body_field": true,
-                "entity": {
-                  "is_bool": true
                 }
               },
               {
@@ -66713,14 +66940,6 @@
             },
             "all_fields": [
               {
-                "name": "include_browse",
-                "description": "Whether to include MCP services for which the principal can only access\nselective metadata.",
-                "is_query": true,
-                "entity": {
-                  "is_bool": true
-                }
-              },
-              {
                 "name": "name",
                 "description": "Resource name of the MCP service.\nFormat: `mcp-services/{catalog}.{schema}.{mcp_service}`.\nEach `{...}` component is capped at 255 characters individually.",
                 "required": true,
@@ -66784,14 +67003,6 @@
               "is_object": true
             },
             "all_fields": [
-              {
-                "name": "include_browse",
-                "description": "Whether to include provider services for which the principal can only\naccess selective metadata.",
-                "is_query": true,
-                "entity": {
-                  "is_bool": true
-                }
-              },
               {
                 "name": "name",
                 "description": "Resource name of the model provider service.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.",
@@ -66857,14 +67068,6 @@
             },
             "all_fields": [
               {
-                "name": "include_browse",
-                "description": "Whether to include model services for which the principal can only access\nselective metadata.",
-                "is_query": true,
-                "entity": {
-                  "is_bool": true
-                }
-              },
-              {
                 "name": "name",
                 "description": "Resource name of the model service.\nFormat: `model-services/{catalog}.{schema}.{model_service}`.\nEach `{...}` component is capped at 255 characters individually.",
                 "required": true,
@@ -66905,14 +67108,6 @@
               "is_object": true
             },
             "all_fields": [
-              {
-                "name": "include_browse",
-                "description": "Whether to include MCP services for which the principal can only access\nselective metadata.",
-                "is_query": true,
-                "entity": {
-                  "is_bool": true
-                }
-              },
               {
                 "name": "page_size",
                 "description": "Maximum number of MCP services to return. Defaults to 100 when unset or 0;\nthe maximum is 100. Use `next_page_token` to retrieve additional pages.",
@@ -66987,14 +67182,6 @@
             },
             "all_fields": [
               {
-                "name": "include_browse",
-                "description": "Whether to include provider services for which the principal can only\naccess selective metadata.",
-                "is_query": true,
-                "entity": {
-                  "is_bool": true
-                }
-              },
-              {
                 "name": "page_size",
                 "description": "Maximum number of provider services to return. Defaults to 100 when unset or\n0; the maximum is 100. Use `next_page_token` to retrieve additional pages.",
                 "is_query": true,
@@ -67067,14 +67254,6 @@
               "is_object": true
             },
             "all_fields": [
-              {
-                "name": "include_browse",
-                "description": "Whether to include model services for which the principal can only access\nselective metadata.",
-                "is_query": true,
-                "entity": {
-                  "is_bool": true
-                }
-              },
               {
                 "name": "page_size",
                 "description": "Maximum number of model services to return. Defaults to 100 when unset or 0;\nthe maximum is 100. Use `next_page_token` to retrieve additional pages.",
@@ -67257,15 +67436,6 @@
                 "is_query": true,
                 "entity": {
                   "is_field_mask": true
-                }
-              },
-              {
-                "name": "browse_only",
-                "description": "Whether the caller sees only metadata available through the BROWSE\nprivilege.",
-                "is_output_only": true,
-                "is_request_body_field": true,
-                "entity": {
-                  "is_bool": true
                 }
               },
               {
@@ -67520,15 +67690,6 @@
                 }
               },
               {
-                "name": "browse_only",
-                "description": "Whether the caller sees only metadata available through the BROWSE\nprivilege.",
-                "is_output_only": true,
-                "is_request_body_field": true,
-                "entity": {
-                  "is_bool": true
-                }
-              },
-              {
                 "name": "comment",
                 "description": "User-provided description.",
                 "is_request_body_field": true,
@@ -67777,15 +67938,6 @@
                 "is_query": true,
                 "entity": {
                   "is_field_mask": true
-                }
-              },
-              {
-                "name": "browse_only",
-                "description": "Whether the caller sees only metadata available through the BROWSE\nprivilege.",
-                "is_output_only": true,
-                "is_request_body_field": true,
-                "entity": {
-                  "is_bool": true
                 }
               },
               {
@@ -73360,6 +73512,14 @@
                 }
               },
               {
+                "name": "forward_user_access_token",
+                "description": "Forward the user's access token to the app. Requires stopping and starting app compute to take effect.",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_bool": true
+                }
+              },
+              {
                 "name": "git_repository",
                 "description": "Git repository configuration for app deployments. When specified, deployments can\nreference code from this repository by providing only the git reference (branch, tag, or commit).",
                 "is_request_body_field": true,
@@ -75791,6 +75951,14 @@
                   "array_value": {
                     "is_string": true
                   }
+                }
+              },
+              {
+                "name": "forward_user_access_token",
+                "description": "Forward the user's access token to the app. Requires stopping and starting app compute to take effect.",
+                "is_request_body_field": true,
+                "entity": {
+                  "is_bool": true
                 }
               },
               {
@@ -79509,7 +79677,7 @@
               },
               {
                 "name": "created_by",
-                "description": "The user who created the deployment (email or principal name).",
+                "description": "The user who created the deployment (email or principal name). Empty if authoritative\ndeployment metadata does not identify a creator or the principal cannot be resolved.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -79651,7 +79819,7 @@
               },
               {
                 "name": "updated_by",
-                "description": "The user who most recently updated the deployment (email or principal name).",
+                "description": "The user who most recently updated the deployment (email or principal name). Empty if\nauthoritative deployment metadata does not identify a modifier or the principal cannot be\nresolved.",
                 "is_output_only": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -79673,7 +79841,7 @@
           },
           {
             "name": "CreateOperation",
-            "description": "Creates a resource operation under a version.\n\nThe caller must provide a `resource_key` which becomes the final\ncomponent of the operation's name. If an operation with the same key\nalready exists under the version, the server returns `ALREADY_EXISTS`.\n\nOn success the server also updates the corresponding deployment-level\nResource (creating it if this is the first operation for that\nresource_key, or removing it if action_type is DELETE).",
+            "description": "Creates a resource operation under a version.\n\nThe caller must provide a `resource_key` which becomes the final\ncomponent of the operation's name. If an operation with the same key\nalready exists under the version, the server returns `ALREADY_EXISTS`.\n\nOn success the server also updates the corresponding deployment-level\nresource, creating it if this is the first operation for that resource_key\nand removing it if the operation records no `state` (see that field).",
             "summary": "Create an operation.",
             "path": "/api/2.0/bundle/{parent=deployments/*/versions/*}/operations",
             "can_use_json": true,
@@ -80216,7 +80384,7 @@
               },
               {
                 "name": "resource_id",
-                "description": "ID of the actual resource in the workspace (e.g. the job ID, pipeline ID).\nOptional at creation: CREATE and RECREATE operations produce a new resource\nwhose ID is not yet known when the operation is recorded. Mutable: may be\nfilled in (or corrected) later via UpdateOperation once the ID is known.",
+                "description": "ID of the actual resource in the workspace (e.g. the job ID, pipeline ID).\nRequired whenever `state` is set, because state records a resource that\nexists. A CREATE or RECREATE that has not produced its resource yet records\nneither. Mutable: may be filled in (or corrected) later via UpdateOperation\nonce the ID is known.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -80320,7 +80488,7 @@
               },
               {
                 "name": "state",
-                "description": "Serialized local config state after the operation. Should be unset for\ndelete operations. Mutable: may be updated after creation via\nUpdateOperation. When updating, the caller must echo the last-observed\n`sequence_id` as a concurrency precondition.\n\nOpaque to this service: the string is stored and returned unchanged. This is\ndeliberately not google.protobuf.Value, whose only numeric case is\n`double number_value`, so parsing the client's JSON into it rewrites every\ninteger as a double - `1` reads back as `1.0`, which no longer deserializes\ninto an integer field - and silently loses precision above 2^53, which is\nwithin range for IDs the client records.\n\nA string rather than bytes: the payload is always UTF-8 JSON, and proto3 JSON\nmaps bytes to base64, which inflates every request and response by a third\nand makes state unreadable in logs and API responses. Both generate the same\nOpenAPI schema (\"type\": \"string\"), so the SDKs are identical either way.",
+                "description": "Serialized local config state after the operation. Its presence records\nwhether the resource still exists, so an operation that records no state\nremoves its resource from the deployment. It may be unset only for an\noperation that left no resource behind: a `DELETE` that succeeded, or a\n`CREATE` or `RECREATE` that failed. It is required otherwise, including for\na failed `DELETE`, whose resource survives.\n\nMutable: may be updated after creation via UpdateOperation. When updating,\nthe caller must echo the last-observed `sequence_id` as a concurrency\nprecondition.\n\nOpaque to this service: the string is stored and returned unchanged. This is\ndeliberately not google.protobuf.Value, whose only numeric case is\n`double number_value`, so parsing the client's JSON into it rewrites every\ninteger as a double - `1` reads back as `1.0`, which no longer deserializes\ninto an integer field - and silently loses precision above 2^53, which is\nwithin range for IDs the client records.\n\nA string rather than bytes: the payload is always UTF-8 JSON, and proto3 JSON\nmaps bytes to base64, which inflates every request and response by a third\nand makes state unreadable in logs and API responses. Both generate the same\nOpenAPI schema (\"type\": \"string\"), so the SDKs are identical either way.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -81620,7 +81788,7 @@
             "all_fields": [
               {
                 "name": "page_size",
-                "description": "The maximum number of deployments to return. The service may return\nfewer than this value.\nIf unspecified, at most 20 deployments will be returned.\nThe maximum value is 100; values above 100 will be coerced to 100.",
+                "description": "The maximum number of deployments to return. The service may return\nfewer than this value.\nIf unspecified, at most 20 deployments will be returned.\nThe maximum value is 1000; values above 1000 will be coerced to 1000.",
                 "is_query": true,
                 "entity": {
                   "is_int": true
@@ -81920,7 +82088,7 @@
           },
           {
             "name": "UpdateOperation",
-            "description": "Updates a resource operation's mutable fields.\n\n`state`, `error_message`, `resource_id`, and `status` may be updated,\nindependently; `update_mask` must contain only those paths. All other\nfields are immutable. The update is guarded by an optimistic-concurrency\ncheck: the caller sets `operation.sequence_id` to the value it last\nobserved, and the server rejects the update with `ABORTED` if the\noperation has been modified since. On success the server increments\n`sequence_id`; updates to `state` and `resource_id` are mirrored onto the\ncorresponding deployment-level Resource projection. The parent version\nmust be in progress, delete operations cannot be updated, and after the\nupdate is applied a succeeded operation cannot carry an `error_message`.",
+            "description": "Updates a resource operation's mutable fields.\n\n`state`, `error_message`, `resource_id`, and `status` may be updated,\nindependently; `update_mask` must contain only those paths. All other\nfields are immutable. The update is guarded by an optimistic-concurrency\ncheck: the caller sets `operation.sequence_id` to the value it last\nobserved, and the server rejects the update with `ABORTED` if the\noperation has been modified since. On success the server increments\n`sequence_id`; updates to `state` and `resource_id` are mirrored onto the\ncorresponding deployment-level resource. Listing `state` in `update_mask`\nwith no value clears it, which removes the resource, so a delete that is\nretried until it succeeds must clear `state`. The parent version must be in\nprogress, and after the update is applied a succeeded operation cannot carry\nan `error_message`. See the `state` and `resource_id` fields for the rest.",
             "summary": "Update an operation.",
             "path": "/api/2.0/bundle/{name=deployments/*/versions/*/operations/*}",
             "can_use_json": true,
@@ -82466,7 +82634,7 @@
               },
               {
                 "name": "resource_id",
-                "description": "ID of the actual resource in the workspace (e.g. the job ID, pipeline ID).\nOptional at creation: CREATE and RECREATE operations produce a new resource\nwhose ID is not yet known when the operation is recorded. Mutable: may be\nfilled in (or corrected) later via UpdateOperation once the ID is known.",
+                "description": "ID of the actual resource in the workspace (e.g. the job ID, pipeline ID).\nRequired whenever `state` is set, because state records a resource that\nexists. A CREATE or RECREATE that has not produced its resource yet records\nneither. Mutable: may be filled in (or corrected) later via UpdateOperation\nonce the ID is known.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -82570,7 +82738,7 @@
               },
               {
                 "name": "state",
-                "description": "Serialized local config state after the operation. Should be unset for\ndelete operations. Mutable: may be updated after creation via\nUpdateOperation. When updating, the caller must echo the last-observed\n`sequence_id` as a concurrency precondition.\n\nOpaque to this service: the string is stored and returned unchanged. This is\ndeliberately not google.protobuf.Value, whose only numeric case is\n`double number_value`, so parsing the client's JSON into it rewrites every\ninteger as a double - `1` reads back as `1.0`, which no longer deserializes\ninto an integer field - and silently loses precision above 2^53, which is\nwithin range for IDs the client records.\n\nA string rather than bytes: the payload is always UTF-8 JSON, and proto3 JSON\nmaps bytes to base64, which inflates every request and response by a third\nand makes state unreadable in logs and API responses. Both generate the same\nOpenAPI schema (\"type\": \"string\"), so the SDKs are identical either way.",
+                "description": "Serialized local config state after the operation. Its presence records\nwhether the resource still exists, so an operation that records no state\nremoves its resource from the deployment. It may be unset only for an\noperation that left no resource behind: a `DELETE` that succeeded, or a\n`CREATE` or `RECREATE` that failed. It is required otherwise, including for\na failed `DELETE`, whose resource survives.\n\nMutable: may be updated after creation via UpdateOperation. When updating,\nthe caller must echo the last-observed `sequence_id` as a concurrency\nprecondition.\n\nOpaque to this service: the string is stored and returned unchanged. This is\ndeliberately not google.protobuf.Value, whose only numeric case is\n`double number_value`, so parsing the client's JSON into it rewrites every\ninteger as a double - `1` reads back as `1.0`, which no longer deserializes\ninto an integer field - and silently loses precision above 2^53, which is\nwithin range for IDs the client records.\n\nA string rather than bytes: the payload is always UTF-8 JSON, and proto3 JSON\nmaps bytes to base64, which inflates every request and response by a third\nand makes state unreadable in logs and API responses. Both generate the same\nOpenAPI schema (\"type\": \"string\"), so the SDKs are identical either way.",
                 "is_request_body_field": true,
                 "entity": {
                   "is_string": true
@@ -91222,6 +91390,9 @@
                         "content": "MYSQL"
                       },
                       {
+                        "content": "NETSUITE"
+                      },
+                      {
                         "content": "ORACLE"
                       },
                       {
@@ -91340,6 +91511,9 @@
                       },
                       {
                         "content": "MYSQL"
+                      },
+                      {
+                        "content": "NETSUITE"
                       },
                       {
                         "content": "ORACLE"
@@ -91464,6 +91638,9 @@
                     },
                     {
                       "content": "MYSQL"
+                    },
+                    {
+                      "content": "NETSUITE"
                     },
                     {
                       "content": "ORACLE"
@@ -96312,10 +96489,10 @@
           "name": "dataclassification"
         },
         "docs_group": "dataclassification",
-        "launch_stage": "PUBLIC_BETA",
-        "cli_launch_stage_label": "*Beta*",
-        "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-        "cli_launch_stage_display": "Beta",
+        "launch_stage": "PUBLIC_PREVIEW",
+        "cli_launch_stage_label": "*Public Preview*",
+        "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+        "cli_launch_stage_display": "Public Preview",
         "methods": [
           {
             "name": "CreateCatalogConfig",
@@ -96325,10 +96502,10 @@
             "can_use_json": true,
             "is_crud_create": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "PUBLIC_PREVIEW",
+            "cli_launch_stage_label": "*Public Preview*",
+            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+            "cli_launch_stage_display": "Public Preview",
             "request": {
               "pascal_name": "CreateCatalogConfigRequest",
               "is_object": true,
@@ -96471,10 +96648,10 @@
             "summary": "Delete config for a catalog.",
             "path": "/api/data-classification/v1/{name=catalogs/*/config}",
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "PUBLIC_PREVIEW",
+            "cli_launch_stage_label": "*Public Preview*",
+            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+            "cli_launch_stage_display": "Public Preview",
             "request": {
               "pascal_name": "DeleteCatalogConfigRequest",
               "is_object": true,
@@ -96534,10 +96711,10 @@
             "path": "/api/data-classification/v1/{name=catalogs/*/config}",
             "is_crud_read": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "PUBLIC_PREVIEW",
+            "cli_launch_stage_label": "*Public Preview*",
+            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+            "cli_launch_stage_display": "Public Preview",
             "request": {
               "pascal_name": "GetCatalogConfigRequest",
               "is_object": true,
@@ -96598,10 +96775,10 @@
             "path": "/api/data-classification/v1/{name=catalogs/*/config}",
             "can_use_json": true,
             "has_required_positional_arguments": true,
-            "launch_stage": "PUBLIC_BETA",
-            "cli_launch_stage_label": "*Beta*",
-            "cli_launch_stage_banner": "This command is in Beta and may change without notice.",
-            "cli_launch_stage_display": "Beta",
+            "launch_stage": "PUBLIC_PREVIEW",
+            "cli_launch_stage_label": "*Public Preview*",
+            "cli_launch_stage_banner": "This command is in Public Preview and may change without notice.",
+            "cli_launch_stage_display": "Public Preview",
             "request": {
               "pascal_name": "UpdateCatalogConfigRequest",
               "is_object": true,
@@ -137796,6 +137973,18 @@
                 }
               },
               {
+                "name": "triggers",
+                "description": "List of triggers attached to this job. A run starts when any active trigger evaluates to true. Cannot be set in\nthe same request as the legacy `schedule`, `trigger`, or `continuous` fields. The 10-trigger cap is the design's\nhard limit; rollout steps the effective cap 3 -\u003e 5 -\u003e 10 via internal validation during the preview.",
+                "is_request_body_field": true,
+                "entity": {
+                  "pascal_name": "TriggerConfigurationList",
+                  "array_value": {
+                    "pascal_name": "TriggerConfiguration",
+                    "is_object": true
+                  }
+                }
+              },
+              {
                 "name": "usage_policy_id",
                 "description": "The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_usage_policy_id` for the usage policy used by this workload.",
                 "is_request_body_field": true,
@@ -159203,7 +159392,7 @@
                   },
                   {
                     "name": "for_securable_type",
-                    "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                    "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -159299,7 +159488,7 @@
                   },
                   {
                     "name": "for_securable_type",
-                    "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                    "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -159401,7 +159590,7 @@
                 },
                 {
                   "name": "for_securable_type",
-                  "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                  "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -159497,7 +159686,7 @@
                 },
                 {
                   "name": "for_securable_type",
-                  "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                  "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -159604,7 +159793,7 @@
                     },
                     {
                       "name": "for_securable_type",
-                      "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                      "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -159700,7 +159889,7 @@
                     },
                     {
                       "name": "for_securable_type",
-                      "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                      "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -159834,7 +160023,7 @@
               },
               {
                 "name": "for_securable_type",
-                "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -160089,7 +160278,7 @@
               },
               {
                 "name": "for_securable_type",
-                "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -160394,7 +160583,7 @@
                 },
                 {
                   "name": "for_securable_type",
-                  "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                  "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -160490,7 +160679,7 @@
                 },
                 {
                   "name": "for_securable_type",
-                  "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                  "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -160882,7 +161071,7 @@
                   },
                   {
                     "name": "for_securable_type",
-                    "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                    "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -160978,7 +161167,7 @@
                   },
                   {
                     "name": "for_securable_type",
-                    "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                    "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                     "required": true,
                     "is_request_body_field": true,
                     "entity": {
@@ -161080,7 +161269,7 @@
                 },
                 {
                   "name": "for_securable_type",
-                  "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                  "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -161176,7 +161365,7 @@
                 },
                 {
                   "name": "for_securable_type",
-                  "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                  "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                   "required": true,
                   "is_request_body_field": true,
                   "entity": {
@@ -161310,7 +161499,7 @@
                     },
                     {
                       "name": "for_securable_type",
-                      "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                      "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -161406,7 +161595,7 @@
                     },
                     {
                       "name": "for_securable_type",
-                      "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                      "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                       "required": true,
                       "is_request_body_field": true,
                       "entity": {
@@ -161548,7 +161737,7 @@
               },
               {
                 "name": "for_securable_type",
-                "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -161830,7 +162019,7 @@
               },
               {
                 "name": "for_securable_type",
-                "description": "Type of securables that the policy should take effect on.\nOnly `TABLE` is supported at this moment.\nRequired on create and optional on update.",
+                "description": "Type of securables that the policy should take effect on.\nRequired on create and optional on update.",
                 "required": true,
                 "is_request_body_field": true,
                 "entity": {
@@ -182083,6 +182272,14 @@
                 "is_path": true,
                 "entity": {
                   "is_string": true
+                }
+              },
+              {
+                "name": "include_value",
+                "description": "Whether to include the secret value in the response. Defaults to false. Requires the\n**READ_SECRET** privilege.",
+                "is_query": true,
+                "entity": {
+                  "is_bool": true
                 }
               }
             ],
