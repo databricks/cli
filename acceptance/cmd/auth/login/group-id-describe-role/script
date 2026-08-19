@@ -1,0 +1,8 @@
+sethome "./home"
+
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
+mkdir -p "./home/.databricks"
+cp "./input-token-cache.json" "./home/.databricks/token-cache.json"
+export DATABRICKS_AUTH_STORAGE=plaintext
+
+trace $CLI auth describe --profile role

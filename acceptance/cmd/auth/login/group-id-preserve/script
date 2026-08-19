@@ -1,0 +1,11 @@
+sethome "./home"
+
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
+export BROWSER="browser.py"
+export DATABRICKS_AUTH_STORAGE=plaintext
+export DATABRICKS_GROUP_ID="ambient-group"
+export DATABRICKS_TEST_GROUP_ID="group-A"
+
+trace $CLI auth login --profile role
+
+mv "./home/.databrickscfg" "./out.databrickscfg"

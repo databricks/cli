@@ -1,0 +1,3 @@
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile role --group-id group-A
+Profile role was successfully saved

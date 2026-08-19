@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "tokens": {
+    "normal": {
+      "access_token": "existing-access-token",
+      "refresh_token": "existing-refresh-token",
+      "token_type": "Bearer"
+    }
+  }
+}

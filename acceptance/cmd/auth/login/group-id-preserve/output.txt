@@ -1,0 +1,3 @@
+
+>>> [CLI] auth login --profile role
+Profile role was successfully saved

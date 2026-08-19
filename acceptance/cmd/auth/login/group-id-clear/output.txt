@@ -1,0 +1,3 @@
+
+>>> [CLI] auth login --profile role --clear-group-id
+Profile role was successfully saved

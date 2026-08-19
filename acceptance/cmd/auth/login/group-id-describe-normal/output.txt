@@ -1,0 +1,18 @@
+
+>>> [CLI] auth describe --profile normal
+Host: [DATABRICKS_URL]
+User: [USERNAME]
+Assumed group ID: None (normal user permissions)
+Authenticated with: databricks-cli
+Token storage: plaintext, ~/.databricks/token-cache.json (from DATABRICKS_AUTH_STORAGE environment variable)
+-----
+Current configuration:
+  ✓ host: [DATABRICKS_URL] (from [TEST_TMP_DIR]/home/.databrickscfg config file)
+  ✓ workspace_id: [NUMID] (from [TEST_TMP_DIR]/home/.databrickscfg config file)
+  ~ token: ******** (from DATABRICKS_TOKEN environment variable, not used for auth type databricks-cli)
+  ✓ profile: normal (from --profile flag)
+  ✓ databricks_cli_path: [CLI]
+  ✓ auth_type: databricks-cli (from [TEST_TMP_DIR]/home/.databrickscfg config file)
+  ✓ rate_limit: [NUMID] (from DATABRICKS_RATE_LIMIT environment variable)
+  ✓ cloud: AWS
+  ✓ discovery_url: [DATABRICKS_URL]/oidc/.well-known/oauth-authorization-server
