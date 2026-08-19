@@ -54,8 +54,8 @@ func gpusPerNode(g gpuType) (int, error) {
 // computeConfig is the `compute` block of the run YAML: which accelerators to
 // use and how many.
 type computeConfig struct {
-	NumAccelerators int    `yaml:"num_accelerators"`
-	AcceleratorType string `yaml:"accelerator_type"`
+	NumAccelerators int    `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for supported GPU types."`
+	AcceleratorType string `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively."`
 }
 
 // validate checks the compute block against the backend's constraints.

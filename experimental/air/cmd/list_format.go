@@ -9,7 +9,8 @@ import (
 
 // buildListRow extracts the columns shown for one run. Optional cells fall back
 // to "-"; MLflowURL starts as "-" and setMLflowLinks fills it in for text output.
-func buildListRow(run *jobs.Run) listRow {
+// host and workspaceID are used for building dashboard URLs.
+func buildListRow(run *jobs.Run, host string, workspaceID int64) listRow {
 	experiment := "-"
 	if e := jobExperiment(run); e != "" {
 		experiment = e
@@ -42,6 +43,8 @@ func buildListRow(run *jobs.Run) listRow {
 		Experiment:   experiment,
 		Duration:     duration,
 		MLflowURL:    "-",
+		MLflowLabel:  "-",
+		RunURL:       dashboardURL(host, run.RunId, workspaceID),
 		Accelerators: accel,
 	}
 }

@@ -27,7 +27,7 @@
 │  MLflow Run    my-run                                          │
 │  User          user@example.com                                │
 │  Accelerators  1x A10                                          │
-│  Environment   N/A                                             │
+│  Environment   4                                               │
 │                                                                │
 ╰────────────────────────────────────────────────────────────────╯
 
