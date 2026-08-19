@@ -6,20 +6,7 @@ Created jobs.foo
 Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --dms //versions --sort
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-provenance/dev/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":4,\"name\":\"[dev [USERNAME]] foo\",\"queue\":{\"enabled\":true},\"tags\":{\"dev\":\"[USERNAME]\"}}}",
-    "resource_id": "[NUMID]",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
-  }
-}
+>>> print_requests.py --dms //versions
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
@@ -47,6 +34,19 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
         "action_type": "OPERATION_ACTION_TYPE_CREATE"
       }
     ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-provenance/dev/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":4,\"name\":\"[dev [USERNAME]] foo\",\"queue\":{\"enabled\":true},\"tags\":{\"dev\":\"[USERNAME]\"}}}",
+    "resource_id": "[NUMID]",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
   }
 }
 {

@@ -6,20 +6,7 @@ Created schemas.foo
 Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --dms //api/2.0/bundle --sort
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_declined_deploy_schema\"}}",
-    "resource_id": "main.dms_declined_deploy_schema",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
-  }
-}
+>>> print_requests.py --dms //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
@@ -52,6 +39,19 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 {
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_declined_deploy_schema\"}}",
+    "resource_id": "main.dms_declined_deploy_schema",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
+  }
+}
+{
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
   "body": {
@@ -74,7 +74,7 @@ To proceed, use --auto-approve after reviewing the plan above.
 Files: 3 uploaded, 0 deleted
 
 === Nothing was recorded for the declined deploy - no version, so none to abort
->>> print_requests.py --dms //api/2.0/bundle --sort
+>>> print_requests.py --dms //api/2.0/bundle
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -11,19 +11,7 @@ API message: cluster spec is invalid
 
 Files: 5 uploaded, 0 deleted
 
->>> print_requests.py --dms //api/2.0/bundle --sort
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.doomed",
-  "q": {
-    "update_mask": "error_message,status"
-  },
-  "body": {
-    "error_message": "cluster spec is invalid (400 INVALID_PARAMETER_VALUE)",
-    "status": "OPERATION_STATUS_FAILED",
-    "sequence_id": "0"
-  }
-}
+>>> print_requests.py --dms //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
@@ -53,6 +41,18 @@ Files: 5 uploaded, 0 deleted
         "action_type": "OPERATION_ACTION_TYPE_CREATE"
       }
     ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.doomed",
+  "q": {
+    "update_mask": "error_message,status"
+  },
+  "body": {
+    "error_message": "cluster spec is invalid (400 INVALID_PARAMETER_VALUE)",
+    "status": "OPERATION_STATUS_FAILED",
+    "sequence_id": "0"
   }
 }
 {

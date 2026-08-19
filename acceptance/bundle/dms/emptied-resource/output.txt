@@ -7,33 +7,7 @@ Created schemas.foo.grants
 Files: 4 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --dms //api/2.0/bundle --sort
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_emptied_resource\"}}",
-    "resource_id": "main.dms_emptied_resource",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo.grants",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "state": "{\"state\":{\"securable_type\":\"schema\",\"full_name\":\"main.dms_emptied_resource\",\"__embed__\":[{\"principal\":\"someone@example.com\",\"privileges\":[\"USE_SCHEMA\"]}]},\"depends_on\":[{\"node\":\"resources.schemas.foo\",\"label\":\"${resources.schemas.foo.id}\"}]}",
-    "resource_id": "schema/main.dms_emptied_resource",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
-  }
-}
+>>> print_requests.py --dms //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
@@ -70,6 +44,32 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 {
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_emptied_resource\"}}",
+    "resource_id": "main.dms_emptied_resource",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo.grants",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "state": "{\"state\":{\"securable_type\":\"schema\",\"full_name\":\"main.dms_emptied_resource\",\"__embed__\":[{\"principal\":\"someone@example.com\",\"privileges\":[\"USE_SCHEMA\"]}]},\"depends_on\":[{\"node\":\"resources.schemas.foo\",\"label\":\"${resources.schemas.foo.id}\"}]}",
+    "resource_id": "schema/main.dms_emptied_resource",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
+  }
+}
+{
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
   "body": {
@@ -86,19 +86,7 @@ Updated schemas.foo.grants
 Files: 3 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py --dms //api/2.0/bundle --sort
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo.grants",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
-  "body": {
-    "resource_id": "schema/main.dms_emptied_resource",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
-  }
-}
+>>> print_requests.py --dms //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
@@ -121,6 +109,18 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
         "action_type": "OPERATION_ACTION_TYPE_UPDATE"
       }
     ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo.grants",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "resource_id": "schema/main.dms_emptied_resource",
+    "status": "OPERATION_STATUS_SUCCEEDED",
+    "sequence_id": "0"
   }
 }
 {
