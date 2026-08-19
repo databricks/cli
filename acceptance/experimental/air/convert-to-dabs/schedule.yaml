@@ -1,0 +1,13 @@
+experiment_name: torchrun-a10-smoke-test
+command: torchrun --nproc_per_node=1 train.py
+compute:
+  accelerator_type: GPU_1xA10
+  num_accelerators: 1
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ./src
+schedule:
+  quartz_cron_expression: "0 0 9 * * ?"
+  timezone_id: America/Los_Angeles
+  pause_status: PAUSED

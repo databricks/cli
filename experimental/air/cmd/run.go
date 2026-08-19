@@ -18,6 +18,7 @@ type runResult struct {
 	Status       string `json:"status"`
 	DryRun       bool   `json:"dry_run,omitempty"`
 	RunID        string `json:"run_id,omitempty"`
+	JobID        string `json:"job_id,omitempty"`
 	DashboardURL string `json:"dashboard_url,omitempty"`
 }
 
@@ -69,6 +70,13 @@ The workload is described by a YAML config file (see --file).`,
 				return nil
 			}
 			return renderEnvelope(ctx, runResult{Status: "DRY_RUN_OK", DryRun: true})
+		}
+
+		// A schedule turns the workload into a persistent, scheduled job instead of a
+		// one-time run: create (or update) the job and return, since there is no
+		// immediate run to submit or stream.
+		if cfg.Schedule != nil {
+			return runScheduled(ctx, cmd, cfg, file)
 		}
 
 		w := cmdctx.WorkspaceClient(ctx)
@@ -126,6 +134,38 @@ The workload is described by a YAML config file (see --file).`,
 	}
 
 	return cmd
+}
+
+// runScheduled creates (or updates) a persistent, scheduled job for a workload
+// whose config carries a `schedule`. Unlike a submit, there is no immediate run
+// to stream, so --watch does not apply here.
+func runScheduled(ctx context.Context, cmd *cobra.Command, cfg *runConfig, configPath string) error {
+	w := cmdctx.WorkspaceClient(ctx)
+	jobID, jobURL, created, err := createScheduledJob(ctx, w, cfg, configPath)
+	if err != nil {
+		return err
+	}
+	jobIDStr := strconv.FormatInt(jobID, 10)
+
+	if root.OutputType(cmd) == flags.OutputJSON {
+		status := "SCHEDULED_UPDATED"
+		if created {
+			status = "SCHEDULED_CREATED"
+		}
+		return renderEnvelope(ctx, runResult{Status: status, JobID: jobIDStr, DashboardURL: jobURL})
+	}
+
+	verb := "Updated"
+	if created {
+		verb = "Created"
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("%s scheduled job %s", verb, jobIDStr))
+	cmdio.LogString(ctx, "View at: "+jobURL)
+	cmdio.LogString(ctx, fmt.Sprintf("Runs on schedule: %s (%s)", cfg.Schedule.QuartzCronExpression, cfg.Schedule.TimezoneID))
+	if cfg.Schedule.PauseStatus == "PAUSED" {
+		cmdio.LogString(ctx, "The schedule is PAUSED; set pause_status: UNPAUSED (or unpause it in the Jobs UI) to activate it.")
+	}
+	return nil
 }
 
 // watchTerminalStatus resolves a watched run's final display state for the

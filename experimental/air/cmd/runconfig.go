@@ -57,6 +57,10 @@ type runConfig struct {
 	Permissions               []permission   `yaml:"permissions"`
 	UsagePolicyName           *string        `yaml:"usage_policy_name"`
 	UsagePolicyID             *string        `yaml:"usage_policy_id"`
+	// Schedule turns the workload into a recurring job. `air run` submits a one-time
+	// run and cannot honor it (see run.go); it is carried through convert-to-dabs,
+	// which emits it onto the bundle job where `bundle deploy` schedules it.
+	Schedule *scheduleConfig `yaml:"schedule"`
 }
 
 // validate runs structural validation over the whole config, returning the first
@@ -176,6 +180,12 @@ func (c *runConfig) validate() error {
 		}
 		if !uuidRe.MatchString(v) {
 			return fmt.Errorf("usage_policy_id must be a UUID (for example, '12345678-90ab-cdef-1234-567890abcdef'), got: %s. To assign a policy by name instead, use usage_policy_name", v)
+		}
+	}
+
+	if c.Schedule != nil {
+		if err := c.Schedule.validate(); err != nil {
+			return err
 		}
 	}
 
@@ -406,6 +416,30 @@ func (s *snapshotSourceConfig) validate() error {
 
 	if s.Git != nil {
 		return s.Git.validate()
+	}
+	return nil
+}
+
+// scheduleConfig mirrors the Jobs CronSchedule proto so it maps 1:1 onto the
+// bundle job's schedule block (see convert_to_dabs.go). pause_status is optional
+// and defaults to UNPAUSED, matching the Jobs default.
+type scheduleConfig struct {
+	QuartzCronExpression string `yaml:"quartz_cron_expression"`
+	TimezoneID           string `yaml:"timezone_id"`
+	PauseStatus          string `yaml:"pause_status"`
+}
+
+func (s *scheduleConfig) validate() error {
+	if strings.TrimSpace(s.QuartzCronExpression) == "" {
+		return errors.New("schedule.quartz_cron_expression is required")
+	}
+	if strings.TrimSpace(s.TimezoneID) == "" {
+		return errors.New("schedule.timezone_id is required (for example, 'America/Los_Angeles' or 'UTC')")
+	}
+	switch s.PauseStatus {
+	case "", "PAUSED", "UNPAUSED":
+	default:
+		return fmt.Errorf("schedule.pause_status must be PAUSED or UNPAUSED, got %q", s.PauseStatus)
 	}
 	return nil
 }

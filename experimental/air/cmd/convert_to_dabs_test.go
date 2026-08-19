@@ -357,6 +357,48 @@ func TestConvertToDabsMapsUsagePolicyID(t *testing.T) {
 	assert.Equal(t, "12345678-90ab-cdef-1234-567890abcdef", get(t, root, "resources.jobs."+loaded.ExperimentName+".budget_policy_id").MustString())
 }
 
+// A schedule block maps 1:1 onto the bundle job's schedule (the field air run
+// can't honor but convert-to-dabs carries so bundle deploy schedules the job).
+func TestConvertToDabsMapsSchedule(t *testing.T) {
+	cfg := minimalConfig + `
+schedule:
+  quartz_cron_expression: "0 0 9 * * ?"
+  timezone_id: America/Los_Angeles
+  pause_status: PAUSED
+`
+	path := writeConfigFile(t, "run.yaml", cfg)
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.NoError(t, err)
+
+	sched := "resources.jobs." + loaded.ExperimentName + ".schedule"
+	assert.Equal(t, "0 0 9 * * ?", get(t, root, sched+".quartz_cron_expression").MustString())
+	assert.Equal(t, "America/Los_Angeles", get(t, root, sched+".timezone_id").MustString())
+	assert.Equal(t, "PAUSED", get(t, root, sched+".pause_status").MustString())
+}
+
+// pause_status is optional; when omitted it is left off the emitted schedule so
+// the Jobs default (UNPAUSED) applies.
+func TestConvertToDabsScheduleOmitsEmptyPauseStatus(t *testing.T) {
+	cfg := minimalConfig + `
+schedule:
+  quartz_cron_expression: "0 0 9 * * ?"
+  timezone_id: UTC
+`
+	path := writeConfigFile(t, "run.yaml", cfg)
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.NoError(t, err)
+
+	sched := "resources.jobs." + loaded.ExperimentName + ".schedule"
+	assert.True(t, has(root, sched+".quartz_cron_expression"))
+	assert.False(t, has(root, sched+".pause_status"), "empty pause_status must be omitted")
+}
+
 func TestConvertToDabsMapsPermissions(t *testing.T) {
 	cfg := minimalConfig + `
 permissions:

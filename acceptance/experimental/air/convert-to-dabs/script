@@ -18,3 +18,7 @@ trace $CLI experimental air convert-to-dabs train.yaml --force
 
 title "docker_image is not supported yet"
 errcode trace $CLI experimental air convert-to-dabs docker.yaml --output-dir generated-docker
+
+title "a schedule maps onto the bundle job (air run can't schedule; the bundle can)"
+trace $CLI experimental air convert-to-dabs schedule.yaml --force
+trace cat databricks.yml

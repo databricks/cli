@@ -247,6 +247,18 @@ func TestRunConfigValidate_FieldRules(t *testing.T) {
 		// A name pasted into the id field gets pointed at the right field.
 		{"policy name in usage_policy_id", func(c *runConfig) { c.UsagePolicyID = str("team-a") }, "use usage_policy_name"},
 		{"uuid usage_policy_id alone is ok", func(c *runConfig) { c.UsagePolicyID = str("12345678-90ab-cdef-1234-567890abcdef") }, ""},
+		{"schedule missing cron", func(c *runConfig) {
+			c.Schedule = &scheduleConfig{TimezoneID: "UTC"}
+		}, "quartz_cron_expression is required"},
+		{"schedule missing timezone", func(c *runConfig) {
+			c.Schedule = &scheduleConfig{QuartzCronExpression: "0 0 9 * * ?"}
+		}, "timezone_id is required"},
+		{"schedule bad pause_status", func(c *runConfig) {
+			c.Schedule = &scheduleConfig{QuartzCronExpression: "0 0 9 * * ?", TimezoneID: "UTC", PauseStatus: "MAYBE"}
+		}, "pause_status must be PAUSED or UNPAUSED"},
+		{"schedule ok", func(c *runConfig) {
+			c.Schedule = &scheduleConfig{QuartzCronExpression: "0 0 9 * * ?", TimezoneID: "UTC"}
+		}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
