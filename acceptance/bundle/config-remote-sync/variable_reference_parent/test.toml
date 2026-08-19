@@ -1,0 +1,9 @@
+# RecordRequests captures the config-remote-sync telemetry event so the script
+# can assert skipped_changes_count (the change skipped under a variable reference).
+# out.requests.txt is removed in the script's cleanup so it is not compared.
+RecordRequests = true
+Ignore = [".databricks", "databricks.yml", "databricks.yml.backup"]
+
+Env.DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
