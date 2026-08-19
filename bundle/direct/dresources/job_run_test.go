@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -78,6 +79,15 @@ func TestJobRunWaitSucceeds(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, remote.State)
 	assert.Equal(t, jobs.RunResultStateSuccess, remote.State.ResultState)
+}
+
+func TestReportRunLineIncludesResourceKey(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	ctx = WithResourceKey(ctx, "job_runs.my_run")
+
+	reportRunLine(ctx, 123, "SUCCESS")
+
+	assert.Equal(t, "Output from job_runs.my_run: id=123: SUCCESS\n", stderr.String())
 }
 
 func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
