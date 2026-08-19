@@ -1,0 +1,19 @@
+title "a repository with a remote: branch, commit and origin URL come from .git\n"
+mkdir withremote
+cd withremote
+cp ../databricks.yml .
+git-repo-init
+git remote add origin https://github.com/databricks/cli
+trace $CLI bundle validate -o json | jq .bundle.git
+cd ..
+rm -fr withremote
+
+title "a malformed .git: the worktree root is still found, with no metadata\n"
+mkdir broken
+cd broken
+cp ../databricks.yml .
+# A .git file must name the real git dir; an empty one is reported but not fatal.
+printf '' > .git
+errcode trace $CLI bundle validate -o json | jq .bundle.git
+cd ..
+rm -fr broken

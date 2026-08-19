@@ -1,0 +1,23 @@
+
+=== a repository with a remote: branch, commit and origin URL come from .git
+
+>>> [CLI] bundle validate -o json
+{
+  "actual_branch": "main",
+  "branch": "main",
+  "bundle_root_path": ".",
+  "commit": "[COMMIT_SHA]",
+  "origin_url": "https://github.com/databricks/cli"
+}
+
+=== a malformed .git: the worktree root is still found, with no metadata
+
+>>> [CLI] bundle validate -o json
+Warn: failed to read .git: expected "[TEST_TMP_DIR]/broken/.git" to contain a line with "gitdir: [...]"
+Error: expected "[TEST_TMP_DIR]/broken/.git" to contain a line with "gitdir: [...]"
+
+
+Exit code: 1
+{
+  "bundle_root_path": "."
+}
