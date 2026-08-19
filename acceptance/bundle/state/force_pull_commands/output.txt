@@ -13,6 +13,14 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === bundle summary --force-pull: remote state read
 
 >>> [CLI] bundle summary --force-pull
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/state/STATE_FILENAME"
+  }
+}
 
 === bundle open without --force-pull: no remote state read
 
@@ -23,3 +31,11 @@ Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 
 >>> [CLI] bundle open foo --force-pull
 Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/state/STATE_FILENAME"
+  }
+}
