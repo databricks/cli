@@ -1,0 +1,39 @@
+
+=== a pattern outside the sync root is rejected
+>>> musterr [CLI] bundle validate
+Error: lifecycle.triggers.on_file_change: pattern "../shared/*.txt" is not under the sync root
+  in databricks.yml:18:29
+
+Name: job-runs-on-file-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-errors/default
+
+Found 1 error
+
+=== a glob that only matches directories is rejected
+>>> musterr [CLI] bundle validate
+Error: lifecycle.triggers.on_file_change: pattern "dirs/*" matches no regular files
+  in databricks.yml:18:29
+
+Name: job-runs-on-file-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-errors/default
+
+Found 1 error
+
+=== a pattern that matches nothing warns
+>>> [CLI] bundle validate
+Warning: lifecycle.triggers.on_file_change: no files match "missing/*.txt"
+  in databricks.yml:18:29
+
+Name: job-runs-on-file-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-errors/default
+
+Found 1 warning

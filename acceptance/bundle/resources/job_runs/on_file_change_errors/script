@@ -1,0 +1,12 @@
+title "a pattern outside the sync root is rejected"
+trace musterr $CLI bundle validate
+
+title "a glob that only matches directories is rejected"
+# dirs/* matches dirs/nested, a directory: nothing is left to hash, so the
+# trigger would silently never fire.
+update_file.py databricks.yml "../shared/*.txt" "dirs/*"
+trace musterr $CLI bundle validate
+
+title "a pattern that matches nothing warns"
+update_file.py databricks.yml "dirs/*" "missing/*.txt"
+trace $CLI bundle validate
