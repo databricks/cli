@@ -43,6 +43,7 @@ var RequiredFields = map[string][]string{
 	"resources.cluster_policies.*.libraries[*].cran":  {"package"},
 	"resources.cluster_policies.*.libraries[*].maven": {"coordinates"},
 	"resources.cluster_policies.*.libraries[*].pypi":  {"package"},
+	"resources.cluster_policies.*.permissions[*]":     {"level"},
 
 	"resources.clusters.*.cluster_log_conf.dbfs":     {"destination"},
 	"resources.clusters.*.cluster_log_conf.s3":       {"destination"},

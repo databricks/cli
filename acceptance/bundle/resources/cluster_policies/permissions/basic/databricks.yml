@@ -1,11 +1,13 @@
 bundle:
-  name: test-bundle-$UNIQUE_NAME
+  name: test_cluster_policy_permissions
 
 resources:
   cluster_policies:
-    foo:
-      name: test-cluster-policy-$UNIQUE_NAME
+    test_cluster_policy:
+      name: my_cluster_policy
       definition: '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'
       permissions:
         - level: CAN_USE
           group_name: users
+        - level: CAN_USE # TO_REMOVE
+          user_name: viewer@example.com # TO_REMOVE

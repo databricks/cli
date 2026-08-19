@@ -1,0 +1,19 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# CAN_USE is the only level cluster policies accept: the deploy succeeds and the
+# permissions PUT carries CAN_USE.
+trace $CLI bundle deploy
+policy_id="$(read_id.py test_cluster_policy)"
+trace print_requests.py //permissions/cluster-policies
+
+# CAN_MANAGE is rejected by the permissions API. The backend error text differs
+# between the fake server and a real workspace, so it is routed to a LOG file;
+# musterr asserts only that the request fails.
+title "CAN_MANAGE is rejected"
+musterr $CLI cluster-policies set-permissions "$policy_id" --json '{"access_control_list":[{"group_name":"users","permission_level":"CAN_MANAGE"}]}' &> LOG.can_manage
