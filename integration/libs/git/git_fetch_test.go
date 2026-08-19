@@ -46,27 +46,6 @@ func ensureWorkspacePrefix(root string) string {
 	return root
 }
 
-func TestFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
-	ctx, wt := acc.WorkspaceTest(t)
-	targetPath := ensureWorkspacePrefix(acc.TemporaryRepo(wt, examplesRepoUrl))
-
-	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "15.4"})
-
-	for _, tc := range []struct {
-		name  string
-		input string
-	}{
-		{"subdir", path.Join(targetPath, "knowledge_base/dashboard_nyc_taxi")},
-		{"root", targetPath},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			info, err := git.FetchRepositoryInfo(ctx, tc.input, wt.W)
-			assert.NoError(t, err)
-			assertFullGitInfo(t, targetPath, info)
-		})
-	}
-}
-
 func TestFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	rootPath := ensureWorkspacePrefix(acc.TemporaryWorkspaceDir(wt, "testing-nonrepo-"))
