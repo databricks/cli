@@ -2,7 +2,10 @@ BUNDLE_FILES="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/move-during-failed-d
 
 title "Deploy 1: the job references src/main.py, which is uploaded to the workspace"
 trace $CLI bundle deploy
-trace $CLI workspace get-status "$BUNDLE_FILES/src/main.py" | jq '{object_type,path}'
+# MSYS_NO_PATHCONV=1 keeps Git Bash from rewriting the leading-slash workspace path
+# into a Windows path before the CLI sees it. Scoped per-command so it does not also
+# break the shebang-resolved .py helpers (update_file.py, read_id.py) on Windows.
+trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "$BUNDLE_FILES/src/main.py" | jq '{object_type,path}'
 
 title "Move the referenced file and point the job at the new location"
 trace mv src/main.py src/renamed.py
@@ -13,10 +16,10 @@ fault.py "POST /api/2.2/jobs/reset" 403 0 1
 trace musterr $CLI bundle deploy
 
 title "Broken state: the failed deploy already deleted the old file from the workspace"
-trace musterr $CLI workspace get-status "$BUNDLE_FILES/src/main.py"
+trace MSYS_NO_PATHCONV=1 musterr $CLI workspace get-status "$BUNDLE_FILES/src/main.py"
 
 title "The new file was uploaded"
-trace $CLI workspace get-status "$BUNDLE_FILES/src/renamed.py" | jq '{object_type,path}'
+trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "$BUNDLE_FILES/src/renamed.py" | jq '{object_type,path}'
 
 title "But the deployed job still points at the deleted file, so a run fails file-not-found"
 job_id=$(read_id.py foo)

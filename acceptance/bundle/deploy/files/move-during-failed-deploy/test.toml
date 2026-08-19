@@ -9,9 +9,3 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 # The script moves src/main.py to src/renamed.py, so the renamed file is not a
 # committed input and would otherwise be flagged as an unexpected leftover.
 Ignore = ["src/renamed.py"]
-
-[Env]
-# The script passes absolute workspace paths like /Workspace/Users/.../src/main.py as
-# CLI arguments. On Windows the script runs under MSYS2, which rewrites such
-# leading-slash arguments to Windows paths before the CLI sees them. Disable that.
-MSYS_NO_PATHCONV = "1"

@@ -6,7 +6,7 @@ Created jobs.foo
 Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/main.py
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/main.py
 {
   "object_type": "FILE",
   "path": "/Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/main.py"
@@ -31,11 +31,11 @@ API message: Fault injected by test.
 Files: 3 uploaded, 1 deleted
 
 === Broken state: the failed deploy already deleted the old file from the workspace
->>> musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/main.py
+>>> MSYS_NO_PATHCONV=1 musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/main.py
 Error: Path (/Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/main.py) doesn't exist.
 
 === The new file was uploaded
->>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/renamed.py
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/renamed.py
 {
   "object_type": "FILE",
   "path": "/Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/renamed.py"
