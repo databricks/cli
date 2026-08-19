@@ -216,8 +216,7 @@ class Job(Resource):
     triggers: VariableOrList[TriggerConfiguration] = field(default_factory=list)
     """
     [Beta] List of triggers attached to this job. A run starts when any active trigger evaluates to true. Cannot be set in
-    the same request as the legacy `schedule`, `trigger`, or `continuous` fields. The 10-trigger cap is the design's
-    hard limit; rollout steps the effective cap 3 -> 5 -> 10 via internal validation during the preview.
+    the same request as the legacy `schedule`, `trigger`, or `continuous` fields. Gated behind the "Multiple Triggers" feature preview.
     """
 
     usage_policy_id: VariableOrOptional[str] = None
@@ -386,8 +385,7 @@ class JobDict(TypedDict, total=False):
     triggers: VariableOrList[TriggerConfigurationParam]
     """
     [Beta] List of triggers attached to this job. A run starts when any active trigger evaluates to true. Cannot be set in
-    the same request as the legacy `schedule`, `trigger`, or `continuous` fields. The 10-trigger cap is the design's
-    hard limit; rollout steps the effective cap 3 -> 5 -> 10 via internal validation during the preview.
+    the same request as the legacy `schedule`, `trigger`, or `continuous` fields. Gated behind the "Multiple Triggers" feature preview.
     """
 
     usage_policy_id: VariableOrOptional[str]

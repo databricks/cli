@@ -4,7 +4,7 @@ package terraform_dabs_map
 
 // alerts / databricks_alert_v2: 1 dabs-only
 // alerts / databricks_alert_v2: 3 tf-only
-// apps / databricks_app: 17 dabs-only
+// apps / databricks_app: 36 dabs-only
 // apps / databricks_app: 1 tf-only
 // clusters / databricks_cluster: 26 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
@@ -13,10 +13,11 @@ package terraform_dabs_map
 // jobs / databricks_job: 11 renames
 // jobs / databricks_job: 40 dabs-only
 // jobs / databricks_job: 259 tf-only
+// model_serving_endpoints / databricks_model_serving: 1 dabs-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 25 dabs-only
+// pipelines / databricks_pipeline: 45 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
@@ -25,6 +26,7 @@ package terraform_dabs_map
 // postgres_projects / databricks_postgres_project: 2 tf-only
 // postgres_projects / databricks_postgres_project: 1 unwraps
 // postgres_roles / databricks_postgres_role: 1 unwraps
+// postgres_synced_tables / databricks_postgres_synced_table: 1 dabs-only
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
 // schemas / databricks_schema: 1 dabs-only
 // schemas / databricks_schema: 1 tf-only
@@ -91,6 +93,14 @@ var DABsOnlyFields = map[string]FieldSet{
 		"file_path": {},
 	},
 	"apps": {
+		"active_deployment": {
+			"git_source": {
+				"git_repository": {
+					"auto_deploy":          {}, // apps.*.active_deployment.git_source.git_repository.auto_deploy
+					"caller_credential_id": {}, // apps.*.active_deployment.git_source.git_repository.caller_credential_id
+				},
+			},
+		},
 		"config": {
 			"command": {}, // apps.*.config.command
 			"env": {
@@ -99,17 +109,44 @@ var DABsOnlyFields = map[string]FieldSet{
 				"value_from": {}, // apps.*.config.env.value_from
 			},
 		},
+		"default_git_source": {
+			"branch": {}, // apps.*.default_git_source.branch
+			"commit": {}, // apps.*.default_git_source.commit
+			"git_repository": {
+				"auto_deploy":          {}, // apps.*.default_git_source.git_repository.auto_deploy
+				"caller_credential_id": {}, // apps.*.default_git_source.git_repository.caller_credential_id
+				"provider":             {}, // apps.*.default_git_source.git_repository.provider
+				"url":                  {}, // apps.*.default_git_source.git_repository.url
+			},
+			"resolved_commit":  {}, // apps.*.default_git_source.resolved_commit
+			"source_code_path": {}, // apps.*.default_git_source.source_code_path
+			"tag":              {}, // apps.*.default_git_source.tag
+		},
 		"forward_user_access_token": {},
+		"git_repository": {
+			"auto_deploy":          {}, // apps.*.git_repository.auto_deploy
+			"caller_credential_id": {}, // apps.*.git_repository.caller_credential_id
+		},
 		"git_source": {
 			"branch": {}, // apps.*.git_source.branch
 			"commit": {}, // apps.*.git_source.commit
 			"git_repository": {
-				"provider": {}, // apps.*.git_source.git_repository.provider
-				"url":      {}, // apps.*.git_source.git_repository.url
+				"auto_deploy":          {}, // apps.*.git_source.git_repository.auto_deploy
+				"caller_credential_id": {}, // apps.*.git_source.git_repository.caller_credential_id
+				"provider":             {}, // apps.*.git_source.git_repository.provider
+				"url":                  {}, // apps.*.git_source.git_repository.url
 			},
 			"resolved_commit":  {}, // apps.*.git_source.resolved_commit
 			"source_code_path": {}, // apps.*.git_source.source_code_path
 			"tag":              {}, // apps.*.git_source.tag
+		},
+		"pending_deployment": {
+			"git_source": {
+				"git_repository": {
+					"auto_deploy":          {}, // apps.*.pending_deployment.git_source.git_repository.auto_deploy
+					"caller_credential_id": {}, // apps.*.pending_deployment.git_source.git_repository.caller_credential_id
+				},
+			},
 		},
 		"source_code_path": {},
 	},
@@ -182,6 +219,11 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 	},
+	"model_serving_endpoints": {
+		"telemetry_config": {
+			"enabled_telemetry_features": {}, // model_serving_endpoints.*.telemetry_config.enabled_telemetry_features
+		},
+	},
 	"pipelines": {
 		"cascade_on_destroy": {},
 		"clusters": {
@@ -210,6 +252,19 @@ var DABsOnlyFields = map[string]FieldSet{
 								"output_column": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.output_column
 							},
 						},
+						"linkedin_ads_options": {
+							"custom_report_options": {
+								"entity_granularity": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.linkedin_ads_options.custom_report_options.entity_granularity
+								"finder":             {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.linkedin_ads_options.custom_report_options.finder
+								"metrics":            {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.linkedin_ads_options.custom_report_options.metrics
+								"time_granularity":   {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.linkedin_ads_options.custom_report_options.time_granularity
+							},
+							"lookback_window_days": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.linkedin_ads_options.lookback_window_days
+							"sync_start_date":      {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.linkedin_ads_options.sync_start_date
+						},
+						"marketo_options": {
+							"sync_start_date": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.marketo_options.sync_start_date
+						},
 					},
 					"fanout_options": {
 						"transforms": {
@@ -235,6 +290,19 @@ var DABsOnlyFields = map[string]FieldSet{
 								"output_column": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.output_column
 							},
 						},
+						"linkedin_ads_options": {
+							"custom_report_options": {
+								"entity_granularity": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.linkedin_ads_options.custom_report_options.entity_granularity
+								"finder":             {}, // pipelines.*.ingestion_definition.objects.table.connector_options.linkedin_ads_options.custom_report_options.finder
+								"metrics":            {}, // pipelines.*.ingestion_definition.objects.table.connector_options.linkedin_ads_options.custom_report_options.metrics
+								"time_granularity":   {}, // pipelines.*.ingestion_definition.objects.table.connector_options.linkedin_ads_options.custom_report_options.time_granularity
+							},
+							"lookback_window_days": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.linkedin_ads_options.lookback_window_days
+							"sync_start_date":      {}, // pipelines.*.ingestion_definition.objects.table.connector_options.linkedin_ads_options.sync_start_date
+						},
+						"marketo_options": {
+							"sync_start_date": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.marketo_options.sync_start_date
+						},
 					},
 				},
 			},
@@ -248,6 +316,11 @@ var DABsOnlyFields = map[string]FieldSet{
 		},
 		"parameters": {
 			"*": {}, // pipelines.*.parameters.*
+		},
+	},
+	"postgres_synced_tables": {
+		"new_pipeline_spec": {
+			"pipeline_channel": {}, // postgres_synced_tables.*.new_pipeline_spec.pipeline_channel
 		},
 	},
 	"schemas": {

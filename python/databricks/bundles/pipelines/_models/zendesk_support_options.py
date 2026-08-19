@@ -17,7 +17,7 @@ class ZendeskSupportOptions:
 
     start_date: VariableOrOptional[str] = None
     """
-    [Beta] (Optional) Start date in YYYY-MM-DD format for the initial sync.
+    [Public Preview] (Optional) Start date in YYYY-MM-DD format for the initial sync.
     This determines the earliest date from which to sync historical data.
     """
 
@@ -34,7 +34,7 @@ class ZendeskSupportOptionsDict(TypedDict, total=False):
 
     start_date: VariableOrOptional[str]
     """
-    [Beta] (Optional) Start date in YYYY-MM-DD format for the initial sync.
+    [Public Preview] (Optional) Start date in YYYY-MM-DD format for the initial sync.
     This determines the earliest date from which to sync historical data.
     """
 

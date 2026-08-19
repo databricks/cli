@@ -1,0 +1,138 @@
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, TypedDict
+
+from databricks.bundles.core._transform import _transform
+from databricks.bundles.core._transform_to_json import _transform_to_json_value
+from databricks.bundles.core._variable import (
+    VariableOr,
+    VariableOrList,
+    VariableOrOptional,
+)
+from databricks.bundles.pipelines._models.linked_in_ads_options_linked_in_ads_custom_report_options_linked_in_ads_entity_granularity import (
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity,
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularityParam,
+)
+from databricks.bundles.pipelines._models.linked_in_ads_options_linked_in_ads_custom_report_options_linked_in_ads_finder import (
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinder,
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinderParam,
+)
+from databricks.bundles.pipelines._models.linked_in_ads_options_linked_in_ads_custom_report_options_linked_in_ads_time_granularity import (
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularity,
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularityParam,
+)
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
+
+@dataclass(kw_only=True)
+class LinkedInAdsOptionsLinkedInAdsCustomReportOptions:
+    """
+    :meta private: [EXPERIMENTAL]
+
+    User-defined custom report for the LinkedIn Ads connector. The destination
+    table name comes from the enclosing TableSpec.destination_table, the start
+    date from the enclosing LinkedInAdsOptions.sync_start_date, and the account
+    it runs against from the source schema (namespace) -- none are repeated here.
+    """
+
+    finder: VariableOr[
+        LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinder
+    ]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Required) adAnalytics finder. See LinkedInAdsFinder.
+    """
+
+    entity_granularity: VariableOrList[
+        LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity
+    ] = field(default_factory=list)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Required) Entity pivots to group by; count/constraints depend on finder.
+    """
+
+    metrics: VariableOrList[str] = field(default_factory=list)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) LinkedIn metric names for the report. Open vocabulary (not an
+    enum): the valid set is large (~100) and evolves with the LinkedIn
+    adAnalytics API, so values are passed through verbatim. If empty, a
+    pivot-safe default core set is ingested: impressions, clicks,
+    costInLocalCurrency, externalWebsiteConversions (valid for every pivot).
+    Ignored for attributedRevenueMetrics (always returns the full
+    RevenueAttributionMetrics struct).
+    """
+
+    time_granularity: VariableOrOptional[
+        LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularity
+    ] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Time aggregation. Defaults to DAILY when unspecified. Used by
+    analytics/statistics; ignored for attributedRevenueMetrics.
+    """
+
+    @classmethod
+    def from_dict(
+        cls, value: "LinkedInAdsOptionsLinkedInAdsCustomReportOptionsDict"
+    ) -> "Self":
+        return _transform(cls, value)
+
+    def as_dict(self) -> "LinkedInAdsOptionsLinkedInAdsCustomReportOptionsDict":
+        return _transform_to_json_value(self)  # type:ignore
+
+
+class LinkedInAdsOptionsLinkedInAdsCustomReportOptionsDict(TypedDict, total=False):
+    """"""
+
+    finder: VariableOr[
+        LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinderParam
+    ]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Required) adAnalytics finder. See LinkedInAdsFinder.
+    """
+
+    entity_granularity: VariableOrList[
+        LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularityParam
+    ]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Required) Entity pivots to group by; count/constraints depend on finder.
+    """
+
+    metrics: VariableOrList[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) LinkedIn metric names for the report. Open vocabulary (not an
+    enum): the valid set is large (~100) and evolves with the LinkedIn
+    adAnalytics API, so values are passed through verbatim. If empty, a
+    pivot-safe default core set is ingested: impressions, clicks,
+    costInLocalCurrency, externalWebsiteConversions (valid for every pivot).
+    Ignored for attributedRevenueMetrics (always returns the full
+    RevenueAttributionMetrics struct).
+    """
+
+    time_granularity: VariableOrOptional[
+        LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularityParam
+    ]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Time aggregation. Defaults to DAILY when unspecified. Used by
+    analytics/statistics; ignored for attributedRevenueMetrics.
+    """
+
+
+LinkedInAdsOptionsLinkedInAdsCustomReportOptionsParam = (
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsDict
+    | LinkedInAdsOptionsLinkedInAdsCustomReportOptions
+)

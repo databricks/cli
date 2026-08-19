@@ -57,9 +57,9 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 				Apps: map[string]*resources.App{
 					"my_app": {
 						App: apps.App{
-							Name: "my_app",
+							Name:           "my_app",
+							SourceCodePath: "./my_app",
 						},
-						SourceCodePath: "./my_app",
 					},
 				},
 			},
@@ -274,7 +274,9 @@ func TestStopApp(t *testing.T) {
 
 func TestBuildAppDeploymentWithValueFrom(t *testing.T) {
 	app := &resources.App{
-		SourceCodePath: "/path/to/app",
+		App: apps.App{
+			SourceCodePath: "/path/to/app",
+		},
 		Config: &resources.AppConfig{
 			Command: []string{"python", "app.py"},
 			Env: []resources.AppEnvVar{
