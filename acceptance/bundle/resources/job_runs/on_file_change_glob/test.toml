@@ -1,0 +1,9 @@
+Ignore = ["tmp.002.txt"]
+
+# See on_file_change/test.toml: mask content hashes before the parent's
+# `\d{8,}` rule can mangle them, keeping distinct hashes distinguishable.
+[[Repls]]
+Old = '[0-9a-f]{64}'
+New = '[FILE_HASH]'
+Order = 1
+Distinct = true
