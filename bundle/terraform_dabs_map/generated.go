@@ -2,24 +2,21 @@
 
 package terraform_dabs_map
 
-// alerts / databricks_alert_v2: 5 dabs-only
+// alerts / databricks_alert_v2: 1 dabs-only
 // alerts / databricks_alert_v2: 3 tf-only
 // apps / databricks_app: 17 dabs-only
 // apps / databricks_app: 1 tf-only
-// clusters / databricks_cluster: 1 dabs-only
-// clusters / databricks_cluster: 25 tf-only
+// clusters / databricks_cluster: 26 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
-// experiments / databricks_mlflow_experiment: 6 dabs-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 53 dabs-only
-// jobs / databricks_job: 258 tf-only
-// model_serving_endpoints / databricks_model_serving: 6 dabs-only
+// jobs / databricks_job: 40 dabs-only
+// jobs / databricks_job: 259 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 87 dabs-only
+// pipelines / databricks_pipeline: 25 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
@@ -28,7 +25,6 @@ package terraform_dabs_map
 // postgres_projects / databricks_postgres_project: 2 tf-only
 // postgres_projects / databricks_postgres_project: 1 unwraps
 // postgres_roles / databricks_postgres_role: 1 unwraps
-// postgres_synced_tables / databricks_postgres_synced_table: 5 dabs-only
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
 // schemas / databricks_schema: 1 dabs-only
 // schemas / databricks_schema: 1 tf-only
@@ -93,11 +89,6 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 var DABsOnlyFields = map[string]FieldSet{
 	"alerts": {
 		"file_path": {},
-		"parameters": {
-			"name":  {}, // alerts.*.parameters.name
-			"type":  {}, // alerts.*.parameters.type
-			"value": {}, // alerts.*.parameters.value
-		},
 	},
 	"apps": {
 		"config": {
@@ -122,33 +113,10 @@ var DABsOnlyFields = map[string]FieldSet{
 		},
 		"source_code_path": {},
 	},
-	"clusters": {
-		"dependency_mode": {},
-	},
-	"experiments": {
-		"trace_location": {
-			"uc_trace_location": {
-				"catalog":                {}, // experiments.*.trace_location.uc_trace_location.catalog
-				"effective_table_prefix": {}, // experiments.*.trace_location.uc_trace_location.effective_table_prefix
-				"schema":                 {}, // experiments.*.trace_location.uc_trace_location.schema
-				"table_prefix":           {}, // experiments.*.trace_location.uc_trace_location.table_prefix
-			},
-		},
-	},
 	"jobs": {
 		"job_clusters": {
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.job_clusters.new_cluster.autotermination_minutes
-				"dependency_mode":         {}, // jobs.*.job_clusters.new_cluster.dependency_mode
-			},
-			"serverless_compute_id": {}, // jobs.*.job_clusters.serverless_compute_id
-		},
-		"parent_path": {},
-		"schedule": {
-			"sql_condition": {
-				"sql_query_id": {}, // jobs.*.schedule.sql_condition.sql_query_id
-				"trigger_mode": {}, // jobs.*.schedule.sql_condition.trigger_mode
-				"warehouse_id": {}, // jobs.*.schedule.sql_condition.warehouse_id
 			},
 		},
 		"tasks": {
@@ -169,20 +137,11 @@ var DABsOnlyFields = map[string]FieldSet{
 					},
 					"new_cluster": {
 						"autotermination_minutes": {}, // jobs.*.tasks.for_each_task.task.new_cluster.autotermination_minutes
-						"dependency_mode":         {}, // jobs.*.tasks.for_each_task.task.new_cluster.dependency_mode
 					},
 				},
 			},
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.tasks.new_cluster.autotermination_minutes
-				"dependency_mode":         {}, // jobs.*.tasks.new_cluster.dependency_mode
-			},
-		},
-		"trigger": {
-			"sql_condition": {
-				"sql_query_id": {}, // jobs.*.trigger.sql_condition.sql_query_id
-				"trigger_mode": {}, // jobs.*.trigger.sql_condition.trigger_mode
-				"warehouse_id": {}, // jobs.*.trigger.sql_condition.warehouse_id
 			},
 		},
 		"triggers": {
@@ -223,17 +182,6 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 	},
-	"model_serving_endpoints": {
-		"telemetry_config": {
-			"table_names": {
-				"annotations_table": {}, // model_serving_endpoints.*.telemetry_config.table_names.annotations_table
-				"logs_table":        {}, // model_serving_endpoints.*.telemetry_config.table_names.logs_table
-				"metrics_table":     {}, // model_serving_endpoints.*.telemetry_config.table_names.metrics_table
-				"traces_table":      {}, // model_serving_endpoints.*.telemetry_config.table_names.traces_table
-			},
-			"telemetry_profile_id": {}, // model_serving_endpoints.*.telemetry_config.telemetry_profile_id
-		},
-	},
 	"pipelines": {
 		"cascade_on_destroy": {},
 		"clusters": {
@@ -245,24 +193,11 @@ var DABsOnlyFields = map[string]FieldSet{
 		"dry_run": {},
 		"ingestion_definition": {
 			"objects": {
-				"report": {
-					"table_configuration": {
-						"source_metadata_column": {}, // pipelines.*.ingestion_definition.objects.report.table_configuration.source_metadata_column
-					},
-				},
 				"schema": {
 					"connector_options": {
 						"api_source_connector_options": {
 							"options": {
 								"*": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.api_source_connector_options.options.*
-							},
-						},
-						"google_ads_options": {
-							"custom_report_options": {
-								"metrics":         {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.google_ads_options.custom_report_options.metrics
-								"resource":        {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.google_ads_options.custom_report_options.resource
-								"resource_fields": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.google_ads_options.custom_report_options.resource_fields
-								"segments":        {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.google_ads_options.custom_report_options.segments
 							},
 						},
 						"kafka_options": {
@@ -275,51 +210,12 @@ var DABsOnlyFields = map[string]FieldSet{
 								"output_column": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.output_column
 							},
 						},
-						"meta_ads_options": {
-							"custom_report_options": {
-								"action_attribution_windows": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.meta_ads_options.custom_report_options.action_attribution_windows
-								"action_breakdowns":          {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.meta_ads_options.custom_report_options.action_breakdowns
-								"action_report_time":         {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.meta_ads_options.custom_report_options.action_report_time
-								"breakdowns":                 {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.meta_ads_options.custom_report_options.breakdowns
-								"level":                      {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.meta_ads_options.custom_report_options.level
-								"time_increment":             {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.meta_ads_options.custom_report_options.time_increment
-							},
-						},
-						"reddit_ads_options": {
-							"custom_report_options": {
-								"breakdowns": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.reddit_ads_options.custom_report_options.breakdowns
-								"fields":     {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.reddit_ads_options.custom_report_options.fields
-							},
-							"lookback_window_days": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.reddit_ads_options.lookback_window_days
-							"sync_start_date":      {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.reddit_ads_options.sync_start_date
-						},
-						"tiktok_ads_options": {
-							"custom_report_options": {
-								"data_level":     {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.tiktok_ads_options.custom_report_options.data_level
-								"dimensions":     {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.tiktok_ads_options.custom_report_options.dimensions
-								"metrics":        {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.tiktok_ads_options.custom_report_options.metrics
-								"query_lifetime": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.tiktok_ads_options.custom_report_options.query_lifetime
-								"report_type":    {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.tiktok_ads_options.custom_report_options.report_type
-							},
-						},
 					},
 					"fanout_options": {
-						"fanout_by": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.fanout_by
 						"transforms": {
-							"format":       {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.format
-							"input_column": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.input_column
-							"json_options": {
-								"as_variant":            {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.as_variant
-								"schema":                {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema
-								"schema_evolution_mode": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema_evolution_mode
-								"schema_file_path":      {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema_file_path
-								"schema_hints":          {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.json_options.schema_hints
-							},
+							"input_column":  {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.input_column
 							"output_column": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.output_column
 						},
-					},
-					"table_configuration": {
-						"source_metadata_column": {}, // pipelines.*.ingestion_definition.objects.schema.table_configuration.source_metadata_column
 					},
 				},
 				"table": {
@@ -327,14 +223,6 @@ var DABsOnlyFields = map[string]FieldSet{
 						"api_source_connector_options": {
 							"options": {
 								"*": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.api_source_connector_options.options.*
-							},
-						},
-						"google_ads_options": {
-							"custom_report_options": {
-								"metrics":         {}, // pipelines.*.ingestion_definition.objects.table.connector_options.google_ads_options.custom_report_options.metrics
-								"resource":        {}, // pipelines.*.ingestion_definition.objects.table.connector_options.google_ads_options.custom_report_options.resource
-								"resource_fields": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.google_ads_options.custom_report_options.resource_fields
-								"segments":        {}, // pipelines.*.ingestion_definition.objects.table.connector_options.google_ads_options.custom_report_options.segments
 							},
 						},
 						"kafka_options": {
@@ -347,36 +235,6 @@ var DABsOnlyFields = map[string]FieldSet{
 								"output_column": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.output_column
 							},
 						},
-						"meta_ads_options": {
-							"custom_report_options": {
-								"action_attribution_windows": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.meta_ads_options.custom_report_options.action_attribution_windows
-								"action_breakdowns":          {}, // pipelines.*.ingestion_definition.objects.table.connector_options.meta_ads_options.custom_report_options.action_breakdowns
-								"action_report_time":         {}, // pipelines.*.ingestion_definition.objects.table.connector_options.meta_ads_options.custom_report_options.action_report_time
-								"breakdowns":                 {}, // pipelines.*.ingestion_definition.objects.table.connector_options.meta_ads_options.custom_report_options.breakdowns
-								"level":                      {}, // pipelines.*.ingestion_definition.objects.table.connector_options.meta_ads_options.custom_report_options.level
-								"time_increment":             {}, // pipelines.*.ingestion_definition.objects.table.connector_options.meta_ads_options.custom_report_options.time_increment
-							},
-						},
-						"reddit_ads_options": {
-							"custom_report_options": {
-								"breakdowns": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.reddit_ads_options.custom_report_options.breakdowns
-								"fields":     {}, // pipelines.*.ingestion_definition.objects.table.connector_options.reddit_ads_options.custom_report_options.fields
-							},
-							"lookback_window_days": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.reddit_ads_options.lookback_window_days
-							"sync_start_date":      {}, // pipelines.*.ingestion_definition.objects.table.connector_options.reddit_ads_options.sync_start_date
-						},
-						"tiktok_ads_options": {
-							"custom_report_options": {
-								"data_level":     {}, // pipelines.*.ingestion_definition.objects.table.connector_options.tiktok_ads_options.custom_report_options.data_level
-								"dimensions":     {}, // pipelines.*.ingestion_definition.objects.table.connector_options.tiktok_ads_options.custom_report_options.dimensions
-								"metrics":        {}, // pipelines.*.ingestion_definition.objects.table.connector_options.tiktok_ads_options.custom_report_options.metrics
-								"query_lifetime": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.tiktok_ads_options.custom_report_options.query_lifetime
-								"report_type":    {}, // pipelines.*.ingestion_definition.objects.table.connector_options.tiktok_ads_options.custom_report_options.report_type
-							},
-						},
-					},
-					"table_configuration": {
-						"source_metadata_column": {}, // pipelines.*.ingestion_definition.objects.table.table_configuration.source_metadata_column
 					},
 				},
 			},
@@ -387,20 +245,9 @@ var DABsOnlyFields = map[string]FieldSet{
 					},
 				},
 			},
-			"table_configuration": {
-				"source_metadata_column": {}, // pipelines.*.ingestion_definition.table_configuration.source_metadata_column
-			},
 		},
 		"parameters": {
 			"*": {}, // pipelines.*.parameters.*
-		},
-	},
-	"postgres_synced_tables": {
-		"extra_columns": {
-			"column_name": {}, // postgres_synced_tables.*.extra_columns.column_name
-			"column_type": {}, // postgres_synced_tables.*.extra_columns.column_type
-			"compute":     {}, // postgres_synced_tables.*.extra_columns.compute
-			"maintenance": {}, // postgres_synced_tables.*.extra_columns.maintenance
 		},
 	},
 	"schemas": {
@@ -423,6 +270,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"no_compute": {},
 	},
 	"clusters": {
+		"clear_cloud_attributes_on_remove": {},
 		"cluster_mount_info": {
 			"local_mount_dir_path": {}, // databricks_cluster.*.cluster_mount_info.local_mount_dir_path
 			"network_filesystem_info": {
@@ -592,6 +440,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 				"*": {}, // databricks_job.*.new_cluster.custom_tags.*
 			},
 			"data_security_mode": {}, // databricks_job.*.new_cluster.data_security_mode
+			"dependency_mode":    {}, // databricks_job.*.new_cluster.dependency_mode
 			"docker_image": {
 				"basic_auth": {
 					"password": {}, // databricks_job.*.new_cluster.docker_image.basic_auth.password
@@ -930,6 +779,7 @@ var DABsToTerraformWrapperFields = map[string]FieldSet{
 		"branch":                             {},
 		"create_database_objects_if_missing": {},
 		"existing_pipeline_id":               {},
+		"extra_columns":                      {},
 		"new_pipeline_spec":                  {},
 		"postgres_database":                  {},
 		"primary_key_columns":                {},

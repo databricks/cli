@@ -13,6 +13,10 @@ type DataSourcePolicyInfosPoliciesColumnMask struct {
 	Using        []DataSourcePolicyInfosPoliciesColumnMaskUsing `json:"using,omitempty"`
 }
 
+type DataSourcePolicyInfosPoliciesGrant struct {
+	Privileges []string `json:"privileges"`
+}
+
 type DataSourcePolicyInfosPoliciesMatchColumns struct {
 	Alias     string `json:"alias,omitempty"`
 	Condition string `json:"condition,omitempty"`
@@ -39,6 +43,7 @@ type DataSourcePolicyInfosPolicies struct {
 	CreatedBy           string                                       `json:"created_by,omitempty"`
 	ExceptPrincipals    []string                                     `json:"except_principals,omitempty"`
 	ForSecurableType    string                                       `json:"for_securable_type,omitempty"`
+	Grant               *DataSourcePolicyInfosPoliciesGrant          `json:"grant,omitempty"`
 	Id                  string                                       `json:"id,omitempty"`
 	MatchColumns        []DataSourcePolicyInfosPoliciesMatchColumns  `json:"match_columns,omitempty"`
 	Name                string                                       `json:"name"`
