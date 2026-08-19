@@ -1,0 +1,8 @@
+Cloud = true
+# serverless is only enabled if UC is enabled
+RequiresUnityCatalog = true
+
+# The patched-wheel path is built with the OS separator; normalize for Windows.
+[[Repls]]
+Old = '\\'
+New = '/'

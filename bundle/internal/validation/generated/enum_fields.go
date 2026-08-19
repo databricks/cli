@@ -147,6 +147,12 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.trigger.periodic.unit":                                                               {"DAYS", "HOURS", "MINUTES", "WEEKS"},
 	"resources.jobs.*.trigger.sql_condition.trigger_mode":                                                  {"QUERY_RETURNS_ROWS", "RESULT_VALUE_CHANGES"},
 	"resources.jobs.*.trigger.table_update.condition":                                                      {"ALL_UPDATED", "ANY_UPDATED"},
+	"resources.jobs.*.triggers[*].continuous.task_retry_mode":                                              {"NEVER", "ON_FAILURE"},
+	"resources.jobs.*.triggers[*].model.condition":                                                         {"MODEL_ALIAS_SET", "MODEL_CREATED", "MODEL_VERSION_READY"},
+	"resources.jobs.*.triggers[*].pause_status":                                                            {"PAUSED", "UNPAUSED"},
+	"resources.jobs.*.triggers[*].periodic.unit":                                                           {"DAYS", "HOURS", "MINUTES", "WEEKS"},
+	"resources.jobs.*.triggers[*].sql_condition.trigger_mode":                                              {"QUERY_RETURNS_ROWS", "RESULT_VALUE_CHANGES"},
+	"resources.jobs.*.triggers[*].table_update.condition":                                                  {"ALL_UPDATED", "ANY_UPDATED"},
 
 	"resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii.behavior":                                        {"BLOCK", "MASK", "NONE"},
 	"resources.model_serving_endpoints.*.ai_gateway.guardrails.output.pii.behavior":                                       {"BLOCK", "MASK", "NONE"},
@@ -154,8 +160,8 @@ var EnumFields = map[string][]string{
 	"resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].renewal_period":                                        {"minute"},
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.bedrock_provider": {"ai21labs", "amazon", "anthropic", "cohere"},
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model.provider":                               {"ai21labs", "amazon-bedrock", "anthropic", "cohere", "custom", "databricks-model-serving", "google-cloud-vertex-ai", "openai", "palm"},
-	"resources.model_serving_endpoints.*.config.served_entities[*].workload_type":                                         {"CPU", "CPU_LARGE", "CPU_MEDIUM", "GPU_LARGE", "GPU_MEDIUM", "GPU_SMALL", "GPU_XLARGE", "MULTIGPU_MEDIUM"},
-	"resources.model_serving_endpoints.*.config.served_models[*].workload_type":                                           {"CPU", "CPU_LARGE", "CPU_MEDIUM", "GPU_LARGE", "GPU_MEDIUM", "GPU_SMALL", "GPU_XLARGE", "MULTIGPU_MEDIUM"},
+	"resources.model_serving_endpoints.*.config.served_entities[*].workload_type":                                         {"CPU", "CPU_LARGE", "CPU_MEDIUM", "GPU_LARGE", "GPU_MEDIUM", "GPU_SMALL", "GPU_XLARGE", "GPU_XLARGE_8", "MULTIGPU_MEDIUM"},
+	"resources.model_serving_endpoints.*.config.served_models[*].workload_type":                                           {"CPU", "CPU_LARGE", "CPU_MEDIUM", "GPU_LARGE", "GPU_MEDIUM", "GPU_SMALL", "GPU_XLARGE", "GPU_XLARGE_8", "MULTIGPU_MEDIUM"},
 	"resources.model_serving_endpoints.*.permissions[*].level":                                                            {"CAN_MANAGE", "CAN_QUERY", "CAN_VIEW"},
 	"resources.model_serving_endpoints.*.rate_limits[*].key":                                                              {"endpoint", "user"},
 	"resources.model_serving_endpoints.*.rate_limits[*].renewal_period":                                                   {"minute"},
@@ -233,7 +239,8 @@ var EnumFields = map[string][]string{
 
 	"resources.schemas.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 
-	"resources.secret_scopes.*.backend_type": {"AZURE_KEYVAULT", "DATABRICKS"},
+	"resources.secret_scopes.*.backend_type":         {"AZURE_KEYVAULT", "DATABRICKS"},
+	"resources.secret_scopes.*.permissions[*].level": {"READ", "WRITE", "MANAGE"},
 
 	"resources.secrets.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 

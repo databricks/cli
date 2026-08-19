@@ -163,6 +163,7 @@ var UpdateMaskFields = []string{
 	"usage_policy_id",
 	"resources",
 	"user_api_scopes",
+	"forward_user_access_token",
 	"compute_size",
 	"compute_min_instances",
 	"compute_max_instances",

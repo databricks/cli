@@ -21,10 +21,12 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 ### Building and Testing
 
 - `./task build` - Build the CLI binary
-- `./task test` - Run unit and acceptance tests for all packages
+- `./task test` - Run unit and acceptance tests for all packages. This runs the *entire* acceptance suite locally against the fake server in `libs/testserver`.
 - `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder> -tail -test.v` - run a single acceptance test
-- `./task integration` - Run integration tests (requires environment variables)
+- `./task integration` - Run integration tests (requires environment variables). The `integration/` tree is deprecated; new coverage that needs a real workspace goes into an acceptance test with `Cloud = true`.
 - `./task cover` - Generate test coverage reports
+
+Every acceptance test runs locally. `Cloud = true` in a `test.toml` means the test *also* runs against a real workspace when `CLOUD_ENV` is set — never that it skips the local run. See `.agents/rules/testing.md`.
 
 ### Code Quality
 

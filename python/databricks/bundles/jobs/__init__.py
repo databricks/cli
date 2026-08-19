@@ -61,9 +61,15 @@ __all__ = [
     "Continuous",
     "ContinuousDict",
     "ContinuousParam",
+    "ContinuousTriggerConfiguration",
+    "ContinuousTriggerConfigurationDict",
+    "ContinuousTriggerConfigurationParam",
     "CronSchedule",
     "CronScheduleDict",
     "CronScheduleParam",
+    "CronTriggerConfiguration",
+    "CronTriggerConfigurationDict",
+    "CronTriggerConfigurationParam",
     "DashboardTask",
     "DashboardTaskDict",
     "DashboardTaskParam",
@@ -299,6 +305,9 @@ __all__ = [
     "TaskParam",
     "TaskRetryMode",
     "TaskRetryModeParam",
+    "TriggerConfiguration",
+    "TriggerConfigurationDict",
+    "TriggerConfigurationParam",
     "TriggerSettings",
     "TriggerSettingsDict",
     "TriggerSettingsParam",
@@ -421,10 +430,20 @@ from databricks.bundles.jobs._models.continuous import (
     ContinuousDict,
     ContinuousParam,
 )
+from databricks.bundles.jobs._models.continuous_trigger_configuration import (
+    ContinuousTriggerConfiguration,
+    ContinuousTriggerConfigurationDict,
+    ContinuousTriggerConfigurationParam,
+)
 from databricks.bundles.jobs._models.cron_schedule import (
     CronSchedule,
     CronScheduleDict,
     CronScheduleParam,
+)
+from databricks.bundles.jobs._models.cron_trigger_configuration import (
+    CronTriggerConfiguration,
+    CronTriggerConfigurationDict,
+    CronTriggerConfigurationParam,
 )
 from databricks.bundles.jobs._models.dashboard_task import (
     DashboardTask,
@@ -792,6 +811,11 @@ from databricks.bundles.jobs._models.task_notification_settings import (
 from databricks.bundles.jobs._models.task_retry_mode import (
     TaskRetryMode,
     TaskRetryModeParam,
+)
+from databricks.bundles.jobs._models.trigger_configuration import (
+    TriggerConfiguration,
+    TriggerConfigurationDict,
+    TriggerConfigurationParam,
 )
 from databricks.bundles.jobs._models.trigger_settings import (
     TriggerSettings,

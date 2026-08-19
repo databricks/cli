@@ -3,8 +3,7 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 # The script writes pyproject.toml as the merge input; --dry-run leaves it unchanged.
 Ignore = ["pyproject.toml"]
 
-[Env]
-DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
+Env.DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
 
 [[Server]]
 Pattern = "GET /serverless/serverless-v4/pyproject.toml"

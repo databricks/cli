@@ -189,6 +189,18 @@ func (db *DeploymentState) GetResourceID(key string) string {
 	return db.stateIDs[key]
 }
 
+// StateCLIVersion returns the CLI version that last wrote the state, or an empty
+// string if the state does not record one (a fresh state that this CLI has not
+// written yet). It is the version stored in the on-disk header, not the running
+// build's version.
+func (db *DeploymentState) StateCLIVersion() string {
+	db.AssertOpenedForReadOrWrite()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	return db.Data.CLIVersion
+}
+
 // GetOrInitLineage returns the deployment lineage, generating and storing a new
 // one if the state does not have one yet. It is the single place the lineage is
 // initialized, shared so the direct deployment engine (when it writes state, via

@@ -1,4 +1,3 @@
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []
-FIRST = ["alpha", "beta"]
-SECOND = []
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
+EnvMatrix.FIRST = ["alpha", "beta"]
+EnvMatrix.SECOND = []
