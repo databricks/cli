@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,9 +15,9 @@ import (
 // absent MLflow link, and a still-running (no end) row.
 func testListRows() []listRow {
 	return []listRow{
-		{RunID: "1", Experiment: "qwen-train", User: "me@example.com", Status: "SUCCESS", StartedAt: new("2026-06-05T17:32:39.000000+00:00"), Duration: "1m 14s", MLflowURL: "https://h/ml/experiments/E/runs/04c41514fbb0/artifacts/logs/node_0", Accelerators: "8x H100"},
-		{RunID: "2", Experiment: "llama-train", User: "me@example.com", Status: "RUNNING", StartedAt: new("2026-06-05T18:43:24.000000+00:00"), Duration: "3m 32s", MLflowURL: "-", Accelerators: "1x A10"},
-		{RunID: "3", Experiment: "mixtral", User: "me@example.com", Status: "FAILED", StartedAt: nil, Duration: "-", MLflowURL: "-", Accelerators: "-"},
+		{RunID: "1", Experiment: "qwen-train", User: "me@example.com", Status: "SUCCESS", StartedAt: new("2026-06-05T17:32:39.000000+00:00"), Duration: "1m 14s", MLflowURL: "https://h/ml/experiments/E/runs/04c41514fbb0/artifacts/logs/node_0", MLflowLabel: "qwen-run-001", Accelerators: "8x H100"},
+		{RunID: "2", Experiment: "llama-train", User: "me@example.com", Status: "RUNNING", StartedAt: new("2026-06-05T18:43:24.000000+00:00"), Duration: "3m 32s", MLflowURL: "-", MLflowLabel: "-", Accelerators: "1x A10"},
+		{RunID: "3", Experiment: "mixtral", User: "me@example.com", Status: "FAILED", StartedAt: nil, Duration: "-", MLflowURL: "-", MLflowLabel: "-", Accelerators: "-"},
 	}
 }
 
@@ -161,7 +160,7 @@ func TestListModelView(t *testing.T) {
 	for _, want := range []string{
 		"Run ID", "Experiment", "Status", "Started", "Duration", "MLflow", "User", "Accelerators",
 		"qwen-train", "● SUCCESS", "● RUNNING", "● FAILED",
-		"…/runs/04c41514…",    // shortened MLflow link
+		"qwen-run-001",        // MLflow run label
 		"2026-06-05T17:32:39", // started trimmed to seconds
 		"▸",                   // selection gutter on the first row
 		"↑/↓ navigate",        // hint line
@@ -176,7 +175,7 @@ func TestStaticListTable(t *testing.T) {
 
 	assert.NotContains(t, out, "\x1b")
 	assert.NotContains(t, out, "▸", "static table has no selection")
-	for _, want := range []string{"Run ID", "1", "qwen-train", "…/runs/04c41514…", "Accelerators"} {
+	for _, want := range []string{"Run ID", "1", "qwen-train", "qwen-run-001", "Accelerators"} {
 		assert.Contains(t, out, want)
 	}
 
@@ -197,15 +196,86 @@ func TestStartedDisplay(t *testing.T) {
 	assert.Equal(t, "2026-06-05T17:32:39", startedDisplay(listRow{StartedAt: new("2026-06-05T17:32:39.000000+00:00")}))
 }
 
-func TestMLflowDisplay(t *testing.T) {
-	assert.Equal(t, "…/runs/04c41514…", mlflowDisplay("https://h/ml/experiments/E/runs/04c41514fbb0/artifacts/logs/node_0"))
-	assert.Equal(t, "…/runs/run1", mlflowDisplay("https://h/ml/experiments/E/runs/run1/artifacts/logs/node_0"))
-	assert.LessOrEqual(t, lipgloss.Width(mlflowDisplay("https://h/no-runs/here")), mlflowColWidth)
+func TestRenderRowHyperlinks(t *testing.T) {
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
+	styles := newListStyles(r)
+	row := listRow{
+		RunID: "1", Experiment: "exp", Status: "SUCCESS", Duration: "-", Accelerators: "-",
+		RunURL: "https://h/jobs/runs/1?o=2", ExperimentURL: "https://h/ml/experiments/E?o=2",
+		MLflowURL: "https://h/ml/experiments/E/runs/rid", MLflowLabel: "my-run",
+	}
+	cols := computeListCols([]listRow{row})
+
+	linked := styles.renderRow(cols, row, false, true)
+	assert.Contains(t, linked, "\x1b]8;;https://h/jobs/runs/1?o=2", "run id links to the dashboard")
+	assert.Contains(t, linked, "\x1b]8;;https://h/ml/experiments/E?o=2", "experiment links to the experiment page")
+
+	plain := styles.renderRow(cols, row, false, false)
+	assert.NotContains(t, plain, "\x1b]8;;", "no links when links are disabled")
 }
 
-func TestMLflowRunID(t *testing.T) {
-	assert.Equal(t, "abc123", mlflowRunID("https://h/ml/experiments/1/runs/abc123/artifacts"))
-	assert.Empty(t, mlflowRunID("https://h/no-runs-here"))
+func TestListModelInfoKeyOpensDetail(t *testing.T) {
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
+	f := &runFetcher{ctx: t.Context(), w: newTestWorkspaceClient(t, "https://x.test")}
+	m := newListModel(r, f, testListRows(), false)
+
+	// `i` opens the detail pane in a loading state and dispatches a fetch (not run here).
+	next, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("i")})
+	m = next.(listModel)
+	assert.Equal(t, modeDetail, m.mode)
+	assert.True(t, m.detailLoading)
+	assert.NotNil(t, cmd)
+}
+
+// detailLoadingModel returns a sized model in the detail-loading state, as if
+// the user just pressed `i` and the fetch is still in flight.
+func detailLoadingModel(t *testing.T) listModel {
+	t.Helper()
+	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
+	f := &runFetcher{ctx: t.Context(), w: newTestWorkspaceClient(t, "https://x.test")}
+	m := newListModel(r, f, testListRows(), false)
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	m = next.(listModel)
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("i")})
+	m = next.(listModel)
+	require.Equal(t, modeDetail, m.mode)
+	require.True(t, m.detailLoading)
+	return m
+}
+
+func TestListModelDetailPaneAndBack(t *testing.T) {
+	m := detailLoadingModel(t)
+
+	// A resolved detailMsg fills the pane.
+	next, _ := m.Update(detailMsg{title: "Run Details", body: "hello from the detail pane"})
+	m = next.(listModel)
+	require.Equal(t, modeDetail, m.mode)
+	assert.False(t, m.detailLoading)
+	view := m.View()
+	assert.Contains(t, view, "Run Details")
+	assert.Contains(t, view, "hello from the detail pane")
+	assert.Contains(t, view, "esc back")
+
+	// esc returns to the list.
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = next.(listModel)
+	assert.Equal(t, modeList, m.mode)
+	assert.Contains(t, m.View(), "Run ID")
+}
+
+func TestListModelDetailLateMsgDropped(t *testing.T) {
+	m := detailLoadingModel(t)
+
+	// User escapes back to the list before the fetch resolves.
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = next.(listModel)
+	require.Equal(t, modeList, m.mode)
+
+	// The late result must be dropped, not snap the user back into the pane.
+	next, _ = m.Update(detailMsg{title: "Run Details", body: "late result"})
+	m = next.(listModel)
+	assert.Equal(t, modeList, m.mode)
+	assert.NotContains(t, m.View(), "late result")
 }
 
 func TestPadAndTruncate(t *testing.T) {

@@ -9,6 +9,12 @@ type DataSources struct {
 	AccountNetworkPolicy                        map[string]any `json:"databricks_account_network_policy,omitempty"`
 	AccountSettingUserPreferenceV2              map[string]any `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                            map[string]any `json:"databricks_account_setting_v2,omitempty"`
+	AiGatewayMcpService                         map[string]any `json:"databricks_ai_gateway_mcp_service,omitempty"`
+	AiGatewayMcpServices                        map[string]any `json:"databricks_ai_gateway_mcp_services,omitempty"`
+	AiGatewayModelProviderService               map[string]any `json:"databricks_ai_gateway_model_provider_service,omitempty"`
+	AiGatewayModelProviderServices              map[string]any `json:"databricks_ai_gateway_model_provider_services,omitempty"`
+	AiGatewayModelService                       map[string]any `json:"databricks_ai_gateway_model_service,omitempty"`
+	AiGatewayModelServices                      map[string]any `json:"databricks_ai_gateway_model_services,omitempty"`
 	AiSearchEndpoint                            map[string]any `json:"databricks_ai_search_endpoint,omitempty"`
 	AiSearchEndpoints                           map[string]any `json:"databricks_ai_search_endpoints,omitempty"`
 	AiSearchIndex                               map[string]any `json:"databricks_ai_search_index,omitempty"`
@@ -105,6 +111,10 @@ type DataSources struct {
 	PostgresBranch                              map[string]any `json:"databricks_postgres_branch,omitempty"`
 	PostgresBranches                            map[string]any `json:"databricks_postgres_branches,omitempty"`
 	PostgresCatalog                             map[string]any `json:"databricks_postgres_catalog,omitempty"`
+	PostgresCdfConfig                           map[string]any `json:"databricks_postgres_cdf_config,omitempty"`
+	PostgresCdfConfigs                          map[string]any `json:"databricks_postgres_cdf_configs,omitempty"`
+	PostgresCdfStatus                           map[string]any `json:"databricks_postgres_cdf_status,omitempty"`
+	PostgresCdfStatuses                         map[string]any `json:"databricks_postgres_cdf_statuses,omitempty"`
 	PostgresDataApi                             map[string]any `json:"databricks_postgres_data_api,omitempty"`
 	PostgresDatabase                            map[string]any `json:"databricks_postgres_database,omitempty"`
 	PostgresDatabases                           map[string]any `json:"databricks_postgres_databases,omitempty"`
@@ -117,6 +127,7 @@ type DataSources struct {
 	PostgresSyncedTable                         map[string]any `json:"databricks_postgres_synced_table,omitempty"`
 	QualityMonitorV2                            map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
 	QualityMonitorsV2                           map[string]any `json:"databricks_quality_monitors_v2,omitempty"`
+	Recipients                                  map[string]any `json:"databricks_recipients,omitempty"`
 	RegisteredModel                             map[string]any `json:"databricks_registered_model,omitempty"`
 	RegisteredModelVersions                     map[string]any `json:"databricks_registered_model_versions,omitempty"`
 	RfaAccessRequestDestinations                map[string]any `json:"databricks_rfa_access_request_destinations,omitempty"`
@@ -166,6 +177,12 @@ func NewDataSources() *DataSources {
 		AccountNetworkPolicy:            make(map[string]any),
 		AccountSettingUserPreferenceV2:  make(map[string]any),
 		AccountSettingV2:                make(map[string]any),
+		AiGatewayMcpService:             make(map[string]any),
+		AiGatewayMcpServices:            make(map[string]any),
+		AiGatewayModelProviderService:   make(map[string]any),
+		AiGatewayModelProviderServices:  make(map[string]any),
+		AiGatewayModelService:           make(map[string]any),
+		AiGatewayModelServices:          make(map[string]any),
 		AiSearchEndpoint:                make(map[string]any),
 		AiSearchEndpoints:               make(map[string]any),
 		AiSearchIndex:                   make(map[string]any),
@@ -262,6 +279,10 @@ func NewDataSources() *DataSources {
 		PostgresBranch:                              make(map[string]any),
 		PostgresBranches:                            make(map[string]any),
 		PostgresCatalog:                             make(map[string]any),
+		PostgresCdfConfig:                           make(map[string]any),
+		PostgresCdfConfigs:                          make(map[string]any),
+		PostgresCdfStatus:                           make(map[string]any),
+		PostgresCdfStatuses:                         make(map[string]any),
 		PostgresDataApi:                             make(map[string]any),
 		PostgresDatabase:                            make(map[string]any),
 		PostgresDatabases:                           make(map[string]any),
@@ -274,6 +295,7 @@ func NewDataSources() *DataSources {
 		PostgresSyncedTable:                         make(map[string]any),
 		QualityMonitorV2:                            make(map[string]any),
 		QualityMonitorsV2:                           make(map[string]any),
+		Recipients:                                  make(map[string]any),
 		RegisteredModel:                             make(map[string]any),
 		RegisteredModelVersions:                     make(map[string]any),
 		RfaAccessRequestDestinations:                make(map[string]any),

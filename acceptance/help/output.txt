@@ -145,7 +145,7 @@ Quality Monitor
   quality-monitor-v2                     *Beta* Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).
 
 Data Classification
-  data-classification                    *Beta* Manage data classification for Unity Catalog catalogs.
+  data-classification                    *Public Preview* Manage data classification for Unity Catalog catalogs.
 
 Data Quality Monitoring
   data-quality                           *Public Preview* Manage the data quality of Unity Catalog objects (currently support schema and table).

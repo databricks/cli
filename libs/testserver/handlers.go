@@ -86,7 +86,8 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(req Request) any {
 		path := req.URL.Query().Get("path")
-		return req.Workspace.WorkspaceGetStatus(path)
+		returnGitInfo := req.URL.Query().Get("return_git_info") == "true"
+		return req.Workspace.WorkspaceGetStatus(path, returnGitInfo)
 	})
 
 	server.Handle("GET", "/api/2.0/workspace/list", func(req Request) any {

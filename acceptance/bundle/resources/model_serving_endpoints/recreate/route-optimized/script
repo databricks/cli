@@ -11,7 +11,7 @@ trace $CLI bundle deploy
 
 ENDPOINT_ID=$($CLI bundle summary -o json | jq -r '.resources.model_serving_endpoints.test_endpoint.id')
 add_repl "$ENDPOINT_ID" ORIGINAL_ENDPOINT_ID
-trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '{route_optimized, id}' > out.first-get.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '{route_optimized, id}' > out.first-get.json
 
 print_requests.py //serving-endpoints > out.first-requests.$DATABRICKS_BUNDLE_ENGINE.json
 

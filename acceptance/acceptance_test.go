@@ -935,7 +935,7 @@ func runTest(t *testing.T,
 	// Disable the passive update notice explicitly. It is already suppressed
 	// implicitly (dev builds, non-TTY stderr, CI), but tests that run released
 	// binaries (e.g. -useversion) must never reach GitHub or print the notice
-	// into compared output. Tests can override this via [Env] in test.toml.
+	// into compared output. Tests can override this via Env.* in test.toml.
 	cmd.Env = append(cmd.Env, "DATABRICKS_CLI_DISABLE_UPDATE_CHECK=true")
 
 	// Neutralize Databricks-internal development-environment interference so
@@ -963,7 +963,9 @@ func runTest(t *testing.T,
 
 	absDir, err := filepath.Abs(dir)
 	require.NoError(t, err)
-	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
+	// Use forward slashes so paths built from $TESTDIR (e.g. echoed in trace
+	// output) are stable across OSes and don't need per-test slash replacements.
+	cmd.Env = append(cmd.Env, "TESTDIR="+filepath.ToSlash(absDir))
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
 	if !isRunningOnCloud {
