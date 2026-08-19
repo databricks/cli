@@ -1,6 +1,15 @@
 bundle:
   name: test-bundle-$UNIQUE_NAME
 
+# This test deploys several times and reports how many files each deploy uploaded, so
+# nothing written between the deploys may end up in the synced tree: the script's own
+# out.after_first_deploy.*, and the test runner's output.txt / ACC_REPLS, which it keeps
+# appending to while the deploy runs.
+sync:
+  exclude:
+    - out*
+    - ACC_REPLS
+
 permissions:
   - level: CAN_MANAGE
     user_name: ${workspace.current_user.userName}

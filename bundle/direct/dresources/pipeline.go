@@ -4,14 +4,38 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
+// PipelineState is the state type for Pipeline resources. It extends CreatePipeline with
+// the CascadeOnDestroy field, a delete-time setting that is not part of the pipeline spec
+type PipelineState struct {
+	pipelines.CreatePipeline
+
+	// CascadeOnDestroy controls whether deleting the pipeline also deletes its datasets (MVs,
+	// STs, Views). Nil means the server default (cascade) applies. Read from persisted state at
+	// delete time; never sent on create/update.
+	CascadeOnDestroy *bool `json:"cascade_on_destroy,omitempty"`
+}
+
+func (s *PipelineState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s PipelineState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
 // PipelineRemote is the return type for DoRead. It embeds CreatePipeline so that all
 // paths in StateType are valid paths in RemoteType.
+// Note that cascade_on_destroy is intentionally absent: it is a delete-time-only setting
+// that the GET response never returns, so the engine suppresses its drift automatically
 type PipelineRemote struct {
 	pipelines.CreatePipeline
 
@@ -49,12 +73,19 @@ func (*ResourcePipeline) New(client *databricks.WorkspaceClient) *ResourcePipeli
 	}
 }
 
-func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *pipelines.CreatePipeline {
-	return &input.CreatePipeline
+func (*ResourcePipeline) PrepareState(input *resources.Pipeline) *PipelineState {
+	return &PipelineState{
+		CreatePipeline:   input.CreatePipeline,
+		CascadeOnDestroy: input.CascadeOnDestroy,
+	}
 }
 
-func (*ResourcePipeline) RemapState(remote *PipelineRemote) *pipelines.CreatePipeline {
-	return &remote.CreatePipeline
+func (*ResourcePipeline) RemapState(remote *PipelineRemote) *PipelineState {
+	return &PipelineState{
+		CreatePipeline: remote.CreatePipeline,
+		// cascade_on_destroy is input-only and absent from PipelineRemote, so it stays nil here.
+		CascadeOnDestroy: nil,
+	}
 }
 
 func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemote, error) {
@@ -124,15 +155,21 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 	}
 }
 
-func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.CreatePipeline) (string, *PipelineRemote, error) {
-	response, err := r.client.Pipelines.Create(ctx, *config)
+func (r *ResourcePipeline) DoCreate(ctx context.Context, config *PipelineState) (string, *PipelineRemote, error) {
+	response, err := r.client.Pipelines.Create(ctx, config.CreatePipeline)
 	if err != nil {
 		return "", nil, err
 	}
 	return response.PipelineId, nil, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ *PlanEntry) (*PipelineRemote, error) {
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *PipelineState, entry *PlanEntry) (*PipelineRemote, error) {
+	// cascade_on_destroy is a delete-time-only setting with no update API, so a change to it
+	// alone must persist to state without a pipeline Update call.
+	if !entry.Changes.HasChangeExcept("cascade_on_destroy") {
+		return nil, nil
+	}
+
 	request := pipelines.EditPipeline{
 		AllowDuplicateNames:  config.AllowDuplicateNames,
 		BudgetPolicyId:       config.BudgetPolicyId,
@@ -174,8 +211,31 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipe
 	return nil, r.client.Pipelines.Update(ctx, request)
 }
 
-func (r *ResourcePipeline) DoDelete(ctx context.Context, id string, _ *pipelines.CreatePipeline) error {
-	return r.client.Pipelines.DeleteByPipelineId(ctx, id)
+func (r *ResourcePipeline) DoDelete(ctx context.Context, id string, state *PipelineState) error {
+	if state.CascadeOnDestroy == nil {
+		// No explicit cascade_on_destroy in config: preserve the backend default (cascade).
+		return r.client.Pipelines.DeleteByPipelineId(ctx, id)
+	}
+	return r.client.Pipelines.Delete(ctx, pipelines.DeletePipelineRequest{
+		PipelineId: id,
+		Cascade:    *state.CascadeOnDestroy,
+		Force:      false,
+		// Cascade is marshaled as `url:"cascade,omitempty"`, so a false value would be dropped from
+		// the query string. We specify `cascade` in ForceSendFields so the SDK send cascade=false explicitly
+		ForceSendFields: []string{"Cascade"},
+	})
+}
+
+// OverrideChangeDesc forces a state-only Update when cascade_on_destroy changes locally.
+// The field is absent from PipelineRemote, so unsetting puts us in the scenario where
+// old=false, new=nil, remote=nil.
+// The problem is that classifier skips the change if remote and new are "empty". There is a bug
+// where "false" value for a boolean field is treated as empty. Hence, we set this override.
+func (*ResourcePipeline) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *PipelineRemote) error {
+	if path.String() == "cascade_on_destroy" && !structdiff.IsEqual(change.Old, change.New) {
+		change.Action = deployplan.Update
+	}
+	return nil
 }
 
 // Note, terraform provider either

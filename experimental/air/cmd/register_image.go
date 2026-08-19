@@ -111,18 +111,15 @@ configuration (run ` + "`docker login`" + ` first); there are no credential flag
 
 		timeout := time.Duration(timeoutMinutes) * time.Minute
 
-		// Discover credentials from the local Docker config and store them in a
-		// per-user secret for the registration call. If storage fails, registration
-		// still proceeds without credentials — a public image succeeds — and
-		// credErr is reported as the cause if the registry rejects anonymous access.
-		// credErr is not fatal on its own: it is reported by registrationError only
-		// if the registry then rejects anonymous access.
-		scope, key, credErr := discoverCredentials(ctx, w, c, dockerImageURL)
+		// credErr is not fatal on its own: registration proceeds without
+		// credentials (a public image still succeeds) and registrationError reports
+		// it only if the registry rejects anonymous access.
+		creds, credErr := discoverCredentials(ctx, w, c, dockerImageURL)
 		if credErr != nil {
 			log.Debugf(ctx, "could not store local Docker credentials: %v", credErr)
 		}
 
-		updated, sha, err := registerWithCredentialFallback(ctx, c, dockerImageURL, scope, key, timeout)
+		updated, sha, err := registerWithCredentialFallback(ctx, c, dockerImageURL, creds, timeout)
 		if err != nil {
 			kind, retryable := classifyRegistrationError(err)
 			return renderError(ctx, cmd, "REGISTRATION_FAILED", kind, retryable,
@@ -142,16 +139,25 @@ configuration (run ` + "`docker login`" + ` first); there are no credential flag
 	return cmd
 }
 
+// imageCredentials is a secret reference passed to registration. discovered
+// marks it as auto-discovered from the local Docker config rather than
+// configured by the user, which decides whether a rejection may be retried
+// anonymously.
+type imageCredentials struct {
+	scope      string
+	key        string
+	discovered bool
+}
+
 // discoverCredentials resolves registry credentials from the local Docker config
-// and stores them in a per-user secret, returning the (scope, key) reference for
-// registration. It first probes whether the image is public: if so, no
-// credentials are stored (avoiding a throwaway secret). Returns empty scope/key
-// when the image is public or no local credentials exist, both with a nil error.
-// A non-nil error means credentials were found but could not be stored (e.g. the
-// user lacks permission to create a secret scope); it is advisory, so the caller
-// can still attempt an anonymous registration and report this as the cause if
-// that fails.
-func discoverCredentials(ctx context.Context, w *databricks.WorkspaceClient, c *imageClient, dockerImageURL string) (scope, key string, err error) {
+// and stores them in a per-user secret, returning the reference for registration.
+// It first probes whether the image is public: if so, no credentials are stored
+// (avoiding a throwaway secret). Returns empty credentials when the image is
+// public or no local credentials exist, both with a nil error. A non-nil error
+// means credentials were found but could not be stored (e.g. the user lacks
+// permission to create a secret scope); it is advisory, so the caller can still
+// attempt an anonymous registration and report this as the cause if that fails.
+func discoverCredentials(ctx context.Context, w *databricks.WorkspaceClient, c *imageClient, dockerImageURL string) (creds imageCredentials, err error) {
 	// readDockerCredentials keys off the registry host, so it needs the normalized
 	// URL (e.g. bare "ubuntu" resolves to the Docker Hub host).
 	normalized := normalizeDockerImageURL(dockerImageURL)
@@ -161,20 +167,20 @@ func discoverCredentials(ctx context.Context, w *databricks.WorkspaceClient, c *
 	// twice.
 	username, password, ok := readDockerCredentials(ctx, normalized)
 	if !ok {
-		return "", "", nil
+		return imageCredentials{}, nil
 	}
 
 	if public := c.checkImageAccess(ctx, dockerImageURL); public != nil && *public {
 		log.Infof(ctx, "image is publicly accessible; skipping local Docker credentials")
-		return "", "", nil
+		return imageCredentials{}, nil
 	}
 
-	scope, key, err = storeDockerCredentials(ctx, w, normalized, username, password)
+	scope, key, err := storeDockerCredentials(ctx, w, normalized, username, password)
 	if err != nil {
-		return "", "", err
+		return imageCredentials{}, err
 	}
 	log.Infof(ctx, "using Docker credentials from local config (stored as %s/%s)", scope, key)
-	return scope, key, nil
+	return imageCredentials{scope: scope, key: key, discovered: true}, nil
 }
 
 // isAuthError reports whether err is an authentication or permission failure,
@@ -218,14 +224,15 @@ func registrationError(dockerImageURL string, err, credErr error) error {
 	return fmt.Errorf("image %q was not found or requires credentials: run `docker login` for its registry, then retry: %w", dockerImageURL, err)
 }
 
-// registerWithCredentialFallback registers the image and, if the stored
+// registerWithCredentialFallback registers the image and, if auto-discovered
 // credentials are rejected as an auth failure, retries once anonymously so a
-// public image isn't blocked by stale local creds (e.g. a revoked PAT from an
-// old `docker login`). The retry only fires when credentials were supplied.
-func registerWithCredentialFallback(ctx context.Context, c *imageClient, dockerImageURL, scope, key string, timeout time.Duration) (updated bool, sha string, err error) {
-	updated, sha, err = resolveImage(ctx, c, dockerImageURL, scope, key, timeout)
-	if err != nil && scope != "" && isAuthError(err) {
-		log.Warnf(ctx, "stored Docker credentials were rejected (%v); retrying without credentials in case the image is public", err)
+// public image isn't blocked by stale local creds (e.g. a revoked PAT from an old
+// `docker login`). Credentials the user configured explicitly are never retried
+// away: they asked for those specifically, so the rejection is the real answer.
+func registerWithCredentialFallback(ctx context.Context, c *imageClient, dockerImageURL string, creds imageCredentials, timeout time.Duration) (updated bool, sha string, err error) {
+	updated, sha, err = resolveImage(ctx, c, dockerImageURL, creds.scope, creds.key, timeout)
+	if err != nil && creds.discovered && isAuthError(err) {
+		log.Warnf(ctx, "Docker credentials discovered from your local config were rejected (%v); retrying without credentials in case the image is public", err)
 		return resolveImage(ctx, c, dockerImageURL, "", "", timeout)
 	}
 	return updated, sha, err

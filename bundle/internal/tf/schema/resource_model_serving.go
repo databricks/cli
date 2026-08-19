@@ -234,17 +234,8 @@ type ResourceModelServingTelemetryConfigInferenceTableConfig struct {
 	SamplingFraction int    `json:"sampling_fraction,omitempty"`
 }
 
-type ResourceModelServingTelemetryConfigTableNames struct {
-	AnnotationsTable string `json:"annotations_table,omitempty"`
-	LogsTable        string `json:"logs_table,omitempty"`
-	MetricsTable     string `json:"metrics_table,omitempty"`
-	TracesTable      string `json:"traces_table,omitempty"`
-}
-
 type ResourceModelServingTelemetryConfig struct {
-	TelemetryProfileId   string                                                   `json:"telemetry_profile_id,omitempty"`
 	InferenceTableConfig *ResourceModelServingTelemetryConfigInferenceTableConfig `json:"inference_table_config,omitempty"`
-	TableNames           *ResourceModelServingTelemetryConfigTableNames           `json:"table_names,omitempty"`
 }
 
 type ResourceModelServing struct {

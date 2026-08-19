@@ -86,7 +86,8 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(req Request) any {
 		path := req.URL.Query().Get("path")
-		return req.Workspace.WorkspaceGetStatus(path)
+		returnGitInfo := req.URL.Query().Get("return_git_info") == "true"
+		return req.Workspace.WorkspaceGetStatus(path, returnGitInfo)
 	})
 
 	server.Handle("GET", "/api/2.0/workspace/list", func(req Request) any {
@@ -568,6 +569,20 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/external-locations/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.ExternalLocations, req.Vars["name"])
+	})
+
+	// Storage Credentials:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/storage-credentials", func(req Request) any {
+		return catalog.ListStorageCredentialsResponse{
+			StorageCredentials: []catalog.StorageCredentialInfo{
+				{
+					Name:        "some-test-credential",
+					Id:          "1234",
+					MetastoreId: "abcd",
+				},
+			},
+		}
 	})
 
 	// Registered Models:

@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/calladapt"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -27,6 +28,21 @@ type IResource interface {
 	// The return value must be a pointer to a specific instance of the resource implementation, e.g. *ResourceJob.
 	// Single instance is reused across all instances, so it must not store any resource-specific state.
 	New(client *databricks.WorkspaceClient) any
+
+	// [Optional] Configure passes the resource type this instance is registered under in SupportedResources
+	// (e.g. "jobs.permissions"). One instance is created per resource type, so type-level lookups belong here
+	// rather than in per-node methods, and an unsupported type fails at init instead of at plan time.
+	// Example: func (r *ResourcePermissions) Configure(resourceType string) error
+	Configure(resourceType string) error
+
+	// [Optional] PrepareInputConfig converts the bundle config for a node into the value passed to PrepareState,
+	// plus references that complete it but have no source in the config. resourceKey is the full node,
+	// e.g. "resources.jobs.foo.permissions". Sub-resources use it to reference their parent's id.
+	// Resources that don't implement it receive their config unchanged and contribute no references.
+	// Like the other resource methods, inputConfig is never nil, so it may be declared as a concrete
+	// pointer and dereferenced: nodes are discovered from the config tree, so the key always exists.
+	// Example: func (r *ResourceGrants) PrepareInputConfig(inputConfig *[]catalog.PrivilegeAssignment, resourceKey string) (*structvar.StructVar, error)
+	PrepareInputConfig(inputConfig any, resourceKey string) (*structvar.StructVar, error)
 
 	// PrepareState converts resource's config as defined by bundle schema to the concrete type used by create/update and persisted in the state.
 	// Example: func (*ResourceJob) PrepareState(input *resources.Job) *jobs.JobSettings
@@ -109,6 +125,7 @@ type Adapter struct {
 	doCreate     *calladapt.BoundCaller
 
 	// Optional:
+	prepareInputConfig *calladapt.BoundCaller
 	isEmptyState       *calladapt.BoundCaller
 	doUpdate           *calladapt.BoundCaller
 	doUpdateWithID     *calladapt.BoundCaller
@@ -137,12 +154,19 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		return nil, fmt.Errorf("internal error: New returned %d values, expected 1", len(outs))
 	}
 	impl := outs[0]
+
+	err = configureImpl(impl, resourceType)
+	if err != nil {
+		return nil, err
+	}
+
 	adapter := &Adapter{
 		prepareState:            nil,
 		remapState:              nil,
 		doRefresh:               nil,
 		doDelete:                nil,
 		doCreate:                nil,
+		prepareInputConfig:      nil,
 		isEmptyState:            nil,
 		doUpdate:                nil,
 		doUpdateWithID:          nil,
@@ -168,6 +192,19 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 	}
 
 	return adapter, nil
+}
+
+// configureImpl calls the resource's Configure method, if it has one.
+func configureImpl(impl any, resourceType string) error {
+	call, err := calladapt.PrepareCall(impl, reflect.TypeFor[IResource](), "Configure")
+	if err != nil {
+		return err
+	}
+	if call == nil {
+		return nil
+	}
+	_, err = call.Call(resourceType)
+	return err
 }
 
 // loadKeyedSlices validates and calls KeyedSlices method, returning the resulting map.
@@ -212,6 +249,11 @@ func (a *Adapter) initMethods(resource any) error {
 	}
 
 	// Optional methods with varying signatures:
+
+	a.prepareInputConfig, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "PrepareInputConfig")
+	if err != nil {
+		return err
+	}
 
 	a.isEmptyState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "IsEmptyState")
 	if err != nil {
@@ -312,7 +354,8 @@ func (a *Adapter) validate() error {
 	// If RemapState is implemented, validate its signature.
 	// Otherwise require remote type to equal state type so remapping isn't needed.
 	if a.remapState != nil {
-		validations = append(validations,
+		validations = append(
+			validations,
 			"RemapState input", a.remapState.InTypes[0], remoteType,
 			"RemapState return", a.remapState.OutTypes[0], stateType,
 		)
@@ -413,6 +456,15 @@ func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
 	return a.generatedResourceConfig
 }
 
+// GetSensitiveFields returns the list of sensitive fields for the resource.
+func (a *Adapter) GetSensitiveFields() []string {
+	var fields []string
+	for _, r := range a.resourceConfig.SensitiveFields {
+		fields = append(fields, r.Field.String())
+	}
+	return fields
+}
+
 // FieldTriggersRecreate reports whether a local change to the field forces a
 // delete + create. Both recreate_on_changes and provided_id_fields do this, so a
 // caller that knows the ID is preserved can conclude the field is unchanged.
@@ -428,6 +480,20 @@ func (a *Adapter) FieldTriggersRecreate(path *structpath.PathNode) bool {
 		}
 	}
 	return false
+}
+
+// PrepareInputConfig converts the node's bundle config into the input for PrepareState and the
+// references needed to complete it. Resources without PrepareInputConfig pass their config through.
+func (a *Adapter) PrepareInputConfig(inputConfig any, resourceKey string) (*structvar.StructVar, error) {
+	if a.prepareInputConfig == nil {
+		return &structvar.StructVar{Value: inputConfig, Refs: nil}, nil
+	}
+
+	outs, err := a.prepareInputConfig.Call(inputConfig, resourceKey)
+	if err != nil {
+		return nil, err
+	}
+	return outs[0].(*structvar.StructVar), nil
 }
 
 func (a *Adapter) PrepareState(input any) (any, error) {

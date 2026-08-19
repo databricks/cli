@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
@@ -36,26 +36,6 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 		img = defaultDlRuntimeImage
 	}
 	return strings.TrimPrefix(img, "CLIENT-GPU-")
-}
-
-// environmentDependencies resolves the user's declared dependencies as a flat
-// list to carry inline on the serverless environment's spec.dependencies: the
-// inline list directly, or the dependencies read from a requirements file
-// (resolved against the config's directory). For file-form deps it also returns
-// the version declared inside that file, which selects the runtime image since
-// top-level environment.version is not allowed there. Returns nil when none are
-// declared.
-func environmentDependencies(cfg *runConfig, configPath string) (deps []string, fileVersion string, err error) {
-	if deps, ok := cfg.inlineDependencies(); ok {
-		return deps, "", nil
-	}
-	if reqPath, ok := cfg.requirementsFile(); ok {
-		if !filepath.IsAbs(reqPath) {
-			reqPath = filepath.Join(filepath.Dir(configPath), reqPath)
-		}
-		return readRequirementsDependencies(reqPath)
-	}
-	return nil, "", nil
 }
 
 // buildSubmitPayload assembles the runs/submit payload. commandPath is the
@@ -141,10 +121,45 @@ func submitToken(flag string, cfg *runConfig) (string, error) {
 	return token, nil
 }
 
+// withSpinner runs fn, showing an stderr spinner labeled msg when show is true.
+// The spinner auto-degrades to nothing on a non-interactive terminal; show is
+// false in JSON mode so the stdout envelope stream stays clean.
+func withSpinner(ctx context.Context, show bool, msg string, fn func() error) error {
+	if !show {
+		return fn()
+	}
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update(msg)
+	defer sp.Close()
+	return fn()
+}
+
 // submitWorkload runs the submit happy path: ensure the experiment directory,
 // upload the launch artifacts, assemble the Jobs payload, and submit it. It
-// returns the new run_id and its dashboard URL.
-func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string) (int64, string, error) {
+// returns the new run_id and its dashboard URL. showProgress enables the
+// stderr upload/packaging spinners (text mode only).
+func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (int64, string, error) {
+	// Compute the launch dir and command_path up front — a read-only workspace lookup plus a
+	// local path build, no writes yet — so the pre-flight validates the real command_path. The
+	// same path is reused for the upload and submit below, so the validated path is the submitted
+	// one.
+	base, err := userWorkspaceDir(ctx, w)
+	if err != nil {
+		return 0, "", err
+	}
+	runName := ""
+	if cfg.MLflowRunName != nil {
+		runName = *cfg.MLflowRunName
+	}
+	funcDir := cliLaunchDir(base, cfg.ExperimentName, runName)
+	commandPath := path.Join(funcDir, commandScriptName)
+
+	// Pre-flight the config server-side before any upload, so a bad config fails with the
+	// backend's field-level errors and no orphaned artifacts.
+	if err := preflightValidate(ctx, w, cfg, commandPath); err != nil {
+		return 0, "", err
+	}
+
 	// Resolve the idempotency token first so a bad key fails before any upload,
 	// and before the policy lookup below spends a round trip on it.
 	token, err := submitToken(idempotencyKey, cfg)
@@ -167,12 +182,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		}
 	}
 
-	// Resolve dependencies before any upload too, so a bad requirements file fails
-	// fast without leaving orphaned artifacts in the workspace.
-	deps, fileVersion, err := environmentDependencies(cfg, configPath)
-	if err != nil {
-		return 0, "", err
-	}
+	deps, _ := cfg.inlineDependencies()
 
 	experimentDir := ""
 	if cfg.MLflowExperimentDirectory != nil {
@@ -182,15 +192,14 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
-	base, err := userWorkspaceDir(ctx, w)
-	if err != nil {
-		return 0, "", err
+	// After the cheap validations but before any upload: verify the custom image is
+	// registered (and, under tag_policy=latest, re-resolve it — a refresh can block
+	// for minutes), so a bad or unregistered image wastes no artifact work.
+	if img := cfg.dockerImage(); img != nil {
+		if err := prepareDockerImage(ctx, w, img); err != nil {
+			return 0, "", err
+		}
 	}
-	runName := ""
-	if cfg.MLflowRunName != nil {
-		runName = *cfg.MLflowRunName
-	}
-	funcDir := cliLaunchDir(base, cfg.ExperimentName, runName)
 
 	fc, err := filer.NewWorkspaceFilesClient(w, funcDir)
 	if err != nil {
@@ -200,7 +209,9 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if err != nil {
 		return 0, "", err
 	}
-	if err := uploadArtifacts(ctx, fc, items); err != nil {
+	if err := withSpinner(ctx, showProgress, "Uploading yaml configuration files…", func() error {
+		return uploadArtifacts(ctx, fc, items)
+	}); err != nil {
 		return 0, "", err
 	}
 
@@ -210,19 +221,18 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	var snap snapshotResult
 	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
 		// Sidecars land in the run's launch dir (funcDir) via fc, next to command.sh.
-		snap, err = snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, fc, funcDir)
+		err = withSpinner(ctx, showProgress, "Packaging code snapshot…", func() error {
+			var e error
+			snap, e = snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, fc, funcDir)
+			return e
+		})
 		if err != nil {
 			return 0, "", err
 		}
 	}
 
-	// Top-level environment.version wins; for file-form deps it is disallowed, so
-	// fall back to the version declared inside the requirements file.
-	runtimeVersion, ok := cfg.runtimeVersion()
-	if !ok {
-		runtimeVersion = fileVersion
-	}
-	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
+	runtimeVersion, _ := cfg.runtimeVersion()
+	payload := buildSubmitPayload(cfg, commandPath, dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
 	payload.IdempotencyToken = token
 
 	// Submit returns as soon as the run is created; we don't wait for it to finish.

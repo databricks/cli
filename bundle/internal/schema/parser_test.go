@@ -2,8 +2,12 @@ package main
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/stretchr/testify/assert"
@@ -64,6 +68,81 @@ func TestExtractAnnotationsNestedEmbeddedSDKType(t *testing.T) {
 
 	got := annotations[getPath(reflect.TypeFor[testProject]())].Fields["display_name"]
 	assert.Equal(t, "Human-readable project name.", got.Description)
+	assert.Equal(t, clijson.LaunchStagePublicBeta, got.LaunchStage)
+}
+
+// TestPostgresResourcesHaveLaunchStageOverride asserts every Postgres resource
+// type is pinned to Beta via a launch-stage override, so an upstream stage
+// change cannot silently alter its label (see annotation.OverrideLaunchStage).
+//
+// postgresResources is spelled out explicitly so the expected set is visible on
+// the page, but it is also cross-checked against the Postgres resources actually
+// declared on config.Resources: a new resource missing from this list fails the
+// completeness check, which is the reminder to add it here AND to
+// launchStageOverrides in bundle/internal/annotation/preview.go.
+func TestPostgresResourcesHaveLaunchStageOverride(t *testing.T) {
+	postgresResources := []reflect.Type{
+		reflect.TypeFor[resources.PostgresBranch](),
+		reflect.TypeFor[resources.PostgresCatalog](),
+		reflect.TypeFor[resources.PostgresDatabase](),
+		reflect.TypeFor[resources.PostgresEndpoint](),
+		reflect.TypeFor[resources.PostgresProject](),
+		reflect.TypeFor[resources.PostgresRole](),
+		reflect.TypeFor[resources.PostgresSyncedTable](),
+	}
+
+	// The list must cover every Postgres resource on config.Resources, so a
+	// newly added one can't slip through unpinned.
+	listed := make(map[reflect.Type]bool, len(postgresResources))
+	for _, typ := range postgresResources {
+		listed[typ] = true
+	}
+	for _, f := range reflect.VisibleFields(reflect.TypeFor[config.Resources]()) {
+		if !strings.HasPrefix(f.Name, "Postgres") {
+			continue
+		}
+		// Each resource is a map[string]*resources.PostgresX; unwrap to the
+		// element struct the schema generator keys annotations by.
+		elem := f.Type.Elem()
+		for elem.Kind() == reflect.Pointer {
+			elem = elem.Elem()
+		}
+		assert.Truef(t, listed[elem],
+			"resource %s (%s) is not covered by this test; add it to postgresResources", f.Name, getPath(elem))
+	}
+
+	for _, typ := range postgresResources {
+		typePath := getPath(typ)
+		// A configured type returns its override for any input; an unconfigured
+		// one returns the input unchanged, so a GA input that survives as GA
+		// (rather than becoming Beta) means the override is missing.
+		stage := annotation.OverrideLaunchStage(typePath, clijson.LaunchStageGA)
+		assert.Equalf(t, clijson.LaunchStagePublicBeta, stage,
+			"resource %s has no launch-stage override; add it to launchStageOverrides in bundle/internal/annotation/preview.go", typePath)
+	}
+}
+
+// TestExtractAnnotationsOverridesLaunchStage feeds a GA launch stage for a real
+// field of an overridden resource and asserts extractAnnotations rewrites it to
+// the override, so an upstream stage change does not alter the label.
+// auth_method is a field of postgres.RoleRoleSpec, embedded by
+// resources.PostgresRole.
+func TestExtractAnnotationsOverridesLaunchStage(t *testing.T) {
+	p := newParser(map[string]*clijson.SchemaJSON{
+		"postgres.RoleRoleSpec": {
+			Fields: map[string]*clijson.SchemaFieldJSON{
+				"auth_method": {
+					Description: "How the role authenticates.",
+					LaunchStage: "GA",
+				},
+			},
+		},
+	})
+
+	annotations, err := p.extractAnnotations(reflect.TypeFor[resources.PostgresRole]())
+	require.NoError(t, err)
+
+	got := annotations[getPath(reflect.TypeFor[resources.PostgresRole]())].Fields["auth_method"]
 	assert.Equal(t, clijson.LaunchStagePublicBeta, got.LaunchStage)
 }
 

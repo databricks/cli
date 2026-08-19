@@ -1,0 +1,31 @@
+
+>>> [CLI] bundle deploy
+Building my_test_code...
+Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created jobs.some_other_job
+Files: 16 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== The environment dependency keeps its [train] extras suffix
+>>> [CLI] jobs get [SOME_OTHER_JOB_ID]
+[
+  "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl[train]"
+]
+
+>>> [CLI] bundle run some_other_job
+Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[NUMID]
+
+[TIMESTAMP] "My Wheel Job" RUNNING
+[TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS
+Hello from my func
+Got arguments:
+['my_test_code']
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.some_other_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted

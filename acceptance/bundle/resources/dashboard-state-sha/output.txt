@@ -2,9 +2,9 @@
 === Create: plan keeps full content in new_state but reports the diff as a hash
 >>> [CLI] bundle plan -o json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard-state-sha-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created dashboards.dashboard1
+Files: 9 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Re-plan with no local change is a no-op (server normalization is ignored, etag_based)
 >>> [CLI] bundle plan -o json
@@ -12,9 +12,9 @@ Deployment complete!
 === Edit serialized_dashboard: the hash changes, so the local diff detects an update
 >>> [CLI] bundle plan -o json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard-state-sha-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated dashboards.dashboard1
+Files: 7 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -22,5 +22,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dashboard-state-sha-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

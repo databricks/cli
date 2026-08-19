@@ -48,6 +48,17 @@ If a desired state describes no resource at all (e.g. an empty grants list), imp
 
 The planner only consults it for nodes without a state entry: once state exists the node stays in the plan, so emptying it still plans an update, and the update is what removes the entry.
 
+## Config that is not the state: Configure and PrepareInputConfig
+
+Most resources take their bundle config straight into `PrepareState`. Sub-resources (permissions, grants) cannot: their state is assembled from the parent's config section plus a reference to the parent's ID, which has no source in the config.
+
+Two optional hooks cover this, and nothing outside the resource needs to know a node is a sub-resource:
+
+ - `Configure(resourceType string) error` is called once per registered type at adapter construction, with the key from `SupportedResources` (e.g. `"jobs.permissions"`). Resolve type-level lookups here — one instance exists per type, so the result can be stored on the receiver, and an unsupported type fails at init rather than at plan time.
+ - `PrepareInputConfig(inputConfig, resourceKey string) (*structvar.StructVar, error)` converts the node's config into the value handed to `PrepareState`, together with the references needed to complete it. `resourceKey` is the full node (`resources.jobs.foo.permissions`), so the parent node is available for building `${...}` references.
+
+Declare `inputConfig` with its concrete type when every parent shares one (grants: `*[]catalog.PrivilegeAssignment`); use `any` only where the config types genuinely differ per parent, as with permissions.
+
 ## State backward compatibility
 
 The state struct is serialized to JSON and persisted between deploys. Backward incompatible changes will result in a drift, which depending

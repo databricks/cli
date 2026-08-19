@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 	"slices"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -341,6 +343,65 @@ func TestJobRunPrepareStateRequiresSuccess(t *testing.T) {
 	assert.Equal(t, jobs.RunResultStateSuccess, state.ResultState)
 }
 
+func TestJobRunPrepareStateOnBundleDeploy(t *testing.T) {
+	t.Run("unset", func(t *testing.T) {
+		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{})
+		assert.Nil(t, state.Lifecycle)
+	})
+
+	t.Run("armed", func(t *testing.T) {
+		on := true
+		input := &resources.JobRun{
+			Lifecycle: &resources.JobRunLifecycle{
+				Triggers: []resources.JobRunTrigger{{OnBundleDeploy: &on}},
+			},
+		}
+		first := (&ResourceJobRun{}).PrepareState(input)
+		require.NotNil(t, first.Lifecycle)
+		require.NotNil(t, first.Lifecycle.Triggers)
+		assert.NotEmpty(t, first.Lifecycle.Triggers.OnBundleDeploy)
+
+		second := (&ResourceJobRun{}).PrepareState(input)
+		assert.NotEqual(t, first.Lifecycle.Triggers.OnBundleDeploy, second.Lifecycle.Triggers.OnBundleDeploy)
+	})
+}
+
+func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
+	r := &ResourceJobRun{}
+
+	t.Run("clearing lifecycle downgrades to update", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    &JobRunLifecycleState{Triggers: &JobRunTriggersState{OnBundleDeploy: "old"}},
+			New:    nil,
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle"), change, nil))
+		assert.Equal(t, deployplan.Update, change.Action)
+		assert.Equal(t, "trigger removed", change.Reason)
+	})
+
+	t.Run("clearing on_bundle_deploy leaf downgrades to update", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    "old",
+			New:    "",
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_bundle_deploy"), change, nil))
+		assert.Equal(t, deployplan.Update, change.Action)
+		assert.Equal(t, "trigger removed", change.Reason)
+	})
+
+	t.Run("fresh fingerprint still recreates", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    "old",
+			New:    "new",
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_bundle_deploy"), change, nil))
+		assert.Equal(t, deployplan.Recreate, change.Action)
+	})
+}
+
 // The planner diffs RemapState(remote) against PrepareState(config), so a run
 // that did not end in SUCCESS has to surface as a difference on result_state.
 func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
@@ -406,6 +467,30 @@ func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 	require.NotNil(t, remote.State)
 	assert.Equal(t, jobs.RunResultStateSuccess, remote.State.ResultState)
 	assert.Equal(t, int32(3), gets.Load(), "expected the wait to poll past both RUNNING reads")
+}
+
+func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
+	var tokens []string
+	server := testserver.New(t)
+	server.Handle("POST", "/api/2.2/jobs/run-now", func(req testserver.Request) any {
+		var body jobs.RunNow
+		require.NoError(t, json.Unmarshal(req.Body, &body))
+		tokens = append(tokens, body.IdempotencyToken)
+		return jobs.RunNowResponse{RunId: int64(123 + len(tokens))}
+	})
+	r := (&ResourceJobRun{}).New(jobRunClientFor(t, server))
+	config := &JobRunState{RunNow: jobs.RunNow{JobId: 456}}
+
+	for range 2 {
+		_, _, err := r.DoCreate(t.Context(), config)
+		require.NoError(t, err)
+	}
+
+	require.Len(t, tokens, 2)
+	assert.NotEmpty(t, tokens[0])
+	assert.NotEqual(t, tokens[0], tokens[1])
+	// Token must not leak into persisted state.
+	assert.Empty(t, config.IdempotencyToken)
 }
 
 // jobRunDeletion records what the fake workspace saw while a run was deleted.

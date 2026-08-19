@@ -101,13 +101,18 @@ bundle:
                 Whether to force this lock if it is enabled.
     "engine":
       "description": |-
-        The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is "terraform".
+        The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is "direct".
       "$type":
         "enum":
           - |-
             terraform
           - |-
             direct
+        "x-databricks-enum-descriptions":
+          "direct": |-
+            Deploy by calling the Databricks APIs directly. This is the default.
+          "terraform": |-
+            Deploy through Terraform. Deprecated: Migrate to `direct`, see https://docs.databricks.com/aws/en/dev-tools/bundles/direct
     "git":
       "description": |-
         The Git version control details that are associated with your bundle.
@@ -973,7 +978,18 @@ resources:
       "$fields":
         "lifecycle":
           "description": |-
-            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed and when the run re-fires.
+          "$fields":
+            "prevent_destroy":
+              "description": |-
+                Lifecycle setting to prevent the resource from being destroyed.
+            "triggers":
+              "description": |-
+                Conditions that re-fire this job run (in addition to configuration changes).
+              "$fields":
+                "on_bundle_deploy":
+                  "description": |-
+                    If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.
         "python_named_params":
           "description": |-
             PLACEHOLDER
@@ -1289,6 +1305,9 @@ resources:
                       path: ./pipeline.py
           ```
       "$fields":
+        "cascade_on_destroy":
+          "description": |-
+            Whether destroying the pipeline also deletes its datasets (MVs, STs, Views). Defaults to true (the server default). Set to false to retain the datasets when the pipeline is deleted. Only affects the delete operation.
         "ingestion_definition":
           "$fields":
             "objects":

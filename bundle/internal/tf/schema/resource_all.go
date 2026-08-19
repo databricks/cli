@@ -12,9 +12,6 @@ type AllResources struct {
 	AccountNetworkPolicy                         ResourceAccountNetworkPolicy                         `json:"databricks_account_network_policy,omitempty"`
 	AccountSettingUserPreferenceV2               ResourceAccountSettingUserPreferenceV2               `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                             ResourceAccountSettingV2                             `json:"databricks_account_setting_v2,omitempty"`
-	AiGatewayMcpService                          ResourceAiGatewayMcpService                          `json:"databricks_ai_gateway_mcp_service,omitempty"`
-	AiGatewayModelProviderService                ResourceAiGatewayModelProviderService                `json:"databricks_ai_gateway_model_provider_service,omitempty"`
-	AiGatewayModelService                        ResourceAiGatewayModelService                        `json:"databricks_ai_gateway_model_service,omitempty"`
 	AiSearchEndpoint                             ResourceAiSearchEndpoint                             `json:"databricks_ai_search_endpoint,omitempty"`
 	AiSearchIndex                                ResourceAiSearchIndex                                `json:"databricks_ai_search_index,omitempty"`
 	AibiDashboardEmbeddingAccessPolicySetting    ResourceAibiDashboardEmbeddingAccessPolicySetting    `json:"databricks_aibi_dashboard_embedding_access_policy_setting,omitempty"`
@@ -116,7 +113,6 @@ type AllResources struct {
 	PolicyInfo                                   ResourcePolicyInfo                                   `json:"databricks_policy_info,omitempty"`
 	PostgresBranch                               ResourcePostgresBranch                               `json:"databricks_postgres_branch,omitempty"`
 	PostgresCatalog                              ResourcePostgresCatalog                              `json:"databricks_postgres_catalog,omitempty"`
-	PostgresCdfConfig                            ResourcePostgresCdfConfig                            `json:"databricks_postgres_cdf_config,omitempty"`
 	PostgresDataApi                              ResourcePostgresDataApi                              `json:"databricks_postgres_data_api,omitempty"`
 	PostgresDatabase                             ResourcePostgresDatabase                             `json:"databricks_postgres_database,omitempty"`
 	PostgresEndpoint                             ResourcePostgresEndpoint                             `json:"databricks_postgres_endpoint,omitempty"`

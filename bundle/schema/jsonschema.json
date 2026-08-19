@@ -66,6 +66,10 @@
                     "enum": [
                       "terraform",
                       "direct"
+                    ],
+                    "enumDescriptions": [
+                      "Deploy through Terraform. Deprecated: Migrate to `direct`, see https://docs.databricks.com/aws/en/dev-tools/bundles/direct",
+                      "Deploy by calling the Databricks APIs directly. This is the default."
                     ]
                   },
                   {
@@ -1178,10 +1182,6 @@
                         "doNotSuggest": true,
                         "deprecated": true
                       },
-                      "idempotency_token": {
-                        "description": "An optional token to guarantee the idempotency of job run requests. If a run with the provided token already exists,\nthe request does not create a new run but returns the ID of the existing run instead. If a run with the provided token is deleted,\nan error is returned.\n\nIf you specify the idempotency token, upon failure you can retry until the request succeeds. Databricks guarantees that exactly one run\nis launched with that idempotency token.\n\nThis token must have at most 64 characters.\n\nFor more information, see [How to ensure idempotency for jobs](https://kb.databricks.com/jobs/jobs-idempotency.html).",
-                        "$ref": "#/$defs/string"
-                      },
                       "jar_params": {
                         "description": "[Private Preview] A list of parameters for jobs with Spark JAR tasks, for example `\"jar_params\": [\"john doe\", \"35\"]`.\nThe parameters are used to invoke the main function of the main class specified in the Spark JAR task.\nIf not specified upon `run-now`, it defaults to an empty list.\njar_params cannot be specified in conjunction with notebook_params.\nThe JSON representation of this field (for example `{\"jar_params\":[\"john doe\",\"35\"]}`) cannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
                         "$ref": "#/$defs/slice/string",
@@ -1199,8 +1199,8 @@
                         "$ref": "#/$defs/map/string"
                       },
                       "lifecycle": {
-                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
-                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed and when the run re-fires.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.JobRunLifecycle"
                       },
                       "notebook_params": {
                         "description": "[Private Preview] A map from keys to values for jobs with notebook task, for example `\"notebook_params\": {\"name\": \"john doe\", \"age\": \"35\"}`.\nThe map is passed to the notebook and is accessible through the [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html) function.\n\nIf not specified upon `run-now`, the triggered run uses the job’s base parameters.\n\nnotebook_params cannot be specified in conjunction with jar_params.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nThe JSON representation of this field (for example `{\"notebook_params\":{\"name\":\"john doe\",\"age\":\"35\"}}`) cannot exceed 10,000 bytes.",
@@ -1263,6 +1263,46 @@
                     "required": [
                       "job_id"
                     ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.JobRunLifecycle": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "prevent_destroy": {
+                        "description": "Lifecycle setting to prevent the resource from being destroyed.",
+                        "$ref": "#/$defs/bool"
+                      },
+                      "triggers": {
+                        "description": "Conditions that re-fire this job run (in addition to configuration changes).",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.JobRunTrigger"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.JobRunTrigger": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "on_bundle_deploy": {
+                        "description": "If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.",
+                        "$ref": "#/$defs/bool"
+                      }
+                    },
+                    "additionalProperties": false
                   },
                   {
                     "type": "string",
@@ -1606,6 +1646,10 @@
                       "budget_policy_id": {
                         "description": "[Public Preview] Budget policy of this pipeline.",
                         "$ref": "#/$defs/string"
+                      },
+                      "cascade_on_destroy": {
+                        "description": "Whether destroying the pipeline also deletes its datasets (MVs, STs, Views). Defaults to true (the server default). Set to false to retain the datasets when the pipeline is deleted. Only affects the delete operation.",
+                        "$ref": "#/$defs/bool"
                       },
                       "catalog": {
                         "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
@@ -2418,15 +2462,15 @@
                     "description": "A secret stored in Unity Catalog. Secrets are three-level namespace objects\n(catalog.schema.secret) that securely store sensitive credential data such as\npasswords, tokens, and keys.",
                     "properties": {
                       "catalog_name": {
-                        "description": "[Public Preview] The name of the catalog where the schema and the secret reside.",
+                        "description": "The name of the catalog where the schema and the secret reside.",
                         "$ref": "#/$defs/string"
                       },
                       "comment": {
-                        "description": "[Public Preview] User-provided free-form text description of the secret.",
+                        "description": "User-provided free-form text description of the secret.",
                         "$ref": "#/$defs/string"
                       },
                       "expire_time": {
-                        "description": "[Public Preview] User-provided expiration time of the secret. Purely informational; does not trigger automatic actions.",
+                        "description": "User-provided expiration time of the secret. Purely informational; does not trigger automatic actions.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
                       },
                       "grants": {
@@ -2438,19 +2482,19 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "[Public Preview] The name of the secret, relative to its parent schema.",
+                        "description": "The name of the secret, relative to its parent schema.",
                         "$ref": "#/$defs/string"
                       },
                       "owner": {
-                        "description": "[Public Preview] The owner of the secret. Defaults to the creating principal on creation. Can be updated to\ntransfer ownership of the secret to another principal.",
+                        "description": "The owner of the secret. Defaults to the creating principal on creation. Can be updated to\ntransfer ownership of the secret to another principal.",
                         "$ref": "#/$defs/string"
                       },
                       "schema_name": {
-                        "description": "[Public Preview] The name of the schema where the secret resides.",
+                        "description": "The name of the schema where the secret resides.",
                         "$ref": "#/$defs/string"
                       },
                       "value": {
-                        "description": "[Public Preview] The secret value to store. Must be a variable reference (e.g. ${var.my_secret}) to prevent plain-text secrets in configuration files.",
+                        "description": "The secret value to store. Must be a variable reference (e.g. ${var.my_secret}) to prevent plain-text secrets in configuration files.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -3096,7 +3140,7 @@
                       "markdownDescription": "The definition of the bundle deployment. For supported attributes see [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
                     },
                     "engine": {
-                      "description": "The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is \"terraform\".",
+                      "description": "The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is \"direct\".",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config/engine.EngineType"
                     },
                     "git": {
@@ -10483,16 +10527,12 @@
                   "description": "Fanout configuration for multi-table routing from streaming sources.\nRoutes each input record to a destination table based on a routing\nkey derived from the record. The key value becomes the table name\nsuffix: {destination_catalog}.{destination_schema}.{key_value}.",
                   "properties": {
                     "fanout_by": {
-                      "description": "[Private Preview] Column path or SQL expression whose value determines the destination table.\nSupports dotted paths (e.g. \"value.event_name\") and expressions\n(e.g. \"value:event_name::string\").",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Column path or SQL expression whose value determines the destination table.\nSupports dotted paths (e.g. \"value.event_name\") and expressions\n(e.g. \"value:event_name::string\").",
+                      "$ref": "#/$defs/string"
                     },
                     "transforms": {
-                      "description": "[Private Preview] Optional transforms applied to each route's DataFrame before writing\nto the destination table.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Optional transforms applied to each route's DataFrame before writing\nto the destination table.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer"
                     }
                   },
                   "additionalProperties": false
@@ -11570,10 +11610,8 @@
                       "$ref": "#/$defs/string"
                     },
                     "fanout_options": {
-                      "description": "[Private Preview] Fanout options for multi-table routing from streaming sources.\nWhen set, records are routed to destination tables based on a\nper-record routing key. The key value becomes the table name:\n{destination_catalog}.{destination_schema}.{key_value}.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionFanoutOptions",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Fanout options for multi-table routing from streaming sources.\nWhen set, records are routed to destination tables based on a\nper-record routing key. The key value becomes the table name:\n{destination_catalog}.{destination_schema}.{key_value}.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionFanoutOptions"
                     },
                     "source_catalog": {
                       "description": "[Public Preview] The source catalog name. Might be optional depending on the type of source.",
@@ -15153,6 +15191,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.JobPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.JobRunTrigger": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.JobRunTrigger"
                       }
                     },
                     {

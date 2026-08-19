@@ -85,6 +85,9 @@ type ResourceLifecycleConfig struct {
 	// for large, equality-only fields that are never read back from state
 	// (e.g. serialized dashboards).
 	HashedInState []string `yaml:"hashed_in_state,omitempty"`
+
+	// SensitiveFields: fields that are sensitive and should not be logged.
+	SensitiveFields []FieldRule `yaml:"sensitive_fields,omitempty"`
 }
 
 // Config is the root configuration structure for resource lifecycle behavior.
@@ -107,6 +110,7 @@ var empty = ResourceLifecycleConfig{
 	NormalizeSlash:      nil,
 	BackendDefaults:     nil,
 	HashedInState:       nil,
+	SensitiveFields:     nil,
 }
 
 func mustParseConfig(data []byte) func() *Config {

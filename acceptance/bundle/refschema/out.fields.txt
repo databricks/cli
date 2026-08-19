@@ -845,8 +845,15 @@ resources.job_runs.*.jar_params[*]	string	ALL
 resources.job_runs.*.job_id	int64	ALL
 resources.job_runs.*.job_parameters	map[string]string	ALL
 resources.job_runs.*.job_parameters.*	string	ALL
+resources.job_runs.*.lifecycle	*dresources.JobRunLifecycleState	STATE
+resources.job_runs.*.lifecycle	*resources.JobRunLifecycle	INPUT
 resources.job_runs.*.lifecycle	resources.Lifecycle	INPUT
 resources.job_runs.*.lifecycle.prevent_destroy	bool	INPUT
+resources.job_runs.*.lifecycle.triggers	*dresources.JobRunTriggersState	STATE
+resources.job_runs.*.lifecycle.triggers	[]resources.JobRunTrigger	INPUT
+resources.job_runs.*.lifecycle.triggers.on_bundle_deploy	string	STATE
+resources.job_runs.*.lifecycle.triggers[*]	resources.JobRunTrigger	INPUT
+resources.job_runs.*.lifecycle.triggers[*].on_bundle_deploy	*bool	INPUT
 resources.job_runs.*.modified_status	string	INPUT
 resources.job_runs.*.notebook_params	map[string]string	ALL
 resources.job_runs.*.notebook_params.*	string	ALL
@@ -1868,6 +1875,7 @@ resources.jobs.*.trigger.table_update.wait_after_last_change_seconds	int	ALL
 resources.jobs.*.trigger_state	*jobs.TriggerStateProto	REMOTE
 resources.jobs.*.trigger_state.file_arrival	*jobs.FileArrivalTriggerState	REMOTE
 resources.jobs.*.trigger_state.file_arrival.using_file_events	bool	REMOTE
+resources.jobs.*.trigger_state.pause_status	jobs.PauseStatus	REMOTE
 resources.jobs.*.trigger_state.sql_condition	*jobs.SqlConditionState	REMOTE
 resources.jobs.*.trigger_state.sql_condition.latest_condition_evaluation_satisfied	bool	REMOTE
 resources.jobs.*.trigger_state.sql_condition.latest_condition_evaluation_sql_session_id	string	REMOTE
@@ -2432,6 +2440,7 @@ resources.models.*.permissions[*].service_principal_name	string	ALL
 resources.models.*.permissions[*].user_name	string	ALL
 resources.pipelines.*.allow_duplicate_names	bool	ALL
 resources.pipelines.*.budget_policy_id	string	ALL
+resources.pipelines.*.cascade_on_destroy	*bool	INPUT	STATE
 resources.pipelines.*.catalog	string	ALL
 resources.pipelines.*.cause	string	REMOTE
 resources.pipelines.*.channel	string	ALL

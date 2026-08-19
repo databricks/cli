@@ -191,17 +191,8 @@ type DataSourceServingEndpointsEndpointsTelemetryConfigInferenceTableConfig stru
 	SamplingFraction int    `json:"sampling_fraction,omitempty"`
 }
 
-type DataSourceServingEndpointsEndpointsTelemetryConfigTableNames struct {
-	AnnotationsTable string `json:"annotations_table,omitempty"`
-	LogsTable        string `json:"logs_table,omitempty"`
-	MetricsTable     string `json:"metrics_table,omitempty"`
-	TracesTable      string `json:"traces_table,omitempty"`
-}
-
 type DataSourceServingEndpointsEndpointsTelemetryConfig struct {
 	InferenceTableConfig []DataSourceServingEndpointsEndpointsTelemetryConfigInferenceTableConfig `json:"inference_table_config,omitempty"`
-	TableNames           []DataSourceServingEndpointsEndpointsTelemetryConfigTableNames           `json:"table_names,omitempty"`
-	TelemetryProfileId   string                                                                   `json:"telemetry_profile_id,omitempty"`
 }
 
 type DataSourceServingEndpointsEndpoints struct {
