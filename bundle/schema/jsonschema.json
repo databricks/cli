@@ -1199,8 +1199,8 @@
                         "$ref": "#/$defs/map/string"
                       },
                       "lifecycle": {
-                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
-                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed and when the run re-fires.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.JobRunLifecycle"
                       },
                       "notebook_params": {
                         "description": "[Private Preview] A map from keys to values for jobs with notebook task, for example `\"notebook_params\": {\"name\": \"john doe\", \"age\": \"35\"}`.\nThe map is passed to the notebook and is accessible through the [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html) function.\n\nIf not specified upon `run-now`, the triggered run uses the job’s base parameters.\n\nnotebook_params cannot be specified in conjunction with jar_params.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nThe JSON representation of this field (for example `{\"notebook_params\":{\"name\":\"john doe\",\"age\":\"35\"}}`) cannot exceed 10,000 bytes.",
@@ -1263,6 +1263,46 @@
                     "required": [
                       "job_id"
                     ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.JobRunLifecycle": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "prevent_destroy": {
+                        "description": "Lifecycle setting to prevent the resource from being destroyed.",
+                        "$ref": "#/$defs/bool"
+                      },
+                      "triggers": {
+                        "description": "Conditions that re-fire this job run (in addition to configuration changes).",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.JobRunTrigger"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.JobRunTrigger": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "on_bundle_deploy": {
+                        "description": "If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.",
+                        "$ref": "#/$defs/bool"
+                      }
+                    },
+                    "additionalProperties": false
                   },
                   {
                     "type": "string",
@@ -15151,6 +15191,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.JobPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.JobRunTrigger": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.JobRunTrigger"
                       }
                     },
                     {
