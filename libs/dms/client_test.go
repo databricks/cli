@@ -2,6 +2,7 @@ package dms
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"sync"
 	"testing"
@@ -104,4 +105,58 @@ func TestDeploymentIDFromName(t *testing.T) {
 
 	_, err = deploymentIDFromName("deployments/")
 	assert.Error(t, err)
+}
+
+func TestUpdateRequestSendsAFieldOnlyWhenTheMaskNamesIt(t *testing.T) {
+	// Every case carries the same values, so what reaches the body is decided by the mask
+	// alone. A failure sending state would drop the resource from the deployment, and
+	// resource_id does not ride along with state.
+	update := OperationUpdate{
+		State:        json.RawMessage(`{"state":{"name":"foo"}}`),
+		ResourceID:   "job-1",
+		Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
+		ErrorMessage: "boom",
+	}
+
+	tests := []struct {
+		name   string
+		fields Fields
+		want   updateOperationRequest
+	}{
+		{
+			name:   "a write that describes the resource",
+			fields: DescribesResource,
+			want: updateOperationRequest{
+				State:        `{"state":{"name":"foo"}}`,
+				ResourceId:   "job-1",
+				Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
+				ErrorMessage: "boom",
+				SequenceId:   "3",
+			},
+		},
+		{
+			name:   "a failure that keeps the recorded state",
+			fields: KeepsState,
+			want: updateOperationRequest{
+				Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
+				ErrorMessage: "boom",
+				SequenceId:   "3",
+			},
+		},
+		{
+			name:   "resource_id without state",
+			fields: FieldResourceID,
+			want: updateOperationRequest{
+				ResourceId: "job-1",
+				SequenceId: "3",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			update.Fields = tt.fields
+			assert.Equal(t, tt.want, newUpdateRequest(update, "3"))
+		})
+	}
 }

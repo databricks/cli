@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,52 +18,43 @@ func testWriter(raw *fakeRaw) OperationWriter {
 	}
 }
 
-func writeState(t *testing.T, w OperationWriter, key ResourceKey, resourceID string, state json.RawMessage) {
+func writeState(t *testing.T, w OperationWriter, key ResourceKey, resourceID string) {
 	t.Helper()
-	update, err := NewStateUpdate(resourceID, state, false)
+	update, err := NewStateUpdate(resourceID, json.RawMessage(`{"state":{}}`), false)
 	require.NoError(t, err)
 	require.NoError(t, w.Write(t.Context(), key, update))
 }
 
-func TestWriterFirstWriteUpdatesTheStagedOperation(t *testing.T) {
-	f := newFakeRaw("1")
-	w := testWriter(f)
-
-	writeState(t, w, "jobs.foo", "job-123", json.RawMessage(`{"state":{}}`))
-
-	require.Len(t, f.updates, 1)
-	c := f.updates[0]
-	// The version already staged this operation, so the first write updates it and echoes
-	// the sequence id staging left.
-	assert.Equal(t, "dep-1", c.deploymentID)
-	assert.Equal(t, int64(2), c.version)
-	assert.Equal(t, ResourceKey("jobs.foo"), c.key)
-	assert.Equal(t, stagedSequenceID, c.sequenceID)
-	assert.Equal(t, "job-123", c.update.ResourceID)
-}
-
-func TestWriterSecondWriteEchoesTheServiceSequence(t *testing.T) {
-	// One operation per resource per version: the second write updates the same operation,
-	// echoing the sequence id the service returned as its precondition.
+func TestWriterSendsTheStagedSequenceThenWhatTheServiceReturns(t *testing.T) {
+	// One operation per resource per version, so every write updates the same operation: the
+	// first at the sequence id staging left, each one after at the id the service returned.
 	f := newFakeRaw("7")
 	w := testWriter(f)
 
-	writeState(t, w, "jobs.foo", "", nil)
-	writeState(t, w, "jobs.foo", "job-456", json.RawMessage(`{"state":{}}`))
+	update, err := NewStateUpdate("job-123", json.RawMessage(`{"state":{}}`), false)
+	require.NoError(t, err)
+	require.NoError(t, w.Write(t.Context(), "jobs.foo", update))
+	writeState(t, w, "jobs.foo", "job-456")
 
 	require.Len(t, f.updates, 2)
-	assert.Equal(t, stagedSequenceID, f.updates[0].sequenceID)
+	assert.Equal(t, updaterCall{
+		deploymentID: "dep-1",
+		version:      2,
+		key:          "jobs.foo",
+		sequenceID:   stagedSequenceID,
+		update:       update,
+	}, f.updates[0])
 	assert.Equal(t, "7", f.updates[1].sequenceID)
 }
 
 func TestWriterTracksSequencePerResource(t *testing.T) {
 	// Each resource has its own staged operation, so each one's first write echoes the staged
 	// sequence id rather than a sequence another resource earned.
-	f := newFakeRaw("1")
+	f := newFakeRaw("7")
 	w := testWriter(f)
 
-	writeState(t, w, "jobs.foo", "id-1", json.RawMessage(`{"state":{}}`))
-	writeState(t, w, "jobs.bar", "id-2", json.RawMessage(`{"state":{}}`))
+	writeState(t, w, "jobs.foo", "id-1")
+	writeState(t, w, "jobs.bar", "id-2")
 
 	require.Len(t, f.updates, 2)
 	assert.Equal(t, stagedSequenceID, f.updates[0].sequenceID)
@@ -72,76 +62,20 @@ func TestWriterTracksSequencePerResource(t *testing.T) {
 }
 
 func TestWriterErrorKeepsTheSequence(t *testing.T) {
-	// A failed write returns its error and leaves the recorded sequence id alone, so a later
-	// write for the same resource still carries the precondition the service last gave us.
+	// A failed write leaves the recorded sequence id alone, so the next write for that resource
+	// still carries the precondition the service last gave us rather than nothing.
 	f := newFakeRaw("9")
 	f.failOn = 1
 	w := testWriter(f)
 
-	writeState(t, w, "jobs.foo", "job-1", json.RawMessage(`{"state":{}}`))
+	writeState(t, w, "jobs.foo", "job-1")
 
-	second, err := NewStateUpdate("job-2", json.RawMessage(`{"state":{}}`), false)
+	update, err := NewStateUpdate("job-2", json.RawMessage(`{"state":{}}`), false)
 	require.NoError(t, err)
-	err = w.Write(t.Context(), "jobs.foo", second)
-	require.ErrorContains(t, err, "injected error")
+	require.ErrorContains(t, w.Write(t.Context(), "jobs.foo", update), "injected error")
 
-	// The third write is what proves the sequence id survived the failure.
-	writeState(t, w, "jobs.foo", "job-3", json.RawMessage(`{"state":{}}`))
+	writeState(t, w, "jobs.foo", "job-3")
 
 	require.Len(t, f.updates, 3)
 	assert.Equal(t, "9", f.updates[2].sequenceID)
-}
-
-func TestUpdateRequestSendsAFieldOnlyWhenTheMaskNamesIt(t *testing.T) {
-	// Every case carries the same values, so what reaches the body is decided by the mask
-	// alone. A failure sending state would drop the resource from the deployment, and
-	// resource_id does not ride along with state.
-	update := OperationUpdate{
-		State:        json.RawMessage(`{"state":{"name":"foo"}}`),
-		ResourceID:   "job-1",
-		Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
-		ErrorMessage: "boom",
-	}
-
-	tests := []struct {
-		name   string
-		fields Fields
-		want   updateOperationRequest
-	}{
-		{
-			name:   "a write that describes the resource",
-			fields: DescribesResource,
-			want: updateOperationRequest{
-				State:        `{"state":{"name":"foo"}}`,
-				ResourceId:   "job-1",
-				Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
-				ErrorMessage: "boom",
-				SequenceId:   "3",
-			},
-		},
-		{
-			name:   "a failure that keeps the recorded state",
-			fields: KeepsState,
-			want: updateOperationRequest{
-				Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
-				ErrorMessage: "boom",
-				SequenceId:   "3",
-			},
-		},
-		{
-			name:   "resource_id without state",
-			fields: FieldResourceID,
-			want: updateOperationRequest{
-				ResourceId: "job-1",
-				SequenceId: "3",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			update.Fields = tt.fields
-			assert.Equal(t, tt.want, newUpdateRequest(update, "3"))
-		})
-	}
 }
