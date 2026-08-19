@@ -1,6 +1,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created jobs.my_job
-Files: 5 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Inject a spark_conf key under a field defined as a complex variable
@@ -28,6 +28,36 @@ Resource: resources.jobs.my_job
 +      max_concurrent_runs: 5
        job_clusters:
          - job_cluster_key: shared
+
+=== Telemetry
+
+>>> cat out.requests.txt
+{
+  "save": true,
+  "changes_total": 2,
+  "add_count": 1,
+  "replace_count": 1,
+  "resource_changes": [
+    {
+      "resource_type": "jobs",
+      "changes_count": 2,
+      "add_count": 1,
+      "replace_count": 1
+    }
+  ],
+  "files_changed_count": 1,
+  "files_written_count": 1,
+  "skipped_changes_count": 1,
+  "state_serial": 1,
+  "state_lineage": "[UUID]",
+  "state_source": "local",
+  "states_available_count": 2,
+  "state_resource_ids": {
+    "resource_job_ids": [
+      "[MY_JOB_ID]"
+    ]
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

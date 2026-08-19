@@ -4,6 +4,8 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
   trace $CLI bundle destroy --auto-approve
+  # destroy records requests too; drop the recorded file so it is not compared.
+  rm -f out.requests.txt
 }
 trap cleanup EXIT
 
@@ -30,3 +32,9 @@ title "Configuration changes"
 echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
+
+title "Telemetry"
+echo
+# The engine name is dropped because both EnvMatrix variants share this output.
+# skipped_changes_count reflects the spark_conf change skipped under a variable reference.
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null) | del(.engine)'
