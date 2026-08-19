@@ -42,4 +42,4 @@ trace $CLI bundle destroy --auto-approve -q
 # a TTY, so TestApprovalForDestroyQuietWhilePrompting covers it.
 title "destroy --auto-approve -qq: nothing"
 trace $CLI bundle deploy -qq
-trace $CLI bundle destroy --auto-approve -qq
+destroy-bundle -qq

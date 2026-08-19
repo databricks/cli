@@ -7,7 +7,7 @@ VOLUME_NAME="test-volume-${UNIQUE_NAME}"
 
 cleanup() {
   title "Test cleanup"
-  trace $CLI bundle destroy --auto-approve
+  destroy-bundle
 
   title "Assert the catalog is deleted"
   trace errcode $CLI catalogs get "${CATALOG_NAME}" 2>/dev/null

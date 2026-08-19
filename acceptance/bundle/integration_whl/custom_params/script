@@ -2,7 +2,7 @@ export EXTRA_CONFIG=empty.yml
 envsubst < $TESTDIR/../base/databricks.yml.tmpl > databricks.yml
 cp -r $TESTDIR/../base/{$EXTRA_CONFIG,setup.py,my_test_code} .
 trace cat databricks.yml
-trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
+trap "errcode destroy-bundle" EXIT
 trace $CLI bundle deploy
 
 # Add all resource IDs to runtime replacements to avoid pattern matching ambiguity

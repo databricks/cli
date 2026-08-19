@@ -5,7 +5,7 @@ envsubst < overrides/10-first.yml.tmpl > overrides/10-first.yml
 envsubst < overrides/20-second.yml.tmpl > overrides/20-second.yml
 
 cleanup() {
-  trace $CLI bundle destroy --auto-approve -t dev
+  destroy-bundle -t dev
 }
 trap cleanup EXIT
 

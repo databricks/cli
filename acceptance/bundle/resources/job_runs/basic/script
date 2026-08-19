@@ -1,5 +1,5 @@
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
+    destroy-bundle
     # destroy deletes the triggered run via jobs/runs/delete (also unlinks out.requests.txt)
     trace print_requests.py //jobs/runs/delete
 }

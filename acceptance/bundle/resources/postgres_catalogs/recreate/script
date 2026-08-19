@@ -1,5 +1,5 @@
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
+    destroy-bundle
     rm -f out.requests.txt
 }
 trap cleanup EXIT

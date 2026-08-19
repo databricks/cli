@@ -5,7 +5,7 @@ add_repl "$DEFAULT_SPARK_VERSION" DEFAULT_SPARK_VERSION
 add_repl "$NODE_TYPE_ID" NODE_TYPE_ID
 
 cleanup() {
-  trace $CLI bundle destroy --auto-approve
+  destroy-bundle
   # destroy records requests too; drop the recorded file so it is not compared.
   rm -f out.requests.txt
 }

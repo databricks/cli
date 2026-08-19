@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 envsubst < a/b/resources.yml.tmpl > a/b/resources.yml
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
+    destroy-bundle
 }
 trap cleanup EXIT
 

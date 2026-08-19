@@ -1,7 +1,7 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
+    destroy-bundle
     rm out.requests.txt
 }
 trap cleanup EXIT

@@ -8,7 +8,7 @@ DEPLOYMENT_PATH="//Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}"
 
 cleanup() {
   title "Destroy bundle"
-  trace $CLI bundle destroy --auto-approve
+  destroy-bundle
 
   title "Assert pipeline is deleted"
   trace errcode $CLI pipelines get "${PIPELINE_ID}"

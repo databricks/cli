@@ -2,7 +2,7 @@ cleanup() {
     # Second deploy has no fault, so it succeeds and prints both summary lines; this
     # both cleans up and shows the contrast with the failed deploy above.
     trace $CLI bundle deploy
-    trace $CLI bundle destroy --auto-approve
+    destroy-bundle
 }
 trap cleanup EXIT
 

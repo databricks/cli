@@ -5,7 +5,7 @@ mv databricks.yml.subst databricks.yml
 trace $CLI bundle deploy
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
+    destroy-bundle
 }
 trap cleanup EXIT
 

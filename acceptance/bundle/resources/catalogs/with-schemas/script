@@ -5,7 +5,7 @@ SCHEMA_FULL_NAME="${CATALOG_NAME}.schema1"
 
 cleanup() {
   title "Test cleanup"
-  trace $CLI bundle destroy --auto-approve
+  destroy-bundle
 
   title "Assert schema is deleted"
   trace errcode $CLI schemas get "${SCHEMA_FULL_NAME}" 2>/dev/null
