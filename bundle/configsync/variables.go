@@ -46,17 +46,14 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // matches the leaf value. Non-sequence Adds (new map fields) are left
 // untouched.
 //
-// The pre-resolved config is obtained by re-loading the bundle from disk
-// through the standard loader mutators (entry point + includes + target
-// overrides) but skipping variable resolution. This gives a fully merged
-// view where ${var.X} and ${resources.X.Y.id} references are still literal
+// The caller supplies preResolved (see LoadPreResolvedConfig): the merged
+// config where ${var.X} and ${resources.X.Y.id} references are still literal
 // strings — enabling correct sibling lookup even for sequences split across
 // files via target overrides.
 // Restoration counts by mechanism are accumulated into stats (used for
 // telemetry); pass nil when counters are not needed (the counter methods are
 // nil-safe).
-func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange, stats *RestoreStats) error {
-	preResolved := loadPreResolvedConfig(ctx, b)
+func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange, preResolved dyn.Value, stats *RestoreStats) error {
 	if !preResolved.IsValid() {
 		return errors.New("pre-resolved config unavailable; variable-backed fields will be hardcoded")
 	}
@@ -118,12 +115,12 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 	return nil
 }
 
-// loadPreResolvedConfig loads the bundle's configuration through the standard
+// LoadPreResolvedConfig loads the bundle's configuration through the standard
 // loader mutators (entry point, includes, target overrides) but without
 // variable resolution. The resulting dyn.Value is fully merged across files
 // and targets, yet retains ${...} references as literal strings. Returns
 // InvalidValue if loading fails (restoration is then skipped).
-func loadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
+func LoadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
 	fresh := &bundle.Bundle{
 		BundleRootPath: b.BundleRootPath,
 		BundleRoot:     b.BundleRoot,
@@ -578,6 +575,28 @@ func preResolvedValueAt(preResolved dyn.Value, fieldPath string) (dyn.Value, boo
 		return dyn.InvalidValue, false
 	}
 	return v, true
+}
+
+// parentIsVariableReference reports whether the parent of fieldPath resolves to a
+// scalar variable reference in the pre-resolved config (e.g. spark_conf:
+// ${var.spark_conf}). A nested key or index cannot be written into such a scalar,
+// so config-remote-sync skips the change. fieldPath is a merged-index path, the
+// same space as FieldChange.originalPath.
+func parentIsVariableReference(preResolved dyn.Value, fieldPath string) bool {
+	node, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return false
+	}
+	parent := node.Parent()
+	if parent == nil {
+		return false
+	}
+	v, ok := preResolvedValueAt(preResolved, parent.String())
+	if !ok {
+		return false
+	}
+	s, ok := v.AsString()
+	return ok && dynvar.ContainsVariableReference(s)
 }
 
 // sequenceSiblings returns the sibling elements of the parent sequence when

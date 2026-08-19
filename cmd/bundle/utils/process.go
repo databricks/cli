@@ -29,6 +29,7 @@ import (
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
+	"golang.org/x/mod/semver"
 )
 
 type ProcessOptions struct {
@@ -261,6 +262,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
+
+			// Warn when the state was last written by a newer CLI than the one
+			// running now. The state schema version is a hard gate (dstate.Open
+			// rejects a too-new state_version), but a state can be written by a
+			// newer CLI that shares this schema; that is allowed, and this only
+			// hints that a downgrade may be unintended.
+			currentVersion := build.GetInfo().Version
+			if stateVersion := b.DeploymentBundle.StateDB.StateCLIVersion(); isNewerVersion(stateVersion, currentVersion) {
+				log.Warnf(ctx, "State was last deployed with CLI version %s but current version is %s", stateVersion, currentVersion)
+			}
 		}
 
 		// These are not safe in plan/deploy because they insert empty config settings for deleted resources.
@@ -449,6 +460,19 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 	}
 
 	return engine.EngineSetting{}, nil
+}
+
+// isNewerVersion reports whether the state's recorded CLI version is strictly
+// newer than the running build. Both are bare versions without a leading "v".
+// An empty stateVersion (state not written by any CLI yet) or an unparseable
+// version returns false, so we never warn on missing or malformed data.
+func isNewerVersion(stateVersion, currentVersion string) bool {
+	sv := "v" + stateVersion
+	cv := "v" + currentVersion
+	if !semver.IsValid(sv) || !semver.IsValid(cv) {
+		return false
+	}
+	return semver.Compare(sv, cv) > 0
 }
 
 func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {

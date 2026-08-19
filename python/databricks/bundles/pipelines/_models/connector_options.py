@@ -4,6 +4,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.pipelines._models.api_source_connector_options import (
+    ApiSourceConnectorOptions,
+    ApiSourceConnectorOptionsParam,
+)
 from databricks.bundles.pipelines._models.confluence_connector_options import (
     ConfluenceConnectorOptions,
     ConfluenceConnectorOptionsParam,
@@ -61,6 +65,13 @@ if TYPE_CHECKING:
 class ConnectorOptions:
     """
     Wrapper message for source-specific options to support multiple connector types
+    """
+
+    api_source_connector_options: VariableOrOptional[ApiSourceConnectorOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Connector-specific options for API Source connectors.
     """
 
     confluence_options: VariableOrOptional[ConfluenceConnectorOptions] = None
@@ -136,9 +147,7 @@ class ConnectorOptions:
 
     zendesk_support_options: VariableOrOptional[ZendeskSupportOptions] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Zendesk Support specific options for ingestion
+    [Beta] Zendesk Support specific options for ingestion
     """
 
     @classmethod
@@ -151,6 +160,13 @@ class ConnectorOptions:
 
 class ConnectorOptionsDict(TypedDict, total=False):
     """"""
+
+    api_source_connector_options: VariableOrOptional[ApiSourceConnectorOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Connector-specific options for API Source connectors.
+    """
 
     confluence_options: VariableOrOptional[ConfluenceConnectorOptionsParam]
     """
@@ -225,9 +241,7 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     zendesk_support_options: VariableOrOptional[ZendeskSupportOptionsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Zendesk Support specific options for ingestion
+    [Beta] Zendesk Support specific options for ingestion
     """
 
 

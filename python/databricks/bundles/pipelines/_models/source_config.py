@@ -4,6 +4,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.pipelines._models.api_source_connector_config import (
+    ApiSourceConnectorConfig,
+    ApiSourceConnectorConfigParam,
+)
 from databricks.bundles.pipelines._models.google_ads_config import (
     GoogleAdsConfig,
     GoogleAdsConfigParam,
@@ -20,6 +24,13 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class SourceConfig:
     """"""
+
+    api_source_connector_config: VariableOrOptional[ApiSourceConnectorConfig] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Connector-specific top-level configuration for API Source connectors.
+    """
 
     catalog: VariableOrOptional[SourceCatalogConfig] = None
     """
@@ -43,6 +54,13 @@ class SourceConfig:
 
 class SourceConfigDict(TypedDict, total=False):
     """"""
+
+    api_source_connector_config: VariableOrOptional[ApiSourceConnectorConfigParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Connector-specific top-level configuration for API Source connectors.
+    """
 
     catalog: VariableOrOptional[SourceCatalogConfigParam]
     """

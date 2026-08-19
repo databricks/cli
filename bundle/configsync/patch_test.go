@@ -50,7 +50,7 @@ resources:
 		},
 	}
 
-	fieldChanges, skipped, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, skipped, err := ResolveChanges(ctx, b, changes, LoadPreResolvedConfig(ctx, b))
 	require.NoError(t, err)
 	require.Empty(t, skipped)
 
