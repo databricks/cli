@@ -6,7 +6,6 @@
 # would otherwise also match the bundle's own file-upload paths. (We can't set
 # MSYS_NO_PATHCONV to keep the "//" intact, because that breaks the python helper's
 # own path resolution -- see the env -u workaround in acceptance/script.prepare.)
-Local = true
 Cloud = false
 RecordRequests = true
 RequiresUnityCatalog = true

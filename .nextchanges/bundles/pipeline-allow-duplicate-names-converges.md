@@ -1,1 +1,0 @@
-Fixed a pipeline with `allow_duplicate_names: true` never converging on the direct engine: the field is only accepted on create/update and is never returned by the pipelines GET API, so every subsequent `bundle plan` reported the pipeline as a perpetual update.

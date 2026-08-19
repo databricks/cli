@@ -1,9 +1,5 @@
 
 >>> [CLI] bundle validate -o json
-Warning: Pattern user_repls.json does not match any files
-  at sync.exclude[1]
-  in databricks.yml:11:7
-
 {
   "workspace": {
     "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default/artifacts",

@@ -870,6 +870,7 @@ resources.job_runs.*.python_params[*]	string	ALL
 resources.job_runs.*.queue	*jobs.QueueSettings	ALL
 resources.job_runs.*.queue.enabled	bool	ALL
 resources.job_runs.*.resolved_job_id	int64	INPUT
+resources.job_runs.*.result_state	jobs.RunResultState	REMOTE	STATE
 resources.job_runs.*.run_id	int64	REMOTE
 resources.job_runs.*.run_name	string	REMOTE
 resources.job_runs.*.run_page_url	string	REMOTE
@@ -1867,6 +1868,7 @@ resources.jobs.*.trigger.table_update.wait_after_last_change_seconds	int	ALL
 resources.jobs.*.trigger_state	*jobs.TriggerStateProto	REMOTE
 resources.jobs.*.trigger_state.file_arrival	*jobs.FileArrivalTriggerState	REMOTE
 resources.jobs.*.trigger_state.file_arrival.using_file_events	bool	REMOTE
+resources.jobs.*.trigger_state.pause_status	jobs.PauseStatus	REMOTE
 resources.jobs.*.trigger_state.sql_condition	*jobs.SqlConditionState	REMOTE
 resources.jobs.*.trigger_state.sql_condition.latest_condition_evaluation_satisfied	bool	REMOTE
 resources.jobs.*.trigger_state.sql_condition.latest_condition_evaluation_sql_session_id	string	REMOTE
@@ -2431,6 +2433,7 @@ resources.models.*.permissions[*].service_principal_name	string	ALL
 resources.models.*.permissions[*].user_name	string	ALL
 resources.pipelines.*.allow_duplicate_names	bool	ALL
 resources.pipelines.*.budget_policy_id	string	ALL
+resources.pipelines.*.cascade_on_destroy	*bool	INPUT	STATE
 resources.pipelines.*.catalog	string	ALL
 resources.pipelines.*.cause	string	REMOTE
 resources.pipelines.*.channel	string	ALL
@@ -3532,6 +3535,32 @@ resources.secret_scopes.*.permissions.acls[*]	workspace.AclItem	ALL
 resources.secret_scopes.*.permissions.acls[*].permission	workspace.AclPermission	ALL
 resources.secret_scopes.*.permissions.acls[*].principal	string	ALL
 resources.secret_scopes.*.permissions.scope_name	string	ALL
+resources.secrets.*.catalog_name	string	ALL
+resources.secrets.*.comment	string	ALL
+resources.secrets.*.create_time	*time.Time	ALL
+resources.secrets.*.created_by	string	ALL
+resources.secrets.*.effective_owner	string	ALL
+resources.secrets.*.effective_value	string	ALL
+resources.secrets.*.expire_time	*time.Time	ALL
+resources.secrets.*.full_name	string	ALL
+resources.secrets.*.id	string	INPUT
+resources.secrets.*.lifecycle	resources.Lifecycle	INPUT
+resources.secrets.*.lifecycle.prevent_destroy	bool	INPUT
+resources.secrets.*.metastore_id	string	ALL
+resources.secrets.*.modified_status	string	INPUT
+resources.secrets.*.name	string	ALL
+resources.secrets.*.owner	string	ALL
+resources.secrets.*.schema_name	string	ALL
+resources.secrets.*.update_time	*time.Time	ALL
+resources.secrets.*.updated_by	string	ALL
+resources.secrets.*.url	string	INPUT
+resources.secrets.*.value	string	ALL
+resources.secrets.*.grants.full_name	string	ALL
+resources.secrets.*.grants.securable_type	string	ALL
+resources.secrets.*.grants[*]	catalog.PrivilegeAssignment	ALL
+resources.secrets.*.grants[*].principal	string	ALL
+resources.secrets.*.grants[*].privileges	[]catalog.Privilege	ALL
+resources.secrets.*.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.sql_warehouses.*.auto_stop_mins	int	ALL
 resources.sql_warehouses.*.channel	*sql.Channel	ALL
 resources.sql_warehouses.*.channel.dbsql_version	string	ALL

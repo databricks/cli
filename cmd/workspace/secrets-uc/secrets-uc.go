@@ -25,10 +25,8 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "secrets-uc",
-		Short: `*Public Preview* A secret is a Unity Catalog securable object that stores sensitive credential data (such as passwords, tokens, and keys) within a three-level namespace (**catalog_name.schema_name.secret_name**).`,
-		Long: `This command is in Public Preview and may change without notice.
-
-A secret is a Unity Catalog securable object that stores sensitive credential
+		Short: `A secret is a Unity Catalog securable object that stores sensitive credential data (such as passwords, tokens, and keys) within a three-level namespace (**catalog_name.schema_name.secret_name**).`,
+		Long: `A secret is a Unity Catalog securable object that stores sensitive credential
   data (such as passwords, tokens, and keys) within a three-level namespace
   (**catalog_name.schema_name.secret_name**).
 
@@ -39,8 +37,8 @@ A secret is a Unity Catalog securable object that stores sensitive credential
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateSecret())
@@ -81,10 +79,8 @@ func newCreateSecret() *cobra.Command {
 	cmd.Flags().StringVar(&createSecretReq.Secret.Owner, "owner", createSecretReq.Secret.Owner, `The owner of the secret.`)
 
 	cmd.Use = "create-secret NAME CATALOG_NAME SCHEMA_NAME VALUE"
-	cmd.Short = `*Public Preview* Create a secret.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Create a secret.
+	cmd.Short = `Create a secret.`
+	cmd.Long = `Create a secret.
 
   Creates a new secret in Unity Catalog.
 
@@ -106,8 +102,8 @@ Create a secret.
       keys, and other sensitive credential data.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -196,10 +192,8 @@ func newDeleteSecret() *cobra.Command {
 	var deleteSecretReq catalog.DeleteSecretRequest
 
 	cmd.Use = "delete-secret FULL_NAME"
-	cmd.Short = `*Public Preview* Delete a secret.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Delete a secret.
+	cmd.Short = `Delete a secret.`
+	cmd.Long = `Delete a secret.
 
   Deletes a secret by its three-level (fully qualified) name.
 
@@ -210,8 +204,8 @@ Delete a secret.
       **catalog_name.schema_name.secret_name**).`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -259,10 +253,8 @@ func newGetSecret() *cobra.Command {
 	var getSecretReq catalog.GetSecretRequest
 
 	cmd.Use = "get-secret FULL_NAME"
-	cmd.Short = `*Public Preview* Get a secret.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get a secret.
+	cmd.Short = `Get a secret.`
+	cmd.Long = `Get a secret.
 
   Gets a secret by its three-level (fully qualified) name.
 
@@ -278,8 +270,8 @@ Get a secret.
       **catalog_name.schema_name.secret_name**).`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -343,10 +335,8 @@ func newListSecrets() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-secrets"
-	cmd.Short = `*Public Preview* List secrets.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List secrets.
+	cmd.Short = `List secrets.`
+	cmd.Long = `List secrets.
 
   Lists secrets in Unity Catalog.
 
@@ -358,8 +348,8 @@ List secrets.
   **page_token** field from the response to retrieve subsequent pages.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -418,10 +408,8 @@ func newUpdateSecret() *cobra.Command {
 	cmd.Flags().StringVar(&updateSecretReq.Secret.Owner, "owner", updateSecretReq.Secret.Owner, `The owner of the secret.`)
 
 	cmd.Use = "update-secret FULL_NAME UPDATE_MASK NAME CATALOG_NAME SCHEMA_NAME VALUE"
-	cmd.Short = `*Public Preview* Update a secret.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Update a secret.
+	cmd.Short = `Update a secret.`
+	cmd.Long = `Update a secret.
 
   Updates an existing secret in Unity Catalog.
 
@@ -451,8 +439,8 @@ Update a secret.
       keys, and other sensitive credential data.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

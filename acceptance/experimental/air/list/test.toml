@@ -1,9 +1,8 @@
 # Disable the on-disk run cache so --all-status output is deterministic across runs.
-[Env]
-DATABRICKS_CACHE_ENABLED = "false"
-
+Env.DATABRICKS_CACHE_ENABLED = "false"
 # The SDK occasionally probes host reachability with a HEAD request; stub it so
 # the test is deterministic.
+
 [[Server]]
 Pattern = "HEAD /"
 Response.Body = ''

@@ -1,0 +1,7 @@
+{
+    "project_name": "my_default_sql",
+    "http_path": "/sql/2.0/warehouses/f00dcafe",
+    "default_catalog": "main",
+    "personal_schemas": "no, I will customize the schema configuration later in databricks.yml",
+    "shared_schema": "-bad"
+}

@@ -1,0 +1,50 @@
+
+=== Machine A: deploy, then destroy (leaves local state with lineage L1 behind)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default/files...
+Created jobs.test_job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.test_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default
+
+Destroy: 1 deleted
+
+=== Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default/files...
+Created jobs.test_job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Machine A: any command that pulls remote state now fails
+
+>>> musterr [CLI] bundle plan
+Error: lineage mismatch in state files
+
+Available state files:
+- resources.json: remote direct state serial=1 lineage="[LINEAGE_B]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[LINEAGE_A]"
+
+
+>>> musterr [CLI] bundle deploy
+Error: lineage mismatch in state files
+
+Available state files:
+- resources.json: remote direct state serial=1 lineage="[LINEAGE_B]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[LINEAGE_A]"
+
+
+>>> musterr [CLI] bundle destroy --auto-approve
+Error: lineage mismatch in state files
+
+Available state files:
+- resources.json: remote direct state serial=1 lineage="[LINEAGE_B]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[LINEAGE_A]"
+

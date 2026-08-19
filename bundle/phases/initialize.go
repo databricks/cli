@@ -34,6 +34,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.NoInterpolationInBundleName(),
 		validate.ValidateEngine(),
 		validate.Scripts(),
+		mutator.ValidateSecretValueIsVariable(),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
@@ -183,6 +184,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Validate that deployment_id / version_id are not set on jobs or pipelines.
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
+
+		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
+		validate.ValidateJobRunIdempotencyToken(),
 
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference

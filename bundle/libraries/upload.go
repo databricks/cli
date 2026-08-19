@@ -38,6 +38,9 @@ type upload struct {
 type LocationToUpdate struct {
 	configPath dyn.Path
 	location   dyn.Location
+	// extras is the pip extras suffix (e.g. "[train]") to re-append to the
+	// rewritten remote path. Empty for libraries that carry no extras.
+	extras string
 }
 
 func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -64,7 +67,7 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		} else {
 			relPath = filepath.ToSlash(relPath)
 		}
-		cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", relPath))
+		cmdio.LogProgress(ctx, fmt.Sprintf("Uploading %s...", relPath))
 		errs.Go(func() error {
 			return UploadFile(errCtx, source, u.client)
 		})

@@ -35,8 +35,21 @@ func (s *FakeWorkspace) SecretsPut(req Request) Response {
 		s.Secrets[request.Scope] = make(map[string]string)
 	}
 
-	// Store the secret value
-	s.Secrets[request.Scope][request.Key] = request.StringValue
+	// Exactly one of string_value / bytes_value is set. bytes_value arrives
+	// already base64-encoded, and GET returns whatever was stored re-encoded,
+	// so decode it here to keep the stored form the raw secret in both cases.
+	value := request.StringValue
+	if request.BytesValue != "" {
+		decoded, err := base64.StdEncoding.DecodeString(request.BytesValue)
+		if err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": "bytes_value must be base64-encoded"},
+			}
+		}
+		value = string(decoded)
+	}
+	s.Secrets[request.Scope][request.Key] = value
 
 	return Response{}
 }

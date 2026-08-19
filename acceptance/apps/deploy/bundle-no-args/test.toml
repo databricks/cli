@@ -1,12 +1,10 @@
-Local = true
 Cloud = false
 
 Ignore = [
     '.databricks',
 ]
 
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 
 [[Server]]
 Pattern = "POST /api/2.0/apps/myapp/deployments"

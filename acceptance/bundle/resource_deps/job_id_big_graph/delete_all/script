@@ -8,11 +8,11 @@ trace print_requests.py --sort //jobs
 replace_ids.py
 
 # Sanity check plan after deploy
-trace $CLI bundle plan > out.plan_sanity.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle plan > out.plan_sanity.txt
 
 title "Delete all via empty.yml"
 cp empty.yml databricks.yml
-trace $CLI bundle plan > out.plan_delete.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle plan > out.plan_delete.txt
 trace $CLI bundle deploy
 
 trace $CLI bundle destroy --auto-approve

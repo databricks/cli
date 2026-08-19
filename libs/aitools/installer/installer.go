@@ -463,7 +463,7 @@ func incompatibleAgentNames(targetAgents []*agents.Agent) []string {
 func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts InstallOptions) (map[string]SkillMeta, error) {
 	isSpecific := len(opts.SpecificSkills) > 0
 	cliVersion := build.GetInfo().Version
-	isDev := strings.HasPrefix(cliVersion, build.DefaultSemver)
+	isDev := build.GetInfo().IsDevelopment()
 
 	// Start with all skills or only the requested ones.
 	var candidates map[string]SkillMeta
@@ -529,7 +529,7 @@ func PrintInstallingFor(ctx context.Context, targetAgents []*agents.Agent) {
 func printNoAgentsDetected(ctx context.Context) {
 	cmdio.LogString(ctx, cmdio.Yellow(ctx, "No supported coding agents detected."))
 	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity")
+	cmdio.LogString(ctx, "Supported agents: "+strings.Join(agents.SupportedNames(), ", "))
 	cmdio.LogString(ctx, "Please install at least one coding agent first.")
 }
 

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/internal/build"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -99,6 +100,52 @@ func TestPanicOnDoubleOpen(t *testing.T) {
 		_ = db.Open(t.Context(), path, WithRecovery(true), WithWrite(true))
 	})
 	mustFinalize(t, &db)
+}
+
+// TestCLIVersionRecordsLastWriter pins that cli_version tracks the CLI that last
+// wrote the state, not the one that created it. Previously the field was only set
+// when the state was first created: the WAL header carried the deploying CLI's
+// version but replay dropped it, so a state stayed pinned to its original writer
+// no matter how many times a newer CLI deployed over it.
+func TestCLIVersionRecordsLastWriter(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	// A state written by some older CLI.
+	seed := `{"state_version":2,"cli_version":"0.1.2","lineage":"test-lineage","serial":1,"state":{}}`
+	require.NoError(t, os.WriteFile(path, []byte(seed), 0o600))
+
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.NoError(t, db.SaveState("resources.jobs.my_job", "123", map[string]string{"k": "v"}, nil))
+	mustFinalize(t, &db)
+
+	var reopened DeploymentState
+	require.NoError(t, reopened.Open(t.Context(), path, WithRecovery(false), WithWrite(false)))
+	assert.Equal(t, build.GetInfo().Version, reopened.Data.CLIVersion)
+	assert.Equal(t, 2, reopened.Data.Serial)
+	mustFinalize(t, &reopened)
+}
+
+// TestHeaderOnlyWALDoesNotUpdateCLIVersion is the counterpart to the serial
+// invariant below: a deploy that commits nothing does not persist a state file,
+// so it must not claim to have written one.
+func TestHeaderOnlyWALDoesNotUpdateCLIVersion(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	walPath := path + walSuffix
+
+	seed := `{"state_version":2,"cli_version":"0.1.2","lineage":"test-lineage","serial":1,"state":{}}`
+	require.NoError(t, os.WriteFile(path, []byte(seed), 0o600))
+
+	header := Header{Lineage: "test-lineage", Serial: 2, StateVersion: currentStateVersion, CLIVersion: build.GetInfo().Version}
+	headerLine, err := json.Marshal(header)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(walPath, append(headerLine, '\n'), 0o600))
+
+	var recovered DeploymentState
+	require.NoError(t, recovered.Open(t.Context(), path, WithRecovery(true), WithWrite(false)))
+	assert.Equal(t, "0.1.2", recovered.Data.CLIVersion, "a header-only WAL wrote no state, so the version must not move")
+	assert.Equal(t, 1, recovered.Data.Serial)
+	mustFinalize(t, &recovered)
 }
 
 func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {

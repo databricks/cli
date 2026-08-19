@@ -73,6 +73,11 @@ class Pipeline(Resource):
     [Public Preview] Budget policy of this pipeline.
     """
 
+    cascade_on_destroy: VariableOrOptional[bool] = None
+    """
+    Whether destroying the pipeline also deletes its datasets (MVs, STs, Views). Defaults to true (the server default). Set to false to retain the datasets when the pipeline is deleted. Only affects the delete operation.
+    """
+
     catalog: VariableOrOptional[str] = None
     """
     A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.
@@ -257,6 +262,11 @@ class PipelineDict(TypedDict, total=False):
     budget_policy_id: VariableOrOptional[str]
     """
     [Public Preview] Budget policy of this pipeline.
+    """
+
+    cascade_on_destroy: VariableOrOptional[bool]
+    """
+    Whether destroying the pipeline also deletes its datasets (MVs, STs, Views). Defaults to true (the server default). Set to false to retain the datasets when the pipeline is deleted. Only affects the delete operation.
     """
 
     catalog: VariableOrOptional[str]

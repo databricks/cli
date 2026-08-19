@@ -28,6 +28,7 @@ var resourceURLPatterns = map[string]string{
 	"queries":                 "sql/editor/%s",
 	"registered_models":       "explore/data/models/%s",
 	"schemas":                 "explore/data/%s",
+	"secrets":                 "explore/data/%s",
 	"synced_database_tables":  "explore/data/%s",
 	"vector_search_endpoints": "compute/vector-search/%s",
 	"vector_search_indexes":   "explore/data/%s",
@@ -54,6 +55,7 @@ var dotSeparatedResources = map[string]bool{
 	"quality_monitors":       true,
 	"registered_models":      true,
 	"schemas":                true,
+	"secrets":                true,
 	"vector_search_indexes":  true,
 	"volumes":                true,
 }

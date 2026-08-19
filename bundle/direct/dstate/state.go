@@ -16,9 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/google/uuid"
 )
 
@@ -75,10 +73,15 @@ type DeploymentState struct {
 }
 
 type Header struct {
-	StateVersion int    `json:"state_version"`
-	CLIVersion   string `json:"cli_version"`
-	Lineage      string `json:"lineage"`
-	Serial       int    `json:"serial"`
+	StateVersion int `json:"state_version"`
+
+	// CLIVersion is the version of the CLI that last wrote this state. It is
+	// refreshed from the WAL header on every deploy that commits changes, so it
+	// tracks the most recent writer rather than the CLI that created the state.
+	CLIVersion string `json:"cli_version"`
+
+	Lineage string `json:"lineage"`
+	Serial  int    `json:"serial"`
 
 	// Features maps each feature flag this state depends on to a (currently empty)
 	// value. This CLI writes no features; it only reads the field to detect a state
@@ -129,10 +132,7 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		db.Data.State = make(map[string]ResourceEntry)
 	}
 
-	// Redact sensitive fields before persisting: secrets must not appear on disk
-	// in plaintext. The original struct is not modified; the plan uses the
-	// unredacted in-memory value for API calls.
-	jsonMessage, err := structwalk.RedactSensitiveFields(state, dyn.SensitiveValueRedacted)
+	jsonMessage, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}
@@ -343,7 +343,10 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 	scanner.Buffer(make([]byte, 0, initialBufferSize), maxWalEntrySize)
 	lineNumber := 0
 	var corruptedLines [][]byte
-	var newSerial int
+	var (
+		newSerial     int
+		newCLIVersion string
+	)
 
 	for scanner.Scan() {
 		lineNumber++
@@ -368,6 +371,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 				return false, fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expectedSerial)
 			}
 			newSerial = header.Serial
+			newCLIVersion = header.CLIVersion
 		} else {
 			var entry WALEntry
 			if err := json.Unmarshal(line, &entry); err != nil {
@@ -410,8 +414,14 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 	// for it leaves the in-memory serial ahead of the persisted one, so the
 	// next deploy writes its WAL header at serial+2 and recovery rejects it as
 	// "ahead of expected". See acceptance/bundle/deploy/wal/header-only-wal.
+	//
+	// The CLI version moves with the serial for the same reason: it records the
+	// CLI that last wrote the state, so it is only accurate once that write is
+	// persisted. Without this the field keeps the version of the CLI that first
+	// created the state, no matter how many times a newer CLI deploys over it.
 	if hasEntries {
 		db.Data.Serial = newSerial
+		db.Data.CLIVersion = newCLIVersion
 	}
 
 	return hasEntries, nil

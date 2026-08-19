@@ -1,4 +1,3 @@
-Local = true
 Cloud = false
 
 # On cloud this needs a real dedicated single-user cluster; locally the default
@@ -16,10 +15,8 @@ Ignore = [
 # Linux-only: the local run drives a real sshd, reliable only there (and where
 # task test-exp-ssh provisions it). Absent GOOS keys default to enabled, so the
 # other OSes must be disabled explicitly.
-[GOOS]
-  linux = true
-  darwin = false
-  windows = false
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false
 
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

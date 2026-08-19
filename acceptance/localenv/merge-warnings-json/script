@@ -1,0 +1,17 @@
+# An existing project whose pins the merge overrides, plus a dependency the env's
+# constraints exclude, a pin in a non-dev group uv still locks, and a standalone
+# pyspark that collides with the pyspark databricks-connect vendors. All five warning
+# conditions in one run, so warnings[] is exercised end to end.
+cat > pyproject.toml <<'PY'
+[project]
+name = "demo"
+requires-python = ">=3.10"
+dependencies = ["pyarrow==21.0.0", "pyspark>=3.5.0"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0", {include-group = "spark"}]
+spark = ["databricks-connect==15.0.0"]
+qa = ["pandas==4.0.0"]
+PY
+
+trace $CLI environments setup-local --serverless-version 4 --dry-run --output json

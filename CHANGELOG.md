@@ -1,5 +1,64 @@
 # Version changelog
 
+## Release v1.12.1 (2026-08-12)
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.166.0 to v0.170.0 ([#6251](https://github.com/databricks/cli/pull/6251)).
+
+
+## Release v1.12.0 (2026-08-12)
+
+### CLI
+
+ * `databricks aitools install` now supports Gemini CLI, installing Databricks agent skills into its skills directory.
+ * `databricks aitools install` now supports Pi, installing Databricks agent skills into its skills directory.
+ * A locally built CLI (`go build`, without release flags) now reports the next release version with a `-dev` prerelease, e.g. `1.12.0-dev+abcdef123456`, instead of `0.0.0-dev+abcdef123456`. The old string sorted below every published release even though a local build is newer than the latest release; the new one sorts above the latest release and below the release it will become, matching what goreleaser already produces for snapshot builds.
+ * Added the `databricks environments setup-local` command, which provisions (or updates) a local Python environment matched to a Databricks compute target. It resolves the target to an environment key, fetches the pinned Python version, databricks-connect version, and dependency constraints published for that key, then provisions a matched `.venv` with uv.
+
+### Bundles
+
+ * Added a `cascade_on_destroy` field to the pipeline resource to control whether destroying a pipeline also deletes its datasets (MVs, STs, Views). When unset, the server default applies; set `cascade_on_destroy: false` to retain the datasets on destroy. Supported with the direct deployment engine ([#5846](https://github.com/databricks/cli/pull/5846)).
+ * Fix `bundle.deployment.lock.force` being ignored. The `--force-lock` flag's default value overwrote the value configured in `databricks.yml`, so setting the field had no effect and a stale deployment lock could only be overridden with the flag. ([#6188](https://github.com/databricks/cli/pull/6188))
+ * direct: experimental `job_runs` now sends a CLI-managed idempotency token on every run-now, so an SDK retry after a lost response returns the same run. Configured `idempotency_token` values are rejected.
+ * direct: the experimental `job_runs` resource now waits for the triggered run to finish, so other resources can reference its outcome (e.g. `${resources.job_runs.nightly.state.result_state}`). A run that does not succeed fails the deploy, naming the failed task, and is run again on the next deploy. If a deploy is interrupted while waiting, the next one resumes waiting on the same run.
+ * direct: Fixed model serving `telemetry_config` drift and applied planned telemetry updates. Unsupported endpoint types now fail when telemetry is applied; create may still succeed because it drops the field ([#6106](https://github.com/databricks/cli/pull/6106)).
+ * The `cli_version` field in the direct engine's deployment state (`resources.json`) now records the CLI version that last wrote the state. Previously it kept the version of the CLI that first created the state.
+ * Add support for UC secrets resource ([#5861](https://github.com/databricks/cli/pull/5861))
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.166.0 to v0.169.0.
+ * Bump Terraform provider from v1.124.0 to v1.126.0 ([#6250](https://github.com/databricks/cli/pull/6250)).
+
+
+## Release v1.11.0 (2026-08-06)
+
+### CLI
+
+ * Fixed `databricks repos get/update/delete` failing with `object at path "..." is not a repo` for Git-CLI-enabled folders (currently in preview), which the workspace API reports as directories rather than repos ([#6181](https://github.com/databricks/cli/pull/6181)).
+ * Support `dbfs:/Skills/...` paths in `databricks fs` commands, routed to the Files API. ([#6147](https://github.com/databricks/cli/pull/6147))
+
+### Bundles
+
+ * For jobs where `ai_runtime_task.code_source_path` is a relative path to a local directory, the directory is now packaged into a tarball (honoring `.gitignore` and `sync.include`/`sync.exclude`), uploaded during deployment, and `code_source_path` is rewritten to the uploaded workspace path. ([#6110](https://github.com/databricks/cli/pull/6110))
+ * Added JSON output to `bundle init`. Running `databricks bundle init <template> -o json` now reports the files the template wrote, relative to the output directory. This lets callers that pass `--output-dir` learn where the template materialized instead of assuming the output is a single directory named after the project. The default text output is unchanged. ([#6161](https://github.com/databricks/cli/pull/6161))
+ * The terraform deployment engine is deprecated and will stop working in a future version of the CLI. Setting `bundle.engine: terraform` now emits a deprecation warning. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct for how to migrate to the direct deployment engine. ([#6099](https://github.com/databricks/cli/pull/6099))
+ * Fixed the direct deployment engine planning a spurious `create` for an empty `grants: []` list. Terraform records no grants resource for such a list, so `bundle plan` after `bundle deployment migrate` no longer reports an action for it. Emptying a previously deployed list still revokes the grants, after which the node is dropped from the deployment state instead of being reported as unchanged forever. ([#6039](https://github.com/databricks/cli/pull/6039))
+ * Fixed `bundle generate` downloading notebooks found inside a folder without their file extension. They are now exported like top-level notebooks, so a Python notebook lands as `notebook.py` instead of an extensionless file ([#6144](https://github.com/databricks/cli/pull/6144)).
+ * direct: `webhook_notifications.on_*` destinations on jobs, tasks, and `for_each_task` are now compared as unordered sets. Previously the Jobs API returning these lists in a different order than submitted produced a phantom diff that `bundle plan` and `bundle deploy` could never converge past, reporting `1 to change` on every run ([#6060](https://github.com/databricks/cli/pull/6060)).
+ * Fixed a pipeline with `allow_duplicate_names: true` never converging on the direct engine: the field is only accepted on create/update and is never returned by the pipelines GET API, so every subsequent `bundle plan` reported the pipeline as a perpetual update. ([#6076](https://github.com/databricks/cli/pull/6076))
+ * direct: A local change to an input-only field (one the API accepts on write but never returns on read, e.g. pipelines' `run_as` or external locations' `skip_validation`) is no longer silently skipped when the new value coincidentally matches the field's fabricated remote value. Previously such a change could hit the `remote_already_set` shortcut and be dropped from the plan. ([#6112](https://github.com/databricks/cli/pull/6112))
+ * Revert usage of RedactiveSenstiveFields (added in [#5896](https://github.com/databricks/cli/pull/5896), released in 1.10.0) which lead to incorrect behaviour (permanent drift) for duration field in Postgres resources ([#6179](https://github.com/databricks/cli/pull/6179)).
+ * Document postgres resource fields in the json schema ([#6164](https://github.com/databricks/cli/pull/6164), [#6163](https://github.com/databricks/cli/pull/6163)).
+ * direct: Recreating a `vector_search_indexes` resource no longer fails with "Index ... is currently pending deletion" when the backend has not yet released the index name. The create is now retried until the name becomes available. ([#6143](https://github.com/databricks/cli/pull/6143))
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.165.0 to v0.166.0. ([#6175](https://github.com/databricks/cli/pull/6175))
+ * Upgrade Terraform provider to 1.124.0. ([#6174](https://github.com/databricks/cli/pull/6174))
+
+
 ## Release v1.10.0 (2026-07-29)
 
 ### CLI

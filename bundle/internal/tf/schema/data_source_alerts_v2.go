@@ -53,12 +53,6 @@ type DataSourceAlertsV2AlertsEvaluation struct {
 	Threshold          *DataSourceAlertsV2AlertsEvaluationThreshold    `json:"threshold,omitempty"`
 }
 
-type DataSourceAlertsV2AlertsParameters struct {
-	Name  string `json:"name"`
-	Type  string `json:"type,omitempty"`
-	Value string `json:"value,omitempty"`
-}
-
 type DataSourceAlertsV2AlertsProviderConfig struct {
 	WorkspaceId string `json:"workspace_id,omitempty"`
 }
@@ -84,7 +78,6 @@ type DataSourceAlertsV2Alerts struct {
 	Id                string                                  `json:"id"`
 	LifecycleState    string                                  `json:"lifecycle_state,omitempty"`
 	OwnerUserName     string                                  `json:"owner_user_name,omitempty"`
-	Parameters        []DataSourceAlertsV2AlertsParameters    `json:"parameters,omitempty"`
 	ParentPath        string                                  `json:"parent_path,omitempty"`
 	ProviderConfig    *DataSourceAlertsV2AlertsProviderConfig `json:"provider_config,omitempty"`
 	QueryText         string                                  `json:"query_text,omitempty"`

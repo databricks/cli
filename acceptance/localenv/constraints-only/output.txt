@@ -19,7 +19,7 @@
   "plan": {
     "wouldWrite": "[TEST_TMP_DIR]/pyproject.toml",
     "wouldInstallPython": "3.12",
-    "diff": "--- pyproject.toml\n+++ pyproject.toml\n@@ -1 +1,15 @@\n+[project]\n+name = \"001\"\n+version = \"0.0.0\"\n+requires-python = \"\u003e=3.12\"\n+\n+[dependency-groups]\n+dev = []\n+\n+# managed by databricks environments setup-local — do not edit\n+[tool.uv]\n+constraint-dependencies = [\n+    \"pyarrow\u003c19\",\n+    \"pandas\u003c3\",\n+]\n+# end managed by databricks environments setup-local\n"
+    "diff": "--- pyproject.toml\n+++ pyproject.toml\n@@ -1 +1,18 @@\n+[project]\n+name = \"001\"\n+version = \"0.0.0\"\n+requires-python = \"\u003e=3.12\"\n+\n+[dependency-groups]\n+dev = []\n+\n+[tool.databricks.environment]\n+environment_version = \"4\"\n+\n+# managed by databricks environments setup-local — do not edit\n+[tool.uv]\n+constraint-dependencies = [\n+    \"pyarrow\u003c19\",\n+    \"pandas\u003c3\",\n+]\n+# end managed by databricks environments setup-local\n"
   },
   "phases": [
     {
@@ -49,5 +49,5 @@
   ],
   "warnings": [],
   "error": null,
-  "durationMs": 0
+  "durationMs": [DURATION_MS]
 }

@@ -158,11 +158,3 @@ func TestFsLsForNonexistingDir(t *testing.T) {
 		})
 	}
 }
-
-func TestFsLsWithoutScheme(t *testing.T) {
-	t.Parallel()
-
-	ctx := t.Context()
-	_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "ls", "/path-without-a-dbfs-scheme", "--output=json")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
-}

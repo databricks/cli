@@ -4,9 +4,9 @@ create dashboards.my_dashboard
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created dashboards.my_dashboard
+Files: 9 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "display_name": "test dashboard",
   "lifecycle_state": "ACTIVE",
@@ -25,9 +25,9 @@ update dashboards.my_dashboard
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated dashboards.my_dashboard
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 {
   "display_name": "test dashboard",
   "lifecycle_state": "ACTIVE",
@@ -47,5 +47,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

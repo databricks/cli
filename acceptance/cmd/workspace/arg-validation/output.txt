@@ -1,0 +1,57 @@
+
+=== clusters create requires a positional arg (or --json)
+
+>>> musterr [CLI] clusters create
+Error: accepts 1 arg(s), received 0
+
+Usage:
+  databricks clusters create SPARK_VERSION [flags]
+
+Flags:
+      --apply-policy-default-values           When set to true, fixed and default values from the policy will be used for fields that are omitted.
+      --autotermination-minutes int           Automatically terminates the cluster after it is inactive for this time in minutes.
+      --cluster-name string                   Cluster name requested by the user.
+      --data-security-mode DataSecurityMode   Supported values: [
+                                                DATA_SECURITY_MODE_AUTO,
+                                                DATA_SECURITY_MODE_DEDICATED,
+                                                DATA_SECURITY_MODE_STANDARD,
+                                                LEGACY_PASSTHROUGH,
+                                                LEGACY_SINGLE_USER,
+                                                LEGACY_SINGLE_USER_STANDARD,
+                                                LEGACY_TABLE_ACL,
+                                                NONE,
+                                                SINGLE_USER,
+                                                USER_ISOLATION,
+                                              ]
+      --dependency-mode DependencyMode        Controls dependency configuration for the cluster. Supported values: [DEPENDENCY_MODE_AUTO, DEPENDENCY_MODE_CLUSTER_LIBRARIES, DEPENDENCY_MODE_ENVIRONMENTS]
+      --driver-instance-pool-id string        The optional ID of the instance pool for the driver of the cluster belongs.
+      --driver-node-type-id string            The node type of the Spark driver.
+      --enable-elastic-disk                   Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.
+      --enable-local-disk-encryption          Whether to enable LUKS on cluster VMs' local disks.
+  -h, --help                                  help for create
+      --instance-pool-id string               The optional ID of the instance pool to which the cluster belongs.
+      --is-single-node                        This field can only be used when kind = CLASSIC_PREVIEW.
+      --json JSON                             either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --kind Kind                             Supported values: [CLASSIC_PREVIEW]
+      --no-wait                               do not wait to reach RUNNING state
+      --node-type-id string                   This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.
+      --num-workers int                       Number of worker nodes that this cluster should have.
+      --policy-id string                      The ID of the cluster policy used to create the cluster if applicable.
+      --remote-disk-throughput int            If set, what the configurable throughput (in Mb/s) for the remote disk is.
+      --runtime-engine RuntimeEngine          Determines the cluster's runtime engine, either standard or Photon. Supported values: [NULL, PHOTON, STANDARD]
+      --single-user-name string               Single user name if data_security_mode is SINGLE_USER.
+      --timeout duration                      maximum amount of time to reach RUNNING state (default 20m0s)
+      --total-initial-remote-disk-size int    If set, what the total initial volume size (in GB) of the remote disks should be.
+      --use-ml-runtime                        This field can only be used when kind = CLASSIC_PREVIEW.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+=== alerts-legacy create only accepts JSON input
+
+>>> musterr [CLI] alerts-legacy create
+Error: please provide command input in JSON format by specifying the --json flag

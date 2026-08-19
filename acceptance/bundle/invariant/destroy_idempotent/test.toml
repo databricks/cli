@@ -3,3 +3,7 @@ EnvMatrix.READPLAN = ["", "1"]
 # Snapshot of pre-destroy state used to re-run destroy on state that still
 # references the (now-gone) resources; may linger if the test fails mid-run.
 Ignore = [".databricks.backup"]
+
+# Secrets have sensitive fields (json:"-") that are stripped when a plan is serialized to JSON,
+# so deploying from a pre-computed plan file creates the secret with an empty value.
+EnvMatrixExclude.no_secret_with_readplan = ["READPLAN=1", "INPUT_CONFIG=secret.yml.tmpl"]

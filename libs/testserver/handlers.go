@@ -86,7 +86,8 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(req Request) any {
 		path := req.URL.Query().Get("path")
-		return req.Workspace.WorkspaceGetStatus(path)
+		returnGitInfo := req.URL.Query().Get("return_git_info") == "true"
+		return req.Workspace.WorkspaceGetStatus(path, returnGitInfo)
 	})
 
 	server.Handle("GET", "/api/2.0/workspace/list", func(req Request) any {
@@ -320,6 +321,10 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req Request) any {
 		return req.Workspace.JobsGetRun(req)
+	})
+
+	server.Handle("POST", "/api/2.2/jobs/runs/cancel", func(req Request) any {
+		return req.Workspace.JobsCancelRun(req)
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/runs/delete", func(req Request) any {
@@ -566,6 +571,20 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.ExternalLocations, req.Vars["name"])
 	})
 
+	// Storage Credentials:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/storage-credentials", func(req Request) any {
+		return catalog.ListStorageCredentialsResponse{
+			StorageCredentials: []catalog.StorageCredentialInfo{
+				{
+					Name:        "some-test-credential",
+					Id:          "1234",
+					MetastoreId: "abcd",
+				},
+			},
+		}
+	})
+
 	// Registered Models:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
@@ -796,6 +815,30 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SecretsAclsDelete(req)
 	})
 
+	// Unity Catalog base endpoint (used for UC availability check):
+	server.Handle("GET", "/api/2.1/unity-catalog", func(req Request) any {
+		return map[string]any{
+			"metastore_id": "test-metastore-id",
+		}
+	})
+
+	// Unity Catalog Secrets:
+	server.Handle("POST", "/api/2.1/unity-catalog/secrets", func(req Request) any {
+		return req.Workspace.SecretsUcCreateSecret(req)
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcGetSecret(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcUpdateSecret(req)
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcDeleteSecret(req)
+	})
+
 	// Groups:
 	server.Handle("POST", "/api/2.0/preview/scim/v2/Groups", func(req Request) any {
 		return req.Workspace.GroupsCreate(req)
@@ -933,7 +976,7 @@ func AddDefaultHandlers(server *Server) {
 
 	// Serving Endpoints:
 	server.Handle("GET", "/api/2.0/serving-endpoints/{name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.ServingEndpoints, req.Vars["name"])
+		return req.Workspace.ServingEndpointGet(req.Vars["name"])
 	})
 
 	server.Handle("POST", "/api/2.0/serving-endpoints", func(req Request) any {
@@ -958,6 +1001,10 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/tags", func(req Request) any {
 		return req.Workspace.ServingEndpointPatchTags(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/telemetry-config", func(req Request) any {
+		return req.Workspace.ServingEndpointPatchTelemetryConfig(req, req.Vars["name"])
 	})
 
 	// Vector Search Endpoints:

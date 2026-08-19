@@ -192,6 +192,15 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
+	// After the cheap validations but before any upload: verify the custom image is
+	// registered (and, under tag_policy=latest, re-resolve it — a refresh can block
+	// for minutes), so a bad or unregistered image wastes no artifact work.
+	if img := cfg.dockerImage(); img != nil {
+		if err := prepareDockerImage(ctx, w, img); err != nil {
+			return 0, "", err
+		}
+	}
+
 	fc, err := filer.NewWorkspaceFilesClient(w, funcDir)
 	if err != nil {
 		return 0, "", err

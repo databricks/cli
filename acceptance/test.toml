@@ -1,5 +1,6 @@
 # Default settings that apply to all tests unless overriden by test.toml files in inner directories.
-Local = true
+# Tests always run locally; set Cloud/CloudSlow to also run on a real workspace.
+# Cloud = false (the inherited default) therefore means local only.
 Cloud = false
 
 # default timeouts

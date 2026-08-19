@@ -36,6 +36,14 @@ func (c *runConfig) dockerImageURL() string {
 	return ""
 }
 
+// dockerImage returns the environment.docker_image block, or nil when unset.
+func (c *runConfig) dockerImage() *dockerImageConfig {
+	if c.Environment == nil {
+		return nil
+	}
+	return c.Environment.DockerImage
+}
+
 // inlineDependencies returns the inline package list from
 // environment.dependencies, and whether it was set.
 func (c *runConfig) inlineDependencies() ([]string, bool) {

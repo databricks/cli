@@ -1,0 +1,1 @@
+* `bundle deploy` now reports the per-resource actions it took, how many files it synced, and a summary of created/changed/deleted/unchanged resources; `bundle destroy` reports how many resources it deleted. `-q` prints only the summaries, `-qq` only warnings and errors. ([#5720](https://github.com/databricks/cli/pull/5720))

@@ -74,6 +74,11 @@ type Constraints struct {
 	DatabricksConnect string
 	// ConstraintDeps is the list of entries from [tool.uv].constraint-dependencies.
 	ConstraintDeps []string
+	// EnvironmentVersion is the serverless environment version written into
+	// [tool.databricks.environment].environment_version (e.g. "5"). It is not
+	// parsed from the artifact but set by the pipeline from the resolved compute
+	// target; it is empty for cluster targets, where the section is not managed.
+	EnvironmentVersion string
 }
 
 // cacheFileName maps an env key to a single, collision-free cache filename.
@@ -287,19 +292,29 @@ func parseConstraints(data []byte) (requiresPython, dbconnect string, deps []str
 // package name: a version specifier, extra, marker, url, or list separator.
 var depNameSepRe = regexp.MustCompile(`[<>=!~;,@\[( \t]`)
 
-// isDatabricksConnectDep reports whether a dependency-group entry is the
-// databricks-connect requirement. It extracts the leading package name (up to
-// the first PEP 508 delimiter) and compares it under PEP 503 normalization, so
-// case, and runs of "-", "_", or "." are all treated as equivalent:
-// "Databricks-Connect", "databricks_connect", and "databricks.connect" all match,
-// while a distinct package like "databricks-connectors" does not.
-func isDatabricksConnectDep(entry string) bool {
+// isDepNamed reports whether a dependency-group entry names the package normalizedName
+// (which the caller passes already PEP 503-normalized). It extracts the leading package
+// name (up to the first PEP 508 delimiter) and compares it under PEP 503 normalization,
+// so case and runs of "-", "_", or "." are all treated as equivalent: for
+// "databricks-connect", "Databricks-Connect", "databricks_connect", and
+// "databricks.connect" all match, while a distinct package like "databricks-connectors"
+// does not.
+func isDepNamed(entry, normalizedName string) bool {
 	name := strings.TrimSpace(entry)
 	if i := depNameSepRe.FindStringIndex(name); i != nil {
 		name = name[:i[0]]
 	}
-	return normalizePackageName(name) == "databricks-connect"
+	return normalizePackageName(name) == normalizedName
 }
+
+// isDatabricksConnectDep reports whether a dependency-group entry is the
+// databricks-connect requirement.
+func isDatabricksConnectDep(entry string) bool { return isDepNamed(entry, "databricks-connect") }
+
+// isPysparkDep reports whether a dependency-group entry is the standalone pyspark
+// requirement. It matches "pyspark" exactly and not a distinct package such as
+// "pyspark-stubs".
+func isPysparkDep(entry string) bool { return isDepNamed(entry, "pyspark") }
 
 // pep503SepRe matches runs of "-", "_", or "." for PEP 503 name normalization.
 var pep503SepRe = regexp.MustCompile(`[-_.]+`)

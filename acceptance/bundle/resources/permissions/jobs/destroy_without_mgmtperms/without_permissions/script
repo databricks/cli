@@ -5,7 +5,7 @@ if [ -z "${TEST_SP_APPLICATION_ID:-}" ]; then
 fi
 # Mask the test SP's application_id (its userName) to a dedicated placeholder so
 # the assertion is env-independent instead of collapsing into the generic [UUID].
-echo "$TEST_SP_APPLICATION_ID:TEST_SP_APPLICATION_ID" >> ACC_REPLS
+add_repl "$TEST_SP_APPLICATION_ID" TEST_SP_APPLICATION_ID
 
 envsubst < databricks.yml.tmpl > databricks.yml
 # Locally DATABRICKS_CLIENT_ID is unset; fall back to the current identity so the
