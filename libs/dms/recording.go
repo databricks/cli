@@ -159,9 +159,9 @@ func (r *recording) Prepare(ctx context.Context) error {
 
 // Start implements Recording.
 func (r *recording) Start(ctx context.Context, staged []StagedOperation) (OperationWriter, error) {
-	// A deploy calls Prepare itself, because the resources the plan is computed from are
-	// stamped with the version number. A destroy creates a version too, but stamps nothing, so
-	// it has no reason to settle the deployment any earlier than here.
+	// A deploy calls Prepare itself, because the version number is stamped onto every job and
+	// pipeline before the plan is computed. A destroy creates a version too, but stamps
+	// nothing, so it has no reason to settle the deployment any earlier than here.
 	if r.versionNum == 0 {
 		if err := r.Prepare(ctx); err != nil {
 			return nil, err
