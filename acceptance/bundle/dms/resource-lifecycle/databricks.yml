@@ -1,5 +1,5 @@
 bundle:
-  name: dms-partial-update
+  name: dms-resource-lifecycle
 
 experimental:
   record_deployment_history: true
@@ -7,6 +7,6 @@ experimental:
 resources:
   schemas:
     foo:
-      name: dms_partial_update_schema
+      name: dms_resource_lifecycle_schema
       catalog_name: main
       comment: v1

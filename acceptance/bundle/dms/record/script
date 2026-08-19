@@ -16,3 +16,9 @@ trace print_requests.py --dms //api/2.0/bundle
 title "Destroy: a destroy version and delete operation are recorded, then the deployment is deleted"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py --dms //api/2.0/bundle
+
+title "Deploy again: the destroy took the node with it, so there is nothing to resolve and a fresh deployment starts at version 1"
+trace MSYS_NO_PATHCONV=1 musterr $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record/default/state/resources.deployment.json"
+trace $CLI bundle deploy
+trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record/default/state/resources.deployment.json" | jq '{object_type,path}'
+trace print_requests.py --dms //api/2.0/bundle

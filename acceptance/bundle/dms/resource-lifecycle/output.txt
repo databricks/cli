@@ -1,7 +1,7 @@
 
 === Deploy: the state write records the resource
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-resource-lifecycle/default/files...
 Created schemas.foo
 Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
@@ -11,7 +11,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
   "body": {
-    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/state",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-resource-lifecycle/default/state",
     "target_name": "default"
   }
 }
@@ -25,10 +25,10 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "cli_version": "[CLI_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
     "target_name": "default",
-    "display_name": "dms-partial-update",
+    "display_name": "dms-resource-lifecycle",
     "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default"
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-resource-lifecycle/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-resource-lifecycle/default"
     },
     "operations": [
       {
@@ -45,8 +45,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_partial_update_schema\"}}",
-    "resource_id": "main.dms_partial_update_schema",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_resource_lifecycle_schema\"}}",
+    "resource_id": "main.dms_resource_lifecycle_schema",
     "status": "OPERATION_STATUS_SUCCEEDED",
     "sequence_id": "0"
   }
@@ -63,7 +63,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> update_file.py databricks.yml catalog_name: main catalog_name: other
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-resource-lifecycle/default/files...
 
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
   recreate resources.schemas.foo
@@ -82,11 +82,11 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
     "cli_version": "[CLI_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
     "target_name": "default",
-    "display_name": "dms-partial-update",
+    "display_name": "dms-resource-lifecycle",
     "previous_version_id": "1",
     "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default"
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-resource-lifecycle/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-resource-lifecycle/default"
     },
     "operations": [
       {
@@ -103,7 +103,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "resource_id": "main.dms_partial_update_schema",
+    "resource_id": "main.dms_resource_lifecycle_schema",
     "status": "OPERATION_STATUS_IN_PROGRESS",
     "sequence_id": "0"
   }
@@ -115,8 +115,8 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "state": "{\"state\":{\"catalog_name\":\"other\",\"comment\":\"v1\",\"name\":\"dms_partial_update_schema\"}}",
-    "resource_id": "other.dms_partial_update_schema",
+    "state": "{\"state\":{\"catalog_name\":\"other\",\"comment\":\"v1\",\"name\":\"dms_resource_lifecycle_schema\"}}",
+    "resource_id": "other.dms_resource_lifecycle_schema",
     "status": "OPERATION_STATUS_SUCCEEDED",
     "sequence_id": "1"
   }
@@ -137,7 +137,7 @@ The following resources will be deleted:
 This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
   delete resources.schemas.foo
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-resource-lifecycle/default
 
 Destroy: 1 deleted
 
@@ -152,11 +152,11 @@ Destroy: 1 deleted
     "cli_version": "[CLI_VERSION]",
     "version_type": "VERSION_TYPE_DESTROY",
     "target_name": "default",
-    "display_name": "dms-partial-update",
+    "display_name": "dms-resource-lifecycle",
     "previous_version_id": "2",
     "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-partial-update/default"
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-resource-lifecycle/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-resource-lifecycle/default"
     },
     "operations": [
       {
@@ -173,7 +173,7 @@ Destroy: 1 deleted
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "resource_id": "other.dms_partial_update_schema",
+    "resource_id": "other.dms_resource_lifecycle_schema",
     "status": "OPERATION_STATUS_SUCCEEDED",
     "sequence_id": "0"
   }
