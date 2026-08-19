@@ -2,7 +2,6 @@ package dms
 
 import (
 	"encoding/json"
-	"errors"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
@@ -93,43 +92,56 @@ func TestWriterErrorKeepsTheSequence(t *testing.T) {
 	assert.Equal(t, "9", f.updates[2].sequenceID)
 }
 
-func TestUpdateRequestSendsOnlyWhatTheMaskNames(t *testing.T) {
-	// A failure keeps whatever state an earlier write recorded, so it must send neither
-	// state nor resource_id: an empty state would drop the resource from the deployment.
-	failure := NewFailureUpdate("job-1", errors.New("boom"))
-
-	body := newUpdateRequest(failure, "3")
-
-	assert.Empty(t, body.State)
-	assert.Empty(t, body.ResourceId)
-	assert.Equal(t, "3", body.SequenceId)
-	assert.Equal(t, "boom", body.ErrorMessage)
-	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, body.Status)
-}
-
-func TestUpdateRequestSendsStateWhenNamed(t *testing.T) {
-	update, err := NewStateUpdate("job-1", json.RawMessage(`{"state":{"name":"foo"}}`), false)
-	require.NoError(t, err)
-
-	body := newUpdateRequest(update, stagedSequenceID)
-
-	assert.JSONEq(t, `{"state":{"name":"foo"}}`, body.State)
-	assert.Equal(t, "job-1", body.ResourceId)
-}
-
-func TestUpdateRequestSendsEachFieldOnItsOwnMaskEntry(t *testing.T) {
-	// resource_id does not travel with state: a mask that names one and not the other sends
-	// exactly that.
+func TestUpdateRequestSendsAFieldOnlyWhenTheMaskNamesIt(t *testing.T) {
+	// Every case carries the same values, so what reaches the body is decided by the mask
+	// alone. A failure sending state would drop the resource from the deployment, and
+	// resource_id does not ride along with state.
 	update := OperationUpdate{
-		Fields:     FieldResourceID | FieldStatus,
-		State:      json.RawMessage(`{"state":{"name":"foo"}}`),
-		ResourceID: "job-1",
-		Status:     bundledeployments.OperationStatusOperationStatusSucceeded,
+		State:        json.RawMessage(`{"state":{"name":"foo"}}`),
+		ResourceID:   "job-1",
+		Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
+		ErrorMessage: "boom",
 	}
 
-	body := newUpdateRequest(update, "4")
+	tests := []struct {
+		name   string
+		fields Fields
+		want   updateOperationRequest
+	}{
+		{
+			name:   "a write that describes the resource",
+			fields: DescribesResource,
+			want: updateOperationRequest{
+				State:        `{"state":{"name":"foo"}}`,
+				ResourceId:   "job-1",
+				Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
+				ErrorMessage: "boom",
+				SequenceId:   "3",
+			},
+		},
+		{
+			name:   "a failure that keeps the recorded state",
+			fields: KeepsState,
+			want: updateOperationRequest{
+				Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
+				ErrorMessage: "boom",
+				SequenceId:   "3",
+			},
+		},
+		{
+			name:   "resource_id without state",
+			fields: FieldResourceID,
+			want: updateOperationRequest{
+				ResourceId: "job-1",
+				SequenceId: "3",
+			},
+		},
+	}
 
-	assert.Empty(t, body.State)
-	assert.Equal(t, "job-1", body.ResourceId)
-	assert.Equal(t, bundledeployments.OperationStatusOperationStatusSucceeded, body.Status)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			update.Fields = tt.fields
+			assert.Equal(t, tt.want, newUpdateRequest(update, "3"))
+		})
+	}
 }
