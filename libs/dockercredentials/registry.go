@@ -22,6 +22,29 @@ type Registry struct {
 	Host        string
 }
 
+// RegistryHost builds a registry host in the workspace's cloud and environment DNS zone.
+func RegistryHost(workspaceID, region, workspaceHost string) (string, error) {
+	workspaceID = strings.TrimSpace(workspaceID)
+	region = strings.TrimSpace(region)
+	if workspaceID == "" {
+		return "", errors.New("workspace ID is required")
+	}
+	if region == "" {
+		return "", errors.New("region is required")
+	}
+	if !isDNSLabel(workspaceID) {
+		return "", fmt.Errorf("invalid workspace ID %q", workspaceID)
+	}
+	if !isDNSLabel(region) {
+		return "", fmt.Errorf("invalid region %q", region)
+	}
+	dnsZone, err := registryDNSZoneForWorkspaceHost(workspaceHost)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s.container.%s%s", workspaceID, region, dnsZone), nil
+}
+
 // normalizeServerAddress accepts the bare host or HTTPS URL forms allowed by Docker's credential-helper protocol.
 // Databricks Artifact Registry uses standard HTTPS and has no configurable port.
 func normalizeServerAddress(raw string) (string, error) {
@@ -73,6 +96,18 @@ func ParseRegistryHost(raw string) (Registry, error) {
 		WorkspaceID: workspaceID,
 		Host:        host,
 	}, nil
+}
+
+func registryDNSZoneForWorkspaceHost(raw string) (string, error) {
+	host, err := normalizeServerAddress(raw)
+	if err != nil {
+		return "", fmt.Errorf("parse workspace host: %w", err)
+	}
+	dnsZone, ok := matchingDatabricksDNSZone(host)
+	if !ok {
+		return "", fmt.Errorf("%q is not a supported Databricks workspace host", host)
+	}
+	return dnsZone, nil
 }
 
 func matchingDatabricksDNSZone(host string) (string, bool) {

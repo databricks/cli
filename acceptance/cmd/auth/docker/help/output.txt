@@ -41,6 +41,7 @@ Usage:
   databricks auth docker [command]
 
 Available Commands:
+  configure   (Experimental) Configure Docker authentication for Databricks Artifact Registry
   token       (Experimental) Generate a Docker credential
 
 Flags:
