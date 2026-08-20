@@ -15,6 +15,7 @@ func newDockerCommand(authArguments *auth.AuthArguments) *cobra.Command {
 		Short: "(Experimental) Manage Docker authentication for Databricks Artifact Registry",
 	}
 	cmd.AddCommand(newDockerTokenCommand(authArguments))
+	cmd.AddCommand(newDockerConfigureCommand())
 	return cmd
 }
 

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDockerTokenCommandIsVisibleAndExperimental(t *testing.T) {
+func TestDockerCommandsAreVisibleAndExperimental(t *testing.T) {
 	tests := []struct {
 		name string
 		args []string
@@ -17,6 +17,9 @@ func TestDockerTokenCommandIsVisibleAndExperimental(t *testing.T) {
 		{name: "auth", args: []string{"--help"}, want: "  docker "},
 		{name: "docker", args: []string{"docker", "--help"}, want: "  token "},
 		{name: "token", args: []string{"docker", "token", "--help"}, want: "Experimental"},
+		{name: "configure listing", args: []string{"docker", "--help"}, want: "  configure "},
+		{name: "configure experimental", args: []string{"docker", "configure", "--help"}, want: "Experimental"},
+		{name: "configure usage", args: []string{"docker", "configure", "--help"}, want: "auth docker configure [PROFILE]"},
 	}
 
 	for _, tt := range tests {

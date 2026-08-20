@@ -1,0 +1,5 @@
+[docker-test]
+# This host is used only to derive the registry DNS zone and is replaced before the helper performs authentication.
+host = https://workspace.cloud.databricks.com
+auth_type = databricks-cli
+workspace_id = 123456789
