@@ -1,0 +1,6 @@
+setup_docker_auth
+
+mkdir -p "$HOME/.databricks"
+cp token-cache.json "$HOME/.databricks/token-cache.json"
+
+printf '%s\n' "$DAR_REGISTRY_HOST" | trace "$CLI" auth docker token | jq -S .

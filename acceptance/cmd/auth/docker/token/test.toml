@@ -1,0 +1,7 @@
+Ignore = [
+    "home",
+]
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Timeout = "15s"
