@@ -3,74 +3,57 @@
 
 >>> selection M:acceptance/selftest/basic/script
 Selected 1 changed tests (limit=50, 0 not selected)
-    5  selftest/basic/DATABRICKS_BUNDLE_ENGINE=terraform
-    5  selftest/basic/DATABRICKS_BUNDLE_ENGINE=direct
+    5  selftest/basic
 
 === Adding a test
 
 >>> selection A:acceptance/selftest/basic/script
 Selected 1 changed tests (limit=50, 0 not selected)
-   10  selftest/basic/DATABRICKS_BUNDLE_ENGINE=terraform
-   10  selftest/basic/DATABRICKS_BUNDLE_ENGINE=direct
+   10  selftest/basic
 
 === A regenerated golden scores below a changed fixture
 
 >>> selection M:acceptance/selftest/basic/output.txt M:acceptance/selftest/diff/script
 Selected 2 changed tests (limit=50, 0 not selected)
-    5  selftest/diff/DATABRICKS_BUNDLE_ENGINE=terraform
-    5  selftest/diff/DATABRICKS_BUNDLE_ENGINE=direct
-    1  selftest/basic/DATABRICKS_BUNDLE_ENGINE=terraform
-    1  selftest/basic/DATABRICKS_BUNDLE_ENGINE=direct
+    5  selftest/diff
+    1  selftest/basic
 
 === Moving a test scores lowest
 
 >>> selection R100:acceptance/selftest/old/script:acceptance/selftest/basic/script M:acceptance/selftest/diff/script
 Selected 2 changed tests (limit=50, 0 not selected)
-    5  selftest/diff/DATABRICKS_BUNDLE_ENGINE=terraform
-    5  selftest/diff/DATABRICKS_BUNDLE_ENGINE=direct
-    1  selftest/basic/DATABRICKS_BUNDLE_ENGINE=terraform
-    1  selftest/basic/DATABRICKS_BUNDLE_ENGINE=direct
+    5  selftest/diff
+    1  selftest/basic
 
 === Touching an invariant config runs every invariant test, for that config only
 
 >>> selection M:acceptance/bundle/invariant/configs/job.yml.tmpl
 Selected 5 changed tests (limit=50, 0 not selected)
     5  bundle/invariant/continue_293/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
-    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
-    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
-    5  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
-    5  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
+    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
+    5  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
     5  bundle/invariant/migrate/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
-    5  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
-    5  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
+    5  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
 
 === Adding one invariant config and touching another: only the new variant is new
 
 >>> selection A:acceptance/bundle/invariant/configs/pipeline.yml.tmpl M:acceptance/bundle/invariant/configs/job.yml.tmpl
 Selected 10 changed tests (limit=50, 0 not selected)
    10  bundle/invariant/continue_293/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl
-   10  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl/READPLAN=
-   10  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl/READPLAN=1
-   10  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl/READPLAN=
-   10  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl/READPLAN=1
+   10  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl
+   10  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl
    10  bundle/invariant/migrate/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl
-   10  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl/READPLAN=
-   10  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl/READPLAN=1
+   10  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=pipeline.yml.tmpl
     5  bundle/invariant/continue_293/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
-    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
-    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
-    5  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
-    5  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
+    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
+    5  bundle/invariant/destroy_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
     5  bundle/invariant/migrate/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
-    5  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
-    5  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
+    5  bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
 
 === The limit keeps the highest scoring tests
 
 >>> selection -limit 3 A:acceptance/selftest/basic/script M:acceptance/selftest/diff/script M:acceptance/bundle/invariant/configs/job.yml.tmpl
 Selected 3 changed tests (limit=3, 4 not selected)
-   10  selftest/basic/DATABRICKS_BUNDLE_ENGINE=terraform
-   10  selftest/basic/DATABRICKS_BUNDLE_ENGINE=direct
+   10  selftest/basic
     5  bundle/invariant/continue_293/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl
-    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=
-    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl/READPLAN=1
+    5  bundle/invariant/delete_idempotent/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl

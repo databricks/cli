@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -72,22 +73,29 @@ func main() {
 	}
 }
 
-// variantNames returns the go test names of the selected test: one per variant of its dir
-// that the selection covers, or the dir alone when it has no variants.
+// variantNames returns the go test names of the selected test. go test reads a name as a
+// prefix, so a name is only as long as it needs to be: the dir alone when every variant of
+// it runs, and otherwise up to the variant the selection names.
 func variantNames(root string, test selection.Test) []string {
-	var filters []string
-	if test.Filter != "" {
-		filters = []string{test.Filter}
+	if test.Filter == "" {
+		return []string{test.Dir}
 	}
+	key, _, _ := strings.Cut(test.Filter, "=")
 
 	var names []string
 	for _, envset := range internal.ExpandEnvMatrix(envMatrix(root, test.Dir), nil, nil) {
-		if len(envset) == 0 {
-			// The harness runs a test without variants as a plain subtest of its dir.
-			return []string{test.Dir}
+		if !selection.MatchesFilters(envset, []string{test.Filter}) {
+			continue
 		}
-		if selection.MatchesFilters(envset, filters) {
-			names = append(names, test.Dir+"/"+strings.Join(envset, "/"))
+		// Cut the name after the variable the filter names; the variants below it all run.
+		for i, kv := range envset {
+			if name, _, _ := strings.Cut(kv, "="); name == key {
+				envset = envset[:i+1]
+				break
+			}
+		}
+		if name := test.Dir + "/" + strings.Join(envset, "/"); !slices.Contains(names, name) {
+			names = append(names, name)
 		}
 	}
 	return names
