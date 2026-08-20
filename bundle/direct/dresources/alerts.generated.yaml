@@ -1,0 +1,21 @@
+# Generated, do not edit. API field behaviors from OpenAPI schema.
+#
+# For manual rules and the description of each category, see README.md.
+
+ignore_remote_changes:
+  - field: create_time
+    reason: spec:output_only
+  - field: effective_run_as
+    reason: spec:output_only
+  - field: evaluation.last_evaluated_at
+    reason: spec:output_only
+  - field: evaluation.state
+    reason: spec:output_only
+  - field: id
+    reason: spec:output_only
+  - field: lifecycle_state
+    reason: spec:output_only
+  - field: owner_user_name
+    reason: spec:output_only
+  - field: update_time
+    reason: spec:output_only

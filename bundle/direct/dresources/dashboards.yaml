@@ -1,0 +1,12 @@
+ignore_remote_changes:
+  # "serialized_dashboard" locally and remotely will have different contents
+  # We only need to rely on etag here, and can skip this field for diff computation.
+  - field: serialized_dashboard
+    reason: etag_based
+
+  # "dataset_catalog" and "dataset_schema" are write-only fields that are not returned by the server.
+  # They will always differ between local config (which has values) and remote state (which has empty strings).
+  - field: dataset_catalog
+    reason: input_only
+  - field: dataset_schema
+    reason: input_only

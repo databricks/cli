@@ -1,0 +1,6 @@
+provided_id_fields:
+  - field: table_name
+    reason: id_field
+recreate_on_changes:
+  - field: assets_dir
+    reason: immutable

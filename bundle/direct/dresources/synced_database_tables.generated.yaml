@@ -1,0 +1,26 @@
+# Generated, do not edit. API field behaviors from OpenAPI schema.
+#
+# For manual rules and the description of each category, see README.md.
+
+ignore_remote_changes:
+  - field: database_instance_name
+    reason: spec:input_only
+  - field: logical_database_name
+    reason: spec:input_only
+  - field: spec.accelerated_sync
+    reason: spec:input_only
+  - field: spec.create_database_objects_if_missing
+    reason: spec:input_only
+  - field: spec.existing_pipeline_id
+    reason: spec:input_only
+  - field: spec.new_pipeline_spec
+    reason: spec:input_only
+
+  - field: data_synchronization_status
+    reason: spec:output_only
+  - field: effective_database_instance_name
+    reason: spec:output_only
+  - field: effective_logical_database_name
+    reason: spec:output_only
+  - field: unity_catalog_provisioning_state
+    reason: spec:output_only

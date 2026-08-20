@@ -1,0 +1,19 @@
+# Generated, do not edit. API field behaviors from OpenAPI schema.
+#
+# For manual rules and the description of each category, see README.md.
+
+recreate_on_changes:
+  - field: parent_path
+    reason: spec:immutable
+
+ignore_remote_changes:
+  - field: create_time
+    reason: spec:output_only
+  - field: dashboard_id
+    reason: spec:output_only
+  - field: lifecycle_state
+    reason: spec:output_only
+  - field: path
+    reason: spec:output_only
+  - field: update_time
+    reason: spec:output_only

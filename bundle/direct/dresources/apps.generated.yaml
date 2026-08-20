@@ -1,0 +1,45 @@
+# Generated, do not edit. API field behaviors from OpenAPI schema.
+#
+# For manual rules and the description of each category, see README.md.
+
+ignore_remote_changes:
+  - field: active_deployment
+    reason: spec:output_only
+  - field: app_status
+    reason: spec:output_only
+  - field: compute_status
+    reason: spec:output_only
+  - field: create_time
+    reason: spec:output_only
+  - field: creator
+    reason: spec:output_only
+  - field: default_source_code_path
+    reason: spec:output_only
+  - field: effective_budget_policy_id
+    reason: spec:output_only
+  - field: effective_usage_policy_id
+    reason: spec:output_only
+  - field: effective_user_api_scopes
+    reason: spec:output_only
+  - field: id
+    reason: spec:output_only
+  - field: oauth2_app_client_id
+    reason: spec:output_only
+  - field: oauth2_app_integration_id
+    reason: spec:output_only
+  - field: pending_deployment
+    reason: spec:output_only
+  - field: service_principal_client_id
+    reason: spec:output_only
+  - field: service_principal_id
+    reason: spec:output_only
+  - field: service_principal_name
+    reason: spec:output_only
+  - field: thumbnail_url
+    reason: spec:output_only
+  - field: update_time
+    reason: spec:output_only
+  - field: updater
+    reason: spec:output_only
+  - field: url
+    reason: spec:output_only

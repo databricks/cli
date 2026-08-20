@@ -1,0 +1,11 @@
+provided_id_fields:
+  - field: name
+    reason: id_field
+# The Database API has no UpdateDatabaseCatalog endpoint (the generated SDK
+# method is a stub that returns 501 NOT_IMPLEMENTED), so this resource
+# implements no DoUpdate and every settable field must recreate. The
+# complementary ignore_remote_changes block in database_catalogs.generated.yaml
+# handles the read side (create_database_if_not_exists is input-only, uid is
+# output-only) so no-op deploys stay idempotent.
+recreate_on_changes:
+  - reason: immutable

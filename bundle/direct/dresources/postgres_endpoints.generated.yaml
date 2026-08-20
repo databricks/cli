@@ -1,0 +1,25 @@
+# Generated, do not edit. API field behaviors from OpenAPI schema.
+#
+# For manual rules and the description of each category, see README.md.
+
+recreate_on_changes:
+  - field: endpoint_type
+    reason: spec:immutable
+
+ignore_remote_changes:
+  - field: autoscaling_limit_max_cu
+    reason: spec:input_only
+  - field: autoscaling_limit_min_cu
+    reason: spec:input_only
+  - field: disabled
+    reason: spec:input_only
+  - field: endpoint_type
+    reason: spec:input_only
+  - field: group
+    reason: spec:input_only
+  - field: no_suspension
+    reason: spec:input_only
+  - field: settings
+    reason: spec:input_only
+  - field: suspend_timeout_duration
+    reason: spec:input_only

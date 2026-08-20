@@ -1,0 +1,42 @@
+# Every jobs.RunNow field is listed, so nothing the request carries is drift.
+# TestJobRunIgnoresEveryRequestField keeps the list in step with the SDK.
+# result_state is not in the list: comparing it against the remote is what
+# makes a run that has not succeeded visible to the plan.
+ignore_remote_changes:
+  - field: job_id
+    reason: immutable
+  # GetRun reports job_parameters resolved against the job's defaults, and
+  # nests the rest under overriding_parameters.
+  - field: dbt_commands
+    reason: effective_vs_requested
+  - field: jar_params
+    reason: effective_vs_requested
+  - field: job_parameters
+    reason: effective_vs_requested
+  - field: notebook_params
+    reason: effective_vs_requested
+  - field: pipeline_params
+    reason: effective_vs_requested
+  - field: python_named_params
+    reason: effective_vs_requested
+  - field: python_params
+    reason: effective_vs_requested
+  - field: spark_submit_params
+    reason: effective_vs_requested
+  - field: sql_params
+    reason: effective_vs_requested
+  # Fields the run-now request carries that GetRun never reports back.
+  - field: idempotency_token
+    reason: not_returned_by_api
+  - field: only
+    reason: not_returned_by_api
+  - field: performance_target
+    reason: not_returned_by_api
+  - field: queue
+    reason: not_returned_by_api
+# A run is immutable and fire-once, so any change recreates it. Omitting
+# `field` matches every field (root; see TestFieldRuleOmittedIsRoot).
+# `field: ""` would instead match nothing. The one exception is a run that is
+# still going, which ResourceJobRun.OverrideChangeDesc downgrades to an update.
+recreate_on_changes:
+  - reason: immutable
