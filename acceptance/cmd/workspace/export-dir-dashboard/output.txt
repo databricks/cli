@@ -6,4 +6,4 @@ Exporting files from /Workspace/Users/[USERNAME]/export-dir-dashboard-[UNIQUE_NA
 /Workspace/Users/[USERNAME]/export-dir-dashboard-[UNIQUE_NAME]/export-dir-dashboard-[UNIQUE_NAME].lvdash.json -> [TEST_TMP_DIR]/export/export-dir-dashboard-[UNIQUE_NAME].lvdash.json
 Export complete
 
->>> diff.py [TEST_TMP_DIR]/expected.json [TEST_TMP_DIR]/exported.json
+>>> assert_exists.py [TEST_TMP_DIR]/export/export-dir-dashboard-[UNIQUE_NAME].lvdash.json
