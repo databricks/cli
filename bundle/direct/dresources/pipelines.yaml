@@ -1,0 +1,73 @@
+recreate_on_changes:
+  - field: storage
+    reason: immutable
+  - field: ingestion_definition.connection_name
+    reason: immutable
+  - field: ingestion_definition.ingestion_gateway_id
+    reason: immutable
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L204
+  - field: gateway_definition.connection_id
+    reason: immutable
+  - field: gateway_definition.connection_name
+    reason: immutable
+  - field: gateway_definition.gateway_storage_catalog
+    reason: immutable
+  - field: gateway_definition.gateway_storage_schema
+    reason: immutable
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L209
+  - field: ingestion_definition.ingest_from_uc_foreign_catalog
+    reason: immutable
+
+# See jobs.yaml: version_id is set on every deploy, so it is ignored as a
+# local/remote change. deployment_id is left out so a change to it still shows.
+ignore_remote_changes:
+  - field: deployment.version_id
+    reason: managed by the deployment metadata service
+  # "id" is handled in a special way before any fields changed
+  # However, it is also part of RemotePipeline via CreatePipeline.
+  # Thus it shows up as a remote change since we don't set on the object.
+  - field: id
+    reason: "!drop"
+  # QQQ should this be here? When run_as is explicitly set, the GET response echoes it back
+  # as a structured run_as.user_name (verified on e2-dogfood with a real user), so it may not
+  # be truly input-only. The explicit-set case could not be confirmed on aws-cli, azure-cli,
+  # or gcp-cli: those envs authenticate as a service principal that lacks servicePrincipal.user
+  # on itself, so it can't self-bind run_as. In the default (unset) case on all three clouds,
+  # GET returns only the flat run_as_user_name and no structured run_as.
+  - field: run_as
+    reason: input_only
+  # Carried by CreatePipeline/EditPipeline but never returned by GET, so remote
+  # always reads back false and a config value of true never converges.
+  - field: allow_duplicate_names
+    reason: input_only
+
+ignore_local_changes:
+  - field: deployment.version_id
+    reason: managed by the deployment metadata service
+  # "id" is output-only, providing it in config would be a mistake
+  - field: id
+    reason: "!drop"
+
+backend_defaults:
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L238
+  # s.SchemaPath("storage").SetCustomSuppressDiff(suppressStorageDiff)
+  # Backend generates storage path like dbfs:/pipelines/<id> when not set by user.
+  - field: storage
+
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L218
+  # s.SchemaPath("cluster", "node_type_id").SetComputed()
+  - field: clusters[*].node_type_id
+
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L219
+  # s.SchemaPath("cluster", "driver_node_type_id").SetComputed()
+  - field: clusters[*].driver_node_type_id
+
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L220
+  # s.SchemaPath("cluster", "enable_local_disk_encryption").SetComputed()
+  - field: clusters[*].enable_local_disk_encryption
+
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L229-L230
+  # s.SchemaPath("event_log", "catalog").SetComputed()
+  # s.SchemaPath("event_log", "schema").SetComputed()
+  - field: event_log.catalog
+  - field: event_log.schema

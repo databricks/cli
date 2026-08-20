@@ -1,0 +1,27 @@
+# Generated, do not edit. API field behaviors from OpenAPI schema.
+#
+# For manual rules and the description of each category, see README.md.
+
+recreate_on_changes:
+  - field: source_branch
+    reason: spec:immutable
+  - field: source_branch_lsn
+    reason: spec:immutable
+  - field: source_branch_time
+    reason: spec:immutable
+
+ignore_remote_changes:
+  - field: expire_time
+    reason: spec:input_only
+  - field: is_protected
+    reason: spec:input_only
+  - field: no_expiry
+    reason: spec:input_only
+  - field: source_branch
+    reason: spec:input_only
+  - field: source_branch_lsn
+    reason: spec:input_only
+  - field: source_branch_time
+    reason: spec:input_only
+  - field: ttl
+    reason: spec:input_only

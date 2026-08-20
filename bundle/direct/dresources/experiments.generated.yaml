@@ -1,0 +1,11 @@
+# Generated, do not edit. API field behaviors from OpenAPI schema.
+#
+# For manual rules and the description of each category, see README.md.
+
+recreate_on_changes:
+  - field: trace_location
+    reason: spec:immutable
+
+ignore_remote_changes:
+  - field: trace_location.uc_trace_location.effective_table_prefix
+    reason: spec:output_only

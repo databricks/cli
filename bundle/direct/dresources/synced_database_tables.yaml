@@ -1,0 +1,11 @@
+provided_id_fields:
+  - field: name
+    reason: id_field
+# The Database API has no UpdateSyncedDatabaseTable endpoint (the generated
+# SDK method is a stub that returns 501 NOT_IMPLEMENTED), so this resource
+# implements no DoUpdate and every settable field must recreate. The
+# complementary ignore_remote_changes block in synced_database_tables.generated.yaml
+# handles the read side (input-only and output-only fields) so no-op deploys
+# stay idempotent. Same pattern as postgres_synced_tables.
+recreate_on_changes:
+  - reason: immutable

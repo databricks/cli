@@ -1,0 +1,15 @@
+recreate_on_changes:
+  - field: storage_root
+    reason: immutable
+  - field: connection_name
+    reason: immutable
+  - field: provider_name
+    reason: immutable
+  - field: share_name
+    reason: immutable
+updatable_id_fields:
+  - field: name
+    reason: id_changes
+backend_defaults:
+  # UC auto-populates unity.catalog.managed.<format>.defaults.* keys after create.
+  - field: properties['unity.catalog.managed.*.defaults.*']

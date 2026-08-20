@@ -1,0 +1,82 @@
+# TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
+provided_id_fields:
+  - field: name
+    reason: id_field
+recreate_on_changes:
+  # description is immutable, can't be updated via API
+  - field: description
+    reason: immutable
+  - field: config.auto_capture_config.catalog_name
+    reason: immutable
+  - field: config.auto_capture_config.schema_name
+    reason: immutable
+  - field: config.auto_capture_config.table_name_prefix
+    reason: immutable
+  - field: route_optimized
+    reason: immutable
+ignore_remote_changes:
+  # budget_policy_id is in ServingEndpointDetailed but GET never populates it
+  # (the API returns effective_budget_policy_id instead), so the remote always
+  # reports empty. This is not a backend default, so suppress remote changes.
+  - field: budget_policy_id
+    reason: no_update_api
+  # Accepted on write but not returned by GET.
+  - field: config.served_entities[*].burst_scaling_enabled
+    reason: input_only
+  # Write-only secrets: the backend stores them and returns the reference field, not the plaintext.
+  - field: config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext
+    reason: input_only
+  - field: config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id_plaintext
+    reason: input_only
+  - field: config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key_plaintext
+    reason: input_only
+  - field: config.served_entities[*].external_model.anthropic_config.anthropic_api_key_plaintext
+    reason: input_only
+  - field: config.served_entities[*].external_model.cohere_config.cohere_api_key_plaintext
+    reason: input_only
+  - field: config.served_entities[*].external_model.custom_provider_config.api_key_auth.value_plaintext
+    reason: input_only
+  - field: config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token_plaintext
+    reason: input_only
+  - field: config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token_plaintext
+    reason: input_only
+  - field: config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key_plaintext
+    reason: input_only
+  - field: config.served_entities[*].external_model.openai_config.openai_api_key_plaintext
+    reason: input_only
+  - field: config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret_plaintext
+    reason: input_only
+  - field: config.served_entities[*].external_model.palm_config.palm_api_key_plaintext
+    reason: input_only
+ignore_local_changes:
+  - field: budget_policy_id
+    reason: no_update_api
+  - field: rate_limits
+    reason: not_implemented
+backend_defaults:
+  # Remote-only telemetry is reported as a change at this parent path.
+  - field: telemetry_config
+
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383
+  # common.CustomizeSchemaPath(m, "config", "served_entities", "name").SetComputed()
+  - field: config.served_entities[*].name
+
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L384
+  # common.CustomizeSchemaPath(m, "config", "served_entities", "workload_type").SetComputed()
+  - field: config.served_entities[*].workload_type
+
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L372
+  # common.CustomizeSchemaPath(m, "config", "auto_capture_config", "enabled").SetComputed()
+  - field: config.auto_capture_config.enabled
+
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L395-L396
+  # route_optimized is ForceNew; backend returns false when not set by user.
+  - field: route_optimized
+    values: [false]
+
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L370
+  # common.CustomizeSchemaPath(m, "config", "traffic_config").SetComputed()
+  # The backend defaults traffic_config (100% to the served entity) when the user
+  # does not specify one. Suppress only that default: if the user sets traffic_config
+  # and the remote diverges, normal drift detection still applies.
+  - field: config.traffic_config

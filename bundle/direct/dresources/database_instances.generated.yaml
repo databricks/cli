@@ -1,0 +1,62 @@
+# Generated, do not edit. API field behaviors from OpenAPI schema.
+#
+# For manual rules and the description of each category, see README.md.
+
+recreate_on_changes:
+  - field: parent_instance_ref
+    reason: spec:immutable
+
+ignore_remote_changes:
+  - field: custom_tags
+    reason: spec:input_only
+  - field: enable_pg_native_login
+    reason: spec:input_only
+  - field: enable_readable_secondaries
+    reason: spec:input_only
+  - field: node_count
+    reason: spec:input_only
+  - field: parent_instance_ref.lsn
+    reason: spec:input_only
+  - field: retention_window_in_days
+    reason: spec:input_only
+  - field: stopped
+    reason: spec:input_only
+  - field: usage_policy_id
+    reason: spec:input_only
+
+  - field: child_instance_refs
+    reason: spec:output_only
+  - field: creation_time
+    reason: spec:output_only
+  - field: creator
+    reason: spec:output_only
+  - field: effective_capacity
+    reason: spec:output_only
+  - field: effective_custom_tags
+    reason: spec:output_only
+  - field: effective_enable_pg_native_login
+    reason: spec:output_only
+  - field: effective_enable_readable_secondaries
+    reason: spec:output_only
+  - field: effective_node_count
+    reason: spec:output_only
+  - field: effective_retention_window_in_days
+    reason: spec:output_only
+  - field: effective_stopped
+    reason: spec:output_only
+  - field: effective_usage_policy_id
+    reason: spec:output_only
+  - field: parent_instance_ref.effective_lsn
+    reason: spec:output_only
+  - field: parent_instance_ref.uid
+    reason: spec:output_only
+  - field: pg_version
+    reason: spec:output_only
+  - field: read_only_dns
+    reason: spec:output_only
+  - field: read_write_dns
+    reason: spec:output_only
+  - field: state
+    reason: spec:output_only
+  - field: uid
+    reason: spec:output_only

@@ -1,0 +1,9 @@
+# Generated, do not edit. API field behaviors from OpenAPI schema.
+#
+# For manual rules and the description of each category, see README.md.
+
+ignore_remote_changes:
+  - field: postgres_database
+    reason: spec:input_only
+  - field: role
+    reason: spec:input_only
