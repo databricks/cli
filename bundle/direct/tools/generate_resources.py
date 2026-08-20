@@ -132,9 +132,7 @@ def write_field_group(lines, header, fields):
 
 GENERATED_SUFFIX = ".generated.yaml"
 
-HEADER = """# Generated, do not edit. API field behaviors from OpenAPI schema.
-#
-# For manual rules and the description of each category, see README.md."""
+HEADER = "# Generated, do not edit."
 
 
 def generate(behaviors):

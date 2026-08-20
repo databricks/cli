@@ -1,6 +1,4 @@
-# Generated, do not edit. API field behaviors from OpenAPI schema.
-#
-# For manual rules and the description of each category, see README.md.
+# Generated, do not edit.
 
 ignore_remote_changes:
   - field: effective_enable_file_events
