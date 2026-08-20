@@ -21,6 +21,7 @@
   },
   "default_source_code_path": "/Workspace/Users/[USERNAME]/test-name",
   "description": "My app description.",
+  "forward_user_access_token": true,
   "id": "1000",
   "name": "test-name",
   "resources": [
@@ -62,6 +63,7 @@
   },
   "default_source_code_path": "/Workspace/Users/[USERNAME]/test-name",
   "description": "My app description.",
+  "forward_user_access_token": true,
   "id": "1001",
   "name": "test-name",
   "resources": [
