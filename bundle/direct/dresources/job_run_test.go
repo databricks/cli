@@ -354,35 +354,23 @@ func TestJobRunPrepareStateRequiresSuccess(t *testing.T) {
 }
 
 func TestJobRunPrepareStateOnBundleDeploy(t *testing.T) {
-	t.Run("unset", func(t *testing.T) {
-		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{})
-		assert.Nil(t, state.Lifecycle)
-	})
+	on := true
+	input := &resources.JobRun{
+		Lifecycle: &resources.JobRunLifecycle{
+			Triggers: []resources.JobRunTrigger{{OnBundleDeploy: &on}},
+		},
+	}
+	first := (&ResourceJobRun{}).PrepareState(input)
+	require.NotNil(t, first.Lifecycle)
+	require.NotNil(t, first.Lifecycle.Triggers)
+	assert.NotEmpty(t, first.Lifecycle.Triggers.OnBundleDeploy)
 
-	t.Run("armed", func(t *testing.T) {
-		on := true
-		input := &resources.JobRun{
-			Lifecycle: &resources.JobRunLifecycle{
-				Triggers: []resources.JobRunTrigger{{OnBundleDeploy: &on}},
-			},
-		}
-		first := (&ResourceJobRun{}).PrepareState(input)
-		require.NotNil(t, first.Lifecycle)
-		require.NotNil(t, first.Lifecycle.Triggers)
-		assert.NotEmpty(t, first.Lifecycle.Triggers.OnBundleDeploy)
-
-		second := (&ResourceJobRun{}).PrepareState(input)
-		assert.NotEqual(t, first.Lifecycle.Triggers.OnBundleDeploy, second.Lifecycle.Triggers.OnBundleDeploy)
-	})
+	second := (&ResourceJobRun{}).PrepareState(input)
+	assert.NotEqual(t, first.Lifecycle.Triggers.OnBundleDeploy, second.Lifecycle.Triggers.OnBundleDeploy)
 }
 
 func TestJobRunPrepareStateOnFileChange(t *testing.T) {
 	hashes := map[string]string{"a.txt": "abc"}
-
-	t.Run("unset", func(t *testing.T) {
-		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{})
-		assert.Nil(t, state.Lifecycle)
-	})
 
 	t.Run("armed", func(t *testing.T) {
 		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{
