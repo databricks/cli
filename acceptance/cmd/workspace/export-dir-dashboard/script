@@ -1,0 +1,28 @@
+DASHBOARD_NAME="export-dir-dashboard-$UNIQUE_NAME"
+DASHBOARD_DIR="/Workspace/Users/$CURRENT_USER_NAME/export-dir-dashboard-$UNIQUE_NAME"
+dashboard_id=""
+
+cleanup() {
+    if [ -n "$dashboard_id" ]; then
+        $CLI lakeview trash "$dashboard_id" >> LOG.cleanup 2>&1 || true
+    fi
+    $CLI workspace delete "$DASHBOARD_DIR" --recursive >> LOG.cleanup 2>&1 || true
+}
+trap cleanup EXIT
+
+trace $CLI workspace mkdirs "$DASHBOARD_DIR"
+
+dashboard_id=$($CLI lakeview create \
+    --display-name "$DASHBOARD_NAME" \
+    --warehouse-id "$TEST_DEFAULT_WAREHOUSE_ID" \
+    --serialized-dashboard "$(cat dashboard.lvdash.json)" \
+    --json "{\"parent_path\": \"$DASHBOARD_DIR\"}" \
+    -o json | jq -r '.dashboard_id')
+add_repl "$dashboard_id" DASHBOARD_ID
+
+mkdir -p "$TEST_TMP_DIR/export"
+trace $CLI workspace export-dir "$DASHBOARD_DIR" "$TEST_TMP_DIR/export"
+
+jq -S . dashboard.lvdash.json > "$TEST_TMP_DIR/expected.json"
+jq -S . "$TEST_TMP_DIR/export/$DASHBOARD_NAME.lvdash.json" > "$TEST_TMP_DIR/exported.json"
+trace diff.py "$TEST_TMP_DIR/expected.json" "$TEST_TMP_DIR/exported.json"
