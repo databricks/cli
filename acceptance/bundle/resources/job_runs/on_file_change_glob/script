@@ -4,7 +4,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Plan once, print JSON changes, leave tmp.plan.json for readplanarg.
 changes() {
     $CLI bundle plan -o json > tmp.plan.json
     trace jq '.plan["resources.job_runs.my_run"].changes' tmp.plan.json
@@ -19,9 +18,7 @@ trace print_requests.py //jobs/run-now
 title "editing one matched file re-fires"
 update_file.py migrations/001.txt "one" "one-edited"
 changes
-# The deploy is not traced: readplanarg makes the command line differ per variant.
-title "bundle deploy\n"
-$CLI bundle deploy $(readplanarg tmp.plan.json)
+trace $CLI bundle deploy
 read_id.py my_run > /dev/null
 trace print_requests.py --keep //jobs/runs/delete
 trace print_requests.py //jobs/run-now
