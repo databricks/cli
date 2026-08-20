@@ -1,6 +1,4 @@
-# Generated, do not edit. API field behaviors from OpenAPI schema.
-#
-# For manual rules and the description of each category, see README.md.
+# Generated, do not edit.
 
 recreate_on_changes:
   - field: source_branch
