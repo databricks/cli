@@ -112,11 +112,16 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	if !input.HasOnBundleDeploy() && len(input.ResolvedFileTriggers) == 0 {
 		return state
 	}
-	triggers := &JobRunTriggersState{OnFileChange: input.ResolvedFileTriggers}
+	onBundleDeploy := ""
 	if input.HasOnBundleDeploy() {
-		triggers.OnBundleDeploy = uuid.NewString()
+		onBundleDeploy = uuid.NewString()
 	}
-	state.Lifecycle = &JobRunLifecycleState{Triggers: triggers}
+	state.Lifecycle = &JobRunLifecycleState{
+		Triggers: &JobRunTriggersState{
+			OnBundleDeploy: onBundleDeploy,
+			OnFileChange:   input.ResolvedFileTriggers,
+		},
+	}
 	return state
 }
 
