@@ -61,7 +61,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> [CLI] bundle deploy
+=== bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-glob/default/files...
 Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
 Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
