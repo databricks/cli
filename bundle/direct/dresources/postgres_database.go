@@ -71,7 +71,7 @@ func (*ResourcePostgresDatabase) RemapState(remote *PostgresDatabaseRemote) *Pos
 
 // makePostgresDatabaseRemote converts the SDK Database into the embedded remote
 // shape. GET does not echo spec today (only status is returned); the embedded
-// spec fields stay at their zero values, and resources.yml suppresses phantom
+// spec fields stay at their zero values, and postgres_databases.yaml suppresses phantom
 // drift via ignore_remote_changes with reason spec:input_only.
 func makePostgresDatabaseRemote(database *postgres.Database) *PostgresDatabaseRemote {
 	var spec postgres.DatabaseDatabaseSpec

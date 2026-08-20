@@ -9,7 +9,7 @@ allowed-tools: Read, Edit, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
 
 The SDK version lives in `go.mod` (`github.com/databricks/databricks-sdk-go`) and the pinned spec SHA lives in `.codegen/_openapi_sha`.
 These two move as a pair; everything else in this skill is regenerated from them or is fallout you fix by hand.
-Do not hand-edit generated files (`.codegen/cli.json`, `cmd/workspace/*`, `cmd/account/*`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `bundle/direct/dresources/resources.generated.yml`, `bundle/terraform_dabs_map/generated.go`, `python/databricks/bundles/**`); regenerate them.
+Do not hand-edit generated files (`.codegen/cli.json`, `cmd/workspace/*`, `cmd/account/*`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `bundle/direct/dresources/*.generated.yaml`, `bundle/terraform_dabs_map/generated.go`, `python/databricks/bundles/**`); regenerate them.
 
 The Python tasks (`pydabs-*`, and the `pydabs-codegen` step inside `generate-check`) all run through `uv`. If one fails because `uv` is missing or because the host's `python3` is too old (e.g. 3.9), install `uv` (`curl -LsSf https://astral.sh/uv/install.sh | sh`) rather than touching the system Python: `uv run` provisions the interpreter each package pins (`>=3.10`, and `==3.13.*` under `python/codegen/`) and downloads it if needed. Do not chase the system Python version.
 
@@ -42,7 +42,7 @@ Run `go build ./...` and fix compile breakages before touching acceptance golden
 Read the SDK's `CHANGELOG.md` at the target version (in the module cache) to enumerate breaking changes before chasing compile errors.
 A removed struct field that the CLI used (e.g. `jobs.AiRuntimeTask.CodeSourcePath`) should have its usage temporarily disabled with a comment noting it returns in a later SDK bump, not deleted outright.
 A new struct field triggers an `exhaustruct` lint failure in `bundle/direct/dresources/*`. Run `./task lint` and (in case of issues) wire the field through `PrepareState` and `RemapState` when it exists on both the input and remote types.
-A field the new spec now annotates as output-only may already be emitted into `resources.generated.yml`, making the manual entry in `resources.yml` redundant; `TestResourcesYMLNoRedundantRules` catches this, so remove the manual entry.
+A field the new spec now annotates as output-only may already be emitted into `<resource_type>.generated.yaml`, making the manual entry in `<resource_type>.yaml` redundant; `TestResourcesYMLNoRedundantRules` catches this, so remove the manual entry.
 
 **6. Refresh goldens, then VERIFY.**
 

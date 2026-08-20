@@ -11,8 +11,8 @@ none) that would make terraform abort.
 
 A field is settable/eligible when out.fields.txt types it as `string` (this
 skips enums, which are named types) with flag ALL or INPUT, and it is not
-output_only (resources.generated.yml), a bundle-framework field, or a known
-terraform-erroring field.
+output_only (<resource_type>.generated.yaml), a bundle-framework field, or a
+known terraform-erroring field.
 
 Run from the repo root; writes databricks.yml in the test directory:
   acceptance/bundle/empty_string_dropped/gen_empty_config.py
@@ -24,7 +24,8 @@ from pathlib import Path
 import yaml
 
 FIELDS = Path("acceptance/bundle/refschema/out.fields.txt")
-GENERATED = Path("bundle/direct/dresources/resources.generated.yml")
+DRESOURCES = Path("bundle/direct/dresources")
+GENERATED_SUFFIX = ".generated.yaml"
 TESTDIR = Path("acceptance/bundle/empty_string_dropped")
 BASE = TESTDIR / "base.yml"
 
@@ -79,14 +80,14 @@ def string_leaf_parents():
 
 def output_only_fields():
     """Map resource type -> {output_only field paths} (user cannot set)."""
-    gen = yaml.safe_load(GENERATED.read_text()) or {}
     result = {}
-    for rtype, spec in (gen.get("resources") or {}).items():
+    for path in sorted(DRESOURCES.glob("*" + GENERATED_SUFFIX)):
+        spec = yaml.safe_load(path.read_text()) or {}
         fields = set()
-        for entry in (spec or {}).get("ignore_remote_changes") or []:
+        for entry in spec.get("ignore_remote_changes") or []:
             if str(entry.get("reason", "")).startswith("spec:output_only"):
                 fields.add(entry["field"])
-        result[rtype] = fields
+        result[path.name.removesuffix(GENERATED_SUFFIX)] = fields
     return result
 
 

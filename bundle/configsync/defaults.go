@@ -63,7 +63,7 @@ var serverSideDefaults = map[string]any{
 	// custom_tags and cluster_log_conf are commonly injected by cluster policies
 	// when the user omits them, so they exist only remotely. Syncing them back leaks
 	// one environment's policy values into (often shared) config and breaks deploys in
-	// other environments. TODO: move to backend_defaults in resources.yml once
+	// other environments. TODO: move to backend_defaults in jobs.yaml once
 	// configsync filtering is migrated to the direct engine lifecycle metadata.
 	"resources.jobs.*.tasks[*].new_cluster.custom_tags":      backendDefault,
 	"resources.jobs.*.tasks[*].new_cluster.cluster_log_conf": backendDefault,
