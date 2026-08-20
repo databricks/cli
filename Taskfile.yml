@@ -1032,9 +1032,9 @@ tasks:
       - bundle/direct/dresources/apitypes.yml
       - acceptance/bundle/refschema/out.fields.txt
     generates:
-      - bundle/direct/dresources/resources.generated.yml
+      - bundle/direct/dresources/*.generated.yaml
     cmds:
-      - "sh -c 'uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
+      - "uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt bundle/direct/dresources"
 
   # pydabs-* tasks are defined in python/Taskfile.yml (included above).
 

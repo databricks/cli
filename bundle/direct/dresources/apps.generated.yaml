@@ -3,6 +3,11 @@
 # For manual rules and the description of each category, see README.md.
 
 ignore_remote_changes:
+  - field: git_source
+    reason: spec:input_only
+  - field: source_code_path
+    reason: spec:input_only
+
   - field: active_deployment
     reason: spec:output_only
   - field: app_status
@@ -12,6 +17,8 @@ ignore_remote_changes:
   - field: create_time
     reason: spec:output_only
   - field: creator
+    reason: spec:output_only
+  - field: default_git_source
     reason: spec:output_only
   - field: default_source_code_path
     reason: spec:output_only

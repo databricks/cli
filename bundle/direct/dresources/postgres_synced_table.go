@@ -62,7 +62,7 @@ func (*ResourcePostgresSyncedTable) RemapState(remote *PostgresSyncedTableRemote
 
 // makePostgresSyncedTableRemote converts the SDK SyncedTable into the embedded
 // remote shape. GET does not echo spec today (only status is returned); the
-// embedded spec fields stay at their zero values, and resources.yml suppresses
+// embedded spec fields stay at their zero values, and postgres_synced_tables.yaml suppresses
 // phantom drift via ignore_remote_changes with reason spec:input_only.
 //
 // The synced-table API doesn't expose the user-facing id as a named field. It

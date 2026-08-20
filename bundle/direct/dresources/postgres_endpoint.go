@@ -80,7 +80,7 @@ func (*ResourcePostgresEndpoint) RemapState(remote *PostgresEndpointRemote) *Pos
 
 // makePostgresEndpointRemote converts the SDK Endpoint into the embedded remote shape.
 // GET does not echo spec today (only status is returned); the embedded spec fields
-// stay at their zero values, and resources.yml suppresses phantom drift via
+// stay at their zero values, and postgres_endpoints.yaml suppresses phantom drift via
 // ignore_remote_changes with reason spec:input_only.
 func makePostgresEndpointRemote(endpoint *postgres.Endpoint) *PostgresEndpointRemote {
 	var spec postgres.EndpointSpec

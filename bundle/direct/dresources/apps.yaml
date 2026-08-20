@@ -4,6 +4,10 @@ provided_id_fields:
 backend_defaults:
   # Backend sets it "MEDIUM" when not specified in the config
   - field: compute_size
+  # Backend enables token forwarding and reports true even when the config omits it,
+  # so an omitted field would otherwise plan an update on every deploy. An explicit
+  # value in the config still diffs normally.
+  - field: forward_user_access_token
   # lifecycle.started is derived from remote compute status in RemapState, so the
   # remote side always has a value. When the user omits lifecycle from config,
   # both old and new are nil and backend_defaults correctly skips the remote value.
