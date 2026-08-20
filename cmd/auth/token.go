@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/dockercredentials"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
@@ -31,7 +32,22 @@ func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthA
 	return fmt.Sprintf("Try logging in again with `%s` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
 }
 
+type (
+	tokenLoader          func(context.Context, loadTokenArgs) (*oauth2.Token, error)
+	registryHostResolver func(string, string, string) (string, error)
+)
+
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
+	return newTokenCommandWithLoader(authArguments, loadToken)
+}
+
+// newTokenCommandWithLoader isolates cache-backed token acquisition from command parsing in tests.
+func newTokenCommandWithLoader(authArguments *auth.AuthArguments, load tokenLoader) *cobra.Command {
+	return newTokenCommandWithRegistryHost(authArguments, load, dockercredentials.RegistryHost)
+}
+
+// newTokenCommandWithRegistryHost isolates registry reconstruction so tests can model cloud and environment matches.
+func newTokenCommandWithRegistryHost(authArguments *auth.AuthArguments, load tokenLoader, registryHost registryHostResolver) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token [PROFILE]",
 		Short: "Get authentication token",
@@ -50,18 +66,31 @@ and secret is not supported.`,
 	cmd.Flags().BoolVar(&forceRefresh, "force-refresh", false,
 		"Force a token refresh even if the cached token is still valid.")
 
-	cmd.PreRunE = profileHostConflictCheck
+	// Docker format is an internal credential-helper contract, not a user-facing output mode.
+	var format string
+	cmd.Flags().StringVar(&format, "format", "", "Hidden output format")
+	_ = cmd.Flags().MarkHidden("format")
+
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if format == "docker" {
+			return validateDockerTokenRequest(cmd, args)
+		}
+		return profileHostConflictCheck(cmd, args)
+	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
+		if format != "" && format != "docker" {
+			return fmt.Errorf("unsupported token format %q", format)
+		}
 
 		tokenStore, mode, err := storage.ResolveStore(ctx, "")
 		if err != nil {
 			return err
 		}
 
-		t, err := loadToken(ctx, loadTokenArgs{
+		loadArgs := loadTokenArgs{
 			authArguments:      authArguments,
 			profileName:        profileName,
 			args:               args,
@@ -71,7 +100,13 @@ and secret is not supported.`,
 			tokenStore:         tokenStore,
 			mode:               mode,
 			persistentAuthOpts: nil,
-		})
+		}
+
+		if format == "docker" {
+			return writeDockerTokenOutput(ctx, cmd, loadArgs, load, registryHost)
+		}
+
+		t, err := load(ctx, loadArgs)
 		if err != nil {
 			return err
 		}
@@ -83,6 +118,108 @@ and secret is not supported.`,
 	}
 
 	return cmd
+}
+
+type dockerGetResponse struct {
+	Username string `json:"Username"`
+	Secret   string `json:"Secret"`
+}
+
+// writeDockerTokenOutput makes Docker's registry address the sole profile selector for its get response.
+// See https://docs.docker.com/reference/cli/docker/login/#credential-helper-protocol.
+func writeDockerTokenOutput(ctx context.Context, cmd *cobra.Command, args loadTokenArgs, load tokenLoader, registryHost registryHostResolver) error {
+	rawServer, err := io.ReadAll(cmd.InOrStdin())
+	if err != nil {
+		return fmt.Errorf("read Docker credential request: %w", err)
+	}
+	registry, err := dockercredentials.ParseRegistryHost(string(rawServer))
+	if err != nil {
+		return err
+	}
+
+	profileName, err := dockerTokenProfileName(ctx, registry, args.profiler, registryHost)
+	if err != nil {
+		return err
+	}
+
+	args.authArguments = &auth.AuthArguments{}
+	args.profileName = profileName
+	args.args = nil
+
+	t, err := load(ctx, args)
+	if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(cmd.OutOrStdout()).Encode(dockerGetResponse{
+		Username: dockercredentials.OAuthTokenUsername,
+		Secret:   t.AccessToken,
+	})
+}
+
+// validateDockerTokenRequest makes the registry address the sole profile selector for Docker-format requests.
+func validateDockerTokenRequest(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		return errors.New("--format=docker does not accept positional arguments")
+	}
+	for _, name := range []string{"profile", "host", "account-id", "workspace-id"} {
+		flag := cmd.Flag(name)
+		if flag != nil && flag.Changed {
+			return fmt.Errorf("--format=docker does not support --%s", name)
+		}
+	}
+
+	return nil
+}
+
+// dockerTokenProfileName finds one compatible profile, using the registry DNS zone to disambiguate repeated workspace IDs.
+func dockerTokenProfileName(ctx context.Context, registry dockercredentials.Registry, profiler profile.Profiler, registryHost registryHostResolver) (string, error) {
+	workspaceProfiles, err := profiler.LoadProfiles(ctx, func(p profile.Profile) bool {
+		return p.WorkspaceID == registry.WorkspaceID
+	})
+	if err != nil {
+		return "", err
+	}
+	if len(workspaceProfiles) == 0 {
+		return "", fmt.Errorf("no Databricks profile found for workspace ID %s from registry host %s. Run databricks auth login --host <workspace-url> and set workspace_id for that profile", registry.WorkspaceID, registry.Host)
+	}
+	if len(workspaceProfiles) == 1 {
+		return validateDockerTokenProfile(registry, workspaceProfiles[0], registryHost)
+	}
+
+	var matchingProfiles profile.Profiles
+	for _, p := range workspaceProfiles {
+		if validateDockerCredentialProfile(p) != nil {
+			continue
+		}
+		expectedHost, err := registryHost(registry.WorkspaceID, registry.Region, p.Host)
+		if err == nil && expectedHost == registry.Host {
+			matchingProfiles = append(matchingProfiles, p)
+		}
+	}
+	if len(matchingProfiles) == 0 {
+		return "", fmt.Errorf("registry host %s does not match any profile for workspace ID %s. Verify the profile workspace host and workspace_id", registry.Host, registry.WorkspaceID)
+	}
+	if len(matchingProfiles) > 1 {
+		return "", fmt.Errorf("multiple Databricks profiles match workspace ID %s: %s. Remove duplicate workspace_id entries before using Docker credential helper", registry.WorkspaceID, strings.Join(matchingProfiles.Names(), " and "))
+	}
+	return validateDockerTokenProfile(registry, matchingProfiles[0], registryHost)
+}
+
+// validateDockerTokenProfile verifies U2M eligibility and reconstructs the registry host to prevent cross-environment matches.
+func validateDockerTokenProfile(registry dockercredentials.Registry, p profile.Profile, registryHost registryHostResolver) (string, error) {
+	if err := validateDockerCredentialProfile(p); err != nil {
+		return "", err
+	}
+	// Workspace IDs can repeat across environments, so the registry must also match the profile's DNS zone.
+	expectedHost, err := registryHost(registry.WorkspaceID, registry.Region, p.Host)
+	if err != nil {
+		return "", fmt.Errorf("validate registry host against profile %q: %w", p.Name, err)
+	}
+	if expectedHost != registry.Host {
+		return "", fmt.Errorf("registry host %s does not match profile %q workspace host", registry.Host, p.Name)
+	}
+	return p.Name, nil
 }
 
 func writeTokenOutput(w io.Writer, t *oauth2.Token, textMode bool) error {
