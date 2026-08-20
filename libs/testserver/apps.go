@@ -329,6 +329,10 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		app.ComputeSize = "MEDIUM"
 	}
 
+	// The platform enables user access token forwarding regardless of what the
+	// request asked for, so the remote always reports true.
+	app.ForwardUserAccessToken = true
+
 	// Assign a service principal to the app, mimicking the real platform.
 	if app.ServicePrincipalClientId == "" {
 		app.ServicePrincipalClientId = nextUUID()
