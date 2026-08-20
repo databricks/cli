@@ -1,7 +1,3 @@
-# Deploy both by re-planning and from a plan saved on disk, so the hashes
-# computed during planning survive plan serialization.
-EnvMatrix.READPLAN = ["", "1"]
-
 Ignore = ["tmp.plan.json", "tmp.002.txt"]
 
 # See on_file_change/test.toml: mask content hashes before the parent's
