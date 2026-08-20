@@ -8,6 +8,73 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestRegistryHost(t *testing.T) {
+	tests := []struct {
+		name          string
+		workspaceHost string
+		region        string
+		want          string
+	}{
+		{
+			name:          "AWS production",
+			workspaceHost: "https://adb-123.456.cloud.databricks.com",
+			region:        "us-west-2",
+			want:          "123456789.container.us-west-2.cloud.databricks.com",
+		},
+		{
+			name:          "AWS staging",
+			workspaceHost: "https://workspace.staging.cloud.databricks.com",
+			region:        "us-west-2",
+			want:          "123456789.container.us-west-2.staging.cloud.databricks.com",
+		},
+		{
+			name:          "Azure production",
+			workspaceHost: "https://adb-123.456.azuredatabricks.net",
+			region:        "eastus",
+			want:          "123456789.container.eastus.azuredatabricks.net",
+		},
+		{
+			name:          "Azure development",
+			workspaceHost: "https://workspace.dev.azuredatabricks.net",
+			region:        "eastus",
+			want:          "123456789.container.eastus.dev.azuredatabricks.net",
+		},
+		{
+			name:          "GCP production",
+			workspaceHost: "https://workspace.gcp.databricks.com",
+			region:        "us-central1",
+			want:          "123456789.container.us-central1.gcp.databricks.com",
+		},
+		{
+			name:          "GCP development",
+			workspaceHost: "https://workspace.dev.gcp.databricks.com",
+			region:        "us-central1",
+			want:          "123456789.container.us-central1.dev.gcp.databricks.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := RegistryHost("123456789", tt.region, tt.workspaceHost)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestRegistryHostRejectsEmptyParts(t *testing.T) {
+	_, err := RegistryHost("", "us-west-2", "https://workspace.cloud.databricks.test")
+	assert.ErrorContains(t, err, "workspace ID is required")
+
+	_, err = RegistryHost("123456789", "", "https://workspace.cloud.databricks.test")
+	assert.ErrorContains(t, err, "region is required")
+}
+
+func TestRegistryHostRejectsUnsupportedWorkspaceHost(t *testing.T) {
+	_, err := RegistryHost("123456789", "us-west-2", "https://workspace.example.test")
+	assert.ErrorContains(t, err, `"workspace.example.test" is not a supported Databricks workspace host`)
+}
+
 func TestParseRegistryHost(t *testing.T) {
 	cases := []string{
 		"123456789.container.us-west-2.cloud.databricks.com",
@@ -35,6 +102,10 @@ func TestParseRegistryHostSupportsAllDatabricksEnvironmentZones(t *testing.T) {
 		}
 		t.Run(dnsZone, func(t *testing.T) {
 			wantHost := "123456789.container.test-region" + dnsZone
+			got, err := RegistryHost("123456789", "test-region", "https://workspace"+dnsZone)
+			require.NoError(t, err)
+			assert.Equal(t, wantHost, got)
+
 			registry, err := ParseRegistryHost("https://" + wantHost + "/v2/")
 			require.NoError(t, err)
 			assert.Equal(t, Registry{
