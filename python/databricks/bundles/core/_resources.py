@@ -108,6 +108,7 @@ class Resources:
         :param location: optional location of the resource in the source code
         """
 
+        from databricks.bundles.alerts import Alert
         from databricks.bundles.jobs import Job
         from databricks.bundles.pipelines import Pipeline
         from databricks.bundles.schemas import Schema
