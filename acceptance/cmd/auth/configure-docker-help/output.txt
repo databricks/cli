@@ -1,0 +1,27 @@
+
+>>> [CLI] auth configure-docker --help
+Configure Docker authentication for Databricks Artifact Registry.
+
+This command installs docker-credential-databricks and configures Docker to use
+it for the selected workspace's Artifact Registry host. If the selected profile
+does not already include a workspace_id, the command resolves and saves it so
+the Docker helper can map the registry host back to the profile. The required
+region must match the workspace home region because it cannot be inferred from
+the profile. Select the workspace with [PROFILE] or --profile; --host,
+--account-id, and --workspace-id are not supported.
+
+Usage:
+  databricks auth configure-docker [PROFILE] --region REGION [flags]
+
+Flags:
+  -h, --help            help for configure-docker
+      --region string   Cloud region for the Databricks Artifact Registry host; must match the workspace home region
+
+Global Flags:
+      --account-id string     Databricks Account ID
+      --debug                 enable debug logging
+      --host string           Databricks Host
+  -o, --output type           output type: text or json (default text)
+  -p, --profile string        ~/.databrickscfg profile
+  -t, --target string         bundle target to use (if applicable)
+      --workspace-id string   Databricks Workspace ID
