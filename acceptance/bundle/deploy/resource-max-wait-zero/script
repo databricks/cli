@@ -9,7 +9,8 @@ trace DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=0 $CLI bundle deploy
 
 # Only the create POST is recorded. No GET means the cluster was left PENDING: the
 # testserver advances PENDING -> RUNNING on read, so a wait would have shown up here.
-trace print_requests.py --get --unique //clusters
+# Method and path are the whole assertion; the body would only add churn.
+trace print_requests.py --get --unique --oneline --del-field body,q //clusters
 
 trace $CLI bundle destroy --auto-approve
 
@@ -17,6 +18,6 @@ title "No cap: the deployment polls until the cluster is RUNNING"
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
-trace print_requests.py --get --unique //clusters
+trace print_requests.py --get --unique --oneline --del-field body,q //clusters
 
 trace $CLI bundle destroy --auto-approve

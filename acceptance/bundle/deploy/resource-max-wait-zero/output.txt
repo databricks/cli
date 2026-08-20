@@ -7,18 +7,8 @@ Created clusters.my_cluster
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --get --unique //clusters
-{
-  "method": "POST",
-  "path": "/api/2.1/clusters/create",
-  "body": {
-    "autotermination_minutes": 60,
-    "cluster_name": "test-cluster",
-    "node_type_id": "[NODE_TYPE_ID]",
-    "num_workers": 1,
-    "spark_version": "13.3.x-scala2.12"
-  }
-}
+>>> print_requests.py --get --unique --oneline --del-field body,q //clusters
+{"method": "POST", "path": "/api/2.1/clusters/create"}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -35,25 +25,9 @@ Created clusters.my_cluster
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --get --unique //clusters
-{
-  "method": "POST",
-  "path": "/api/2.1/clusters/create",
-  "body": {
-    "autotermination_minutes": 60,
-    "cluster_name": "test-cluster",
-    "node_type_id": "[NODE_TYPE_ID]",
-    "num_workers": 1,
-    "spark_version": "13.3.x-scala2.12"
-  }
-}
-{
-  "method": "GET",
-  "path": "/api/2.1/clusters/get",
-  "q": {
-    "cluster_id": "[UUID]"
-  }
-}
+>>> print_requests.py --get --unique --oneline --del-field body,q //clusters
+{"method": "POST", "path": "/api/2.1/clusters/create"}
+{"method": "GET", "path": "/api/2.1/clusters/get"}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
