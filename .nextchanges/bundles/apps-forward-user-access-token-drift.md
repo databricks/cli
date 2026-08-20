@@ -1,1 +1,0 @@
-Fixed apps planning an update on every deploy. The backend enables `forward_user_access_token` and reports it as `true` even when the bundle omits it, which the direct engine read as drift and turned into a no-op update call on each deploy ([#6328](https://github.com/databricks/cli/pull/6328)).
