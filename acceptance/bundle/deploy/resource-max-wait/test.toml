@@ -1,2 +1,5 @@
+# Covers parsing of DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT only. What the cap does to a wait
+# is covered by ../resource-max-wait-zero, whose resource actually has one: jobs have no
+# WaitAfterCreate, so a cap would be a no-op here.
 # DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT is read by the direct engine only.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
