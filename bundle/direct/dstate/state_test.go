@@ -261,3 +261,56 @@ func TestGetOrInitLineageReadableBeforeWriteAndPersisted(t *testing.T) {
 	assert.Equal(t, lineage, reopened.Data.Lineage)
 	mustFinalize(t, &reopened)
 }
+
+// statFile stats through an open handle rather than by path: on Windows a
+// path-based os.Stat resolves the file identity lazily, inside os.SameFile,
+// which would re-resolve the path after the save and defeat the comparison in
+// TestSaveReplacesStateFile.
+func statFile(t *testing.T, path string) os.FileInfo {
+	t.Helper()
+	f, err := os.Open(path)
+	require.NoError(t, err)
+	defer f.Close()
+	info, err := f.Stat()
+	require.NoError(t, err)
+	return info
+}
+
+// TestSaveReplacesStateFile pins that persisting state writes a new file and
+// renames it over the previous one instead of truncating it in place. An
+// in-place write that is interrupted leaves a state file that Open cannot
+// parse, and Open fails on it before it looks at the WAL, so the intact WAL
+// sitting next to it is never replayed and the deployment state is lost.
+func TestSaveReplacesStateFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "state.json")
+
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{"key": "val"}, nil))
+	mustFinalize(t, &db)
+
+	before := statFile(t, path)
+
+	var db2 DeploymentState
+	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.NoError(t, db2.SaveState("jobs.my_job", "456", map[string]string{"key": "val2"}, nil))
+	mustFinalize(t, &db2)
+
+	assert.False(t, os.SameFile(before, statFile(t, path)), "state file was written in place")
+
+	// The rename leaves nothing behind: no temp file, and no WAL.
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	var names []string
+	for _, entry := range entries {
+		names = append(names, entry.Name())
+	}
+	assert.Equal(t, []string{"state.json"}, names)
+
+	var db3 DeploymentState
+	require.NoError(t, db3.Open(t.Context(), path, WithRecovery(false), WithWrite(false)))
+	assert.Equal(t, "456", db3.GetResourceID("jobs.my_job"))
+	assert.Equal(t, 2, db3.Data.Serial)
+	mustFinalize(t, &db3)
+}

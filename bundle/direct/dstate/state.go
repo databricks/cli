@@ -574,6 +574,14 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 	return ExportStateFromData(db.Data)
 }
 
+// unlockedSave persists the in-memory state to db.Path by writing a temp file in
+// the same directory and renaming it over the destination, so an interrupted save
+// cannot leave a half-written state file behind.
+//
+// Writing in place would be unrecoverable: replayWAL saves the merged state and
+// only then removes the WAL, and Open parses the state file before it looks at
+// the WAL. A torn write would therefore leave a state file that Open rejects
+// next to an intact WAL it never reads.
 func (db *DeploymentState) unlockedSave() error {
 	data, err := json.MarshalIndent(db.Data, "", " ")
 	if err != nil {
@@ -585,8 +593,26 @@ func (db *DeploymentState) unlockedSave() error {
 		return fmt.Errorf("failed to create directory %#v: %w", dir, err)
 	}
 
-	err = os.WriteFile(db.Path, data, 0o600)
+	// CreateTemp creates the file with mode 0o600, matching the state file.
+	tmp, err := os.CreateTemp(dir, "."+filepath.Base(db.Path)+".tmp-*")
 	if err != nil {
+		return fmt.Errorf("failed to create temp file for %#v: %w", db.Path, err)
+	}
+	tmpPath := tmp.Name()
+	// Cleans up the temp file on failure; a no-op once the rename succeeded.
+	defer os.Remove(tmpPath)
+
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return fmt.Errorf("failed to write %#v: %w", tmpPath, err)
+	}
+
+	// Close before the rename: on Windows the file must not be open for writing.
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("failed to close %#v: %w", tmpPath, err)
+	}
+
+	if err := os.Rename(tmpPath, db.Path); err != nil {
 		return fmt.Errorf("failed to save resources state to %#v: %w", db.Path, err)
 	}
 
