@@ -1,3 +1,6 @@
+# Fixture is named dot_gitignore so a real .gitignore does not affect git while developing.
+mv dot_gitignore .gitignore
+
 cleanup() {
     trace $CLI bundle destroy --auto-approve
     rm -f out.requests.txt
