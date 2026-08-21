@@ -17,6 +17,54 @@ const (
 	SshTunnelClientModeIDE         SshTunnelClientMode = "IDE"
 )
 
+// SshTunnelErrorCategory is a coarse classification of why a connection attempt failed.
+// The categories name the distinct early-return sites of the connect flow so a failure can
+// be attributed without logging the error text, which carries cluster names, paths and user
+// names.
+type SshTunnelErrorCategory string
+
+const (
+	SshTunnelErrorCategoryUnspecified SshTunnelErrorCategory = "TYPE_UNSPECIFIED"
+
+	// The IDE's shell command ("code"/"cursor") is not on PATH. A permanent per-machine
+	// condition rather than a transient failure, so it is distinguished from the rest.
+	SshTunnelErrorCategoryIDECommandNotOnPath SshTunnelErrorCategory = "IDE_COMMAND_NOT_ON_PATH"
+
+	// The required Remote-SSH extension is missing or too old and was not installed.
+	SshTunnelErrorCategoryIDESSHExtensionMissing SshTunnelErrorCategory = "IDE_SSH_EXTENSION_MISSING"
+
+	// IDE settings had to be updated for serverless but the update failed and the user
+	// declined to continue (or --auto-approve turned the failure into an abort).
+	SshTunnelErrorCategoryIDESettingsUpdateDeclined SshTunnelErrorCategory = "IDE_SETTINGS_UPDATE_DECLINED"
+
+	// The cluster is not a dedicated single-user cluster, or it could not be inspected.
+	SshTunnelErrorCategoryClusterAccessDenied SshTunnelErrorCategory = "CLUSTER_ACCESS_DENIED"
+
+	// The cluster was not running and could not be started.
+	SshTunnelErrorCategoryClusterStartFailed SshTunnelErrorCategory = "CLUSTER_START_FAILED"
+
+	// Creating or reading the secret scope holding the SSH keys failed.
+	SshTunnelErrorCategorySecretScopeFailed SshTunnelErrorCategory = "SECRET_SCOPE_FAILED"
+
+	// Generating or persisting the local SSH key pair failed.
+	SshTunnelErrorCategoryKeyGenerationFailed SshTunnelErrorCategory = "KEY_GENERATION_FAILED"
+
+	// Uploading the SSH tunnel binaries to the workspace failed.
+	SshTunnelErrorCategoryBinaryUploadFailed SshTunnelErrorCategory = "BINARY_UPLOAD_FAILED"
+
+	// The SSH server never became reachable: the bootstrap job failed to start, died, or
+	// its metadata never appeared before the timeout.
+	SshTunnelErrorCategoryServerStartTimeout SshTunnelErrorCategory = "SERVER_START_TIMEOUT"
+
+	// The user interrupted the connection (Ctrl-C or a termination signal).
+	SshTunnelErrorCategoryUserAborted SshTunnelErrorCategory = "USER_ABORTED"
+
+	// A failure that does not correspond to any of the categories above. The connect path
+	// attributes every per-environment blocker, so a rise here points at a CLI bug (or a new
+	// failure mode that needs its own category) rather than a user's setup.
+	SshTunnelErrorCategoryUnknown SshTunnelErrorCategory = "UNKNOWN"
+)
+
 // SshTunnelEvent is emitted when a user establishes an SSH tunnel connection
 // via the Databricks CLI.
 type SshTunnelEvent struct {
@@ -53,4 +101,10 @@ type SshTunnelEvent struct {
 	// Whether a serverless usage policy was set via --usage-policy-id.
 	// Only the presence is recorded, not the policy ID itself.
 	HasUsagePolicy bool `json:"has_usage_policy,omitempty"`
+
+	// Why the connection attempt failed, or TYPE_UNSPECIFIED on success. Deliberately
+	// without omitempty: the field is what identifies a failure's cause, so an empty value
+	// must not be silently dropped into an indistinguishable NULL. Every failure path sets
+	// a category, falling back to UNKNOWN.
+	ErrorCategory SshTunnelErrorCategory `json:"error_category"`
 }
