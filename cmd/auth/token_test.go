@@ -484,7 +484,7 @@ func TestToken_loadToken(t *testing.T) {
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 				},
 			},
-			wantErr: "acct-dup1 and acct-dup2 match accounts.cloud.databricks.com in <in memory>. Use --profile to specify which profile to use",
+			wantErr: "acct-dup1 and acct-dup2 match https://accounts.cloud.databricks.com in <in memory>. Use --profile to specify which profile to use",
 		},
 		{
 			name: "workspace host ambiguity — multiple profiles, non-interactive",
