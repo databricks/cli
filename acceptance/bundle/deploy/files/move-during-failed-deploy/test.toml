@@ -1,0 +1,11 @@
+Badness = "A deploy uploads and deletes bundle files before it applies resources, so a resource-update failure after a file move leaves the job pointing at a file that no longer exists in the workspace."
+
+# The injected fault (POST /api/2.2/jobs/reset) and the state inspection differ in
+# output between the terraform and direct engines, so pin the direct engine (same
+# precedent as ../partial-summary-on-push-fail). The ordering bug being demonstrated
+# is engine-independent: files.Upload runs before deployCore for both engines.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# The script moves src/main.py to src/renamed.py, so the renamed file is not a
+# committed input and would otherwise be flagged as an unexpected leftover.
+Ignore = ["src/renamed.py"]
