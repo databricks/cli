@@ -15,36 +15,21 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Redeploy clears the comment
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: cannot update resources.schemas.schema1: updating id=main.test-schema-[UNIQUE_NAME]: UpdateSchema Nothing to update. (400 INVALID_PARAMETER_VALUE)
-
-Endpoint: PATCH [DATABRICKS_URL]/api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]
-HTTP Status: 400 Bad Request
-API error_code: INVALID_PARAMETER_VALUE
-API message: UpdateSchema Nothing to update.
-
+Updated schemas.schema1
 Files: 0 uploaded, 0 deleted
-
-Exit code: 1
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === The comment is gone
 >>> [CLI] api get /api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]
-"set outside the bundle"
+""
 
 === Redeploy is a no-op
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: cannot update resources.schemas.schema1: updating id=main.test-schema-[UNIQUE_NAME]: UpdateSchema Nothing to update. (400 INVALID_PARAMETER_VALUE)
-
-Endpoint: PATCH [DATABRICKS_URL]/api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]
-HTTP Status: 400 Bad Request
-API error_code: INVALID_PARAMETER_VALUE
-API message: UpdateSchema Nothing to update.
-
 Files: 0 uploaded, 0 deleted
-
-Exit code: 1
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -69,10 +54,7 @@ Destroy: 1 deleted
 {
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]",
-  "body": {}
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]",
-  "body": {}
+  "body": {
+    "comment": ""
+  }
 }
