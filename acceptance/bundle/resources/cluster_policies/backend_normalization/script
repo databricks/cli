@@ -1,0 +1,19 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+# For each authoring style, print the definition string the backend returns on GET.
+# Compare it against what we sent to see whether the backend reformats the JSON.
+for name in json_string multiline yaml; do
+    pol_id=$(read_id.py "$name")
+    title "[$name] definition returned by the backend (GET)"
+    trace $CLI cluster-policies get "$pol_id" -o json | jq -r '.definition'
+done
+
+# yaml is normalized to compact JSON by the mutator, matching the string the backend
+# stores and returns, so it does not drift (plan below is a no-op).
+title "Plan after deploy: any drift means the backend reformatted a definition"
+trace $CLI bundle plan

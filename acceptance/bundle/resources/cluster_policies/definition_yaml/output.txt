@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "pol": {
+    "definition": "{\"autotermination_minutes\":{\"maxValue\":120,\"minValue\":10,\"type\":\"range\"},\"enable_elastic_disk\":{\"type\":\"fixed\",\"value\":true},\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+    "name": "my_policy"
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_definition_yaml/default/files...
+Created cluster_policies.pol
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Native YAML definition serializes to compact JSON, preserving numbers and booleans as JSON types (not quoted strings)
+>>> print_requests.py //policies/clusters
+{
+  "method": "POST",
+  "path": "/api/2.0/policies/clusters/create",
+  "body": {
+    "definition": "{\"autotermination_minutes\":{\"maxValue\":120,\"minValue\":10,\"type\":\"range\"},\"enable_elastic_disk\":{\"type\":\"fixed\",\"value\":true},\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+    "name": "my_policy"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.pol
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster_policy_definition_yaml/default
+
+Destroy: 1 deleted

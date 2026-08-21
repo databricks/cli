@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    foo:
+      name: test-cluster-policy-$UNIQUE_NAME
+      definition: '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'

@@ -1,0 +1,67 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "json_string": {
+    "name": "policy_json_string",
+    "policy_family_definition_overrides": "{\"autotermination_minutes\":{\"type\":\"fixed\",\"value\":30}}",
+    "policy_family_id": "personal-vm"
+  },
+  "multiline": {
+    "name": "policy_multiline",
+    "policy_family_definition_overrides": "{\n  \"autotermination_minutes\": {\n    \"type\": \"fixed\",\n    \"value\": 30\n  }\n}",
+    "policy_family_id": "personal-vm"
+  },
+  "yaml": {
+    "name": "policy_yaml",
+    "policy_family_definition_overrides": "{\"autotermination_minutes\":{\"type\":\"fixed\",\"value\":30},\"enable_elastic_disk\":{\"type\":\"fixed\",\"value\":true}}",
+    "policy_family_id": "personal-vm"
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_overrides/default/files...
+Created cluster_policies.json_string
+Created cluster_policies.multiline
+Created cluster_policies.yaml
+Files: 4 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Create bodies carry policy_family_id and overrides as a JSON string (YAML normalized, JSON preserved)
+>>> print_requests.py //policies/clusters/create --sort
+{
+  "method": "POST",
+  "path": "/api/2.0/policies/clusters/create",
+  "body": {
+    "name": "policy_json_string",
+    "policy_family_definition_overrides": "{\"autotermination_minutes\":{\"type\":\"fixed\",\"value\":30}}",
+    "policy_family_id": "personal-vm"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/policies/clusters/create",
+  "body": {
+    "name": "policy_multiline",
+    "policy_family_definition_overrides": "{\n  \"autotermination_minutes\": {\n    \"type\": \"fixed\",\n    \"value\": 30\n  }\n}",
+    "policy_family_id": "personal-vm"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/policies/clusters/create",
+  "body": {
+    "name": "policy_yaml",
+    "policy_family_definition_overrides": "{\"autotermination_minutes\":{\"type\":\"fixed\",\"value\":30},\"enable_elastic_disk\":{\"type\":\"fixed\",\"value\":true}}",
+    "policy_family_id": "personal-vm"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.json_string
+  delete resources.cluster_policies.multiline
+  delete resources.cluster_policies.yaml
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster_policy_overrides/default
+
+Destroy: 3 deleted

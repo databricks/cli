@@ -1,0 +1,18 @@
+bundle:
+  name: cluster_policy_definition_yaml
+
+resources:
+  cluster_policies:
+    pol:
+      name: my_policy
+      definition:
+        spark_version:
+          type: fixed
+          value: 13.3.x-scala2.12
+        autotermination_minutes:
+          type: range
+          minValue: 10
+          maxValue: 120
+        enable_elastic_disk:
+          type: fixed
+          value: true

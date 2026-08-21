@@ -1,0 +1,26 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_family/default/files...
+Created cluster_policies.family_policy
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Plan is a no-op after deploy (server-computed definition is not drift)
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Redeploy issues no edit
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_family/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //policies/clusters/edit
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.family_policy
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster_policy_family/default
+
+Destroy: 1 deleted

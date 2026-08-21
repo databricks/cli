@@ -70,6 +70,8 @@ resources:
 
   # catalogs: no api field behaviors
 
+  # cluster_policies: no api field behaviors
+
   # clusters: no api field behaviors
 
   dashboards:

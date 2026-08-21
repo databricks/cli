@@ -648,6 +648,14 @@ resources:
     # DataSecurityModeDiffSuppressFunc: suppress when old != "" && new == ""
     #- field: data_security_mode
 
+  cluster_policies:
+    backend_defaults:
+      # A policy authored with policy_family_id and no definition gets its definition
+      # computed from the policy family by the backend and returned on read. Config
+      # leaves definition empty, so old/new are nil and backend_defaults skips the
+      # server-computed remote value; without this every deploy sees drift and re-Edits.
+      - field: definition
+
   instance_pools:
     # Field behaviors follow the TF provider tags cross-referenced with the edit API (compute.EditInstancePool):
     # https://github.com/databricks/terraform-provider-databricks/blob/main/pools/resource_instance_pool.go
