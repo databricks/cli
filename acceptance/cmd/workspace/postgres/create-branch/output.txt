@@ -1,0 +1,96 @@
+
+=== Set up the parent project
+=== create-branch --ttl: API (604800s), Go (168h) and day (7d) forms all go on the wire as seconds
+=== create-branch --no-expiry
+=== create-branch --ttl combined with a --json spec: the flag's ttl survives the json merge
+=== the pre-existing flags still work alongside --ttl: --name (body), --replace-existing (query), --timeout (wait)
+=== the --no-wait path still works alongside --no-expiry
+=== An expiration is required: no flag fails before any API call (no request recorded)
+=== Conflicting flags fail before any API call (no request recorded)
+=== Recorded create-branch request bodies{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/acc-proj/branches",
+  "q": {
+    "branch_id": "branch-ttl-api"
+  },
+  "body": {
+    "spec": {
+      "ttl": "604800s"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/acc-proj/branches",
+  "q": {
+    "branch_id": "branch-ttl-go"
+  },
+  "body": {
+    "spec": {
+      "ttl": "604800s"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/acc-proj/branches",
+  "q": {
+    "branch_id": "branch-ttl-days"
+  },
+  "body": {
+    "spec": {
+      "ttl": "604800s"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/acc-proj/branches",
+  "q": {
+    "branch_id": "branch-noexp"
+  },
+  "body": {
+    "spec": {
+      "no_expiry": true
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/acc-proj/branches",
+  "q": {
+    "branch_id": "branch-mix"
+  },
+  "body": {
+    "spec": {
+      "source_branch": "projects/acc-proj/branches/production",
+      "ttl": "604800s"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/acc-proj/branches",
+  "q": {
+    "branch_id": "branch-flags",
+    "replace_existing": "true"
+  },
+  "body": {
+    "name": "display-name",
+    "spec": {
+      "ttl": "604800s"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/acc-proj/branches",
+  "q": {
+    "branch_id": "branch-nowait"
+  },
+  "body": {
+    "spec": {
+      "no_expiry": true
+    }
+  }
+}
