@@ -2,23 +2,23 @@
   "plan_version": 2,
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
-  "serial": 3,
+  "serial": 1,
   "plan": {
     "resources.dashboards.dashboard1": {
       "action": "skip",
       "remote_state": {
         "create_time": "[TIMESTAMP]",
-        "dashboard_id": "[DASHBOARD1_ID]",
-        "display_name": "my dashboard",
+        "dashboard_id": "[DASHBOARD_ID]",
+        "display_name": "dashboard-state-sha [UUID]",
         "embed_credentials": true,
-        "etag": "[NUMID]",
+        "etag": [ETAG],
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]",
-        "path": "/Users/[USERNAME]/my dashboard.lvdash.json",
+        "path": "/Users/[USERNAME]/dashboard-state-sha [UUID].lvdash.json",
         "published": true,
-        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"name\":\"02724bf2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
+        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Sales Overview\",\"layout\":[{\"widget\":{\"name\":\"counter1\"}}],\"name\":\"main\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
         "update_time": "[TIMESTAMP]",
-        "warehouse_id": "123456"
+        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
       },
       "changes": {
         "create_time": {
@@ -29,13 +29,13 @@
         "dashboard_id": {
           "action": "skip",
           "reason": "spec:output_only",
-          "remote": "[DASHBOARD1_ID]"
+          "remote": "[DASHBOARD_ID]"
         },
         "etag": {
           "action": "skip",
           "reason": "custom",
-          "old": "[NUMID]",
-          "remote": "[NUMID]"
+          "old": [ETAG],
+          "remote": [ETAG]
         },
         "lifecycle_state": {
           "action": "skip",
@@ -45,7 +45,7 @@
         "path": {
           "action": "skip",
           "reason": "spec:output_only",
-          "remote": "/Users/[USERNAME]/my dashboard.lvdash.json"
+          "remote": "/Users/[USERNAME]/dashboard-state-sha [UUID].lvdash.json"
         },
         "serialized_dashboard": {
           "action": "skip",
