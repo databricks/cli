@@ -33,8 +33,8 @@
 }
 
 === resources.models.rname ===
-Warning: required field "name" is not set
-  at resources.models.rname
+Error: model name is required
+  at resources.models.rname.name
   in databricks.yml:6:12
 
 {
@@ -53,6 +53,10 @@ Warning: required field "name" is not set
 }
 
 === resources.registered_models.rname ===
+Error: registered_model name is required
+  at resources.registered_models.rname.name
+  in databricks.yml:6:12
+
 {
   "registered_models": {
     "rname": {}
@@ -79,11 +83,11 @@ Warning: required field "table_name" is not set
 }
 
 === resources.schemas.rname ===
-Warning: required field "catalog_name" is not set
-  at resources.schemas.rname
+Error: schema name is required
+  at resources.schemas.rname.name
   in databricks.yml:6:12
 
-Warning: required field "name" is not set
+Warning: required field "catalog_name" is not set
   at resources.schemas.rname
   in databricks.yml:6:12
 
@@ -94,11 +98,11 @@ Warning: required field "name" is not set
 }
 
 === resources.volumes.rname ===
-Warning: required field "catalog_name" is not set
-  at resources.volumes.rname
+Error: volume name is required
+  at resources.volumes.rname.name
   in databricks.yml:6:12
 
-Warning: required field "name" is not set
+Warning: required field "catalog_name" is not set
   at resources.volumes.rname
   in databricks.yml:6:12
 
@@ -126,11 +130,11 @@ Warning: required field "schema_name" is not set
 
 === resources.dashboards.rname ===
 Error: dashboard display_name is required
-  at resources.dashboards.rname
+  at resources.dashboards.rname.display_name
   in databricks.yml:6:12
 
 Error: dashboard warehouse_id is required
-  at resources.dashboards.rname
+  at resources.dashboards.rname.warehouse_id
   in databricks.yml:6:12
 
 {
@@ -143,14 +147,9 @@ Error: dashboard warehouse_id is required
 }
 
 === resources.apps.rname ===
-Warning: required field "name" is not set
-  at resources.apps.rname
+Error: app name is required
+  at resources.apps.rname.name
   in databricks.yml:6:12
-
-Error: Missing app source code path or git source
-  in databricks.yml:6:12
-
-app resource 'rname' should have either source_code_path or git_source field
 
 {
   "apps": {
@@ -162,7 +161,7 @@ app resource 'rname' should have either source_code_path or git_source field
 
 === resources.sql_warehouses.rname ===
 Error: sql_warehouse name is required
-  at resources.sql_warehouses.rname
+  at resources.sql_warehouses.rname.name
   in databricks.yml:6:12
 
 {
@@ -177,8 +176,8 @@ Error: sql_warehouse name is required
 }
 
 === resources.secret_scopes.rname ===
-Warning: required field "name" is not set
-  at resources.secret_scopes.rname
+Error: secret_scope name is required
+  at resources.secret_scopes.rname.name
   in databricks.yml:6:12
 
 {
@@ -188,8 +187,8 @@ Warning: required field "name" is not set
 }
 
 === resources.alerts.rname ===
-Warning: required field "display_name" is not set
-  at resources.alerts.rname
+Error: alert display_name is required
+  at resources.alerts.rname.display_name
   in databricks.yml:6:12
 
 Warning: required field "evaluation" is not set

@@ -1,0 +1,53 @@
+
+>>> musterr [CLI] bundle validate
+Error: catalog name is required
+  at resources.catalogs.empty_catalog.name
+  in databricks.yml:11:13
+
+Error: experiment name must not be blank
+  at resources.experiments.blank_experiment.name
+  in databricks.yml:43:13
+
+Error: model name is required
+  at resources.models.empty_model.name
+  in databricks.yml:7:13
+
+Error: model_serving_endpoint name must not contain control characters
+  at resources.model_serving_endpoints.newline_endpoint.name
+  in databricks.yml:34:13
+
+The value contains U+000A at byte offset 5
+
+Error: pipeline library file path is required
+  at resources.pipelines.incomplete_file.libraries[0].file
+  in databricks.yml:49:17
+
+Error: vector_search_endpoint name must not contain control characters
+  at resources.vector_search_endpoints.tab_endpoint.name
+  in databricks.yml:38:13
+
+The value contains U+0009 at byte offset 3
+
+Error: volume catalog_name is required
+  at resources.volumes.empty_catalog_name.catalog_name
+  in databricks.yml:28:21
+
+Error: volume catalog_name must not contain control characters
+  at resources.volumes.tab_catalog.catalog_name
+  in databricks.yml:22:21
+
+The value contains U+0009 at byte offset 4
+
+Error: volume name must not contain control characters
+  at resources.volumes.tab_volume.name
+  in databricks.yml:15:13
+
+The value contains U+0009 at byte offset 3
+
+Name: invalid-identifiers
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/invalid-identifiers/default
+
+Found 9 errors

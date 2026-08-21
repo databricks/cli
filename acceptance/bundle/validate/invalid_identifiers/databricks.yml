@@ -1,0 +1,49 @@
+bundle:
+  name: invalid-identifiers
+
+resources:
+  models:
+    empty_model:
+      name: ""
+
+  catalogs:
+    empty_catalog:
+      name: ""
+
+  volumes:
+    tab_volume:
+      name: "tab\there"
+      catalog_name: main
+      schema_name: default
+      volume_type: MANAGED
+
+    tab_catalog:
+      name: valid
+      catalog_name: "main\tcatalog"
+      schema_name: default
+      volume_type: MANAGED
+
+    empty_catalog_name:
+      name: valid
+      catalog_name: ""
+      schema_name: default
+      volume_type: MANAGED
+
+  model_serving_endpoints:
+    newline_endpoint:
+      name: "line1\nline2"
+
+  vector_search_endpoints:
+    tab_endpoint:
+      name: "bad\tname"
+      endpoint_type: STANDARD
+
+  experiments:
+    blank_experiment:
+      name: "   "
+
+  pipelines:
+    incomplete_file:
+      name: incomplete-file
+      libraries:
+        - file: {}
