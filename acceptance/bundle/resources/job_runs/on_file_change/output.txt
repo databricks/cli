@@ -52,25 +52,17 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle": {
+  "lifecycle.triggers.on_file_change.files": {
     "action": "recreate",
     "reason": "immutable",
     "old": {
-      "triggers": {
-        "on_file_change": {
-          "seed.txt": "[FILE_HASH][0]"
-        }
-      }
+      "seed.txt": "[FILE_HASH][0]"
     },
     "new": {
-      "triggers": {
-        "on_file_change": {
-          "seed.txt": "[FILE_HASH][1]"
-        }
-      }
+      "seed.txt": "[FILE_HASH][1]"
     }
   },
-  "lifecycle.triggers.on_file_change['seed.txt']": {
+  "lifecycle.triggers.on_file_change.files['seed.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][0]",
@@ -125,25 +117,17 @@ Warning: lifecycle.triggers.on_file_change: no files match "seed.txt"
   in databricks.yml:18:29
 
 {
-  "lifecycle": {
+  "lifecycle.triggers.on_file_change.files": {
     "action": "recreate",
     "reason": "immutable",
     "old": {
-      "triggers": {
-        "on_file_change": {
-          "seed.txt": "[FILE_HASH][1]"
-        }
-      }
+      "seed.txt": "[FILE_HASH][1]"
     },
     "new": {
-      "triggers": {
-        "on_file_change": {
-          "seed.txt": ""
-        }
-      }
+      "seed.txt": ""
     }
   },
-  "lifecycle.triggers.on_file_change['seed.txt']": {
+  "lifecycle.triggers.on_file_change.files['seed.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][1]",
