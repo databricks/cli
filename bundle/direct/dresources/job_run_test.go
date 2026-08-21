@@ -351,6 +351,10 @@ func TestJobRunPrepareStateRequiresSuccess(t *testing.T) {
 	state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{RunNow: jobs.RunNow{JobId: 456}})
 
 	assert.Equal(t, jobs.RunResultStateSuccess, state.ResultState)
+	require.NotNil(t, state.Lifecycle)
+	require.NotNil(t, state.Lifecycle.Triggers)
+	assert.NotNil(t, state.Lifecycle.Triggers.OnFileChange)
+	assert.Nil(t, state.Lifecycle.Triggers.OnFileChange.Files)
 }
 
 func TestJobRunPrepareStateOnBundleDeploy(t *testing.T) {
@@ -378,7 +382,7 @@ func TestJobRunPrepareStateOnFileChange(t *testing.T) {
 		})
 		require.NotNil(t, state.Lifecycle)
 		require.NotNil(t, state.Lifecycle.Triggers)
-		assert.Equal(t, hashes, state.Lifecycle.Triggers.OnFileChange)
+		assert.Equal(t, hashes, state.Lifecycle.Triggers.OnFileChange.Files)
 		assert.Empty(t, state.Lifecycle.Triggers.OnBundleDeploy)
 	})
 
@@ -393,23 +397,53 @@ func TestJobRunPrepareStateOnFileChange(t *testing.T) {
 		require.NotNil(t, state.Lifecycle)
 		require.NotNil(t, state.Lifecycle.Triggers)
 		assert.NotEmpty(t, state.Lifecycle.Triggers.OnBundleDeploy)
-		assert.Equal(t, hashes, state.Lifecycle.Triggers.OnFileChange)
+		assert.Equal(t, hashes, state.Lifecycle.Triggers.OnFileChange.Files)
+	})
+}
+
+func TestJobRunStateUnmarshalLifecycleCompatibility(t *testing.T) {
+	t.Run("missing lifecycle gets empty shape", func(t *testing.T) {
+		var state JobRunState
+		require.NoError(t, json.Unmarshal([]byte(`{}`), &state))
+		require.NotNil(t, state.Lifecycle)
+		require.NotNil(t, state.Lifecycle.Triggers)
+		require.NotNil(t, state.Lifecycle.Triggers.OnFileChange)
+		assert.Nil(t, state.Lifecycle.Triggers.OnFileChange.Files)
+	})
+
+	t.Run("old path-to-hash map is preserved", func(t *testing.T) {
+		var state JobRunState
+		require.NoError(t, json.Unmarshal([]byte(`{
+			"lifecycle": {
+				"triggers": {
+					"on_file_change": {
+						"a.txt": "abc"
+					}
+				}
+			}
+		}`), &state))
+		assert.Equal(t, map[string]string{"a.txt": "abc"}, state.Lifecycle.Triggers.OnFileChange.Files)
+	})
+
+	t.Run("new wrapped map is preserved", func(t *testing.T) {
+		var state JobRunState
+		require.NoError(t, json.Unmarshal([]byte(`{
+			"lifecycle": {
+				"triggers": {
+					"on_file_change": {
+						"files": {
+							"a.txt": "abc"
+						}
+					}
+				}
+			}
+		}`), &state))
+		assert.Equal(t, map[string]string{"a.txt": "abc"}, state.Lifecycle.Triggers.OnFileChange.Files)
 	})
 }
 
 func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 	r := &ResourceJobRun{}
-
-	t.Run("clearing lifecycle downgrades to skip", func(t *testing.T) {
-		change := &ChangeDesc{
-			Action: deployplan.Recreate,
-			Old:    &JobRunLifecycleState{Triggers: &JobRunTriggersState{OnBundleDeploy: "old"}},
-			New:    nil,
-		}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle"), change, nil))
-		assert.Equal(t, deployplan.Skip, change.Action)
-		assert.Equal(t, "trigger removed", change.Reason)
-	})
 
 	t.Run("clearing on_bundle_deploy leaf downgrades to skip", func(t *testing.T) {
 		change := &ChangeDesc{
@@ -422,14 +456,14 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 		assert.Equal(t, "trigger removed", change.Reason)
 	})
 
-	t.Run("clearing on_file_change leaf downgrades to update", func(t *testing.T) {
+	t.Run("clearing on_file_change files downgrades to skip", func(t *testing.T) {
 		change := &ChangeDesc{
 			Action: deployplan.Recreate,
 			Old:    map[string]string{"a.txt": "abc"},
 			New:    nil,
 		}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change"), change, nil))
-		assert.Equal(t, deployplan.Update, change.Action)
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change.files"), change, nil))
+		assert.Equal(t, deployplan.Skip, change.Action)
 		assert.Equal(t, "trigger removed", change.Reason)
 	})
 
@@ -446,10 +480,30 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 	t.Run("changed on_file_change hash still recreates", func(t *testing.T) {
 		change := &ChangeDesc{
 			Action: deployplan.Recreate,
-			Old:    map[string]string{"a.txt": "old"},
-			New:    map[string]string{"a.txt": "new"},
+			Old:    "old",
+			New:    "new",
 		}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change"), change, nil))
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change.files['a.txt']"), change, nil))
+		assert.Equal(t, deployplan.Recreate, change.Action)
+	})
+
+	t.Run("removed matched file still recreates", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    "old",
+			New:    nil,
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change.files['a.txt']"), change, nil))
+		assert.Equal(t, deployplan.Recreate, change.Action)
+	})
+
+	t.Run("missing file fingerprint still recreates", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    "old",
+			New:    "",
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change.files['a.txt']"), change, nil))
 		assert.Equal(t, deployplan.Recreate, change.Action)
 	})
 }
@@ -464,11 +518,13 @@ func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
 		"",
 	} {
 		t.Run(string(outcome), func(t *testing.T) {
-			remote := &JobRunRemote{RunId: 123, ResultState: outcome}
+			lifecycle := newJobRunLifecycleState()
+			remote := &JobRunRemote{RunId: 123, ResultState: outcome, Lifecycle: lifecycle}
 
 			state := (&ResourceJobRun{}).RemapState(remote)
 
 			assert.Equal(t, outcome, state.ResultState)
+			assert.Same(t, lifecycle, state.Lifecycle)
 		})
 	}
 }
