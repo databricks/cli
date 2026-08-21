@@ -3,7 +3,7 @@ export VERSION=$($CLI model-versions list system.ai.llama_v3_2_1b_instruct | jq 
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
+    destroy-bundle
     rm out.requests.txt
 }
 trap cleanup EXIT

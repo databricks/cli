@@ -16,5 +16,5 @@ trace print_requests.py --sort --get > out.requests.plan2.$DATABRICKS_BUNDLE_ENG
 musterr trace $CLI bundle run foo
 trace print_requests.py --sort --get > out.requests.run.$DATABRICKS_BUNDLE_ENGINE.json
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 trace print_requests.py --sort --get > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json

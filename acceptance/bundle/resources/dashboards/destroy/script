@@ -16,6 +16,6 @@ add_repl "$DASHBOARD_ID" DASHBOARD_ID
 # Verify dashboard was deployed
 trace retry $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path}'
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 trace $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path}'

@@ -3,7 +3,7 @@ trace cp $TESTDIR/../../deploy/simple/databricks.yml.tmpl .
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
+    destroy-bundle
 }
 trap cleanup EXIT
 

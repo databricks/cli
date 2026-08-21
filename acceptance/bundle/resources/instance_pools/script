@@ -25,7 +25,7 @@ trace jq 'select(.method == "POST" and (.path | contains("/instance-pools/edit")
 trace $CLI bundle summary
 
 title "Destroy the instance pool"
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 title "Verify the destroy request"
 trace jq 'select(.method == "POST" and (.path | contains("/instance-pools/delete")))' out.requests.txt

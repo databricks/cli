@@ -3,4 +3,4 @@
 
 trace $CLI apps deploy --skip-validation --auto-approve --force-lock --fail-on-active-runs
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle

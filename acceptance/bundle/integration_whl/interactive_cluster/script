@@ -1,7 +1,7 @@
 export DATA_SECURITY_MODE=USER_ISOLATION
 envsubst < databricks.yml.tmpl > databricks.yml
 trace cat databricks.yml
-trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
+trap "errcode destroy-bundle" EXIT
 trace $CLI bundle deploy
 
 # Add all resource IDs to runtime replacements to avoid pattern matching ambiguity

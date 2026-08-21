@@ -33,6 +33,6 @@ $CLI bundle plan --output json | jq '{plan: .plan | map_values({action, name_cha
 
 trace $CLI bundle deployment unbind experiment1
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 trace $CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}'

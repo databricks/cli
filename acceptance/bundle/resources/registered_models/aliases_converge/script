@@ -4,7 +4,7 @@ trace export COMMENT="original comment"
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
+    destroy-bundle
 }
 trap cleanup EXIT
 

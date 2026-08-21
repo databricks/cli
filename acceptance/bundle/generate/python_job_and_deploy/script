@@ -47,4 +47,4 @@ title "Deploy the generated bundle"
 trace $CLI bundle deploy
 
 title "Destroy the deployed bundle"
-trace $CLI bundle destroy --auto-approve
+destroy-bundle

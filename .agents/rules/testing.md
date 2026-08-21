@@ -146,6 +146,7 @@ Ignore = ["databricks.yml"]   # parsed as EnvMatrix.Ignore, not top-level Ignore
 - `errcode CMD...`: run CMD; if it exits non-zero, append `Exit code: N` to the output but let the script continue (scripts run under `bash -e`, which would otherwise abort). Use when a command is *allowed* to fail and later steps must still run.
 - `musterr CMD...`: run CMD and fail the whole test if it *succeeds*; on the expected failure the script continues. Use to assert a command must error.
 - `withdir DIR CMD...`: run CMD with the working directory set to DIR, restoring it afterwards.
+- `destroy-bundle [ARGS...]`: run `bundle destroy --auto-approve` (traced, so output is identical to calling it directly) and then remove the `~/.bundle/<name>` directory the bundle was deployed under. Prefer it over a bare `trace $CLI bundle destroy --auto-approve` when the test is done with the bundle: on a real workspace a leftover directory is never reused, and they accumulate against the workspace's child-node limit. It removes the directory recursively, so do not use it to destroy one target while another target of the same bundle must stay deployed.
 - `git-repo-init`: initialize a deterministic git repo (fixed user/email, no hooks) and commit `databricks.yml`.
 - `uuid`, `sethome DIR`, `venv_activate`, `as-test-sp CMD...`, `readplanarg FILE`, `envsubst`: see `acceptance/script.prepare` for the full list and exact semantics.
 

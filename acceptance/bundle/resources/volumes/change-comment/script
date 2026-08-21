@@ -27,7 +27,7 @@ trace print_requests.py //unity
 title "Verify updated deployment: should show new comment"
 trace $CLI volumes read main.myschema.myvolume | jq .comment
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 trace print_requests.py //unity
 
 trace musterr $CLI volumes read main.myschema.myvolume

@@ -29,7 +29,7 @@ trace $CLI jobs get $ppid | jq 'del(.settings.run_as)'
 rm out.requests.txt
 
 title "Destroy the job and verify that it's removed from the state and from remote"
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 trace print_requests.py //jobs
 
 trace musterr $CLI jobs get $ppid

@@ -6,7 +6,7 @@ cleanup() {
   # Restore original config before destroy to avoid Terraform errors
   # from server-side-only fields (e.g. creator_name) written by config-remote-sync.
   envsubst < databricks.yml.tmpl > databricks.yml
-  trace $CLI bundle destroy --auto-approve
+  destroy-bundle
 }
 trap cleanup EXIT
 

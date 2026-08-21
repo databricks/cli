@@ -7,7 +7,7 @@ trace $CLI schemas create "qm_test_${UNIQUE_NAME}_2" main -o json | jq '{full_na
 trace create_table.py "$TABLE_NAME"
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
+    destroy-bundle
     # Clean up schemas and table (suppress errors since they may already be gone)
     $CLI schemas delete "$SCHEMA_NAME" --force 2>/dev/null || true
     $CLI schemas delete "qm_test_${UNIQUE_NAME}_2" --force 2>/dev/null || true

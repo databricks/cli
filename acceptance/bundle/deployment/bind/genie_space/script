@@ -24,7 +24,7 @@ trace $CLI genie get-space "${GENIE_SPACE_ID}" | jq --sort-keys '{title, parent_
 
 trace $CLI bundle deployment unbind genie_space1
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 # Read the Genie space again (expecting it still exists and is not deleted):
 trace $CLI genie get-space "${GENIE_SPACE_ID}" | jq --sort-keys '{title, parent_path, warehouse_id}'

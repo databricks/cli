@@ -8,5 +8,5 @@ trace print_requests.py //permissions > out.deploy1.requests.$DATABRICKS_BUNDLE_
 # Since we're sending different requests between terraform and direct, assert that the end result is the same:
 trace $CLI grants get function main.myschema_$UNIQUE_NAME.mymodel | jq --sort-keys
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 trace print_requests.py //permissions > out.destroy.requests.$DATABRICKS_BUNDLE_ENGINE.json

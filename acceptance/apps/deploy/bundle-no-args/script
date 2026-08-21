@@ -4,4 +4,4 @@
 
 trace $CLI apps deploy --skip-validation
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle

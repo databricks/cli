@@ -37,6 +37,6 @@ role_id_2=`read_id.py my_role`
 trace $CLI postgres get-role $role_id_2 | role_fields
 
 title "Destroy and verify cleanup"
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 trace print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/'

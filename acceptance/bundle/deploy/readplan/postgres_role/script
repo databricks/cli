@@ -19,5 +19,5 @@ trace print_requests.py //roles
 # A follow-up plan must show no drift.
 trace $CLI bundle plan
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 rm out.requests.txt

@@ -41,7 +41,7 @@ project_id_2=`read_id.py my_project`
 $CLI postgres get-project $project_id_2 | project_fields > out.get_project.txt
 
 title "Destroy and verify cleanup"
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 print_requests.py --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.txt
 

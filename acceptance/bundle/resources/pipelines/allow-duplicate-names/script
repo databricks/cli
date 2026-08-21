@@ -3,7 +3,7 @@ envsubst < pipeline.json.tmpl > pipeline.json
 touch foo.py
 
 cleanup() {
-  trace $CLI bundle destroy --auto-approve
+  destroy-bundle
   trace $CLI pipelines delete ${PIPELINE_ID}
   rm out.requests.txt
 }

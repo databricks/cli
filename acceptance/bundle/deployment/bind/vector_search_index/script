@@ -21,7 +21,7 @@ trace $CLI vector-search-indexes get-index "${INDEX_NAME}" | jq '{name, endpoint
 
 trace $CLI bundle deployment unbind index1
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 # Read the pre-defined index again (expecting it still exists and is not deleted):
 trace $CLI vector-search-indexes get-index "${INDEX_NAME}" | jq '{name, endpoint_name, index_type, primary_key}'

@@ -38,5 +38,5 @@ trace $CLI bundle deploy
 trace print_requests.py //pipeline > out.requests_restore_original.json
 trace $CLI bundle plan
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 print_requests.py //pipeline > out.requests_destroy.json

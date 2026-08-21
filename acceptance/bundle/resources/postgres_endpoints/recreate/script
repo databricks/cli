@@ -40,6 +40,6 @@ endpoint_id_2=`read_id.py my_endpoint`
 trace $CLI postgres get-endpoint $endpoint_id_2 | jq 'del(.create_time, .update_time)' | jq '.status.endpoint_type'
 
 title "Destroy and verify cleanup"
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 trace print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/'

@@ -35,4 +35,4 @@ patch -s --no-backup-if-mismatch databricks.yml < fix.patch
 trace $CLI bundle deploy -qq
 trace has_manage_run
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle

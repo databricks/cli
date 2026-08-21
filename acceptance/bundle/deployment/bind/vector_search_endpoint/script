@@ -17,7 +17,7 @@ trace $CLI vector-search-endpoints get-endpoint "${ENDPOINT_NAME}" | jq '{id, na
 
 trace $CLI bundle deployment unbind endpoint1
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 # Read the pre-defined endpoint again (expecting it still exists and is not deleted):
 trace $CLI vector-search-endpoints get-endpoint "${ENDPOINT_NAME}" | jq '{id, name, endpoint_type}'

@@ -14,5 +14,5 @@ trace $CLI bundle deploy --plan out.plan_skip.json
 # Show what requests were made (should not create/update job again; should not read remote state)
 trace print_requests.py --get //jobs | contains.py "!GET" "!POST"
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 rm out.requests.txt

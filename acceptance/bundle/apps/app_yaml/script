@@ -5,5 +5,5 @@ trace jq 'select(.path | test("app.yml"))' out.requests.txt | sed 's/\\r//g'  > 
 #trace print_requests.py //apps  # currently fails due to TF inserting description=""
 rm out.requests.txt
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 trace print_requests.py //apps

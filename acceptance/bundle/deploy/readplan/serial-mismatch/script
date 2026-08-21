@@ -11,4 +11,4 @@ jq '.serial = 999' plan.json > plan.json.tmp && mv plan.json.tmp plan.json
 musterr $CLI bundle deploy --plan plan.json
 
 rm plan.json
-trace $CLI bundle destroy --auto-approve
+destroy-bundle

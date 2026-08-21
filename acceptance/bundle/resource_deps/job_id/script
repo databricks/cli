@@ -12,5 +12,5 @@ trace $CLI bundle plan -o json > out.plan_delete.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py //jobs
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 trace print_requests.py //jobs

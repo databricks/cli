@@ -50,7 +50,7 @@ title "Remove .databricks directory to simulate fresh deployment:"
 trace rm -rf .databricks
 
 title "Destroy the bundle:"
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 title "Read the pre-defined job again (expecting it still exists):"
 trace $CLI jobs get ${JOB_ID} | jq '{job_id, settings: {name: .settings.name, tasks: [.settings.tasks[] | {task_key, spark_python_task: {python_file: .spark_python_task.python_file}}]}}'

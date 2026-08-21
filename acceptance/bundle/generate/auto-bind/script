@@ -45,7 +45,7 @@ title "Deploy the bound job:"
 trace $CLI bundle deploy
 
 title "Destroy the bundle:"
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 title "Check that job is bound and does not exist after bundle is destroyed:"
 trace errcode $CLI jobs get "${JOB_ID}" --output json

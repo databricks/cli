@@ -10,5 +10,5 @@ replace_ids.py
 trace $CLI bundle plan > out.plan_sanity.txt
 
 title "Destroy all via bundle destroy"
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 rm -f out.requests.txt

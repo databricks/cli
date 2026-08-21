@@ -7,7 +7,7 @@ VOLUME_NAME="test-volume-${UNIQUE_NAME}"
 
 cleanup() {
   title "Test cleanup"
-  trace $CLI bundle destroy --auto-approve
+  destroy-bundle
 
   title "Assert the schema is deleted"
   trace errcode $CLI schemas get "${CATALOG_NAME}.${SCHEMA_NAME}" 2>/dev/null

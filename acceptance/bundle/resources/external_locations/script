@@ -7,7 +7,7 @@ EXT_LOCATION_NAME="test_ext_location_${UNIQUE_NAME}"
 
 cleanup() {
   title "Test cleanup"
-  trace $CLI bundle destroy --auto-approve
+  destroy-bundle
 }
 trap cleanup EXIT
 

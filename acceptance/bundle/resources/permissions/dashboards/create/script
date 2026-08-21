@@ -17,5 +17,5 @@ replace_ids.py
 
 print_requests.py //permissions > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 print_requests.py //permissions > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json

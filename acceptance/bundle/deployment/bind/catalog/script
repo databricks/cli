@@ -20,7 +20,7 @@ title "Unbind catalog"
 trace $CLI bundle deployment unbind foo
 
 title "Destroy bundle"
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 title "Read the pre-defined catalog again (expecting it still exists): "
 trace $CLI catalogs get "test-catalog-$UNIQUE_NAME" | jq '{comment, name}'

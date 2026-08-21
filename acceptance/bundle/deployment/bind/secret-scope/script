@@ -18,6 +18,6 @@ trace $CLI secrets list-scopes -o json | jq --arg value ${SECRET_SCOPE_NAME} '.[
 
 trace $CLI bundle deployment unbind secret_scope1
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 trace $CLI secrets list-scopes -o json | jq --arg value ${SECRET_SCOPE_NAME} '.[] | select(.name == $value)'

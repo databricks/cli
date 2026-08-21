@@ -11,7 +11,7 @@ trace $CLI catalogs create ${catalog_name} | jq '{full_name}'
 trace $CLI schemas create ${schema_name} ${catalog_name} | jq '{full_name}'
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
+    destroy-bundle
     trace $CLI schemas delete ${catalog_name}.${schema_name} --force
     trace $CLI catalogs delete ${catalog_name} --force
 }

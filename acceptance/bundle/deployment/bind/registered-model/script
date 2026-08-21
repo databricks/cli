@@ -26,7 +26,7 @@ trace $CLI registered-models get "${MODEL_FULL_NAME}" | jq '{full_name, schema_n
 
 trace $CLI bundle deployment unbind model1
 
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 # Read the pre-defined model again (expecting it still exists and is not deleted):
 trace $CLI registered-models get "${MODEL_FULL_NAME}" | jq '{full_name, schema_name, name}'

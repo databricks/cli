@@ -25,7 +25,7 @@ trace $CLI pipelines get $ppid
 rm out.requests.txt
 
 title "Destroy the pipeline and verify that it's removed from the state and from remote"
-trace $CLI bundle destroy --auto-approve
+destroy-bundle
 
 trace print_requests
 trace musterr $CLI pipelines get $ppid

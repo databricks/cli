@@ -1,7 +1,7 @@
 trace $CLI bundle validate
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
+    destroy-bundle
 }
 trap cleanup EXIT
 

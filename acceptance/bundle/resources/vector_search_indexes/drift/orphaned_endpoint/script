@@ -3,7 +3,7 @@ endpoint_name="vs-endpoint-${UNIQUE_NAME}"
 index_name="main.default.vs_index_${UNIQUE_NAME}"
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
+    destroy-bundle
     rm -f out.requests.txt
 }
 trap cleanup EXIT
