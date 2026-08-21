@@ -58,6 +58,18 @@ func (r *JobRun) HasOnFileChange() bool {
 	return false
 }
 
+func (r *JobRun) HasOnValueChange() bool {
+	if r.Lifecycle == nil {
+		return false
+	}
+	for _, t := range r.Lifecycle.Triggers {
+		if t.OnValueChange != nil {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *JobRun) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, r)
 }

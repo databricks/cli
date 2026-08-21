@@ -1007,6 +1007,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		maps.Copy(refs, inputStructVar.Refs)
+		dresources.DropJobRunValueChangeConfigRefs(refs)
 
 		var dependsOn []deployplan.DependsOnEntry
 		for _, reference := range refs {
