@@ -1,0 +1,16 @@
+
+=== Starting a cluster that is already running is a no-op, not an error
+
+>>> [CLI] clusters start [CLUSTER_ID]
+{
+  "cluster_id": "[CLUSTER_ID]",
+  "state": "RUNNING"
+}
+
+=== Starting a terminated cluster starts it
+
+>>> [CLI] clusters start [CLUSTER_ID]
+{
+  "cluster_id": "[CLUSTER_ID]",
+  "state": "RUNNING"
+}

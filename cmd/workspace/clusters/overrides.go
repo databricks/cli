@@ -1,9 +1,12 @@
 package clusters
 
 import (
+	"errors"
 	"strings"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
 )
@@ -93,8 +96,36 @@ func sparkVersionsOverride(sparkVersionsCmd *cobra.Command) {
 	`)
 }
 
+func startOverride(startCmd *cobra.Command, startReq *compute.StartCluster) {
+	start := startCmd.RunE
+	startCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		err := start(cmd, args)
+		if err == nil {
+			return nil
+		}
+
+		// The API rejects a cluster that is not TERMINATED with INVALID_STATE, even though this
+		// command is documented as a no-op in that case ("If the cluster is not currently in a
+		// TERMINATED state, nothing will happen"). Report success if the cluster is already
+		// running, so that starting a running cluster is idempotent.
+		apiErr, ok := errors.AsType[*apierr.APIError](err)
+		if !ok || apiErr.ErrorCode != "INVALID_STATE" {
+			return err
+		}
+
+		ctx := cmd.Context()
+		cluster, getErr := cmdctx.WorkspaceClient(ctx).Clusters.GetByClusterId(ctx, startReq.ClusterId)
+		if getErr != nil || cluster.State != compute.StateRunning {
+			return err
+		}
+
+		return cmdio.Render(ctx, cluster)
+	}
+}
+
 func init() {
 	listOverrides = append(listOverrides, listOverride)
 	listNodeTypesOverrides = append(listNodeTypesOverrides, listNodeTypesOverride)
 	sparkVersionsOverrides = append(sparkVersionsOverrides, sparkVersionsOverride)
+	startOverrides = append(startOverrides, startOverride)
 }
