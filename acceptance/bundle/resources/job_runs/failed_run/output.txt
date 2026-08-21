@@ -37,11 +37,6 @@ Files: 7 uploaded, 0 deleted
   },
   "remote_state": {
     "job_id": [MY_JOB_ID],
-    "lifecycle": {
-      "triggers": {
-        "on_file_change": {}
-      }
-    },
     "result_state": "FAILED",
     "run_id": [MY_RUN_ID],
     "run_name": "test-job-[UNIQUE_NAME]",
