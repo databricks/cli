@@ -346,6 +346,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
+	// Fuzzer mutator is stdlib-only Python; yaml2json parses bases the way the bundle does.
+	yaml2jsonPath := BuildYaml2Json(t, buildDir, runtime.GOOS, runtime.GOARCH)
+	t.Setenv("YAML2JSON", yaml2jsonPath)
+	repls.SetPath(yaml2jsonPath, "[YAML2JSON]")
+
 	if !inprocessMode {
 		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
 		t.Setenv("CLI_293", cli293Path)
@@ -1297,6 +1302,24 @@ func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {
 		// Use -buildvcs=false to disable VCS stamping.
 		args = append(args, "-buildvcs=false")
 	}
+
+	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch})
+	return execPath
+}
+
+// BuildYaml2Json builds the acceptance-only yaml2json helper and returns its path.
+func BuildYaml2Json(t *testing.T, buildDir, osName, arch string) string {
+	execPath := filepath.Join(buildDir, "yaml2json")
+	if osName == "windows" {
+		execPath += ".exe"
+	}
+
+	args := []string{"go", "build", "-o", execPath}
+	if osName == "windows" {
+		// Same as BuildCLI: "error obtaining VCS status: exit status 128" without this.
+		args = append(args, "-buildvcs=false")
+	}
+	args = append(args, "./acceptance/cmd/yaml2json")
 
 	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch})
 	return execPath

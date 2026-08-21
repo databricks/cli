@@ -1,0 +1,8 @@
+Cloud = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.FUZZ_TARGET = [
+  "no_drift",
+  "migrate",
+  "delete_idempotent",
+  "destroy_idempotent"
+]

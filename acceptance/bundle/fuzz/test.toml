@@ -1,0 +1,60 @@
+# Local only: cloud round-trips are minutes per seed and trip SEED_TIMEOUT.
+Cloud = false
+
+# Nightly FUZZ_TIME_BUDGET plus the last seed's tail.
+Timeout = '20m'
+
+# Copied from ../invariant/test.toml (merge is directory-chain only); script asserts every
+# Pattern there is present here.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    ".databricks",
+    ".venv",
+    "databricks.yml",
+    "plan.json",
+    "*.py",
+    "*.json",
+    "*.err",
+    "app",
+    # Idempotency targets' pre-delete snapshot; may linger if a seed fails.
+    ".databricks.backup",
+]
+
+# continue_293 omitted: pinned v0.293.0 rejects most current fields/types first.
+EnvMatrix.FUZZ_TARGET = ["no_drift", "migrate", "delete_idempotent", "destroy_idempotent"]
+
+# Local SQL stub used by some mutated configs.
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements/"
+Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
+
+[[Server]]
+Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"
+Response.Body = '{"status": "OK"}'
+
+# Unmodeled routes → TESTSERVER_GAP. HEAD shares the GET catch-all (ServeMux maps HEAD to GET).
+[[Server]]
+Pattern = "GET /{path...}"
+Response.StatusCode = 501
+Response.Body = '{"message": "TESTSERVER_GAP"}'
+
+[[Server]]
+Pattern = "POST /{path...}"
+Response.StatusCode = 501
+Response.Body = '{"message": "TESTSERVER_GAP"}'
+
+[[Server]]
+Pattern = "PUT /{path...}"
+Response.StatusCode = 501
+Response.Body = '{"message": "TESTSERVER_GAP"}'
+
+[[Server]]
+Pattern = "PATCH /{path...}"
+Response.StatusCode = 501
+Response.Body = '{"message": "TESTSERVER_GAP"}'
+
+[[Server]]
+Pattern = "DELETE /{path...}"
+Response.StatusCode = 501
+Response.Body = '{"message": "TESTSERVER_GAP"}'

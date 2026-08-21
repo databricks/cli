@@ -1,0 +1,53 @@
+# Fuzz overrides of invariant helpers. Source explicitly: we sit outside the invariant
+# subtree (test.toml / script.prepare only merge along the directory chain).
+export INVARIANT_DIR="$TESTDIR/../invariant"
+
+# Empty INPUT_CONFIG satisfies set -u; mutated configs are unnamed.
+export INPUT_CONFIG=""
+
+source "$INVARIANT_DIR/script.prepare"
+
+# Mutator writes the config; validate runs on its own so a panic there is caught before deploy.
+invariant_render() {
+    cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
+
+    mutate_fuzz_config.py > databricks.yml 2>LOG.gen.err
+
+    cp databricks.yml LOG.config
+
+    # --strict: type/required warnings must reject before deploy.
+    set +e
+    trace $CLI bundle validate --strict &> LOG.validate
+    local rc=$?
+    set -e
+    cat LOG.validate | contains.py '!panic:' '!internal error' > /dev/null
+    if [ "$rc" -ne 0 ]; then
+        return 1
+    fi
+}
+
+# Plan-determinism oracle: exact no_drift false-positives on fake-server gaps.
+# Default 0 for the committed run; task test-fuzz and the nightly set 1.
+if [ "${FUZZ_CHECK_DRIFT:-0}" = 0 ]; then
+    invariant_verify_no_drift() {
+        set +e
+        $CLI bundle plan -o json > LOG.plan1.json 2>LOG.plan1.err
+        local plan1_rc=$?
+        $CLI bundle plan -o json > LOG.plan2.json 2>LOG.plan2.err
+        local plan2_rc=$?
+        set -e
+        cat LOG.plan1.err | contains.py '!panic:' '!internal error' > /dev/null
+        cat LOG.plan2.err | contains.py '!panic:' '!internal error' > /dev/null
+
+        if [ "$plan1_rc" -ne 0 ] || [ "$plan2_rc" -ne 0 ]; then
+            # Stderr is ignored (*.err); copy into LOG.plan.failed for classify().
+            if ! grep -q TESTSERVER_GAP LOG.plan1.err LOG.plan2.err; then
+                echo "bundle plan exited $plan1_rc and $plan2_rc" > LOG.plan.failed
+                cat LOG.plan1.err LOG.plan2.err >> LOG.plan.failed
+            fi
+            return 1
+        fi
+
+        diff LOG.plan1.json LOG.plan2.json > LOG.plan.determinism.diff
+    }
+fi
