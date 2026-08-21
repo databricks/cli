@@ -13,8 +13,11 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -31,6 +34,7 @@ const jobRunTimeout = 24 * time.Hour
 var jobRunTriggerLocalPaths = []string{
 	"lifecycle.triggers.on_bundle_deploy",
 	"lifecycle.triggers.on_file_change",
+	"lifecycle.triggers.on_value_change",
 }
 
 func isJobRunTriggerPath(path string) bool {
@@ -52,6 +56,8 @@ type JobRunTriggersState struct {
 	OnBundleDeploy string `json:"on_bundle_deploy,omitempty"`
 	// Content hashes from ResolveJobRunFileTriggers; any change recreates.
 	OnFileChange map[string]string `json:"on_file_change,omitempty"`
+	// Resolved expression per watched value; any change recreates.
+	OnValueChange map[string]string `json:"on_value_change,omitempty"`
 }
 
 // JobRunLifecycleState is the local-only trigger fingerprint. Nested by value,
@@ -67,6 +73,7 @@ func emptyJobRunLifecycleState() JobRunLifecycleState {
 		Triggers: JobRunTriggersState{
 			OnBundleDeploy: "",
 			OnFileChange:   nil,
+			OnValueChange:  nil,
 		},
 	}
 }
@@ -139,7 +146,57 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	if len(input.ResolvedFileTriggers) > 0 {
 		state.Lifecycle.Triggers.OnFileChange = input.ResolvedFileTriggers
 	}
+	if values := jobRunValueChangeState(input); len(values) > 0 {
+		state.Lifecycle.Triggers.OnValueChange = values
+	}
 	return state
+}
+
+func (*ResourceJobRun) PrepareInputConfig(input *resources.JobRun, _ string) (*structvar.StructVar, error) {
+	refs := map[string]string{}
+	for expr := range jobRunValueChangeState(input) {
+		if _, ok := dynvar.NewRef(dyn.V(expr)); !ok {
+			continue
+		}
+		path := structpath.NewStringKey(structpath.MustParsePath("lifecycle.triggers.on_value_change"), expr)
+		refs[path.String()] = expr
+	}
+	if len(refs) == 0 {
+		refs = nil
+	}
+	return &structvar.StructVar{Value: input, Refs: refs}, nil
+}
+
+func jobRunValueChangeState(input *resources.JobRun) map[string]string {
+	if input.Lifecycle == nil {
+		return nil
+	}
+	out := make(map[string]string)
+	for _, t := range input.Lifecycle.Triggers {
+		if t.OnValueChange == nil {
+			continue
+		}
+		expr := strings.TrimSpace(*t.OnValueChange)
+		if expr == "" {
+			continue
+		}
+		out[expr] = expr
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// DropJobRunValueChangeConfigRefs drops lifecycle.triggers[N].on_value_change.
+// ExtractReferences treats [0] on the triggers struct as a no-op, so that path
+// is the wrapper, which cannot hold a resolved id.
+func DropJobRunValueChangeConfigRefs(refs map[string]string) {
+	for k := range refs {
+		if strings.Contains(k, ".triggers[") && strings.HasSuffix(k, "].on_value_change") {
+			delete(refs, k)
+		}
+	}
 }
 
 // makeJobRunRemote maps the GetRun response into the RunNow-shaped remote: GET
@@ -425,6 +482,7 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 	if isJobRunTriggerPath(pathString) {
 		removed := pathString == "lifecycle.triggers.on_bundle_deploy" && (change.New == nil || change.New == "")
 		removed = removed || pathString == "lifecycle.triggers.on_file_change" && change.New == nil
+		removed = removed || pathString == "lifecycle.triggers.on_value_change" && change.New == nil
 		if removed {
 			change.Action = deployplan.Update
 			change.Reason = "trigger removed"

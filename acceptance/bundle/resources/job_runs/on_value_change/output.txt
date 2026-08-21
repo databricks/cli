@@ -1,0 +1,140 @@
+
+=== first deploy triggers a run
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
+Created job_runs.my_run
+Created jobs.my_job
+Files: 4 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> read_id.py my_job
+[MY_JOB_ID]
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+=== redeploy with unchanged values plans nothing
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //jobs/run-now
+
+=== changing one value re-fires
+>>> [CLI] bundle plan
+recreate job_runs.my_run
+
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> changes
+{
+  "lifecycle.triggers.on_value_change": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": {
+      "a1": "a1",
+      "v1": "v1"
+    },
+    "new": {
+      "a1": "a1",
+      "v2": "v2"
+    }
+  },
+  "lifecycle.triggers.on_value_change['v1']": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": "v1"
+  },
+  "lifecycle.triggers.on_value_change['v2']": {
+    "action": "recreate",
+    "reason": "immutable",
+    "new": "v2"
+  },
+  "result_state": {
+    "action": "skip",
+    "reason": "remote_already_set",
+    "new": "SUCCESS",
+    "remote": "SUCCESS"
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
+Recreated job_runs.my_run
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+
+>>> print_requests.py --keep //jobs/runs/delete
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/delete",
+  "body": {
+    "run_id": [MY_RUN_ID]
+  }
+}
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+=== removing on_value_change rewrites state without a run
+>>> [CLI] bundle plan
+update job_runs.my_run
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> changes
+{
+  "lifecycle.triggers.on_value_change": {
+    "action": "update",
+    "reason": "trigger removed",
+    "old": {
+      "a1": "a1",
+      "v2": "v2"
+    }
+  },
+  "result_state": {
+    "action": "skip",
+    "reason": "remote_already_set",
+    "new": "SUCCESS",
+    "remote": "SUCCESS"
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default/files...
+Updated job_runs.my_run
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //jobs/run-now
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default
+
+Destroy: 2 deleted

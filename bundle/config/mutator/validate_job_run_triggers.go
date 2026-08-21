@@ -26,28 +26,28 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 		if jr == nil || jr.Lifecycle == nil {
 			continue
 		}
-		// Recreate-every-deploy cannot coexist with prevent_destroy.
-		if (jr.HasOnBundleDeploy() || jr.HasOnFileChange()) && jr.Lifecycle.PreventDestroy {
+		if (jr.HasOnBundleDeploy() || jr.HasOnFileChange() || jr.HasOnValueChange()) && jr.Lifecycle.PreventDestroy {
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
-				Summary:   "lifecycle.triggers.on_bundle_deploy or on_file_change is incompatible with lifecycle.prevent_destroy",
+				Summary:   "lifecycle.triggers.on_bundle_deploy, on_file_change, or on_value_change is incompatible with lifecycle.prevent_destroy",
 				Locations: b.Config.GetLocations(fmt.Sprintf("resources.job_runs.%s.lifecycle", name)),
 			})
 		}
 		for i, t := range jr.Lifecycle.Triggers {
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d]", name, i)
-			if t.OnBundleDeploy == nil && t.OnFileChange == nil {
+			switch t.ArmedCount() {
+			case 0:
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers entry must set on_bundle_deploy or on_file_change",
+					Summary:   "lifecycle.triggers entry must set on_bundle_deploy, on_file_change, or on_value_change",
 					Locations: b.Config.GetLocations(path),
 				})
 				continue
-			}
-			if t.OnBundleDeploy != nil && t.OnFileChange != nil {
+			case 1:
+			default:
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers entry must set only one of on_bundle_deploy or on_file_change",
+					Summary:   "lifecycle.triggers entry must set only one of on_bundle_deploy, on_file_change, or on_value_change",
 					Locations: b.Config.GetLocations(path),
 				})
 				continue
@@ -64,6 +64,13 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 					Severity:  diag.Error,
 					Summary:   "lifecycle.triggers.on_file_change must be non-empty when set",
 					Locations: b.Config.GetLocations(path + ".on_file_change"),
+				})
+			}
+			if t.OnValueChange != nil && strings.TrimSpace(*t.OnValueChange) == "" {
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   "lifecycle.triggers.on_value_change must be non-empty when set",
+					Locations: b.Config.GetLocations(path + ".on_value_change"),
 				})
 			}
 		}
