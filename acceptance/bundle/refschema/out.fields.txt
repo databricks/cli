@@ -845,15 +845,16 @@ resources.job_runs.*.jar_params[*]	string	ALL
 resources.job_runs.*.job_id	int64	ALL
 resources.job_runs.*.job_parameters	map[string]string	ALL
 resources.job_runs.*.job_parameters.*	string	ALL
-resources.job_runs.*.lifecycle	*dresources.JobRunLifecycleState	STATE
+resources.job_runs.*.lifecycle	*dresources.JobRunLifecycleState	REMOTE	STATE
 resources.job_runs.*.lifecycle	*resources.JobRunLifecycle	INPUT
 resources.job_runs.*.lifecycle	resources.Lifecycle	INPUT
 resources.job_runs.*.lifecycle.prevent_destroy	bool	INPUT
-resources.job_runs.*.lifecycle.triggers	*dresources.JobRunTriggersState	STATE
+resources.job_runs.*.lifecycle.triggers	*dresources.JobRunTriggersState	REMOTE	STATE
 resources.job_runs.*.lifecycle.triggers	[]resources.JobRunTrigger	INPUT
-resources.job_runs.*.lifecycle.triggers.on_bundle_deploy	string	STATE
-resources.job_runs.*.lifecycle.triggers.on_file_change	map[string]string	STATE
-resources.job_runs.*.lifecycle.triggers.on_file_change.*	string	STATE
+resources.job_runs.*.lifecycle.triggers.on_bundle_deploy	string	REMOTE	STATE
+resources.job_runs.*.lifecycle.triggers.on_file_change	*dresources.JobRunFileTriggerState	REMOTE	STATE
+resources.job_runs.*.lifecycle.triggers.on_file_change.files	map[string]string	REMOTE	STATE
+resources.job_runs.*.lifecycle.triggers.on_file_change.files.*	string	REMOTE	STATE
 resources.job_runs.*.lifecycle.triggers[*]	resources.JobRunTrigger	INPUT
 resources.job_runs.*.lifecycle.triggers[*].on_bundle_deploy	*bool	INPUT
 resources.job_runs.*.lifecycle.triggers[*].on_file_change	*string	INPUT

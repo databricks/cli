@@ -175,6 +175,9 @@ resources:
         reason: not_returned_by_api
       - field: queue
         reason: not_returned_by_api
+      # Local-only trigger fingerprints; GetRun does not return them.
+      - field: lifecycle
+        reason: not_returned_by_api
     # A run is immutable and fire-once, so any change recreates it. Omitting
     # `field` matches every field (root; see TestFieldRuleOmittedIsRoot).
     # `field: ""` would instead match nothing. The one exception is a run that is

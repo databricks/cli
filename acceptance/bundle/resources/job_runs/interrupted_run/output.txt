@@ -43,11 +43,21 @@ Exit code: 1
   "new_state": {
     "value": {
       "job_id": [MY_JOB_ID],
+      "lifecycle": {
+        "triggers": {
+          "on_file_change": {}
+        }
+      },
       "result_state": "SUCCESS"
     }
   },
   "remote_state": {
     "job_id": [MY_JOB_ID],
+    "lifecycle": {
+      "triggers": {
+        "on_file_change": {}
+      }
+    },
     "run_id": [MY_RUN_ID],
     "run_name": "my-job",
     "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]",
