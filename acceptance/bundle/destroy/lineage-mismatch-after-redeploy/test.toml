@@ -1,6 +1,5 @@
-# Lineage is a direct-engine concept (a UUID minted per deployment history),
-# so this scenario only applies to the direct engine.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# Both engines keep a lineage-bearing local state file, so the destroy scenario
+# and its fix apply to both.
 
 # .databricks.machineA is the stashed local state; may linger if the test fails mid-run.
 Ignore = [".databricks.machineA"]
