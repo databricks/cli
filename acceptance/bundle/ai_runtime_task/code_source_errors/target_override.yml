@@ -1,0 +1,33 @@
+bundle:
+  name: ai-runtime-target-override
+
+resources:
+  jobs:
+    train:
+      tasks:
+        - task_key: train
+          environment_key: default
+          ai_runtime_task:
+            experiment: my-training
+            deployments:
+              - command_path: src/command.sh
+                compute:
+                  accelerator_type: GPU_1xA10
+                  accelerator_count: 1
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+
+targets:
+  dev:
+    resources:
+      jobs:
+        train:
+          tasks:
+            # A code_source under a target override is not supported: the (job,
+            # task_key) stash can't represent per-target overrides. Rejected at load.
+            - task_key: train
+              ai_runtime_task:
+                code_source:
+                  root_path: ./src

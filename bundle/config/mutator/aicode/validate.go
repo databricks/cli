@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -69,6 +72,14 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 			if task.AiRuntimeTask == nil {
 				continue
 			}
+
+			// A DABs-native code_source block (extracted into AiRuntimeExtras before
+			// normalization) packages a directory too, so the snapshot-dir guards apply.
+			if block := codeSourceBlock(b, name, task.TaskKey); block != nil {
+				packagesCode = true
+				diags = diags.Extend(v.validateCodeSourceBlock(b, job.GitSource, task, taskPath, block))
+			}
+
 			codePath := taskPath.Append(dyn.Key("ai_runtime_task"), dyn.Key("code_source_path"))
 			diags = diags.Extend(v.validateTask(b, job.GitSource, task.AiRuntimeTask.CodeSourcePath, codePath))
 		}
@@ -80,6 +91,140 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 
 	return diags
 }
+
+// codeSourceBlock returns the DABs-native code_source block stashed for a task, or
+// nil if none. It is keyed by (job, task_key), matching rewriteAiRuntimeCodeSource.
+func codeSourceBlock(b *bundle.Bundle, jobName, taskKey string) *config.CodeSourceOptions {
+	extras, ok := b.Config.AiRuntimeExtras[jobName][taskKey]
+	if !ok {
+		return nil
+	}
+	return extras.CodeSource
+}
+
+// validateCodeSourceBlock checks a DABs-native ai_runtime_task.code_source block.
+// The field-format rules mirror the AIR CLI's train.yaml validation
+// (experimental/air/cmd/runconfig.go) so the two authoring surfaces agree.
+func (v *validate) validateCodeSourceBlock(b *bundle.Bundle, gitSource *jobs.GitSource, task jobs.Task, taskPath dyn.Path, block *config.CodeSourceOptions) diag.Diagnostics {
+	blockPath := taskPath.Append(dyn.Key("ai_runtime_task"), dyn.Key("code_source"))
+	locations := b.Config.GetLocations(blockPath.String())
+	reject := func(summary, detail string) diag.Diagnostics {
+		return diag.Diagnostics{{
+			Severity:  diag.Error,
+			Summary:   summary,
+			Detail:    detail,
+			Locations: locations,
+			Paths:     []dyn.Path{blockPath},
+		}}
+	}
+
+	// code_source and code_source_path are two ways to set the same thing; requiring
+	// exactly one avoids an ambiguous precedence.
+	if task.AiRuntimeTask.CodeSourcePath != "" {
+		return reject(
+			"ai_runtime_task sets both code_source and code_source_path",
+			"Set either the code_source block or code_source_path, not both",
+		)
+	}
+
+	if strings.TrimSpace(block.RootPath) == "" {
+		return reject("ai_runtime_task.code_source.root_path is required", "")
+	}
+
+	// The packaged directory must live inside the bundle sync root (it is uploaded as
+	// part of the bundle). Same check as the code_source_path path below.
+	if rel, err := filepath.Rel(b.SyncRootPath, filepath.Join(b.SyncRootPath, filepath.FromSlash(block.RootPath))); err != nil || !filepath.IsLocal(rel) {
+		return reject(
+			fmt.Sprintf("code_source.root_path %q is outside the bundle root", block.RootPath),
+			"root_path must point at a directory inside the bundle",
+		)
+	}
+	isDir, err := isExistingDir(filepath.Join(b.SyncRootPath, filepath.FromSlash(block.RootPath)))
+	if err != nil {
+		return reject(fmt.Sprintf("failed to inspect code_source.root_path %q: %v", block.RootPath, err), "")
+	}
+	if !isDir {
+		return reject(fmt.Sprintf("code_source.root_path %q is not a directory", block.RootPath), "")
+	}
+
+	// include_paths: relative, non-empty, no parent traversal (they stay within
+	// root_path). Mirrors snapshotSourceConfig.validate.
+	for _, p := range block.IncludePaths {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			return reject("code_source.include_paths entry cannot be empty", "")
+		}
+		if strings.HasPrefix(p, "/") {
+			return reject(fmt.Sprintf("code_source.include_paths must be relative paths, got %q", p), "")
+		}
+		if slices.Contains(strings.Split(p, "/"), "..") {
+			return reject(fmt.Sprintf("code_source.include_paths cannot contain '..' traversal, got %q", p), "")
+		}
+	}
+
+	// remote_volume would upload the archive to a UC Volume instead of the bundle's
+	// workspace file path. That is a deploy-phase workspace write (the overlay path this
+	// mutator uses only targets workspace.file_path), and a Volume is not cleaned by
+	// bundle destroy — both unresolved. Reject it explicitly rather than silently ignore.
+	if block.RemoteVolume != "" {
+		return reject(
+			"code_source.remote_volume is not yet supported",
+			"Remove remote_volume; the archive is uploaded to the bundle's workspace file path",
+		)
+	}
+
+	if block.Git != nil {
+		if diags := validateCodeSourceGit(block.Git, reject); diags.HasError() {
+			return diags
+		}
+		// The deploy engine retrieves task files from git when git_source is set, so a
+		// per-task git-pinned snapshot would be silently ignored. Reject the combination.
+		if gitSource != nil {
+			return reject(
+				"ai_runtime_task.code_source.git cannot be combined with the job's git_source",
+				"Remove git_source, or remove the code_source.git ref",
+			)
+		}
+	}
+
+	return nil
+}
+
+// validateCodeSourceGit checks a code_source.git ref: exactly one of branch/commit,
+// and a safe branch name. Mirrors gitRef.validate in the AIR CLI.
+func validateCodeSourceGit(git *config.CodeSourceGit, reject func(summary, detail string) diag.Diagnostics) diag.Diagnostics {
+	switch {
+	case git.Branch == "" && git.Commit == "":
+		return reject("code_source.git requires either 'branch' or 'commit'", "")
+	case git.Branch != "" && git.Commit != "":
+		return reject("code_source.git 'branch' and 'commit' are mutually exclusive; specify only one", "")
+	}
+	if git.Branch != "" && !gitRefRe.MatchString(git.Branch) {
+		return reject(
+			fmt.Sprintf("invalid code_source.git.branch %q", git.Branch),
+			"only alphanumeric characters, hyphens, dots, slashes, and underscores are allowed",
+		)
+	}
+	// commit must be a hex object id, not a moving ref. A branch/tag/HEAD value would
+	// package a different archive (and content-addressed name) on every deploy,
+	// defeating the point of pinning; requiring hex also rejects a leading-"-" value
+	// that would otherwise be a flag-injection shape into `git archive`.
+	if git.Commit != "" && !gitCommitRe.MatchString(git.Commit) {
+		return reject(
+			fmt.Sprintf("invalid code_source.git.commit %q", git.Commit),
+			"commit must be a hex commit SHA (7-64 hex characters), not a branch, tag, or HEAD",
+		)
+	}
+	return nil
+}
+
+// gitRefRe guards a branch name that flows into git exec args against injection.
+// Mirrors the AIR CLI's gitRefRe (experimental/air/cmd/runconfig.go).
+var gitRefRe = regexp.MustCompile(`^[\w./-]+$`)
+
+// gitCommitRe requires a hex object id: full SHA-1 (40) or SHA-256 (64), or an
+// abbreviated prefix down to git's conventional 7-char short form.
+var gitCommitRe = regexp.MustCompile(`^[0-9a-fA-F]{7,64}$`)
 
 // packagesLocalDir reports whether codeSourcePath is one this mutator packages: a
 // local path that is an existing directory. A local *file* (a pre-built tarball from

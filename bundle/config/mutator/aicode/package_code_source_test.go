@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -86,4 +87,45 @@ func TestCollectLocalCodeSourcesSkipsLocalFile(t *testing.T) {
 	sources, diags := collectLocalCodeSources(b)
 	require.Empty(t, diags)
 	assert.Empty(t, sources, "a local tarball file must flow through artifact upload, not aicode packaging")
+}
+
+func TestFilterIncludePaths(t *testing.T) {
+	mk := func(rels ...string) []fileset.File {
+		out := make([]fileset.File, len(rels))
+		for i, r := range rels {
+			out[i] = fileset.File{Relative: r}
+		}
+		return out
+	}
+	rels := func(files []fileset.File) []string {
+		out := make([]string, len(files))
+		for i, f := range files {
+			out[i] = f.Relative
+		}
+		return out
+	}
+
+	t.Run("relBase src, keep subtrees and exact files", func(t *testing.T) {
+		files := mk("src/a/x.py", "src/b/y.py", "src/c.py", "src/keep.txt")
+		got := filterIncludePaths(files, "src", []string{"a", "keep.txt"})
+		assert.Equal(t, []string{"src/a/x.py", "src/keep.txt"}, rels(got))
+	})
+
+	t.Run("relBase . keeps top-level includes", func(t *testing.T) {
+		files := mk("a/x.py", "b/y.py", "c.py")
+		got := filterIncludePaths(files, ".", []string{"a"})
+		assert.Equal(t, []string{"a/x.py"}, rels(got))
+	})
+
+	t.Run("trailing slash and whitespace tolerated", func(t *testing.T) {
+		files := mk("src/a/x.py", "src/b/y.py")
+		got := filterIncludePaths(files, "src", []string{" a/ "})
+		assert.Equal(t, []string{"src/a/x.py"}, rels(got))
+	})
+
+	t.Run("a prefix does not match a sibling with the same prefix string", func(t *testing.T) {
+		files := mk("src/a/x.py", "src/ab/y.py")
+		got := filterIncludePaths(files, "src", []string{"a"})
+		assert.Equal(t, []string{"src/a/x.py"}, rels(got))
+	})
 }

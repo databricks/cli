@@ -98,12 +98,17 @@ def _parse_schema(schema: dict) -> Schema:
         return value
 
     for k, v in schema.get("properties", {}).items():
+        # Properties without a $ref are inline schemas the Go side injects for
+        # DABs-only authoring sugar that has no SDK type (e.g. ai_runtime_task's
+        # code_source block). pydabs has no model for them, so skip rather than
+        # assert — the field is available in YAML DABs but not the Python API.
+        if v.get("$ref") is None:
+            continue
+
         assert v.get("type") is None
         assert v.get("anyOf") is None
         assert v.get("properties") is None
         assert v.get("items") is None
-
-        assert v.get("$ref")
 
         prop = Property(
             ref=v["$ref"],

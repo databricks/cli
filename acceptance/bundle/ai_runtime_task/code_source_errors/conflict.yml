@@ -1,0 +1,24 @@
+bundle:
+  name: ai-runtime-conflict
+
+resources:
+  jobs:
+    train:
+      tasks:
+        - task_key: train
+          environment_key: default
+          ai_runtime_task:
+            experiment: my-training
+            # Both forms set on one task: mutually exclusive, rejected at validate.
+            code_source_path: ./src
+            code_source:
+              root_path: ./src
+            deployments:
+              - command_path: src/command.sh
+                compute:
+                  accelerator_type: GPU_1xA10
+                  accelerator_count: 1
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"

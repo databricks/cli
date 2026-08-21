@@ -1,0 +1,40 @@
+
+=== code_source and code_source_path on the same task are mutually exclusive
+
+>>> [CLI] bundle validate
+Error: ai_runtime_task sets both code_source and code_source_path
+  at resources.jobs.train.tasks[0].ai_runtime_task.code_source
+
+Set either the code_source block or code_source_path, not both
+
+Name: ai-runtime-conflict
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/ai-runtime-conflict/default
+
+Found 1 error
+
+=== remote_volume is not yet supported
+
+>>> [CLI] bundle validate
+Error: code_source.remote_volume is not yet supported
+  at resources.jobs.train.tasks[0].ai_runtime_task.code_source
+
+Remove remote_volume; the archive is uploaded to the bundle's workspace file path
+
+Name: ai-runtime-remote-volume
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/ai-runtime-remote-volume/default
+
+Found 1 error
+
+=== code_source under a target override is rejected at load
+
+>>> [CLI] bundle validate -t dev
+Error: failed to rewrite [TEST_TMP_DIR]/databricks.yml: ai_runtime_task.code_source at [TEST_TMP_DIR]/databricks.yml:33:19 is not supported inside a target override; move it to the task's base definition under resources.jobs
+
+
+Found 1 error

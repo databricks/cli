@@ -1,0 +1,7 @@
+# Load/validate-time errors only; no deploy, so run a single engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    '.databricks',
+    'databricks.yml',
+]

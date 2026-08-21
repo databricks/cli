@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
@@ -66,32 +67,65 @@ func (m *packageCodeSource) Name() string {
 }
 
 func (m *packageCodeSource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	sources, diags := collectLocalCodeSources(b)
+	// Package two source kinds into a single list of archives to overlay:
+	//   - a local-directory code_source_path string (collectLocalCodeSources), and
+	//   - a DABs-native code_source block (collectCodeSourceBlocks), which additionally
+	//     supports include_paths narrowing and git-ref pinning.
+	// Both lower to the same shape: a config path (…ai_runtime_task.code_source_path) to
+	// set to the uploaded workspace path, plus the archive bytes to overlay.
+	var packaged []packagedSource
+
+	strSources, diags := collectLocalCodeSources(b)
 	if diags.HasError() {
 		return diags
 	}
-	if len(sources) == 0 {
+	for _, cs := range strSources {
+		relArchive, archive, err := packageOne(ctx, b, cs)
+		if err != nil {
+			return diags.Extend(diag.FromErr(err))
+		}
+		packaged = append(packaged, packagedSource{
+			configPath: cs.configPath,
+			location:   cs.location,
+			relArchive: relArchive,
+			archive:    archive,
+		})
+	}
+
+	blockSources, blockDiags := collectCodeSourceBlocks(b)
+	diags = diags.Extend(blockDiags)
+	if diags.HasError() {
+		return diags
+	}
+	for _, cs := range blockSources {
+		relArchive, archive, err := packageBlock(ctx, b, cs)
+		if err != nil {
+			return diags.Extend(diag.FromErr(err))
+		}
+		packaged = append(packaged, packagedSource{
+			configPath: cs.configPath,
+			location:   cs.location,
+			relArchive: relArchive,
+			archive:    archive,
+		})
+	}
+
+	if len(packaged) == 0 {
 		return diags
 	}
 
-	// remotePaths maps each config location to the synced workspace path its archive
-	// will occupy; overlayFiles maps each archive's sync-relative path to its bytes.
-	// Both are built before any config mutation so packaging failures are reported
-	// first. The archives are added to the sync root as in-memory overlay files
-	// (see below) rather than written to disk, so the user's working tree is not
-	// dirtied by deploy.
-	remotePaths := make(map[string]string, len(sources))
-	overlayFiles := make(map[string][]byte, len(sources))
-	for _, cs := range sources {
-		relArchive, archive, err := packageOne(ctx, b, cs)
-		if err != nil {
-			diags = diags.Extend(diag.FromErr(err))
-			return diags
-		}
-		overlayFiles[relArchive] = archive
+	// overlayFiles maps each archive's sync-relative path to its bytes; remotePaths maps
+	// each config location to the synced workspace path its archive will occupy. Both
+	// are built before any config mutation so packaging failures are reported first. The
+	// archives are added to the sync root as in-memory overlay files (see below) rather
+	// than written to disk, so the user's working tree is not dirtied by deploy.
+	overlayFiles := make(map[string][]byte, len(packaged))
+	remotePaths := make(map[string]string, len(packaged))
+	for _, p := range packaged {
+		overlayFiles[p.relArchive] = p.archive
 		// The workspace path the archive occupies once file sync uploads it. Matches
 		// how command_path is translated (workspace.file_path + sync-relative path).
-		remotePaths[cs.configPath.String()] = path.Join(b.Config.Workspace.FilePath, relArchive)
+		remotePaths[p.configPath.String()] = path.Join(b.Config.Workspace.FilePath, p.relArchive)
 	}
 
 	// Overlay the archives onto the sync root: bundle file sync walks and uploads
@@ -107,12 +141,12 @@ func (m *packageCodeSource) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	b.HasAiRuntimeCodeSnapshot = true
 
 	err = b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		for _, cs := range sources {
-			remote := remotePaths[cs.configPath.String()]
+		for _, p := range packaged {
+			remote := remotePaths[p.configPath.String()]
 			var err error
-			root, err = dyn.SetByPath(root, cs.configPath, dyn.NewValue(remote, []dyn.Location{cs.location}))
+			root, err = dyn.SetByPath(root, p.configPath, dyn.NewValue(remote, []dyn.Location{p.location}))
 			if err != nil {
-				return root, fmt.Errorf("failed to update code_source_path %q to %q: %w", cs.value, remote, err)
+				return root, fmt.Errorf("failed to update code_source_path to %q: %w", remote, err)
 			}
 		}
 		return root, nil
@@ -122,6 +156,17 @@ func (m *packageCodeSource) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	}
 
 	return diags
+}
+
+// packagedSource is one code source packaged into an archive, ready to overlay on the
+// sync root and to rewrite into the task's code_source_path.
+type packagedSource struct {
+	// configPath is the …ai_runtime_task.code_source_path to set to the uploaded path.
+	configPath dyn.Path
+	location   dyn.Location
+	// relArchive is the archive's sync-relative path; archive is its bytes.
+	relArchive string
+	archive    []byte
 }
 
 // snapshotSubdir is the sync-relative dir the archives are placed under (dedicated
@@ -243,6 +288,137 @@ func collectLocalCodeSources(b *bundle.Bundle) ([]codeSource, diag.Diagnostics) 
 	}
 
 	return sources, diags
+}
+
+// taskPattern matches every job task, used to locate a task by task_key when lowering
+// a code_source block (keyed by task_key in Root.AiRuntimeExtras).
+var taskPattern = dyn.NewPattern(
+	dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),
+	dyn.Key("tasks"), dyn.AnyIndex(),
+)
+
+// blockSource is a DABs-native code_source block to package: the config path of the
+// task's code_source_path to write, a location for diagnostics, and the block options.
+type blockSource struct {
+	configPath dyn.Path
+	location   dyn.Location
+	opts       config.CodeSourceOptions
+}
+
+// collectCodeSourceBlocks returns one blockSource per task that carries a code_source
+// block (extracted into Root.AiRuntimeExtras before normalization). It matches each
+// stashed (job, task_key) to the task's current position in the config tree — so it
+// tracks the task after MergeJobTasks reorders tasks by task_key — and yields the
+// …ai_runtime_task.code_source_path config path to set to the uploaded workspace path.
+func collectCodeSourceBlocks(b *bundle.Bundle) ([]blockSource, diag.Diagnostics) {
+	var sources []blockSource
+	var diags diag.Diagnostics
+	if len(b.Config.AiRuntimeExtras) == 0 {
+		return nil, diags
+	}
+
+	// Read-only pattern walk over the current tree — the callback returns each task
+	// unchanged and only records matches, so it does not go through Config.Mutate.
+	_, err := dyn.MapByPattern(b.Config.Value(), taskPattern, func(p dyn.Path, task dyn.Value) (dyn.Value, error) {
+		jobName := p[2].Key()
+		taskKey, ok := task.Get("task_key").AsString()
+		if !ok {
+			return task, nil
+		}
+		extras, ok := b.Config.AiRuntimeExtras[jobName][taskKey]
+		if !ok || extras.CodeSource == nil {
+			return task, nil
+		}
+		sources = append(sources, blockSource{
+			configPath: p.Append(dyn.Key("ai_runtime_task"), dyn.Key("code_source_path")),
+			location:   task.Get("ai_runtime_task").Location(),
+			opts:       *extras.CodeSource,
+		})
+		return task, nil
+	})
+	if err != nil {
+		diags = diags.Extend(diag.FromErr(err))
+	}
+
+	return sources, diags
+}
+
+// packageBlock packages a code_source block into a content-addressed tarball and
+// returns its sync-relative path plus the archive bytes. Like packageOne it performs
+// no disk or workspace write; the caller overlays the bytes and file sync uploads them.
+//
+// A git ref archives the pinned commit via `git archive` (uncommitted changes are not
+// included); otherwise the working tree is packaged via the same file-list path as a
+// bare code_source_path, narrowed by include_paths.
+func packageBlock(ctx context.Context, b *bundle.Bundle, cs blockSource) (string, []byte, error) {
+	localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(cs.opts.RootPath))
+	dirName := filepath.Base(localDir)
+
+	if cs.opts.Git != nil {
+		commit, err := resolveGitCommit(ctx, localDir, cs.opts.Git, cs.opts.IncludePaths)
+		if err != nil {
+			return "", nil, err
+		}
+		archive, sha, err := buildGitArchive(ctx, localDir, commit, dirName, cs.opts.IncludePaths)
+		if err != nil {
+			return "", nil, err
+		}
+		relArchive := path.Join(snapshotSubdir, fmt.Sprintf("%s_%s.tar.gz", dirName, sha[:16]))
+		log.Debugf(ctx, "packaged git code snapshot %s for code_source.root_path %q at %s", relArchive, cs.opts.RootPath, shortSHA(commit))
+		return relArchive, archive, nil
+	}
+
+	relBase, err := filepath.Rel(b.SyncRootPath, localDir)
+	if err != nil {
+		return "", nil, fmt.Errorf("code_source.root_path %q: %w", cs.opts.RootPath, err)
+	}
+	relBase = filepath.ToSlash(relBase)
+
+	files, err := codeSourceFiles(ctx, b, relBase)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to list files for code_source.root_path %q: %w", cs.opts.RootPath, err)
+	}
+	if len(cs.opts.IncludePaths) > 0 {
+		files = filterIncludePaths(files, relBase, cs.opts.IncludePaths)
+	}
+	// An empty file list means everything was filtered out (gitignore / sync.exclude /
+	// include_paths) or the directory is empty. Packaging it would deploy a job with no
+	// code, so fail with an actionable message instead.
+	if len(files) == 0 {
+		return "", nil, fmt.Errorf("code_source.root_path %q has no files to package (all excluded by .gitignore, sync.exclude, or include_paths, or the directory is empty)", cs.opts.RootPath)
+	}
+
+	var buf bytes.Buffer
+	sha, err := buildCodeSnapshot(b.SyncRoot, relBase, files, dirName, &buf)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to package code_source.root_path %q: %w", cs.opts.RootPath, err)
+	}
+	relArchive := path.Join(snapshotSubdir, fmt.Sprintf("%s_%s.tar.gz", dirName, sha[:16]))
+	log.Debugf(ctx, "packaged code snapshot %s for code_source.root_path %q", relArchive, cs.opts.RootPath)
+	return relArchive, buf.Bytes(), nil
+}
+
+// filterIncludePaths keeps only files under one of the include paths. Each include is
+// relative to the code directory (relBase); f.Relative is relative to the sync root, so
+// the includes are re-based onto relBase before matching.
+func filterIncludePaths(files []fileset.File, relBase string, includePaths []string) []fileset.File {
+	prefixes := make([]string, 0, len(includePaths))
+	for _, inc := range includePaths {
+		inc = strings.Trim(strings.TrimSpace(inc), "/")
+		if relBase != "." {
+			inc = relBase + "/" + inc
+		}
+		prefixes = append(prefixes, inc)
+	}
+	return slices.DeleteFunc(files, func(f fileset.File) bool {
+		for _, pre := range prefixes {
+			// Match an exact file entry or anything under a directory entry.
+			if f.Relative == pre || strings.HasPrefix(f.Relative, pre+"/") {
+				return false
+			}
+		}
+		return true
+	})
 }
 
 // isExistingDir reports whether path is an existing directory. A not-exist error
