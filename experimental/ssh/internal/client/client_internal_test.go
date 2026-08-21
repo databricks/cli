@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -481,4 +482,17 @@ func TestBuildSshTunnelEvent(t *testing.T) {
 			assert.Equal(t, &tt.want, got)
 		})
 	}
+}
+
+// A failed first attempt is the case the telemetry exists to measure, so assert
+// the outcome fields reach the payload as an explicit false rather than being
+// dropped as zero values.
+func TestBuildSshTunnelEventReportsFailure(t *testing.T) {
+	got := buildSshTunnelEvent(ClientOptions{ClusterID: "abc-123"}, false, false, 0)
+
+	assert.False(t, got.IsSuccess)
+
+	b, err := json.Marshal(got)
+	require.NoError(t, err)
+	assert.Contains(t, string(b), `"is_success":false`)
 }
