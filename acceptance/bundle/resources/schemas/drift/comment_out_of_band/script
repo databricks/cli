@@ -23,10 +23,10 @@ title "The remote comment is drift, so the plan updates the schema"
 trace $CLI bundle plan --output json | jq '.plan[].changes.comment'
 
 title "Redeploy clears the comment"
-trace errcode $CLI bundle deploy
+trace $CLI bundle deploy
 
 title "The comment is gone"
 MSYS_NO_PATHCONV=1 trace $CLI api get "/api/2.1/unity-catalog/schemas/$SCHEMA" | jq '.comment'
 
 title "Redeploy is a no-op"
-trace errcode $CLI bundle deploy
+trace $CLI bundle deploy
