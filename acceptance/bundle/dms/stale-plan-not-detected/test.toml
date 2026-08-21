@@ -1,0 +1,5 @@
+Badness = "A plan computed with no local state carries no lineage or serial, so ValidatePlanAgainstState skips its check and a plan computed against an older deployment version is applied without complaint. Fix in a follow-up: take the lineage from the DMS deployment ID and the serial from the version the plan was computed against, and reject a plan that claims no deployment when one exists."
+
+Ignore = [
+    'tmp.plan.json',
+]

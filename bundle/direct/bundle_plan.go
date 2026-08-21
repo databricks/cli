@@ -40,6 +40,10 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 
 // ValidatePlanAgainstState validates that a plan's lineage and serial match the given state.
 // If the plan has no lineage (first deployment), validation is skipped.
+//
+// TODO(DMS): skipping is wrong when the plan was computed before any deployment
+// existed and one exists by the time it is applied - the plan should be rejected
+// instead. See acceptance/bundle/dms/stale-plan-not-detected.
 func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
 	if plan.Lineage == "" {
 		return nil
