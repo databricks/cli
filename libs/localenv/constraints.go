@@ -284,7 +284,11 @@ func parseConstraints(data []byte) (requiresPython, dbconnect string, deps []str
 		}
 	}
 
-	deps = p.Tool.UV.ConstraintDependencies
+	// Drop constraints that cannot install on a developer machine (GPU/CUDA builds,
+	// Databricks-image rebuilds). Filtering here covers both the live-fetch and
+	// cache-fallback paths, and leaves the cached artifact bytes untouched, so the
+	// policy re-applies on every read rather than being frozen into the cache.
+	deps = filterNonLocalConstraints(p.Tool.UV.ConstraintDependencies)
 	return requiresPython, dbconnect, deps, nil
 }
 
@@ -323,4 +327,59 @@ var pep503SepRe = regexp.MustCompile(`[-_.]+`)
 // run of "-", "_", or "." to a single "-".
 func normalizePackageName(name string) string {
 	return pep503SepRe.ReplaceAllString(strings.ToLower(strings.TrimSpace(name)), "-")
+}
+
+// nonLocalConstraintNames are GPU-only distributions that make no sense as a
+// local constraint: they require an NVIDIA GPU (and CUDA toolchain) that a
+// developer machine does not have, and on macOS they have no wheel at all. Every
+// nvidia-* PyPI distribution is a CUDA runtime component and is caught by prefix
+// below; these are the remaining GPU-only names. Compared PEP 503-normalized.
+var nonLocalConstraintNames = map[string]bool{
+	"triton":     true,
+	"flash-attn": true,
+	"deepspeed":  true,
+}
+
+// isNonLocalConstraint reports whether a constraint-dependencies entry names a
+// package that cannot (or should not) be installed on a developer machine, so it
+// must not be carried into the user's local pyproject.toml. The constraint
+// artifacts mirror the cluster image faithfully (see the databricks/environments
+// repo), which is the right contract for the image but wrong for a local env: an
+// unsatisfiable constraint only ever fails `uv sync` and never helps, because a
+// constraint binds a version only if the package enters the resolution.
+//
+// Two independent tests, both fail-open — an entry we cannot confidently parse is
+// kept, never dropped:
+//
+//   - A PEP 440 local version segment (a "+" in the specifier, e.g. "+cu129",
+//     "+cpu", "+db1"). These name a build published only on an out-of-band index
+//     (download.pytorch.org) or rebuilt inside the Databricks image, so they
+//     resolve nowhere off the cluster and are impossible on macOS/CPU entirely.
+//   - A GPU-only distribution: any nvidia-* CUDA runtime component, or one of
+//     nonLocalConstraintNames.
+func isNonLocalConstraint(entry string) bool {
+	name, spec, ok := splitDepSpec(entry)
+	if !ok {
+		return false
+	}
+	if strings.Contains(spec, "+") {
+		return true
+	}
+	if strings.HasPrefix(name, "nvidia-") {
+		return true
+	}
+	return nonLocalConstraintNames[name]
+}
+
+// filterNonLocalConstraints returns deps with every non-local constraint (see
+// isNonLocalConstraint) removed, preserving order. A nil input yields nil so a
+// missing constraint-dependencies key is not turned into an empty block.
+func filterNonLocalConstraints(deps []string) []string {
+	var kept []string
+	for _, d := range deps {
+		if !isNonLocalConstraint(d) {
+			kept = append(kept, d)
+		}
+	}
+	return kept
 }

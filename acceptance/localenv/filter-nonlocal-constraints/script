@@ -1,0 +1,12 @@
+# The constraint artifact faithfully mirrors the cluster image, which includes builds
+# that cannot install on a developer machine. setup-local drops them before writing the
+# merged pyproject.toml, so the JSON diff's [tool.uv] constraint-dependencies keeps only
+# numpy, the plain torch pin, and pyarrow — the +cu129/+cpu/+db1 local-version builds and
+# the GPU-only nvidia-cublas-cu12 / triton pins are gone.
+cat > pyproject.toml <<'PY'
+[project]
+name = "demo"
+requires-python = "==3.12.*"
+PY
+
+trace $CLI environments setup-local --serverless-version 4 --dry-run --output json

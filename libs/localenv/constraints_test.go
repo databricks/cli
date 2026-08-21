@@ -61,6 +61,96 @@ func TestParseConstraints(t *testing.T) {
 	assert.Equal(t, []string{"pydantic~=2.10.6", "anyio~=4.6.2"}, deps)
 }
 
+func TestIsNonLocalConstraint(t *testing.T) {
+	// Dropped: a PEP 440 local version segment (+cuNNN / +cpu / +db1) names a
+	// build published only on an out-of-band index or inside the cluster image,
+	// so it can never resolve on a developer machine.
+	for _, entry := range []string{
+		"torch==2.9.0+cu129",
+		"torchvision==0.24.0+cu129",
+		"torch==2.7.0+cpu",
+		"flask==1.1.2+db1",
+		"horovod==0.28.1+db1",
+	} {
+		assert.True(t, isNonLocalConstraint(entry), "expected %q to be dropped (local version segment)", entry)
+	}
+
+	// Dropped: the GPU-only distributions. Every nvidia-* PyPI distribution is a
+	// CUDA runtime component; triton/flash-attn/deepspeed are GPU-only too.
+	// Name matching is PEP 503-normalized (case and -/_/. runs are equivalent).
+	for _, entry := range []string{
+		"nvidia-cublas-cu12~=12.6.4.1",
+		"nvidia-cudnn-cu12~=9.5.1.17",
+		"NVIDIA_Cublas-cu12~=12.6.4.1",
+		"triton~=3.3.0",
+		"flash-attn~=2.7.4.post1",
+		"flash_attn~=2.7.4.post1",
+		"deepspeed~=0.16.5",
+	} {
+		assert.True(t, isNonLocalConstraint(entry), "expected %q to be dropped (GPU-only)", entry)
+	}
+
+	// Kept: ordinary pins that install cleanly on a developer machine, including a
+	// plain torch pin (resolves to a macOS/CPU wheel) and ray (on PyPI, usable
+	// locally). Only the +local torch builds are dropped, not torch itself.
+	for _, entry := range []string{
+		"boto3~=1.40.45",
+		"numpy~=2.1.3",
+		"pyarrow~=21.0.0",
+		"databricks-sdk~=0.67",
+		"ray~=2.37.0",
+		"torch~=2.7.0",
+	} {
+		assert.False(t, isNonLocalConstraint(entry), "expected %q to be kept", entry)
+	}
+}
+
+func TestIsNonLocalConstraintFailsOpenOnUnparseable(t *testing.T) {
+	// A shape we cannot confidently parse (an environment marker) is kept rather
+	// than dropped: filtering must never remove a constraint we are unsure about.
+	assert.False(t, isNonLocalConstraint(`torch==2.9.0+cu129 ; python_version < "3.13"`))
+	assert.False(t, isNonLocalConstraint(""))
+}
+
+func TestFilterNonLocalConstraintsPreservesOrderAndKeeps(t *testing.T) {
+	in := []string{
+		"boto3~=1.40.45",
+		"torch==2.7.0+cpu",
+		"numpy~=2.1.3",
+		"nvidia-cublas-cu12~=12.6.4.1",
+		"triton~=3.3.0",
+		"pyarrow~=21.0.0",
+	}
+	got := filterNonLocalConstraints(in)
+	assert.Equal(t, []string{"boto3~=1.40.45", "numpy~=2.1.3", "pyarrow~=21.0.0"}, got)
+}
+
+func TestFilterNonLocalConstraintsPreservesNil(t *testing.T) {
+	// A missing constraint-dependencies key parses to nil; the filter must not
+	// turn that into a non-nil empty slice (mergeToolUv treats the two differently).
+	assert.Nil(t, filterNonLocalConstraints(nil))
+}
+
+func TestParseConstraintsDropsNonLocal(t *testing.T) {
+	toml := `[project]
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = ["databricks-connect~=17.3.0"]
+
+[tool.uv]
+constraint-dependencies = [
+    "numpy~=2.1.3",
+    "torch==2.7.0+cu129",
+    "nvidia-cublas-cu12~=12.6.4.1",
+    "pyarrow~=21.0.0",
+]
+`
+	_, _, deps, err := parseConstraints([]byte(toml))
+	require.NoError(t, err)
+	assert.Equal(t, []string{"numpy~=2.1.3", "pyarrow~=21.0.0"}, deps)
+}
+
 func TestParseConstraintsRejectsMissingRequiresPython(t *testing.T) {
 	// Valid TOML but no requires-python is not a usable artifact; it must error
 	// rather than return an empty result that would be cached and fail later.
