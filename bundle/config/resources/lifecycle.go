@@ -37,5 +37,20 @@ type JobRunLifecycle struct {
 // JobRunTrigger is one lifecycle.triggers entry.
 type JobRunTrigger struct {
 	OnBundleDeploy *bool   `json:"on_bundle_deploy,omitempty"`
-	OnFileChange   *string `json:"on_file_change,omitempty"` // path or glob under sync root
+	OnFileChange   *string `json:"on_file_change,omitempty"`  // path or glob under sync root
+	OnValueChange  *string `json:"on_value_change,omitempty"` // interpolated expr; re-fire when the resolved value changes
+}
+
+func (t JobRunTrigger) ArmedCount() int {
+	n := 0
+	if t.OnBundleDeploy != nil {
+		n++
+	}
+	if t.OnFileChange != nil {
+		n++
+	}
+	if t.OnValueChange != nil {
+		n++
+	}
+	return n
 }

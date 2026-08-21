@@ -1,0 +1,29 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "plan depends on both jobs in the expression"
+$CLI bundle plan -o json > tmp.plan.json
+trace jq '.plan["resources.job_runs.my_run"].depends_on' tmp.plan.json | contains.py \
+    'resources.jobs.other' '${resources.jobs.other.id}' \
+    'resources.jobs.extra' '${resources.jobs.extra.id}'
+
+title "first deploy triggers a run"
+# Not traced: readplanarg makes the command line differ per READPLAN variant.
+title "bundle deploy\n"
+$CLI bundle deploy $(readplanarg tmp.plan.json)
+trace read_id.py my_job
+trace read_id.py other
+trace read_id.py extra
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now
+
+title "state records the concatenated resolved ids"
+trace print_state.py | jq '.state["resources.job_runs.my_run"].state.lifecycle.triggers.on_value_change.values'
+
+title "redeploy with unchanged ids plans nothing"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now

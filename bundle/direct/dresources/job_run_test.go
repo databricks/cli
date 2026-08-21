@@ -345,6 +345,71 @@ func TestJobRunReadOfUnfinishedRunReportsNoResult(t *testing.T) {
 	assert.Empty(t, remote.ResultState)
 }
 
+func TestJobRunPrepareStateOnValueChange(t *testing.T) {
+	expr := "${resources.jobs.foo.id}"
+
+	t.Run("armed", func(t *testing.T) {
+		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{
+			Lifecycle: &resources.JobRunLifecycle{
+				Triggers: []resources.JobRunTrigger{{OnValueChange: &expr}},
+			},
+		})
+		assert.Equal(t, map[string]string{expr: expr}, state.Lifecycle.Triggers.OnValueChange.Values)
+		assert.Empty(t, state.Lifecycle.Triggers.OnBundleDeploy)
+		assert.Nil(t, state.Lifecycle.Triggers.OnFileChange.Files)
+	})
+
+	t.Run("literal", func(t *testing.T) {
+		lit := "v1"
+		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{
+			Lifecycle: &resources.JobRunLifecycle{
+				Triggers: []resources.JobRunTrigger{{OnValueChange: &lit}},
+			},
+		})
+		assert.Equal(t, map[string]string{"v1": "v1"}, state.Lifecycle.Triggers.OnValueChange.Values)
+	})
+}
+
+func TestJobRunPrepareInputConfigOnValueChange(t *testing.T) {
+	expr := "${resources.jobs.foo.id}"
+	input := &resources.JobRun{
+		Lifecycle: &resources.JobRunLifecycle{
+			Triggers: []resources.JobRunTrigger{{OnValueChange: &expr}},
+		},
+	}
+	sv, err := (&ResourceJobRun{}).PrepareInputConfig(input, "resources.job_runs.my_run")
+	require.NoError(t, err)
+	assert.Same(t, input, sv.Value)
+	path := structpath.NewStringKey(structpath.MustParsePath("lifecycle.triggers.on_value_change.values"), expr)
+	assert.Equal(t, map[string]string{path.String(): expr}, sv.Refs)
+}
+
+func TestDropJobRunValueChangeConfigRefs(t *testing.T) {
+	expr := "${resources.jobs.other.id}"
+	valuesPath := structpath.NewStringKey(structpath.MustParsePath("lifecycle.triggers.on_value_change.values"), expr).String()
+	refs := map[string]string{
+		"lifecycle.triggers[0].on_value_change": expr,
+		"job_id":                                "${resources.jobs.my_job.id}",
+		valuesPath:                              expr,
+	}
+	DropJobRunValueChangeConfigRefs(refs)
+	assert.Equal(t, map[string]string{
+		"job_id":   "${resources.jobs.my_job.id}",
+		valuesPath: expr,
+	}, refs)
+}
+
+func TestJobRunPrepareInputConfigLiteralHasNoRefs(t *testing.T) {
+	lit := "v1"
+	sv, err := (&ResourceJobRun{}).PrepareInputConfig(&resources.JobRun{
+		Lifecycle: &resources.JobRunLifecycle{
+			Triggers: []resources.JobRunTrigger{{OnValueChange: &lit}},
+		},
+	}, "resources.job_runs.my_run")
+	require.NoError(t, err)
+	assert.Nil(t, sv.Refs)
+}
+
 // PrepareState records the outcome the run must reach, the same for every run,
 // so the planner has something to compare the remote against.
 func TestJobRunPrepareStateRequiresSuccess(t *testing.T) {
@@ -352,6 +417,7 @@ func TestJobRunPrepareStateRequiresSuccess(t *testing.T) {
 
 	assert.Equal(t, jobs.RunResultStateSuccess, state.ResultState)
 	assert.Nil(t, state.Lifecycle.Triggers.OnFileChange.Files)
+	assert.Nil(t, state.Lifecycle.Triggers.OnValueChange.Values)
 }
 
 func TestJobRunPrepareStateOnBundleDeploy(t *testing.T) {
@@ -492,6 +558,27 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 			New:    "",
 		}
 		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change.files['a.txt']"), change, nil))
+		assert.Equal(t, deployplan.Recreate, change.Action)
+	})
+
+	t.Run("clearing on_value_change values downgrades to update", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    map[string]string{"${resources.jobs.foo.id}": "1"},
+			New:    nil,
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_value_change.values"), change, nil))
+		assert.Equal(t, deployplan.Update, change.Action)
+		assert.Equal(t, "trigger removed", change.Reason)
+	})
+
+	t.Run("changed on_value_change still recreates", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    "1",
+			New:    "2",
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_value_change.values['${resources.jobs.foo.id}']"), change, nil))
 		assert.Equal(t, deployplan.Recreate, change.Action)
 	})
 }

@@ -1,0 +1,25 @@
+bundle:
+  name: job-runs-on-value-change
+
+variables:
+  stamp:
+    default: v1
+  other:
+    default: a1
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}
+      lifecycle:
+        triggers:
+          - on_value_change: ${var.stamp}
+          - on_value_change: ${var.other}
