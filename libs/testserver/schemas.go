@@ -120,8 +120,8 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 	}
 
 	// mergo skips zero values, so an explicit empty comment would leave the stored one in
-	// place. UC clears it, and comment is the only field its UpdateSchema can clear: an
-	// empty or null properties map is what it rejects as "nothing to update" above.
+	// place. UC clears it instead. Comment is the only field UpdateSchema can clear at
+	// all: clearing properties needs an empty or null map, which the check above rejects.
 	if _, ok := fields["comment"]; ok {
 		existing.Comment = schemaUpdate.Comment
 	}
