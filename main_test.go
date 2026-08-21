@@ -36,6 +36,37 @@ func TestImportDoesNotSetCliPathEnv(t *testing.T) {
 	assert.NotEqual(t, os.Args[0], os.Getenv("DATABRICKS_CLI_PATH"))
 }
 
+func TestCommandArgsForDockerCredentialHelper(t *testing.T) {
+	tests := []struct {
+		name       string
+		executable string
+		args       []string
+		want       []string
+		wantHelper bool
+		wantError  string
+	}{
+		{name: "databricks", executable: "databricks", args: []string{"auth", "token"}, want: []string{"auth", "token"}},
+		{name: "helper", executable: "/usr/local/bin/docker-credential-databricks", args: []string{"get"}, want: []string{"auth", "token", "--format=docker"}, wantHelper: true},
+		{name: "Windows helper", executable: `C:\Program Files\Databricks\docker-credential-databricks.exe`, args: []string{"get"}, want: []string{"auth", "token", "--format=docker"}, wantHelper: true},
+		{name: "unsupported operation", executable: "docker-credential-databricks", args: []string{"store"}, wantHelper: true, wantError: "only supports get"},
+		{name: "uppercase operation", executable: "docker-credential-databricks.exe", args: []string{"GET"}, wantHelper: true, wantError: "only supports get"},
+		{name: "missing operation", executable: "docker-credential-databricks", wantHelper: true, wantError: "only supports get"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, helper, err := commandArgs(tt.executable, tt.args)
+			if tt.wantError != "" {
+				require.ErrorContains(t, err, tt.wantError)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+			require.Equal(t, tt.wantHelper, helper)
+		})
+	}
+}
+
 func TestFilePath(t *testing.T) {
 	// To import this repository as a library, all files must match the
 	// file path constraints made by Go. This test ensures that all files
