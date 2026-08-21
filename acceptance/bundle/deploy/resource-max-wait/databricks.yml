@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+# Nothing to sync: keeps the "Files:" line out of the output, which would otherwise
+# count whatever the harness has written into the test directory.
+sync:
+  paths: []
+
+resources:
+  jobs:
+    my_job:
+      name: test-job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/notebook
