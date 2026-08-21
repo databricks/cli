@@ -1,2 +1,7 @@
 trace $CLI bundle deploy
 trace $CLI bundle destroy --auto-approve
+
+# Destroy removes the target directory, and the .bundle/<name> parent goes with it once
+# nothing else is deployed under it. Double slash keeps Windows from rewriting the path.
+title "Assert the bundle directory is deleted"
+trace errcode $CLI workspace get-status "//Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle"

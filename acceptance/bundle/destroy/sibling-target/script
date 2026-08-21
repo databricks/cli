@@ -1,0 +1,17 @@
+# Double slash keeps Windows from rewriting the path.
+BUNDLE_DIR="//Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle"
+
+trace $CLI bundle deploy -t dev
+trace $CLI bundle deploy -t prod
+
+title "Destroy one target while the other is still deployed"
+trace $CLI bundle destroy -t dev --auto-approve
+
+title "Assert the bundle directory is kept for the remaining target"
+trace $CLI workspace get-status "${BUNDLE_DIR}" | jq '{path, object_type}'
+
+title "Destroy the remaining target"
+trace $CLI bundle destroy -t prod --auto-approve
+
+title "Assert the bundle directory is deleted"
+trace errcode $CLI workspace get-status "${BUNDLE_DIR}"
