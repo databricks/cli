@@ -59,6 +59,11 @@ Resources:
       "job_parameters": {
         "env": "prod"
       },
+      "lifecycle": {
+        "triggers": {
+          "on_file_change": {}
+        }
+      },
       "result_state": "SUCCESS"
     }
   },

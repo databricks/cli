@@ -1,0 +1,64 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+changes() {
+    $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"].changes'
+}
+
+title "first deploy triggers a run"
+trace $CLI bundle deploy
+trace read_id.py my_job
+# Name the first run so the recreated one becomes [MY_RUN_ID_2].
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now
+
+title "redeploy with unchanged file plans nothing"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now
+
+title "touch without content change plans nothing"
+python -c "import os; os.utime('seed.txt', None)"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now
+
+title "editing the file re-fires"
+update_file.py seed.txt "v1" "v2"
+trace $CLI bundle plan
+# Save the plan so the READPLAN=1 variant deploys the hashes computed here.
+# The deploy is not traced: readplanarg makes the command line differ per variant.
+$CLI bundle plan -o json > tmp.plan.json
+trace jq '.plan["resources.job_runs.my_run"].changes' tmp.plan.json
+title "bundle deploy\n"
+$CLI bundle deploy $(readplanarg tmp.plan.json)
+read_id.py my_run > /dev/null
+trace print_requests.py --keep //jobs/runs/delete
+trace print_requests.py //jobs/run-now
+
+title "deleting the file warns and re-fires"
+mv seed.txt tmp.seed.txt
+trace $CLI bundle plan
+trace changes
+trace $CLI bundle deploy
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now
+
+title "restoring the file re-fires again"
+mv tmp.seed.txt seed.txt
+trace $CLI bundle plan
+trace $CLI bundle deploy
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now
+
+title "removing on_file_change rewrites state without a run"
+update_file.py databricks.yml "      lifecycle:
+        triggers:
+          - on_file_change: seed.txt
+" ""
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now

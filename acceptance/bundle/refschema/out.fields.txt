@@ -865,15 +865,19 @@ resources.job_runs.*.jar_params[*]	string	ALL
 resources.job_runs.*.job_id	int64	ALL
 resources.job_runs.*.job_parameters	map[string]string	ALL
 resources.job_runs.*.job_parameters.*	string	ALL
-resources.job_runs.*.lifecycle	*dresources.JobRunLifecycleState	STATE
 resources.job_runs.*.lifecycle	*resources.JobRunLifecycle	INPUT
+resources.job_runs.*.lifecycle	dresources.JobRunLifecycleState	STATE
 resources.job_runs.*.lifecycle	resources.Lifecycle	INPUT
 resources.job_runs.*.lifecycle.prevent_destroy	bool	INPUT
-resources.job_runs.*.lifecycle.triggers	*dresources.JobRunTriggersState	STATE
 resources.job_runs.*.lifecycle.triggers	[]resources.JobRunTrigger	INPUT
+resources.job_runs.*.lifecycle.triggers	dresources.JobRunTriggersState	STATE
 resources.job_runs.*.lifecycle.triggers.on_bundle_deploy	string	STATE
+resources.job_runs.*.lifecycle.triggers.on_file_change	dresources.JobRunFileTriggerState	STATE
+resources.job_runs.*.lifecycle.triggers.on_file_change.files	map[string]string	STATE
+resources.job_runs.*.lifecycle.triggers.on_file_change.files.*	string	STATE
 resources.job_runs.*.lifecycle.triggers[*]	resources.JobRunTrigger	INPUT
 resources.job_runs.*.lifecycle.triggers[*].on_bundle_deploy	*bool	INPUT
+resources.job_runs.*.lifecycle.triggers[*].on_file_change	*string	INPUT
 resources.job_runs.*.modified_status	string	INPUT
 resources.job_runs.*.notebook_params	map[string]string	ALL
 resources.job_runs.*.notebook_params.*	string	ALL
@@ -896,6 +900,8 @@ resources.job_runs.*.python_params	[]string	ALL
 resources.job_runs.*.python_params[*]	string	ALL
 resources.job_runs.*.queue	*jobs.QueueSettings	ALL
 resources.job_runs.*.queue.enabled	bool	ALL
+resources.job_runs.*.resolved_file_triggers	map[string]string	INPUT
+resources.job_runs.*.resolved_file_triggers.*	string	INPUT
 resources.job_runs.*.resolved_job_id	int64	INPUT
 resources.job_runs.*.result_state	jobs.RunResultState	REMOTE	STATE
 resources.job_runs.*.run_id	int64	REMOTE

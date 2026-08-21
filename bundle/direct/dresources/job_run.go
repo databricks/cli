@@ -3,6 +3,7 @@ package dresources
 import (
 	"cmp"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -26,15 +27,73 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
+// jobRunTriggerLocalPaths are state-only: DoUpdate must not wait, OverrideChangeDesc
+// downgrades a cleared trigger to update.
+var jobRunTriggerLocalPaths = []string{
+	"lifecycle.triggers.on_bundle_deploy",
+	"lifecycle.triggers.on_file_change.files",
+}
+
+func isJobRunTriggerPath(path string) bool {
+	return slices.Contains(jobRunTriggerLocalPaths, path)
+}
+
+func hasJobRunNonTriggerChanges(changes Changes) bool {
+	for path, change := range changes {
+		if change.Action != deployplan.Skip && !isJobRunTriggerPath(path) {
+			return true
+		}
+	}
+	return false
+}
+
 // JobRunTriggersState is the persisted fingerprint of lifecycle.triggers.
 type JobRunTriggersState struct {
 	// Fresh UUID each plan while armed so Old!=New forces recreate.
 	OnBundleDeploy string `json:"on_bundle_deploy,omitempty"`
+	// Content hashes from ResolveJobRunFileTriggers; any change recreates.
+	OnFileChange JobRunFileTriggerState `json:"on_file_change"`
 }
 
-// JobRunLifecycleState holds local-only lifecycle fields persisted in state.
+// JobRunFileTriggerState wraps the hashes so turning the trigger off (Files nil)
+// diffs at one path, distinct from the per-file entries a changed file produces.
+type JobRunFileTriggerState struct {
+	Files map[string]string `json:"files,omitempty"`
+}
+
+// UnmarshalJSON accepts the wrapped map and the older path-to-hash map.
+func (s *JobRunFileTriggerState) UnmarshalJSON(b []byte) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if files, ok := raw["files"]; ok && len(files) > 0 && files[0] == '{' {
+		return json.Unmarshal(files, &s.Files)
+	}
+	if len(raw) == 0 {
+		s.Files = nil
+		return nil
+	}
+	return json.Unmarshal(b, &s.Files)
+}
+
+// JobRunLifecycleState is the local-only trigger fingerprint. Nested by value,
+// not by pointer: structdiff cannot descend into a nil pointer and would report
+// the whole subtree at "lifecycle" instead of the leaf that actually changed.
 type JobRunLifecycleState struct {
-	Triggers *JobRunTriggersState `json:"triggers,omitempty"`
+	Triggers JobRunTriggersState `json:"triggers"`
+}
+
+// Zero value spelled out field by field, as exhaustruct requires.
+func emptyJobRunLifecycleState() JobRunLifecycleState {
+	return JobRunLifecycleState{
+		Triggers: JobRunTriggersState{
+			OnBundleDeploy: "",
+			OnFileChange: JobRunFileTriggerState{
+				Files: nil,
+			},
+		},
+	}
 }
 
 // JobRunState is the RunNow request plus the outcome required for planning.
@@ -44,9 +103,9 @@ type JobRunState struct {
 	// Always SUCCESS during planning and cleared before persistence.
 	ResultState jobs.RunResultState `json:"result_state,omitempty"`
 
-	// Local-only; listed in knownMissingInRemoteType. Nested under lifecycle to
-	// mirror config and avoid colliding with a future Jobs API field.
-	Lifecycle *JobRunLifecycleState `json:"lifecycle,omitempty"`
+	// Local-only. Nested under lifecycle to mirror config and avoid colliding
+	// with a future Jobs API field.
+	Lifecycle JobRunLifecycleState `json:"lifecycle"`
 }
 
 func (s *JobRunState) UnmarshalJSON(b []byte) error {
@@ -57,8 +116,8 @@ func (s JobRunState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-// JobRunRemote embeds RunNow so every StateType path is a valid RemoteType path
-// (see TestRemoteSuperset), plus the run's output-only fields for a faithful view.
+// JobRunRemote is the RunNow request plus the run's output-only fields. It has no
+// lifecycle: GetRun never returns the fingerprints (see knownMissingInRemoteType).
 type JobRunRemote struct {
 	jobs.RunNow
 
@@ -97,12 +156,13 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	state := &JobRunState{
 		RunNow:      input.RunNow,
 		ResultState: jobs.RunResultStateSuccess,
-		Lifecycle:   nil,
+		Lifecycle:   emptyJobRunLifecycleState(),
 	}
 	if input.HasOnBundleDeploy() {
-		state.Lifecycle = &JobRunLifecycleState{
-			Triggers: &JobRunTriggersState{OnBundleDeploy: uuid.NewString()},
-		}
+		state.Lifecycle.Triggers.OnBundleDeploy = uuid.NewString()
+	}
+	if len(input.ResolvedFileTriggers) > 0 {
+		state.Lifecycle.Triggers.OnFileChange.Files = input.ResolvedFileTriggers
 	}
 	return state
 }
@@ -178,13 +238,13 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 }
 
 // RemapState extracts the fields used for diffing: the RunNow request and the
-// outcome the run reached.
+// outcome the run reached. Lifecycle has no remote counterpart, so it stays empty
+// and the planner skips it as missing_in_remote.
 func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 	return &JobRunState{
 		RunNow:      remote.RunNow,
 		ResultState: remote.ResultState,
-		// Local-only lifecycle fingerprints stay unset on the remapped remote.
-		Lifecycle: nil,
+		Lifecycle:   emptyJobRunLifecycleState(),
 	}
 }
 
@@ -370,7 +430,7 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, config *JobRunState, entry *PlanEntry) (*JobRunRemote, error) {
 	// Clearing a trigger only drops its local-only fingerprint from state; wait on
 	// the run only when some other field changed.
-	if !entry.Changes.HasChangeExcept("lifecycle", "lifecycle.triggers", "lifecycle.triggers.on_bundle_deploy") {
+	if !hasJobRunNonTriggerChanges(entry.Changes) {
 		config.ResultState = ""
 		return nil, nil
 	}
@@ -386,15 +446,17 @@ func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, config *JobRun
 // Clearing a trigger downgrades the recreate to a state-only update so the
 // fingerprint is dropped from state without re-firing the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
-	switch path.String() {
-	case "lifecycle", "lifecycle.triggers", "lifecycle.triggers.on_bundle_deploy":
-		// A cleared trigger sets New empty; structdiff may report it at lifecycle,
-		// lifecycle.triggers, or the leaf. DoUpdate treats these paths as no-ops.
-		if change.New == nil || change.New == "" {
+	pathString := path.String()
+	if isJobRunTriggerPath(pathString) {
+		removed := pathString == "lifecycle.triggers.on_bundle_deploy" && (change.New == nil || change.New == "")
+		removed = removed || pathString == "lifecycle.triggers.on_file_change.files" && change.New == nil
+		if removed {
 			change.Action = deployplan.Update
 			change.Reason = "trigger removed"
 		}
 		return nil
+	}
+	switch path.String() {
 	case "result_state":
 		// The planner passes no remote state when the run could not be read.
 		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {

@@ -43,6 +43,11 @@ Exit code: 1
   "new_state": {
     "value": {
       "job_id": [MY_JOB_ID],
+      "lifecycle": {
+        "triggers": {
+          "on_file_change": {}
+        }
+      },
       "result_state": "SUCCESS"
     }
   },

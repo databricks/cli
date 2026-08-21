@@ -351,44 +351,87 @@ func TestJobRunPrepareStateRequiresSuccess(t *testing.T) {
 	state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{RunNow: jobs.RunNow{JobId: 456}})
 
 	assert.Equal(t, jobs.RunResultStateSuccess, state.ResultState)
+	assert.Nil(t, state.Lifecycle.Triggers.OnFileChange.Files)
 }
 
 func TestJobRunPrepareStateOnBundleDeploy(t *testing.T) {
-	t.Run("unset", func(t *testing.T) {
-		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{})
-		assert.Nil(t, state.Lifecycle)
-	})
+	on := true
+	input := &resources.JobRun{
+		Lifecycle: &resources.JobRunLifecycle{
+			Triggers: []resources.JobRunTrigger{{OnBundleDeploy: &on}},
+		},
+	}
+	first := (&ResourceJobRun{}).PrepareState(input)
+	assert.NotEmpty(t, first.Lifecycle.Triggers.OnBundleDeploy)
+
+	second := (&ResourceJobRun{}).PrepareState(input)
+	assert.NotEqual(t, first.Lifecycle.Triggers.OnBundleDeploy, second.Lifecycle.Triggers.OnBundleDeploy)
+}
+
+func TestJobRunPrepareStateOnFileChange(t *testing.T) {
+	hashes := map[string]string{"a.txt": "abc"}
 
 	t.Run("armed", func(t *testing.T) {
+		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{
+			ResolvedFileTriggers: hashes,
+		})
+		assert.Equal(t, hashes, state.Lifecycle.Triggers.OnFileChange.Files)
+		assert.Empty(t, state.Lifecycle.Triggers.OnBundleDeploy)
+	})
+
+	t.Run("both triggers", func(t *testing.T) {
 		on := true
-		input := &resources.JobRun{
+		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{
 			Lifecycle: &resources.JobRunLifecycle{
 				Triggers: []resources.JobRunTrigger{{OnBundleDeploy: &on}},
 			},
-		}
-		first := (&ResourceJobRun{}).PrepareState(input)
-		require.NotNil(t, first.Lifecycle)
-		require.NotNil(t, first.Lifecycle.Triggers)
-		assert.NotEmpty(t, first.Lifecycle.Triggers.OnBundleDeploy)
+			ResolvedFileTriggers: hashes,
+		})
+		assert.NotEmpty(t, state.Lifecycle.Triggers.OnBundleDeploy)
+		assert.Equal(t, hashes, state.Lifecycle.Triggers.OnFileChange.Files)
+	})
+}
 
-		second := (&ResourceJobRun{}).PrepareState(input)
-		assert.NotEqual(t, first.Lifecycle.Triggers.OnBundleDeploy, second.Lifecycle.Triggers.OnBundleDeploy)
+func TestJobRunStateUnmarshalLifecycleCompatibility(t *testing.T) {
+	t.Run("missing lifecycle gets empty shape", func(t *testing.T) {
+		var state JobRunState
+		require.NoError(t, json.Unmarshal([]byte(`{}`), &state))
+		assert.Nil(t, state.Lifecycle.Triggers.OnFileChange.Files)
+	})
+
+	t.Run("old path-to-hash map is preserved", func(t *testing.T) {
+		var state JobRunState
+		require.NoError(t, json.Unmarshal([]byte(`{
+			"lifecycle": {
+				"triggers": {
+					"on_file_change": {
+						"a.txt": "abc"
+					}
+				}
+			}
+		}`), &state))
+		assert.Equal(t, map[string]string{"a.txt": "abc"}, state.Lifecycle.Triggers.OnFileChange.Files)
+	})
+
+	t.Run("new wrapped map is preserved", func(t *testing.T) {
+		var state JobRunState
+		require.NoError(t, json.Unmarshal([]byte(`{
+			"lifecycle": {
+				"triggers": {
+					"on_file_change": {
+						"files": {
+							"a.txt": "abc"
+						}
+					}
+				}
+			}
+		}`), &state))
+		assert.Equal(t, map[string]string{"a.txt": "abc"}, state.Lifecycle.Triggers.OnFileChange.Files)
 	})
 }
 
 func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 	r := &ResourceJobRun{}
-
-	t.Run("clearing lifecycle downgrades to update", func(t *testing.T) {
-		change := &ChangeDesc{
-			Action: deployplan.Recreate,
-			Old:    &JobRunLifecycleState{Triggers: &JobRunTriggersState{OnBundleDeploy: "old"}},
-			New:    nil,
-		}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle"), change, nil))
-		assert.Equal(t, deployplan.Update, change.Action)
-		assert.Equal(t, "trigger removed", change.Reason)
-	})
 
 	t.Run("clearing on_bundle_deploy leaf downgrades to update", func(t *testing.T) {
 		change := &ChangeDesc{
@@ -401,6 +444,17 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 		assert.Equal(t, "trigger removed", change.Reason)
 	})
 
+	t.Run("clearing on_file_change files downgrades to update", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    map[string]string{"a.txt": "abc"},
+			New:    nil,
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change.files"), change, nil))
+		assert.Equal(t, deployplan.Update, change.Action)
+		assert.Equal(t, "trigger removed", change.Reason)
+	})
+
 	t.Run("fresh fingerprint still recreates", func(t *testing.T) {
 		change := &ChangeDesc{
 			Action: deployplan.Recreate,
@@ -408,6 +462,36 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 			New:    "new",
 		}
 		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_bundle_deploy"), change, nil))
+		assert.Equal(t, deployplan.Recreate, change.Action)
+	})
+
+	t.Run("changed on_file_change hash still recreates", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    "old",
+			New:    "new",
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change.files['a.txt']"), change, nil))
+		assert.Equal(t, deployplan.Recreate, change.Action)
+	})
+
+	t.Run("removed matched file still recreates", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    "old",
+			New:    nil,
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change.files['a.txt']"), change, nil))
+		assert.Equal(t, deployplan.Recreate, change.Action)
+	})
+
+	t.Run("missing file fingerprint still recreates", func(t *testing.T) {
+		change := &ChangeDesc{
+			Action: deployplan.Recreate,
+			Old:    "old",
+			New:    "",
+		}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change.files['a.txt']"), change, nil))
 		assert.Equal(t, deployplan.Recreate, change.Action)
 	})
 }
@@ -427,6 +511,7 @@ func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
 			state := (&ResourceJobRun{}).RemapState(remote)
 
 			assert.Equal(t, outcome, state.ResultState)
+			assert.Equal(t, emptyJobRunLifecycleState(), state.Lifecycle)
 		})
 	}
 }

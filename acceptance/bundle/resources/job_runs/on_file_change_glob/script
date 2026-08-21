@@ -1,0 +1,63 @@
+# Fixture is named dot_gitignore so a real .gitignore does not affect git while developing.
+mv dot_gitignore .gitignore
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Plan once, print JSON changes, leave tmp.plan.json for readplanarg.
+changes() {
+    $CLI bundle plan -o json > tmp.plan.json
+    trace jq '.plan["resources.job_runs.my_run"].changes' tmp.plan.json
+}
+
+title "deploy hashes the matched files"
+trace $CLI bundle deploy
+trace read_id.py my_job
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now
+
+title "editing one matched file re-fires"
+update_file.py migrations/001.txt "one" "one-edited"
+changes
+# The deploy is not traced: readplanarg makes the command line differ per variant.
+title "bundle deploy\n"
+$CLI bundle deploy $(readplanarg tmp.plan.json)
+read_id.py my_run > /dev/null
+trace print_requests.py --keep //jobs/runs/delete
+trace print_requests.py //jobs/run-now
+
+title "editing a file in a subdirectory re-fires"
+# printf keeps LF on Windows, where update_file.py's text-mode rewrite would
+# restore CRLF and leave the file hashing differently than the deploy above.
+printf 'sub-edited\n' > mysubdir/a.txt
+changes
+printf 'sub\n' > mysubdir/a.txt
+
+title "a new matching file re-fires"
+printf 'three\n' > migrations/003.txt
+changes
+rm migrations/003.txt
+
+title "removing a matched file re-fires"
+mv migrations/002.txt tmp.002.txt
+changes
+mv tmp.002.txt migrations/002.txt
+
+title "editing a file below the glob does not re-fire"
+# migrations/* matches the archive directory itself, which is skipped: the glob
+# does not descend into it.
+update_file.py migrations/archive/003.txt "three" "three-edited"
+changes
+update_file.py migrations/archive/003.txt "three-edited" "three"
+
+title "editing a gitignored file does not re-fire"
+update_file.py migrations/ignored.txt "ignored" "ignored-edited"
+trace $CLI bundle plan
+update_file.py migrations/ignored.txt "ignored-edited" "ignored"
+
+title "** is not recursive: it matches the same files as *"
+update_file.py databricks.yml "migrations/*" "migrations/**"
+changes
