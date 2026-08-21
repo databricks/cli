@@ -1,0 +1,4 @@
+# Without the fix, validate --strict succeeds and deploy fails with
+# "invalid dependency" (direct) or an unresolved terraform reference.
+musterr trace $CLI bundle validate --strict
+musterr trace $CLI bundle deploy

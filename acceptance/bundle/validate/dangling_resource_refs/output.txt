@@ -1,0 +1,17 @@
+
+>>> [CLI] bundle validate --strict
+Error: reference does not exist: ${resources.jobs.does_not_exist.id}
+  at resources.jobs.my_job.permissions[0].group_name
+
+Name: dangling-resource-refs
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/dangling-resource-refs/default
+
+Found 1 error
+
+>>> [CLI] bundle deploy
+Error: reference does not exist: ${resources.jobs.does_not_exist.id}
+  at resources.jobs.my_job.permissions[0].group_name
+
