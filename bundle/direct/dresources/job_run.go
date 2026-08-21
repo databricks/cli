@@ -51,13 +51,12 @@ func hasJobRunNonTriggerChanges(changes Changes) bool {
 type JobRunTriggersState struct {
 	// Fresh UUID each plan while armed so Old!=New forces recreate.
 	OnBundleDeploy string `json:"on_bundle_deploy,omitempty"`
-	// Path → content hash from ResolveJobRunFileTriggers; change to recreate.
-	OnFileChange *JobRunFileTriggerState `json:"on_file_change"`
+	// Content hashes from ResolveJobRunFileTriggers; any change recreates.
+	OnFileChange JobRunFileTriggerState `json:"on_file_change"`
 }
 
-// JobRunFileTriggerState is always present so remote and state share one shape.
-// Files is nil when the trigger is off, so dropping the trigger diffs here and
-// a file appear/disappear diffs inside the map.
+// JobRunFileTriggerState wraps the hashes so turning the trigger off (Files nil)
+// diffs at one path, distinct from the per-file entries a changed file produces.
 type JobRunFileTriggerState struct {
 	Files map[string]string `json:"files,omitempty"`
 }
@@ -78,16 +77,21 @@ func (s *JobRunFileTriggerState) UnmarshalJSON(b []byte) error {
 	return json.Unmarshal(b, &s.Files)
 }
 
-// JobRunLifecycleState is the local-only trigger fingerprint, also present (empty) on remote.
+// JobRunLifecycleState is the local-only trigger fingerprint. Nested by value,
+// not by pointer: structdiff cannot descend into a nil pointer and would report
+// the whole subtree at "lifecycle" instead of the leaf that actually changed.
 type JobRunLifecycleState struct {
-	Triggers *JobRunTriggersState `json:"triggers"`
+	Triggers JobRunTriggersState `json:"triggers"`
 }
 
-func newJobRunLifecycleState() *JobRunLifecycleState {
-	return &JobRunLifecycleState{
-		Triggers: &JobRunTriggersState{
+// Zero value spelled out field by field, as exhaustruct requires.
+func emptyJobRunLifecycleState() JobRunLifecycleState {
+	return JobRunLifecycleState{
+		Triggers: JobRunTriggersState{
 			OnBundleDeploy: "",
-			OnFileChange:   &JobRunFileTriggerState{Files: nil},
+			OnFileChange: JobRunFileTriggerState{
+				Files: nil,
+			},
 		},
 	}
 }
@@ -101,11 +105,10 @@ type JobRunState struct {
 
 	// Local-only. Nested under lifecycle to mirror config and avoid colliding
 	// with a future Jobs API field.
-	Lifecycle *JobRunLifecycleState `json:"lifecycle"`
+	Lifecycle JobRunLifecycleState `json:"lifecycle"`
 }
 
 func (s *JobRunState) UnmarshalJSON(b []byte) error {
-	s.Lifecycle = newJobRunLifecycleState()
 	return marshal.Unmarshal(b, s)
 }
 
@@ -113,17 +116,14 @@ func (s JobRunState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-// JobRunRemote embeds RunNow so every StateType path is a valid RemoteType path
-// (see TestRemoteSuperset), plus the run's output-only fields for a faithful view.
+// JobRunRemote is the RunNow request plus the run's output-only fields. It has no
+// lifecycle: GetRun never returns the fingerprints (see knownMissingInRemoteType).
 type JobRunRemote struct {
 	jobs.RunNow
 
 	// Repeats state.result_state at the path JobRunState uses, so the planner can
 	// compare the two. See "RemapState is a dumb copy" in README.md.
 	ResultState jobs.RunResultState `json:"result_state,omitempty"`
-
-	// Always the empty fingerprint: GetRun does not return triggers.
-	Lifecycle *JobRunLifecycleState `json:"lifecycle"`
 
 	RunId      int64          `json:"run_id,omitempty"`
 	RunName    string         `json:"run_name,omitempty"`
@@ -135,7 +135,6 @@ type JobRunRemote struct {
 // Custom marshaler needed because embedded RunNow's MarshalJSON would otherwise
 // take over and drop the additional fields.
 func (s *JobRunRemote) UnmarshalJSON(b []byte) error {
-	s.Lifecycle = newJobRunLifecycleState()
 	return marshal.Unmarshal(b, s)
 }
 
@@ -157,7 +156,7 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	state := &JobRunState{
 		RunNow:      input.RunNow,
 		ResultState: jobs.RunResultStateSuccess,
-		Lifecycle:   newJobRunLifecycleState(),
+		Lifecycle:   emptyJobRunLifecycleState(),
 	}
 	if input.HasOnBundleDeploy() {
 		state.Lifecycle.Triggers.OnBundleDeploy = uuid.NewString()
@@ -204,7 +203,6 @@ func makeJobRunRemote(run *jobs.Run) *JobRunRemote {
 			ForceSendFields:   nil,
 		},
 		ResultState: run.State.ResultState,
-		Lifecycle:   newJobRunLifecycleState(),
 		RunId:       run.RunId,
 		RunName:     run.RunName,
 		// Rebuilt, not copied: the SDK records explicitly-sent fields in
@@ -240,12 +238,13 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 }
 
 // RemapState extracts the fields used for diffing: the RunNow request and the
-// outcome the run reached.
+// outcome the run reached. Lifecycle has no remote counterpart, so it stays empty
+// and the planner skips it as missing_in_remote.
 func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 	return &JobRunState{
 		RunNow:      remote.RunNow,
 		ResultState: remote.ResultState,
-		Lifecycle:   remote.Lifecycle,
+		Lifecycle:   emptyJobRunLifecycleState(),
 	}
 }
 
