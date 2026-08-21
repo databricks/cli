@@ -255,6 +255,18 @@ func TestJobRunWaitAbandonedLinksTheRun(t *testing.T) {
 	require.ErrorContains(t, err, testRunPageLink)
 }
 
+// State written before lifecycle existed has no such key, and must still load.
+func TestJobRunStateUnmarshalWithoutLifecycle(t *testing.T) {
+	var state JobRunState
+
+	require.NoError(t, json.Unmarshal([]byte(`{}`), &state))
+
+	require.NotNil(t, state.Lifecycle)
+	require.NotNil(t, state.Lifecycle.Triggers)
+	require.NotNil(t, state.Lifecycle.Triggers.OnFileChange)
+	assert.Nil(t, state.Lifecycle.Triggers.OnFileChange.Files)
+}
+
 // The planner diffs RemapState(remote) against PrepareState(config), so a run
 // that did not end in SUCCESS has to surface as a difference on result_state.
 func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
@@ -265,11 +277,13 @@ func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
 		"",
 	} {
 		t.Run(string(outcome), func(t *testing.T) {
-			remote := &JobRunRemote{RunId: 123, ResultState: outcome}
+			lifecycle := newJobRunLifecycleState()
+			remote := &JobRunRemote{RunId: 123, ResultState: outcome, Lifecycle: lifecycle}
 
 			state := (&ResourceJobRun{}).RemapState(remote)
 
 			assert.Equal(t, outcome, state.ResultState)
+			assert.Same(t, lifecycle, state.Lifecycle)
 		})
 	}
 }
