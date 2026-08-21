@@ -20,7 +20,7 @@ class JobCluster:
     `JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution.
     """
 
-    new_cluster: VariableOr[ClusterSpec]
+    new_cluster: VariableOrOptional[ClusterSpec] = None
     """
     If new_cluster, a description of a cluster that is created for each task.
     """
@@ -51,7 +51,7 @@ class JobClusterDict(TypedDict, total=False):
     `JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution.
     """
 
-    new_cluster: VariableOr[ClusterSpecParam]
+    new_cluster: VariableOrOptional[ClusterSpecParam]
     """
     If new_cluster, a description of a cluster that is created for each task.
     """

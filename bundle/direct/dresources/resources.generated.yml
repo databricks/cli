@@ -27,6 +27,11 @@ resources:
   apps:
 
     ignore_remote_changes:
+      - field: git_source
+        reason: spec:input_only
+      - field: source_code_path
+        reason: spec:input_only
+
       - field: active_deployment
         reason: spec:output_only
       - field: app_status
@@ -36,6 +41,8 @@ resources:
       - field: create_time
         reason: spec:output_only
       - field: creator
+        reason: spec:output_only
+      - field: default_git_source
         reason: spec:output_only
       - field: default_source_code_path
         reason: spec:output_only
@@ -193,9 +200,6 @@ resources:
   model_serving_endpoints:
 
     ignore_remote_changes:
-      - field: telemetry_config.table_names
-        reason: spec:input_only
-
       - field: telemetry_config.inference_table_config.name
         reason: spec:output_only
 

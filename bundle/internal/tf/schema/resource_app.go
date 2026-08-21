@@ -13,8 +13,10 @@ type ResourceAppActiveDeploymentEnvVars struct {
 }
 
 type ResourceAppActiveDeploymentGitSourceGitRepository struct {
-	Provider string `json:"provider"`
-	Url      string `json:"url"`
+	AutoDeploy         bool   `json:"auto_deploy,omitempty"`
+	CallerCredentialId int    `json:"caller_credential_id,omitempty"`
+	Provider           string `json:"provider"`
+	Url                string `json:"url"`
 }
 
 type ResourceAppActiveDeploymentGitSource struct {
@@ -57,9 +59,43 @@ type ResourceAppComputeStatus struct {
 	State           string `json:"state,omitempty"`
 }
 
+type ResourceAppDefaultGitSourceGitRepository struct {
+	AutoDeploy         bool   `json:"auto_deploy,omitempty"`
+	CallerCredentialId int    `json:"caller_credential_id,omitempty"`
+	Provider           string `json:"provider"`
+	Url                string `json:"url"`
+}
+
+type ResourceAppDefaultGitSource struct {
+	Branch         string                                    `json:"branch,omitempty"`
+	Commit         string                                    `json:"commit,omitempty"`
+	GitRepository  *ResourceAppDefaultGitSourceGitRepository `json:"git_repository,omitempty"`
+	ResolvedCommit string                                    `json:"resolved_commit,omitempty"`
+	SourceCodePath string                                    `json:"source_code_path,omitempty"`
+	Tag            string                                    `json:"tag,omitempty"`
+}
+
 type ResourceAppGitRepository struct {
-	Provider string `json:"provider"`
-	Url      string `json:"url"`
+	AutoDeploy         bool   `json:"auto_deploy,omitempty"`
+	CallerCredentialId int    `json:"caller_credential_id,omitempty"`
+	Provider           string `json:"provider"`
+	Url                string `json:"url"`
+}
+
+type ResourceAppGitSourceGitRepository struct {
+	AutoDeploy         bool   `json:"auto_deploy,omitempty"`
+	CallerCredentialId int    `json:"caller_credential_id,omitempty"`
+	Provider           string `json:"provider"`
+	Url                string `json:"url"`
+}
+
+type ResourceAppGitSource struct {
+	Branch         string                             `json:"branch,omitempty"`
+	Commit         string                             `json:"commit,omitempty"`
+	GitRepository  *ResourceAppGitSourceGitRepository `json:"git_repository,omitempty"`
+	ResolvedCommit string                             `json:"resolved_commit,omitempty"`
+	SourceCodePath string                             `json:"source_code_path,omitempty"`
+	Tag            string                             `json:"tag,omitempty"`
 }
 
 type ResourceAppPendingDeploymentDeploymentArtifacts struct {
@@ -73,8 +109,10 @@ type ResourceAppPendingDeploymentEnvVars struct {
 }
 
 type ResourceAppPendingDeploymentGitSourceGitRepository struct {
-	Provider string `json:"provider"`
-	Url      string `json:"url"`
+	AutoDeploy         bool   `json:"auto_deploy,omitempty"`
+	CallerCredentialId int    `json:"caller_credential_id,omitempty"`
+	Provider           string `json:"provider"`
+	Url                string `json:"url"`
 }
 
 type ResourceAppPendingDeploymentGitSource struct {
@@ -200,12 +238,15 @@ type ResourceApp struct {
 	ComputeStatus               *ResourceAppComputeStatus                `json:"compute_status,omitempty"`
 	CreateTime                  string                                   `json:"create_time,omitempty"`
 	Creator                     string                                   `json:"creator,omitempty"`
+	DefaultGitSource            *ResourceAppDefaultGitSource             `json:"default_git_source,omitempty"`
 	DefaultSourceCodePath       string                                   `json:"default_source_code_path,omitempty"`
 	Description                 string                                   `json:"description,omitempty"`
 	EffectiveBudgetPolicyId     string                                   `json:"effective_budget_policy_id,omitempty"`
 	EffectiveUsagePolicyId      string                                   `json:"effective_usage_policy_id,omitempty"`
 	EffectiveUserApiScopes      []string                                 `json:"effective_user_api_scopes,omitempty"`
+	ForwardUserAccessToken      bool                                     `json:"forward_user_access_token,omitempty"`
 	GitRepository               *ResourceAppGitRepository                `json:"git_repository,omitempty"`
+	GitSource                   *ResourceAppGitSource                    `json:"git_source,omitempty"`
 	Id                          string                                   `json:"id,omitempty"`
 	Name                        string                                   `json:"name"`
 	NoCompute                   bool                                     `json:"no_compute,omitempty"`
@@ -217,6 +258,7 @@ type ResourceApp struct {
 	ServicePrincipalClientId    string                                   `json:"service_principal_client_id,omitempty"`
 	ServicePrincipalId          int                                      `json:"service_principal_id,omitempty"`
 	ServicePrincipalName        string                                   `json:"service_principal_name,omitempty"`
+	SourceCodePath              string                                   `json:"source_code_path,omitempty"`
 	Space                       string                                   `json:"space,omitempty"`
 	TelemetryExportDestinations []ResourceAppTelemetryExportDestinations `json:"telemetry_export_destinations,omitempty"`
 	ThumbnailUrl                string                                   `json:"thumbnail_url,omitempty"`
