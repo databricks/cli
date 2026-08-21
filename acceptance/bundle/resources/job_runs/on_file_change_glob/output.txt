@@ -176,7 +176,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 {
   "lifecycle.triggers.on_file_change.files": {
     "action": "skip",
-    "reason": "not_returned_by_api",
+    "reason": "missing_in_remote",
     "old": {
       "migrations/001.txt": "[FILE_HASH][3]",
       "migrations/002.txt": "[FILE_HASH][1]",
@@ -205,7 +205,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 {
   "lifecycle.triggers.on_file_change.files": {
     "action": "skip",
-    "reason": "not_returned_by_api",
+    "reason": "missing_in_remote",
     "old": {
       "migrations/001.txt": "[FILE_HASH][3]",
       "migrations/002.txt": "[FILE_HASH][1]",

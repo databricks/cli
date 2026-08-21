@@ -250,9 +250,6 @@ func TestJobRunStateUnmarshalWithoutLifecycle(t *testing.T) {
 
 	require.NoError(t, json.Unmarshal([]byte(`{}`), &state))
 
-	require.NotNil(t, state.Lifecycle)
-	require.NotNil(t, state.Lifecycle.Triggers)
-	require.NotNil(t, state.Lifecycle.Triggers.OnFileChange)
 	assert.Nil(t, state.Lifecycle.Triggers.OnFileChange.Files)
 }
 
@@ -266,13 +263,12 @@ func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
 		"",
 	} {
 		t.Run(string(outcome), func(t *testing.T) {
-			lifecycle := newJobRunLifecycleState()
-			remote := &JobRunRemote{RunId: 123, ResultState: outcome, Lifecycle: lifecycle}
+			remote := &JobRunRemote{RunId: 123, ResultState: outcome}
 
 			state := (&ResourceJobRun{}).RemapState(remote)
 
 			assert.Equal(t, outcome, state.ResultState)
-			assert.Same(t, lifecycle, state.Lifecycle)
+			assert.Equal(t, emptyJobRunLifecycleState(), state.Lifecycle)
 		})
 	}
 }
