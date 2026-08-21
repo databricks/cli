@@ -1,0 +1,25 @@
+name: Try OIDC
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+  workflow_dispatch:
+
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test Databricks OIDC
+        uses: ./.github/actions/foo/bar
+        with:
+          databricks_host: https://adb-575821473882772.12.azuredatabricks.net
+          databricks_client_id: a71e69be-fe57-484b-ae8b-bb6ce382668a
