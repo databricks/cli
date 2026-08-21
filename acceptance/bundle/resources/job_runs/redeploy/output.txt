@@ -59,6 +59,11 @@ Resources:
       "job_parameters": {
         "env": "prod"
       },
+      "lifecycle": {
+        "triggers": {
+          "on_file_change": {}
+        }
+      },
       "result_state": "SUCCESS"
     }
   },
@@ -66,6 +71,11 @@ Resources:
     "job_id": [MY_JOB_ID],
     "job_parameters": {
       "env": "dev"
+    },
+    "lifecycle": {
+      "triggers": {
+        "on_file_change": {}
+      }
     },
     "result_state": "SUCCESS",
     "run_id": [MY_RUN_ID],

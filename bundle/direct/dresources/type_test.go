@@ -61,10 +61,6 @@ var knownMissingInRemoteType = map[string][]string{
 		"acl",
 		"zip_path",
 	},
-	"job_runs": {
-		// Local-only trigger fingerprints under lifecycle.
-		"lifecycle",
-	},
 }
 
 // commonMissingInStateType lists fields that are commonly missing across all resource types.
