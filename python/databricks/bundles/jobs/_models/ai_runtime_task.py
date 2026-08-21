@@ -57,6 +57,26 @@ class AiRuntimeTask:
     eventual intent but not yet supported.
     """
 
+    docker_image_url: VariableOrOptional[str] = None
+    """
+    [Beta] Optional Docker image URL for a custom container image. When set,
+    the task runs on the specified container image instead of the default
+    Databricks client image. Format:
+    `{organization}/{repository}:{tag}`
+    """
+
+    mlflow_artifact_location: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Optional root location for MLflow artifacts logged by the run.
+    If this field isn't specified the default artifact location will be in dbfs
+    i.e. `dbfs:/databricks/mlflow-tracking/<experiment_id>/...`
+    If dbfs access is restricted or UC is preferred this can be a custom location in UC:
+    `dbfs:/Volumes/<catalog>/<schema>/<volume>/...`
+    The location should be unique for each experiment.
+    """
+
     mlflow_experiment_directory: VariableOrOptional[str] = None
     """
     [Public Preview] Optional workspace directory under which the MLflow experiment named in
@@ -107,6 +127,26 @@ class AiRuntimeTaskDict(TypedDict, total=False):
     is a current-Preview constraint. Role-split workloads (driver + worker,
     parameter server, separate eval node, etc.) with multiple entries are the
     eventual intent but not yet supported.
+    """
+
+    docker_image_url: VariableOrOptional[str]
+    """
+    [Beta] Optional Docker image URL for a custom container image. When set,
+    the task runs on the specified container image instead of the default
+    Databricks client image. Format:
+    `{organization}/{repository}:{tag}`
+    """
+
+    mlflow_artifact_location: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Optional root location for MLflow artifacts logged by the run.
+    If this field isn't specified the default artifact location will be in dbfs
+    i.e. `dbfs:/databricks/mlflow-tracking/<experiment_id>/...`
+    If dbfs access is restricted or UC is preferred this can be a custom location in UC:
+    `dbfs:/Volumes/<catalog>/<schema>/<volume>/...`
+    The location should be unique for each experiment.
     """
 
     mlflow_experiment_directory: VariableOrOptional[str]

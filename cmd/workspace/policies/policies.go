@@ -110,8 +110,8 @@ func newCreatePolicy() *cobra.Command {
   Arguments:
     TO_PRINCIPALS: List of user or group names that the policy applies to. Required on create
       and optional on update.
-    FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Only TABLE is
-      supported at this moment. Required on create and optional on update.
+    FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Required on
+      create and optional on update.
       Supported values: [
         CATALOG,
         CLEAN_ROOM,
@@ -481,8 +481,8 @@ func newUpdatePolicy() *cobra.Command {
     NAME: Required. The name of the policy to update.
     TO_PRINCIPALS: List of user or group names that the policy applies to. Required on create
       and optional on update.
-    FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Only TABLE is
-      supported at this moment. Required on create and optional on update.
+    FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Required on
+      create and optional on update.
       Supported values: [
         CATALOG,
         CLEAN_ROOM,

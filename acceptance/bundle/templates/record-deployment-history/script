@@ -14,4 +14,4 @@ done
 
 # Keep one file in full to assert where the stanza lands in the document.
 mv output/default-python/my_default_python/databricks.yml out.default-python.databricks.yml
-add_repl.py "$(grep -o 'uuid: .*' out.default-python.databricks.yml | cut -d ' ' -f2)" BUNDLE_UUID
+add_repl "$(grep -o 'uuid: .*' out.default-python.databricks.yml | cut -d ' ' -f2)" BUNDLE_UUID

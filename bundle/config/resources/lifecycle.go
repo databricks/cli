@@ -25,3 +25,16 @@ type LifecycleWithStarted struct {
 	// Supported only for apps, clusters, and sql_warehouses.
 	Started *bool `json:"started,omitempty"`
 }
+
+// JobRunLifecycle extends Lifecycle with run-fire triggers.
+type JobRunLifecycle struct {
+	Lifecycle
+
+	// Triggers that cause the run to re-fire (in addition to config changes).
+	Triggers []JobRunTrigger `json:"triggers,omitempty"`
+}
+
+// JobRunTrigger is one lifecycle.triggers entry.
+type JobRunTrigger struct {
+	OnBundleDeploy *bool `json:"on_bundle_deploy,omitempty"`
+}

@@ -2,9 +2,9 @@
 === Deploy a pipeline with cascade_on_destroy: true (state records true)
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade-divergence/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created pipelines.my_pipeline
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 >>> print_requests.py //api/2.0/pipelines
@@ -34,8 +34,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade-divergence/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted
 
 >>> print_requests.py //api/2.0/pipelines
 {

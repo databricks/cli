@@ -12,16 +12,12 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ZendeskSupportOptions:
     """
-    :meta private: [EXPERIMENTAL]
-
     Zendesk Support specific options for ingestion
     """
 
     start_date: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Start date in YYYY-MM-DD format for the initial sync.
+    [Beta] (Optional) Start date in YYYY-MM-DD format for the initial sync.
     This determines the earliest date from which to sync historical data.
     """
 
@@ -38,9 +34,7 @@ class ZendeskSupportOptionsDict(TypedDict, total=False):
 
     start_date: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Start date in YYYY-MM-DD format for the initial sync.
+    [Beta] (Optional) Start date in YYYY-MM-DD format for the initial sync.
     This determines the earliest date from which to sync historical data.
     """
 

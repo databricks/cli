@@ -109,6 +109,12 @@ retry() {
     env -u MSYS_NO_PATHCONV retry.py "$@"
 }
 
+add_repl() {
+    # Same MSYS_NO_PATHCONV workaround as envsubst above: otherwise Python cannot
+    # find add_repl.py on Windows.
+    env -u MSYS_NO_PATHCONV add_repl.py "$@"
+}
+
 # The engine_terraform_* keys reflect the deployment engine opt-in; engine_terraform_env
 # in particular mirrors $DATABRICKS_BUNDLE_ENGINE, which the acceptance matrix sets per
 # variant, so it diverges across the matrix. Drop both here so this shared helper stays

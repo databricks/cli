@@ -56,6 +56,10 @@ var knownMissingInRemoteType = map[string][]string{
 	"vector_search_endpoints": {
 		"usage_policy_id",
 	},
+	"job_runs": {
+		// Local-only trigger fingerprints under lifecycle.
+		"lifecycle",
+	},
 }
 
 // commonMissingInStateType lists fields that are commonly missing across all resource types.
@@ -81,6 +85,11 @@ var knownMissingInStateType = map[string][]string{
 	},
 	"sql_warehouses": {
 		"lifecycle.prevent_destroy",
+	},
+	"job_runs": {
+		// State stores trigger fingerprints, not the config trigger list / prevent_destroy.
+		"lifecycle.prevent_destroy",
+		"lifecycle.triggers[*]",
 	},
 	"dashboards": {
 		"file_path",

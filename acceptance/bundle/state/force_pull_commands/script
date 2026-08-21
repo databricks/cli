@@ -11,19 +11,19 @@ export BROWSER="echo_browser.py"
 title "bundle summary without --force-pull: no remote state read\n"
 trace $CLI bundle summary > /dev/null
 touch out.requests.txt
-print_requests.py --get //workspace-files/
+print_requests.py --get //workspace/export
 
 title "bundle summary --force-pull: remote state read\n"
 trace $CLI bundle summary --force-pull > /dev/null
 touch out.requests.txt
-print_requests.py --get //workspace-files/
+print_requests.py --get //workspace/export
 
 title "bundle open without --force-pull: no remote state read\n"
 trace $CLI bundle open foo > /dev/null
 touch out.requests.txt
-print_requests.py --get //workspace-files/
+print_requests.py --get //workspace/export
 
 title "bundle open --force-pull: remote state read\n"
 trace $CLI bundle open foo --force-pull > /dev/null
 touch out.requests.txt
-print_requests.py --get //workspace-files/
+print_requests.py --get //workspace/export

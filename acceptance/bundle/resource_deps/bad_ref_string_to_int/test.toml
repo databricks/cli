@@ -1,7 +1,6 @@
 RecordRequests = false
 
-[Env]
-DATABRICKS_CACHE_ENABLED = 'false'
+Env.DATABRICKS_CACHE_ENABLED = 'false'
 
 [[Repls]]
 Old = 'terraform.tfstate'

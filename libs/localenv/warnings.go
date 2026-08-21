@@ -170,8 +170,9 @@ func resolutionRequirements(p userPyprojectTOML) []string {
 // pyprojectTOML, so no shape a real pyproject.toml may legitimately carry can
 // suppress the checks that do not depend on it. Greenfield projects (no pre-existing
 // content) produce nothing — there is nothing of the user's to override. Warnings are
-// deterministic and ordered (requires-python, then databricks-connect, then
-// constraint conflicts in the order uv would encounter them) so goldens are stable.
+// deterministic and ordered (requires-python, then databricks-connect, then the
+// standalone-pyspark collision, then constraint conflicts in the order uv would
+// encounter them) so goldens are stable.
 func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan) []Warning {
 	if len(userPyproject) == 0 {
 		return nil
@@ -206,6 +207,16 @@ func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan
 	// databricks-connect is left untouched).
 	if c.DatabricksConnect != "" {
 		warnings = append(warnings, dbconnectWarnings(plan, survivors, c.DatabricksConnect)...)
+	}
+
+	// A standalone pyspark collides with databricks-connect's vendored pyspark whenever
+	// databricks-connect ends up in the environment — whether the env manages it (default
+	// mode, c.DatabricksConnect set) or the user's own pyproject pins it (kept as-is in
+	// constraints-only mode, since mergeDatabricksConnect is a no-op on an empty managed
+	// value). Gate on its presence by either route, not on the mode, so this agrees with
+	// the validate hard-fail, which keys on the installed venv rather than the mode.
+	if c.DatabricksConnect != "" || len(dbconnectPins(survivors)) > 0 {
+		warnings = append(warnings, standalonePysparkWarnings(survivors)...)
 	}
 
 	warnings = append(warnings, constraintConflicts(survivors, c.ConstraintDeps)...)
@@ -321,6 +332,26 @@ func dbconnectPins(entries []string) []string {
 		}
 	}
 	return out
+}
+
+// standalonePysparkWarnings flags a standalone pyspark requirement among reqs. It is a
+// coexistence conflict, not a version one: databricks-connect vendors its own pyspark,
+// so any separately declared pyspark overwrites it in a shared environment regardless
+// of the version pinned. It is therefore reported without inspecting the specifier, and
+// once however many groups declare it — one collision to fix, and repeating it would
+// inflate the code histogram consumers build from warnings[]. The caller gates this on
+// databricks-connect being present in the resolved environment (by either route).
+func standalonePysparkWarnings(reqs []string) []Warning {
+	for _, r := range reqs {
+		if isPysparkDep(r) {
+			return []Warning{{
+				Code: WarnStandalonePysparkConflict,
+				Message: fmt.Sprintf("dependency %q collides with the pyspark bundled in databricks-connect; the two cannot share one environment — remove it, or install it in a separate environment for local Spark",
+					strings.TrimSpace(r)),
+			}}
+		}
+	}
+	return nil
 }
 
 // constraintConflicts flags each user dependency pin that the env's
