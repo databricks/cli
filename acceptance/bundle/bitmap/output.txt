@@ -1,0 +1,8 @@
+
+>>> [CLI] bundle bitmap schema
+
+>>> DATABRICKS_CACHE_DIR=[TEST_TMP_DIR]/cache-text [CLI] bundle bitmap bitmap-text
+
+>>> DATABRICKS_CACHE_DIR=[TEST_TMP_DIR]/cache-enc [CLI] bundle bitmap bitmap
+
+>>> [CLI] bundle bitmap update-schema --validate

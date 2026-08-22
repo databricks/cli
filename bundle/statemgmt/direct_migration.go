@@ -57,9 +57,11 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		log.Warnf(ctx, "%sfailed to parse terraform state: %v", warnPrefix, err)
 		if requestedEngine.Type == engine.EngineDirect {
 			b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
+			b.Telemetry.DirectMigrateError = true
 			log.Warnf(ctx, "%s", autoMigrateStoppedNotice)
 		} else {
 			b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, false)
+			b.Telemetry.SetPaired(&b.Telemetry.DirectDryMigrateSuccessTrue, &b.Telemetry.DirectDryMigrateSuccessFalse, false)
 		}
 		return
 	}
@@ -84,6 +86,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		cmdio.LogString(ctx, "Removing empty terraform state; direct engine will be used on the next deploy (opted in via "+requestedEngine.Source+")...")
 		if err := backupTerraformState(ctx, b); err != nil {
 			b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
+			b.Telemetry.DirectMigrateCommitError = true
 			log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
 			return
 		}
@@ -116,15 +119,19 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 	if requestedEngine.Type != engine.EngineDirect {
 		b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, err == nil)
 		b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, hasWarnings)
+		b.Telemetry.SetPaired(&b.Telemetry.DirectDryMigrateSuccessTrue, &b.Telemetry.DirectDryMigrateSuccessFalse, err == nil)
+		b.Telemetry.SetPaired(&b.Telemetry.DirectDryMigrateWarningsTrue, &b.Telemetry.DirectDryMigrateWarningsFalse, hasWarnings)
 		return
 	}
 
 	// From here on, the user opted in: use the migrate_* telemetry keys.
 	if err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
+		b.Telemetry.DirectMigrateError = true
 	}
 	if hasWarnings {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateWarnings, true)
+		b.Telemetry.DirectMigrateWarnings = true
 	}
 
 	if err != nil || hasWarnings {
@@ -136,6 +143,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 
 	if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
+		b.Telemetry.DirectMigrateCommitError = true
 		log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
 		return
 	}
@@ -152,6 +160,8 @@ func recordDryRunNoop(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 	}
 	b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, true)
 	b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, false)
+	b.Telemetry.SetPaired(&b.Telemetry.DirectDryMigrateSuccessTrue, &b.Telemetry.DirectDryMigrateSuccessFalse, true)
+	b.Telemetry.SetPaired(&b.Telemetry.DirectDryMigrateWarningsTrue, &b.Telemetry.DirectDryMigrateWarningsFalse, false)
 }
 
 // recordAutoMigrateSource sets exactly one of the migrated-via-* telemetry
@@ -163,8 +173,10 @@ func recordDryRunNoop(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 func recordAutoMigrateSource(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 	if requestedEngine.ConfigType == engine.EngineDirect {
 		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaConfig, true)
+		b.Telemetry.DirectMigratedViaConfig = true
 	} else {
 		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaEnv, true)
+		b.Telemetry.DirectMigratedViaEnv = true
 	}
 }
 
