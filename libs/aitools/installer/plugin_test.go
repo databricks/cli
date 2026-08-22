@@ -1,9 +1,12 @@
 package installer
 
 import (
+	"context"
 	"errors"
+	"io"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -41,6 +44,29 @@ func pluginAgent(name, display, binary string) *agents.Agent {
 func claudeAgent() *agents.Agent { return pluginAgent(agents.NameClaudeCode, "Claude Code", "claude") }
 func codexAgent() *agents.Agent  { return pluginAgent(agents.NameCodex, "Codex CLI", "codex") }
 
+// builtinMarketplaceAgent models Claude Code: the plugin lives in a built-in
+// marketplace (empty Source) that the CLI never adds routinely, but can re-add
+// via BuiltinAddSource when an install fails because it's missing or stale.
+func builtinMarketplaceAgent() *agents.Agent {
+	return &agents.Agent{
+		Name:        agents.NameClaudeCode,
+		DisplayName: "Claude Code",
+		Binary:      "claude",
+		Plugin: &agents.PluginSpec{
+			Marketplace:      "claude-plugins-official",
+			ID:               "databricks",
+			Source:           "",
+			BuiltinAddSource: "anthropics/claude-plugins-official",
+		},
+	}
+}
+
+// promptCtx returns a context whose cmdio supports prompting and answers the
+// next AskYesOrNo with the given stdin line (e.g. "y\n" or "n\n").
+func promptCtx(ctx context.Context, stdin string) context.Context {
+	return cmdio.InContext(ctx, cmdio.NewTestIO(strings.NewReader(stdin), io.Discard, io.Discard))
+}
+
 func noPluginAgent() *agents.Agent {
 	return &agents.Agent{Name: agents.NameOpenCode, DisplayName: "OpenCode", Binary: "opencode"}
 }
@@ -72,14 +98,7 @@ func TestInstallPluginForAgentBuiltinMarketplace(t *testing.T) {
 
 	// An agent whose plugin lives in a built-in marketplace (empty Source) like
 	// Claude's claude-plugins-official: install from it, never register it.
-	agent := &agents.Agent{
-		Name:        agents.NameClaudeCode,
-		DisplayName: "Claude Code",
-		Binary:      "claude",
-		Plugin:      &agents.PluginSpec{Marketplace: "claude-plugins-official", ID: "databricks", Source: ""},
-	}
-
-	rec, err := InstallPluginForAgent(ctx, agent, "user", "main")
+	rec, err := InstallPluginForAgent(ctx, builtinMarketplaceAgent(), "user", "main")
 	require.NoError(t, err)
 	assert.Equal(t, "claude-plugins-official", rec.Marketplace)
 	assert.False(t, rec.InstalledMarketplace, "a built-in marketplace is never registered by us")
@@ -90,6 +109,126 @@ func TestInstallPluginForAgentBuiltinMarketplace(t *testing.T) {
 	}
 	assert.Contains(t, cmds, "claude plugin marketplace update")
 	assert.Contains(t, cmds, "claude plugin install databricks@claude-plugins-official --scope user")
+}
+
+func TestInstallBuiltinMarketplaceRecoversAfterPrompt(t *testing.T) {
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	// The install fails while the marketplace is missing/stale, then succeeds after
+	// it's re-added and refreshed. Track the retried install via a call counter.
+	installs := 0
+	stub.WithCallback(func(cmd *exec.Cmd) error {
+		if strings.Contains(strings.Join(cmd.Args, " "), "plugin install") {
+			installs++
+			if installs == 1 {
+				// First install fails as it would when the marketplace is stale.
+				_, _ = cmd.Stderr.Write([]byte(`Plugin "databricks" not found in marketplace "claude-plugins-official"`))
+				return errors.New("exit status 1")
+			}
+		}
+		return nil
+	})
+	// User agrees to the repair prompt.
+	ctx = promptCtx(ctx, "y\n")
+
+	rec, err := InstallPluginForAgent(ctx, builtinMarketplaceAgent(), "user", "main")
+	require.NoError(t, err)
+	assert.Equal(t, "claude-plugins-official", rec.Marketplace)
+	assert.False(t, rec.InstalledMarketplace, "a built-in marketplace is never recorded as ours, even after a repair")
+
+	cmds := stub.Commands()
+	assert.Contains(t, cmds, "claude plugin marketplace add anthropics/claude-plugins-official")
+	assert.Contains(t, cmds, "claude plugin marketplace update")
+	assert.Equal(t, 2, installs, "the install is retried once after the repair")
+}
+
+func TestInstallBuiltinMarketplaceUserDeclinesPrompt(t *testing.T) {
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithFailureFor("plugin install", errors.New("exit status 1"))
+	stub.WithStderrFor("plugin install", `Plugin "databricks" not found in marketplace "claude-plugins-official"`)
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	// User declines the repair prompt.
+	ctx = promptCtx(ctx, "n\n")
+
+	_, err := InstallPluginForAgent(ctx, builtinMarketplaceAgent(), "user", "main")
+	var be *BlockedError
+	require.ErrorAs(t, err, &be)
+	assert.Equal(t, ReasonInstallFailed, be.Reason)
+	// The actionable error names the exact repair commands.
+	assert.Contains(t, be.Detail, "claude plugin marketplace add anthropics/claude-plugins-official")
+	assert.Contains(t, be.Detail, "claude plugin marketplace update claude-plugins-official")
+
+	// The proactive refresh (marketplace update, no name) runs before every Claude
+	// install; declining recovery must only skip the re-add, not that refresh.
+	for _, c := range stub.Commands() {
+		assert.NotContains(t, c, "marketplace add", "declining must not re-add the marketplace")
+	}
+}
+
+func TestInstallBuiltinMarketplaceNonInteractiveActionableError(t *testing.T) {
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithFailureFor("plugin install", errors.New("exit status 1"))
+	stub.WithStderrFor("plugin install", `Plugin "databricks" not found in marketplace "claude-plugins-official"`)
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	// No cmdio on the context: a non-interactive run must not prompt, must not
+	// touch the marketplace, and must return the actionable error.
+	_, err := InstallPluginForAgent(ctx, builtinMarketplaceAgent(), "user", "main")
+	var be *BlockedError
+	require.ErrorAs(t, err, &be)
+	assert.Equal(t, ReasonInstallFailed, be.Reason)
+	assert.Contains(t, be.Detail, `Plugin "databricks" not found`)
+	assert.Contains(t, be.Detail, "claude plugin marketplace add anthropics/claude-plugins-official")
+
+	// The proactive refresh runs before install; a non-interactive run must only
+	// skip the recovery re-add, not that refresh.
+	for _, c := range stub.Commands() {
+		assert.NotContains(t, c, "marketplace add")
+	}
+}
+
+func TestInstallBuiltinMarketplaceRetryStillFails(t *testing.T) {
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	// Every install fails, even after the repair, so the recovery gives up with the
+	// actionable error rather than reporting a false success.
+	stub.WithFailureFor("plugin install", errors.New("exit status 1"))
+	stub.WithStderrFor("plugin install", `Plugin "databricks" not found in marketplace "claude-plugins-official"`)
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	ctx = promptCtx(ctx, "y\n")
+
+	_, err := InstallPluginForAgent(ctx, builtinMarketplaceAgent(), "user", "main")
+	var be *BlockedError
+	require.ErrorAs(t, err, &be)
+	assert.Equal(t, ReasonInstallFailed, be.Reason)
+	assert.Contains(t, be.Detail, "claude plugin marketplace add anthropics/claude-plugins-official")
+
+	// The repair was still attempted before giving up.
+	cmds := stub.Commands()
+	assert.Contains(t, cmds, "claude plugin marketplace add anthropics/claude-plugins-official")
+}
+
+func TestInstallBuiltinMarketplaceNonMissingErrorSkipsRecovery(t *testing.T) {
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	// The install fails for a reason unrelated to a missing marketplace (auth), so
+	// recovery must not prompt or re-add the marketplace even in an interactive
+	// session; the original error is surfaced verbatim.
+	stub.WithStderrFor("plugin install", "you must run `claude login`").
+		WithFailureFor("plugin install", errors.New("exit status 1"))
+	ctx = promptCtx(ctx, "y\n")
+
+	_, err := InstallPluginForAgent(ctx, builtinMarketplaceAgent(), "user", "main")
+	var be *BlockedError
+	require.ErrorAs(t, err, &be)
+	assert.Equal(t, ReasonInstallFailed, be.Reason)
+	assert.Equal(t, "you must run `claude login`", be.Detail)
+
+	for _, c := range stub.Commands() {
+		assert.NotContains(t, c, "marketplace add", "a non-missing failure must not re-add the marketplace")
+	}
 }
 
 func TestInstallPluginForAgentCodexUsesAddNoScope(t *testing.T) {

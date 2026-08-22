@@ -24,6 +24,13 @@ type PluginSpec struct {
 	// (e.g. "databricks/databricks-agent-skills"). Empty marks a built-in
 	// marketplace that must not be added or de-registered.
 	Source string
+	// BuiltinAddSource is the `<agent> plugin marketplace add` argument used only
+	// to repair a built-in marketplace (Source empty) that the install found
+	// missing or out of date (e.g. "anthropics/claude-plugins-official"). It is a
+	// recovery-only hint: unlike Source it never triggers a routine add or a
+	// de-register on uninstall, so the built-in marketplace stays shared infra we
+	// don't claim to own. Empty when the built-in marketplace can't be re-added.
+	BuiltinAddSource string
 }
 
 // Agent defines a supported coding agent.
@@ -147,6 +154,11 @@ const (
 	// our own marketplace for Claude. An empty PluginSpec.Source marks a built-in
 	// marketplace that must not be added.
 	claudeOfficialMarketplace = "claude-plugins-official"
+	// claudeOfficialSource re-adds the built-in marketplace when a user has removed
+	// it or their local copy is out of date (the only case where the CLI touches a
+	// built-in marketplace). Per Claude Code's docs this is the `owner/repo` the
+	// `plugin marketplace add` command expects for the official marketplace.
+	claudeOfficialSource = "anthropics/claude-plugins-official"
 )
 
 // databricksPlugin returns the shared plugin descriptor for an agent that
@@ -164,9 +176,10 @@ func databricksPlugin() *PluginSpec {
 // the CLI doesn't register a separate databricks-agent-skills marketplace for it.
 func claudePlugin() *PluginSpec {
 	return &PluginSpec{
-		Marketplace: claudeOfficialMarketplace,
-		ID:          databricksPluginID,
-		Source:      "",
+		Marketplace:      claudeOfficialMarketplace,
+		ID:               databricksPluginID,
+		Source:           "",
+		BuiltinAddSource: claudeOfficialSource,
 	}
 }
 
