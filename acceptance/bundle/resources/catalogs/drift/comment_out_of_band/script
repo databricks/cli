@@ -1,0 +1,32 @@
+echo "*" > .gitignore
+envsubst < databricks.yml.tmpl > databricks.yml
+
+CATALOG="test-catalog-${UNIQUE_NAME}"
+
+# print_requests.py consumes out.requests.txt, so it has to run after the last
+# request the test makes, which is the destroy below.
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    title "The UpdateCatalog payloads the deploys sent"
+    trace print_requests.py --method PATCH //unity-catalog/catalogs
+}
+trap cleanup EXIT
+
+title "Deploy a catalog that does not declare a comment"
+trace $CLI bundle deploy
+
+title "Set the comment out of band, the way Catalog Explorer does"
+MSYS_NO_PATHCONV=1 $CLI api patch "/api/2.1/unity-catalog/catalogs/$CATALOG" --json '{"comment":"set outside the bundle"}' > /dev/null
+
+title "The remote comment is drift, so the plan updates the catalog"
+trace $CLI bundle plan --output json | jq '.plan[].changes.comment'
+
+title "Redeploy clears the comment"
+trace $CLI bundle deploy
+
+title "The comment is gone"
+MSYS_NO_PATHCONV=1 trace $CLI api get "/api/2.1/unity-catalog/catalogs/$CATALOG" | jq '.comment'
+
+title "Redeploy is a no-op"
+trace $CLI bundle deploy

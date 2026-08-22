@@ -88,6 +88,11 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 		}
 	}
 
+	fields, errResponse := parseUCUpdate(req.Body, "UpdateCatalog")
+	if errResponse != nil {
+		return *errResponse
+	}
+
 	var updateRequest catalog.UpdateCatalog
 	if err := json.Unmarshal(req.Body, &updateRequest); err != nil {
 		return Response{
@@ -96,9 +101,13 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 		}
 	}
 
-	// Update only the fields that can be updated
-	if updateRequest.Comment != "" {
+	// Update only the fields that can be updated. Comment is keyed off presence rather
+	// than a non-empty value so an explicit empty comment clears it, the way UC does.
+	if _, ok := fields["comment"]; ok {
 		existing.Comment = updateRequest.Comment
+		// UC echoes a comment once it has been set, including when it was set to "",
+		// so keep it in the response rather than letting omitempty drop it.
+		existing.ForceSendFields = append(existing.ForceSendFields, "Comment")
 	}
 	if updateRequest.CustomMaxRetentionHours != 0 {
 		existing.CustomMaxRetentionHours = updateRequest.CustomMaxRetentionHours

@@ -65,3 +65,14 @@ func collectLeafUpdatePathsWithPrefix(changes Changes, prefix string) []string {
 	slices.Sort(paths)
 	return paths
 }
+
+// forceSendComment adds Comment to a ForceSendFields list, so a comment the config no
+// longer sets serializes as "" instead of being dropped by omitempty.
+//
+// The UC update APIs answer a PATCH that carries no field with "Nothing to update" (400)
+// rather than treating it as a no-op. A resource whose only updatable field is its comment
+// would otherwise become undeployable the moment someone sets a description on it outside
+// the bundle. Sending the empty value also makes clearing such a comment actually happen.
+func forceSendComment(forceSendFields []string) []string {
+	return append(forceSendFields, "Comment")
+}

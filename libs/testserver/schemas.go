@@ -80,6 +80,11 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		}
 	}
 
+	fields, errResponse := parseUCUpdate(req.Body, "UpdateSchema")
+	if errResponse != nil {
+		return *errResponse
+	}
+
 	var schemaUpdate catalog.SchemaInfo
 
 	if err := json.Unmarshal(req.Body, &schemaUpdate); err != nil {
@@ -95,6 +100,13 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 			Body:       fmt.Sprintf("mergo error: %s", err),
 			StatusCode: http.StatusInternalServerError,
 		}
+	}
+
+	// mergo skips zero values, so an explicit empty comment would leave the stored one in
+	// place. UC clears it instead. Comment is the only field UpdateSchema can clear at
+	// all: clearing properties needs an empty or null map, which the check above rejects.
+	if _, ok := fields["comment"]; ok {
+		existing.Comment = schemaUpdate.Comment
 	}
 
 	existing.UpdatedAt = nowMilli()
