@@ -2,14 +2,14 @@
 >>> [CLI] bundle validate -o json
 {
   "workspace": {
-    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default/artifacts",
+    "artifact_path": "${resources.internal_immutable_snapshots.immutable.full_path}/artifacts",
     "current_user": {
       "domain_friendly_name": "[USERNAME]",
       "id": "[USERID]",
       "short_name": "[USERNAME]",
       "userName": "[USERNAME]"
     },
-    "file_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default/files",
+    "file_path": "${resources.internal_immutable_snapshots.immutable.full_path}/files",
     "resource_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default/resources",
     "root_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default",
     "state_path": "/Workspace/Users/[USERNAME]/.bundle/my-bundle/default/state"
@@ -19,7 +19,7 @@
       "ai_runtime_task": {
         "deployments": [
           {
-            "command_path": "${workspace.snapshot_path}/files/src/main.py",
+            "command_path": "${resources.internal_immutable_snapshots.immutable.full_path}/files/src/main.py",
             "compute": {
               "accelerator_count": 1,
               "accelerator_type": "GPU_1xA10"
@@ -33,7 +33,7 @@
     {
       "existing_cluster_id": "0101-120000-aaaaaaaa",
       "spark_python_task": {
-        "python_file": "${workspace.snapshot_path}/files/src/main.py"
+        "python_file": "${resources.internal_immutable_snapshots.immutable.full_path}/files/src/main.py"
       },
       "task_key": "my_task"
     }

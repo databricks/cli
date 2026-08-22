@@ -1,0 +1,9 @@
+bundle:
+  name: snapshot_resource_not_allowed
+
+resources:
+  internal_immutable_snapshots:
+    immutable:
+      bundle_id: 123
+      zip_content: |-
+        This is a test zip content.

@@ -1,0 +1,11 @@
+
+>>> [CLI] bundle validate
+Error: Internal resources cannot be set in bundle configuration
+  at resources
+
+Name: snapshot_resource_not_allowed
+Target: default
+
+Found 1 error
+
+Exit code: 1

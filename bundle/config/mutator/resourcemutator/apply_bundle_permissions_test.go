@@ -35,6 +35,7 @@ var unsupportedResources = []string{
 	"postgres_synced_tables",
 	"vector_search_indexes",
 	"job_runs",
+	"internal_immutable_snapshots",
 	"secrets",
 }
 

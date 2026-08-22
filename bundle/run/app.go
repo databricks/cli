@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -142,8 +143,82 @@ func (a *appRunner) deploy(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	deployment := appdeploy.BuildDeployment(a.app.SourceCodePath, config, a.app.GitSource)
+	sourceCodePath, err := a.resolvedSourceCodePath()
+	if err != nil {
+		return err
+	}
+	deployment := appdeploy.BuildDeployment(sourceCodePath, config, a.app.GitSource)
 	return appdeploy.Deploy(ctx, w, a.app.Name, deployment)
+}
+
+// resolvedSourceCodePath returns source_code_path with any ${resources.*} variable
+// references resolved against the current bundle state. This is needed for immutable
+// folder bundles where source_code_path contains a reference to the snapshot's
+// full_path, which is only known after deploy.
+func (a *appRunner) resolvedSourceCodePath() (string, error) {
+	if !dynvar.ContainsVariableReference(a.app.SourceCodePath) {
+		return a.app.SourceCodePath, nil
+	}
+
+	root := a.bundle.Config.Value()
+
+	// Build a lookup for ${resources.*} references. For most fields, the
+	// normalized config value is enough. For compute-only fields like the
+	// snapshot's full_path (a method, not a stored field), we supplement with
+	// the deployed state from the direct engine's state DB.
+	stateOverrides := a.snapshotStateOverrides()
+	normalized, _ := convert.Normalize(a.bundle.Config, root, convert.IncludeMissingFields)
+
+	sourceCodePathKey := dyn.MustPathFromString("resources." + a.Key() + ".source_code_path")
+	pathV, err := dyn.GetByPath(root, sourceCodePathKey)
+	if err != nil || !pathV.IsValid() {
+		return a.app.SourceCodePath, nil //nolint:nilerr
+	}
+
+	resourcesPrefix := dyn.MustPathFromString("resources")
+	resolved, err := dynvar.Resolve(pathV, func(path dyn.Path) (dyn.Value, error) {
+		if !path.HasPrefix(resourcesPrefix) {
+			return dyn.InvalidValue, dynvar.ErrSkipResolution
+		}
+		// Prefer state-derived overrides (e.g. snapshot.full_path) over the
+		// config-computed value, which would be wrong when ZipContent is empty.
+		if v, ok := stateOverrides[path.String()]; ok {
+			return dyn.V(v), nil
+		}
+		return dyn.GetByPath(normalized, path)
+	})
+	if err != nil {
+		return "", err
+	}
+
+	s, ok := resolved.AsString()
+	if !ok {
+		return a.app.SourceCodePath, nil
+	}
+	return s, nil
+}
+
+// snapshotStateOverrides returns a map of resource path → deployed value for
+// fields that are only correct in the persisted state (not computable from the
+// bundle config alone). Currently this covers the snapshot's full_path and
+// relative_path, whose content hash depends on ZipContent (json:"-").
+func (a *appRunner) snapshotStateOverrides() map[string]string {
+	const snapshotKey = "resources.internal_immutable_snapshots.immutable"
+	entry, ok := a.bundle.DeploymentBundle.StateDB.GetResourceEntry(snapshotKey)
+	if !ok {
+		return nil
+	}
+	var s struct {
+		RelativePath string `json:"relative_path"`
+		FullPath     string `json:"full_path"`
+	}
+	if err := json.Unmarshal(entry.State, &s); err != nil || s.FullPath == "" {
+		return nil
+	}
+	return map[string]string{
+		snapshotKey + ".full_path":     s.FullPath,
+		snapshotKey + ".relative_path": s.RelativePath,
+	}
 }
 
 // resolvedConfig returns the app config with any ${resources.*} variable references

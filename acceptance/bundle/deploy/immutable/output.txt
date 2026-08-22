@@ -10,10 +10,12 @@ Validation OK!
 
 >>> [CLI] bundle plan -o json
 Building python_artifact...
+
+>>> jq .plan["resources.jobs.my_job"].new_state.value.tasks plan.json
 [
   {
     "notebook_task": {
-      "notebook_path": "${workspace.snapshot_path}/files/src/notebook"
+      "notebook_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
     },
     "task_key": "notebook_task"
   },
@@ -28,29 +30,146 @@ Building python_artifact...
   {
     "environment_key": "env",
     "spark_python_task": {
-      "python_file": "${workspace.snapshot_path}/files/src/main.py"
+      "python_file": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
     },
     "task_key": "spark_python_task"
   }
 ]
 
+>>> jq .plan["resources.jobs.my_job"].new_state.value.environments plan.json
+[
+  {
+    "environment_key": "env",
+    "spec": {
+      "dependencies": [
+        "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
+      ],
+      "environment_version": "4"
+    }
+  }
+]
+
+>>> jq .plan["resources.internal_immutable_snapshots.immutable"] plan.json
+{
+  "action": "create",
+  "new_state": {
+    "value": {
+      "remote_root": "/Workspace/Users/[UUID]/.snapshots",
+      "relative_path": "[UUID]/[SNAPSHOT_HASH]",
+      "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
+      "bundle_id": "[UUID]",
+      "acl": [
+        {
+          "user_name": "[USERNAME]",
+          "permission_level": "CAN_READ"
+        }
+      ]
+    }
+  }
+}
+
 >>> [CLI] bundle deploy
 Building python_artifact...
-Uploading immutable bundle snapshot...
+Created internal_immutable_snapshots.immutable
 Created jobs.my_job
 Files: 0 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> [CLI] jobs get [NUMID]
+>>> jq .settings.tasks job.json
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
 
->>> [CLI] jobs get [NUMID]
+>>> jq .settings.tasks job.json
 "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
 
->>> [CLI] jobs get [NUMID]
+>>> jq .settings.environments[0].spec.dependencies job.json
 [
   "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
 ]
+
+>>> title Check snapshot plan after deploy
+
+=== Check snapshot plan after deploy
+>>> [CLI] bundle plan -o json
+Building python_artifact...
+
+>>> jq .plan["resources.internal_immutable_snapshots.immutable"] plan.json
+{
+  "action": "recreate",
+  "new_state": {
+    "value": {
+      "remote_root": "/Workspace/Users/[UUID]/.snapshots",
+      "relative_path": "[UUID]/[SNAPSHOT_HASH]",
+      "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
+      "bundle_id": "[UUID]",
+      "acl": [
+        {
+          "user_name": "[USERNAME]",
+          "permission_level": "CAN_READ"
+        }
+      ]
+    }
+  },
+  "remote_state": {
+    "relative_path": "[UUID]/[SNAPSHOT_HASH]",
+    "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]"
+  },
+  "changes": {
+    "acl": {
+      "action": "skip",
+      "reason": "missing_in_remote",
+      "old": [
+        {
+          "user_name": "[USERNAME]",
+          "permission_level": "CAN_READ"
+        }
+      ],
+      "new": [
+        {
+          "user_name": "[USERNAME]",
+          "permission_level": "CAN_READ"
+        }
+      ],
+      "remote": null
+    },
+    "bundle_id": {
+      "action": "skip",
+      "reason": "missing_in_remote",
+      "old": "[UUID]",
+      "new": "[UUID]",
+      "remote": ""
+    },
+    "full_path": {
+      "action": "recreate",
+      "reason": "immutable",
+      "old": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
+      "new": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
+      "remote": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]"
+    },
+    "relative_path": {
+      "action": "recreate",
+      "reason": "immutable",
+      "old": "[UUID]/[SNAPSHOT_HASH]",
+      "new": "[UUID]/[SNAPSHOT_HASH]",
+      "remote": "[UUID]/[SNAPSHOT_HASH]"
+    },
+    "remote_root": {
+      "action": "skip",
+      "reason": "missing_in_remote",
+      "old": "/Workspace/Users/[UUID]/.snapshots",
+      "new": "/Workspace/Users/[UUID]/.snapshots",
+      "remote": ""
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Building python_artifact...
+Recreated internal_immutable_snapshots.immutable
+Updated jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
+
+=== Check that job uses a new snapshot: Snapshot changed as expected
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
