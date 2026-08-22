@@ -185,6 +185,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
 
+		// Reads (typed): b.Config.Experimental.RecordDeploymentHistory
+		// Reads (env): DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY (non-empty value force allows it)
+		// Rejects experimental.record_deployment_history: the feature is not usable yet.
+		validate.ValidateRecordDeploymentHistory(),
+
 		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
 		validate.ValidateJobRunIdempotencyToken(),
 

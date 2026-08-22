@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
@@ -204,7 +205,18 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	// lock is acquired here
+	//
+	// The version is created only after approval; CompleteVersion is deferred before
+	// lock.Release and no-ops until then.
+	recording, err := newRecording(ctx, b, stateEngine, dms.VersionTypeDeploy)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 	defer func() {
+		if err := recording.Finish(ctx, !logdiag.HasError(ctx)); err != nil {
+			logdiag.LogError(ctx, err)
+		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
@@ -267,6 +279,24 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	// Settle deployment and version before planning. Plan snapshots the config, so
+	// both must be stamped before it is computed. Version itself is created after approval.
+	if err := recording.Prepare(ctx); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	if recording.Version() != 0 {
+		// The deployment ID is stamped earlier, when the state is opened; only the
+		// version is new here. A first deploy has no ID until now, so stamp both.
+		bundle.ApplySeqContext(ctx, b,
+			metadata.AnnotateDeployment(recording.DeploymentID()),
+			metadata.AnnotateDeploymentVersion(recording.Version()),
+		)
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
 	planFromFile := plan != nil
 	if plan == nil {
 		// State is already open for read by process.go (for direct engine)
@@ -304,17 +334,37 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	haveApproval, err := approvalForDeploy(ctx, b, plan)
+	haveApproval, approvalErr := approvalForDeploy(ctx, b, plan)
+	if !haveApproval {
+		// No version was created, so the deferred CompleteVersion is a no-op and the version
+		// number is left for the next deploy. Both the user declining and a console that
+		// cannot prompt land here.
+		if approvalErr != nil {
+			logdiag.LogError(ctx, approvalErr)
+			return
+		}
+		cmdio.LogString(ctx, "Deployment cancelled!")
+		return
+	}
+
+	// Create the version the plan was stamped with, staging an operation for every resource
+	// it touches. Doing it here rather than before the prompt means a declined deploy never
+	// claims a version number.
+	staged, err := stagedOperations(plan)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
-	if haveApproval {
-		deployCore(ctx, b, plan, stateEngine, requestedEngine)
-	} else {
-		cmdio.LogString(ctx, "Deployment cancelled!")
+	writer, err := recording.Start(ctx, staged)
+	if err != nil {
+		logdiag.LogError(ctx, err)
 		return
 	}
+	logDeploymentVersion(ctx, b, recording)
+
+	// Record operations under that version, so DMS holds the deployed resource state.
+	b.DeploymentBundle.OpRec = writer
+	deployCore(ctx, b, plan, stateEngine, requestedEngine)
 
 	if logdiag.HasError(ctx) {
 		return

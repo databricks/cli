@@ -1,0 +1,36 @@
+
+=== The first version fails, so no deployment record exists - only the node naming its ID
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/files...
+Error: failed to create deployment version: Internal error (500 INTERNAL_ERROR)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/bundle/deployments/[NUMID]/versions?version_id=1
+HTTP Status: 500 Internal Server Error
+API error_code: INTERNAL_ERROR
+API message: Internal error
+
+Files: 5 uploaded, 0 deleted
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/state/resources.deployment.json
+{
+  "object_type": "FILE"
+}
+
+=== The next deploy reuses the ID that node names and retries version 1, rather than creating a second deployment
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/files...
+Error: failed to create deployment version: Internal error (500 INTERNAL_ERROR)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/bundle/deployments/[NUMID]/versions?version_id=1
+HTTP Status: 500 Internal Server Error
+API error_code: INTERNAL_ERROR
+API message: Internal error
+
+Files: 2 uploaded, 0 deleted
+
+>>> print_requests.py --dms //api/2.0/bundle --get --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments", "body": {"initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/state", "target_name": "default"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "1"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY", "target_name": "default", "display_name": "dms-version-never-created", "workspace_info": {"file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/files", "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default"}, "operations": [{"resource_key": "jobs.foo", "action_type": "OPERATION_ACTION_TYPE_CREATE"}]}}
+{"method": "GET", "path": "/api/2.0/bundle/deployments/[NUMID]/resources"}
+{"method": "GET", "path": "/api/2.0/bundle/deployments/[NUMID]"}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "1"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY", "target_name": "default", "display_name": "dms-version-never-created", "workspace_info": {"file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/files", "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default"}, "operations": [{"resource_key": "jobs.foo", "action_type": "OPERATION_ACTION_TYPE_CREATE"}]}}

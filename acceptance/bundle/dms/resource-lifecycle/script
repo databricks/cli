@@ -1,0 +1,14 @@
+title "Deploy: the state write records the resource"
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle
+
+title "Recreate writes state twice - the entry is dropped, then the new resource is saved"
+# One operation per resource per version; both writes land on the same one.
+# The drop opens it IN_PROGRESS, the save patches it to SUCCEEDED.
+trace update_file.py databricks.yml "catalog_name: main" "catalog_name: other"
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py --dms //api/2.0/bundle
+
+title "Destroy: the delete is recorded with the id and no state"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py --dms //api/2.0/bundle

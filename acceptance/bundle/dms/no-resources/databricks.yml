@@ -1,0 +1,5 @@
+bundle:
+  name: dms-no-resources
+
+experimental:
+  record_deployment_history: true

@@ -36,7 +36,7 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	ctx = log.WithPrefix(ctx, "deploying "+d.ResourceKey)
 	ctx = d.withResourceKey(ctx)
 	if actionType == deployplan.Create {
-		return d.Create(ctx, db, newState)
+		return d.Create(ctx, db, newState, deployplan.Create)
 	}
 
 	oldID := db.GetResourceID(d.ResourceKey)
@@ -58,7 +58,10 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	}
 }
 
-func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
+// Create creates the resource and records its state. action is the operation the
+// create is part of: a recreate ends by calling this, and reports the write as a
+// recreate so the deployment history says how the resource got here.
+func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any, action deployplan.ActionType) error {
 	var newID string
 	var remoteState any
 	_, err := retryWith(ctx, func(err error) bool {
@@ -83,7 +86,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = d.saveState(db, newID, newState, d.DependsOn)
+	err = d.saveState(ctx, db, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -126,7 +129,10 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// Drop the state entry so a subsequent failure of Create or WaitAfterDelete
 	// leaves no malformed (empty-ID) entry behind. The next plan will see "no
 	// state" and retry as Create.
-	err = db.DeleteState(d.ResourceKey)
+	//
+	// Recorded as a recreate rather than a delete: if the create below fails, this is the
+	// operation DMS is left with, and it says the resource is mid-recreate.
+	err = db.DeleteStateForRecreate(ctx, d.ResourceKey)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
@@ -139,7 +145,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
 
-	return d.Create(ctx, db, newState)
+	return d.Create(ctx, db, newState, deployplan.Recreate)
 }
 
 func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
@@ -168,12 +174,15 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		// The update emptied the resource out (e.g. all grants revoked). Keeping an entry
 		// would report the node as tracked-and-unchanged forever, while a fresh deploy of
 		// the same config plans no node at all; drop it so the two agree.
-		err = db.DeleteState(d.ResourceKey)
+		//
+		// Recorded as a delete, which is what it did to the state, not the update that
+		// caused it.
+		err = db.DeleteState(ctx, d.ResourceKey)
 		if err != nil {
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
 	} else {
-		err = d.saveState(db, id, newState, d.DependsOn)
+		err = d.saveState(ctx, db, id, newState, d.DependsOn)
 		if err != nil {
 			return fmt.Errorf("saving state id=%s: %w", id, err)
 		}
@@ -218,7 +227,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = d.saveState(db, newID, newState, d.DependsOn)
+	err = d.saveState(ctx, db, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -260,7 +269,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 		}
 	}
 
-	err = db.DeleteState(d.ResourceKey)
+	err = db.DeleteState(ctx, d.ResourceKey)
 	if err != nil {
 		return fmt.Errorf("deleting state id=%s: %w", oldID, err)
 	}
@@ -305,7 +314,7 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = d.saveState(db, id, newState, d.DependsOn)
+	err = d.saveState(ctx, db, id, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
@@ -315,11 +324,11 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 
 // saveState saves a state with sensitive fields replaced by a placeholder value so secrets are never written
 // to disk in plaintext.
-func (d *DeploymentUnit) saveState(db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
+func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
 	if err := zeroSensitiveFields(d.Adapter, state); err != nil {
 		return fmt.Errorf("redacting state: %w", err)
 	}
-	return db.SaveState(d.ResourceKey, newID, state, dependsOn)
+	return db.SaveState(ctx, d.ResourceKey, newID, state, dependsOn)
 }
 
 func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {

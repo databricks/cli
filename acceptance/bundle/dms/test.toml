@@ -1,0 +1,20 @@
+Cloud = false
+
+# Deployment Metadata Service (DMS) recording is only supported by the direct
+# engine; it is a no-op on terraform.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# These tests enable recording through experimental.record_deployment_history, so the
+# DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY variant the rest of the suite adds would
+# just duplicate them.
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
+
+RecordRequests = true
+
+Ignore = [
+    '.databricks',
+]
+
+# experimental.record_deployment_history is normally rejected; these tests force-allow it
+# to exercise the feature. bundle/dms/not-supported covers the rejection path.
+Env.DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY = "1"

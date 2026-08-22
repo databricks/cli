@@ -43,6 +43,16 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
+	// The state DB records every write through this sink, so DMS mirrors the WAL. Writes run
+	// on one background goroutine, off the apply path, and are drained below once every
+	// worker has finished recording.
+	opSink := newOperationSink(ctx, b.OpRec)
+	if opSink != nil {
+		// Only when non-nil: a nil *operationSink in an interface is not a nil interface, so
+		// the state DB's nil check would not see it.
+		b.StateDB.SetOperationSink(opSink)
+	}
+
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		entry, err := plan.WriteLockEntry(resourceKey)
 		if err != nil {
@@ -73,6 +83,12 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
+		// Stop resource CRUD once uploading DMS state has failed.
+		if err := opSink.firstErr(); err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+			return false
+		}
+
 		adapter, err := b.getAdapterForKey(resourceKey)
 		if adapter == nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot get adapter: %w", errorPrefix, err))
@@ -100,14 +116,18 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		if action == deployplan.Delete {
+			// Read the ID before the delete removes it from state; recording a failure
+			// below needs it to say which resource the operation refers to.
+			deletedID := b.StateDB.GetResourceID(resourceKey)
 			if entry.Gone {
 				// Planning confirmed the resource is already deleted remotely; only
 				// remove it from the state, without calling the delete API.
-				err = b.StateDB.DeleteState(resourceKey)
+				err = b.StateDB.DeleteState(ctx, resourceKey)
 			} else {
 				err = d.Destroy(ctx, &b.StateDB)
 			}
 			if err != nil {
+				opSink.recordFailure(resourceKey, deletedID, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -134,8 +154,15 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			}
 
 			// TODO: redo calcDiff to downgrade planned action if possible (?)
+			//
+			// Success is recorded by the state writes inside Deploy, so a recreate reports
+			// each of its steps.
 			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			if err != nil {
+				// Empty for a create that never got an ID, and for a recreate whose delete
+				// step already dropped it.
+				failedID := b.StateDB.GetResourceID(resourceKey)
+				opSink.recordFailure(resourceKey, failedID, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -162,6 +189,13 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		return true
 	})
+
+	// Wait for the recorded operations before returning: the caller completes the
+	// DMS version right after, and a version must not be completed with uploads
+	// still in flight.
+	if err := opSink.close(); err != nil {
+		logdiag.LogError(ctx, err)
+	}
 }
 
 func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {

@@ -1,0 +1,18 @@
+bundle:
+  name: dms-multiple-resources
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  jobs:
+    one:
+      name: one
+    two:
+      name: two
+    three:
+      name: three
+    four:
+      name: four
+    five:
+      name: five

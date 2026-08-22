@@ -1,0 +1,6 @@
+# The job cannot be created, so applying it fails and the operation is recorded as
+# failed rather than omitted.
+[[Server]]
+Pattern = "POST /api/2.2/jobs/create"
+Response.StatusCode = 400
+Response.Body = '''{"error_code": "INVALID_PARAMETER_VALUE", "message": "cluster spec is invalid"}'''

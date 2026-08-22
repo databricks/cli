@@ -1,0 +1,12 @@
+bundle:
+  name: dms-failed-recreate
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  schemas:
+    foo:
+      name: dms_failed_recreate_schema
+      catalog_name: main
+      comment: v1

@@ -1,0 +1,12 @@
+bundle:
+  name: dms-resource-lifecycle
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  schemas:
+    foo:
+      name: dms_resource_lifecycle_schema
+      catalog_name: main
+      comment: v1

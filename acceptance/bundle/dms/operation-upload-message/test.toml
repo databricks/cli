@@ -1,0 +1,9 @@
+# One resource, so which operation is refused is fixed and the error a user sees can be
+# asserted. operation-upload-fails covers a deploy of several resources, where which ones
+# were reached before the failure landed is not.
+RecordRequests = false
+
+[[Server]]
+Pattern = "PATCH /api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/operations/{resource_key}"
+Response.StatusCode = 500
+Response.Body = '''{"error_code": "INTERNAL_ERROR", "message": "Internal error"}'''

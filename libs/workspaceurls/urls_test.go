@@ -141,6 +141,55 @@ func TestResourceURL(t *testing.T) {
 	}
 }
 
+func TestDeploymentURL(t *testing.T) {
+	tests := []struct {
+		name         string
+		deploymentID string
+		version      int64
+		base         url.URL
+		expected     string
+	}{
+		{
+			name:         "id and version",
+			deploymentID: "996980114684409",
+			version:      2,
+			base:         url.URL{Scheme: "https", Host: "host.com"},
+			expected:     "https://host.com/deployments/996980114684409?version=2",
+		},
+		{
+			// The version is only known once CreateVersion has run, so link to the
+			// deployment itself rather than emitting version=0.
+			name:         "zero version omits the query",
+			deploymentID: "996980114684409",
+			version:      0,
+			base:         url.URL{Scheme: "https", Host: "host.com"},
+			expected:     "https://host.com/deployments/996980114684409",
+		},
+		{
+			// A base URL carrying ?w=<workspace id> keeps it, so a vanity or legacy
+			// host still addresses the right workspace.
+			name:         "preserves an existing query",
+			deploymentID: "42",
+			version:      7,
+			base:         url.URL{Scheme: "https", Host: "host.com", RawQuery: "w=123"},
+			expected:     "https://host.com/deployments/42?version=7&w=123",
+		},
+		{
+			name:         "empty id returns empty",
+			deploymentID: "",
+			version:      1,
+			base:         url.URL{Scheme: "https", Host: "host.com"},
+			expected:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, DeploymentURL(tt.base, tt.deploymentID, tt.version))
+		})
+	}
+}
+
 func TestHasWorkspaceIDInHostname(t *testing.T) {
 	tests := []struct {
 		name        string

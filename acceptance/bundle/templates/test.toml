@@ -1,5 +1,9 @@
 # Local-only: At the moment, there are many differences across different envs w.r.t to catalog use, node type and so on.
 
+# Template tests materialize and deploy full projects, taking tens of seconds each.
+# Recording adds minutes without new coverage the rest of the suite provides.
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
+
 [[Server]]
 Pattern = "POST /telemetry-ext"
 Response.Body = '''

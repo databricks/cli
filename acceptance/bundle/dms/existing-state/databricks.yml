@@ -1,0 +1,10 @@
+bundle:
+  name: dms-existing-state
+
+experimental:
+  record_deployment_history: false
+
+resources:
+  jobs:
+    one:
+      name: one

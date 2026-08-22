@@ -323,6 +323,14 @@ func (b *Bundle) WorkspaceClient(ctx context.Context) *databricks.WorkspaceClien
 	return client
 }
 
+// RecordsDeploymentHistory reports whether this bundle records deployment history with the
+// deployment metadata service, from experimental.record_deployment_history or
+// DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY.
+func (b *Bundle) RecordsDeploymentHistory(ctx context.Context) bool {
+	configured := b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory
+	return env.RecordsDeploymentHistory(ctx, configured)
+}
+
 // SetWorkpaceClient sets the workspace client for this bundle.
 // This is used to inject a mock client for testing.
 func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {

@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -21,6 +22,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -56,6 +58,11 @@ type ProcessOptions struct {
 	// If true, calls statemgmt.Load() to read the state and update resources with IDs; also calls InitializeURLs()
 	// Implies ReadState
 	InitIDs bool
+
+	// If true, calls InitializeDeploymentHistory() to look up the bundle's recorded
+	// deployment. Independent of InitIDs, and costs its own API calls.
+	// Implies ReadState
+	InitDeploymentHistory bool
 
 	// if true, pass ErrorOnEmptyState to statemgmt.Load
 	// Implies ReadState
@@ -189,7 +196,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		return b, nil, err
 	}
 
-	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.InitDeploymentHistory || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
@@ -223,7 +230,35 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+
+			// Recording makes the service the source of truth for state.
+			var dmsSource *dstate.DMSSource
+			if b.RecordsDeploymentHistory(ctx) {
+				w := b.WorkspaceClient(ctx)
+				deploymentID, err := dms.ResolveDeploymentID(ctx, w, b.Config.Workspace.StatePath)
+				if err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+				dmsClient, err := dms.NewClient(w)
+				if err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+				dmsSource = &dstate.DMSSource{
+					Client:       dmsClient,
+					DeploymentID: deploymentID,
+				}
+
+				// Stamp the deployment before anything diffs the resources: the workspace
+				// has it, so leaving it unset would report drift on an untouched resource.
+				// The deploy phase stamps the version, once it claims one.
+				bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(deploymentID))
+				if logdiag.HasError(ctx) {
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+			}
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dmsSource); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -264,6 +299,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				mutators = append(mutators, mutator.InitializeURLs())
 			}
 			bundle.ApplySeqContext(ctx, b, mutators...)
+			if logdiag.HasError(ctx) {
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+		}
+
+		// Independent of the resource IDs above: this reads the deployment record, not
+		// the state. It makes its own API calls, so only 'bundle summary' asks for it.
+		if opts.InitDeploymentHistory {
+			bundle.ApplyContext(ctx, b, mutator.InitializeDeploymentHistory())
 			if logdiag.HasError(ctx) {
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}

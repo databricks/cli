@@ -1,3 +1,7 @@
+# Recording needs a bundle from the start. This test rewinds state and wipes the
+# deployment record path, so recording refuses it.
+EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
+
 EnvMatrix.READPLAN = ["", "1"]
 
 # Snapshot of pre-delete state used to re-run the delete on state that still

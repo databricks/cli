@@ -1,0 +1,12 @@
+bundle:
+  name: dms-failed-update
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  schemas:
+    foo:
+      name: dms_failed_update_schema
+      catalog_name: main
+      comment: v1

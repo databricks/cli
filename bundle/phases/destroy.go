@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -134,7 +135,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType, recording dms.Recording) {
 	if engine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
 	} else {
@@ -155,6 +156,12 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	}
 
 	if logdiag.HasError(ctx) {
+		return
+	}
+
+	// Complete version before deleting remote files; the deployment node is under statePath.
+	if err := recording.Finish(ctx, true); err != nil {
+		logdiag.LogError(ctx, err)
 		return
 	}
 
@@ -196,7 +203,17 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		return
 	}
 
+	// Set up DMS recording of this destroy. Version is created after approval; cancelled
+	// destroy records nothing. Deferred before lock.Release to hold the lock.
+	recording, err := newRecording(ctx, b, engine, dms.VersionTypeDestroy)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 	defer func() {
+		if err := recording.Finish(ctx, !logdiag.HasError(ctx)); err != nil {
+			logdiag.LogError(ctx, err)
+		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
@@ -253,7 +270,20 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				return
 			}
 		}
-		destroyCore(ctx, b, plan, engine)
+		// Record the DMS version now that the destroy is approved and the state WAL
+		// has been opened, then record each delete operation under it.
+		staged, err := stagedOperations(plan)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		writer, err := recording.Start(ctx, staged)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		b.DeploymentBundle.OpRec = writer
+		destroyCore(ctx, b, plan, engine, recording)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}
