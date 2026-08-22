@@ -1,0 +1,1 @@
+Fixed `databricks aitools install` to offer restoration of Claude Code's official plugin marketplace when it is missing.

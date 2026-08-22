@@ -69,6 +69,7 @@ func TestInstallPluginForAgentBuiltinMarketplace(t *testing.T) {
 	stubAgentLookPath(t, true)
 	ctx, stub := process.WithStub(t.Context())
 	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	stub.WithStdoutFor("plugin marketplace list", "claude-plugins-official\n")
 
 	// An agent whose plugin lives in a built-in marketplace (empty Source) like
 	// Claude's claude-plugins-official: install from it, never register it.
@@ -90,6 +91,49 @@ func TestInstallPluginForAgentBuiltinMarketplace(t *testing.T) {
 	}
 	assert.Contains(t, cmds, "claude plugin marketplace update")
 	assert.Contains(t, cmds, "claude plugin install databricks@claude-plugins-official --scope user")
+}
+
+func TestInstallPluginForAgentBuiltinMarketplaceMissing(t *testing.T) {
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+
+	agent := &agents.Agent{
+		Name:        agents.NameClaudeCode,
+		DisplayName: "Claude Code",
+		Binary:      "claude",
+		Plugin:      &agents.PluginSpec{Marketplace: "claude-plugins-official", ID: "databricks", Source: ""},
+	}
+
+	_, err := InstallPluginForAgent(ctx, agent, "user", "main")
+	var be *BlockedError
+	require.ErrorAs(t, err, &be)
+	assert.Equal(t, ReasonMarketplaceNotConfigured, be.Reason)
+
+	cmds := stub.Commands()
+	assert.Contains(t, cmds, "claude plugin marketplace list")
+	assert.NotContains(t, cmds, "claude plugin marketplace update")
+	assert.NotContains(t, cmds, "claude plugin install databricks@claude-plugins-official --scope user")
+}
+
+func TestRestoreMarketplaceForAgentClaude(t *testing.T) {
+	stubAgentLookPath(t, true)
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+
+	agent := &agents.Agent{
+		Name:        agents.NameClaudeCode,
+		DisplayName: "Claude Code",
+		Binary:      "claude",
+		Plugin:      &agents.PluginSpec{Marketplace: "claude-plugins-official", ID: "databricks", Source: ""},
+	}
+
+	require.NoError(t, RestoreMarketplaceForAgent(ctx, agent))
+	assert.Contains(
+		t,
+		stub.Commands(),
+		"claude plugin marketplace add anthropics/claude-plugins-official",
+	)
 }
 
 func TestInstallPluginForAgentCodexUsesAddNoScope(t *testing.T) {
