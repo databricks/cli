@@ -24,13 +24,13 @@
    * See https://docs.databricks.com/release-notes/runtime/index.html for available versions.
    */}}
 {{define "serverless_environment_version" -}}
-  4
+  5
 {{- end}}
 
 {{/* Python version specification for the template.
    * This needs to be compatible with the version of DB Connect and the serverless_environment_version.
    *
-   * Serverless environment version 4 (and upcoming v5), DBR 16, and DBR 17 all use Python 3.12.
+   * Serverless environment version 5, DBR 16, and DBR 17 all use Python 3.12.
    * DB Connect 15 supports all of these and is compatible with Python 3.10-3.12.
    *
    * We use >=3.10,<3.13 rather than pinning to 3.12 specifically because overly narrow pinning
