@@ -1,7 +1,7 @@
 
 === Deploy a volume that does not declare a comment
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
 Created volumes.volume1
 Files: 0 uploaded, 0 deleted
@@ -17,7 +17,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Redeploy clears the comment
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated volumes.volume1
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
@@ -28,7 +28,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 === Redeploy is a no-op
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
@@ -46,7 +46,7 @@ cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:
   delete resources.volumes.volume1
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Destroy: 2 deleted
 
