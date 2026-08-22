@@ -1,0 +1,1 @@
+The direct deployment engine no longer emits a no-op grants PATCH when a resource is created with an empty `grants: []` and no prior state, matching Terraform. Removing previously-granted principals by setting `grants: []` still works.

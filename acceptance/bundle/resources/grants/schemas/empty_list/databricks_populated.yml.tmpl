@@ -1,0 +1,12 @@
+bundle:
+  name: schema-grants-empty-list-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      name: schema_grants_empty_list_$UNIQUE_NAME
+      catalog_name: main
+      grants:
+        - principal: $CURRENT_USER_NAME
+          privileges:
+            - CREATE_TABLE

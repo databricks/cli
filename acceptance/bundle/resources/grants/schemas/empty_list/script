@@ -1,0 +1,28 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate -o json | jq .resources.schemas.grants_schema.grants
+
+errcode $CLI bundle plan -o json &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+rm -f out.requests.txt
+
+# Create with an empty list: nothing to grant and no prior state, so the direct
+# engine emits no request (matching terraform), not a no-op PATCH.
+trace $CLI bundle deploy
+print_requests.py //permissions > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+
+title "Grant a principal, then remove all grants with grants: []\n"
+envsubst < databricks_populated.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+print_requests.py //permissions > out.requests.grant.$DATABRICKS_BUNDLE_ENGINE.json
+
+# Back to an empty list, but now the node is in state: the removal must still be
+# planned and the PATCH must remove the previously granted privileges.
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+print_requests.py //permissions > out.requests.remove.$DATABRICKS_BUNDLE_ENGINE.json

@@ -949,6 +949,20 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 						return v, fmt.Errorf("unsupported resource type: %s", resourceType)
 					}
 
+					// An empty grants list with no prior state has nothing to
+					// apply: creating the node would emit a no-op PATCH with no
+					// changes (terraform emits nothing). Skip it. When the node is
+					// already in state we must keep it so the removal is planned;
+					// the grant-removal PATCH is built from remote state, not config.
+					// This also covers permissions nodes, but an empty permissions
+					// list is populated with a default owner by FixPermissions
+					// before planning, so in practice only grants reach here empty.
+					if seq, ok := v.AsSequence(); ok && len(seq) == 0 {
+						if _, inState := db.State[s]; !inState {
+							return dyn.InvalidValue, nil
+						}
+					}
+
 					nodes = append(nodes, s)
 					return dyn.InvalidValue, nil
 				},

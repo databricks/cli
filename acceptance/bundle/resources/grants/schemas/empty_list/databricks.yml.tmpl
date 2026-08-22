@@ -1,0 +1,12 @@
+bundle:
+  name: schema-grants-empty-list-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      name: schema_grants_empty_list_$UNIQUE_NAME
+      catalog_name: main
+      # Unlike permissions, grants have no default owner: an empty list grants
+      # nothing. Note the engines diverge on create: direct emits a no-op PATCH
+      # with an empty body, terraform emits no request at all.
+      grants: []
