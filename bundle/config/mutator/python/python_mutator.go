@@ -124,6 +124,13 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 		return opts{}, errors.New("experimental/pydabs is deprecated, use python instead (https://docs.databricks.com/dev-tools/bundles/python)")
 	}
 
+	// Without mutator functions there is nothing to mutate, so skip the subprocess that would load
+	// every resource and return it unchanged. load_resources still reports configuration errors.
+	if phase == PythonMutatorPhaseApplyMutators &&
+		len(b.Config.Python.Mutators) == 0 && len(experimental.Python.Mutators) == 0 {
+		return opts{}, nil
+	}
+
 	if experimentalPythonEnabled && pythonEnabled {
 		if !reflect.DeepEqual(experimental.Python, b.Config.Python) {
 			return opts{}, errors.New("'experimental/python' and 'python' configuration properties are mutually exclusive, use only 'python'")
