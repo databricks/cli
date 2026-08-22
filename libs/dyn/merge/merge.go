@@ -10,7 +10,7 @@ import (
 //
 // Semantics are as follows:
 // * Merging x with nil or nil with x always yields x.
-// * Merging maps a and b means entries from map b take precedence.
+// * Merging maps a and b means entries from map b take precedence. A nil entry in b clears the corresponding entry in a.
 // * Merging sequences a and b means concatenating them.
 //
 // Merging retains and accumulates the locations metadata associated with the values.
@@ -84,6 +84,13 @@ func mergeMap(a, b dyn.Value) (dyn.Value, error) {
 		key := pk.MustString()
 		pv := pair.Value
 		if ov, ok := out.Get(pk); ok {
+			// An explicit nil in the incoming map clears the existing value instead
+			// of being ignored, so a target can drop an inherited field (e.g. set
+			// `autoscale: null` to remove an inherited autoscale block).
+			if pv.Kind() == dyn.KindNil {
+				out.SetLoc(key, pair.Key.Locations(), pv.AppendLocationsFromValue(ov))
+				continue
+			}
 			// If the key already exists, merge the values.
 			merged, err := merge(ov, pv)
 			if err != nil {
