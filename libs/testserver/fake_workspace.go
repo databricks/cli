@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -253,6 +254,37 @@ func (s *FakeWorkspace) LockUnlock() func() {
 	}
 	s.mu.Lock()
 	return func() { s.mu.Unlock() }
+}
+
+// parseUCUpdate decodes a Unity Catalog update payload into its raw fields. It returns a
+// rejection response when the body carries no field to act on: UC answers such a PATCH with
+// "<operation> Nothing to update." (400) rather than treating it as a no-op. A key set to
+// null does not count. Verified against a real workspace for schemas, volumes and catalogs:
+// {} and {"comment": null} are rejected, while {"comment": ""} and
+// {"custom_max_retention_hours": 0} are accepted.
+func parseUCUpdate(body []byte, operation string) (map[string]json.RawMessage, *Response) {
+	var fields map[string]json.RawMessage
+
+	if err := json.Unmarshal(body, &fields); err != nil {
+		return nil, &Response{
+			Body:       fmt.Sprintf("internal error: %s", err),
+			StatusCode: http.StatusInternalServerError,
+		}
+	}
+
+	for _, value := range fields {
+		if string(value) != "null" {
+			return fields, nil
+		}
+	}
+
+	return nil, &Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    operation + " Nothing to update.",
+		},
+	}
 }
 
 // Generic functions to handle map operations

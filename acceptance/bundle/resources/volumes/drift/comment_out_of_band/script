@@ -1,0 +1,32 @@
+echo "*" > .gitignore
+envsubst < databricks.yml.tmpl > databricks.yml
+
+VOLUME="main.test-schema-${UNIQUE_NAME}.test-volume-${UNIQUE_NAME}"
+
+# print_requests.py consumes out.requests.txt, so it has to run after the last
+# request the test makes, which is the destroy below.
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    title "The UpdateVolume payloads the deploys sent"
+    trace print_requests.py --method PATCH //unity-catalog/volumes
+}
+trap cleanup EXIT
+
+title "Deploy a volume that does not declare a comment"
+trace $CLI bundle deploy
+
+title "Set the comment out of band, the way Catalog Explorer does"
+MSYS_NO_PATHCONV=1 $CLI api patch "/api/2.1/unity-catalog/volumes/$VOLUME" --json '{"comment":"set outside the bundle"}' > /dev/null
+
+title "The remote comment is drift, so the plan updates the volume"
+trace $CLI bundle plan --output json | jq '.plan["resources.volumes.volume1"].changes.comment'
+
+title "Redeploy clears the comment"
+trace $CLI bundle deploy
+
+title "The comment is gone"
+MSYS_NO_PATHCONV=1 trace $CLI api get "/api/2.1/unity-catalog/volumes/$VOLUME" | jq '.comment'
+
+title "Redeploy is a no-op"
+trace $CLI bundle deploy

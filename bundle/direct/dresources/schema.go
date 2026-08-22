@@ -56,14 +56,8 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalo
 		NewName:                      "", // We recreate schemas on name change intentionally.
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateSchema](config.ForceSendFields, "EnablePredictiveOptimization", "NewName", "Owner"),
+		ForceSendFields:              forceSendComment(utils.FilterFields[catalog.UpdateSchema](config.ForceSendFields, "EnablePredictiveOptimization", "NewName", "Owner")),
 	}
-
-	// UC answers a PATCH that carries no field with "Nothing to update" (400) instead of
-	// treating it as a no-op, and omitempty drops every field the config leaves unset.
-	// Always sending comment keeps the payload non-empty and makes clearing a comment
-	// that was set outside the bundle explicit.
-	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, "Comment")
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)
 	if err != nil {

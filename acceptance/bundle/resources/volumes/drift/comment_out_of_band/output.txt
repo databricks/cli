@@ -1,0 +1,68 @@
+
+=== Deploy a volume that does not declare a comment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created schemas.schema1
+Created volumes.volume1
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Set the comment out of band, the way Catalog Explorer does
+=== The remote comment is drift, so the plan updates the volume
+>>> [CLI] bundle plan --output json
+{
+  "action": "update",
+  "remote": "set outside the bundle"
+}
+
+=== Redeploy clears the comment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated volumes.volume1
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+=== The comment is gone
+>>> [CLI] api get /api/2.1/unity-catalog/volumes/main.test-schema-[UNIQUE_NAME].test-volume-[UNIQUE_NAME]
+""
+
+=== Redeploy is a no-op
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.schema1
+  delete resources.volumes.volume1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:
+  delete resources.volumes.volume1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 2 deleted
+
+=== The UpdateVolume payloads the deploys sent
+>>> print_requests.py --method PATCH //unity-catalog/volumes
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/volumes/main.test-schema-[UNIQUE_NAME].test-volume-[UNIQUE_NAME]",
+  "body": {
+    "comment": "set outside the bundle"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/volumes/main.test-schema-[UNIQUE_NAME].test-volume-[UNIQUE_NAME]",
+  "body": {
+    "comment": ""
+  }
+}

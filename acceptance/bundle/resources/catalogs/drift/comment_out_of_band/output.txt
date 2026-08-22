@@ -1,0 +1,57 @@
+
+=== Deploy a catalog that does not declare a comment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created catalogs.catalog1
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Set the comment out of band, the way Catalog Explorer does
+=== The remote comment is drift, so the plan updates the catalog
+>>> [CLI] bundle plan --output json
+{
+  "action": "update",
+  "remote": "set outside the bundle"
+}
+
+=== Redeploy clears the comment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated catalogs.catalog1
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+=== The comment is gone
+>>> [CLI] api get /api/2.1/unity-catalog/catalogs/test-catalog-[UNIQUE_NAME]
+""
+
+=== Redeploy is a no-op
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.catalogs.catalog1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
+
+=== The UpdateCatalog payloads the deploys sent
+>>> print_requests.py --method PATCH //unity-catalog/catalogs
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/catalogs/test-catalog-[UNIQUE_NAME]",
+  "body": {
+    "comment": "set outside the bundle"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/catalogs/test-catalog-[UNIQUE_NAME]",
+  "body": {
+    "comment": ""
+  }
+}
