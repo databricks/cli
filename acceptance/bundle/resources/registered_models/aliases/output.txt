@@ -1,0 +1,90 @@
+
+>>> export NAME=my-registered-model-[UNIQUE_NAME]
+
+>>> export COMMENT=test model
+
+>>> export CATALOG_NAME=mycatalog-[UNIQUE_NAME]
+
+>>> export SCHEMA_NAME=myschema-[UNIQUE_NAME]
+
+>>> [CLI] catalogs create mycatalog-[UNIQUE_NAME]
+{
+  "full_name": "mycatalog-[UNIQUE_NAME]"
+}
+
+>>> [CLI] schemas create myschema-[UNIQUE_NAME] mycatalog-[UNIQUE_NAME]
+{
+  "full_name": "mycatalog-[UNIQUE_NAME].myschema-[UNIQUE_NAME]"
+}
+
+=== create with aliases
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default/files...
+Created registered_models.my_registered_model
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] registered-models get mycatalog-[UNIQUE_NAME].myschema-[UNIQUE_NAME].my-registered-model-[UNIQUE_NAME] --include-aliases
+{
+  "aliases": [
+    {
+      "alias_name": "champion",
+      "version_num": 1
+    },
+    {
+      "alias_name": "staging",
+      "version_num": 2
+    }
+  ]
+}
+
+=== redeploy unchanged (idempotence check)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+=== update: modify champion version, remove staging, add latest
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default/files...
+Updated registered_models.my_registered_model
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] registered-models get mycatalog-[UNIQUE_NAME].myschema-[UNIQUE_NAME].my-registered-model-[UNIQUE_NAME] --include-aliases
+{
+  "aliases": [
+    {
+      "alias_name": "champion",
+      "version_num": 5
+    },
+    {
+      "alias_name": "latest",
+      "version_num": 3
+    }
+  ]
+}
+
+=== remove all aliases
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default/files...
+Updated registered_models.my_registered_model
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] registered-models get mycatalog-[UNIQUE_NAME].myschema-[UNIQUE_NAME].my-registered-model-[UNIQUE_NAME] --include-aliases
+{
+  "aliases": []
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.registered_models.my_registered_model
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> [CLI] schemas delete mycatalog-[UNIQUE_NAME].myschema-[UNIQUE_NAME] --force
+
+>>> [CLI] catalogs delete mycatalog-[UNIQUE_NAME] --force

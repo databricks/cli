@@ -8,28 +8,20 @@ Created registered_models.my_registered_model
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
-=== Plan is a no-op: GET never echoes aliases, so they must not drift
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
-
-=== The config-set aliases are skipped as input_only (confirms the matched rule)
->>> [CLI] bundle plan --output json
+=== Aliases are applied to the model
+>>> [CLI] registered-models get main.default.my-registered-model-aliases-[UNIQUE_NAME] --include-aliases
 {
-  "action": "skip",
-  "reason": "input_only",
-  "old": [
+  "aliases": [
     {
       "alias_name": "champion",
-      "id": "alias-champion"
-    }
-  ],
-  "new": [
-    {
-      "alias_name": "champion",
-      "id": "alias-champion"
+      "version_num": 1
     }
   ]
 }
+
+=== Plan is a no-op: GET echoes the synced aliases, so they must not drift
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Edit the comment: an in-place update, not a recreate
 >>> [CLI] bundle plan

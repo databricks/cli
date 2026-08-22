@@ -1,0 +1,8 @@
+Cloud = true
+RecordRequests = false
+RunsOnDbr = true
+RequiresUnityCatalog = true
+
+# Alias syncing via SetAlias/DeleteAlias lives in the direct engine; the
+# terraform provider does not apply aliases, so scope this test there.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
