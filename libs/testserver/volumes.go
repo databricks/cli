@@ -76,6 +76,11 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 		}
 	}
 
+	fields, errResponse := parseUCUpdate(req.Body, "UpdateVolume")
+	if errResponse != nil {
+		return *errResponse
+	}
+
 	var request catalog.UpdateVolumeRequestContent
 
 	if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -85,8 +90,13 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 		}
 	}
 
-	if request.Comment != "" {
+	// Keyed off presence rather than a non-empty value so an explicit empty comment
+	// clears the stored one, the way UC does.
+	if _, ok := fields["comment"]; ok {
 		existing.Comment = request.Comment
+		// UC echoes a comment once it has been set, including when it was set to "",
+		// so keep it in the response rather than letting omitempty drop it.
+		existing.ForceSendFields = append(existing.ForceSendFields, "Comment")
 	}
 
 	if request.Owner != "" {

@@ -80,26 +80,9 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		}
 	}
 
-	var fields map[string]json.RawMessage
-
-	if err := json.Unmarshal(req.Body, &fields); err != nil {
-		return Response{
-			Body:       fmt.Sprintf("internal error: %s", err),
-			StatusCode: http.StatusInternalServerError,
-		}
-	}
-
-	// UC rejects a PATCH that carries no field to update instead of treating it as a
-	// no-op. Verified against a real workspace: {} and {"comment": null} are rejected,
-	// while {"comment": ""} and {"custom_max_retention_hours": 0} are accepted.
-	if !hasFieldToUpdate(fields) {
-		return Response{
-			StatusCode: http.StatusBadRequest,
-			Body: map[string]string{
-				"error_code": "INVALID_PARAMETER_VALUE",
-				"message":    "UpdateSchema Nothing to update.",
-			},
-		}
+	fields, errResponse := parseUCUpdate(req.Body, "UpdateSchema")
+	if errResponse != nil {
+		return *errResponse
 	}
 
 	var schemaUpdate catalog.SchemaInfo
@@ -134,15 +117,4 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 	return Response{
 		Body: existing,
 	}
-}
-
-// hasFieldToUpdate reports whether an update payload carries at least one field the
-// backend can act on. A key set to null does not count.
-func hasFieldToUpdate(fields map[string]json.RawMessage) bool {
-	for _, value := range fields {
-		if string(value) != "null" {
-			return true
-		}
-	}
-	return false
 }

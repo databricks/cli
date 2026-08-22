@@ -62,7 +62,7 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 		Options:                      config.Options,
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner"),
+		ForceSendFields:              forceSendComment(utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner")),
 	}
 
 	response, err := r.client.Catalogs.Update(ctx, updateRequest)
@@ -86,7 +86,7 @@ func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config 
 		Options:                      config.Options,
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner"),
+		ForceSendFields:              forceSendComment(utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner")),
 	}
 
 	if config.Name != id {
