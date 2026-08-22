@@ -1,0 +1,28 @@
+# The selection runs against the real acceptance tree, so every line it prints is a real
+# test name that can be passed to `go test -run`.
+selection() {
+    "$SELECTION" -root "$TESTROOT" "$@"
+}
+
+# Each argument is a changed file: "M:" modified, "A:" added, "R100:old:new" moved.
+
+title "Changing a test\n"
+trace selection M:acceptance/selftest/basic/script
+
+title "Adding a test\n"
+trace selection A:acceptance/selftest/basic/script
+
+title "A regenerated golden scores below a changed fixture\n"
+trace selection M:acceptance/selftest/basic/output.txt M:acceptance/selftest/diff/script
+
+title "Moving a test scores lowest\n"
+trace selection R100:acceptance/selftest/old/script:acceptance/selftest/basic/script M:acceptance/selftest/diff/script
+
+title "Touching an invariant config runs every invariant test, for that config only\n"
+trace selection M:acceptance/bundle/invariant/configs/job.yml.tmpl
+
+title "Adding one invariant config and touching another: only the new variant is new\n"
+trace selection A:acceptance/bundle/invariant/configs/pipeline.yml.tmpl M:acceptance/bundle/invariant/configs/job.yml.tmpl
+
+title "The limit keeps the highest scoring tests\n"
+trace selection -limit 3 A:acceptance/selftest/basic/script M:acceptance/selftest/diff/script M:acceptance/bundle/invariant/configs/job.yml.tmpl

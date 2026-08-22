@@ -553,6 +553,15 @@ tasks:
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-60m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
 
+  local-select:
+    desc: Run selection of local tests (tests changed in this branch)
+    # Local counterpart of cloud-select: the same DATABRICKS_TEST_SELECT_CHANGED selection,
+    # against the testserver instead of a real workspace. -v to show the selection summary
+    # and the tests that ran; no sources/generates because the selection depends on the git
+    # diff, which Task cannot checksum.
+    cmds:
+      - "DATABRICKS_TEST_SELECT_CHANGED=${DATABRICKS_TEST_SELECT_CHANGED:-50} go test ./acceptance -run '^TestAccept$' -v -timeout=${LOCAL_TIMEOUT:-60m}"
+
   test-update:
     desc: Update acceptance test output (local)
     # Excludes out* because the task rewrites them; keeping them in sources would
@@ -762,12 +771,16 @@ tasks:
           --packages "./acceptance ./integration/..." \
           -- -parallel 4 -timeout=12h -short
 
-  integration-short-skiplocal:
-    desc: Run integration tests for PRs (skips CloudSlow and tests with testserver coverage)
+  cloud-select:
+    desc: Run selection of integration tests (tests changed in this branch)
+    # The alias is the name the eng-dev-ecosystem CI job dispatches (cli-isolated-pr.yml
+    # passes it as integration_task, and cli-isolated-tests.yml greps Taskfile.yml for it
+    # and falls back to integration-short, the full cloud suite, if it is missing).
+    aliases: [integration-short-skiplocal]
     deps: [install-pythons]
     cmds:
       - |
-        DATABRICKS_TEST_SKIPLOCAL=withchanged VERBOSE_TEST=1 \
+        DATABRICKS_TEST_SELECT_CHANGED=50 VERBOSE_TEST=1 \
         go run -modfile=tools/go.mod ./tools/testrunner/main.go \
           {{.GO_TOOL}} gotestsum \
           --format github-actions \
