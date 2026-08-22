@@ -1,0 +1,12 @@
+Cloud = true
+RequiresWarehouse = true
+
+# export-dir prints the local destination with OS-native separators, so the
+# output diverges on Windows. The exported-dashboard behavior is OS-independent,
+# so cover it on Linux/macOS only.
+GOOS.windows = false
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+Ignore = [
+  "export",
+]
