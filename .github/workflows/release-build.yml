@@ -124,6 +124,31 @@ jobs:
             echo
           done
 
+      - name: Verify FIPS module in binaries
+        run: |
+          shopt -s nullglob
+          count=0
+          for bin in dist/*/databricks dist/*/databricks.exe; do
+            count=$((count + 1))
+            stamp=$(go version -m "$bin" | grep -E 'GOFIPS140|DefaultGODEBUG|-tags=fips140' || true)
+            echo "=== $bin"
+            echo "$stamp"
+            [[ "$stamp" == *"GOFIPS140=v1.0.0"* ]] || {
+              echo "ERROR: $bin is not built against the validated FIPS module" >&2
+              exit 1
+            }
+            [[ "$stamp" == *"DefaultGODEBUG=fips140=on"* ]] || {
+              echo "ERROR: $bin does not enable FIPS mode by default" >&2
+              exit 1
+            }
+          done
+          # Without this the loop is a no-op when the glob matches nothing.
+          if [ "$count" -eq 0 ]; then
+            echo "ERROR: no binaries found under dist/" >&2
+            exit 1
+          fi
+          echo "verified $count binaries"
+
       - name: Stage bundle JSON schema for upload
         run: cp bundle/schema/jsonschema.json dist/
 
