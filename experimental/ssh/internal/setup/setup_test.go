@@ -12,7 +12,9 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/qa"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -291,6 +293,81 @@ func TestSetup_PromptsForClusterWhenNotProvided(t *testing.T) {
 	hostConfigStr := string(hostContent)
 	assert.Contains(t, hostConfigStr, "--cluster=picked-cluster")
 	assert.NotContains(t, hostConfigStr, "--cluster= ")
+}
+
+// clusterListFixtures returns the API responses the cluster picker needs to
+// list the given clusters.
+func clusterListFixtures(clusters []compute.ClusterDetails) qa.HTTPFixtures {
+	return qa.HTTPFixtures{
+		{
+			Method:   "GET",
+			Resource: "/api/2.1/clusters/list?filter_by.cluster_sources=API&filter_by.cluster_sources=UI&page_size=100",
+			Response: compute.ListClustersResponse{Clusters: clusters},
+		},
+		{
+			Method:   "GET",
+			Resource: "/api/2.0/preview/scim/v2/Me?",
+			Response: iam.User{UserName: "someone@example.com"},
+		},
+		{
+			Method:   "GET",
+			Resource: "/api/2.1/clusters/spark-versions",
+			Response: compute.GetSparkVersionsResponse{
+				Versions: []compute.SparkVersion{{Key: "14.5.x-scala2.12", Name: "14.5 (Scala 2.12)"}},
+			},
+		},
+	}
+}
+
+func TestDefaultClusterSelectionPrompt_DuplicateClusterNames(t *testing.T) {
+	cfg, server := clusterListFixtures([]compute.ClusterDetails{
+		{
+			ClusterId:     "cluster-a",
+			ClusterName:   "shared name",
+			ClusterSource: compute.ClusterSourceUi,
+			SparkVersion:  "14.5.x-scala2.12",
+			State:         compute.StateRunning,
+		},
+		{
+			ClusterId:     "cluster-b",
+			ClusterName:   "shared name",
+			ClusterSource: compute.ClusterSourceApi,
+			SparkVersion:  "14.5.x-scala2.12",
+			State:         compute.StateRunning,
+		},
+	}).Config(t)
+	defer server.Close()
+	w := databricks.Must(databricks.NewWorkspaceClient((*databricks.Config)(cfg)))
+
+	ctx := cmdio.MockDiscard(t.Context())
+	_, err := defaultClusterSelectionPrompt(ctx, w)
+
+	// Both clusters share a display name. Listing must still succeed and reach
+	// the picker, which cannot run without a TTY -- the point is that it fails
+	// there rather than while loading the cluster list.
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Choose compatible cluster")
+	assert.NotContains(t, err.Error(), "duplicate")
+}
+
+func TestDefaultClusterSelectionPrompt_SingleCluster(t *testing.T) {
+	cfg, server := clusterListFixtures([]compute.ClusterDetails{
+		{
+			ClusterId:     "only-cluster",
+			ClusterName:   "the only one",
+			ClusterSource: compute.ClusterSourceUi,
+			SparkVersion:  "14.5.x-scala2.12",
+			State:         compute.StateRunning,
+		},
+	}).Config(t)
+	defer server.Close()
+	w := databricks.Must(databricks.NewWorkspaceClient((*databricks.Config)(cfg)))
+
+	ctx := cmdio.MockDiscard(t.Context())
+	id, err := defaultClusterSelectionPrompt(ctx, w)
+
+	require.NoError(t, err)
+	assert.Equal(t, "only-cluster", id)
 }
 
 func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
