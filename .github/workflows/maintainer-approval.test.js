@@ -334,6 +334,88 @@ describe("maintainer-approval", () => {
     assert.equal(github._checkRuns.length, 0);
   });
 
+  it("owner who approved then requested changes no longer approves", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "jefferycheng1" } },
+        { state: "CHANGES_REQUESTED", user: { login: "jefferycheng1" } },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._checkRuns.length, 0);
+  });
+
+  it("maintainer who approved then requested changes no longer approves", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "maintainer1" } },
+        { state: "CHANGES_REQUESTED", user: { login: "maintainer1" } },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._checkRuns.length, 0);
+  });
+
+  it("owner who requested changes then approved counts as approval", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "CHANGES_REQUESTED", user: { login: "jefferycheng1" } },
+        { state: "APPROVED", user: { login: "jefferycheng1" } },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._checkRuns.length, 1);
+    assert.equal(github._checkRuns[0].conclusion, "success");
+  });
+
+  it("COMMENTED review after an approval leaves the approval standing", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "jefferycheng1" } },
+        { state: "COMMENTED", user: { login: "jefferycheng1" } },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._checkRuns.length, 1);
+    assert.equal(github._checkRuns[0].conclusion, "success");
+  });
+
+  it("dismissed approval no longer counts", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "jefferycheng1" } },
+        { state: "DISMISSED", user: { login: "jefferycheng1" } },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._checkRuns.length, 0);
+  });
+
   it("self-approval by PR author is excluded", async () => {
     const github = makeGithub({
       reviews: [
