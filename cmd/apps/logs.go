@@ -95,6 +95,10 @@ Examples:
 			if tailLines < 0 {
 				return errors.New("--tail-lines cannot be negative")
 			}
+			sourceMap, err := buildSourceFilter(sourceFilters)
+			if err != nil {
+				return err
+			}
 
 			if follow && streamTimeout > 0 {
 				var cancel context.CancelFunc
@@ -171,11 +175,6 @@ Examples:
 
 			outputFormat := root.OutputType(cmd)
 			colorizeLogs := outputPath == "" && outputFormat == flags.OutputText && cmdio.SupportsColor(ctx, cmd.OutOrStdout())
-
-			sourceMap, err := buildSourceFilter(sourceFilters)
-			if err != nil {
-				return err
-			}
 
 			log.Infof(ctx, "Streaming logs for %s (%s)", name, wsURL)
 			return logstream.Run(ctx, logstream.Config{
