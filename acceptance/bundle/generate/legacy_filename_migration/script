@@ -1,0 +1,20 @@
+mkdir resources
+
+title "job legacy filename"
+echo legacy-job > resources/test_job.yml
+trace $CLI bundle generate job --existing-job-id 1234 --key test_job --config-dir resources
+test ! -e resources/test_job.yml
+grep -q "name: test-job" resources/test_job.job.yml
+
+title "pipeline legacy filename"
+echo legacy-pipeline > resources/test_pipeline.yml
+trace $CLI bundle generate pipeline --existing-pipeline-id 1234 --key test_pipeline --config-dir resources
+test ! -e resources/test_pipeline.yml
+grep -q "name: test-pipeline" resources/test_pipeline.pipeline.yml
+
+title "existing typed filename preserves both files"
+echo legacy-job > resources/test_job.yml
+echo typed-job > resources/test_job.job.yml
+trace musterr $CLI bundle generate job --existing-job-id 1234 --key test_job --config-dir resources
+test "$(cat resources/test_job.yml)" = legacy-job
+test "$(cat resources/test_job.job.yml)" = typed-job
