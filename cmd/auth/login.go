@@ -49,8 +49,21 @@ const (
 	// host used by the discovery login flow. Intended for testing and
 	// development against non-production environments. See WithDiscoveryHost
 	// in github.com/databricks/databricks-sdk-go/credentials/u2m.
-	discoveryHostEnvVar = "DATABRICKS_DISCOVERY_HOST"
+	discoveryHostEnvVar     = "DATABRICKS_DISCOVERY_HOST"
+	oauthCallbackPortEnvVar = "DATABRICKS_OAUTH_CALLBACK_PORT"
 )
+
+func withOAuthCallbackPort(ctx context.Context, opts []u2m.PersistentAuthOption) ([]u2m.PersistentAuthOption, error) {
+	value := env.Get(ctx, oauthCallbackPortEnvVar)
+	if value == "" {
+		return opts, nil
+	}
+	port, err := strconv.Atoi(value)
+	if err != nil {
+		return nil, fmt.Errorf("invalid %s value %q: %w", oauthCallbackPortEnvVar, value, err)
+	}
+	return append(opts, u2m.WithPort(port)), nil
+}
 
 // discoveryErr wraps an error (or creates a new one) and appends the
 // discovery fallback tip so users know they can bypass login.databricks.com.
@@ -302,6 +315,10 @@ a new profile is created.
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
 			u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, tokenStore, mode, oauthArgument)),
+		}
+		persistentAuthOpts, err = withOAuthCallbackPort(ctx, persistentAuthOpts)
+		if err != nil {
+			return err
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
@@ -660,6 +677,10 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		u2m.WithBrowser(in.browserFunc),
 		u2m.WithDiscoveryLogin(),
 		u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, in.tokenStore, in.mode, arg)),
+	}
+	opts, err = withOAuthCallbackPort(ctx, opts)
+	if err != nil {
+		return discoveryErr("setting OAuth callback port", err)
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))
