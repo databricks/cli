@@ -1,0 +1,27 @@
+# Generated, do not edit.
+
+ignore_remote_changes:
+  - field: accelerated_sync
+    reason: spec:input_only
+  - field: branch
+    reason: spec:input_only
+  - field: create_database_objects_if_missing
+    reason: spec:input_only
+  - field: existing_pipeline_id
+    reason: spec:input_only
+  - field: extra_columns
+    reason: spec:input_only
+  - field: new_pipeline_spec
+    reason: spec:input_only
+  - field: postgres_database
+    reason: spec:input_only
+  - field: primary_key_columns
+    reason: spec:input_only
+  - field: scheduling_policy
+    reason: spec:input_only
+  - field: source_table_full_name
+    reason: spec:input_only
+  - field: timeseries_key
+    reason: spec:input_only
+  - field: type_overrides
+    reason: spec:input_only

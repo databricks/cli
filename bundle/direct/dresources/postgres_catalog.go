@@ -62,7 +62,7 @@ func (*ResourcePostgresCatalog) RemapState(remote *PostgresCatalogRemote) *Postg
 
 // makePostgresCatalogRemote converts the SDK Catalog into the embedded remote shape.
 // GET does not echo spec today (only status is returned); the embedded spec fields
-// stay at their zero values, and resources.yml suppresses phantom drift via
+// stay at their zero values, and postgres_catalogs.yaml suppresses phantom drift via
 // ignore_remote_changes with reason spec:input_only.
 //
 // The user-facing catalog id only appears as the trailing component of
