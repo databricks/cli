@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -377,4 +378,30 @@ func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
 	require.NoError(t, r.DoDelete(t.Context(), "123", &JobRunState{}))
 
 	assert.False(t, cancelled.Load(), "a run that already finished has nothing to cancel")
+}
+
+func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
+	r := &ResourceJobRun{}
+	for _, tt := range []struct {
+		name   string
+		path   string
+		new    any
+		action deployplan.ActionType
+	}{
+		{"cleared on_bundle_deploy string", "lifecycle.triggers.on_bundle_deploy", "", deployplan.Skip},
+		{"nil on_bundle_deploy", "lifecycle.triggers.on_bundle_deploy", nil, deployplan.Skip},
+		{"rotated on_bundle_deploy", "lifecycle.triggers.on_bundle_deploy", "uuid", deployplan.Recreate},
+		{"cleared on_file_change", "lifecycle.triggers.on_file_change", nil, deployplan.Skip},
+		{"changed on_file_change map", "lifecycle.triggers.on_file_change", map[string]string{"a.txt": "h"}, deployplan.Recreate},
+		{"cleared on_file_change child", "lifecycle.triggers.on_file_change['a.txt']", nil, deployplan.Recreate},
+		{"cleared triggers parent", "lifecycle.triggers", nil, deployplan.Skip},
+		{"changed triggers parent", "lifecycle.triggers", JobRunTriggersState{OnBundleDeploy: "uuid"}, deployplan.Recreate},
+		{"result_state unchanged", "result_state", nil, deployplan.Recreate},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			change := &ChangeDesc{Action: deployplan.Recreate, New: tt.new}
+			require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath(tt.path), change, nil))
+			assert.Equal(t, tt.action, change.Action)
+		})
+	}
 }
