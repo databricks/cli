@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/libs/safeerr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -299,6 +300,104 @@ resources:
 						assert.Equal(t, want.Label, entry.DependsOn[i].Label)
 					}
 				}
+			}
+		})
+	}
+}
+
+// buildStateErrFromTF is runBuildStateFromTF's failure counterpart: it returns
+// the error instead of requiring success.
+func buildStateErrFromTF(
+	t *testing.T,
+	yaml string,
+	tfAttrs migrate.TFStateAttrs,
+	tfIDs map[string]string,
+) error {
+	t.Helper()
+
+	root := rootFromYAML(t, yaml)
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	var db dstate.DeploymentState
+	db.OpenWithData(filepath.Join(t.TempDir(), "resources.json"), dstate.NewDatabase("lineage", 1))
+	require.NoError(t, db.UpgradeToWrite())
+
+	_, err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
+	return err
+}
+
+// TestBuildStateFromTFErrors covers the ways a conversion fails, and pins the
+// message against the template reported to telemetry: the message names the
+// resource and field, the template names neither but still says which failure
+// it was. Together these are what a migration failure population can be broken
+// down by.
+func TestBuildStateFromTFErrors(t *testing.T) {
+	tests := []struct {
+		name string
+
+		yaml    string
+		tfAttrs migrate.TFStateAttrs
+		tfIDs   map[string]string
+
+		// wantErrContains is a substring of the user-facing message; secrets
+		// below must appear there and must not appear in the template.
+		wantErrContains string
+		wantTemplate    string
+	}{
+		{
+			name: "referenced resource missing from TF state",
+			yaml: `
+resources:
+  pipelines:
+    src_secret:
+      name: "source"
+  jobs:
+    dst_secret:
+      name: "${resources.pipelines.src_secret.name}"
+`,
+			tfAttrs: migrate.TFStateAttrs{
+				"databricks_job": {"dst_secret": json.RawMessage(`{"id": "j1"}`)},
+			},
+			tfIDs:           map[string]string{"resources.jobs.dst_secret": "j1"},
+			wantErrContains: "databricks_pipeline.src_secret not found in TF state",
+			wantTemplate:    `jobs.*: cannot resolve field %q (template %q): jobs.%s field %s: method A: %q: key not found; method B: cannot look up %q: databricks_pipeline.%s not found in TF state`,
+		},
+		{
+			name: "referenced field absent from TF attributes",
+			yaml: `
+resources:
+  pipelines:
+    src_secret:
+      name: "source"
+  jobs:
+    dst_secret:
+      name: "${resources.pipelines.src_secret.name}"
+`,
+			tfAttrs: migrate.TFStateAttrs{
+				"databricks_pipeline": {"src_secret": json.RawMessage(`{"id": "p1"}`)},
+				"databricks_job":      {"dst_secret": json.RawMessage(`{"id": "j1"}`)},
+			},
+			tfIDs: map[string]string{
+				"resources.pipelines.src_secret": "p1",
+				"resources.jobs.dst_secret":      "j1",
+			},
+			wantErrContains: "key not found",
+			wantTemplate:    `jobs.*: cannot resolve field %q (template %q): jobs.%s field %s: method A: %q: key not found; method B: cannot look up %q: %q: key not found`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := buildStateErrFromTF(t, tc.yaml, tc.tfAttrs, tc.tfIDs)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wantErrContains)
+			assert.Equal(t, tc.wantTemplate, safeerr.ErrorTemplate(err))
+
+			// The names the message carries must not reach the template.
+			for _, secret := range []string{"src_secret", "dst_secret"} {
+				assert.Contains(t, err.Error(), secret, "message should name the resource")
+				assert.NotContains(t, safeerr.ErrorTemplate(err), secret, "template must not")
 			}
 		})
 	}

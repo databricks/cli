@@ -13,6 +13,7 @@ cleanup() {
 trap cleanup EXIT
 
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_migration_telemetry
 trace print_requests.py //pipelines > out.create_requests.json
 trace print_state.py > out.old_state.json
 

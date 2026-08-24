@@ -4,7 +4,16 @@
 # direct_drymigrate_success=false was. Callers clear out.requests.txt
 # themselves; some tests want to keep it for a subsequent print_requests.py
 # assertion.
+# Collapsed with uniq: out.requests.txt may hold several deploys, and repeating
+# an identical telemetry line once per deploy says nothing. Differing values for
+# the same key still both appear.
 print_migration_telemetry() {
-    print_telemetry_bool_values | grep '^direct_' || true
-    print_telemetry_error_templates | grep '^direct_' || true
+    # A test with RecordRequests = false has no requests to read; say so rather
+    # than letting jq complain about the missing file.
+    if [ ! -f out.requests.txt ]; then
+        echo "(no recorded requests)"
+        return
+    fi
+    print_telemetry_bool_values | grep '^direct_' | uniq || true
+    print_telemetry_error_templates | grep '^direct_' | uniq || true
 }

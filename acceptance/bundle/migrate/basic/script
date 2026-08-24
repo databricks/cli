@@ -3,6 +3,7 @@ export DATABRICKS_BUNDLE_ENGINE=
 trace musterr $CLI bundle deployment migrate
 
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_migration_telemetry
 print_state.py -t dev > out.original_state.json
 
 trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 3 resources'
@@ -17,6 +18,7 @@ trace jq '.state."resources.pipelines.test_pipeline".state.tags.volume_storage_l
 # this is expected to warn because state does not match env var, but still succeed using state engine
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_migration_telemetry
 
 title "Should show that it's already migrated"
 trace musterr $CLI bundle deployment migrate

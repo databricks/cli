@@ -2,6 +2,7 @@ export DATABRICKS_BUNDLE_ENGINE=terraform
 
 title "Deploy with terraform (instance_pools is commented out; terraform cannot deploy it)"
 trace $CLI bundle deploy
+trace print_migration_telemetry
 
 title "Add a direct-only resource to the config without deploying it"
 trace update_file.py databricks.yml "#instance_pools" "instance_pools"

@@ -2,6 +2,7 @@ export DATABRICKS_BUNDLE_ENGINE=terraform
 
 # Deploy with terraform (both job_a and job_b)
 trace $CLI bundle deploy
+trace print_migration_telemetry
 
 # Remove job_b from config without deploying the deletion
 grep -v job_b databricks.yml > databricks_tmp.yml && mv databricks_tmp.yml databricks.yml
