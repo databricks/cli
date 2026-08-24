@@ -113,6 +113,18 @@ type BundleDeployExperimental struct {
 
 	// Local cache measurements in milliseconds (compute duration, potential savings, etc.)
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
+
+	// PII-free descriptions of errors, keyed by which error is described
+	// ("error_template", "direct_migrate_error_template", ...). Each value is a
+	// message template produced by libs/safeerr: the format string of the error,
+	// with everything the user supplied left as a verb, plus the safe fields of
+	// any API error at the end of the chain.
+	//
+	// This is the aggregatable counterpart to BundleDeployEvent.ErrorMessage,
+	// which is scrubbed heuristically and still treated as privileged. Values
+	// here are composed of source literals and closed enums only, so they need
+	// no scrubbing. As with BoolValues, a new key needs no proto change.
+	StringValues []StringMapEntry `json:"string_values,omitempty"`
 }
 
 // BundleResourcesMetadata mirrors the universe proto. Per-resource-type counts
@@ -162,4 +174,9 @@ type BoolMapEntry struct {
 type IntMapEntry struct {
 	Key   string `json:"key,omitempty"`
 	Value int64  `json:"value"`
+}
+
+type StringMapEntry struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
 }

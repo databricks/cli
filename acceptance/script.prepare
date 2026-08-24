@@ -123,6 +123,14 @@ print_telemetry_bool_values() {
     jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' out.requests.txt | grep -v '^engine_terraform_' | sort
 }
 
+print_telemetry_error_message() {
+    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | .databricks_cli_log.bundle_deploy_event.error_message // empty )' out.requests.txt
+}
+
+print_telemetry_string_values() {
+    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.string_values // []) ) | map("\(.key) \(.value)") | .[]' out.requests.txt | sort
+}
+
 sethome() {
     local home="$1"
     mkdir -p "$home"

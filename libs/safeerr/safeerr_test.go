@@ -1,0 +1,463 @@
+package safeerr
+
+import (
+	"errors"
+	"fmt"
+	"io/fs"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// unsafeValue appears in every argument that is not marked Safe, so a test can
+// assert it never reaches a template.
+const unsafeValue = "resources.jobs.my_secret_job"
+
+func TestErrorf(t *testing.T) {
+	tests := []struct {
+		name         string
+		format       string
+		args         []any
+		wantMessage  string
+		wantTemplate string
+	}{
+		{
+			name:         "no verbs",
+			format:       "state conversion failed",
+			wantMessage:  "state conversion failed",
+			wantTemplate: "state conversion failed",
+		},
+		{
+			name:         "unsafe string",
+			format:       "%s: getting config",
+			args:         []any{unsafeValue},
+			wantMessage:  unsafeValue + ": getting config",
+			wantTemplate: "%s: getting config",
+		},
+		{
+			name:         "unsafe int",
+			format:       "unsupported deployment state version: %d",
+			args:         []any{7},
+			wantMessage:  "unsupported deployment state version: 7",
+			wantTemplate: "unsupported deployment state version: %d",
+		},
+		{
+			name:         "safe value is substituted",
+			format:       "%s: cannot set resolved value for field %q",
+			args:         []any{unsafeValue, Safe("tasks[0].job_id")},
+			wantMessage:  unsafeValue + `: cannot set resolved value for field "tasks[0].job_id"`,
+			wantTemplate: `%s: cannot set resolved value for field "tasks[0].job_id"`,
+		},
+		{
+			name:         "only safe values",
+			format:       "cannot convert %s to %s",
+			args:         []any{Safe("string"), Safe("int64")},
+			wantMessage:  "cannot convert string to int64",
+			wantTemplate: "cannot convert string to int64",
+		},
+		{
+			name:         "escaped percent is preserved",
+			format:       "100%% of %s",
+			args:         []any{unsafeValue},
+			wantMessage:  "100% of " + unsafeValue,
+			wantTemplate: "100%% of %s",
+		},
+		{
+			name:         "flags and width on an unsafe verb",
+			format:       "%-12s|",
+			args:         []any{"job"},
+			wantMessage:  "job         |",
+			wantTemplate: "%-12s|",
+		},
+		{
+			name:         "flags and width on a safe verb",
+			format:       "%-12s|",
+			args:         []any{Safe("job")},
+			wantMessage:  "job         |",
+			wantTemplate: "job         |",
+		},
+		{
+			name:         "width and precision on a safe verb",
+			format:       "%08.3f",
+			args:         []any{Safe(3.5)},
+			wantMessage:  "0003.500",
+			wantTemplate: "0003.500",
+		},
+		{
+			name:         "plus v on an unsafe verb",
+			format:       "reading state: %+v",
+			args:         []any{struct{ Path string }{unsafeValue}},
+			wantMessage:  "reading state: {Path:" + unsafeValue + "}",
+			wantTemplate: "reading state: %+v",
+		},
+		{
+			name:         "safe bool",
+			format:       "recovery enabled: %v",
+			args:         []any{Safe(true)},
+			wantMessage:  "recovery enabled: true",
+			wantTemplate: "recovery enabled: true",
+		},
+		{
+			name:         "mixed safe and unsafe in order",
+			format:       "%s: %s for %s in %s",
+			args:         []any{Safe("jobs"), unsafeValue, Safe("PrepareState"), "/home/user/bundle"},
+			wantMessage:  "jobs: " + unsafeValue + " for PrepareState in /home/user/bundle",
+			wantTemplate: "jobs: %s for PrepareState in %s",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := Errorf(tt.format, tt.args...)
+			assert.Equal(t, tt.wantMessage, err.Error())
+			assert.Equal(t, tt.wantTemplate, ErrorTemplate(err))
+		})
+	}
+}
+
+// TestErrorfMessageMatchesFmt is the property that makes converting a call site
+// a no-op for every existing consumer, including acceptance test goldens.
+func TestErrorfMessageMatchesFmt(t *testing.T) {
+	tests := []struct {
+		name   string
+		format string
+		safe   []any
+		raw    []any
+	}{
+		{
+			name:   "quoted safe value",
+			format: "field %q",
+			safe:   []any{Safe("tasks[0].job_id")},
+			raw:    []any{"tasks[0].job_id"},
+		},
+		{
+			name:   "safe struct with plus v",
+			format: "%+v",
+			safe:   []any{Safe(struct{ A int }{1})},
+			raw:    []any{struct{ A int }{1}},
+		},
+		{
+			name:   "safe nil",
+			format: "%v",
+			safe:   []any{Safe(nil)},
+			raw:    []any{nil},
+		},
+		{
+			name:   "safe error with s verb",
+			format: "%s",
+			safe:   []any{Safe(fs.ErrNotExist)},
+			raw:    []any{fs.ErrNotExist},
+		},
+		{
+			name:   "too few arguments",
+			format: "%s and %s",
+			safe:   []any{Safe("one")},
+			raw:    []any{"one"},
+		},
+		{
+			name:   "too many arguments",
+			format: "%s",
+			safe:   []any{Safe("one"), Safe("two")},
+			raw:    []any{"one", "two"},
+		},
+		{
+			name:   "wrong verb for type",
+			format: "%d",
+			safe:   []any{Safe("not a number")},
+			raw:    []any{"not a number"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, fmt.Errorf(tt.format, tt.raw...).Error(), Errorf(tt.format, tt.safe...).Error())
+		})
+	}
+}
+
+func TestErrorTemplateChains(t *testing.T) {
+	inner := Errorf("cannot convert %s to %s", Safe("string"), Safe("int64"))
+	middle := Errorf("%s: cannot set resolved value for field %q: %w", unsafeValue, Safe("tasks[0].job_id"), inner)
+	outer := Errorf("%s: SaveState: %w", unsafeValue, middle)
+
+	assert.Equal(t,
+		unsafeValue+": SaveState: "+unsafeValue+`: cannot set resolved value for field "tasks[0].job_id": cannot convert string to int64`,
+		outer.Error())
+	assert.Equal(t,
+		`%s: SaveState: %s: cannot set resolved value for field "tasks[0].job_id": cannot convert string to int64`,
+		ErrorTemplate(outer))
+
+	// Each level still reports its own template.
+	assert.Equal(t, `%s: cannot set resolved value for field "tasks[0].job_id": cannot convert string to int64`, ErrorTemplate(middle))
+	assert.Equal(t, "cannot convert string to int64", ErrorTemplate(inner))
+}
+
+func TestErrorTemplateChainsThroughForeignError(t *testing.T) {
+	// A %w wrapping an error with no template keeps the bare verb.
+	err := Errorf("reading %s: %w", "/home/user/state.json", fs.ErrNotExist)
+
+	assert.Equal(t, "reading /home/user/state.json: "+fs.ErrNotExist.Error(), err.Error())
+	assert.Equal(t, "reading %s: %w", ErrorTemplate(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestErrorTemplateChainsThroughUntemplatedWrap(t *testing.T) {
+	// A plain fmt.Errorf in the middle of the chain contributes nothing, so the
+	// innermost template that is known reaches the top.
+	inner := Errorf("cannot look up %q", Safe("continuous.pause_status"))
+	err := fmt.Errorf("%s: %w", unsafeValue, inner)
+
+	assert.Equal(t, `cannot look up "continuous.pause_status"`, ErrorTemplate(err))
+}
+
+func TestErrorTemplateChainsSeveralWrappedErrors(t *testing.T) {
+	first := Errorf("group %s has no adapter", Safe("quality_monitors"))
+	err := Errorf("%s: %w and %w", unsafeValue, first, fs.ErrPermission)
+
+	assert.Equal(t, "%s: group quality_monitors has no adapter and %w", ErrorTemplate(err))
+	assert.ErrorIs(t, err, fs.ErrPermission)
+	assert.ErrorIs(t, err, first)
+}
+
+func TestErrorTemplateWithoutTemplate(t *testing.T) {
+	assert.Empty(t, ErrorTemplate(nil))
+	assert.Empty(t, ErrorTemplate(errors.New(unsafeValue)))
+	assert.Empty(t, ErrorTemplate(fmt.Errorf("reading %s", unsafeValue)))
+	assert.Empty(t, ErrorTemplate(fs.ErrNotExist))
+}
+
+func TestNew(t *testing.T) {
+	err := New("state conversion failed")
+	assert.Equal(t, "state conversion failed", err.Error())
+	assert.Equal(t, "state conversion failed", ErrorTemplate(err))
+}
+
+func TestNewDoesNotFormat(t *testing.T) {
+	// New takes a literal message, so verbs in it are neither expanded nor lost.
+	err := New("100% of %s attempts failed")
+	assert.Equal(t, "100% of %s attempts failed", err.Error())
+	assert.Equal(t, "100% of %s attempts failed", ErrorTemplate(err))
+}
+
+func TestErrorTemplateFallsBackToRawFormat(t *testing.T) {
+	tests := []struct {
+		name   string
+		format string
+		args   []any
+	}{
+		{name: "explicit argument index", format: "%[1]s and %[1]s", args: []any{Safe("jobs")}},
+		{name: "star width", format: "%*d", args: []any{Safe(5), Safe(42)}},
+		{name: "star precision", format: "%.*f", args: []any{Safe(2), Safe(3.5)}},
+		{name: "dangling percent", format: "done: 100%", args: nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// The format string is a source literal, so reporting it verbatim is
+			// safe even though its verbs were not analysed.
+			assert.Equal(t, tt.format, ErrorTemplate(Errorf(tt.format, tt.args...)))
+		})
+	}
+}
+
+func TestErrorsIs(t *testing.T) {
+	sentinel := errors.New("sentinel")
+	err := Errorf("%s: %w", unsafeValue, sentinel)
+
+	assert.ErrorIs(t, err, sentinel)
+	assert.ErrorIs(t, Errorf("outer: %w", err), sentinel)
+	assert.NotErrorIs(t, Errorf("no wrapping: %s", sentinel), sentinel)
+}
+
+func TestErrorsAsType(t *testing.T) {
+	err := Errorf("%s: %w", unsafeValue, &fs.PathError{Op: "open", Path: "/tmp/x", Err: fs.ErrNotExist})
+
+	pathErr, ok := errors.AsType[*fs.PathError](err)
+	require.True(t, ok)
+	assert.Equal(t, "open", pathErr.Op)
+}
+
+// TestTemplateNeverLeaksUnsafeValues is the security property of the package:
+// nothing that was not marked Safe reaches the template.
+func TestTemplateNeverLeaksUnsafeValues(t *testing.T) {
+	const secret = "SECRET-a1b2c3"
+
+	errs := []error{
+		Errorf("%s", secret),
+		Errorf("%q: %v", secret, errors.New(secret)),
+		Errorf("%s: %w", secret, errors.New(secret)),
+		Errorf("%s: %w", secret, Errorf("inner %s: %w", secret, fs.ErrNotExist)),
+		Errorf("%v", struct{ Name string }{secret}),
+		Errorf("%s and %s", Safe("jobs"), secret),
+		Errorf("%[1]s", secret),
+		Errorf("%*s", Safe(4), secret),
+	}
+
+	for _, err := range errs {
+		require.Contains(t, err.Error(), secret, "message should carry the value")
+		assert.NotContains(t, ErrorTemplate(err), secret, "template must not carry the value")
+	}
+}
+
+func TestParseVerb(t *testing.T) {
+	tests := []struct {
+		format   string
+		wantSpec string
+		wantVerb byte
+		wantNext int
+		wantOk   bool
+	}{
+		{format: "%s", wantSpec: "%s", wantVerb: 's', wantNext: 2, wantOk: true},
+		{format: "%%", wantSpec: "%%", wantVerb: '%', wantNext: 2, wantOk: true},
+		{format: "%+v", wantSpec: "%+v", wantVerb: 'v', wantNext: 3, wantOk: true},
+		{format: "%#v", wantSpec: "%#v", wantVerb: 'v', wantNext: 3, wantOk: true},
+		{format: "%-12q", wantSpec: "%-12q", wantVerb: 'q', wantNext: 5, wantOk: true},
+		{format: "%08.3f", wantSpec: "%08.3f", wantVerb: 'f', wantNext: 6, wantOk: true},
+		{format: "% d", wantSpec: "% d", wantVerb: 'd', wantNext: 3, wantOk: true},
+		{format: "%w", wantSpec: "%w", wantVerb: 'w', wantNext: 2, wantOk: true},
+		{format: "%[1]s", wantOk: false},
+		{format: "%*d", wantOk: false},
+		{format: "%.*f", wantOk: false},
+		{format: "%", wantOk: false},
+		{format: "%-", wantOk: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.format, func(t *testing.T) {
+			spec, verb, next, ok := parseVerb(tt.format, 0)
+			assert.Equal(t, tt.wantOk, ok)
+			if !tt.wantOk {
+				return
+			}
+			assert.Equal(t, tt.wantSpec, spec)
+			assert.Equal(t, string(tt.wantVerb), string(verb))
+			assert.Equal(t, tt.wantNext, next)
+		})
+	}
+}
+
+// TestErrorTemplateIsStableAcrossCalls guards against expand mutating state.
+func TestErrorTemplateIsStableAcrossCalls(t *testing.T) {
+	err := Errorf("%s: field %q: %w", unsafeValue, Safe("id"), Errorf("inner %d", Safe(2)))
+	first := ErrorTemplate(err)
+	assert.Equal(t, first, ErrorTemplate(err))
+	assert.Equal(t, first, ErrorTemplate(err))
+}
+
+// TestUnsafeArgsAreNotRetained checks that unsafe values are dropped at
+// construction rather than kept alive inside the error for later inspection.
+func TestUnsafeArgsAreNotRetained(t *testing.T) {
+	err := Errorf("%s: %d", unsafeValue, 42)
+
+	te, ok := errors.AsType[*templateError](err)
+	require.True(t, ok)
+	require.Len(t, te.args, 2)
+	for i, arg := range te.args {
+		assert.Nil(t, arg, "argument %d should not be retained", i)
+	}
+}
+
+func TestSafeArgsAreRetainedForTemplating(t *testing.T) {
+	err := Errorf("%s: %s", Safe("jobs"), unsafeValue)
+
+	te, ok := errors.AsType[*templateError](err)
+	require.True(t, ok)
+	require.Len(t, te.args, 2)
+	assert.Equal(t, safeValue{v: "jobs"}, te.args[0])
+	assert.Nil(t, te.args[1])
+}
+
+func TestErrorTemplateDeepChain(t *testing.T) {
+	err := New("root cause")
+	for range 5 {
+		err = Errorf("%s: %w", unsafeValue, err)
+	}
+
+	assert.Equal(t, strings.Repeat("%s: ", 5)+"root cause", ErrorTemplate(err))
+}
+
+// safeStringerKey stands in for a resource key: the full value carries a
+// user-chosen name, the stand-in keeps only the group.
+type safeStringerKey string
+
+func (k safeStringerKey) SafeString() string { return "resources.jobs.*" }
+
+// safeStringerErr implements both error and SafeStringer, which resolves as
+// error so that %w keeps chaining.
+type safeStringerErr struct{}
+
+func (safeStringerErr) Error() string      { return "boom" }
+func (safeStringerErr) SafeString() string { return "SHOULD-NOT-APPEAR" }
+
+func TestSafeStringer(t *testing.T) {
+	key := safeStringerKey("resources.jobs.my_job")
+
+	tests := []struct {
+		name         string
+		format       string
+		args         []any
+		wantMessage  string
+		wantTemplate string
+	}{
+		{
+			name:         "s verb",
+			format:       "cannot update %s: %w",
+			args:         []any{key, fs.ErrPermission},
+			wantMessage:  "cannot update resources.jobs.my_job: " + fs.ErrPermission.Error(),
+			wantTemplate: "cannot update resources.jobs.*: %w",
+		},
+		{
+			name:         "q verb quotes the stand-in like the value",
+			format:       "%q not found",
+			args:         []any{key},
+			wantMessage:  `"resources.jobs.my_job" not found`,
+			wantTemplate: `"resources.jobs.*" not found`,
+		},
+		{
+			name:         "alongside Safe and unsafe args",
+			format:       "cannot %s %s: field %q: %s",
+			args:         []any{Safe("update"), key, Safe("tasks[0].job_id"), unsafeValue},
+			wantMessage:  "cannot update resources.jobs.my_job: field \"tasks[0].job_id\": " + unsafeValue,
+			wantTemplate: `cannot update resources.jobs.*: field "tasks[0].job_id": %s`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := Errorf(tt.format, tt.args...)
+			assert.Equal(t, tt.wantMessage, err.Error())
+			assert.Equal(t, tt.wantTemplate, ErrorTemplate(err))
+		})
+	}
+}
+
+func TestSafeStringerValueIsNotRetained(t *testing.T) {
+	err := Errorf("%s", safeStringerKey("resources.jobs.my_job"))
+
+	te, ok := errors.AsType[*templateError](err)
+	require.True(t, ok)
+	require.Len(t, te.args, 1)
+	// Only the stand-in survives; the key itself is gone.
+	assert.Equal(t, safeValue{v: "resources.jobs.*"}, te.args[0])
+}
+
+func TestSafeStringerErrorIsTreatedAsError(t *testing.T) {
+	// Both interfaces: error wins, so %w still chains and the stand-in is unused.
+	inner := Errorf("inner %d", Safe(1))
+	err := Errorf("outer: %w", inner)
+	assert.Equal(t, "outer: inner 1", ErrorTemplate(err))
+
+	err = Errorf("outer: %w", safeStringerErr{})
+	assert.Equal(t, "outer: %w", ErrorTemplate(err))
+	assert.NotContains(t, ErrorTemplate(err), "SHOULD-NOT-APPEAR")
+}
+
+func TestSafeStringerOutranksSafe(t *testing.T) {
+	// Wrapping a SafeStringer in Safe must not put its user-supplied part back
+	// into the template.
+	err := Errorf("%s", Safe(safeStringerKey("resources.jobs.my_job")))
+	assert.Equal(t, "resources.jobs.my_job", err.Error())
+	assert.Equal(t, "resources.jobs.*", ErrorTemplate(err))
+}

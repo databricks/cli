@@ -12,6 +12,12 @@ title "Opt in via env var; inject 403 on the resources.json push so commit fails
 fault.py "POST /api/2.0/workspace-files/import-file/Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle/default/state/resources.json" 403 0 1
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 trace print_migration_telemetry
+
+# Record the migration error fields exactly as they leave the machine. The deploy
+# itself succeeded, so error_message is absent and the only thing reported about
+# the failed migration is the PII-free template — note the workspace path and
+# user name in the warning above are nowhere in it.
+cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | {error_message: .entry.databricks_cli_log.bundle_deploy_event.error_message, string_values: .entry.databricks_cli_log.bundle_deploy_event.experimental.string_values}' > out.telemetry.txt
 rm -f out.requests.txt
 
 title "Local state was NOT rewritten (still terraform)\n"

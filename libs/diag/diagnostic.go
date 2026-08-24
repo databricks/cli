@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/safeerr"
 )
 
 type Diagnostic struct {
@@ -28,6 +29,15 @@ type Diagnostic struct {
 
 	// A diagnostic ID. Only used for select diagnostic messages.
 	ID ID
+
+	// ErrorTemplate is a PII-free description of the error this diagnostic came
+	// from, suitable for telemetry: the message template of a safeerr error plus
+	// the safe fields of any API error at the end of its chain. Empty when the
+	// diagnostic was not built from an error, or from an error carrying neither.
+	//
+	// Unlike Summary, this is never user-authored, so it can be aggregated
+	// across the fleet without scrubbing. See libs/safeerr.
+	ErrorTemplate string
 }
 
 // Errorf creates a new error diagnostic.
@@ -47,10 +57,30 @@ func FromErr(err error) Diagnostics {
 	}
 	return []Diagnostic{
 		{
-			Severity: Error,
-			Summary:  FormatAPIErrorSummary(err),
-			Detail:   FormatAPIErrorDetails(err),
+			Severity:      Error,
+			Summary:       FormatAPIErrorSummary(err),
+			Detail:        FormatAPIErrorDetails(err),
+			ErrorTemplate: ErrorTemplate(err),
 		},
+	}
+}
+
+// ErrorTemplate builds the PII-free description recorded in
+// Diagnostic.ErrorTemplate, for callers holding an error rather than a
+// diagnostic. The two halves are independent: a CLI error carries a template but
+// may wrap no API error, and an API error reached without any safeerr wrapping
+// has safe fields but no template.
+func ErrorTemplate(err error) string {
+	template := safeerr.ErrorTemplate(err)
+	apiDescription := SafeAPIErrorDescription(err)
+
+	switch {
+	case apiDescription == "":
+		return template
+	case template == "":
+		return apiDescription
+	default:
+		return template + " [" + apiDescription + "]"
 	}
 }
 

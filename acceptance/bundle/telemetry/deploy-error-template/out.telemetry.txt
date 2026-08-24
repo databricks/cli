@@ -1,0 +1,9 @@
+{
+  "error_message": "access denied: [REDACTED_WORKSPACE_PATH](json) (403 INJECTED)",
+  "string_values": [
+    {
+      "key": "error_template",
+      "value": "INJECTED 403"
+    }
+  ]
+}

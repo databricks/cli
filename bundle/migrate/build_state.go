@@ -2,7 +2,6 @@ package migrate
 
 import (
 	"context"
-	"fmt"
 	"maps"
 	"slices"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/safeerr"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -64,7 +64,7 @@ func BuildStateFromTF(
 
 		group := config.GetResourceTypeFromKey(node)
 		if group == "" {
-			return warningsSeen, fmt.Errorf("cannot determine resource type for %q", node)
+			return warningsSeen, safeerr.Errorf("cannot determine resource type for %q", config.ResourceKey(node))
 		}
 
 		adapter, ok := adapters[group]
@@ -76,22 +76,22 @@ func BuildStateFromTF(
 
 		inputConfig, err := configRoot.GetResourceConfig(node)
 		if err != nil {
-			return warningsSeen, fmt.Errorf("%s: getting config: %w", node, err)
+			return warningsSeen, safeerr.Errorf("%s: getting config: %w", config.ResourceKey(node), err)
 		}
 
 		inputSV, err := adapter.PrepareInputConfig(inputConfig, node)
 		if err != nil {
-			return warningsSeen, fmt.Errorf("%s: PrepareInputConfig: %w", node, err)
+			return warningsSeen, safeerr.Errorf("%s: PrepareInputConfig: %w", config.ResourceKey(node), err)
 		}
 
 		newStateValue, err := adapter.PrepareState(inputSV.Value)
 		if err != nil {
-			return warningsSeen, fmt.Errorf("%s: PrepareState: %w", node, err)
+			return warningsSeen, safeerr.Errorf("%s: PrepareState: %w", config.ResourceKey(node), err)
 		}
 
 		refs, err := direct.ExtractReferences(configRoot.Value(), node, adapter.StateType())
 		if err != nil {
-			return warningsSeen, fmt.Errorf("%s: extracting references: %w", node, err)
+			return warningsSeen, safeerr.Errorf("%s: extracting references: %w", config.ResourceKey(node), err)
 		}
 		maps.Copy(refs, inputSV.Refs)
 
@@ -142,7 +142,7 @@ func BuildStateFromTF(
 		// is absent there (model_serving_endpoints, database_instances).
 		if _, ok := sv.Refs["object_id"]; ok {
 			if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "object_id"), id); err != nil {
-				return warningsSeen, fmt.Errorf("%s: setting object_id: %w", node, err)
+				return warningsSeen, safeerr.Errorf("%s: setting object_id: %w", config.ResourceKey(node), err)
 			}
 			delete(sv.Refs, "object_id")
 		}
@@ -169,14 +169,14 @@ func BuildStateFromTF(
 		for _, pending := range pendingRefs {
 			fieldPath, err := structpath.ParsePath(pending.fieldPathStr)
 			if err != nil {
-				return warningsSeen, fmt.Errorf("%s: parsing field path %q: %w", node, pending.fieldPathStr, err)
+				return warningsSeen, safeerr.Errorf("%s: parsing field path %q: %w", config.ResourceKey(node), pending.fieldPathStr, err)
 			}
 
 			// ResolveFieldRef returns the fully resolved value for this field,
 			// using either Method A (TF state lookup) or Method B (template evaluation).
 			value, warned, err := ResolveFieldRef(ctx, tfAttrs, srcGroup, srcName, fieldPath, pending.refTemplate, warnPrefix)
 			if err != nil {
-				return warningsSeen, fmt.Errorf("%s: cannot resolve field %q (template %q): %w", node, pending.fieldPathStr, pending.refTemplate, err)
+				return warningsSeen, safeerr.Errorf("%s: cannot resolve field %q (template %q): %w", config.ResourceKey(node), pending.fieldPathStr, pending.refTemplate, err)
 			}
 			if warned {
 				warningsSeen = true
@@ -184,13 +184,13 @@ func BuildStateFromTF(
 
 			// Set the resolved value directly and remove the ref entry.
 			if err := structaccess.Set(sv.Value, fieldPath, value); err != nil {
-				return warningsSeen, fmt.Errorf("%s: cannot set resolved value for field %q: %w", node, pending.fieldPathStr, err)
+				return warningsSeen, safeerr.Errorf("%s: cannot set resolved value for field %q: %w", config.ResourceKey(node), pending.fieldPathStr, err)
 			}
 			delete(sv.Refs, pending.fieldPathStr)
 		}
 
 		if len(sv.Refs) > 0 {
-			return warningsSeen, fmt.Errorf("%s: unresolved references: %v", node, sv.Refs)
+			return warningsSeen, safeerr.Errorf("%s: unresolved references: %v", config.ResourceKey(node), sv.Refs)
 		}
 
 		// Handle etag for dashboards: read it directly from TF state attributes.
@@ -200,13 +200,13 @@ func BuildStateFromTF(
 		if v, err := LookupTFField(tfAttrs, group, srcName, structpath.NewStringKey(nil, "etag")); err == nil {
 			if etag, ok := v.(string); ok && etag != "" {
 				if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag); err != nil {
-					return warningsSeen, fmt.Errorf("%s: cannot set etag: %w", node, err)
+					return warningsSeen, safeerr.Errorf("%s: cannot set etag: %w", config.ResourceKey(node), err)
 				}
 			}
 		}
 
 		if err := stateDB.SaveState(node, id, sv.Value, dependsOn); err != nil {
-			return warningsSeen, fmt.Errorf("%s: SaveState: %w", node, err)
+			return warningsSeen, safeerr.Errorf("%s: SaveState: %w", config.ResourceKey(node), err)
 		}
 	}
 

@@ -75,6 +75,7 @@ type Metrics struct {
 	TargetCount                 int64
 	DeploymentId                uuid.UUID
 	BoolValues                  []protos.BoolMapEntry
+	StringValues                []protos.StringMapEntry
 	PythonAddedResourcesCount   int64
 	PythonUpdatedResourcesCount int64
 	ExecutionTimes              []protos.IntMapEntry
@@ -103,6 +104,19 @@ func (m *Metrics) SetBoolValue(key string, value bool) {
 		}
 	}
 	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
+}
+
+// SetStringValue sets the value of a string metric, replacing any previous value
+// for the same key. Values must be PII-free: this map is reported without
+// scrubbing. See protos.BundleDeployExperimental.StringValues.
+func (m *Metrics) SetStringValue(key, value string) {
+	for i, v := range m.StringValues {
+		if v.Key == key {
+			m.StringValues[i].Value = value
+			return
+		}
+	}
+	m.StringValues = append(m.StringValues, protos.StringMapEntry{Key: key, Value: value})
 }
 
 func (m *Metrics) AddBoolValue(key string, value bool) {

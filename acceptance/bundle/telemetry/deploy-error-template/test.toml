@@ -1,0 +1,5 @@
+# The injected path is the direct-engine state file (state/resources.json), so
+# this runs on the direct engine only. The path is fixed, so the bundle name must
+# be stable (test-bundle, not $UNIQUE_NAME).
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+Ignore = [".databricks"]

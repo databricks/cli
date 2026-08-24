@@ -296,6 +296,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				TargetCount:                  b.Metrics.TargetCount,
 				WorkspaceArtifactPathType:    artifactPathType,
 				BoolValues:                   b.Metrics.BoolValues,
+				StringValues:                 b.Metrics.StringValues,
 				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
 				PythonAddedResourcesCount:    b.Metrics.PythonAddedResourcesCount,
 				PythonUpdatedResourcesCount:  b.Metrics.PythonUpdatedResourcesCount,

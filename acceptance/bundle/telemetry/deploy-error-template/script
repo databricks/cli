@@ -1,0 +1,20 @@
+# error_message is scrubbed heuristically and stays privileged; error_template is
+# the PII-free counterpart telemetry can aggregate on. Fail the deploy with an
+# API error to show both: no safeerr wrapping is involved here, so the whole
+# template comes from the error's structured fields.
+fault.py "POST /api/2.0/workspace-files/import-file/Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle/default/state/resources.json" 403 0 1
+
+# -qq: the file and resource summaries are irrelevant here, and the uploaded-file
+# count is unstable because the harness is still writing output.txt and
+# out.requests.txt while the deploy syncs.
+errcode trace $CLI bundle deploy -qq
+
+title "The message carries the workspace path and the user; the template carries neither\n"
+trace print_telemetry_error_message
+trace print_telemetry_string_values
+
+# Record the error fields exactly as they leave the machine, so the golden shows
+# the payload rather than a helper's rendering of it.
+cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | {error_message: .entry.databricks_cli_log.bundle_deploy_event.error_message, string_values: .entry.databricks_cli_log.bundle_deploy_event.experimental.string_values}' > out.telemetry.txt
+
+rm out.requests.txt
