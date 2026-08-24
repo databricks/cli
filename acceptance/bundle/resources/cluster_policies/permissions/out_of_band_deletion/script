@@ -1,0 +1,22 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+policy_id="$(read_id.py test_cluster_policy)"
+
+title "Permissions are set on the live policy"
+trace $CLI api get /api/2.0/permissions/cluster-policies/$policy_id | jq '{object_type, access_control_list}'
+
+title "Delete the policy out of band"
+trace $CLI cluster-policies delete "$policy_id"
+
+# v1 quirk: the permissions endpoint keeps returning the ACLs for a deleted
+# cluster policy; it does not 404 the way a v2 cascade-deleted resource would.
+title "Permissions API still returns the ACLs for the deleted policy (no 404)"
+trace $CLI api get /api/2.0/permissions/cluster-policies/$policy_id | jq '{object_type, access_control_list}'
+
+title "Plan recreates the gone policy"
+trace $CLI bundle plan

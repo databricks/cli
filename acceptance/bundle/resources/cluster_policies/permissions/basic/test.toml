@@ -1,5 +1,0 @@
-# Local-only: this deterministic test uses a fixed policy name and does not mask
-# the server id, so it is not safe for concurrent cloud runs. Cloud coverage of
-# the permission behavior lives in the levels test.
-Cloud = false
-Ignore = [".databricks", "databricks.yml", "updated.yml"]

@@ -1,5 +1,5 @@
 bundle:
-  name: test_cluster_policy_permissions
+  name: test_cluster_policy_permissions_recreate
 
 resources:
   cluster_policies:
@@ -9,5 +9,3 @@ resources:
       permissions:
         - level: CAN_USE
           group_name: users
-        - level: CAN_USE # TO_REMOVE
-          user_name: viewer@example.com # TO_REMOVE
