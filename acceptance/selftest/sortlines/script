@@ -1,10 +1,14 @@
-# Each run of "Fruit:" lines is sorted before the output is compared, so this test passes
-# no matter which order the lines are printed in. Everything else stays put.
-echo "Fruit: pear"
-echo "Fruit: apple"
+# Each run of consecutive "Fruit:" lines is sorted on its own, and a non-matching line ends
+# the run. The values are picked so that this is visible in the output: the first block
+# sorts late in the alphabet and the second sorts early, so if the two blocks were sorted
+# together, "apple" and "banana" would move up past "Not a fruit: rock".
+echo "Fruit: zucchini"
+echo "Fruit: quince"
 echo "Not a fruit: rock"
-echo "Fruit: cherry"
 echo "Fruit: banana"
+echo "Fruit: apple"
+echo "Not a fruit: spoon"
+echo "Fruit: melon"
 
 # deploy_actions is disabled here, so these keep the order they were printed in.
 echo "Created jobs.z"
