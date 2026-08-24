@@ -1,0 +1,38 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+deployed_state="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle-${UNIQUE_NAME}/default/state"
+other_state="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/other-bundle/default/state"
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Modify the job remotely"
+echo
+edit_resource.py jobs $job_id <<INNER
+r["max_concurrent_runs"] = 5
+INNER
+
+# The local cache is flushed before each sync so the state has to come from the
+# workspace path under test rather than from the deploy that just ran.
+title "--state-path at the deployment's own state folder detects the drift"
+echo
+rm -rf .databricks
+$CLI bundle config-remote-sync --state-path "$deployed_state" --select-ids "jobs:$job_id"
+
+title "A relative --state-path is rejected before any state is read"
+errcode trace $CLI bundle config-remote-sync --state-path relative/state
+
+title "A ~-relative --state-path is rejected too"
+errcode trace $CLI bundle config-remote-sync --state-path '~/.bundle/test/default/state'
+
+title "--state-path elsewhere does not see the deployment"
+echo
+rm -rf .databricks
+errcode trace $CLI bundle config-remote-sync --state-path "$other_state" --select-ids "jobs:$job_id" > out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1

@@ -1,0 +1,5 @@
+
+>>> [CLI] bundle config-remote-sync --state-path /Workspace/Users/[USERNAME]/.bundle/other-bundle/default/state --select-ids jobs:[MY_JOB_ID]
+Error: state snapshot not available: resources state snapshot not found remotely at resources-config-sync-snapshot.json: state snapshot not found
+
+Exit code: 1

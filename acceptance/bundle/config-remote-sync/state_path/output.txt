@@ -1,0 +1,36 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.my_job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Modify the job remotely
+
+=== --state-path at the deployment's own state folder detects the drift
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  max_concurrent_runs: replace
+
+
+
+=== A relative --state-path is rejected before any state is read
+>>> [CLI] bundle config-remote-sync --state-path relative/state
+Error: --state-path must be an absolute workspace path, got "relative/state"
+
+Exit code: 1
+
+=== A ~-relative --state-path is rejected too
+>>> [CLI] bundle config-remote-sync --state-path ~/.bundle/test/default/state
+Error: --state-path must be an absolute workspace path, got "~/.bundle/test/default/state"
+
+Exit code: 1
+
+=== --state-path elsewhere does not see the deployment
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

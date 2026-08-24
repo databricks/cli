@@ -8,6 +8,7 @@ import (
 	"maps"
 	"runtime"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/configsync"
@@ -25,6 +26,7 @@ import (
 func newConfigRemoteSyncCommand() *cobra.Command {
 	var save bool
 	var selectIDs []string
+	var statePath string
 
 	cmd := &cobra.Command{
 		Use:   "config-remote-sync",
@@ -44,16 +46,24 @@ Examples:
   databricks bundle config-remote-sync --save
 
   # Restrict the sync to a single resource by its type and deployed resource ID
-  databricks bundle config-remote-sync --select-ids jobs:123456789 --save`,
+  databricks bundle config-remote-sync --select-ids jobs:123456789 --save
+
+  # Read the deployment state from an explicit workspace location
+  databricks bundle config-remote-sync --state-path /Workspace/Shared/.bundle/my_bundle/dev/state`,
 		Hidden: true, // Used by DABs in the Workspace only
 	}
 
 	cmd.Flags().BoolVar(&save, "save", false, "Write updated config files to disk")
 	cmd.Flags().StringSliceVar(&selectIDs, "select-ids", nil, "Sync only the given resources, each as <type>:<id> (e.g. jobs:123456789). Can be repeated or comma-separated.")
+	cmd.Flags().StringVar(&statePath, "state-path", "", "Absolute workspace path of the deployment state folder to read, overriding workspace.state_path. Use when the state does not live under the path this command resolves by default, e.g. because the bundle was deployed by another user.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if runtime.GOOS == "windows" {
 			return errors.New("config-remote-sync command is not supported on Windows")
+		}
+
+		if err := validateStatePathFlag(statePath); err != nil {
+			return err
 		}
 
 		stats := configsync.Stats{Save: save}
@@ -74,6 +84,13 @@ Examples:
 			AlwaysPull: true,
 			InitFunc: func(b *bundle.Bundle) {
 				b.SkipLocalFileValidation = true
+
+				// InitFunc runs before phases.Initialize, so this assignment takes
+				// precedence over DefineDefaultWorkspacePaths (which only fills an
+				// empty state_path) while still passing through PrependWorkspacePrefix.
+				if statePath != "" {
+					b.Config.Workspace.StatePath = statePath
+				}
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 				stats.Engine = stateDesc.Engine
@@ -180,4 +197,17 @@ Examples:
 	}
 
 	return cmd
+}
+
+// validateStatePathFlag rejects a --state-path that would resolve against whoever runs
+// the command. A caller-relative state folder is the failure this flag exists to
+// override, so silently expanding "~" or a relative path here would reintroduce it.
+func validateStatePathFlag(statePath string) error {
+	if statePath == "" {
+		return nil
+	}
+	if strings.HasPrefix(statePath, "~") || !strings.HasPrefix(statePath, "/") {
+		return fmt.Errorf("--state-path must be an absolute workspace path, got %q", statePath)
+	}
+	return nil
 }
