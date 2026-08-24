@@ -133,6 +133,13 @@ func TestReconcileBranchExpiration(t *testing.T) {
 			wantErr:        "set more than once",
 		},
 		{
+			name:            "no-expiry and json expiration conflict",
+			noExpiryChanged: true,
+			noExpiry:        true,
+			jsonExpiration:  true,
+			wantErr:         "set more than once",
+		},
+		{
 			name:            "no-expiry=false is rejected",
 			noExpiryChanged: true,
 			noExpiry:        false,
