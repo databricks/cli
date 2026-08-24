@@ -31,6 +31,18 @@ func mkdirs(t *testing.T, baseURL, path string) {
 	require.Equal(t, 200, resp.StatusCode)
 }
 
+func workspaceDelete(t *testing.T, baseURL, path string, recursive bool) int {
+	t.Helper()
+	body, err := json.Marshal(map[string]any{"path": path, "recursive": recursive})
+	require.NoError(t, err)
+	req, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/workspace/delete", strings.NewReader(string(body)))
+	req.Header.Set("Authorization", "Bearer test-token")
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	return resp.StatusCode
+}
+
 func getStatus(t *testing.T, baseURL, path string) int {
 	t.Helper()
 	req, _ := http.NewRequest(http.MethodGet, baseURL+"/api/2.0/workspace/get-status?path="+path, nil)
@@ -51,6 +63,29 @@ func TestWorkspaceImportRejectsMissingParent(t *testing.T) {
 
 	mkdirs(t, server.URL, "/test-dir")
 	assert.Equal(t, 200, importFile(t, server.URL, "/test-dir/file.py", "content"))
+}
+
+// A non-recursive delete only removes a directory that is truly empty, which is what
+// lets a caller clean up a parent directory without touching one still in use.
+func TestWorkspaceDeleteNonRecursiveRequiresEmptyDirectory(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	// A subdirectory keeps the parent.
+	mkdirs(t, server.URL, "/a/b/c")
+	assert.Equal(t, 400, workspaceDelete(t, server.URL, "/a/b", false))
+	assert.Equal(t, 200, getStatus(t, server.URL, "/a/b"))
+
+	// So does a file.
+	mkdirs(t, server.URL, "/f/dir")
+	require.Equal(t, 200, importFile(t, server.URL, "/f/dir/file.py", "content"))
+	assert.Equal(t, 400, workspaceDelete(t, server.URL, "/f/dir", false))
+	assert.Equal(t, 200, getStatus(t, server.URL, "/f/dir"))
+
+	// Emptied out, both go.
+	assert.Equal(t, 200, workspaceDelete(t, server.URL, "/a/b/c", false))
+	assert.Equal(t, 200, workspaceDelete(t, server.URL, "/a/b", false))
+	assert.Equal(t, 404, getStatus(t, server.URL, "/a/b"))
 }
 
 // mkdirs creates all intermediate directories, matching "mkdir -p".
