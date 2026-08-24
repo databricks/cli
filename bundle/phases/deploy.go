@@ -311,16 +311,17 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
-
-	// Report what was deployed, mirroring "bundle plan". Printed last so it does not
-	// precede (and appear to vouch for) the postdeploy script's output. Printed even
-	// if that script fails: the resources were already applied successfully by then,
-	// so the counts are accurate, and the script's error still propagates. Earlier
-	// failures report the files only, since the plan counts would then describe what
-	// was intended rather than what was applied.
+	// Report what was deployed, mirroring "bundle plan". Printed before the
+	// postdeploy script so the deploy's own report is not interleaved with
+	// post-deploy output: the script's lines and the migration's below both follow
+	// it, and neither reads as belonging to the deploy. The resources were applied
+	// above, so the counts are accurate however the script turns out, and its error
+	// still propagates. Earlier failures report the files only, since the plan
+	// counts would then describe what was intended rather than what was applied.
 	filesReported = true
 	logDeploySummary(ctx, b, plan)
+
+	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 
 	// Migrate the state to the direct engine, if the user opted in (via
 	// bundle.engine or DATABRICKS_BUNDLE_ENGINE) and a dry-run of the migration
@@ -335,7 +336,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// Gated on the deploy alone, which the early return above already guarantees
 	// — not on the postdeploy script. The resources were applied before that
 	// script ran, so the state is worth migrating even if it failed, the same
-	// reasoning that prints the summary regardless.
+	// reasoning that prints the summary ahead of it.
 	if !stateEngine.IsDirect() {
 		statemgmt.MigrateToDirect(ctx, b, requestedEngine)
 	}
