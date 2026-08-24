@@ -1,4 +1,5 @@
 
+=== API deploy with an explicit app name
 >>> [CLI] apps deploy test-app --no-wait
 {
   "deployment_id": "dep-123",
@@ -10,9 +11,36 @@
   }
 }
 
+=== API flags infer the app name from the bundle
+>>> [CLI] apps deploy --source-code-path /Workspace/apps/inferred --no-wait
+{
+  "deployment_id": "dep-456",
+  "mode": "SNAPSHOT",
+  "source_code_path": "/Workspace/apps/inferred",
+  "status": {
+    "message": "Deployment pending",
+    "state": "PENDING"
+  }
+}
+
+=== API and bundle deploy flags cannot be mixed
+>>> musterr [CLI] apps deploy --source-code-path /Workspace/apps/inferred --force
+Error: API deploy flags --source-code-path cannot be combined with bundle deploy flags --force
+
+=== API control flags do not select API mode
+>>> musterr [CLI] apps deploy --no-wait
+Error: API deploy flags --no-wait do not select API mode; provide APP_NAME or an API request flag such as --source-code-path, or omit them to use bundle deploy
+
 >>> print_requests.py //apps
 {
   "method": "POST",
   "path": "/api/2.0/apps/test-app/deployments",
   "body": {}
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/myapp/deployments",
+  "body": {
+    "source_code_path": "/Workspace/apps/inferred"
+  }
 }

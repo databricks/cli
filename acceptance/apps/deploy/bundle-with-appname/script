@@ -1,5 +1,15 @@
-# Test: apps deploy with APP_NAME in a bundle directory
-# Expected: Falls back to API deploy (ignores bundle, no validation)
+# Test: apps deploy API routing in a bundle directory
+# Expected: explicit names and API flags use direct deploy; incompatible flags fail
+title "API deploy with an explicit app name"
 trace $CLI apps deploy test-app --no-wait
+
+title "API flags infer the app name from the bundle"
+trace $CLI apps deploy --source-code-path /Workspace/apps/inferred --no-wait
+
+title "API and bundle deploy flags cannot be mixed"
+trace musterr $CLI apps deploy --source-code-path /Workspace/apps/inferred --force
+
+title "API control flags do not select API mode"
+trace musterr $CLI apps deploy --no-wait
 
 trace print_requests.py //apps

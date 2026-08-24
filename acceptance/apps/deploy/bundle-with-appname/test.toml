@@ -14,3 +14,17 @@ Response.Body = '''
   }
 }
 '''
+
+[[Server]]
+Pattern = "POST /api/2.0/apps/myapp/deployments"
+Response.Body = '''
+{
+  "deployment_id": "dep-456",
+  "source_code_path": "/Workspace/apps/inferred",
+  "mode": "SNAPSHOT",
+  "status": {
+    "state": "PENDING",
+    "message": "Deployment pending"
+  }
+}
+'''
