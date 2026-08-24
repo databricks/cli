@@ -1,0 +1,29 @@
+
+=== Deploy an app with UC TABLE and VOLUME securables
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/apps-uc-securable-drift/default/files...
+Created apps.myapp
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Re-plan is clean: the TABLE securable's server-computed securable_kind is output-only and must not drift
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== securable_kind is classified output-only (skip); the VOLUME securable has none
+>>> [CLI] bundle plan -o json
+{
+  "resources[0].uc_securable.securable_kind": {
+    "action": "skip",
+    "reason": "output_only",
+    "remote": "TABLE_DELTA"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/apps-uc-securable-drift/default
+
+Destroy: 1 deleted

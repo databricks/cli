@@ -574,6 +574,15 @@ resources:
     ignore_remote_changes:
       - field: space # This field is not yet supported by Update APIs but exposed in the API spec. TODO: fix when update APIs supports it.
         reason: managed
+      # securable_kind is a server-computed classification (e.g. TABLE_DELTA) that the
+      # backend returns only for UC TABLE securables. It is output-only and absent from
+      # the input schema, so the user can never declare it; without this it plans a
+      # perpetual update on every TABLE securable (remote set, config empty). It is not
+      # produced by resources.generated.yml because the OpenAPI schema does not link the
+      # element type of app resources[], so the generator cannot reach this nested field.
+      # https://github.com/databricks/cli/issues/6342
+      - field: resources[*].uc_securable.securable_kind
+        reason: output_only
 
   secret_scopes:
     backend_defaults:
