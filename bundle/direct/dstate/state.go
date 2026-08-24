@@ -614,7 +614,8 @@ func (db *DeploymentState) unlockedSave() error {
 		return fmt.Errorf("failed to create directory %#v: %w", dir, err)
 	}
 
-	// CreateTemp creates the file with mode 0o600, matching the state file.
+	// CreateTemp creates the file with mode 0o600, which is the mode a new state
+	// file gets; an existing one keeps its own mode, see below.
 	tmp, err := os.CreateTemp(dir, "."+filepath.Base(db.Path)+".tmp-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temp file for %#v: %w", db.Path, err)
@@ -631,6 +632,18 @@ func (db *DeploymentState) unlockedSave() error {
 	// Close before the rename: on Windows the file must not be open for writing.
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("failed to close %#v: %w", tmpPath, err)
+	}
+
+	// Carry over the mode of the state file being replaced. Writing in place used
+	// to leave it alone, whereas the temp file always starts at 0o600, so without
+	// this a state file deliberately made readable to a group or to CI silently
+	// narrows on the next deploy.
+	if info, err := os.Stat(db.Path); err == nil {
+		if err := os.Chmod(tmpPath, info.Mode().Perm()); err != nil {
+			return fmt.Errorf("failed to set mode on %#v: %w", tmpPath, err)
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to stat %#v: %w", db.Path, err)
 	}
 
 	if err := os.Rename(tmpPath, db.Path); err != nil {
