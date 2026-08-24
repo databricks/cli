@@ -186,17 +186,14 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
   }
 }
 
-=== removing on_file_change rewrites state without a run
+=== removing on_file_change is unchanged and does not run
 >>> [CLI] bundle plan
-update job_runs.my_run
-
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
-Updated job_runs.my_run
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //jobs/run-now
 
