@@ -314,12 +314,15 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	var stateDB dstate.DeploymentState
 	stateDB.OpenWithData(tempStatePath, migratedDB)
 
-	// Apply SecretScopeFixups so the config matches what the direct engine expects.
-	// This adds MANAGE ACL for the current user to all secret scopes, ensuring
-	// the migrated state and config agree on .permissions entries.
-	bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
-	if logdiag.HasError(ctx) {
-		return tempStatePath, resourceCount, false, nil, safeerr.New("failed to apply secret scope fixups")
+	// Apply the secret scope fixups so the config matches what the direct engine
+	// expects. This adds MANAGE ACL for the current user to all secret scopes,
+	// ensuring the migrated state and config agree on .permissions entries.
+	//
+	// Called directly rather than through the mutator so the failure arrives as an
+	// error: a diagnostic's summary would reach telemetry as a generic "failed to
+	// apply secret scope fixups", losing which fixup failed.
+	if _, err := resourcemutator.ApplySecretScopeFixups(b, engine.EngineDirect); err != nil {
+		return tempStatePath, resourceCount, false, nil, err
 	}
 
 	// b.Config has been modified by terraform.Interpolate which converts bundle-style
