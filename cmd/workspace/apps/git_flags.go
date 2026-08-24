@@ -64,6 +64,13 @@ func gitSourceFlags(cmd *cobra.Command, target **apps.GitSource) func(*cobra.Com
 		if !refSet && !pathSet {
 			return nil
 		}
+		// deployment_source is a proto oneof: a deployment draws its code from
+		// either a workspace path (--source-code-path) or a Git source, never
+		// both. Reject the combination rather than shipping a request the server
+		// and bundle validation treat as invalid.
+		if cmd.Flags().Changed("source-code-path") {
+			return errors.New("--source-code-path (workspace source) cannot be combined with the --git-* flags; a deployment uses either a workspace path or a Git source")
+		}
 		// A source-code path without a reference has no repository to resolve
 		// against — the reference is what selects the code to deploy.
 		if pathSet && !refSet {
