@@ -1,7 +1,9 @@
 package client
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -474,11 +476,79 @@ func TestBuildSshTunnelEvent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildSshTunnelEvent(tt.opts, true, true, 1500)
+			got := buildSshTunnelEvent(tt.opts, connectOutcome{
+				isSuccess:         true,
+				isReconnect:       true,
+				serverStartTimeMs: 1500,
+			})
 			tt.want.IsSuccess = true
 			tt.want.IsReconnect = true
 			tt.want.ServerStartTimeMs = 1500
+			tt.want.ErrorCategory = protos.SshTunnelErrorCategoryUnspecified
 			assert.Equal(t, &tt.want, got)
 		})
 	}
+}
+
+func TestConnectOutcomeCategory(t *testing.T) {
+	errFailed := errors.New("failed")
+
+	tests := []struct {
+		name    string
+		outcome connectOutcome
+		want    protos.SshTunnelErrorCategory
+	}{
+		{
+			name:    "success reports no category",
+			outcome: connectOutcome{isSuccess: true},
+			want:    protos.SshTunnelErrorCategoryUnspecified,
+		},
+		{
+			// A non-zero exit after the tunnel is up belongs to the ssh client, not the connection.
+			name:    "error after a successful connection reports no category",
+			outcome: connectOutcome{isSuccess: true, err: errFailed},
+			want:    protos.SshTunnelErrorCategoryUnspecified,
+		},
+		{
+			name:    "attributed failure keeps its category",
+			outcome: connectOutcome{errorCategory: protos.SshTunnelErrorCategoryIDECommandNotOnPath, err: errFailed},
+			want:    protos.SshTunnelErrorCategoryIDECommandNotOnPath,
+		},
+		{
+			name:    "unattributed failure falls back to UNKNOWN",
+			outcome: connectOutcome{err: errFailed},
+			want:    protos.SshTunnelErrorCategoryUnknown,
+		},
+		{
+			name:    "cancellation reports USER_ABORTED",
+			outcome: connectOutcome{err: fmt.Errorf("wrapped: %w", context.Canceled)},
+			want:    protos.SshTunnelErrorCategoryUserAborted,
+		},
+		{
+			// Ctrl-C surfaces as a cancellation from whichever step observed it first, so the
+			// interruption must win over the category that step recorded.
+			name: "cancellation wins over the category set at the failure site",
+			outcome: connectOutcome{
+				errorCategory: protos.SshTunnelErrorCategoryServerStartTimeout,
+				err:           fmt.Errorf("wrapped: %w", context.Canceled),
+			},
+			want: protos.SshTunnelErrorCategoryUserAborted,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.outcome.category())
+		})
+	}
+}
+
+func TestBuildSshTunnelEventReportsErrorCategory(t *testing.T) {
+	got := buildSshTunnelEvent(ClientOptions{ConnectionName: "my-conn", IDE: "vscode"}, connectOutcome{
+		errorCategory: protos.SshTunnelErrorCategoryIDECommandNotOnPath,
+		err:           errors.New("failed"),
+	})
+
+	assert.False(t, got.IsSuccess)
+	assert.Equal(t, protos.SshTunnelErrorCategoryIDECommandNotOnPath, got.ErrorCategory)
 }

@@ -2,7 +2,7 @@ module github.com/databricks/cli
 
 go 1.26.0
 
-toolchain go1.26.6
+toolchain go1.26.7
 
 require (
 	dario.cat/mergo v1.0.2 // BSD-3-Clause
@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.7 // MIT
-	github.com/databricks/databricks-sdk-go v0.171.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.175.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
@@ -36,7 +36,7 @@ require (
 	github.com/zalando/go-keyring v0.2.8 // MIT
 	go.yaml.in/yaml/v3 v3.0.4 // MIT AND Apache-2.0
 	golang.org/x/crypto v0.54.0 // BSD-3-Clause
-	golang.org/x/mod v0.38.0 // BSD-3-Clause
+	golang.org/x/mod v0.40.0 // BSD-3-Clause
 	golang.org/x/net v0.57.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
 	golang.org/x/sync v0.22.0 // BSD-3-Clause

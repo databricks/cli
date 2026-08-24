@@ -271,6 +271,7 @@ type ResourceJobJobClusterNewCluster struct {
 	ClusterName                       string                                                    `json:"cluster_name,omitempty"`
 	CustomTags                        map[string]string                                         `json:"custom_tags,omitempty"`
 	DataSecurityMode                  string                                                    `json:"data_security_mode,omitempty"`
+	DependencyMode                    string                                                    `json:"dependency_mode,omitempty"`
 	DriverInstancePoolId              string                                                    `json:"driver_instance_pool_id,omitempty"`
 	DriverNodeTypeId                  string                                                    `json:"driver_node_type_id,omitempty"`
 	EnableElasticDisk                 bool                                                      `json:"enable_elastic_disk,omitempty"`
@@ -307,8 +308,9 @@ type ResourceJobJobClusterNewCluster struct {
 }
 
 type ResourceJobJobCluster struct {
-	JobClusterKey string                           `json:"job_cluster_key"`
-	NewCluster    *ResourceJobJobClusterNewCluster `json:"new_cluster,omitempty"`
+	JobClusterKey       string                           `json:"job_cluster_key"`
+	ServerlessComputeId string                           `json:"serverless_compute_id,omitempty"`
+	NewCluster          *ResourceJobJobClusterNewCluster `json:"new_cluster,omitempty"`
 }
 
 type ResourceJobLibraryCran struct {
@@ -531,6 +533,7 @@ type ResourceJobNewCluster struct {
 	ClusterName                string                                          `json:"cluster_name,omitempty"`
 	CustomTags                 map[string]string                               `json:"custom_tags,omitempty"`
 	DataSecurityMode           string                                          `json:"data_security_mode,omitempty"`
+	DependencyMode             string                                          `json:"dependency_mode,omitempty"`
 	DriverInstancePoolId       string                                          `json:"driver_instance_pool_id,omitempty"`
 	DriverNodeTypeId           string                                          `json:"driver_node_type_id,omitempty"`
 	EnableElasticDisk          bool                                            `json:"enable_elastic_disk,omitempty"`
@@ -614,10 +617,17 @@ type ResourceJobRunJobTask struct {
 	JobParameters map[string]string `json:"job_parameters,omitempty"`
 }
 
+type ResourceJobScheduleSqlCondition struct {
+	SqlQueryId  string `json:"sql_query_id"`
+	TriggerMode string `json:"trigger_mode,omitempty"`
+	WarehouseId string `json:"warehouse_id"`
+}
+
 type ResourceJobSchedule struct {
-	PauseStatus          string `json:"pause_status,omitempty"`
-	QuartzCronExpression string `json:"quartz_cron_expression"`
-	TimezoneId           string `json:"timezone_id"`
+	PauseStatus          string                           `json:"pause_status,omitempty"`
+	QuartzCronExpression string                           `json:"quartz_cron_expression"`
+	TimezoneId           string                           `json:"timezone_id"`
+	SqlCondition         *ResourceJobScheduleSqlCondition `json:"sql_condition,omitempty"`
 }
 
 type ResourceJobSparkJarTask struct {
@@ -649,7 +659,9 @@ type ResourceJobTaskAiRuntimeTaskDeployments struct {
 
 type ResourceJobTaskAiRuntimeTask struct {
 	CodeSourcePath            string                                    `json:"code_source_path,omitempty"`
+	DockerImageUrl            string                                    `json:"docker_image_url,omitempty"`
 	Experiment                string                                    `json:"experiment"`
+	MlflowArtifactLocation    string                                    `json:"mlflow_artifact_location,omitempty"`
 	MlflowExperimentDirectory string                                    `json:"mlflow_experiment_directory,omitempty"`
 	MlflowRun                 string                                    `json:"mlflow_run,omitempty"`
 	Deployments               []ResourceJobTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
@@ -749,7 +761,9 @@ type ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments struct {
 
 type ResourceJobTaskForEachTaskTaskAiRuntimeTask struct {
 	CodeSourcePath            string                                                   `json:"code_source_path,omitempty"`
+	DockerImageUrl            string                                                   `json:"docker_image_url,omitempty"`
 	Experiment                string                                                   `json:"experiment"`
+	MlflowArtifactLocation    string                                                   `json:"mlflow_artifact_location,omitempty"`
 	MlflowExperimentDirectory string                                                   `json:"mlflow_experiment_directory,omitempty"`
 	MlflowRun                 string                                                   `json:"mlflow_run,omitempty"`
 	Deployments               []ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
@@ -1083,6 +1097,7 @@ type ResourceJobTaskForEachTaskTaskNewCluster struct {
 	ClusterName                string                                                             `json:"cluster_name,omitempty"`
 	CustomTags                 map[string]string                                                  `json:"custom_tags,omitempty"`
 	DataSecurityMode           string                                                             `json:"data_security_mode,omitempty"`
+	DependencyMode             string                                                             `json:"dependency_mode,omitempty"`
 	DriverInstancePoolId       string                                                             `json:"driver_instance_pool_id,omitempty"`
 	DriverNodeTypeId           string                                                             `json:"driver_node_type_id,omitempty"`
 	EnableElasticDisk          bool                                                               `json:"enable_elastic_disk,omitempty"`
@@ -1584,6 +1599,7 @@ type ResourceJobTaskNewCluster struct {
 	ClusterName                       string                                              `json:"cluster_name,omitempty"`
 	CustomTags                        map[string]string                                   `json:"custom_tags,omitempty"`
 	DataSecurityMode                  string                                              `json:"data_security_mode,omitempty"`
+	DependencyMode                    string                                              `json:"dependency_mode,omitempty"`
 	DriverInstancePoolId              string                                              `json:"driver_instance_pool_id,omitempty"`
 	DriverNodeTypeId                  string                                              `json:"driver_node_type_id,omitempty"`
 	EnableElasticDisk                 bool                                                `json:"enable_elastic_disk,omitempty"`
@@ -1851,6 +1867,12 @@ type ResourceJobTriggerPeriodic struct {
 	Unit     string `json:"unit"`
 }
 
+type ResourceJobTriggerSqlCondition struct {
+	SqlQueryId  string `json:"sql_query_id"`
+	TriggerMode string `json:"trigger_mode,omitempty"`
+	WarehouseId string `json:"warehouse_id"`
+}
+
 type ResourceJobTriggerTableUpdate struct {
 	Condition                     string   `json:"condition,omitempty"`
 	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
@@ -1859,11 +1881,64 @@ type ResourceJobTriggerTableUpdate struct {
 }
 
 type ResourceJobTrigger struct {
-	PauseStatus string                         `json:"pause_status,omitempty"`
-	FileArrival *ResourceJobTriggerFileArrival `json:"file_arrival,omitempty"`
-	Model       *ResourceJobTriggerModel       `json:"model,omitempty"`
-	Periodic    *ResourceJobTriggerPeriodic    `json:"periodic,omitempty"`
-	TableUpdate *ResourceJobTriggerTableUpdate `json:"table_update,omitempty"`
+	PauseStatus  string                          `json:"pause_status,omitempty"`
+	FileArrival  *ResourceJobTriggerFileArrival  `json:"file_arrival,omitempty"`
+	Model        *ResourceJobTriggerModel        `json:"model,omitempty"`
+	Periodic     *ResourceJobTriggerPeriodic     `json:"periodic,omitempty"`
+	SqlCondition *ResourceJobTriggerSqlCondition `json:"sql_condition,omitempty"`
+	TableUpdate  *ResourceJobTriggerTableUpdate  `json:"table_update,omitempty"`
+}
+
+type ResourceJobTriggersContinuous struct {
+	TaskRetryMode string `json:"task_retry_mode,omitempty"`
+}
+
+type ResourceJobTriggersFileArrival struct {
+	MinTimeBetweenTriggersSeconds int    `json:"min_time_between_triggers_seconds,omitempty"`
+	Url                           string `json:"url"`
+	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
+}
+
+type ResourceJobTriggersModel struct {
+	Aliases                       []string `json:"aliases,omitempty"`
+	Condition                     string   `json:"condition"`
+	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
+	SecurableName                 string   `json:"securable_name,omitempty"`
+	WaitAfterLastChangeSeconds    int      `json:"wait_after_last_change_seconds,omitempty"`
+}
+
+type ResourceJobTriggersPeriodic struct {
+	Interval int    `json:"interval"`
+	Unit     string `json:"unit"`
+}
+
+type ResourceJobTriggersSchedule struct {
+	QuartzCronExpression string `json:"quartz_cron_expression"`
+	TimezoneId           string `json:"timezone_id"`
+}
+
+type ResourceJobTriggersSqlCondition struct {
+	SqlQueryId  string `json:"sql_query_id"`
+	TriggerMode string `json:"trigger_mode,omitempty"`
+	WarehouseId string `json:"warehouse_id"`
+}
+
+type ResourceJobTriggersTableUpdate struct {
+	Condition                     string   `json:"condition,omitempty"`
+	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
+	TableNames                    []string `json:"table_names"`
+	WaitAfterLastChangeSeconds    int      `json:"wait_after_last_change_seconds,omitempty"`
+}
+
+type ResourceJobTriggers struct {
+	PauseStatus  string                           `json:"pause_status,omitempty"`
+	Continuous   *ResourceJobTriggersContinuous   `json:"continuous,omitempty"`
+	FileArrival  *ResourceJobTriggersFileArrival  `json:"file_arrival,omitempty"`
+	Model        *ResourceJobTriggersModel        `json:"model,omitempty"`
+	Periodic     *ResourceJobTriggersPeriodic     `json:"periodic,omitempty"`
+	Schedule     *ResourceJobTriggersSchedule     `json:"schedule,omitempty"`
+	SqlCondition *ResourceJobTriggersSqlCondition `json:"sql_condition,omitempty"`
+	TableUpdate  *ResourceJobTriggersTableUpdate  `json:"table_update,omitempty"`
 }
 
 type ResourceJobWebhookNotificationsOnDurationWarningThresholdExceeded struct {
@@ -1907,6 +1982,7 @@ type ResourceJob struct {
 	MaxRetries             int                              `json:"max_retries,omitempty"`
 	MinRetryIntervalMillis int                              `json:"min_retry_interval_millis,omitempty"`
 	Name                   string                           `json:"name,omitempty"`
+	ParentPath             string                           `json:"parent_path,omitempty"`
 	PerformanceTarget      string                           `json:"performance_target,omitempty"`
 	RetryOnTimeout         bool                             `json:"retry_on_timeout,omitempty"`
 	Tags                   map[string]string                `json:"tags,omitempty"`
@@ -1938,5 +2014,6 @@ type ResourceJob struct {
 	SparkSubmitTask        *ResourceJobSparkSubmitTask      `json:"spark_submit_task,omitempty"`
 	Task                   []ResourceJobTask                `json:"task,omitempty"`
 	Trigger                *ResourceJobTrigger              `json:"trigger,omitempty"`
+	Triggers               []ResourceJobTriggers            `json:"triggers,omitempty"`
 	WebhookNotifications   *ResourceJobWebhookNotifications `json:"webhook_notifications,omitempty"`
 }

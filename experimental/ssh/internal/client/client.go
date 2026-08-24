@@ -258,7 +258,7 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 	return proxyCommand, nil
 }
 
-func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions) error {
+func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions) (retErr error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -268,6 +268,17 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		<-sigCh
 		cmdio.LogString(ctx, "Received termination signal, cleaning up...")
 		cancel()
+	}()
+
+	// Report the outcome of every path below, so a failure is attributable to the step that
+	// caused it. Registered before the first early return -- in particular before the IDE
+	// preconditions, which fail fast on a permanent per-machine condition and are the failures
+	// most worth measuring. Each failing step sets outcome.errorCategory; the returned error is
+	// picked up here via the named return.
+	outcome := connectOutcome{isReconnect: opts.ServerMetadata != ""}
+	defer func() {
+		outcome.err = retErr
+		logSshTunnelEvent(ctx, opts, outcome)
 	}()
 
 	sessionID := opts.SessionIdentifier()
@@ -281,9 +292,11 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 
 	if opts.IDE != "" && !opts.ProxyMode {
 		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryIDECommandNotOnPath
 			return err
 		}
 		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE, opts.AutoApprove); err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryIDESSHExtensionMissing
 			return err
 		}
 	}
@@ -299,24 +312,20 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 			cmdio.LogString(ctx, vscode.GetManualInstructions(opts.IDE, opts.ConnectionName))
 			cmdio.LogString(ctx, "Use --skip-settings-check to bypass IDE settings verification.")
 			if opts.AutoApprove {
+				outcome.errorCategory = protos.SshTunnelErrorCategoryIDESettingsUpdateDeclined
 				return fmt.Errorf("aborted: IDE settings need to be updated manually: %w", err)
 			}
 			shouldProceed, promptErr := cmdio.AskYesOrNo(ctx, "Do you want to proceed with the connection?")
 			if promptErr != nil {
+				outcome.errorCategory = protos.SshTunnelErrorCategoryIDESettingsUpdateDeclined
 				return fmt.Errorf("failed to prompt user: %w", promptErr)
 			}
 			if !shouldProceed {
+				outcome.errorCategory = protos.SshTunnelErrorCategoryIDESettingsUpdateDeclined
 				return errors.New("aborted: IDE settings need to be updated manually, user declined to proceed")
 			}
 		}
 	}
-
-	isReconnect := opts.ServerMetadata != ""
-	var serverStartTimeMs int64
-	isSuccess := false
-	defer func() {
-		logSshTunnelEvent(ctx, opts, isSuccess, isReconnect, serverStartTimeMs)
-	}()
 
 	// A direct `connect --cluster` bypasses `ssh setup`, which is where the access mode is
 	// normally validated, so validate it here too. Proxy mode is skipped because its
@@ -324,6 +333,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	// Clusters.Get on every (re)connection. Serverless has no cluster to inspect.
 	if !opts.ProxyMode && !opts.IsServerlessMode() {
 		if err := ValidateClusterAccess(ctx, client, opts.ClusterID); err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryClusterAccessDenied
 			return err
 		}
 	}
@@ -333,27 +343,32 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		cmdio.LogString(ctx, "Checking cluster state...")
 		err := checkClusterState(ctx, client, opts.ClusterID, opts.AutoStartCluster)
 		if err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryClusterStartFailed
 			return err
 		}
 	}
 
 	secretScopeName, err := keys.CreateKeysSecretScope(ctx, client, sessionID)
 	if err != nil {
+		outcome.errorCategory = protos.SshTunnelErrorCategorySecretScopeFailed
 		return fmt.Errorf("failed to create secret scope: %w", err)
 	}
 
 	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, secretScopeName, opts.ClientPrivateKeyName, opts.ClientPublicKeyName)
 	if err != nil {
+		outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
 		return fmt.Errorf("failed to get or generate SSH key pair from secrets: %w", err)
 	}
 
 	keyPath, err := keys.GetLocalSSHKeyPath(ctx, sessionID, opts.SSHKeysDir)
 	if err != nil {
+		outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
 		return fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
 	err = keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes)
 	if err != nil {
+		outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
 		return fmt.Errorf("failed to save SSH key pair locally: %w", err)
 	}
 	log.Infof(ctx, "Using SSH key: %s", keyPath)
@@ -372,15 +387,21 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		err := UploadTunnelReleases(ctx, client, version, opts.ReleasesDir)
 		sp.Close()
 		if err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryBinaryUploadFailed
 			return fmt.Errorf("failed to upload ssh-tunnel binaries: %w", err)
 		}
 		serverStartTime := time.Now()
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryServerStartTimeout
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
-		serverStartTimeMs = time.Since(serverStartTime).Milliseconds()
+		outcome.serverStartTimeMs = time.Since(serverStartTime).Milliseconds()
 	} else {
+		// The failures below are left to fall through to UNKNOWN on purpose: --metadata is a
+		// hidden flag whose value we generated ourselves in ToProxyCommand, so a parse failure
+		// here is a CLI bug rather than a per-environment blocker. Attributing them to
+		// SERVER_START_TIMEOUT would pollute the bucket that tracks unreachable servers.
 		// Metadata format: "<user_name>,<port>,<cluster_id>"
 		metadata := strings.Split(opts.ServerMetadata, ",")
 		if len(metadata) < 2 {
@@ -416,7 +437,9 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		cmdio.LogString(ctx, "Connected!")
 	}
 
-	isSuccess = true
+	// The tunnel is up from here on. A later non-zero exit belongs to the SSH client or the
+	// user's own remote command, so it is not counted as a connection failure.
+	outcome.isSuccess = true
 
 	if opts.ProxyMode {
 		return runSSHProxy(ctx, client, serverPort, clusterID, opts)
@@ -1209,15 +1232,44 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	return meta.UserName, meta.Port, meta.ClusterID, nil
 }
 
-func logSshTunnelEvent(ctx context.Context, opts ClientOptions, isSuccess, isReconnect bool, serverStartTimeMs int64) {
+// connectOutcome is the observed result of a connection attempt, collected by Run for telemetry.
+type connectOutcome struct {
+	// isSuccess reports whether the tunnel was established. It stays true when the SSH client
+	// itself later exits non-zero, since by then the tunnel was up.
+	isSuccess         bool
+	isReconnect       bool
+	serverStartTimeMs int64
+	// errorCategory is set at the failure site. Empty means the failure was not attributed.
+	errorCategory protos.SshTunnelErrorCategory
+	err           error
+}
+
+// category returns the error category to report. A cancelled context means the user
+// interrupted the attempt, whichever call happened to observe it first, so it wins over the
+// category recorded at the failure site. An unattributed failure is reported as UNKNOWN so
+// that it stays countable.
+func (o connectOutcome) category() protos.SshTunnelErrorCategory {
+	if o.isSuccess || o.err == nil {
+		return protos.SshTunnelErrorCategoryUnspecified
+	}
+	if errors.Is(o.err, context.Canceled) {
+		return protos.SshTunnelErrorCategoryUserAborted
+	}
+	if o.errorCategory == "" {
+		return protos.SshTunnelErrorCategoryUnknown
+	}
+	return o.errorCategory
+}
+
+func logSshTunnelEvent(ctx context.Context, opts ClientOptions, outcome connectOutcome) {
 	telemetry.Log(ctx, protos.DatabricksCliLog{
-		SshTunnelEvent: buildSshTunnelEvent(opts, isSuccess, isReconnect, serverStartTimeMs),
+		SshTunnelEvent: buildSshTunnelEvent(opts, outcome),
 	})
 }
 
 // buildSshTunnelEvent maps the connection options and outcome onto the telemetry
 // event. It is separated from logSshTunnelEvent so the field mapping can be unit tested.
-func buildSshTunnelEvent(opts ClientOptions, isSuccess, isReconnect bool, serverStartTimeMs int64) *protos.SshTunnelEvent {
+func buildSshTunnelEvent(opts ClientOptions, outcome connectOutcome) *protos.SshTunnelEvent {
 	computeType := protos.SshTunnelComputeTypeDedicated
 	if opts.IsServerlessMode() {
 		computeType = protos.SshTunnelComputeTypeServerless
@@ -1238,11 +1290,12 @@ func buildSshTunnelEvent(opts ClientOptions, isSuccess, isReconnect bool, server
 		AcceleratorType:    opts.Accelerator,
 		IdeType:            opts.IDE,
 		ClientMode:         clientMode,
-		IsReconnect:        isReconnect,
+		IsReconnect:        outcome.isReconnect,
 		AutoStartCluster:   opts.AutoStartCluster,
-		ServerStartTimeMs:  serverStartTimeMs,
-		IsSuccess:          isSuccess,
+		ServerStartTimeMs:  outcome.serverStartTimeMs,
+		IsSuccess:          outcome.isSuccess,
 		HasBaseEnvironment: opts.BaseEnvironment != "",
 		HasUsagePolicy:     opts.UsagePolicyID != "",
+		ErrorCategory:      outcome.category(),
 	}
 }

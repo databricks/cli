@@ -5,10 +5,26 @@ package schema
 type DataSources struct {
 	AccountFederationPolicies                   map[string]any `json:"databricks_account_federation_policies,omitempty"`
 	AccountFederationPolicy                     map[string]any `json:"databricks_account_federation_policy,omitempty"`
+	AccountIamDirectGroupMemberV2               map[string]any `json:"databricks_account_iam_direct_group_member_v2,omitempty"`
+	AccountIamDirectGroupMembersV2              map[string]any `json:"databricks_account_iam_direct_group_members_v2,omitempty"`
+	AccountIamGroupV2                           map[string]any `json:"databricks_account_iam_group_v2,omitempty"`
+	AccountIamGroupsV2                          map[string]any `json:"databricks_account_iam_groups_v2,omitempty"`
+	AccountIamServicePrincipalV2                map[string]any `json:"databricks_account_iam_service_principal_v2,omitempty"`
+	AccountIamServicePrincipalsV2               map[string]any `json:"databricks_account_iam_service_principals_v2,omitempty"`
+	AccountIamUserV2                            map[string]any `json:"databricks_account_iam_user_v2,omitempty"`
+	AccountIamUsersV2                           map[string]any `json:"databricks_account_iam_users_v2,omitempty"`
+	AccountIamWorkspaceAssignmentV2             map[string]any `json:"databricks_account_iam_workspace_assignment_v2,omitempty"`
+	AccountIamWorkspaceAssignmentsV2            map[string]any `json:"databricks_account_iam_workspace_assignments_v2,omitempty"`
 	AccountNetworkPolicies                      map[string]any `json:"databricks_account_network_policies,omitempty"`
 	AccountNetworkPolicy                        map[string]any `json:"databricks_account_network_policy,omitempty"`
 	AccountSettingUserPreferenceV2              map[string]any `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                            map[string]any `json:"databricks_account_setting_v2,omitempty"`
+	AiGatewayMcpService                         map[string]any `json:"databricks_ai_gateway_mcp_service,omitempty"`
+	AiGatewayMcpServices                        map[string]any `json:"databricks_ai_gateway_mcp_services,omitempty"`
+	AiGatewayModelProviderService               map[string]any `json:"databricks_ai_gateway_model_provider_service,omitempty"`
+	AiGatewayModelProviderServices              map[string]any `json:"databricks_ai_gateway_model_provider_services,omitempty"`
+	AiGatewayModelService                       map[string]any `json:"databricks_ai_gateway_model_service,omitempty"`
+	AiGatewayModelServices                      map[string]any `json:"databricks_ai_gateway_model_services,omitempty"`
 	AiSearchEndpoint                            map[string]any `json:"databricks_ai_search_endpoint,omitempty"`
 	AiSearchEndpoints                           map[string]any `json:"databricks_ai_search_endpoints,omitempty"`
 	AiSearchIndex                               map[string]any `json:"databricks_ai_search_index,omitempty"`
@@ -105,6 +121,10 @@ type DataSources struct {
 	PostgresBranch                              map[string]any `json:"databricks_postgres_branch,omitempty"`
 	PostgresBranches                            map[string]any `json:"databricks_postgres_branches,omitempty"`
 	PostgresCatalog                             map[string]any `json:"databricks_postgres_catalog,omitempty"`
+	PostgresCdfConfig                           map[string]any `json:"databricks_postgres_cdf_config,omitempty"`
+	PostgresCdfConfigs                          map[string]any `json:"databricks_postgres_cdf_configs,omitempty"`
+	PostgresCdfStatus                           map[string]any `json:"databricks_postgres_cdf_status,omitempty"`
+	PostgresCdfStatuses                         map[string]any `json:"databricks_postgres_cdf_statuses,omitempty"`
 	PostgresDataApi                             map[string]any `json:"databricks_postgres_data_api,omitempty"`
 	PostgresDatabase                            map[string]any `json:"databricks_postgres_database,omitempty"`
 	PostgresDatabases                           map[string]any `json:"databricks_postgres_databases,omitempty"`
@@ -117,6 +137,7 @@ type DataSources struct {
 	PostgresSyncedTable                         map[string]any `json:"databricks_postgres_synced_table,omitempty"`
 	QualityMonitorV2                            map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
 	QualityMonitorsV2                           map[string]any `json:"databricks_quality_monitors_v2,omitempty"`
+	Recipients                                  map[string]any `json:"databricks_recipients,omitempty"`
 	RegisteredModel                             map[string]any `json:"databricks_registered_model,omitempty"`
 	RegisteredModelVersions                     map[string]any `json:"databricks_registered_model_versions,omitempty"`
 	RfaAccessRequestDestinations                map[string]any `json:"databricks_rfa_access_request_destinations,omitempty"`
@@ -153,6 +174,17 @@ type DataSources struct {
 	WarehousesDefaultWarehouseOverrides         map[string]any `json:"databricks_warehouses_default_warehouse_overrides,omitempty"`
 	WorkspaceEntityTagAssignment                map[string]any `json:"databricks_workspace_entity_tag_assignment,omitempty"`
 	WorkspaceEntityTagAssignments               map[string]any `json:"databricks_workspace_entity_tag_assignments,omitempty"`
+	WorkspaceIamDirectGroupMemberV2             map[string]any `json:"databricks_workspace_iam_direct_group_member_v2,omitempty"`
+	WorkspaceIamDirectGroupMembersV2            map[string]any `json:"databricks_workspace_iam_direct_group_members_v2,omitempty"`
+	WorkspaceIamGroupV2                         map[string]any `json:"databricks_workspace_iam_group_v2,omitempty"`
+	WorkspaceIamGroupsV2                        map[string]any `json:"databricks_workspace_iam_groups_v2,omitempty"`
+	WorkspaceIamServicePrincipalV2              map[string]any `json:"databricks_workspace_iam_service_principal_v2,omitempty"`
+	WorkspaceIamServicePrincipalsV2             map[string]any `json:"databricks_workspace_iam_service_principals_v2,omitempty"`
+	WorkspaceIamUserV2                          map[string]any `json:"databricks_workspace_iam_user_v2,omitempty"`
+	WorkspaceIamUsersV2                         map[string]any `json:"databricks_workspace_iam_users_v2,omitempty"`
+	WorkspaceIamWorkspaceAssignmentV2           map[string]any `json:"databricks_workspace_iam_workspace_assignment_v2,omitempty"`
+	WorkspaceIamWorkspaceAssignmentsV2          map[string]any `json:"databricks_workspace_iam_workspace_assignments_v2,omitempty"`
+	WorkspaceIamWorkspaceIdentityDetailV2       map[string]any `json:"databricks_workspace_iam_workspace_identity_detail_v2,omitempty"`
 	WorkspaceNetworkOption                      map[string]any `json:"databricks_workspace_network_option,omitempty"`
 	WorkspaceSettingV2                          map[string]any `json:"databricks_workspace_setting_v2,omitempty"`
 	Zones                                       map[string]any `json:"databricks_zones,omitempty"`
@@ -160,62 +192,78 @@ type DataSources struct {
 
 func NewDataSources() *DataSources {
 	return &DataSources{
-		AccountFederationPolicies:       make(map[string]any),
-		AccountFederationPolicy:         make(map[string]any),
-		AccountNetworkPolicies:          make(map[string]any),
-		AccountNetworkPolicy:            make(map[string]any),
-		AccountSettingUserPreferenceV2:  make(map[string]any),
-		AccountSettingV2:                make(map[string]any),
-		AiSearchEndpoint:                make(map[string]any),
-		AiSearchEndpoints:               make(map[string]any),
-		AiSearchIndex:                   make(map[string]any),
-		AiSearchIndexes:                 make(map[string]any),
-		AlertV2:                         make(map[string]any),
-		AlertsV2:                        make(map[string]any),
-		App:                             make(map[string]any),
-		AppSpace:                        make(map[string]any),
-		AppSpaces:                       make(map[string]any),
-		Apps:                            make(map[string]any),
-		AppsSettingsCustomTemplate:      make(map[string]any),
-		AppsSettingsCustomTemplates:     make(map[string]any),
-		AwsAssumeRolePolicy:             make(map[string]any),
-		AwsBucketPolicy:                 make(map[string]any),
-		AwsCrossaccountPolicy:           make(map[string]any),
-		AwsUnityCatalogAssumeRolePolicy: make(map[string]any),
-		AwsUnityCatalogPolicy:           make(map[string]any),
-		BudgetPolicies:                  make(map[string]any),
-		BudgetPolicy:                    make(map[string]any),
-		Catalog:                         make(map[string]any),
-		Catalogs:                        make(map[string]any),
-		Cluster:                         make(map[string]any),
-		ClusterPolicy:                   make(map[string]any),
-		Clusters:                        make(map[string]any),
-		CurrentConfig:                   make(map[string]any),
-		CurrentMetastore:                make(map[string]any),
-		CurrentUser:                     make(map[string]any),
-		Dashboards:                      make(map[string]any),
-		DataClassificationCatalogConfig: make(map[string]any),
-		DataQualityMonitor:              make(map[string]any),
-		DataQualityMonitors:             make(map[string]any),
-		DataQualityRefresh:              make(map[string]any),
-		DataQualityRefreshes:            make(map[string]any),
-		DatabaseDatabaseCatalog:         make(map[string]any),
-		DatabaseDatabaseCatalogs:        make(map[string]any),
-		DatabaseInstance:                make(map[string]any),
-		DatabaseInstances:               make(map[string]any),
-		DatabaseSyncedDatabaseTable:     make(map[string]any),
-		DatabaseSyncedDatabaseTables:    make(map[string]any),
-		DbfsFile:                        make(map[string]any),
-		DbfsFilePaths:                   make(map[string]any),
-		Directory:                       make(map[string]any),
-		DisasterRecoveryFailoverGroup:   make(map[string]any),
-		DisasterRecoveryFailoverGroups:  make(map[string]any),
-		DisasterRecoveryStableUrl:       make(map[string]any),
-		DisasterRecoveryStableUrls:      make(map[string]any),
-		Endpoint:                        make(map[string]any),
-		Endpoints:                       make(map[string]any),
-		EntityTagAssignment:             make(map[string]any),
-		EntityTagAssignments:            make(map[string]any),
+		AccountFederationPolicies:        make(map[string]any),
+		AccountFederationPolicy:          make(map[string]any),
+		AccountIamDirectGroupMemberV2:    make(map[string]any),
+		AccountIamDirectGroupMembersV2:   make(map[string]any),
+		AccountIamGroupV2:                make(map[string]any),
+		AccountIamGroupsV2:               make(map[string]any),
+		AccountIamServicePrincipalV2:     make(map[string]any),
+		AccountIamServicePrincipalsV2:    make(map[string]any),
+		AccountIamUserV2:                 make(map[string]any),
+		AccountIamUsersV2:                make(map[string]any),
+		AccountIamWorkspaceAssignmentV2:  make(map[string]any),
+		AccountIamWorkspaceAssignmentsV2: make(map[string]any),
+		AccountNetworkPolicies:           make(map[string]any),
+		AccountNetworkPolicy:             make(map[string]any),
+		AccountSettingUserPreferenceV2:   make(map[string]any),
+		AccountSettingV2:                 make(map[string]any),
+		AiGatewayMcpService:              make(map[string]any),
+		AiGatewayMcpServices:             make(map[string]any),
+		AiGatewayModelProviderService:    make(map[string]any),
+		AiGatewayModelProviderServices:   make(map[string]any),
+		AiGatewayModelService:            make(map[string]any),
+		AiGatewayModelServices:           make(map[string]any),
+		AiSearchEndpoint:                 make(map[string]any),
+		AiSearchEndpoints:                make(map[string]any),
+		AiSearchIndex:                    make(map[string]any),
+		AiSearchIndexes:                  make(map[string]any),
+		AlertV2:                          make(map[string]any),
+		AlertsV2:                         make(map[string]any),
+		App:                              make(map[string]any),
+		AppSpace:                         make(map[string]any),
+		AppSpaces:                        make(map[string]any),
+		Apps:                             make(map[string]any),
+		AppsSettingsCustomTemplate:       make(map[string]any),
+		AppsSettingsCustomTemplates:      make(map[string]any),
+		AwsAssumeRolePolicy:              make(map[string]any),
+		AwsBucketPolicy:                  make(map[string]any),
+		AwsCrossaccountPolicy:            make(map[string]any),
+		AwsUnityCatalogAssumeRolePolicy:  make(map[string]any),
+		AwsUnityCatalogPolicy:            make(map[string]any),
+		BudgetPolicies:                   make(map[string]any),
+		BudgetPolicy:                     make(map[string]any),
+		Catalog:                          make(map[string]any),
+		Catalogs:                         make(map[string]any),
+		Cluster:                          make(map[string]any),
+		ClusterPolicy:                    make(map[string]any),
+		Clusters:                         make(map[string]any),
+		CurrentConfig:                    make(map[string]any),
+		CurrentMetastore:                 make(map[string]any),
+		CurrentUser:                      make(map[string]any),
+		Dashboards:                       make(map[string]any),
+		DataClassificationCatalogConfig:  make(map[string]any),
+		DataQualityMonitor:               make(map[string]any),
+		DataQualityMonitors:              make(map[string]any),
+		DataQualityRefresh:               make(map[string]any),
+		DataQualityRefreshes:             make(map[string]any),
+		DatabaseDatabaseCatalog:          make(map[string]any),
+		DatabaseDatabaseCatalogs:         make(map[string]any),
+		DatabaseInstance:                 make(map[string]any),
+		DatabaseInstances:                make(map[string]any),
+		DatabaseSyncedDatabaseTable:      make(map[string]any),
+		DatabaseSyncedDatabaseTables:     make(map[string]any),
+		DbfsFile:                         make(map[string]any),
+		DbfsFilePaths:                    make(map[string]any),
+		Directory:                        make(map[string]any),
+		DisasterRecoveryFailoverGroup:    make(map[string]any),
+		DisasterRecoveryFailoverGroups:   make(map[string]any),
+		DisasterRecoveryStableUrl:        make(map[string]any),
+		DisasterRecoveryStableUrls:       make(map[string]any),
+		Endpoint:                         make(map[string]any),
+		Endpoints:                        make(map[string]any),
+		EntityTagAssignment:              make(map[string]any),
+		EntityTagAssignments:             make(map[string]any),
 		EnvironmentsDefaultWorkspaceBaseEnvironment: make(map[string]any),
 		EnvironmentsWorkspaceBaseEnvironment:        make(map[string]any),
 		EnvironmentsWorkspaceBaseEnvironments:       make(map[string]any),
@@ -262,6 +310,10 @@ func NewDataSources() *DataSources {
 		PostgresBranch:                              make(map[string]any),
 		PostgresBranches:                            make(map[string]any),
 		PostgresCatalog:                             make(map[string]any),
+		PostgresCdfConfig:                           make(map[string]any),
+		PostgresCdfConfigs:                          make(map[string]any),
+		PostgresCdfStatus:                           make(map[string]any),
+		PostgresCdfStatuses:                         make(map[string]any),
 		PostgresDataApi:                             make(map[string]any),
 		PostgresDatabase:                            make(map[string]any),
 		PostgresDatabases:                           make(map[string]any),
@@ -274,6 +326,7 @@ func NewDataSources() *DataSources {
 		PostgresSyncedTable:                         make(map[string]any),
 		QualityMonitorV2:                            make(map[string]any),
 		QualityMonitorsV2:                           make(map[string]any),
+		Recipients:                                  make(map[string]any),
 		RegisteredModel:                             make(map[string]any),
 		RegisteredModelVersions:                     make(map[string]any),
 		RfaAccessRequestDestinations:                make(map[string]any),
@@ -310,6 +363,17 @@ func NewDataSources() *DataSources {
 		WarehousesDefaultWarehouseOverrides:         make(map[string]any),
 		WorkspaceEntityTagAssignment:                make(map[string]any),
 		WorkspaceEntityTagAssignments:               make(map[string]any),
+		WorkspaceIamDirectGroupMemberV2:             make(map[string]any),
+		WorkspaceIamDirectGroupMembersV2:            make(map[string]any),
+		WorkspaceIamGroupV2:                         make(map[string]any),
+		WorkspaceIamGroupsV2:                        make(map[string]any),
+		WorkspaceIamServicePrincipalV2:              make(map[string]any),
+		WorkspaceIamServicePrincipalsV2:             make(map[string]any),
+		WorkspaceIamUserV2:                          make(map[string]any),
+		WorkspaceIamUsersV2:                         make(map[string]any),
+		WorkspaceIamWorkspaceAssignmentV2:           make(map[string]any),
+		WorkspaceIamWorkspaceAssignmentsV2:          make(map[string]any),
+		WorkspaceIamWorkspaceIdentityDetailV2:       make(map[string]any),
 		WorkspaceNetworkOption:                      make(map[string]any),
 		WorkspaceSettingV2:                          make(map[string]any),
 		Zones:                                       make(map[string]any),

@@ -9,9 +9,17 @@ package schema
 type AllResources struct {
 	AccessControlRuleSet                         ResourceAccessControlRuleSet                         `json:"databricks_access_control_rule_set,omitempty"`
 	AccountFederationPolicy                      ResourceAccountFederationPolicy                      `json:"databricks_account_federation_policy,omitempty"`
+	AccountIamDirectGroupMemberV2                ResourceAccountIamDirectGroupMemberV2                `json:"databricks_account_iam_direct_group_member_v2,omitempty"`
+	AccountIamGroupV2                            ResourceAccountIamGroupV2                            `json:"databricks_account_iam_group_v2,omitempty"`
+	AccountIamServicePrincipalV2                 ResourceAccountIamServicePrincipalV2                 `json:"databricks_account_iam_service_principal_v2,omitempty"`
+	AccountIamUserV2                             ResourceAccountIamUserV2                             `json:"databricks_account_iam_user_v2,omitempty"`
+	AccountIamWorkspaceAssignmentV2              ResourceAccountIamWorkspaceAssignmentV2              `json:"databricks_account_iam_workspace_assignment_v2,omitempty"`
 	AccountNetworkPolicy                         ResourceAccountNetworkPolicy                         `json:"databricks_account_network_policy,omitempty"`
 	AccountSettingUserPreferenceV2               ResourceAccountSettingUserPreferenceV2               `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                             ResourceAccountSettingV2                             `json:"databricks_account_setting_v2,omitempty"`
+	AiGatewayMcpService                          ResourceAiGatewayMcpService                          `json:"databricks_ai_gateway_mcp_service,omitempty"`
+	AiGatewayModelProviderService                ResourceAiGatewayModelProviderService                `json:"databricks_ai_gateway_model_provider_service,omitempty"`
+	AiGatewayModelService                        ResourceAiGatewayModelService                        `json:"databricks_ai_gateway_model_service,omitempty"`
 	AiSearchEndpoint                             ResourceAiSearchEndpoint                             `json:"databricks_ai_search_endpoint,omitempty"`
 	AiSearchIndex                                ResourceAiSearchIndex                                `json:"databricks_ai_search_index,omitempty"`
 	AibiDashboardEmbeddingAccessPolicySetting    ResourceAibiDashboardEmbeddingAccessPolicySetting    `json:"databricks_aibi_dashboard_embedding_access_policy_setting,omitempty"`
@@ -113,6 +121,7 @@ type AllResources struct {
 	PolicyInfo                                   ResourcePolicyInfo                                   `json:"databricks_policy_info,omitempty"`
 	PostgresBranch                               ResourcePostgresBranch                               `json:"databricks_postgres_branch,omitempty"`
 	PostgresCatalog                              ResourcePostgresCatalog                              `json:"databricks_postgres_catalog,omitempty"`
+	PostgresCdfConfig                            ResourcePostgresCdfConfig                            `json:"databricks_postgres_cdf_config,omitempty"`
 	PostgresDataApi                              ResourcePostgresDataApi                              `json:"databricks_postgres_data_api,omitempty"`
 	PostgresDatabase                             ResourcePostgresDatabase                             `json:"databricks_postgres_database,omitempty"`
 	PostgresEndpoint                             ResourcePostgresEndpoint                             `json:"databricks_postgres_endpoint,omitempty"`
@@ -165,6 +174,12 @@ type AllResources struct {
 	WorkspaceConf                                ResourceWorkspaceConf                                `json:"databricks_workspace_conf,omitempty"`
 	WorkspaceEntityTagAssignment                 ResourceWorkspaceEntityTagAssignment                 `json:"databricks_workspace_entity_tag_assignment,omitempty"`
 	WorkspaceFile                                ResourceWorkspaceFile                                `json:"databricks_workspace_file,omitempty"`
+	WorkspaceIamDirectGroupMemberV2              ResourceWorkspaceIamDirectGroupMemberV2              `json:"databricks_workspace_iam_direct_group_member_v2,omitempty"`
+	WorkspaceIamGroupV2                          ResourceWorkspaceIamGroupV2                          `json:"databricks_workspace_iam_group_v2,omitempty"`
+	WorkspaceIamServicePrincipalV2               ResourceWorkspaceIamServicePrincipalV2               `json:"databricks_workspace_iam_service_principal_v2,omitempty"`
+	WorkspaceIamUserV2                           ResourceWorkspaceIamUserV2                           `json:"databricks_workspace_iam_user_v2,omitempty"`
+	WorkspaceIamWorkspaceAssignmentV2            ResourceWorkspaceIamWorkspaceAssignmentV2            `json:"databricks_workspace_iam_workspace_assignment_v2,omitempty"`
+	WorkspaceIamWorkspaceIdentityDetailV2        ResourceWorkspaceIamWorkspaceIdentityDetailV2        `json:"databricks_workspace_iam_workspace_identity_detail_v2,omitempty"`
 	WorkspaceNetworkOption                       ResourceWorkspaceNetworkOption                       `json:"databricks_workspace_network_option,omitempty"`
 	WorkspaceSettingV2                           ResourceWorkspaceSettingV2                           `json:"databricks_workspace_setting_v2,omitempty"`
 }

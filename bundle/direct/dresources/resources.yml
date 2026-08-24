@@ -320,6 +320,11 @@ resources:
       # Accepted on write but not returned by GET.
       - field: config.served_entities[*].burst_scaling_enabled
         reason: input_only
+      # table_names creates a profile and is not returned; inference_table_config round-trips.
+      # The spec annotated this input_only in the v0.171 spec but no longer does, so the rule
+      # has to be manual again.
+      - field: telemetry_config.table_names
+        reason: input_only
       # Write-only secrets: the backend stores them and returns the reference field, not the plaintext.
       - field: config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext
         reason: input_only
@@ -555,6 +560,10 @@ resources:
     backend_defaults:
       # Backend sets it "MEDIUM" when not specified in the config
       - field: compute_size
+      # Backend enables token forwarding and reports true even when the config omits it,
+      # so an omitted field would otherwise plan an update on every deploy. An explicit
+      # value in the config still diffs normally.
+      - field: forward_user_access_token
       # lifecycle.started is derived from remote compute status in RemapState, so the
       # remote side always has a value. When the user omits lifecycle from config,
       # both old and new are nil and backend_defaults correctly skips the remote value.
