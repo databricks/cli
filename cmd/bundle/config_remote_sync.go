@@ -2,20 +2,26 @@ package bundle
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
+	"os"
+	"path/filepath"
 	"runtime"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/configsync"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -66,6 +72,14 @@ Examples:
 			return err
 		}
 
+		// Scope the local state cache to the state folder being read. The cache is
+		// otherwise keyed on bundle root and target alone, so another deployment's
+		// state would land in the default location and be picked up as this bundle's
+		// own by later commands, including deploy.
+		if statePath != "" {
+			cmd.SetContext(envlib.Set(cmd.Context(), env.TempDirVariable, stateCacheDir(statePath)))
+		}
+
 		stats := configsync.Stats{Save: save}
 
 		// Emit telemetry on every exit path, including failures inside
@@ -84,13 +98,21 @@ Examples:
 			AlwaysPull: true,
 			InitFunc: func(b *bundle.Bundle) {
 				b.SkipLocalFileValidation = true
-
-				// InitFunc runs before phases.Initialize, so this assignment takes
-				// precedence over DefineDefaultWorkspacePaths (which only fills an
-				// empty state_path) while still passing through PrependWorkspacePrefix.
-				if statePath != "" {
-					b.Config.Workspace.StatePath = statePath
+			},
+			// Applied after phases.Initialize so the dev-mode uniqueness check does not
+			// reject a state folder this command only reads: it belongs to the
+			// deployment being synced, not to whoever runs the command.
+			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
+				if statePath == "" {
+					return nil
 				}
+				// Assigned through a mutator so the value also lands in the dynamic
+				// config tree. Later phases convert dyn->typed on entry, which would
+				// otherwise restore the default before the state snapshot is read.
+				bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
+					b.Config.Workspace.StatePath = normalizeStatePath(statePath)
+				})
+				return nil
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 				stats.Engine = stateDesc.Engine
@@ -199,15 +221,38 @@ Examples:
 	return cmd
 }
 
-// validateStatePathFlag rejects a --state-path that would resolve against whoever runs
-// the command. A caller-relative state folder is the failure this flag exists to
-// override, so silently expanding "~" or a relative path here would reintroduce it.
+// validateStatePathFlag rejects a --state-path this command cannot resolve to one
+// deployment's state folder. "~" is refused rather than expanded: it resolves to the
+// home of whoever runs the command, which is the resolution this flag exists to override.
 func validateStatePathFlag(statePath string) error {
-	if statePath == "" {
+	switch {
+	case statePath == "":
 		return nil
-	}
-	if strings.HasPrefix(statePath, "~") || !strings.HasPrefix(statePath, "/") {
+	case strings.HasPrefix(statePath, "~"):
+		return fmt.Errorf("--state-path must be an absolute workspace path, got %q: pass the path of the deployment to sync, not one relative to the current user's home", statePath)
+	case !strings.HasPrefix(statePath, "/"):
 		return fmt.Errorf("--state-path must be an absolute workspace path, got %q", statePath)
+	case strings.HasPrefix(statePath, "/Volumes/"):
+		return fmt.Errorf("--state-path does not support Volumes paths, got %q", statePath)
 	}
 	return nil
+}
+
+// stateCacheDir returns the local cache directory to use for an overridden state path.
+// It is keyed on the state folder so state read from another deployment can never occupy
+// the location this bundle caches its own state in, and stays outside the bundle tree so
+// a plain deploy in the same directory cannot pick it up. Deterministic, so repeat runs
+// against the same state folder still reuse the cache.
+func stateCacheDir(statePath string) string {
+	sum := sha256.Sum256([]byte(normalizeStatePath(statePath)))
+	return filepath.Join(os.TempDir(), "databricks-bundle-state", hex.EncodeToString(sum[:8]))
+}
+
+// normalizeStatePath applies the /Workspace prefixing that PrependWorkspacePrefix gives
+// a configured state_path. That mutator has already run by the time the flag is applied.
+func normalizeStatePath(statePath string) string {
+	if strings.HasPrefix(statePath, "/Workspace/") {
+		return statePath
+	}
+	return "/Workspace" + statePath
 }

@@ -1,5 +1,5 @@
 RecordRequests = false
-Ignore = [".databricks", "databricks.yml"]
+Ignore = [".databricks", "databricks.yml", "other"]
 
 Env.DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
 
