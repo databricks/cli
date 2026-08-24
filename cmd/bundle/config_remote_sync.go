@@ -6,15 +6,20 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"os"
 	"runtime"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/configsync"
+	"github.com/databricks/cli/bundle/deploy/metadata"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -25,6 +30,7 @@ import (
 func newConfigRemoteSyncCommand() *cobra.Command {
 	var save bool
 	var selectIDs []string
+	var statePath string
 
 	cmd := &cobra.Command{
 		Use:   "config-remote-sync",
@@ -44,16 +50,39 @@ Examples:
   databricks bundle config-remote-sync --save
 
   # Restrict the sync to a single resource by its type and deployed resource ID
-  databricks bundle config-remote-sync --select-ids jobs:123456789 --save`,
+  databricks bundle config-remote-sync --select-ids jobs:123456789 --save
+
+  # Read the deployment state from an explicit workspace location
+  databricks bundle config-remote-sync --state-path /Workspace/Shared/.bundle/my_bundle/dev/state`,
 		Hidden: true, // Used by DABs in the Workspace only
 	}
 
 	cmd.Flags().BoolVar(&save, "save", false, "Write updated config files to disk")
 	cmd.Flags().StringSliceVar(&selectIDs, "select-ids", nil, "Sync only the given resources, each as <type>:<id> (e.g. jobs:123456789). Can be repeated or comma-separated.")
+	cmd.Flags().StringVar(&statePath, "state-path", "", "Absolute workspace path of the deployment state folder to read, overriding workspace.state_path. Use when the state does not live under the path this command resolves by default, e.g. because the bundle was deployed by another user.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if runtime.GOOS == "windows" {
 			return errors.New("config-remote-sync command is not supported on Windows")
+		}
+
+		if err := validateStatePathFlag(statePath); err != nil {
+			return err
+		}
+
+		// Materialize the state being read into a scratch directory: it has to be on
+		// disk to be opened, and the default location is keyed on bundle root and
+		// target alone, so another deployment's state would be left there for later
+		// commands, including deploy, to pick up as this bundle's own. Nothing needs
+		// it to persist, since the state is always re-read and never written back.
+		if statePath != "" {
+			parent, _ := env.TempDir(cmd.Context())
+			stateDir, err := os.MkdirTemp(parent, "databricks-bundle-state-")
+			if err != nil {
+				return err
+			}
+			defer os.RemoveAll(stateDir)
+			cmd.SetContext(envlib.Set(cmd.Context(), env.TempDirVariable, stateDir))
 		}
 
 		stats := configsync.Stats{Save: save}
@@ -74,6 +103,25 @@ Examples:
 			AlwaysPull: true,
 			InitFunc: func(b *bundle.Bundle) {
 				b.SkipLocalFileValidation = true
+			},
+			// Applied after phases.Initialize so the dev-mode uniqueness check does not
+			// reject a state folder this command only reads: it belongs to the
+			// deployment being synced, not to whoever runs the command.
+			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
+				if statePath == "" {
+					return nil
+				}
+				// Assigned through a mutator so the value also lands in the dynamic
+				// config tree. Later phases convert dyn->typed on entry, which would
+				// otherwise restore the default before the state snapshot is read.
+				bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
+					b.Config.Workspace.StatePath = normalizeStatePath(statePath)
+				})
+				// deployment.metadata_file_path is derived from state_path at the end of
+				// phases.Initialize, which ran before this override. Recompute it, or the
+				// diff reports the default location as a change on every resource.
+				bundle.ApplySeqContext(ctx, b, metadata.AnnotateJobs(), metadata.AnnotatePipelines())
+				return nil
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 				stats.Engine = stateDesc.Engine
@@ -180,4 +228,30 @@ Examples:
 	}
 
 	return cmd
+}
+
+// validateStatePathFlag rejects a --state-path this command cannot resolve to one
+// deployment's state folder. "~" is refused rather than expanded: it resolves to the
+// home of whoever runs the command, which is the resolution this flag exists to override.
+func validateStatePathFlag(statePath string) error {
+	switch {
+	case statePath == "":
+		return nil
+	case strings.HasPrefix(statePath, "~"):
+		return fmt.Errorf("--state-path must be an absolute workspace path, got %q: pass the path of the deployment to sync, not one relative to the current user's home", statePath)
+	case !strings.HasPrefix(statePath, "/"):
+		return fmt.Errorf("--state-path must be an absolute workspace path, got %q", statePath)
+	case strings.HasPrefix(statePath, "/Volumes/"):
+		return fmt.Errorf("--state-path does not support Volumes paths, got %q", statePath)
+	}
+	return nil
+}
+
+// normalizeStatePath applies the /Workspace prefixing that PrependWorkspacePrefix gives
+// a configured state_path. That mutator has already run by the time the flag is applied.
+func normalizeStatePath(statePath string) string {
+	if strings.HasPrefix(statePath, "/Workspace/") {
+		return statePath
+	}
+	return "/Workspace" + statePath
 }

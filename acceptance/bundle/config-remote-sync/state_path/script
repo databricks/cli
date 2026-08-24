@@ -1,0 +1,59 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+mkdir -p other
+envsubst < other.yml.tmpl > other/databricks.yml
+
+cleanup() {
+  trace withdir other $CLI bundle destroy --auto-approve
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+own_state="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle-${UNIQUE_NAME}/default/state"
+other_state="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/other-bundle-${UNIQUE_NAME}/default/state"
+
+$CLI bundle deploy
+withdir other $CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Modify the job remotely"
+echo
+edit_resource.py jobs $job_id <<INNER
+r["max_concurrent_runs"] = 5
+INNER
+
+# Nothing below flushes .databricks: the deploy above populated it, and the override
+# has to win over that cache rather than be silently defeated by it.
+title "--state-path at this deployment's own state folder detects the drift"
+echo
+$CLI bundle config-remote-sync --state-path "$own_state" --select-ids "jobs:$job_id"
+
+title "The same folder without a /Workspace prefix resolves identically"
+echo
+$CLI bundle config-remote-sync --state-path "/Users/${CURRENT_USER_NAME}/.bundle/test-bundle-${UNIQUE_NAME}/default/state" --select-ids "jobs:$job_id"
+
+title "Reading another deployment's state reports no change of its own making"
+echo
+# The other deployment declares the same resource with the same fields, so a clean
+# diff is empty. Anything reported here is derived from this bundle's own defaults
+# rather than from the state folder that was passed.
+$CLI bundle config-remote-sync --state-path "$other_state"
+
+title "Reading another deployment's state does not poison this bundle's own cache"
+echo
+errcode $CLI bundle config-remote-sync --state-path "$other_state" --select-ids "jobs:$job_id" > out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+echo "sync against the other deployment's state failed as expected (its state has no jobs:$job_id)"
+echo "this bundle still reads its own state:"
+$CLI bundle config-remote-sync
+
+title "A dev-mode target is not blocked from reading a state folder it does not own"
+echo
+errcode $CLI bundle config-remote-sync --state-path "/Workspace/Users/someone-else@example.com/.bundle/b/default/state" --select-ids "jobs:$job_id" 2>&1 | contains.py "!uniqueness when using 'mode: development'" >> out.$DATABRICKS_BUNDLE_ENGINE.txt
+errcode $CLI bundle config-remote-sync --state-path "/Workspace/Shared/.bundle/b/default/state" --select-ids "jobs:$job_id" 2>&1 | contains.py "!uniqueness when using 'mode: development'" >> out.$DATABRICKS_BUNDLE_ENGINE.txt
+echo "neither foreign path was rejected by the dev-mode uniqueness check"
+
+title "Rejected values"
+musterr trace $CLI bundle config-remote-sync --state-path relative/state
+musterr trace $CLI bundle config-remote-sync --state-path '~/.bundle/test/default/state'
+musterr trace $CLI bundle config-remote-sync --state-path /Volumes/main/default/vol/state
