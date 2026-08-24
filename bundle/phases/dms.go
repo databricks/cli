@@ -33,7 +33,7 @@ func newRecording(ctx context.Context, b *bundle.Bundle, eng engine.EngineType, 
 		Client: client,
 		// Read the state from the same deployment, which the state DB looked up when it
 		// opened. Empty on a first deploy, where Prepare creates the deployment instead.
-		DeploymentID: b.DeploymentBundle.StateDB.DMSDeploymentID(),
+		DeploymentID: b.DeploymentBundle.StateDB.DMSDeploymentID,
 		StatePath:    b.Config.Workspace.StatePath,
 		VersionType:  versionType,
 		Metadata:     deploymentMetadata(b),

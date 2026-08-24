@@ -76,17 +76,10 @@ type DeploymentState struct {
 	// history, in which case StartRecording installs it.
 	sink operationRecorder
 
-	// dmsDeploymentID is the deployment Open read the state from, kept so the deploy that
-	// follows records under it without looking the workspace node up again.
-	dmsDeploymentID string
-}
-
-// DMSDeploymentID returns the deployment this state was read from, and empty when the bundle
-// does not record deployment history or has never been deployed.
-func (db *DeploymentState) DMSDeploymentID() string {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	return db.dmsDeploymentID
+	// DMSDeploymentID is the deployment Open read the state from, kept so what follows records
+	// under it without looking the workspace node up again. Empty when the bundle does not
+	// record deployment history or has never been deployed.
+	DMSDeploymentID string
 }
 
 // StartRecording has every subsequent state write recorded with DMS through writer, so what
@@ -417,7 +410,7 @@ To record this bundle's history, start it over as a new deployment:
 
 To keep the existing resources instead, unset experimental.record_deployment_history`, path)
 		}
-		db.dmsDeploymentID = dmsSource.DeploymentID
+		db.DMSDeploymentID = dmsSource.DeploymentID
 		if dmsSource.DeploymentID != "" {
 			if err := db.readDMSState(ctx, dmsSource); err != nil {
 				return err

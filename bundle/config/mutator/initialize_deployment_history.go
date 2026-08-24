@@ -31,7 +31,7 @@ func (m *initializeDeploymentHistory) Apply(ctx context.Context, b *bundle.Bundl
 		return nil
 	}
 
-	deploymentID := b.DeploymentBundle.StateDB.DMSDeploymentID()
+	deploymentID := b.DeploymentBundle.StateDB.DMSDeploymentID
 	if deploymentID == "" {
 		// Nothing recorded yet: the bundle has not been deployed, or its deployment
 		// was destroyed.
