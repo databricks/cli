@@ -50,7 +50,7 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *catalog.CreateCa
 }
 
 // DoUpdate updates the catalog in place and returns remote state.
-func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catalog.CreateCatalog, _ *PlanEntry) (*catalog.CatalogInfo, error) {
+func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catalog.CreateCatalog, entry *PlanEntry) (*catalog.CatalogInfo, error) {
 	updateRequest := catalog.UpdateCatalog{
 		Comment:                      config.Comment,
 		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
@@ -62,8 +62,10 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 		Options:                      config.Options,
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              forceSendComment(utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner")),
+		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner"),
 	}
+
+	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
 
 	response, err := r.client.Catalogs.Update(ctx, updateRequest)
 	if err != nil {
@@ -86,13 +88,16 @@ func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config 
 		Options:                      config.Options,
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              forceSendComment(utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner")),
+		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner"),
 	}
 
 	if config.Name != id {
 		updateRequest.NewName = config.Name
 	}
 
+	// No forceSendClearedFields here: the rename always carries new_name, so the payload is
+	// never empty, and DoUpdateWithID has no PlanEntry to consult. A field cleared in the
+	// same deploy as a rename is picked up by the DoUpdate on the next one.
 	response, err := r.client.Catalogs.Update(ctx, updateRequest)
 	if err != nil {
 		return "", nil, err

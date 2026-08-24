@@ -101,29 +101,7 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 		}
 	}
 
-	// Update only the fields that can be updated. Comment is keyed off presence rather
-	// than a non-empty value so an explicit empty comment clears it, the way UC does.
-	if _, ok := fields["comment"]; ok {
-		existing.Comment = updateRequest.Comment
-		// UC echoes a comment once it has been set, including when it was set to "",
-		// so keep it in the response rather than letting omitempty drop it.
-		existing.ForceSendFields = append(existing.ForceSendFields, "Comment")
-	}
-	if updateRequest.CustomMaxRetentionHours != 0 {
-		existing.CustomMaxRetentionHours = updateRequest.CustomMaxRetentionHours
-	}
-	if updateRequest.ManagedEncryptionSettings != nil {
-		existing.ManagedEncryptionSettings = updateRequest.ManagedEncryptionSettings
-	}
-	if updateRequest.Options != nil {
-		existing.Options = updateRequest.Options
-	}
-	if updateRequest.Properties != nil {
-		existing.Properties = updateRequest.Properties
-	}
-	if updateRequest.Owner != "" {
-		existing.Owner = updateRequest.Owner
-	}
+	applyUpdatedFields(&existing, updateRequest, fields)
 	if updateRequest.NewName != "" {
 		existing.Name = updateRequest.NewName
 		existing.FullName = updateRequest.NewName

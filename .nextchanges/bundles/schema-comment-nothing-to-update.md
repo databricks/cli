@@ -1,1 +1,1 @@
-Fixed `bundle deploy` failing with `Nothing to update` on the direct engine when a schema's, catalog's or volume's comment was set outside the bundle.
+Fixed `bundle deploy` on the direct engine failing with `Nothing to update`, or silently not converging, when a schema, catalog or volume field was set outside the bundle. The update now sends the fields the plan reports as cleared instead of dropping them.

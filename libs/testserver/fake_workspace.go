@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/google/uuid"
 
+	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/files"
@@ -284,6 +286,38 @@ func parseUCUpdate(body []byte, operation string) (map[string]json.RawMessage, *
 			"error_code": "INVALID_PARAMETER_VALUE",
 			"message":    operation + " Nothing to update.",
 		},
+	}
+}
+
+// applyUpdatedFields copies every field the update payload names from update onto
+// existing, matched by JSON name, and marks it force-send so a zero value survives the
+// response encoding (the stored *Info types are all omitempty).
+//
+// Fields the payload omits are left untouched: a partial-update API changes only what the
+// caller names, and modelling that is the whole point of these fakes. Fields the payload
+// names but the stored type lacks (new_name, force) are skipped for the caller to handle.
+// existing must be a pointer; update is passed by value.
+func applyUpdatedFields(existing, update any, fields map[string]json.RawMessage) {
+	dst := reflect.ValueOf(existing).Elem()
+	src := reflect.ValueOf(update)
+
+	for i := range src.Type().NumField() {
+		name := structtag.JSONTag(src.Type().Field(i).Tag.Get("json")).Name()
+		if name == "" || name == "-" {
+			continue
+		}
+		if _, ok := fields[name]; !ok {
+			continue
+		}
+		dstField := dst.FieldByName(src.Type().Field(i).Name)
+		if !dstField.IsValid() || !dstField.CanSet() || dstField.Type() != src.Field(i).Type() {
+			continue
+		}
+		dstField.Set(src.Field(i))
+		forceSend := dst.FieldByName("ForceSendFields")
+		if forceSend.IsValid() && forceSend.CanSet() {
+			forceSend.Set(reflect.Append(forceSend, reflect.ValueOf(src.Type().Field(i).Name)))
+		}
 	}
 }
 

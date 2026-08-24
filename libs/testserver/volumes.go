@@ -90,18 +90,7 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 		}
 	}
 
-	// Keyed off presence rather than a non-empty value so an explicit empty comment
-	// clears the stored one, the way UC does.
-	if _, ok := fields["comment"]; ok {
-		existing.Comment = request.Comment
-		// UC echoes a comment once it has been set, including when it was set to "",
-		// so keep it in the response rather than letting omitempty drop it.
-		existing.ForceSendFields = append(existing.ForceSendFields, "Comment")
-	}
-
-	if request.Owner != "" {
-		existing.Owner = request.Owner
-	}
+	applyUpdatedFields(&existing, request, fields)
 
 	if request.NewName != "" {
 		delete(s.Volumes, fullname)

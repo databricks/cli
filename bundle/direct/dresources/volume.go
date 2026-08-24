@@ -48,14 +48,14 @@ func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVol
 	return response.FullName, response, nil
 }
 
-func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ *PlanEntry) (*catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, entry *PlanEntry) (*catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,
 		NewName: "", // Not supported by Update(). Needs DoUpdateWithID()
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: forceSendComment(utils.FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "NewName", "Owner")),
+		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "NewName", "Owner"),
 	}
 
 	nameFromID, err := getNameFromID(id)
@@ -66,6 +66,8 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 	if config.Name != nameFromID {
 		return nil, fmt.Errorf("internal error: unexpected change of name from %#v to %#v", nameFromID, config.Name)
 	}
+
+	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil {
@@ -87,7 +89,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		NewName: "", // Initialized below if needed
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: forceSendComment(utils.FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "Owner")),
+		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "Owner"),
 	}
 
 	items := strings.Split(id, ".")
@@ -100,6 +102,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		updateRequest.NewName = config.Name
 	}
 
+	// See ResourceCatalog.DoUpdateWithID on why the rename path does not force-send.
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil || response == nil {
 		return "", nil, err
