@@ -157,6 +157,11 @@ type Bundle struct {
 	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
 	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
 
+	// RootPathIsNameTargetScoped reports whether workspace.root_path ends in the bundle
+	// name and target. Recorded before variable resolution, so a path that only happens
+	// to end in those two segments does not count.
+	RootPathIsNameTargetScoped bool
+
 	// Metadata about the bundle deployment. This is the interface Databricks services
 	// rely on to integrate with bundles when they need additional information about
 	// a bundle deployment.
