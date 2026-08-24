@@ -317,38 +317,16 @@ resources:
       # reports empty. This is not a backend default, so suppress remote changes.
       - field: budget_policy_id
         reason: no_update_api
-      # Accepted on write but not returned by GET.
-      - field: config.served_entities[*].burst_scaling_enabled
-        reason: input_only
       # table_names creates a profile and is not returned; inference_table_config round-trips.
       # The spec annotated this input_only in the v0.171 spec but no longer does, so the rule
       # has to be manual again.
       - field: telemetry_config.table_names
         reason: input_only
       # Write-only secrets: the backend stores them and returns the reference field, not the plaintext.
-      - field: config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.anthropic_config.anthropic_api_key_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.cohere_config.cohere_api_key_plaintext
-        reason: input_only
+      # custom_provider_config is not in the OpenAPI spec so the generator cannot reach it.
       - field: config.served_entities[*].external_model.custom_provider_config.api_key_auth.value_plaintext
         reason: input_only
       - field: config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.openai_config.openai_api_key_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.palm_config.palm_api_key_plaintext
         reason: input_only
     ignore_local_changes:
       - field: budget_policy_id
@@ -574,15 +552,6 @@ resources:
     ignore_remote_changes:
       - field: space # This field is not yet supported by Update APIs but exposed in the API spec. TODO: fix when update APIs supports it.
         reason: managed
-      # securable_kind is a server-computed classification (e.g. TABLE_DELTA) that the
-      # backend returns only for UC TABLE securables. It is output-only and absent from
-      # the input schema, so the user can never declare it; without this it plans a
-      # perpetual update on every TABLE securable (remote set, config empty). It is not
-      # produced by resources.generated.yml because the OpenAPI schema does not link the
-      # element type of app resources[], so the generator cannot reach this nested field.
-      # https://github.com/databricks/cli/issues/6342
-      - field: resources[*].uc_securable.securable_kind
-        reason: output_only
 
   secret_scopes:
     backend_defaults:
