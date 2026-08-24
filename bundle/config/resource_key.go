@@ -12,7 +12,7 @@ import "strings"
 //
 //	safeerr.Errorf("%s: SaveState: %w", config.ResourceKey(node), err)
 //	  message:  resources.jobs.my_job: SaveState: ...
-//	  template: resources.jobs.*: SaveState: %w
+//	  template: jobs.*: SaveState: %w
 type ResourceKey string
 
 func (k ResourceKey) String() string {
@@ -31,9 +31,10 @@ func (k ResourceKey) SafeString() string {
 	// GetResourceTypeFromKey collapses a sub-resource into "<group>.<kind>"
 	// (e.g. "jobs.permissions"), but in the key itself the kind trails the
 	// name. Rebuild the key's own shape so the stand-in reads like the value.
+	// The "resources." prefix is dropped: every key carries it, so it is noise.
 	group, kind, hasKind := strings.Cut(resourceType, ".")
 	if hasKind {
-		return "resources." + group + ".*." + kind
+		return group + ".*." + kind
 	}
-	return "resources." + group + ".*"
+	return group + ".*"
 }

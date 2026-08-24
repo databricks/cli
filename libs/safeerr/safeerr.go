@@ -66,8 +66,8 @@ func Safe(v any) any {
 //
 // A resource key is the motivating case: "resources.jobs.my_job" mixes a group
 // the CLI defines with a name the user chose, so it stands in for itself as
-// "resources.jobs.*" — enough to tell a failing job from a failing pipeline
-// without reporting which one.
+// "jobs.*" — enough to tell a failing job from a failing pipeline without
+// reporting which one.
 //
 // A value that is both an error and a SafeStringer is treated as an error, so
 // that %w keeps chaining its template. Otherwise SafeStringer wins over Safe:

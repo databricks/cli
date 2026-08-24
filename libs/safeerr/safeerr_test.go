@@ -382,7 +382,7 @@ func TestErrorTemplateDeepChain(t *testing.T) {
 // user-chosen name, the stand-in keeps only the group.
 type safeStringerKey string
 
-func (k safeStringerKey) SafeString() string { return "resources.jobs.*" }
+func (k safeStringerKey) SafeString() string { return "jobs.*" }
 
 // safeStringerErr implements both error and SafeStringer, which resolves as
 // error so that %w keeps chaining.
@@ -406,21 +406,21 @@ func TestSafeStringer(t *testing.T) {
 			format:       "cannot update %s: %w",
 			args:         []any{key, fs.ErrPermission},
 			wantMessage:  "cannot update resources.jobs.my_job: " + fs.ErrPermission.Error(),
-			wantTemplate: "cannot update resources.jobs.*: %w",
+			wantTemplate: "cannot update jobs.*: %w",
 		},
 		{
 			name:         "q verb quotes the stand-in like the value",
 			format:       "%q not found",
 			args:         []any{key},
 			wantMessage:  `"resources.jobs.my_job" not found`,
-			wantTemplate: `"resources.jobs.*" not found`,
+			wantTemplate: `"jobs.*" not found`,
 		},
 		{
 			name:         "alongside Safe and unsafe args",
 			format:       "cannot %s %s: field %q: %s",
 			args:         []any{Safe("update"), key, Safe("tasks[0].job_id"), unsafeValue},
 			wantMessage:  "cannot update resources.jobs.my_job: field \"tasks[0].job_id\": " + unsafeValue,
-			wantTemplate: `cannot update resources.jobs.*: field "tasks[0].job_id": %s`,
+			wantTemplate: `cannot update jobs.*: field "tasks[0].job_id": %s`,
 		},
 	}
 
@@ -440,7 +440,7 @@ func TestSafeStringerValueIsNotRetained(t *testing.T) {
 	require.True(t, ok)
 	require.Len(t, te.args, 1)
 	// Only the stand-in survives; the key itself is gone.
-	assert.Equal(t, safeValue{v: "resources.jobs.*"}, te.args[0])
+	assert.Equal(t, safeValue{v: "jobs.*"}, te.args[0])
 }
 
 func TestSafeStringerErrorIsTreatedAsError(t *testing.T) {
@@ -459,5 +459,5 @@ func TestSafeStringerOutranksSafe(t *testing.T) {
 	// into the template.
 	err := Errorf("%s", Safe(safeStringerKey("resources.jobs.my_job")))
 	assert.Equal(t, "resources.jobs.my_job", err.Error())
-	assert.Equal(t, "resources.jobs.*", ErrorTemplate(err))
+	assert.Equal(t, "jobs.*", ErrorTemplate(err))
 }
