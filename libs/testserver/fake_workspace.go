@@ -258,13 +258,9 @@ func (s *FakeWorkspace) LockUnlock() func() {
 	return func() { s.mu.Unlock() }
 }
 
-// parseUCUpdate decodes a Unity Catalog update payload into its raw fields. It returns a
-// rejection response when the body carries no field to act on: UC answers such a PATCH with
-// "<operation> Nothing to update." (400) rather than treating it as a no-op. A key set to
-// null does not count. Verified against a real workspace for schemas, volumes and catalogs:
-// {} and {"comment": null} are rejected, while {"comment": ""} and
-// {"custom_max_retention_hours": 0} are accepted.
-func parseUCUpdate(body []byte, operation string) (map[string]json.RawMessage, *Response) {
+// parseUpdateFields decodes an update payload into its raw fields, so a handler can tell
+// a field explicitly set to a zero value from one the caller omitted.
+func parseUpdateFields(body []byte) (map[string]json.RawMessage, *Response) {
 	var fields map[string]json.RawMessage
 
 	if err := json.Unmarshal(body, &fields); err != nil {
@@ -272,6 +268,22 @@ func parseUCUpdate(body []byte, operation string) (map[string]json.RawMessage, *
 			Body:       fmt.Sprintf("internal error: %s", err),
 			StatusCode: http.StatusInternalServerError,
 		}
+	}
+	return fields, nil
+}
+
+// parseUCUpdate is parseUpdateFields for the UC APIs that reject a payload carrying no
+// field to act on, answering "<operation> Nothing to update." (400) rather than treating it
+// as a no-op. A key set to null does not count.
+//
+// Verified against a real workspace for schemas, volumes and catalogs: {} and
+// {"comment": null} are rejected, while {"comment": ""} and
+// {"custom_max_retention_hours": 0} are accepted. Registered models accept {} instead, so
+// they use parseUpdateFields.
+func parseUCUpdate(body []byte, operation string) (map[string]json.RawMessage, *Response) {
+	fields, errResponse := parseUpdateFields(body)
+	if errResponse != nil {
+		return nil, errResponse
 	}
 
 	for _, value := range fields {

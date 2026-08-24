@@ -65,7 +65,7 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.
 	return response.FullName, response, nil
 }
 
-func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ *PlanEntry) (*catalog.RegisteredModelInfo, error) {
+func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, entry *PlanEntry) (*catalog.RegisteredModelInfo, error) {
 	updateRequest := catalog.UpdateRegisteredModelRequest{
 		FullName:        id,
 		Comment:         config.Comment,
@@ -90,6 +90,8 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 		Name:            config.Name,
 		CatalogName:     config.CatalogName,
 	}
+
+	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
 
 	response, err := r.client.RegisteredModels.Update(ctx, updateRequest)
 	if err != nil {

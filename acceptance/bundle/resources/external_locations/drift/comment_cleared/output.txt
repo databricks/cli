@@ -15,13 +15,11 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === The comment the bundle no longer declares
 >>> [CLI] api get /api/2.1/unity-catalog/external-locations/myloc
-"declared in the bundle"
+""
 
 === Redeploy
 >>> [CLI] bundle plan
-update external_locations.location1
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -37,6 +35,7 @@ Destroy: 1 deleted
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/external-locations/myloc",
   "body": {
+    "comment": "",
     "credential_name": "test_storage_credential",
     "url": "s3://test-bucket/path"
   }

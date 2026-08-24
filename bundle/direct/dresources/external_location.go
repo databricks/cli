@@ -53,7 +53,7 @@ func (r *ResourceExternalLocation) DoCreate(ctx context.Context, config *catalog
 }
 
 // DoUpdate updates the external location in place and returns remote state.
-func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, config *catalog.CreateExternalLocation, _ *PlanEntry) (*catalog.ExternalLocationInfo, error) {
+func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, config *catalog.CreateExternalLocation, entry *PlanEntry) (*catalog.ExternalLocationInfo, error) {
 	updateRequest := catalog.UpdateExternalLocation{
 		Comment:                   config.Comment,
 		CredentialName:            config.CredentialName,
@@ -74,11 +74,13 @@ func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, conf
 		ForceSendFields:           utils.FilterFields[catalog.UpdateExternalLocation](config.ForceSendFields, "IsolationMode", "Owner"),
 	}
 
+	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
+
 	return r.client.ExternalLocations.Update(ctx, updateRequest)
 }
 
 // DoUpdateWithID updates the external location and returns the new ID if the name changes.
-func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateExternalLocation, _ *PlanEntry) (string, *catalog.ExternalLocationInfo, error) {
+func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateExternalLocation, entry *PlanEntry) (string, *catalog.ExternalLocationInfo, error) {
 	updateRequest := catalog.UpdateExternalLocation{
 		Comment:                   config.Comment,
 		CredentialName:            config.CredentialName,
@@ -102,6 +104,8 @@ func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string
 	if config.Name != id {
 		updateRequest.NewName = config.Name
 	}
+
+	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
 
 	response, err := r.client.ExternalLocations.Update(ctx, updateRequest)
 	if err != nil {
