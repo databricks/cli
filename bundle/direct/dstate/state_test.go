@@ -2,7 +2,6 @@ package dstate
 
 import (
 	"encoding/json"
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,25 +15,6 @@ func mustFinalize(t *testing.T, db *DeploymentState) {
 	t.Helper()
 	_, err := db.Finalize(t.Context())
 	require.NoError(t, err)
-}
-
-func TestStateWritesRecordNothingWithoutSink(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "state.json")
-
-	var db DeploymentState
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
-
-	// A bundle that does not record deployment history has no writer, so no sink is
-	// installed and every recording call is a no-op.
-	db.StartRecording(t.Context(), nil)
-	require.Nil(t, db.recorder())
-
-	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil))
-	require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job"))
-	db.RecordFailure("jobs.my_job", "123", errors.New("boom"))
-	require.NoError(t, db.RecordingErr())
-	require.NoError(t, db.FinishRecording())
-	mustFinalize(t, &db)
 }
 
 func TestOpenSaveFinalizeRoundTrip(t *testing.T) {

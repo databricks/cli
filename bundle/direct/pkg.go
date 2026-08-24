@@ -55,7 +55,7 @@ type DeploymentBundle struct {
 	// OpRec records applied operations with DMS. Nil unless the bundle records deployment
 	// history, in which case the deploy phase sets it once the version exists. Apply drains
 	// it before returning.
-	OpRec dms.OperationWriter
+	OpRec *dms.OperationSink
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

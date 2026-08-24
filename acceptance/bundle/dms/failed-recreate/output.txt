@@ -66,7 +66,7 @@ Files: 3 uploaded, 0 deleted
   "method": "PATCH",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
   "q": {
-    "update_mask": "error_message,status"
+    "update_mask": "error_message,resource_id,status"
   },
   "body": {
     "error_message": "Fault injected by test. (400 INVALID_PARAMETER_VALUE)",

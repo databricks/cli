@@ -179,12 +179,12 @@ func TestDisabledRecordingIsNoOp(t *testing.T) {
 	r := Disabled()
 
 	require.NoError(t, r.Prepare(t.Context()))
-	writer, err := r.Start(t.Context(), []StagedOperation{{ResourceKey: "jobs.foo"}})
+	sink, err := r.Start(t.Context(), []StagedOperation{{ResourceKey: "jobs.foo"}})
 	require.NoError(t, err)
 	require.NoError(t, r.Finish(t.Context(), true))
 
 	assert.Empty(t, r.DeploymentID())
 	assert.Zero(t, r.Version())
-	// No writer, which is what leaves the state DB without a sink and nothing to stamp.
-	assert.Nil(t, writer)
+	// No sink, which is what leaves the state DB recording nothing and nothing to stamp.
+	assert.Nil(t, sink)
 }

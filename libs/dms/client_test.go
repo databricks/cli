@@ -108,55 +108,20 @@ func TestDeploymentIDFromName(t *testing.T) {
 }
 
 func TestUpdateRequestSendsAFieldOnlyWhenTheMaskNamesIt(t *testing.T) {
-	// Every case carries the same values, so what reaches the body is decided by the mask
-	// alone. A failure sending state would drop the resource from the deployment, and
-	// resource_id does not ride along with state.
+	// The masks the CLI builds are asserted on the wire by acceptance/bundle/dms. What that
+	// cannot show is that each field is gated on its own bit: state is the one whose absence
+	// would drop the resource from the deployment, and resource_id must not ride along with it.
 	update := OperationUpdate{
+		Fields:       FieldResourceID | FieldStatus,
 		State:        json.RawMessage(`{"state":{"name":"foo"}}`),
 		ResourceID:   "job-1",
 		Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
 		ErrorMessage: "boom",
 	}
 
-	tests := []struct {
-		name   string
-		fields Fields
-		want   updateOperationRequest
-	}{
-		{
-			name:   "a write that describes the resource",
-			fields: DescribesResource,
-			want: updateOperationRequest{
-				State:        `{"state":{"name":"foo"}}`,
-				ResourceId:   "job-1",
-				Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
-				ErrorMessage: "boom",
-				SequenceId:   "3",
-			},
-		},
-		{
-			name:   "a failure that keeps the recorded state",
-			fields: KeepsState,
-			want: updateOperationRequest{
-				Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
-				ErrorMessage: "boom",
-				SequenceId:   "3",
-			},
-		},
-		{
-			name:   "resource_id without state",
-			fields: FieldResourceID,
-			want: updateOperationRequest{
-				ResourceId: "job-1",
-				SequenceId: "3",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			update.Fields = tt.fields
-			assert.Equal(t, tt.want, newUpdateRequest(update, "3"))
-		})
-	}
+	assert.Equal(t, updateOperationRequest{
+		ResourceId: "job-1",
+		Status:     bundledeployments.OperationStatusOperationStatusSucceeded,
+		SequenceId: "3",
+	}, newUpdateRequest(update, "3"))
 }

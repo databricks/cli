@@ -9,7 +9,7 @@ import (
 func TestFieldsMask(t *testing.T) {
 	// The order is fixed, so the same set always sends the same mask.
 	assert.Equal(t, "state,error_message,resource_id,status", DescribesResource.Mask())
-	assert.Equal(t, "error_message,status", KeepsState.Mask())
+	assert.Equal(t, "error_message,resource_id,status", KeepsState.Mask())
 	assert.Equal(t, "state", FieldState.Mask())
 	assert.Empty(t, Fields(0).Mask())
 }

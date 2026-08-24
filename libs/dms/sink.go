@@ -12,11 +12,18 @@ import (
 // and DMS is what the next plan reads.
 const operationSinkQueueSize = 10
 
-// OperationSink writes operations one at a time on a background goroutine, so a deploy never
-// waits on a round trip. queue holds bundle state keys, converted where they go on the wire,
-// and pending the newest update per key, so a second write for a resource replaces the first.
+// stagedSequenceID is what CreateVersion leaves on every operation it stages, and so the
+// precondition for the first update of a resource.
+const stagedSequenceID = "0"
+
+// OperationSink fills in the operations one version staged. It writes them one at a time on a
+// background goroutine, so a deploy never waits on a round trip. queue holds bundle state keys,
+// converted where they go on the wire, and pending the newest update per key, so a second write
+// for a resource replaces the first.
 type OperationSink struct {
-	writer OperationWriter
+	client       *Client
+	deploymentID string
+	version      int64
 
 	// queue holds the keys that have something waiting. One slot per resource, so a full
 	// queue means the deploy is that many resources ahead and the next write waits. Record
@@ -29,6 +36,11 @@ type OperationSink struct {
 	// stopQueue closes the queue, wrapped so Close can safely run twice.
 	stopQueue func()
 
+	// sequenceIDs holds the token the last update for a resource returned. A resource absent
+	// from it has only what staging left, so its first update sends that. Unguarded: run is
+	// the only goroutine that writes, one update at a time.
+	sequenceIDs map[ResourceKey]string
+
 	// mu guards the fields below.
 	mu sync.Mutex
 
@@ -38,13 +50,16 @@ type OperationSink struct {
 	err error
 }
 
-// NewOperationSink starts the writer. ctx must outlive Close.
-func NewOperationSink(ctx context.Context, writer OperationWriter) *OperationSink {
+// newOperationSink starts the writer. ctx must outlive Close.
+func newOperationSink(ctx context.Context, client *Client, deploymentID string, version int64) *OperationSink {
 	s := &OperationSink{
-		writer:  writer,
-		queue:   make(chan string, operationSinkQueueSize),
-		done:    make(chan struct{}),
-		pending: make(map[string]OperationUpdate),
+		client:       client,
+		deploymentID: deploymentID,
+		version:      version,
+		queue:        make(chan string, operationSinkQueueSize),
+		done:         make(chan struct{}),
+		sequenceIDs:  make(map[ResourceKey]string),
+		pending:      make(map[string]OperationUpdate),
 	}
 	s.stopQueue = sync.OnceFunc(func() { close(s.queue) })
 
@@ -111,10 +126,28 @@ func (s *OperationSink) run(ctx context.Context) {
 		}
 
 		// Keep going after a failure, so one bad write does not drop everything behind it.
-		if err := s.writer.Write(ctx, KeyFromState(resourceKey), update); err != nil {
+		if err := s.write(ctx, KeyFromState(resourceKey), update); err != nil {
 			s.setErr(fmt.Errorf("recording operation for %s with the deployment metadata service: %w", resourceKey, err))
 		}
 	}
+}
+
+// write sends one update, at the sequence id the resource is at.
+func (s *OperationSink) write(ctx context.Context, key ResourceKey, update OperationUpdate) error {
+	sequenceID, written := s.sequenceIDs[key]
+	if !written {
+		sequenceID = stagedSequenceID
+	}
+
+	next, err := s.client.UpdateOperation(ctx, s.deploymentID, s.version, key, sequenceID, update)
+	if err != nil {
+		return err
+	}
+
+	// The next write for this resource echoes the sequence id this one earned.
+	s.sequenceIDs[key] = next
+
+	return nil
 }
 
 // Close drains what is waiting and returns the first write error, which fails the deploy:

@@ -17,10 +17,12 @@ const (
 // an update may change.
 const DescribesResource = FieldState | FieldErrorMessage | FieldResourceID | FieldStatus
 
-// KeepsState is what a failure claims: mark it failed and leave state alone. State means
-// the resource is as it was written; no state means a delete went through and nothing
-// replaced it, so the resource really is gone and the deployment should say so.
-const KeepsState = FieldErrorMessage | FieldStatus
+// KeepsState is what a failure claims: mark it failed, name the resource it failed on, and
+// leave state alone. State means the resource is as it was written; no state means a delete
+// went through and nothing replaced it, so the resource really is gone and the deployment
+// should say so. The id is not optional: the service refuses an update to a delete operation
+// that does not name the resource.
+const KeepsState = FieldErrorMessage | FieldResourceID | FieldStatus
 
 // wireNames pairs each field with its name on the wire, in the order a mask lists them.
 var wireNames = []struct {

@@ -277,12 +277,12 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			logdiag.LogError(ctx, err)
 			return
 		}
-		writer, err := recording.Start(ctx, staged)
+		sink, err := recording.Start(ctx, staged)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
-		b.DeploymentBundle.OpRec = writer
+		b.DeploymentBundle.OpRec = sink
 		destroyCore(ctx, b, plan, engine, recording)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
