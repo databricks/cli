@@ -3,9 +3,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# The fake workspace settles a run on its first successful poll, so both the
-# deploy's wait and the refresh destroy plans with are faulted: the run is still
-# going when the delete reads it, which is what an interrupted deploy leaves behind.
+# Fake workspace settles a run on the first successful poll, so both the deploy
+# wait and destroy's refresh are faulted: delete sees an in-progress run.
 fault.py "GET /api/2.2/jobs/runs/get" 403 0 2
 
 title "the deploy stops waiting before the run finishes"
