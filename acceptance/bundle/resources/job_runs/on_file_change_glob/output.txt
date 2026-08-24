@@ -25,7 +25,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === editing one matched file re-fires
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_file_change.files": {
+  "lifecycle.triggers.on_file_change": {
     "action": "recreate",
     "reason": "immutable",
     "old": {
@@ -39,7 +39,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "mysubdir/a.txt": "[FILE_HASH][2]"
     }
   },
-  "lifecycle.triggers.on_file_change.files['migrations/001.txt']": {
+  "lifecycle.triggers.on_file_change['migrations/001.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][0]",
@@ -83,7 +83,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 === editing a file in a subdirectory re-fires
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_file_change.files": {
+  "lifecycle.triggers.on_file_change": {
     "action": "recreate",
     "reason": "immutable",
     "old": {
@@ -97,7 +97,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
       "mysubdir/a.txt": "[FILE_HASH][4]"
     }
   },
-  "lifecycle.triggers.on_file_change.files['mysubdir/a.txt']": {
+  "lifecycle.triggers.on_file_change['mysubdir/a.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][2]",
@@ -114,7 +114,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 === a new matching file re-fires
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_file_change.files": {
+  "lifecycle.triggers.on_file_change": {
     "action": "recreate",
     "reason": "immutable",
     "old": {
@@ -129,7 +129,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
       "mysubdir/a.txt": "[FILE_HASH][2]"
     }
   },
-  "lifecycle.triggers.on_file_change.files['migrations/003.txt']": {
+  "lifecycle.triggers.on_file_change['migrations/003.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "new": "[FILE_HASH][5]"
@@ -145,7 +145,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 === removing a matched file re-fires
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_file_change.files": {
+  "lifecycle.triggers.on_file_change": {
     "action": "recreate",
     "reason": "immutable",
     "old": {
@@ -158,7 +158,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
       "mysubdir/a.txt": "[FILE_HASH][2]"
     }
   },
-  "lifecycle.triggers.on_file_change.files['migrations/002.txt']": {
+  "lifecycle.triggers.on_file_change['migrations/002.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][1]"
@@ -174,7 +174,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 === editing a file below the glob does not re-fire
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_file_change.files": {
+  "lifecycle.triggers.on_file_change": {
     "action": "skip",
     "reason": "missing_in_remote",
     "old": {
@@ -203,7 +203,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 === ** is not recursive: it matches the same files as *
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_file_change.files": {
+  "lifecycle.triggers.on_file_change": {
     "action": "skip",
     "reason": "missing_in_remote",
     "old": {
