@@ -9,9 +9,14 @@ import (
 // precondition for the first update of a resource.
 const stagedSequenceID = "0"
 
-// OperationWriter fills in the operations one version staged, tracking the sequence id each
-// resource is at. Calls for different resources may run concurrently.
-type OperationWriter struct {
+// OperationWriter fills in the operations one version staged. Calls for different resources
+// may run concurrently.
+type OperationWriter interface {
+	Write(ctx context.Context, key ResourceKey, update OperationUpdate) error
+}
+
+// operationWriter writes through the API, tracking the sequence id each resource is at.
+type operationWriter struct {
 	client       *Client
 	deploymentID string
 	version      int64
@@ -22,8 +27,7 @@ type OperationWriter struct {
 	sequenceIDs map[ResourceKey]string
 }
 
-// Write records update as the outcome of key's staged operation.
-func (w *OperationWriter) Write(ctx context.Context, key ResourceKey, update OperationUpdate) error {
+func (w *operationWriter) Write(ctx context.Context, key ResourceKey, update OperationUpdate) error {
 	w.mu.Lock()
 	sequenceID, written := w.sequenceIDs[key]
 	w.mu.Unlock()

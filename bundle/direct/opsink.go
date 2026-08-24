@@ -14,17 +14,11 @@ import (
 // and DMS is what the next plan reads.
 const operationSinkQueueSize = 10
 
-// operationWriter is the part of dms.OperationWriter the sink uses, named here so a test can
-// hold a write in flight and watch what coalesces behind it.
-type operationWriter interface {
-	Write(ctx context.Context, key dms.ResourceKey, update dms.OperationUpdate) error
-}
-
 // operationSink writes operations one at a time on a background goroutine, so a deploy never
 // waits on a round trip. queue holds bundle state keys, converted where they go on the wire,
 // and pending the newest update per key, so a second write for a resource replaces the first.
 type operationSink struct {
-	writer operationWriter
+	writer dms.OperationWriter
 
 	// queue holds the keys that have something waiting. One slot per resource, so a full
 	// queue means the deploy is that many resources ahead and the next write waits. Record
@@ -46,9 +40,13 @@ type operationSink struct {
 	err error
 }
 
-// newOperationSink starts the writer. Every method is a no-op on a nil sink, which is what
-// apply holds when recording is off. ctx must outlive close.
-func newOperationSink(ctx context.Context, writer operationWriter) *operationSink {
+// newOperationSink starts the writer. It returns nil when recording is off, and every
+// method is a no-op on a nil sink. ctx must outlive close.
+func newOperationSink(ctx context.Context, writer dms.OperationWriter) *operationSink {
+	if writer == nil {
+		return nil
+	}
+
 	s := &operationSink{
 		writer:  writer,
 		queue:   make(chan string, operationSinkQueueSize),
