@@ -2,20 +2,18 @@ package bundle
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
 	"os"
-	"path/filepath"
 	"runtime"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/configsync"
+	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
@@ -72,12 +70,19 @@ Examples:
 			return err
 		}
 
-		// Scope the local state cache to the state folder being read. The cache is
-		// otherwise keyed on bundle root and target alone, so another deployment's
-		// state would land in the default location and be picked up as this bundle's
-		// own by later commands, including deploy.
+		// Materialize the state being read into a scratch directory: it has to be on
+		// disk to be opened, and the default location is keyed on bundle root and
+		// target alone, so another deployment's state would be left there for later
+		// commands, including deploy, to pick up as this bundle's own. Nothing needs
+		// it to persist, since the state is always re-read and never written back.
 		if statePath != "" {
-			cmd.SetContext(envlib.Set(cmd.Context(), env.TempDirVariable, stateCacheDir(statePath)))
+			parent, _ := env.TempDir(cmd.Context())
+			stateDir, err := os.MkdirTemp(parent, "databricks-bundle-state-")
+			if err != nil {
+				return err
+			}
+			defer os.RemoveAll(stateDir)
+			cmd.SetContext(envlib.Set(cmd.Context(), env.TempDirVariable, stateDir))
 		}
 
 		stats := configsync.Stats{Save: save}
@@ -112,6 +117,10 @@ Examples:
 				bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
 					b.Config.Workspace.StatePath = normalizeStatePath(statePath)
 				})
+				// deployment.metadata_file_path is derived from state_path at the end of
+				// phases.Initialize, which ran before this override. Recompute it, or the
+				// diff reports the default location as a change on every resource.
+				bundle.ApplySeqContext(ctx, b, metadata.AnnotateJobs(), metadata.AnnotatePipelines())
 				return nil
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
@@ -236,16 +245,6 @@ func validateStatePathFlag(statePath string) error {
 		return fmt.Errorf("--state-path does not support Volumes paths, got %q", statePath)
 	}
 	return nil
-}
-
-// stateCacheDir returns the local cache directory to use for an overridden state path.
-// It is keyed on the state folder so state read from another deployment can never occupy
-// the location this bundle caches its own state in, and stays outside the bundle tree so
-// a plain deploy in the same directory cannot pick it up. Deterministic, so repeat runs
-// against the same state folder still reuse the cache.
-func stateCacheDir(statePath string) string {
-	sum := sha256.Sum256([]byte(normalizeStatePath(statePath)))
-	return filepath.Join(os.TempDir(), "databricks-bundle-state", hex.EncodeToString(sum[:8]))
 }
 
 // normalizeStatePath applies the /Workspace prefixing that PrependWorkspacePrefix gives

@@ -3,7 +3,7 @@ Created jobs.my_job
 Files: 7 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/other-bundle-[UNIQUE_NAME]/default/files...
-Created jobs.other_job
+Created jobs.my_job
 Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
@@ -23,6 +23,10 @@ Detected changes in 1 resource(s):
 Resource: resources.jobs.my_job
   max_concurrent_runs: replace
 
+
+
+=== Reading another deployment's state reports no change of its own making
+No changes detected.
 
 
 === Reading another deployment's state does not poison this bundle's own cache
@@ -50,7 +54,7 @@ Error: --state-path does not support Volumes paths, got "/Volumes/main/default/v
 
 >>> withdir other [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.jobs.other_job
+  delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/other-bundle-[UNIQUE_NAME]/default
 

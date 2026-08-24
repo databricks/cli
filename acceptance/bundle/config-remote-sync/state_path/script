@@ -33,6 +33,13 @@ title "The same folder without a /Workspace prefix resolves identically"
 echo
 $CLI bundle config-remote-sync --state-path "/Users/${CURRENT_USER_NAME}/.bundle/test-bundle-${UNIQUE_NAME}/default/state" --select-ids "jobs:$job_id"
 
+title "Reading another deployment's state reports no change of its own making"
+echo
+# The other deployment declares the same resource with the same fields, so a clean
+# diff is empty. Anything reported here is derived from this bundle's own defaults
+# rather than from the state folder that was passed.
+$CLI bundle config-remote-sync --state-path "$other_state"
+
 title "Reading another deployment's state does not poison this bundle's own cache"
 echo
 errcode $CLI bundle config-remote-sync --state-path "$other_state" --select-ids "jobs:$job_id" > out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
