@@ -28,11 +28,11 @@ func TestSafeAPIErrorDescription(t *testing.T) {
 		want string
 	}{
 		{name: "not an api error", err: errors.New("boom"), want: ""},
-		{name: "code and status", err: apiError("PERMISSION_DENIED", http.StatusForbidden), want: "PERMISSION_DENIED 403"},
+		{name: "code and status", err: apiError("PERMISSION_DENIED", http.StatusForbidden), want: "403 PERMISSION_DENIED"},
 		{name: "code only", err: apiError("RESOURCE_DOES_NOT_EXIST", 0), want: "RESOURCE_DOES_NOT_EXIST"},
 		{name: "status only", err: apiError("", http.StatusInternalServerError), want: "500"},
 		{name: "nothing safe", err: apiError("", 0), want: ""},
-		{name: "wrapped", err: fmt.Errorf("deploying: %w", apiError("QUOTA_EXCEEDED", 429)), want: "QUOTA_EXCEEDED 429"},
+		{name: "wrapped", err: fmt.Errorf("deploying: %w", apiError("QUOTA_EXCEEDED", 429)), want: "429 QUOTA_EXCEEDED"},
 
 		// A code that does not have the shape of an enum member is dropped
 		// rather than trusted, so free text cannot ride along.
@@ -69,12 +69,12 @@ func TestFromErrErrorTemplate(t *testing.T) {
 		{
 			name: "api error without any safeerr wrapping",
 			err:  apiError("PERMISSION_DENIED", http.StatusForbidden),
-			want: "PERMISSION_DENIED 403",
+			want: "403 PERMISSION_DENIED",
 		},
 		{
 			name: "safeerr error wrapping an api error",
 			err:  safeerr.Errorf("cannot update %s: %w", "resources.jobs.my_job", apiError("PERMISSION_DENIED", http.StatusForbidden)),
-			want: "cannot update %s: %w [PERMISSION_DENIED 403]",
+			want: "cannot update %s: %w [403 PERMISSION_DENIED]",
 		},
 	}
 

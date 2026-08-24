@@ -67,12 +67,14 @@ func SafeAPIErrorDescription(e error) string {
 		return ""
 	}
 
+	// Status first, then code, matching FormatAPIErrorSummary so the template and
+	// the user-facing message order the same two values the same way.
 	var parts []string
-	if safeErrorCode.MatchString(apiErr.ErrorCode) {
-		parts = append(parts, apiErr.ErrorCode)
-	}
 	if apiErr.StatusCode != 0 {
 		parts = append(parts, strconv.Itoa(apiErr.StatusCode))
+	}
+	if safeErrorCode.MatchString(apiErr.ErrorCode) {
+		parts = append(parts, apiErr.ErrorCode)
 	}
 	if len(parts) == 0 {
 		return ""
