@@ -112,15 +112,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				return
 			}
 			errMsg := logdiag.GetFirstErrorSummary(ctx)
-			errTemplate := logdiag.GetFirstErrorTemplate(ctx)
 			if errMsg == "" && retErr != nil && !errors.Is(retErr, root.ErrAlreadyPrinted) {
 				errMsg = retErr.Error()
-				// Mirror the summary's fallback: a command that returned an error
-				// without logging a diagnostic never reached LogDiag, so the
-				// template has to come off the error value itself.
-				errTemplate = diag.ErrorTemplate(retErr)
 			}
-			b.Metrics.ErrorTemplate = errTemplate
 			phases.LogDeployTelemetry(ctx, b, errMsg)
 		}()
 	}

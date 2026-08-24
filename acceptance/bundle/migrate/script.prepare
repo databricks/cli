@@ -1,11 +1,11 @@
 # Filter telemetry output to auto-migration keys (direct_drymigrate_*,
 # direct_migrate_*, direct_migrated_via_*), booleans first and then the
 # PII-free error template that says which failure a direct_migrate_error or
-# direct_drymigrate_success=false was. Callers clear out.requests.txt
-# themselves; some tests want to keep it for a subsequent print_requests.py
-# assertion.
-# Call this right after the deploy whose telemetry you want, and clear
-# out.requests.txt afterwards, so each block covers exactly one deploy.
+# direct_drymigrate_success=false was.
+#
+# Call it right after the deploy whose telemetry you want, so a block covers
+# exactly one deploy. It does not clear out.requests.txt: callers do that
+# themselves, since some want it kept for a subsequent print_requests.py.
 print_migration_telemetry() {
     print_telemetry_bool_values | grep '^direct_' || true
     print_telemetry_error_templates | grep '^direct_' || true

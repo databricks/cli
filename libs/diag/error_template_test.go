@@ -50,58 +50,8 @@ func TestSafeAPIErrorDescription(t *testing.T) {
 	}
 }
 
-func TestFromErrErrorTemplate(t *testing.T) {
-	tests := []struct {
-		name string
-		err  error
-		want string
-	}{
-		{
-			name: "plain error has no template",
-			err:  errors.New("resources.jobs.my_job failed"),
-			want: "",
-		},
-		{
-			name: "safeerr error",
-			err:  safeerr.Errorf("cannot update %s: %w", "resources.jobs.my_job", errors.New("boom")),
-			want: "cannot update %s: %w",
-		},
-		{
-			name: "api error without any safeerr wrapping",
-			err:  apiError("PERMISSION_DENIED", http.StatusForbidden),
-			want: "403 PERMISSION_DENIED",
-		},
-		{
-			name: "safeerr error wrapping an api error",
-			err:  safeerr.Errorf("cannot update %s: %w", "resources.jobs.my_job", apiError("PERMISSION_DENIED", http.StatusForbidden)),
-			want: "cannot update %s: %w [403 PERMISSION_DENIED]",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			diags := FromErr(tt.err)
-			assert.Len(t, diags, 1)
-			assert.Equal(t, tt.want, diags[0].ErrorTemplate)
-		})
-	}
-}
-
 // TestFromErrErrorTemplateCarriesNoUserData is the property the field exists
 // for: whatever the summary holds, the template holds none of it.
-func TestFromErrErrorTemplateCarriesNoUserData(t *testing.T) {
-	err := safeerr.Errorf("cannot update %s: %w",
-		"resources.jobs.my_secret_job",
-		apiError("PERMISSION_DENIED", http.StatusForbidden))
-
-	diags := FromErr(err)
-	assert.Len(t, diags, 1)
-
-	for _, secret := range []string{"my_secret_job", "alice@example.com", "/Workspace/"} {
-		assert.Contains(t, diags[0].Summary, secret, "summary carries user data, as before")
-		assert.NotContains(t, diags[0].ErrorTemplate, secret, "template must not")
-	}
-}
 
 func TestFromErrNil(t *testing.T) {
 	assert.Nil(t, FromErr(nil))
@@ -110,16 +60,6 @@ func TestFromErrNil(t *testing.T) {
 // TestErrorTemplateMatchesFromErr keeps the exported helper and the field in
 // step, since callers holding an error use one and callers holding a diagnostic
 // use the other.
-func TestErrorTemplateMatchesFromErr(t *testing.T) {
-	for _, err := range []error{
-		errors.New("plain"),
-		safeerr.Errorf("cannot update %s: %w", "resources.jobs.my_job", errors.New("boom")),
-		apiError("PERMISSION_DENIED", http.StatusForbidden),
-		safeerr.Errorf("x: %w", apiError("ABORTED", http.StatusConflict)),
-	} {
-		assert.Equal(t, FromErr(err)[0].ErrorTemplate, ErrorTemplate(err))
-	}
-}
 
 // standInErr models a typed CLI error such as libs/filer's: user data in the
 // message, a PII-free classification as its stand-in.

@@ -1,0 +1,48 @@
+
+=== Not opted in: the conversion failure is reported as a failed dry run
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Warning: invalid value "BOGUS" for enum field. Valid values are [READ WRITE MANAGE]
+  at resources.secret_scopes.my_scope.permissions[0].level
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warn: post-deploy dry-run migration to direct: Failed to collapse permissions for secret scope: unknown permission level "BOGUS" for secret scope
+Warn: post-deploy dry-run migration to direct: failed to apply secret scope fixups
+Warn: The warnings above are from a dry-run migration to the direct deployment engine (https://docs.databricks.com/aws/en/dev-tools/bundles/direct).
+Your deployment is not affected and works normally, but you may experience these issues when migrating to the direct deployment engine.
+Please forward these warnings to dabs-feedback@databricks.com
+Created secret_scopes.my_scope
+Created secret_scopes.my_scope.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_migration_telemetry
+direct_drymigrate_success false
+direct_drymigrate_warnings false
+direct_migrate_error_template failed to apply secret scope fixups
+
+=== Opted in: the same failure stops the automatic migration
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Warning: invalid value "BOGUS" for enum field. Valid values are [READ WRITE MANAGE]
+  at resources.secret_scopes.my_scope.permissions[0].level
+
+Warn: Direct engine requested in DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warn: post-deploy dry-run migration to direct: Failed to collapse permissions for secret scope: unknown permission level "BOGUS" for secret scope
+Warn: post-deploy dry-run migration to direct: failed to apply secret scope fixups
+Warn: The warnings above are from a dry-run migration to the direct deployment engine (https://docs.databricks.com/aws/en/dev-tools/bundles/direct).
+Your deployment is not affected and works normally, but you may experience these issues when migrating to the direct deployment engine.
+Please forward these warnings to dabs-feedback@databricks.com
+Warn: Direct engine was requested but the dry-run migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_migration_telemetry
+direct_migrate_error true
+direct_migrate_error_template failed to apply secret scope fixups
+
+=== State is still terraform, so nothing was migrated
+
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate

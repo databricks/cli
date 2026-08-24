@@ -1,0 +1,3 @@
+# The unknown permission level is deliberate; the enum warning is part of what
+# this test asserts.
+Ignore = [".databricks"]

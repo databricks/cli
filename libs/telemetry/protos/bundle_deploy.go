@@ -114,7 +114,8 @@ type BundleDeployExperimental struct {
 	// Local cache measurements in milliseconds (compute duration, potential savings, etc.)
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
 
-	// PII-free descriptions of the errors this deploy hit. Each is a message
+	// PII-free descriptions of why a post-deploy migration to the direct engine
+	// failed. Each is a message
 	// template produced by libs/safeerr — the format string of the error, with
 	// everything the user supplied left as a verb — plus the safe fields of any
 	// API error at the end of its chain.
@@ -123,9 +124,6 @@ type BundleDeployExperimental struct {
 	// which is scrubbed heuristically and still treated as privileged. They are
 	// composed of source literals and closed enums only, so they need no
 	// scrubbing and can be grouped on directly.
-
-	// ErrorTemplate describes the first error diagnostic the deploy logged.
-	ErrorTemplate string `json:"error_template,omitempty"`
 
 	// DirectMigrateErrorTemplate describes a post-deploy migration to the direct
 	// engine whose state could not be read or converted. Set alongside

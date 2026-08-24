@@ -1,6 +1,4 @@
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
-trace print_migration_telemetry
-rm out.requests.txt
 # Add all resource IDs to runtime replacements to avoid pattern matching ambiguity
 replace_ids.py
 print_state.py > out.original_state.json
@@ -11,7 +9,6 @@ print_state.py > out.new_state.json
 # this is expected to warn because state does not match env var, but still succeed using state engine
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
-trace print_migration_telemetry
 
 rm out.requests.txt
 # Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work

@@ -33,11 +33,6 @@ type LogDiagData struct {
 
 	// Summary of the first error diagnostic logged, if any.
 	FirstErrorSummary string
-
-	// ErrorTemplate of the same diagnostic FirstErrorSummary came from. Kept
-	// alongside it rather than derived later, because the error value itself
-	// does not survive past LogDiag.
-	FirstErrorTemplate string
 }
 
 // IsSetup returns whether InitContext() was already called.
@@ -141,18 +136,6 @@ func GetFirstErrorSummary(ctx context.Context) string {
 	return val.FirstErrorSummary
 }
 
-// GetFirstErrorTemplate returns the PII-free description of the first error
-// diagnostic logged, or an empty string if there was none or it carried none.
-// Unlike GetFirstErrorSummary, the result needs no scrubbing before it is
-// reported. See diag.Diagnostic.ErrorTemplate.
-func GetFirstErrorTemplate(ctx context.Context) string {
-	val := read(ctx)
-	val.mu.Lock()
-	defer val.mu.Unlock()
-
-	return val.FirstErrorTemplate
-}
-
 func LogDiag(ctx context.Context, d diag.Diagnostic) {
 	val := read(ctx)
 	val.mu.Lock()
@@ -163,7 +146,6 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 		val.Errors += 1
 		if val.FirstErrorSummary == "" {
 			val.FirstErrorSummary = d.Summary
-			val.FirstErrorTemplate = d.ErrorTemplate
 		}
 	case diag.Warning:
 		val.Warnings += 1

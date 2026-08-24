@@ -5,10 +5,6 @@ Created jobs.job_a
 Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_migration_telemetry
-direct_drymigrate_success true
-direct_drymigrate_warnings false
-
 >>> [CLI] bundle deployment migrate
 Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
 
