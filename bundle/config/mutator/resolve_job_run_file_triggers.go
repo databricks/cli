@@ -108,6 +108,14 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[stri
 			Locations: b.Config.GetLocations(loc),
 		})
 	}
+	// filepath.Glob treats ** as two *, so doublestar-style patterns match less than expected.
+	if strings.Contains(pattern, "**") {
+		diags = diags.Append(diag.Diagnostic{
+			Severity:  diag.Warning,
+			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: ** in %q is not recursive and matches the same files as *", pattern),
+			Locations: b.Config.GetLocations(loc),
+		})
+	}
 	matches, err := filepath.Glob(filepath.Join(b.SyncRootPath, localPattern))
 	if err != nil {
 		return out, diags.Append(diag.Diagnostic{
@@ -150,7 +158,7 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[stri
 			})
 			continue
 		}
-		// Same membership as sync: .gitignore and sync.exclude drop a glob match.
+		// Honor .gitignore and sync.exclude the same way sync does.
 		if _, ok := syncable[filepath.ToSlash(rel)]; !ok {
 			ignoredMatches++
 			continue
@@ -167,20 +175,12 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[stri
 		}
 		out[filepath.ToSlash(rel)] = hash
 	}
-	// A directory-only match would otherwise leave ResolvedFileTriggers empty
-	// and silently disarm the trigger while config still sets on_file_change.
-	if regularMatches == 0 && sawNonRegular && ignoredMatches == 0 {
-		diags = diags.Append(diag.Diagnostic{
+	// Directories or excluded files would leave hashes empty and disarm the trigger.
+	// Unlike a missing-file warning, this cannot re-arm when a file appears later.
+	if regularMatches == 0 && (sawNonRegular || ignoredMatches > 0) {
+		return out, diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q matches no regular files", pattern),
-			Locations: b.Config.GetLocations(loc),
-		})
-	}
-	if len(out) == 0 && ignoredMatches > 0 {
-		out[filepath.ToSlash(pattern)] = missingFileHash
-		diags = diags.Append(diag.Diagnostic{
-			Severity:  diag.Warning,
-			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: no files match %q", pattern),
+			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q matches only directories or files excluded from sync, leaving nothing to hash", pattern),
 			Locations: b.Config.GetLocations(loc),
 		})
 	}
