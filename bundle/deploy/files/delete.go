@@ -15,8 +15,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-const bundleDirName = ".bundle"
-
 type delete struct{}
 
 func (m *delete) Name() string {
@@ -32,7 +30,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
-	removeEmptyBundleDir(ctx, b)
+	removeBundleNameDir(ctx, b)
 
 	// Clean up sync snapshot file
 	err = deleteSnapshotFile(ctx, b)
@@ -42,20 +40,17 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return nil
 }
 
-// removeEmptyBundleDir removes the ~/.bundle/<name> directory left behind once the
-// target subdirectory under it is gone. The delete is not recursive, so it only
-// succeeds while no other target of the bundle is still deployed there; both a
-// remaining sibling target and an already-removed directory surface as an error that
-// is expected and ignored.
-func removeEmptyBundleDir(ctx context.Context, b *bundle.Bundle) {
-	dir := path.Dir(b.Config.Workspace.RootPath)
-
-	// root_path is user-configurable, so only clean up the layout the CLI generates
-	// (~/.bundle/<name>/<target>) instead of deleting the parent of an arbitrary path.
-	if path.Base(path.Dir(dir)) != bundleDirName {
+// removeBundleNameDir removes the directory above the deployment root, the one named
+// after the bundle, now that the deployment under it is gone. It runs only when
+// root_path is scoped by bundle name and target, so the directory holds nothing but
+// this bundle. The delete is not recursive, so it fails while another target is still
+// deployed there; that and an already-removed directory are both ignored.
+func removeBundleNameDir(ctx context.Context, b *bundle.Bundle) {
+	if !b.RootPathIsNameTargetScoped {
 		return
 	}
 
+	dir := path.Dir(b.Config.Workspace.RootPath)
 	err := b.WorkspaceClient(ctx).Workspace.Delete(ctx, workspace.Delete{Path: dir})
 	if err != nil {
 		log.Debugf(ctx, "Leaving %s in place: %s", dir, err)
