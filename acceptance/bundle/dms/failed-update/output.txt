@@ -55,8 +55,8 @@ Files: 3 uploaded, 0 deleted
   },
   "body": {
     "error_message": "updating id=main.dms_failed_update_schema: Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
-    "status": "OPERATION_STATUS_FAILED",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "status": "OPERATION_STATUS_FAILED"
   }
 }
 {

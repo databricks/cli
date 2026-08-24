@@ -12,45 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewStateUpdateRecordsEnvelopeAsIs(t *testing.T) {
-	// The state DB serializes the envelope (see dstate.SaveState); the update carries it
-	// through untouched, sensitive fields and all.
-	state := json.RawMessage(`{"state":{"name":"foo","token":"super-secret"}}`)
-
-	update, err := NewStateUpdate("job-123", state, false)
-	require.NoError(t, err)
-
-	assert.JSONEq(t, string(state), string(update.State))
-	assert.Equal(t, bundledeployments.OperationStatusOperationStatusSucceeded, update.Status)
-	assert.Equal(t, DescribesResource, update.Fields)
-}
-
-func TestNewStateUpdateInProgressIsNotFinished(t *testing.T) {
-	// A recreate's delete is half of a larger change, so an interrupted deploy must not
-	// leave the resource described as finished.
-	update, err := NewStateUpdate("", nil, true)
-	require.NoError(t, err)
-
-	assert.Equal(t, StatusInProgress, update.Status)
-}
-
-func TestNewStateUpdateRejectsOversizedState(t *testing.T) {
-	big := json.RawMessage(strings.Repeat("x", maxStateSize+1))
-
-	_, err := NewStateUpdate("job-123", big, false)
-	assert.ErrorContains(t, err, "exceeds the 65536 byte limit")
-}
-
-func TestNewFailureUpdateRecordsError(t *testing.T) {
-	update := NewFailureUpdate("", errors.New("cluster spec is invalid"))
-
-	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, update.Status)
-	assert.Equal(t, "cluster spec is invalid", update.ErrorMessage)
-	// The resource was never written, so there is no state to serve back for it.
-	assert.Nil(t, update.State)
-	// The update only marks the operation failed; see KeepsState.
-	assert.Equal(t, KeepsState, update.Fields)
-}
+// What these updates put on the wire - the mask, the status, the state a write carries and a
+// failure leaves alone - is asserted by acceptance/bundle/dms. What is left here are the limits
+// and the merge, which a deploy cannot reach.
 
 func TestNewFailureUpdateTruncatesLongError(t *testing.T) {
 	// Truncated rather than rejected: a message over the limit would make recording
@@ -91,8 +55,8 @@ func TestMergeLetsAWriteSupersedeAFailure(t *testing.T) {
 
 func TestMergeKeepsTheWritesStateAndMask(t *testing.T) {
 	// A failure claims only status and error_message, so the write's state, id and mask
-	// survive.
-	write, err := NewStateUpdate("id-new", nil, false)
+	// survive: the resource stays listed as it was written, now marked failed.
+	write, err := NewStateUpdate("id-new", json.RawMessage(`{"state":{"name":"before"}}`), false)
 	require.NoError(t, err)
 	failed := NewFailureUpdate("id-old", errors.New("boom"))
 
@@ -101,7 +65,7 @@ func TestMergeKeepsTheWritesStateAndMask(t *testing.T) {
 	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, merged.Status)
 	assert.Equal(t, "boom", merged.ErrorMessage)
 	assert.Equal(t, "id-new", merged.ResourceID)
-	assert.Nil(t, merged.State)
+	assert.JSONEq(t, `{"state":{"name":"before"}}`, string(merged.State))
 	assert.Equal(t, DescribesResource, merged.Fields)
 }
 

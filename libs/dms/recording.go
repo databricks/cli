@@ -41,11 +41,11 @@ type Recording interface {
 	// Version is the version number Prepare claimed, and zero before it runs.
 	Version() int64
 
-	// Start creates the version, staging an operation for each resource, and returns the
-	// writer that fills them in - nil when nothing is recorded, which is what leaves the state
-	// DB without a sink. The staged set is fixed here: the service has no call to add one
-	// later, so a resource left out can never be recorded.
-	Start(ctx context.Context, staged []StagedOperation) (OperationWriter, error)
+	// Start creates the version, staging an operation for each resource, and returns the sink
+	// that fills them in - nil when nothing is recorded, which is what leaves the state DB
+	// without one. The staged set is fixed here: the service has no call to add one later, so
+	// a resource left out can never be recorded.
+	Start(ctx context.Context, staged []StagedOperation) (*OperationSink, error)
 
 	// Finish completes the version. It is a no-op before Start, which is what lets a caller
 	// defer it and still not complete a version a cancelled deploy never created, and it is
@@ -102,7 +102,7 @@ func Disabled() Recording {
 }
 
 // disabled records nothing. Its Prepare leaves no deployment and no version, and its Start no
-// writer, so a caller that stamps a version or installs the writer finds nothing to install.
+// sink, so a caller that stamps a version or installs the sink finds nothing to install.
 type disabled struct{}
 
 func (disabled) Prepare(context.Context) error      { return nil }
@@ -110,7 +110,7 @@ func (disabled) DeploymentID() string               { return "" }
 func (disabled) Version() int64                     { return 0 }
 func (disabled) Finish(context.Context, bool) error { return nil }
 
-func (disabled) Start(context.Context, []StagedOperation) (OperationWriter, error) {
+func (disabled) Start(context.Context, []StagedOperation) (*OperationSink, error) {
 	return nil, nil
 }
 
@@ -158,7 +158,7 @@ func (r *recording) Prepare(ctx context.Context) error {
 }
 
 // Start implements Recording.
-func (r *recording) Start(ctx context.Context, staged []StagedOperation) (OperationWriter, error) {
+func (r *recording) Start(ctx context.Context, staged []StagedOperation) (*OperationSink, error) {
 	// A deploy calls Prepare itself, because the version number is stamped onto every job and
 	// pipeline before the plan is computed. A destroy creates a version too, but stamps
 	// nothing, so it has no reason to settle the deployment any earlier than here.
@@ -200,12 +200,7 @@ func (r *recording) Start(ctx context.Context, staged []StagedOperation) (Operat
 	r.stopHeartbeat = startHeartbeat(ctx, r.client, r.deploymentID, r.versionNum)
 	log.Infof(ctx, "Created deployment version: deployment=%s version=%s", r.deploymentID, version.VersionId)
 
-	return &operationWriter{
-		client:       r.client,
-		deploymentID: r.deploymentID,
-		version:      r.versionNum,
-		sequenceIDs:  make(map[ResourceKey]string),
-	}, nil
+	return newOperationSink(ctx, r.client, r.deploymentID, r.versionNum), nil
 }
 
 // Finish implements Recording.

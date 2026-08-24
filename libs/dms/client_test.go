@@ -107,56 +107,32 @@ func TestDeploymentIDFromName(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestUpdateRequestSendsAFieldOnlyWhenTheMaskNamesIt(t *testing.T) {
-	// Every case carries the same values, so what reaches the body is decided by the mask
-	// alone. A failure sending state would drop the resource from the deployment, and
-	// resource_id does not ride along with state.
+func TestUpdateRequestSendsExactlyTheMaskedFields(t *testing.T) {
+	// The service rejects an update whose mask names a field the body leaves out, and treats a
+	// field it does carry as written - so the body has to hold every masked field and nothing
+	// else, empty values included. Both masks the CLI builds are asserted on the wire by
+	// acceptance/bundle/dms; this pins the rule they both rely on.
 	update := OperationUpdate{
-		State:        json.RawMessage(`{"state":{"name":"foo"}}`),
-		ResourceID:   "job-1",
-		Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
-		ErrorMessage: "boom",
+		Fields:     DescribesResource,
+		State:      json.RawMessage(`{"state":{"name":"foo"}}`),
+		ResourceID: "job-1",
+		Status:     bundledeployments.OperationStatusOperationStatusSucceeded,
 	}
 
-	tests := []struct {
-		name   string
-		fields Fields
-		want   updateOperationRequest
-	}{
-		{
-			name:   "a write that describes the resource",
-			fields: DescribesResource,
-			want: updateOperationRequest{
-				State:        `{"state":{"name":"foo"}}`,
-				ResourceId:   "job-1",
-				Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
-				ErrorMessage: "boom",
-				SequenceId:   "3",
-			},
-		},
-		{
-			name:   "a failure that keeps the recorded state",
-			fields: KeepsState,
-			want: updateOperationRequest{
-				Status:       bundledeployments.OperationStatusOperationStatusSucceeded,
-				ErrorMessage: "boom",
-				SequenceId:   "3",
-			},
-		},
-		{
-			name:   "resource_id without state",
-			fields: FieldResourceID,
-			want: updateOperationRequest{
-				ResourceId: "job-1",
-				SequenceId: "3",
-			},
-		},
-	}
+	// A successful write reports no error, and the empty value is what clears an earlier one.
+	assert.Equal(t, map[string]any{
+		"state":         `{"state":{"name":"foo"}}`,
+		"resource_id":   "job-1",
+		"error_message": "",
+		"status":        bundledeployments.OperationStatusOperationStatusSucceeded,
+		"sequence_id":   "3",
+	}, newUpdateRequest(update, "3"))
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			update.Fields = tt.fields
-			assert.Equal(t, tt.want, newUpdateRequest(update, "3"))
-		})
-	}
+	// A failure keeps the recorded state, so state is absent rather than empty: naming it
+	// would clear what the resource last recorded.
+	assert.Equal(t, map[string]any{
+		"error_message": "boom",
+		"status":        bundledeployments.OperationStatusOperationStatusFailed,
+		"sequence_id":   "3",
+	}, newUpdateRequest(NewFailureUpdate("job-1", errors.New("boom")), "3"))
 }

@@ -52,10 +52,10 @@ type DeploymentBundle struct {
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
 
-	// OpRec records applied operations with DMS. Nil unless the bundle records deployment
+	// OpSink records applied operations with DMS. Nil unless the bundle records deployment
 	// history, in which case the deploy phase sets it once the version exists. Apply drains
 	// it before returning.
-	OpRec dms.OperationWriter
+	OpSink *dms.OperationSink
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

@@ -45,10 +45,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_declined_deploy_schema\"}}",
+    "error_message": "",
     "resource_id": "main.dms_declined_deploy_schema",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_declined_deploy_schema\"}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 {

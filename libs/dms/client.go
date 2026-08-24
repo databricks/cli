@@ -113,9 +113,8 @@ func deploymentIDFromName(name string) (string, error) {
 // requester sends the two requests the generated client cannot express, so a test can capture
 // what the CLI puts on the wire. Both are TODO(DMS): drop them once the spec catches up.
 type requester interface {
-	// CreateVersion is hand-written because the generated struct has no
-	// previous_version_id, which the service needs as its concurrency check - without it
-	// every deploy after the first is rejected.
+	// CreateVersion is hand-written because the generated struct has no operations: the field
+	// is at DEVELOPMENT stage, which keeps it out of the SDK until it is promoted.
 	CreateVersion(ctx context.Context, deploymentID, versionID string, body CreateVersionRequest) (*bundledeployments.Version, error)
 
 	// UpdateOperation is hand-written because the SDK types sequence_id as an int64 while
@@ -142,7 +141,9 @@ type CreateVersionRequest struct {
 	// where it landed. The service denormalizes both onto the deployment.
 	GitInfo       *bundledeployments.GitInfo       `json:"git_info,omitempty"`
 	WorkspaceInfo *bundledeployments.WorkspaceInfo `json:"workspace_info,omitempty"`
-	// Operations is every resource this version will touch; see StagedOperation.
+	// Operations is every resource this version will touch; see StagedOperation. It sits in this
+	// body with the version's own fields because the request binds body: "version", and is input
+	// only - the response never carries it back.
 	Operations []StagedOperation `json:"operations,omitempty"`
 }
 
@@ -152,16 +153,6 @@ type CreateVersionRequest struct {
 type StagedOperation struct {
 	ResourceKey ResourceKey                           `json:"resource_key"`
 	ActionType  bundledeployments.OperationActionType `json:"action_type"`
-}
-
-// updateOperationRequest carries the values an update writes. action_type and resource_key
-// are left out: the service fixes them when the version stages the operation.
-type updateOperationRequest struct {
-	State        string                            `json:"state,omitempty"`
-	ErrorMessage string                            `json:"error_message,omitempty"`
-	ResourceId   string                            `json:"resource_id,omitempty"`
-	Status       bundledeployments.OperationStatus `json:"status,omitempty"`
-	SequenceId   string                            `json:"sequence_id,omitempty"`
 }
 
 // operationResponse is the part of an operation response the CLI reads back.
@@ -188,22 +179,24 @@ func (r *rawClient) CreateVersion(ctx context.Context, deploymentID, versionID s
 	return &version, nil
 }
 
-// newUpdateRequest builds the request body for update. Each field is sent because the mask
-// names it: the service ignores the rest, and state is the largest field by far, so a
-// failure that keeps the recorded state sends none of it.
-func newUpdateRequest(update OperationUpdate, sequenceID string) updateOperationRequest {
-	body := updateOperationRequest{SequenceId: sequenceID}
+// newUpdateRequest builds the request body for update. A field is in the body when the mask
+// names it and absent otherwise, which is what the service requires: it rejects an update
+// whose mask names a field the body leaves out, and an empty value is how a field is cleared -
+// no state means the resource is gone, no error_message means an earlier failure is resolved.
+// A map, not a struct, so presence cannot drift from the mask through an omitempty tag.
+func newUpdateRequest(update OperationUpdate, sequenceID string) map[string]any {
+	body := map[string]any{"sequence_id": sequenceID}
 	if update.Fields.Has(FieldState) {
-		body.State = string(update.State)
+		body["state"] = string(update.State)
 	}
 	if update.Fields.Has(FieldResourceID) {
-		body.ResourceId = update.ResourceID
+		body["resource_id"] = update.ResourceID
 	}
 	if update.Fields.Has(FieldErrorMessage) {
-		body.ErrorMessage = update.ErrorMessage
+		body["error_message"] = update.ErrorMessage
 	}
 	if update.Fields.Has(FieldStatus) {
-		body.Status = update.Status
+		body["status"] = update.Status
 	}
 	return body
 }

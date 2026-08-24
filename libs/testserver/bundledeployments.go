@@ -157,19 +157,19 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
 	}
 
-	// previous_version_id and operations are absent from the generated struct, so read them
-	// separately.
-	var extra struct {
-		PreviousVersionId string `json:"previous_version_id"`
-		Operations        []struct {
+	// operations rides in the version body like every other field, but is absent from the
+	// generated struct while the field is at DEVELOPMENT stage, so it is read separately.
+	// Embedding Version instead would promote its own UnmarshalJSON and silently drop this
+	// field. It is input only, so it is read here and never returned.
+	var staged struct {
+		Operations []struct {
 			ResourceKey string                                `json:"resource_key"`
 			ActionType  bundledeployments.OperationActionType `json:"action_type"`
 		} `json:"operations"`
 	}
-	if err := json.Unmarshal(req.Body, &extra); err != nil {
+	if err := json.Unmarshal(req.Body, &staged); err != nil {
 		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
 	}
-	concurrency := extra
 
 	defer s.LockUnlock()()
 
@@ -191,7 +191,7 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 	if next <= last {
 		return dmsInvalidArgument("version_id " + versionID + " must be greater than the most recent version " + d.deployment.LastVersionId)
 	}
-	if concurrency.PreviousVersionId != d.deployment.LastVersionId {
+	if version.PreviousVersionId != d.deployment.LastVersionId {
 		return dmsAborted("previous_version_id is outdated; the deployment's most recent version is " + d.deployment.LastVersionId)
 	}
 
@@ -205,17 +205,17 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 	}
 
 	// A version records its whole operation set up front; there is no API to add one later.
-	if len(extra.Operations) > maxOperationsPerVersion {
+	if len(staged.Operations) > maxOperationsPerVersion {
 		return Response{
 			StatusCode: 429,
 			Body: map[string]string{
 				"error_code": "RESOURCE_EXHAUSTED",
-				"message":    fmt.Sprintf("a version may stage at most %d operations, got %d", maxOperationsPerVersion, len(extra.Operations)),
+				"message":    fmt.Sprintf("a version may stage at most %d operations, got %d", maxOperationsPerVersion, len(staged.Operations)),
 			},
 		}
 	}
-	seen := make(map[string]bool, len(extra.Operations))
-	for _, staged := range extra.Operations {
+	seen := make(map[string]bool, len(staged.Operations))
+	for _, staged := range staged.Operations {
 		switch {
 		case staged.ResourceKey == "":
 			return dmsInvalidArgument("operations.resource_key is required")
@@ -245,7 +245,7 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 
 	// Each staged operation starts pending at sequence 0, and the CLI fills in its outcome
 	// with UpdateOperation as the resource is applied.
-	for _, staged := range extra.Operations {
+	for _, staged := range staged.Operations {
 		opName := "deployments/" + deploymentID + "/versions/" + versionID + "/operations/" + staged.ResourceKey
 		d.operations[opName] = &bundledeployments.Operation{
 			Name:        opName,
@@ -345,7 +345,21 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 		if !slices.Contains(dmsUpdatableOperationFields, path) {
 			return dmsInvalidArgument("update_mask path " + path + " is not updatable")
 		}
+		if _, sent := raw[path]; !sent {
+			// An empty value is how a field is cleared, so the field has to be there to say so.
+			return dmsInvalidArgument(path + " is required when '" + path + "' is in update_mask (an empty value clears it)")
+		}
 		update[path] = true
+	}
+
+	// A resource_id can be written but not cleared, and only alongside the state it belongs to.
+	if update["resource_id"] {
+		if op.ResourceId == "" {
+			return dmsInvalidArgument("resource_id is required when 'resource_id' is in update_mask")
+		}
+		if !update["state"] {
+			return dmsInvalidArgument("state must be in update_mask when 'resource_id' is")
+		}
 	}
 
 	defer s.LockUnlock()()
@@ -383,11 +397,6 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 	failed := after.Status == bundledeployments.OperationStatusOperationStatusFailed
 	if !failed && after.ErrorMessage != "" {
 		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED")
-	}
-
-	// Delete operations require resource_id. Create-flavored actions may lack an ID initially.
-	if after.ActionType == bundledeployments.OperationActionTypeOperationActionTypeDelete && after.ResourceId == "" {
-		return dmsInvalidArgument("resource_id is required for OPERATION_ACTION_TYPE_DELETE operations")
 	}
 
 	// An operation with state must identify its resource via resource_id,

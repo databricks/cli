@@ -355,7 +355,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		logdiag.LogError(ctx, err)
 		return
 	}
-	writer, err := recording.Start(ctx, staged)
+	sink, err := recording.Start(ctx, staged)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -363,7 +363,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	logDeploymentVersion(ctx, b, recording)
 
 	// Record operations under that version, so DMS holds the deployed resource state.
-	b.DeploymentBundle.OpRec = writer
+	b.DeploymentBundle.OpSink = sink
 	deployCore(ctx, b, plan, stateEngine, requestedEngine)
 
 	if logdiag.HasError(ctx) {

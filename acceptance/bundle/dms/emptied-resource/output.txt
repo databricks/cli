@@ -50,10 +50,11 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_emptied_resource\"}}",
+    "error_message": "",
     "resource_id": "main.dms_emptied_resource",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_emptied_resource\"}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 {
@@ -63,10 +64,11 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "state": "{\"state\":{\"securable_type\":\"schema\",\"full_name\":\"main.dms_emptied_resource\",\"__embed__\":[{\"principal\":\"someone@example.com\",\"privileges\":[\"USE_SCHEMA\"]}]},\"depends_on\":[{\"node\":\"resources.schemas.foo\",\"label\":\"${resources.schemas.foo.id}\"}]}",
+    "error_message": "",
     "resource_id": "schema/main.dms_emptied_resource",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "{\"state\":{\"securable_type\":\"schema\",\"full_name\":\"main.dms_emptied_resource\",\"__embed__\":[{\"principal\":\"someone@example.com\",\"privileges\":[\"USE_SCHEMA\"]}]},\"depends_on\":[{\"node\":\"resources.schemas.foo\",\"label\":\"${resources.schemas.foo.id}\"}]}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 {
@@ -118,9 +120,11 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
+    "error_message": "",
     "resource_id": "schema/main.dms_emptied_resource",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "",
+    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 {

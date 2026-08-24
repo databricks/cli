@@ -1,0 +1,87 @@
+
+=== Deploy so there is a recorded resource to recreate
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-upload-fails-once/default/files...
+Created schemas.foo
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A recreate records twice, and the first one fails: the second must still carry the sequence id staging left, because a rejected update earned no new one
+>>> fault.py PATCH /api/2.0/bundle/* 500 0 1
+
+>>> update_file.py databricks.yml catalog_name: main catalog_name: other
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-upload-fails-once/default/files...
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+  recreate resources.schemas.foo
+Error: recording operation for resources.schemas.foo with the deployment metadata service: Fault injected by test. (500 INJECTED)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo?update_mask=state%2Cerror_message%2Cresource_id%2Cstatus
+HTTP Status: 500 Internal Server Error
+API error_code: INJECTED
+API message: Fault injected by test.
+
+Files: 3 uploaded, 0 deleted
+
+>>> print_requests.py --dms //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "2"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "target_name": "default",
+    "display_name": "dms-upload-fails-once",
+    "previous_version_id": "1",
+    "workspace_info": {
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-upload-fails-once/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-upload-fails-once/default"
+    },
+    "operations": [
+      {
+        "resource_key": "schemas.foo",
+        "action_type": "OPERATION_ACTION_TYPE_RECREATE"
+      }
+    ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "error_message": "",
+    "resource_id": "main.dms_upload_fails_once_schema",
+    "sequence_id": "0",
+    "state": "",
+    "status": "OPERATION_STATUS_IN_PROGRESS"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "error_message": "",
+    "resource_id": "other.dms_upload_fails_once_schema",
+    "sequence_id": "0",
+    "state": "{\"state\":{\"catalog_name\":\"other\",\"comment\":\"v1\",\"name\":\"dms_upload_fails_once_schema\"}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_FAILURE"
+  }
+}

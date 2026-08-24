@@ -45,10 +45,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_resource_lifecycle_schema\"}}",
+    "error_message": "",
     "resource_id": "main.dms_resource_lifecycle_schema",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_resource_lifecycle_schema\"}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 {
@@ -103,9 +104,11 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
+    "error_message": "",
     "resource_id": "main.dms_resource_lifecycle_schema",
-    "status": "OPERATION_STATUS_IN_PROGRESS",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "",
+    "status": "OPERATION_STATUS_IN_PROGRESS"
   }
 }
 {
@@ -115,10 +118,11 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "state": "{\"state\":{\"catalog_name\":\"other\",\"comment\":\"v1\",\"name\":\"dms_resource_lifecycle_schema\"}}",
+    "error_message": "",
     "resource_id": "other.dms_resource_lifecycle_schema",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "1"
+    "sequence_id": "1",
+    "state": "{\"state\":{\"catalog_name\":\"other\",\"comment\":\"v1\",\"name\":\"dms_resource_lifecycle_schema\"}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 {
@@ -173,9 +177,11 @@ Destroy: 1 deleted
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
+    "error_message": "",
     "resource_id": "other.dms_resource_lifecycle_schema",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "",
+    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 {

@@ -20,6 +20,9 @@ const DescribesResource = FieldState | FieldErrorMessage | FieldResourceID | Fie
 // KeepsState is what a failure claims: mark it failed and leave state alone. State means
 // the resource is as it was written; no state means a delete went through and nothing
 // replaced it, so the resource really is gone and the deployment should say so.
+//
+// It cannot name resource_id: the service requires state in any mask that names the id, and
+// naming state here would overwrite what the resource last recorded.
 const KeepsState = FieldErrorMessage | FieldStatus
 
 // wireNames pairs each field with its name on the wire, in the order a mask lists them.

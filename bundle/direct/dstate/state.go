@@ -82,16 +82,14 @@ type DeploymentState struct {
 	DMSDeploymentID string
 }
 
-// StartRecording has every subsequent state write recorded with DMS through writer, so what
-// the service holds mirrors the WAL. A nil writer records nothing, which is what a bundle that
-// does not record deployment history passes. It is called once the version exists, which is why
-// it is not an Open option, and ctx must outlive FinishRecording.
-func (db *DeploymentState) StartRecording(ctx context.Context, writer dms.OperationWriter) {
-	if writer == nil {
+// StartRecording has every subsequent state write recorded with DMS through sink, so what the
+// service holds mirrors the WAL. A nil sink records nothing, which is what a bundle that does
+// not record deployment history passes. It is called once the version exists, which is why it
+// is not an Open option.
+func (db *DeploymentState) StartRecording(sink *dms.OperationSink) {
+	if sink == nil {
 		return
 	}
-
-	sink := dms.NewOperationSink(ctx, writer)
 
 	db.mu.Lock()
 	defer db.mu.Unlock()

@@ -11,11 +11,11 @@ Files: 4 uploaded, 0 deleted
 Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //versions/1/operations --sort --del-body state --oneline
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.five", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"resource_id": "[NUMID]", "status": "OPERATION_STATUS_SUCCEEDED", "sequence_id": "0"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.four", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"resource_id": "[NUMID]", "status": "OPERATION_STATUS_SUCCEEDED", "sequence_id": "0"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"resource_id": "[NUMID]", "status": "OPERATION_STATUS_SUCCEEDED", "sequence_id": "0"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.three", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"resource_id": "[NUMID]", "status": "OPERATION_STATUS_SUCCEEDED", "sequence_id": "0"}}
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"resource_id": "[NUMID]", "status": "OPERATION_STATUS_SUCCEEDED", "sequence_id": "0"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.five", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.four", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.three", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
 
 === Redeploy with no changes: nothing is applied, so no operations are recorded and only the version is opened and completed
 >>> [CLI] bundle deploy

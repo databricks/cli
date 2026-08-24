@@ -45,10 +45,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}",
+    "error_message": "",
     "resource_id": "[NUMID]",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 {
@@ -143,9 +144,11 @@ Destroy: 1 deleted
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
+    "error_message": "",
     "resource_id": "[NUMID]",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "",
+    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 {
@@ -215,10 +218,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}",
+    "error_message": "",
     "resource_id": "[NUMID]",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 {
