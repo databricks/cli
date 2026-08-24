@@ -709,7 +709,7 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) Response {
 				StatusCode: 400,
 				Body: map[string]string{
 					"error_code": "DIRECTORY_NOT_EMPTY",
-					"message":    "Directory " + path + " is not empty",
+					"message":    "Folder (" + path + ") is not empty",
 				},
 			}
 		}
