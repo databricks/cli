@@ -1,0 +1,40 @@
+
+>>> local_aws_attributes
+Warning: There are no files to sync, please check your .gitignore
+
+{
+  "with_pool": {},
+  "without_pool": {
+    "availability": "SPOT"
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> job_requests
+
+>>> remote_aws_attributes
+with_pool:
+{
+  "instance_pool_id": "pool-id",
+  "node_type_id": null,
+  "aws_attributes": {
+    "instance_profile_arn": "arn:aws:iam::[NUMID]:instance-profile/original"
+  }
+}
+without_pool:
+{
+  "instance_pool_id": null,
+  "node_type_id": "m5.large",
+  "aws_attributes": {
+    "availability": "SPOT",
+    "instance_profile_arn": "arn:aws:iam::[NUMID]:instance-profile/original"
+  }
+}

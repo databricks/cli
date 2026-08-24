@@ -1,0 +1,3 @@
+RecordRequests = true
+
+Badness = "Under terraform, aws_attributes.instance_profile_arn cannot be cleared on an instance-pool cluster. Two independent drops: ModifyRequestOnInstancePool rebuilds AwsAttributes without ForceSendFields (losing the explicit \"\"), and DropEmptyStrings removes the empty string for every cluster. Neither the removal nor the documented workaround reaches the backend. The direct engine clears the field in both cases."

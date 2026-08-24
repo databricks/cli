@@ -1,0 +1,69 @@
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "with_pool",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "new_cluster": {
+          "aws_attributes": {
+            "instance_profile_arn": "arn:aws:iam::[NUMID]:instance-profile/original"
+          },
+          "instance_pool_id": "pool-id",
+          "num_workers": 1,
+          "spark_version": "13.3.x-scala2.12"
+        },
+        "notebook_task": {
+          "notebook_path": "/Workspace/nb",
+          "source": "WORKSPACE"
+        },
+        "task_key": "key"
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "without_pool",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "new_cluster": {
+          "aws_attributes": {
+            "availability": "SPOT",
+            "instance_profile_arn": "arn:aws:iam::[NUMID]:instance-profile/original"
+          },
+          "node_type_id": "m5.large",
+          "num_workers": 1,
+          "spark_version": "13.3.x-scala2.12"
+        },
+        "notebook_task": {
+          "notebook_path": "/Workspace/nb",
+          "source": "WORKSPACE"
+        },
+        "task_key": "key"
+      }
+    ]
+  }
+}

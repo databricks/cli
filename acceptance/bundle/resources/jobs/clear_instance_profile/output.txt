@@ -1,0 +1,32 @@
+
+=== Create both jobs with aws_attributes.instance_profile_arn set
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> job_requests
+
+>>> remote_aws_attributes
+with_pool:
+{
+  "instance_pool_id": "pool-id",
+  "node_type_id": null,
+  "aws_attributes": {
+    "instance_profile_arn": "arn:aws:iam::[NUMID]:instance-profile/original"
+  }
+}
+without_pool:
+{
+  "instance_pool_id": null,
+  "node_type_id": "m5.large",
+  "aws_attributes": {
+    "availability": "SPOT",
+    "instance_profile_arn": "arn:aws:iam::[NUMID]:instance-profile/original"
+  }
+}
+
+=== Case 1: drop the instance_profile_arn lines, keep the aws_attributes blocks
+=== Case 2: the suggested workaround, instance_profile_arn: ""
+=== Reference: replacing the ARN with a different one is detected

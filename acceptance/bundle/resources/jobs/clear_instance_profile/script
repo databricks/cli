@@ -1,0 +1,39 @@
+# Under the terraform engine, a job whose new_cluster runs on an
+# instance pool cannot have aws_attributes.instance_profile_arn cleared. Neither
+# dropping the field nor the suggested `instance_profile_arn: ""` workaround
+# reaches the backend; replacing the ARN with a different one does. Each phase
+# records a per-engine file because the direct engine does clear it.
+#
+# with_pool vs without_pool isolates the instance-pool-specific part: for
+# without_pool the empty string survives the mutator pipeline (and is then
+# dropped by DropEmptyStrings), while for with_pool it is already gone from the
+# resolved config that `bundle validate` prints.
+
+echo "*" > .gitignore
+
+ARN_LINE="              instance_profile_arn: arn:aws:iam::123456789012:instance-profile/original"
+
+title "Create both jobs with aws_attributes.instance_profile_arn set"
+trace $CLI bundle deploy
+trace job_requests > out.create.requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+declare -A JOB_IDS
+for name in with_pool without_pool; do
+    JOB_IDS[$name]=`read_id.py $name`
+done
+trace remote_aws_attributes
+
+title "Case 1: drop the instance_profile_arn lines, keep the aws_attributes blocks"
+update_file.py databricks.yml "$ARN_LINE" "              # instance_profile_arn removed"
+phase remove
+
+title 'Case 2: the suggested workaround, instance_profile_arn: ""'
+update_file.py databricks.yml "              # instance_profile_arn removed" '              instance_profile_arn: ""'
+phase workaround
+
+title "Reference: replacing the ARN with a different one is detected"
+update_file.py databricks.yml '              instance_profile_arn: ""' "              instance_profile_arn: arn:aws:iam::123456789012:instance-profile/replacement"
+phase replace
+
+# The last `jobs get` of the last phase leaves a recorded GET behind.
+rm out.requests.txt
