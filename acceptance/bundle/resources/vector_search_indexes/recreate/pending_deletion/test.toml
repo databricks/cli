@@ -1,4 +1,2 @@
 # The two-phase deletion race is simulated by the testserver, so this only runs locally.
 Cloud = false
-# The parent sets CloudSlow=true; disable it here too, otherwise CloudSlow would imply Cloud=true.
-CloudSlow = false

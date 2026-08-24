@@ -52,8 +52,8 @@ type TestConfig struct {
 	// Does not affect the local run, which happens either way.
 	Cloud *bool
 
-	// Like Cloud, but the cloud run is skipped when -short is passed.
-	// This also sets -tail when -v is passed. Implies Cloud.
+	// Only meaningful alongside Cloud=true: the cloud run is skipped when -short is passed.
+	// This also sets -tail when -v is passed. It does not enable the cloud run on its own.
 	CloudSlow *bool
 
 	// If true and Cloud=true, run the cloud part of this test only if unity catalog is available in the cloud environment
