@@ -1,3 +1,2 @@
 Cloud = false
-RequiresWarehouse = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

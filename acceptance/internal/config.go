@@ -38,7 +38,7 @@ type TestConfig struct {
 	GOOS map[string]bool
 
 	// Every test runs locally against the fake server in libs/testserver. None of the
-	// five cloud fields that follow can prevent that: they are only consulted when
+	// three cloud fields that follow can prevent that: they are only consulted when
 	// CLOUD_ENV is set (an additional run against a real workspace) and can only
 	// subtract from that run. What skips a test locally is a different set entirely:
 	// GOOS, RunsOnDbr, DATABRICKS_TEST_SKIPLOCAL.
@@ -55,12 +55,6 @@ type TestConfig struct {
 	// Only meaningful alongside Cloud=true: the cloud run is skipped when -short is passed.
 	// This also sets -tail when -v is passed. It does not enable the cloud run on its own.
 	CloudSlow *bool
-
-	// If true and Cloud=true, run the cloud part of this test only if a default test cluster is available in the cloud environment
-	RequiresCluster *bool
-
-	// If true and Cloud=true, run the cloud part of this test only if a default warehouse is available in the cloud environment
-	RequiresWarehouse *bool
 
 	// If set, current user will be set to a service principal-like UUID instead of email (default is false)
 	IsServicePrincipal *bool
