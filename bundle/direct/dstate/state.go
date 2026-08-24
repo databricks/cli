@@ -354,7 +354,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		panic(fmt.Sprintf("state already opened: %v, cannot open %v", db.Path, path))
 	}
 
-	err := db.unlockedOpen(ctx, path, withRecovery, withWrite)
+	err := db.unlockedOpen(ctx, path, withRecovery, withWrite, dmsSource)
 	if err != nil {
 		// A failed open must leave the receiver closed. unlockedOpen assigns
 		// db.Path before every fallible step, so without this the receiver stays
@@ -376,7 +376,7 @@ func (db *DeploymentState) reset() {
 	db.stateIDs = nil
 }
 
-func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite) error {
+func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsSource *DMSSource) error {
 	db.Path = path
 	data, err := os.ReadFile(db.Path)
 	if err != nil {

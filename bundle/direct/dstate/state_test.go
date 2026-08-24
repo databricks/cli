@@ -354,13 +354,13 @@ func TestOpenFailureLeavesStateClosed(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte("{not json"), 0o600))
 
 	var db DeploymentState
-	require.Error(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.Error(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
 	assert.Empty(t, db.Path)
 
 	// Once the state file is readable, the same receiver opens without panicking.
 	seed := `{"state_version":2,"cli_version":"0.1.2","lineage":"test-lineage","serial":1,"state":{}}`
 	require.NoError(t, os.WriteFile(path, []byte(seed), 0o600))
-	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
 	assert.Equal(t, "test-lineage", db.Data.Lineage)
 	mustFinalize(t, &db)
 }
