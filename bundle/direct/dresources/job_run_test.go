@@ -431,7 +431,7 @@ func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
 	}
 }
 
-// resources.yml ignores remote drift on everything the RunNow request carries,
+// job_runs.yaml ignores remote drift on everything the RunNow request carries,
 // since GetRun does not echo it back faithfully, and leaves result_state alone.
 func TestJobRunIgnoresEveryRequestField(t *testing.T) {
 	adapters, err := InitAll(nil)

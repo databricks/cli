@@ -1,0 +1,10 @@
+recreate_on_changes:
+  - field: credential_name
+    reason: immutable
+  - field: encryption_details
+    reason: immutable
+  - field: file_event_queue
+    reason: immutable
+updatable_id_fields:
+  - field: name
+    reason: id_changes

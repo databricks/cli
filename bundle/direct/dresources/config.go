@@ -1,8 +1,11 @@
 package dresources
 
 import (
-	_ "embed"
+	"embed"
 	"encoding/json"
+	"fmt"
+	"io/fs"
+	"strings"
 	"sync"
 
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -84,16 +87,25 @@ type ResourceLifecycleConfig struct {
 	SensitiveFields []FieldRule `yaml:"sensitive_fields,omitempty"`
 }
 
-// Config is the root configuration structure for resource lifecycle behavior.
+// Config holds the lifecycle behavior of every resource type, keyed by resource type.
 type Config struct {
-	Resources map[string]ResourceLifecycleConfig `yaml:"resources"`
+	Resources map[string]ResourceLifecycleConfig
 }
 
-//go:embed resources.yml
-var resourcesYAML []byte
+// One file per resource type: <resource_type>.yaml holds the hand-written rules and
+// <resource_type>.generated.yaml the ones derived from the OpenAPI spec. A resource
+// type without rules has no file. The apitypes*.yml files are inputs to the
+// generator, not lifecycle config, hence the .yaml/.yml split in extensions.
+//
+//go:embed *.yaml
+var configFS embed.FS
 
-//go:embed resources.generated.yml
-var resourcesGeneratedYAML []byte
+const (
+	yamlSuffix = ".yaml"
+
+	// generatedSuffix marks a generated file once yamlSuffix is trimmed.
+	generatedSuffix = ".generated"
+)
 
 var empty = ResourceLifecycleConfig{
 	IgnoreRemoteChanges: nil,
@@ -106,28 +118,50 @@ var empty = ResourceLifecycleConfig{
 	SensitiveFields:     nil,
 }
 
-func mustParseConfig(data []byte) func() *Config {
-	return sync.OnceValue(func() *Config {
-		c := &Config{Resources: nil}
-		if err := yaml.Unmarshal(data, c); err != nil {
+// loadConfigs parses every embedded YAML file into the hand-written or the generated
+// config, keyed by the resource type the file is named after.
+var loadConfigs = sync.OnceValues(func() (*Config, *Config) {
+	handWritten := &Config{Resources: map[string]ResourceLifecycleConfig{}}
+	generated := &Config{Resources: map[string]ResourceLifecycleConfig{}}
+
+	names, err := fs.Glob(configFS, "*"+yamlSuffix)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, name := range names {
+		dst, resourceType := handWritten, strings.TrimSuffix(name, yamlSuffix)
+		if trimmed, ok := strings.CutSuffix(resourceType, generatedSuffix); ok {
+			dst, resourceType = generated, trimmed
+		}
+
+		data, err := configFS.ReadFile(name)
+		if err != nil {
 			panic(err)
 		}
-		return c
-	})
-}
 
-var loadConfig = mustParseConfig(resourcesYAML)
+		var rc ResourceLifecycleConfig
+		if err := yaml.Unmarshal(data, &rc); err != nil {
+			panic(fmt.Errorf("%s: %w", name, err))
+		}
 
-var loadGeneratedConfig = mustParseConfig(resourcesGeneratedYAML)
+		dst.Resources[resourceType] = rc
+	}
 
-// MustLoadConfig returns the parsed resources.yml configuration.
+	return handWritten, generated
+})
+
+// MustLoadConfig returns the configuration parsed from the <resource_type>.yaml files.
 func MustLoadConfig() *Config {
-	return loadConfig()
+	handWritten, _ := loadConfigs()
+	return handWritten
 }
 
-// MustLoadGeneratedConfig returns the parsed resources.generated.yml configuration.
+// MustLoadGeneratedConfig returns the configuration parsed from the
+// <resource_type>.generated.yaml files.
 func MustLoadGeneratedConfig() *Config {
-	return loadGeneratedConfig()
+	_, generated := loadConfigs()
+	return generated
 }
 
 // GetResourceConfig returns the lifecycle config for a given resource type.

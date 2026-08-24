@@ -40,7 +40,7 @@ func TestVectorSearchIndexAllSDKFieldsAreClassified(t *testing.T) {
 		}
 		jsonTag = strings.TrimSuffix(jsonTag, ",omitempty")
 		assert.Truef(t, classified[jsonTag],
-			"field %q is not declared in resources.yml under vector_search_indexes; "+
+			"field %q is not declared in vector_search_indexes.yaml; "+
 				"vector_search_indexes has no update API, so every SDK field must be in "+
 				"recreate_on_changes, provided_id_fields or ignore_remote_changes",
 			jsonTag,

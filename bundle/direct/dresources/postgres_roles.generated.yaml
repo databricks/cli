@@ -1,0 +1,13 @@
+# Generated, do not edit.
+
+ignore_remote_changes:
+  - field: attributes
+    reason: spec:input_only
+  - field: auth_method
+    reason: spec:input_only
+  - field: identity_type
+    reason: spec:input_only
+  - field: membership_roles
+    reason: spec:input_only
+  - field: postgres_role
+    reason: spec:input_only

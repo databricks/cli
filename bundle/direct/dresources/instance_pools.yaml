@@ -1,0 +1,24 @@
+# Field behaviors follow the TF provider tags cross-referenced with the edit API (compute.EditInstancePool):
+# https://github.com/databricks/terraform-provider-databricks/blob/main/pools/resource_instance_pool.go
+ignore_remote_changes:
+  # Backend fills cloud defaults the user omits; treated as managed like clusters.yaml.
+  - field: aws_attributes
+    reason: managed
+  - field: azure_attributes
+    reason: managed
+  - field: gcp_attributes
+    reason: managed
+recreate_on_changes:
+  # force_new and not accepted by /instance-pools/edit.
+  - field: disk_spec
+  - field: node_type_flexibility
+  - field: preloaded_spark_versions
+  - field: preloaded_docker_images
+backend_defaults:
+  # Defaults to true server-side.
+  - field: enable_elastic_disk
+  # Backend applies a default of 60 minutes when the field is omitted.
+  - field: idle_instance_autotermination_minutes
+    values: [60]
+  # GCP seeds max_capacity (1000) when omitted; unconstrained as the default is cloud-dependent.
+  - field: max_capacity

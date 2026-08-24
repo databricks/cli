@@ -5,7 +5,10 @@
 # ]
 # ///
 """
-Generate resources.generated.yml from cli.json field behaviors.
+Generate per-resource <resource_type>.generated.yaml files from cli.json field behaviors.
+
+A resource with no field behaviors gets no file; a stale file left over from a
+previous run is removed.
 """
 
 import argparse
@@ -109,7 +112,9 @@ def filter_prefixes(fields):
 
 def write_field_group(lines, header, fields):
     """Write a group of fields with field and reason, grouped by behavior."""
-    lines.append(f"\n    {header}:")
+    if lines:
+        lines.append("")
+    lines.append(f"{header}:")
     # Group by behavior
     by_behavior = {}
     for field, behavior in fields:
@@ -121,51 +126,57 @@ def write_field_group(lines, header, fields):
         first = False
         reason = f"spec:{behavior.lower()}"
         for field in by_behavior[behavior]:
-            lines.append(f"      - field: {field}")
-            lines.append(f"        reason: {reason}")
+            lines.append(f"  - field: {field}")
+            lines.append(f"    reason: {reason}")
 
 
-def generate(resource_behaviors):
-    """Generate resources.yml."""
-    lines = [
-        """# Generated, do not edit. API field behaviors from OpenAPI schema.
-#
-# For manual edits and schema description, see resources.yml.
+GENERATED_SUFFIX = ".generated.yaml"
 
-resources:"""
-    ]
+HEADER = "# Generated, do not edit."
 
-    for resource in sorted(resource_behaviors):
-        behaviors = resource_behaviors[resource]
 
-        ignore_remote, recreate = [], []
-        for field, fb in sorted(behaviors.items()):
-            if "OUTPUT_ONLY" in fb:
-                ignore_remote.append((field, "OUTPUT_ONLY"))
-            elif "INPUT_ONLY" in fb:
-                ignore_remote.append((field, "INPUT_ONLY"))
-            if "IMMUTABLE" in fb:
-                recreate.append((field, "IMMUTABLE"))
+def generate(behaviors):
+    """Render one resource's field behaviors, or "" if it has none."""
+    ignore_remote, recreate = [], []
+    for field, fb in sorted(behaviors.items()):
+        if "OUTPUT_ONLY" in fb:
+            ignore_remote.append((field, "OUTPUT_ONLY"))
+        elif "INPUT_ONLY" in fb:
+            ignore_remote.append((field, "INPUT_ONLY"))
+        if "IMMUTABLE" in fb:
+            recreate.append((field, "IMMUTABLE"))
 
-        ignore_remote = filter_prefixes(ignore_remote)
-        recreate = filter_prefixes(recreate)
+    ignore_remote = filter_prefixes(ignore_remote)
+    recreate = filter_prefixes(recreate)
 
-        if not ignore_remote and not recreate:
-            lines.append(f"\n  # {resource}: no api field behaviors")
+    if not ignore_remote and not recreate:
+        return ""
+
+    lines = []
+    if recreate:
+        write_field_group(lines, "recreate_on_changes", recreate)
+    if ignore_remote:
+        write_field_group(lines, "ignore_remote_changes", ignore_remote)
+
+    return HEADER + "\n\n" + "\n".join(lines) + "\n"
+
+
+def write_files(outdir, resource_behaviors):
+    """Write <resource_type>.generated.yaml per resource, pruning files that are now empty."""
+    written = set()
+    for resource, behaviors in sorted(resource_behaviors.items()):
+        content = generate(behaviors)
+        if not content:
             continue
+        path = outdir / (resource + GENERATED_SUFFIX)
+        path.write_text(content)
+        written.add(path)
 
-        lines.append(f"\n  {resource}:")
+    for path in sorted(outdir.glob("*" + GENERATED_SUFFIX)):
+        if path not in written:
+            path.unlink()
 
-        if recreate:
-            write_field_group(lines, "recreate_on_changes", recreate)
-
-        if ignore_remote:
-            write_field_group(lines, "ignore_remote_changes", ignore_remote)
-
-    while lines and lines[-1] == "":
-        lines.pop()
-
-    return "\n".join(lines)
+    print(f"wrote {len(written)} files to {outdir}", file=sys.stderr)
 
 
 def main():
@@ -174,6 +185,7 @@ def main():
     parser.add_argument("apitypes", type=Path, help="Path to apitypes.generated.yml file")
     parser.add_argument("apitypes_override", type=Path, help="Path to apitypes.yml override file")
     parser.add_argument("out_fields", type=Path, help="Path to out.fields.txt file")
+    parser.add_argument("outdir", type=Path, help="Directory to write <resource_type>.generated.yaml files to")
     args = parser.parse_args()
 
     resource_types = parse_apitypes(args.apitypes, args.apitypes_override)
@@ -191,7 +203,7 @@ def main():
                 print(f"    {field}: {all_behaviors[field]}", file=sys.stderr)
         resource_behaviors[resource] = {f: b for f, b in all_behaviors.items() if f in fields}
 
-    print(generate(resource_behaviors))
+    write_files(args.outdir, resource_behaviors)
 
 
 if __name__ == "__main__":

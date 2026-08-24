@@ -96,7 +96,7 @@ func (*ResourcePostgresRole) RemapState(remote *PostgresRoleRemote) *PostgresRol
 
 // makePostgresRoleRemote converts the SDK Role into the embedded remote shape.
 // GET does not echo spec today (only status is returned); the embedded spec fields
-// stay at their zero values, and resources.yml suppresses phantom drift via
+// stay at their zero values, and postgres_roles.yaml suppresses phantom drift via
 // ignore_remote_changes with reason spec:input_only.
 func makePostgresRoleRemote(role *postgres.Role) *PostgresRoleRemote {
 	var spec postgres.RoleRoleSpec

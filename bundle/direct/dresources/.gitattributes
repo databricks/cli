@@ -1,1 +1,2 @@
 *.generated.yml linguist-generated=true
+*.generated.yaml linguist-generated=true

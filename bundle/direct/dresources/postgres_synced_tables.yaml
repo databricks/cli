@@ -1,0 +1,12 @@
+# The Postgres API has no UpdateSyncedTable endpoint, so every settable
+# field is recreate-only on the intent side (local YAML edit -> delete +
+# create). The complementary ignore_remote_changes block for this resource
+# lives in postgres_synced_tables.generated.yaml and handles the read side: it
+# suppresses drift for the same fields because the GET API does not echo back
+# the spec. Together they make no-op deploys idempotent while a real config
+# edit still triggers a recreate. Same pattern as secret_scopes.
+provided_id_fields:
+  - field: synced_table_id
+    reason: id_field
+recreate_on_changes:
+  - reason: immutable
