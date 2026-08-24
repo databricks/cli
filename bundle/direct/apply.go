@@ -261,7 +261,11 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 		} else if d.deleteConfirmedGone(ctx, oldID) {
 			log.Warnf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", d.ResourceKey, oldID, err)
 		} else {
-			return fmt.Errorf("deleting id=%s: %w", oldID, err)
+			// The resource is still there, so the history says why rather than leaving its
+			// operation pending. The state write below is what records a delete that worked.
+			err = fmt.Errorf("deleting id=%s: %w", oldID, err)
+			db.RecordFailure(d.ResourceKey, oldID, err)
+			return err
 		}
 	}
 

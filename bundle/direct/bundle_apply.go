@@ -88,9 +88,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		if action == deployplan.Delete {
-			// Read the ID before the delete removes it from state; recording a failure
-			// below needs it to say which resource the operation refers to.
-			deletedID := b.StateDB.GetResourceID(resourceKey)
 			if entry.Gone {
 				// Planning confirmed the resource is already deleted remotely; only
 				// remove it from the state, without calling the delete API.
@@ -99,7 +96,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				err = d.Destroy(ctx, &b.StateDB)
 			}
 			if err != nil {
-				b.StateDB.RecordFailure(resourceKey, deletedID, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
