@@ -1,4 +1,4 @@
-package direct
+package dstate
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,7 +52,7 @@ func (f *fakeWriter) recorded() []string {
 // envelope builds the serialized RecordedState the state DB hands the sink.
 func envelope(t *testing.T, name string) json.RawMessage {
 	t.Helper()
-	raw, err := json.Marshal(dstate.RecordedState{State: json.RawMessage(`{"name":"` + name + `"}`)})
+	raw, err := json.Marshal(RecordedState{State: json.RawMessage(`{"name":"` + name + `"}`)})
 	require.NoError(t, err)
 	return raw
 }

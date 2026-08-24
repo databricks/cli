@@ -34,15 +34,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
-	// The state DB records every write through this sink, so DMS mirrors the WAL. Writes run
-	// on one background goroutine, off the apply path, and are drained below once every
-	// worker has finished recording.
-	opSink := newOperationSink(ctx, b.OpRec)
-	if opSink != nil {
-		// Only when non-nil: a nil *operationSink in an interface is not a nil interface, so
-		// the state DB's nil check would not see it.
-		b.StateDB.SetOperationSink(opSink)
-	}
+	// The state DB records every write with DMS from here on, so the service mirrors the WAL.
+	// Writes go out on one background goroutine, off the apply path, and are drained below
+	// once every worker has finished recording.
+	b.StateDB.StartRecording(ctx, b.OpRec)
 
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		entry, err := plan.WriteLockEntry(resourceKey)
@@ -74,8 +69,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
-		// Stop resource CRUD once uploading DMS state has failed.
-		if err := opSink.firstErr(); err != nil {
+		// Stop resource CRUD once recording state with DMS has failed.
+		if err := b.StateDB.RecordingErr(); err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
 		}
@@ -104,7 +99,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				err = d.Destroy(ctx, &b.StateDB)
 			}
 			if err != nil {
-				opSink.recordFailure(resourceKey, deletedID, err)
+				b.StateDB.RecordFailure(resourceKey, deletedID, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -139,7 +134,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				// Empty for a create that never got an ID, and for a recreate whose delete
 				// step already dropped it.
 				failedID := b.StateDB.GetResourceID(resourceKey)
-				opSink.recordFailure(resourceKey, failedID, err)
+				b.StateDB.RecordFailure(resourceKey, failedID, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -170,7 +165,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	// Wait for the recorded operations before returning: the caller completes the
 	// DMS version right after, and a version must not be completed with uploads
 	// still in flight.
-	if err := opSink.close(); err != nil {
+	if err := b.StateDB.FinishRecording(); err != nil {
 		logdiag.LogError(ctx, err)
 	}
 }

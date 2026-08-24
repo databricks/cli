@@ -17,13 +17,6 @@ type RecordedState struct {
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
-// OperationSink records one resource operation with DMS, so what DMS holds mirrors the WAL.
-// inProgress marks a write that is half of a larger change. It returns no error: the write
-// runs in the background, and the deploy learns of a failure when the queue is drained.
-type OperationSink interface {
-	RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage)
-}
-
 // readDMSState replaces the file-derived resource state with what DMS recorded. Recording is
 // only enabled for net-new deployments, so DMS owns the resource set outright: an empty set
 // means a successful deploy of nothing, not missing data. The caller holds db.mu.

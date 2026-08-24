@@ -19,10 +19,15 @@ func mustFinalize(t *testing.T, db *DeploymentState) {
 	require.NoError(t, err)
 }
 
-// fakeSink captures what the state writes report to DMS.
+// fakeSink captures what the state writes report to DMS. Only RecordOperation is exercised;
+// apply drives the rest.
 type fakeSink struct {
 	ops []string
 }
+
+func (f *fakeSink) recordFailure(resourceKey, resourceID string, cause error) {}
+func (f *fakeSink) firstErr() error                                           { return nil }
+func (f *fakeSink) close() error                                              { return nil }
 
 func (f *fakeSink) RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage) {
 	entry := fmt.Sprintf("%s id=%s state=%s", resourceKey, resourceID, string(state))
@@ -74,7 +79,7 @@ func TestStateWritesRecordOperations(t *testing.T) {
 
 			var db DeploymentState
 			require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
-			db.SetOperationSink(sink)
+			db.sink = sink
 
 			tt.write(t, &db)
 			mustFinalize(t, &db)

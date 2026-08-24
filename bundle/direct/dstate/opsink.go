@@ -1,4 +1,4 @@
-package direct
+package dstate
 
 import (
 	"context"
@@ -8,6 +8,16 @@ import (
 
 	"github.com/databricks/cli/libs/dms"
 )
+
+// operationRecorder is what the state DB records through: the sink in production, and a
+// stand-in in this package's tests, which watch what a write reports without the queue in
+// between. The queue coalesces writes for one resource, so only the sink sees every one.
+type operationRecorder interface {
+	RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage)
+	recordFailure(resourceKey, resourceID string, cause error)
+	firstErr() error
+	close() error
+}
 
 // operationSinkQueueSize is how many resources may be waiting to be recorded before the
 // next write has to wait. Without a cap a deploy could finish far ahead of the service,

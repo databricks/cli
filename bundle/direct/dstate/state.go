@@ -72,17 +72,58 @@ type DeploymentState struct {
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
 
-	// sink records each state write with DMS. Nil unless the bundle records
-	// deployment history, in which case SetOperationSink installs it.
-	sink OperationSink
+	// sink records each state write with DMS. Nil unless the bundle records deployment
+	// history, in which case StartRecording installs it.
+	sink operationRecorder
 }
 
-// SetOperationSink makes every subsequent state write also record an operation with
-// DMS. It is set after the version is created, which is why it is not an Open option.
-func (db *DeploymentState) SetOperationSink(sink OperationSink) {
+// StartRecording has every subsequent state write recorded with DMS through writer, so what
+// the service holds mirrors the WAL. A nil writer records nothing, which is what a bundle that
+// does not record deployment history passes. It is called once the version exists, which is why
+// it is not an Open option, and ctx must outlive FinishRecording.
+func (db *DeploymentState) StartRecording(ctx context.Context, writer dms.OperationWriter) {
+	sink := newOperationSink(ctx, writer)
+	if sink == nil {
+		return
+	}
+
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.sink = sink
+}
+
+// RecordFailure records that a resource did not apply, so the history says why rather than
+// leaving the resource out. resourceID is the id it had before the failure.
+func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause error) {
+	if r := db.recorder(); r != nil {
+		r.recordFailure(resourceKey, resourceID, cause)
+	}
+}
+
+// RecordingErr reports the first failure to record an operation, so apply can stop before
+// creating resources the service will not know about.
+func (db *DeploymentState) RecordingErr() error {
+	if r := db.recorder(); r != nil {
+		return r.firstErr()
+	}
+	return nil
+}
+
+// FinishRecording drains what is waiting and returns the first failure to record. Safe to call
+// twice, and on a state that never started recording.
+func (db *DeploymentState) FinishRecording() error {
+	if r := db.recorder(); r != nil {
+		return r.close()
+	}
+	return nil
+}
+
+// recorder reads the sink under db.mu, which guards it, and returns nil when the bundle does
+// not record deployment history.
+func (db *DeploymentState) recorder() operationRecorder {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.sink
 }
 
 type Header struct {
