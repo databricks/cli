@@ -97,11 +97,10 @@ func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, reque
 				case <-gCtx.Done():
 					return gCtx.Err()
 				case <-ticker.C:
-					// Pings take the same serialised write path as data — gorilla forbids
-					// concurrent writers — so a ping that ticks during a handover blocks until it
-					// finishes and then goes out late. Harmless: a handover establishes a fresh
-					// connection, which resets the peer's idle clock anyway.
-					if err := proxy.sendMessage(websocket.PingMessage, nil); err != nil {
+					// A ping that ticks during a handover goes to the connection being replaced and
+					// may simply fail. Harmless: a handover establishes a fresh connection, which
+					// resets the peer's idle clock anyway, and the next tick uses the new one.
+					if err := proxy.sendPing(); err != nil {
 						// Never fatal. A failed ping knows nothing the data loops don't, and an
 						// error returned here would cancel the session it exists to preserve.
 						// The receiving loop notices a genuinely dead connection within one read.

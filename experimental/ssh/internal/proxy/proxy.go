@@ -29,6 +29,10 @@ const (
 	proxyHandoverInitTimeout = 30 * time.Second
 	// Timeout for the handover process, when accepted by the server.
 	proxyHandoverAcceptTimeout = 25 * time.Second
+	// Bounds how long a keepalive ping may hold the websocket's write lock. A stalled or half-open
+	// connection parks a write until the kernel gives up retransmitting (~15 minutes with Linux
+	// defaults), and close() and the sending loop need that same lock, so the ping caps its wait.
+	proxyPingWriteTimeout = 5 * time.Second
 )
 
 // handoverCoordination holds the context and channels used to coordinate a single handover operation
@@ -202,6 +206,15 @@ func (pc *proxyConnection) sendMessage(mt int, data []byte) error {
 	defer pc.handoverMutex.Unlock()
 	conn := pc.conn.Load()
 	return conn.WriteMessage(mt, data)
+}
+
+// sendPing writes a keepalive ping on the current connection. Unlike sendMessage it takes neither
+// the handover mutex nor an unbounded wait: gorilla permits WriteControl concurrently with the data
+// writes, and its deadline bounds how long a stalled socket holds the connection's write lock, which
+// close() and the sending loop also need.
+func (pc *proxyConnection) sendPing() error {
+	conn := pc.conn.Load()
+	return conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(proxyPingWriteTimeout))
 }
 
 func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) error {
