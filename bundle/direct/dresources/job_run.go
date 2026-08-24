@@ -365,19 +365,8 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 	cmdio.LogString(ctx, fmt.Sprintf("Output from %s: id=%d: %s", ResourceKey(ctx), runID, msg))
 }
 
-// DoUpdate clears the planning-only outcome before persisting the adopted run.
-func (*ResourceJobRun) DoUpdate(_ context.Context, _ string, config *JobRunState, _ *PlanEntry) (*JobRunRemote, error) {
-	config.ResultState = ""
-	return nil, nil
-}
-
-// WaitAfterUpdate resumes the wait an interrupted deploy abandoned.
-func (r *ResourceJobRun) WaitAfterUpdate(ctx context.Context, id string, _ *JobRunState) (*JobRunRemote, error) {
-	return r.waitForRun(ctx, id)
-}
-
-// OverrideChangeDesc downgrades result_state drift to an update while the run is
-// still going, so a run that may yet succeed is adopted and waited on. A run that
+// OverrideChangeDesc downgrades result_state drift to skip while the run is
+// still going, so a run that may yet succeed is not recreated. A run that
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
 // Clearing a trigger skips its local-only fingerprint without re-firing the run.
@@ -396,7 +385,7 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
 			return nil
 		}
-		change.Action = deployplan.Update
+		change.Action = deployplan.Skip
 		change.Reason = "run in progress"
 		return nil
 	default:

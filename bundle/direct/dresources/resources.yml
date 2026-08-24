@@ -178,7 +178,7 @@ resources:
     # A run is immutable and fire-once, so any change recreates it. Omitting
     # `field` matches every field (root; see TestFieldRuleOmittedIsRoot).
     # `field: ""` would instead match nothing. The one exception is a run that is
-    # still going, which ResourceJobRun.OverrideChangeDesc downgrades to an update.
+    # still going, which ResourceJobRun.OverrideChangeDesc downgrades to skip.
     recreate_on_changes:
       - reason: immutable
 
