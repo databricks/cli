@@ -1,5 +1,4 @@
 Cloud = true
-RequiresUnityCatalog = true
 
 # RecordRequests captures the config-remote-sync telemetry event so the script
 # can assert the variable-reference restoration counts (refs_retargeted /

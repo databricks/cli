@@ -1,6 +1,5 @@
 Badness = "Cannot read dashboard, expecting deployment to succeed"
 Cloud = true
-RequiresWarehouse = true
 RecordRequests = false
 RunsOnDbr = true
 

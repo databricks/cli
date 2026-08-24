@@ -1,7 +1,6 @@
 Cloud = false
 
 # Serverless requires Unity Catalog.
-RequiresUnityCatalog = true
 
 # Record requests so we can assert the bootstrap job the CLI submits.
 RecordRequests = true
