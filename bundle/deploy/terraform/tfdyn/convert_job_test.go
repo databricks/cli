@@ -26,7 +26,7 @@ func TestConvertJob(t *testing.T) {
 			JobClusters: []jobs.JobCluster{
 				{
 					JobClusterKey: "key",
-					NewCluster: compute.ClusterSpec{
+					NewCluster: &compute.ClusterSpec{
 						SparkVersion: "10.4.x-scala2.12",
 					},
 				},
@@ -162,7 +162,7 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 			JobClusters: []jobs.JobCluster{
 				{
 					JobClusterKey: "key",
-					NewCluster: compute.ClusterSpec{
+					NewCluster: &compute.ClusterSpec{
 						ApplyPolicyDefaultValues: true,
 						PolicyId:                 "policy_id",
 						GcpAttributes: &compute.GcpAttributes{
@@ -173,7 +173,7 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 				},
 				{
 					JobClusterKey: "key2",
-					NewCluster: compute.ClusterSpec{
+					NewCluster: &compute.ClusterSpec{
 						ApplyPolicyDefaultValues: true,
 						PolicyId:                 "policy_id2",
 						CustomTags: map[string]string{
@@ -204,7 +204,7 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 				},
 				{
 					JobClusterKey: "key3",
-					NewCluster: compute.ClusterSpec{
+					NewCluster: &compute.ClusterSpec{
 						ApplyPolicyDefaultValues: true,
 						SparkVersion:             "16.4.x-scala2.12",
 					},

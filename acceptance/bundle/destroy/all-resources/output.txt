@@ -21,3 +21,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Destroy: 2 deleted
+
+=== Assert the bundle directory is deleted
+>>> musterr [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/test-bundle
+Error: Path (//Workspace/Users/[USERNAME]/.bundle/test-bundle) doesn't exist.

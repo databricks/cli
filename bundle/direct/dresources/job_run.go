@@ -29,8 +29,7 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
-// jobRunTriggerLocalPaths are state-only: DoUpdate must not wait, OverrideChangeDesc
-// downgrades a cleared trigger to update.
+// jobRunTriggerLocalPaths are local-only fingerprints: clearing one is skip, not recreate.
 var jobRunTriggerLocalPaths = []string{
 	"lifecycle.triggers.on_bundle_deploy",
 	"lifecycle.triggers.on_file_change",
@@ -39,15 +38,6 @@ var jobRunTriggerLocalPaths = []string{
 
 func isJobRunTriggerPath(path string) bool {
 	return slices.Contains(jobRunTriggerLocalPaths, path)
-}
-
-func hasJobRunNonTriggerChanges(changes Changes) bool {
-	for path, change := range changes {
-		if change.Action != deployplan.Skip && !isJobRunTriggerPath(path) {
-			return true
-		}
-	}
-	return false
 }
 
 // JobRunTriggersState is the persisted fingerprint of lifecycle.triggers.
@@ -457,26 +447,11 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 	cmdio.LogString(ctx, fmt.Sprintf("Output from %s: id=%d: %s", ResourceKey(ctx), runID, msg))
 }
 
-// DoUpdate rewrites state after a cleared trigger (no API call) or finishes the
-// wait an interrupted deploy abandoned.
-func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, config *JobRunState, entry *PlanEntry) (*JobRunRemote, error) {
-	// Clearing a trigger only drops its local-only fingerprint from state; wait on
-	// the run only when some other field changed.
-	if !hasJobRunNonTriggerChanges(entry.Changes) {
-		config.ResultState = ""
-		return nil, nil
-	}
-	remote, err := r.waitForRun(ctx, id)
-	config.ResultState = ""
-	return remote, err
-}
-
-// OverrideChangeDesc downgrades result_state drift to an update while the run is
-// still going, so a run that may yet succeed is adopted and waited on. A run that
+// OverrideChangeDesc downgrades result_state drift to skip while the run is
+// still going, so a run that may yet succeed is not recreated. A run that
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
-// Clearing a trigger downgrades the recreate to a state-only update so the
-// fingerprint is dropped from state without re-firing the run.
+// Clearing a trigger skips its local-only fingerprint without re-firing the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
 	pathString := path.String()
 	if isJobRunTriggerPath(pathString) {
@@ -484,7 +459,7 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 		removed = removed || pathString == "lifecycle.triggers.on_file_change" && change.New == nil
 		removed = removed || pathString == "lifecycle.triggers.on_value_change" && change.New == nil
 		if removed {
-			change.Action = deployplan.Update
+			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
 		}
 		return nil
@@ -495,7 +470,7 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
 			return nil
 		}
-		change.Action = deployplan.Update
+		change.Action = deployplan.Skip
 		change.Reason = "run in progress"
 		return nil
 	default:

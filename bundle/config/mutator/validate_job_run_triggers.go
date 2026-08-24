@@ -26,6 +26,7 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 		if jr == nil || jr.Lifecycle == nil {
 			continue
 		}
+		// Recreate-every-deploy cannot coexist with prevent_destroy.
 		if (jr.HasOnBundleDeploy() || jr.HasOnFileChange() || jr.HasOnValueChange()) && jr.Lifecycle.PreventDestroy {
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,

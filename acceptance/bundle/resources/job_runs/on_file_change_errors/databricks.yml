@@ -1,6 +1,12 @@
 bundle:
   name: job-runs-on-file-change-errors
 
+sync:
+  exclude:
+    - mixed/excluded.txt
+    # Literal path: the script rewrites the trigger by substring, and allexcluded/* would hit this line.
+    - allexcluded/a.txt
+
 resources:
   jobs:
     my_job:

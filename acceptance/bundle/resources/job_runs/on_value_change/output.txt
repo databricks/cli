@@ -98,35 +98,14 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
   }
 }
 
-=== removing on_value_change rewrites state without a run
+=== removing on_value_change is unchanged and does not run
 >>> [CLI] bundle plan
-update job_runs.my_run
-
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
-
->>> changes
-{
-  "lifecycle.triggers.on_value_change": {
-    "action": "update",
-    "reason": "trigger removed",
-    "old": {
-      "a1": "a1",
-      "v2": "v2"
-    }
-  },
-  "result_state": {
-    "action": "skip",
-    "reason": "remote_already_set",
-    "new": "SUCCESS",
-    "remote": "SUCCESS"
-  }
-}
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default/files...
-Updated job_runs.my_run
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //jobs/run-now
 

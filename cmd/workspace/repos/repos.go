@@ -94,8 +94,7 @@ func newCreate() *cobra.Command {
       are gitHub, bitbucketCloud, gitLab, azureDevOpsServices (Azure
       DevOps Services, including Microsoft Entra ID authentication),
       gitHubEnterprise, bitbucketServer (Bitbucket Data Center),
-      gitLabEnterpriseEdition (GitLab Self-Managed), and awsCodeCommit
-      (deprecated by AWS, not accepting new customers).`
+      gitLabEnterpriseEdition (GitLab Self-Managed), and awsCodeCommit.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
