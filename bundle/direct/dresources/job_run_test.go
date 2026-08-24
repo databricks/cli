@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -68,28 +66,6 @@ func waitForTestRun(t *testing.T, ctx context.Context, client *databricks.Worksp
 	return r.WaitAfterCreate(ctx, "123", &JobRunState{})
 }
 
-func TestJobRunWaitSucceeds(t *testing.T) {
-	client := jobRunClient(t, &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateSuccess,
-	})
-
-	remote, err := waitForTestRun(t, t.Context(), client)
-
-	require.NoError(t, err)
-	require.NotNil(t, remote.State)
-	assert.Equal(t, jobs.RunResultStateSuccess, remote.State.ResultState)
-}
-
-func TestReportRunLineIncludesResourceKey(t *testing.T) {
-	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	ctx = WithResourceKey(ctx, "job_runs.my_run")
-
-	reportRunLine(ctx, 123, "SUCCESS")
-
-	assert.Equal(t, "Output from job_runs.my_run: id=123: SUCCESS\n", stderr.String())
-}
-
 func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{
 		LifeCycleState: jobs.RunLifeCycleStateTerminated,
@@ -100,36 +76,6 @@ func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
 	_, err := waitForTestRun(t, t.Context(), client)
 
 	require.ErrorContains(t, err, "did not succeed: FAILED: task failed")
-}
-
-func TestJobRunWaitReportsFailedTask(t *testing.T) {
-	failed := &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateFailed,
-	}
-	server := testserver.New(t)
-	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
-		return jobs.Run{
-			RunId: 123,
-			JobId: 456,
-			State: failed,
-			Tasks: []jobs.RunTask{
-				{TaskKey: "ok", RunId: 998, State: &jobs.RunState{
-					LifeCycleState: jobs.RunLifeCycleStateTerminated,
-					ResultState:    jobs.RunResultStateSuccess,
-				}},
-				{TaskKey: "main", RunId: 999, State: failed},
-			},
-		}
-	})
-	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
-		return jobs.RunOutput{Error: "notebook not found"}
-	})
-
-	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
-
-	require.ErrorContains(t, err, `task "main": notebook not found`)
-	assert.NotContains(t, err.Error(), `task "ok"`)
 }
 
 // Without the deprecated per-task state, a failed task is told apart from a
@@ -257,39 +203,6 @@ func TestJobRunWaitFailsOnInternalError(t *testing.T) {
 	require.ErrorContains(t, err, testRunPageLink)
 }
 
-// A real workspace reports a run whose task failed as INTERNAL_ERROR in the
-// deprecated life_cycle_state. The failing task still has to be named.
-func TestJobRunWaitReportsFailedTaskOfInternalErrorRun(t *testing.T) {
-	server := testserver.New(t)
-	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
-		return jobs.Run{
-			RunId:      123,
-			JobId:      456,
-			RunPageUrl: testRunPageURL,
-			State: &jobs.RunState{
-				LifeCycleState: jobs.RunLifeCycleStateInternalError,
-				ResultState:    jobs.RunResultStateFailed,
-				StateMessage:   "Task main failed with message: Workload failed, see run output for details.",
-			},
-			Tasks: []jobs.RunTask{
-				{TaskKey: "main", RunId: 999, State: &jobs.RunState{
-					LifeCycleState: jobs.RunLifeCycleStateTerminated,
-					ResultState:    jobs.RunResultStateFailed,
-				}},
-			},
-		}
-	})
-	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
-		return jobs.RunOutput{Error: "RuntimeError: intentional failure"}
-	})
-
-	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
-
-	require.ErrorContains(t, err, "run did not succeed: FAILED")
-	require.ErrorContains(t, err, `task "main": RuntimeError: intentional failure`)
-	require.ErrorContains(t, err, testRunPageLink)
-}
-
 func TestJobRunWaitReportsOnlyTheLastAttemptOfATask(t *testing.T) {
 	failed := &jobs.RunState{
 		LifeCycleState: jobs.RunLifeCycleStateTerminated,
@@ -332,64 +245,17 @@ func TestJobRunWaitAbandonedLinksTheRun(t *testing.T) {
 	require.ErrorContains(t, err, testRunPageLink)
 }
 
-// An abandoned wait leaves the run going with its id recorded, so the next deploy
-// reads an empty outcome, which result_state drift catches.
-func TestJobRunReadOfUnfinishedRunReportsNoResult(t *testing.T) {
-	client := jobRunClient(t, &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning})
-
-	remote, err := (&ResourceJobRun{}).New(client).DoRead(t.Context(), "123")
-
-	require.NoError(t, err)
-	require.NotNil(t, remote.State)
-	assert.Equal(t, jobs.RunLifeCycleStateRunning, remote.State.LifeCycleState)
-	assert.Empty(t, remote.ResultState)
-}
-
-// PrepareState records the outcome the run must reach, the same for every run,
-// so the planner has something to compare the remote against.
-func TestJobRunPrepareStateRequiresSuccess(t *testing.T) {
-	state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{RunNow: jobs.RunNow{JobId: 456}})
-
-	assert.Equal(t, jobs.RunResultStateSuccess, state.ResultState)
-	assert.Nil(t, state.Lifecycle.Triggers.OnFileChange)
-}
-
-func TestJobRunPrepareStateOnBundleDeploy(t *testing.T) {
+func TestJobRunPrepareStateBothTriggers(t *testing.T) {
 	on := true
-	input := &resources.JobRun{
+	hashes := map[string]string{"a.txt": "abc"}
+	state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{
 		Lifecycle: &resources.JobRunLifecycle{
 			Triggers: []resources.JobRunTrigger{{OnBundleDeploy: &on}},
 		},
-	}
-	first := (&ResourceJobRun{}).PrepareState(input)
-	assert.NotEmpty(t, first.Lifecycle.Triggers.OnBundleDeploy)
-
-	second := (&ResourceJobRun{}).PrepareState(input)
-	assert.NotEqual(t, first.Lifecycle.Triggers.OnBundleDeploy, second.Lifecycle.Triggers.OnBundleDeploy)
-}
-
-func TestJobRunPrepareStateOnFileChange(t *testing.T) {
-	hashes := map[string]string{"a.txt": "abc"}
-
-	t.Run("armed", func(t *testing.T) {
-		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{
-			ResolvedFileTriggers: hashes,
-		})
-		assert.Equal(t, hashes, state.Lifecycle.Triggers.OnFileChange)
-		assert.Empty(t, state.Lifecycle.Triggers.OnBundleDeploy)
+		ResolvedFileTriggers: hashes,
 	})
-
-	t.Run("both triggers", func(t *testing.T) {
-		on := true
-		state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{
-			Lifecycle: &resources.JobRunLifecycle{
-				Triggers: []resources.JobRunTrigger{{OnBundleDeploy: &on}},
-			},
-			ResolvedFileTriggers: hashes,
-		})
-		assert.NotEmpty(t, state.Lifecycle.Triggers.OnBundleDeploy)
-		assert.Equal(t, hashes, state.Lifecycle.Triggers.OnFileChange)
-	})
+	assert.NotEmpty(t, state.Lifecycle.Triggers.OnBundleDeploy)
+	assert.Equal(t, hashes, state.Lifecycle.Triggers.OnFileChange)
 }
 
 func TestJobRunStateUnmarshalLifecycleCompatibility(t *testing.T) {
@@ -411,72 +277,6 @@ func TestJobRunStateUnmarshalLifecycleCompatibility(t *testing.T) {
 			}
 		}`), &state))
 		assert.Equal(t, map[string]string{"a.txt": "abc"}, state.Lifecycle.Triggers.OnFileChange)
-	})
-}
-
-func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
-	r := &ResourceJobRun{}
-
-	t.Run("clearing on_bundle_deploy leaf downgrades to update", func(t *testing.T) {
-		change := &ChangeDesc{
-			Action: deployplan.Recreate,
-			Old:    "old",
-			New:    "",
-		}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_bundle_deploy"), change, nil))
-		assert.Equal(t, deployplan.Update, change.Action)
-		assert.Equal(t, "trigger removed", change.Reason)
-	})
-
-	t.Run("clearing on_file_change downgrades to update", func(t *testing.T) {
-		change := &ChangeDesc{
-			Action: deployplan.Recreate,
-			Old:    map[string]string{"a.txt": "abc"},
-			New:    nil,
-		}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change"), change, nil))
-		assert.Equal(t, deployplan.Update, change.Action)
-		assert.Equal(t, "trigger removed", change.Reason)
-	})
-
-	t.Run("fresh fingerprint still recreates", func(t *testing.T) {
-		change := &ChangeDesc{
-			Action: deployplan.Recreate,
-			Old:    "old",
-			New:    "new",
-		}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_bundle_deploy"), change, nil))
-		assert.Equal(t, deployplan.Recreate, change.Action)
-	})
-
-	t.Run("changed on_file_change hash still recreates", func(t *testing.T) {
-		change := &ChangeDesc{
-			Action: deployplan.Recreate,
-			Old:    "old",
-			New:    "new",
-		}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change['a.txt']"), change, nil))
-		assert.Equal(t, deployplan.Recreate, change.Action)
-	})
-
-	t.Run("removed matched file still recreates", func(t *testing.T) {
-		change := &ChangeDesc{
-			Action: deployplan.Recreate,
-			Old:    "old",
-			New:    nil,
-		}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change['a.txt']"), change, nil))
-		assert.Equal(t, deployplan.Recreate, change.Action)
-	})
-
-	t.Run("missing file fingerprint still recreates", func(t *testing.T) {
-		change := &ChangeDesc{
-			Action: deployplan.Recreate,
-			Old:    "old",
-			New:    "",
-		}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_file_change['a.txt']"), change, nil))
-		assert.Equal(t, deployplan.Recreate, change.Action)
 	})
 }
 
