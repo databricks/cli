@@ -4,7 +4,7 @@ Name: test_cluster_policy
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Validation OK!
 
@@ -12,7 +12,7 @@ Validation OK!
 {
   "test_cluster_policy": {
     "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
-    "name": "my_cluster_policy"
+    "name": "my_cluster_policy-[UNIQUE_NAME]"
   }
 }
 
@@ -21,17 +21,17 @@ Name: test_cluster_policy
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Resources:
   Cluster Policies:
     test_cluster_policy:
-      Name: my_cluster_policy
+      Name: my_cluster_policy-[UNIQUE_NAME]
       URL:  (not deployed)
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.test_cluster_policy
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Verify the create request
@@ -41,7 +41,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/policies/clusters/create",
   "body": {
     "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
-    "name": "my_cluster_policy"
+    "name": "my_cluster_policy-[UNIQUE_NAME]"
   }
 }
 
@@ -50,18 +50,18 @@ Name: test_cluster_policy
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Resources:
   Cluster Policies:
     test_cluster_policy:
-      Name: my_cluster_policy
+      Name: my_cluster_policy-[UNIQUE_NAME]
       URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[NUMID]
 
 === Update the cluster policy name
 >>> update_file.py databricks.yml my_cluster_policy my_cluster_policy_2
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated cluster_policies.test_cluster_policy
 Files: 3 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
@@ -73,7 +73,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/policies/clusters/edit",
   "body": {
     "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
-    "name": "my_cluster_policy_2",
+    "name": "my_cluster_policy_2-[UNIQUE_NAME]",
     "policy_id": "[TEST_CLUSTER_POLICY_ID]"
   }
 }
@@ -83,11 +83,11 @@ Name: test_cluster_policy
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Resources:
   Cluster Policies:
     test_cluster_policy:
-      Name: my_cluster_policy_2
+      Name: my_cluster_policy_2-[UNIQUE_NAME]
       URL:  [DATABRICKS_URL]/compute/policies/[TEST_CLUSTER_POLICY_ID]?w=[NUMID]
 
 === Destroy the cluster policy
@@ -95,7 +95,7 @@ Resources:
 The following resources will be deleted:
   delete resources.cluster_policies.test_cluster_policy
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Destroy: 1 deleted
 
@@ -114,11 +114,11 @@ Name: test_cluster_policy
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 Resources:
   Cluster Policies:
     test_cluster_policy:
-      Name: my_cluster_policy_2
+      Name: my_cluster_policy_2-[UNIQUE_NAME]
       URL:  (not deployed)
 
 >>> [CLI] bundle destroy --auto-approve

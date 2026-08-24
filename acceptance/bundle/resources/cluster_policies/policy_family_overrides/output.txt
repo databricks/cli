@@ -2,28 +2,28 @@
 >>> [CLI] bundle validate -o json
 {
   "json_string": {
-    "name": "policy_json_string",
+    "name": "policy_json_string-[UNIQUE_NAME]",
     "policy_family_definition_overrides": "{\"autotermination_minutes\":{\"type\":\"fixed\",\"value\":30}}",
     "policy_family_id": "personal-vm"
   },
   "multiline": {
-    "name": "policy_multiline",
+    "name": "policy_multiline-[UNIQUE_NAME]",
     "policy_family_definition_overrides": "{\n  \"autotermination_minutes\": {\n    \"type\": \"fixed\",\n    \"value\": 30\n  }\n}",
     "policy_family_id": "personal-vm"
   },
   "yaml": {
-    "name": "policy_yaml",
+    "name": "policy_yaml-[UNIQUE_NAME]",
     "policy_family_definition_overrides": "{\"autotermination_minutes\":{\"type\":\"fixed\",\"value\":30},\"enable_elastic_disk\":{\"type\":\"fixed\",\"value\":true}}",
     "policy_family_id": "personal-vm"
   }
 }
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_overrides/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.json_string
 Created cluster_policies.multiline
 Created cluster_policies.yaml
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Create bodies carry policy_family_id and overrides as a JSON string (YAML normalized, JSON preserved)
@@ -32,7 +32,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/policies/clusters/create",
   "body": {
-    "name": "policy_json_string",
+    "name": "policy_json_string-[UNIQUE_NAME]",
     "policy_family_definition_overrides": "{\"autotermination_minutes\":{\"type\":\"fixed\",\"value\":30}}",
     "policy_family_id": "personal-vm"
   }
@@ -41,7 +41,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/policies/clusters/create",
   "body": {
-    "name": "policy_multiline",
+    "name": "policy_multiline-[UNIQUE_NAME]",
     "policy_family_definition_overrides": "{\n  \"autotermination_minutes\": {\n    \"type\": \"fixed\",\n    \"value\": 30\n  }\n}",
     "policy_family_id": "personal-vm"
   }
@@ -50,7 +50,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/policies/clusters/create",
   "body": {
-    "name": "policy_yaml",
+    "name": "policy_yaml-[UNIQUE_NAME]",
     "policy_family_definition_overrides": "{\"autotermination_minutes\":{\"type\":\"fixed\",\"value\":30},\"enable_elastic_disk\":{\"type\":\"fixed\",\"value\":true}}",
     "policy_family_id": "personal-vm"
   }
@@ -62,6 +62,6 @@ The following resources will be deleted:
   delete resources.cluster_policies.multiline
   delete resources.cluster_policies.yaml
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster_policy_overrides/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Destroy: 3 deleted

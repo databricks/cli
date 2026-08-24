@@ -1,10 +1,10 @@
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_backend_normalization/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.json_string
 Created cluster_policies.multiline
 Created cluster_policies.yaml
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === [json_string] definition returned by the backend (GET)
@@ -34,6 +34,6 @@ The following resources will be deleted:
   delete resources.cluster_policies.multiline
   delete resources.cluster_policies.yaml
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster_policy_backend_normalization/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Destroy: 3 deleted

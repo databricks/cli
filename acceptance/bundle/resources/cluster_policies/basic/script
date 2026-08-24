@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 trace $CLI bundle validate
 trace $CLI bundle validate -o json | jq ".resources.cluster_policies"
 

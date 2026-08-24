@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 cleanup() {
     $CLI bundle destroy --auto-approve &> LOG.destroy || true
 }

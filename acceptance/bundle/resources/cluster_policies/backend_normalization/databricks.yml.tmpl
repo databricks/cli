@@ -1,16 +1,19 @@
 bundle:
   name: cluster_policy_backend_normalization
 
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
 resources:
   cluster_policies:
     # Definition as a compact JSON string.
     json_string:
-      name: probe_json_string
+      name: probe_json_string-$UNIQUE_NAME
       definition: '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'
 
     # Definition as a multiline block-scalar JSON string.
     multiline:
-      name: probe_multiline
+      name: probe_multiline-$UNIQUE_NAME
       definition: |-
         {
           "spark_version": {
@@ -21,7 +24,7 @@ resources:
 
     # Definition as native YAML (normalized to compact JSON by the mutator before deploy).
     yaml:
-      name: probe_yaml
+      name: probe_yaml-$UNIQUE_NAME
       definition:
         spark_version:
           type: fixed

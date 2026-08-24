@@ -1,17 +1,20 @@
 bundle:
   name: cluster_policy_overrides
 
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
 resources:
   cluster_policies:
     # Overrides as a compact JSON string.
     json_string:
-      name: policy_json_string
+      name: policy_json_string-$UNIQUE_NAME
       policy_family_id: personal-vm
       policy_family_definition_overrides: '{"autotermination_minutes":{"type":"fixed","value":30}}'
 
     # Overrides as a multiline block-scalar JSON string (preserved verbatim).
     multiline:
-      name: policy_multiline
+      name: policy_multiline-$UNIQUE_NAME
       policy_family_id: personal-vm
       policy_family_definition_overrides: |-
         {
@@ -23,7 +26,7 @@ resources:
 
     # Overrides as native YAML (normalized to compact JSON, numbers/booleans kept as JSON types).
     yaml:
-      name: policy_yaml
+      name: policy_yaml-$UNIQUE_NAME
       policy_family_id: personal-vm
       policy_family_definition_overrides:
         autotermination_minutes:

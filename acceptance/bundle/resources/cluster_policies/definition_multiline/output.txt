@@ -3,14 +3,14 @@
 {
   "pol": {
     "definition": "{\n  \"spark_version\": {\n    \"type\": \"fixed\",\n    \"value\": \"13.3.x-scala2.12\"\n  }\n}",
-    "name": "my_policy"
+    "name": "my_policy-[UNIQUE_NAME]"
   }
 }
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_definition_multiline/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.pol
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Create body preserves the block-scalar definition as a newline-escaped string
@@ -20,7 +20,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/policies/clusters/create",
   "body": {
     "definition": "{\n  \"spark_version\": {\n    \"type\": \"fixed\",\n    \"value\": \"13.3.x-scala2.12\"\n  }\n}",
-    "name": "my_policy"
+    "name": "my_policy-[UNIQUE_NAME]"
   }
 }
 
@@ -28,6 +28,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 The following resources will be deleted:
   delete resources.cluster_policies.pol
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster_policy_definition_multiline/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Destroy: 1 deleted
