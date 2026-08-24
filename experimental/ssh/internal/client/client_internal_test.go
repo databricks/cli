@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -551,4 +552,17 @@ func TestBuildSshTunnelEventReportsErrorCategory(t *testing.T) {
 
 	assert.False(t, got.IsSuccess)
 	assert.Equal(t, protos.SshTunnelErrorCategoryIDECommandNotOnPath, got.ErrorCategory)
+}
+
+// A failed first attempt is the case the telemetry exists to measure, so assert
+// the outcome fields reach the payload as an explicit false rather than being
+// dropped as zero values.
+func TestBuildSshTunnelEventReportsFailure(t *testing.T) {
+	got := buildSshTunnelEvent(ClientOptions{ClusterID: "abc-123"}, connectOutcome{})
+
+	assert.False(t, got.IsSuccess)
+
+	b, err := json.Marshal(got)
+	require.NoError(t, err)
+	assert.Contains(t, string(b), `"is_success":false`)
 }
