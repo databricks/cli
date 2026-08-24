@@ -1019,7 +1019,7 @@ resources:
                     If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.
                 "on_file_change":
                   "description": |-
-                    Path or glob under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Incompatible with lifecycle.prevent_destroy.
+                    Path or glob relative to the defining YAML file. It must resolve under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Incompatible with lifecycle.prevent_destroy.
         "python_named_params":
           "description": |-
             PLACEHOLDER

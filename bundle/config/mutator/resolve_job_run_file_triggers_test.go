@@ -44,14 +44,30 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 		require.False(t, diags.HasError())
 		assert.Equal(t, contentHash("v1"), b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers["seed.txt"])
 	})
+
+	t.Run("globs from the bundle root when the sync root is an ancestor", func(t *testing.T) {
+		parent := t.TempDir()
+		bundleDir := filepath.Join(parent, "bundle")
+		require.NoError(t, os.Mkdir(bundleDir, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(parent, "shared.txt"), []byte("from-sync-root"), 0o644))
+
+		pattern := "../shared.txt"
+		b := bundleWithFileTrigger(parent, pattern)
+		b.BundleRootPath = bundleDir
+
+		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
+		require.False(t, diags.HasError())
+		assert.Equal(t, contentHash("from-sync-root"), b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers["shared.txt"])
+	})
 }
 
 func bundleWithFileTrigger(syncRoot, pattern string) *bundle.Bundle {
 	root := vfs.MustNew(syncRoot)
 	return &bundle.Bundle{
-		SyncRootPath: syncRoot,
-		SyncRoot:     root,
-		WorktreeRoot: root,
+		BundleRootPath: syncRoot,
+		SyncRootPath:   syncRoot,
+		SyncRoot:       root,
+		WorktreeRoot:   root,
 		Config: config.Root{
 			Sync: config.Sync{Paths: []string{"."}},
 			Resources: config.Resources{
