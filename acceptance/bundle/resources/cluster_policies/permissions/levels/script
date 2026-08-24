@@ -12,7 +12,9 @@ read_id.py test_cluster_policy > /dev/null
 trace print_requests.py //permissions/cluster-policies
 
 # CAN_MANAGE is rejected, so the redeploy fails with the backend's error.
-title "CAN_MANAGE is rejected\n"
+# Output goes to LOG (upload counts differ between the fake and cloud); the
+# error message is deterministic and asserted here.
+title "CAN_MANAGE is rejected"
 update_file.py databricks.yml CAN_USE CAN_MANAGE
-musterr $CLI bundle deploy > LOG.deploy 2>&1
-grep "Error: cannot update" LOG.deploy
+musterr $CLI bundle deploy &> LOG.deploy
+cat LOG.deploy | contains.py "Unknown Cluster Policy Permission Level: CAN_MANAGE" > /dev/null

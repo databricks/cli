@@ -21,8 +21,6 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === CAN_MANAGE is rejected
-Error: cannot update resources.cluster_policies.test_cluster_policy.permissions: updating id=/cluster-policies/[TEST_CLUSTER_POLICY_ID]: Unknown Cluster Policy Permission Level: CAN_MANAGE (400 INVALID_PARAMETER_VALUE)
-
 >>> [CLI] bundle destroy --auto-approve
 Warning: invalid value "CAN_MANAGE" for enum field. Valid values are [CAN_USE]
   at resources.cluster_policies.test_cluster_policy.permissions[0].level
