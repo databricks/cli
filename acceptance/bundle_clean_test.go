@@ -129,12 +129,8 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 }
 
 // removeBundleDirs deletes the ~/.bundle/<name> directories this run created.
-// Destroy removes the deployment root beneath such a directory but never the
-// directory itself, and every run picks a fresh bundle name, so nothing reuses
-// them: left behind they pile up against the workspace child-node limit, which
-// is what exhausted it before. The delete is recursive so a directory a killed
-// test left half-written goes too. A directory whose deployment failed to
-// destroy is kept, so its state is still there for the periodic sweep.
+// Destroy empties them but leaves them behind, and the names are never reused, so
+// they pile up in the workspace. One whose destroy failed is left for the sweep.
 func removeBundleDirs(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, bundleDirs, failed []string) {
 	const maxConcurrentDeletes = 20
 	sem := make(chan struct{}, maxConcurrentDeletes)
