@@ -218,9 +218,7 @@ func TestOperationSinkCloseIsIdempotent(t *testing.T) {
 }
 
 func TestNilOperationSinkIsNoOp(t *testing.T) {
-	// Recording off: the writer is nil, so the sink is too, and every method still works.
-	require.Nil(t, newOperationSink(t.Context(), nil))
-
+	// Recording off: apply holds no sink at all, so every method has to work on nil.
 	var s *operationSink
 	s.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", nil)
 	s.recordFailure("resources.jobs.foo", "id-1", errors.New("boom"))

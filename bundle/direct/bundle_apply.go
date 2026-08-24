@@ -36,11 +36,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 	// The state DB records every write through this sink, so DMS mirrors the WAL. Writes run
 	// on one background goroutine, off the apply path, and are drained below once every
-	// worker has finished recording.
-	opSink := newOperationSink(ctx, b.OpRec)
-	if opSink != nil {
-		// Only when non-nil: a nil *operationSink in an interface is not a nil interface, so
-		// the state DB's nil check would not see it.
+	// worker has finished recording. Recording off leaves both nil, and a nil sink no-ops.
+	var opSink *operationSink
+	if b.OpRec != nil {
+		opSink = newOperationSink(ctx, b.OpRec)
 		b.StateDB.SetOperationSink(opSink)
 	}
 

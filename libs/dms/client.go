@@ -14,14 +14,15 @@ import (
 )
 
 // Client is every call the CLI makes to DMS, as methods below. Each one goes out through one
-// of two halves: the generated client for the calls it can express, and hand-written requests
-// for the two it cannot.
+// of two halves: the generated client for the calls it can express, and a request written by
+// hand for the two it cannot.
 type Client struct {
 	// Service is the generated client.
 	Service bundledeployments.BundleDeploymentsInterface
 
-	// raw sends what the generated client cannot; see requester.
-	raw requester
+	// api sends the two requests the generated client cannot express; see CreateVersion and
+	// UpdateOperation. Both are TODO(DMS): drop them once the spec catches up.
+	api *client.DatabricksClient
 }
 
 // NewClient returns a Client for the workspace w.
@@ -30,7 +31,7 @@ func NewClient(w *databricks.WorkspaceClient) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{Service: w.BundleDeployments, raw: &rawClient{client: api}}, nil
+	return &Client{Service: w.BundleDeployments, api: api}, nil
 }
 
 // deploymentName and versionName are the two resource-name formats the service uses. Every
@@ -72,9 +73,20 @@ func (c *Client) DeleteDeployment(ctx context.Context, deploymentID string) erro
 	})
 }
 
-// CreateVersion claims the version and stages the operations body carries.
+// CreateVersion claims the version and stages the operations body carries. Written by hand
+// because the generated struct has no previous_version_id, which the service needs as its
+// concurrency check - without it every deploy after the first is rejected.
 func (c *Client) CreateVersion(ctx context.Context, deploymentID string, version int64, body CreateVersionRequest) (*bundledeployments.Version, error) {
-	return c.raw.CreateVersion(ctx, deploymentID, strconv.FormatInt(version, 10), body)
+	var created bundledeployments.Version
+	path := "/api/2.0/bundle/" + deploymentName(deploymentID) + "/versions"
+	err := c.api.Do(ctx, http.MethodPost, path,
+		auth.WorkspaceIDHeaders(c.api.Config),
+		map[string]any{"version_id": strconv.FormatInt(version, 10)},
+		body, &created)
+	if err != nil {
+		return nil, err
+	}
+	return &created, nil
 }
 
 // CompleteVersion closes the version out, which is what stops the service expiring its lease.
@@ -95,9 +107,22 @@ func (c *Client) Heartbeat(ctx context.Context, deploymentID string, version int
 }
 
 // UpdateOperation fills in one operation the version staged, and returns the sequence id the
-// next update for that resource must send.
+// next update for that resource must send. sequenceID is the token the previous update
+// returned, or 0 for the first, which is what staging leaves.
+//
+// Written by hand because the SDK types sequence_id as an int64 while the service sends a
+// JSON string, so the generated client cannot read the response.
 func (c *Client) UpdateOperation(ctx context.Context, deploymentID string, version int64, key ResourceKey, sequenceID string, update OperationUpdate) (string, error) {
-	return c.raw.UpdateOperation(ctx, deploymentID, version, key, sequenceID, update)
+	var result operationResponse
+	path := "/api/2.0/bundle/" + versionName(deploymentID, version) + "/operations/" + string(key)
+	err := c.api.Do(ctx, http.MethodPatch, path,
+		auth.WorkspaceIDHeaders(c.api.Config),
+		map[string]any{"update_mask": update.Fields.Mask()},
+		newUpdateRequest(update, sequenceID), &result)
+	if err != nil {
+		return "", err
+	}
+	return result.SequenceId, nil
 }
 
 // deploymentIDFromName extracts the deployment ID from a DMS resource name of
@@ -108,21 +133,6 @@ func deploymentIDFromName(name string) (string, error) {
 		return "", fmt.Errorf("unexpected deployment name %q from deployment metadata service", name)
 	}
 	return id, nil
-}
-
-// requester sends the two requests the generated client cannot express, so a test can capture
-// what the CLI puts on the wire. Both are TODO(DMS): drop them once the spec catches up.
-type requester interface {
-	// CreateVersion is hand-written because the generated struct has no
-	// previous_version_id, which the service needs as its concurrency check - without it
-	// every deploy after the first is rejected.
-	CreateVersion(ctx context.Context, deploymentID, versionID string, body CreateVersionRequest) (*bundledeployments.Version, error)
-
-	// UpdateOperation is hand-written because the SDK types sequence_id as an int64 while
-	// the service sends a JSON string, so it cannot read the response. sequenceID is the
-	// token the previous update for this resource returned, or 0 for the first, which is
-	// what staging leaves.
-	UpdateOperation(ctx context.Context, deploymentID string, version int64, key ResourceKey, sequenceID string, update OperationUpdate) (next string, err error)
 }
 
 // CreateVersionRequest is the CreateVersion request body.
@@ -170,24 +180,6 @@ type operationResponse struct {
 	SequenceId string `json:"sequence_id,omitempty"`
 }
 
-// rawClient sends the requests the generated client cannot express.
-type rawClient struct {
-	client *client.DatabricksClient
-}
-
-func (r *rawClient) CreateVersion(ctx context.Context, deploymentID, versionID string, body CreateVersionRequest) (*bundledeployments.Version, error) {
-	var version bundledeployments.Version
-	path := "/api/2.0/bundle/" + deploymentName(deploymentID) + "/versions"
-	err := r.client.Do(ctx, http.MethodPost, path,
-		auth.WorkspaceIDHeaders(r.client.Config),
-		map[string]any{"version_id": versionID},
-		body, &version)
-	if err != nil {
-		return nil, err
-	}
-	return &version, nil
-}
-
 // newUpdateRequest builds the request body for update. Each field is sent because the mask
 // names it: the service ignores the rest, and state is the largest field by far, so a
 // failure that keeps the recorded state sends none of it.
@@ -206,19 +198,4 @@ func newUpdateRequest(update OperationUpdate, sequenceID string) updateOperation
 		body.Status = update.Status
 	}
 	return body
-}
-
-func (r *rawClient) UpdateOperation(ctx context.Context, deploymentID string, version int64, key ResourceKey, sequenceID string, update OperationUpdate) (string, error) {
-	body := newUpdateRequest(update, sequenceID)
-
-	var result operationResponse
-	path := "/api/2.0/bundle/" + versionName(deploymentID, version) + "/operations/" + string(key)
-	err := r.client.Do(ctx, http.MethodPatch, path,
-		auth.WorkspaceIDHeaders(r.client.Config),
-		map[string]any{"update_mask": update.Fields.Mask()},
-		body, &result)
-	if err != nil {
-		return "", err
-	}
-	return result.SequenceId, nil
 }

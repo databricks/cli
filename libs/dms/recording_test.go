@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -26,9 +27,6 @@ type fakeDMS struct {
 	created   []bundledeployments.CreateDeploymentRequest
 	completed []bundledeployments.CompleteVersionRequest
 	deleted   []string
-
-	// raw captures what the hand-written half of the client sent; see fakeRaw.
-	raw *fakeRaw
 }
 
 func (f *fakeDMS) CreateDeployment(ctx context.Context, req bundledeployments.CreateDeploymentRequest) (*bundledeployments.Deployment, error) {
@@ -61,34 +59,37 @@ func deploymentAt(lastVersion string) func(string) (*bundledeployments.Deploymen
 	}
 }
 
-// testRecording records the stored deployment through f, failing CreateVersion with
-// versionErr when set.
-func testRecording(f *fakeDMS, versionType VersionType, versionErr error) Recording {
-	f.raw = newFakeRaw("1")
-	f.raw.versionErr = versionErr
+// testRecording records the stored deployment: the generated calls through f, and CreateVersion
+// through a server answering versionReply.
+func testRecording(t *testing.T, f *fakeDMS, versionType VersionType, versionReply reply) Recording {
+	t.Helper()
+
+	c, _ := newFakeAPI(t, versionReply)
+	c.Service = f
 	return NewRecording(RecordingOptions{
-		Client:       &Client{Service: f, raw: f.raw},
+		Client:       c,
 		DeploymentID: "stored-id",
 		VersionType:  versionType,
 	})
 }
 
-func TestRecordingStartReportsWhatTheServiceRefused(t *testing.T) {
-	aborted := &apierr.APIError{StatusCode: 409, ErrorCode: "ABORTED"}
-	exhausted := &apierr.APIError{StatusCode: 429, ErrorCode: "RESOURCE_EXHAUSTED"}
+// versionCreated is what the service answers a CreateVersion the test expects to succeed.
+var versionCreated = reply{status: http.StatusOK, body: `{"version_id":"3"}`}
 
+func TestRecordingStartReportsWhatTheServiceRefused(t *testing.T) {
 	tests := []struct {
 		name          string
 		getDeployment func(string) (*bundledeployments.Deployment, error)
-		versionErr    error
+		versionReply  reply
 		wantMessages  []string
-		wantCause     error
+		wantCode      string
 	}{
 		{
 			name: "the deployment cannot be read",
 			getDeployment: func(string) (*bundledeployments.Deployment, error) {
 				return nil, errors.New("boom")
 			},
+			versionReply: versionCreated,
 			wantMessages: []string{"failed to get deployment"},
 		},
 		{
@@ -98,28 +99,29 @@ func TestRecordingStartReportsWhatTheServiceRefused(t *testing.T) {
 			getDeployment: func(string) (*bundledeployments.Deployment, error) {
 				return nil, fmt.Errorf("deployment: %w", apierr.ErrNotFound)
 			},
+			versionReply: versionCreated,
 			wantMessages: []string{"internal error: no deployment found for the file with object id stored-id"},
 		},
 		{
 			name:          "another deploy claimed the version number",
 			getDeployment: deploymentAt("4"),
-			versionErr:    aborted,
+			versionReply:  reply{status: http.StatusConflict, body: `{"error_code":"ABORTED","message":"taken"}`},
 			wantMessages:  []string{"another deploy already claimed version 5", "try again"},
-			wantCause:     aborted,
+			wantCode:      "ABORTED",
 		},
 		{
 			name:          "the bundle stages more operations than a version holds",
 			getDeployment: deploymentAt("4"),
-			versionErr:    exhausted,
+			versionReply:  reply{status: http.StatusBadRequest, body: `{"error_code":"RESOURCE_EXHAUSTED","message":"too many"}`},
 			wantMessages:  []string{"this bundle deploys 1 resources"},
-			wantCause:     exhausted,
+			wantCode:      "RESOURCE_EXHAUSTED",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &fakeDMS{getDeployment: tt.getDeployment}
-			r := testRecording(f, VersionTypeDeploy, tt.versionErr)
+			r := testRecording(t, f, VersionTypeDeploy, tt.versionReply)
 
 			_, err := r.Start(t.Context(), []StagedOperation{{ResourceKey: "jobs.foo"}})
 
@@ -127,9 +129,11 @@ func TestRecordingStartReportsWhatTheServiceRefused(t *testing.T) {
 			for _, want := range tt.wantMessages {
 				assert.ErrorContains(t, err, want)
 			}
-			if tt.wantCause != nil {
+			if tt.wantCode != "" {
 				// Wrapped, so a caller can still match on what the service said.
-				assert.ErrorIs(t, err, tt.wantCause)
+				apiErr, ok := errors.AsType[*apierr.APIError](err)
+				require.True(t, ok, "an API error survives the wrap")
+				assert.Equal(t, tt.wantCode, apiErr.ErrorCode)
 			}
 			assert.Empty(t, f.created, "the deployment already exists")
 		})
@@ -153,7 +157,7 @@ func TestRecordingFinishDeletesTheDeploymentOnlyForACompletedDestroy(t *testing.
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &fakeDMS{getDeployment: deploymentAt("2")}
-			r := testRecording(f, tt.versionType, nil)
+			r := testRecording(t, f, tt.versionType, versionCreated)
 
 			_, err := r.Start(t.Context(), nil)
 			require.NoError(t, err)
