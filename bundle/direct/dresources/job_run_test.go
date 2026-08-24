@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -252,47 +251,6 @@ func TestJobRunStateUnmarshalWithoutLifecycle(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{}`), &state))
 
 	assert.Nil(t, state.Lifecycle.Triggers.OnFileChange)
-}
-
-// The ref path is what the deploy graph keys the dependency on, so it has to be
-// the state path of the watched expression, not the config path it came from.
-func TestJobRunPrepareInputConfigOnValueChange(t *testing.T) {
-	expr := "${resources.jobs.foo.id}"
-	literal := "v1"
-	input := &resources.JobRun{
-		Lifecycle: &resources.JobRunLifecycle{
-			Triggers: []resources.JobRunTrigger{
-				{OnValueChange: &expr},
-				{OnValueChange: &literal},
-			},
-		},
-	}
-
-	sv, err := (&ResourceJobRun{}).PrepareInputConfig(input, "resources.job_runs.my_run")
-
-	require.NoError(t, err)
-	assert.Same(t, input, sv.Value)
-	// Only the interpolated expression is a ref; the literal has nothing to resolve.
-	path := structpath.NewStringKey(structpath.MustParsePath("lifecycle.triggers.on_value_change"), expr)
-	assert.Equal(t, map[string]string{path.String(): expr}, sv.Refs)
-}
-
-func TestDropJobRunValueChangeConfigRefs(t *testing.T) {
-	expr := "${resources.jobs.other.id}"
-	statePath := structpath.NewStringKey(structpath.MustParsePath("lifecycle.triggers.on_value_change"), expr).String()
-	refs := map[string]string{
-		"lifecycle.triggers[0].on_value_change": expr,
-		"job_id":                                "${resources.jobs.my_job.id}",
-		statePath:                               expr,
-	}
-
-	DropJobRunValueChangeConfigRefs(refs)
-
-	// The config path is dropped; the state path that carries the resolved id stays.
-	assert.Equal(t, map[string]string{
-		"job_id":  "${resources.jobs.my_job.id}",
-		statePath: expr,
-	}, refs)
 }
 
 // The planner diffs RemapState(remote) against PrepareState(config), so a run

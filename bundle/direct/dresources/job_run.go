@@ -142,6 +142,8 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	return state
 }
 
+// PrepareInputConfig puts resource refs on the state path of each watched
+// expression so the deploy graph depends on that value, not the config wrapper.
 func (*ResourceJobRun) PrepareInputConfig(input *resources.JobRun, _ string) (*structvar.StructVar, error) {
 	refs := map[string]string{}
 	for expr := range jobRunValueChangeState(input) {
@@ -179,8 +181,8 @@ func jobRunValueChangeState(input *resources.JobRun) map[string]string {
 }
 
 // DropJobRunValueChangeConfigRefs drops lifecycle.triggers[N].on_value_change.
-// ExtractReferences treats [0] on the triggers struct as a no-op, so that path
-// is the wrapper, which cannot hold a resolved id.
+// ExtractReferences treats [0] on a struct as a no-op, so that path is the
+// wrapper and cannot hold the resolved id.
 func DropJobRunValueChangeConfigRefs(refs map[string]string) {
 	for k := range refs {
 		if strings.Contains(k, ".triggers[") && strings.HasSuffix(k, "].on_value_change") {
