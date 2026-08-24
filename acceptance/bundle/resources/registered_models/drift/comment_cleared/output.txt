@@ -1,0 +1,49 @@
+
+=== Deploy with a comment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created registered_models.model1
+Created schemas.schema1
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Remove the comment from the configuration and redeploy
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated registered_models.model1
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+=== The comment the bundle no longer declares
+>>> [CLI] api get /api/2.1/unity-catalog/models/main.test-schema-[UNIQUE_NAME].test-model-[UNIQUE_NAME]
+"declared in the bundle"
+
+=== Redeploy
+>>> [CLI] bundle plan
+update registered_models.model1
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.registered_models.model1
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted
+
+=== The UpdateRegisteredModel payloads the deploys sent
+>>> print_requests.py --method PATCH //unity-catalog/models
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/models/main.test-schema-[UNIQUE_NAME].test-model-[UNIQUE_NAME]",
+  "body": {
+    "catalog_name": "main",
+    "name": "test-model-[UNIQUE_NAME]",
+    "schema_name": "test-schema-[UNIQUE_NAME]"
+  }
+}

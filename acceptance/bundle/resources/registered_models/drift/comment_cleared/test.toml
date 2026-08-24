@@ -1,0 +1,12 @@
+Cloud = true
+RequiresUnityCatalog = true
+
+# UpdateRegisteredModel payload construction is direct-engine-specific.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+    "databricks.yml.in",
+]
