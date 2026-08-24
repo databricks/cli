@@ -25,6 +25,17 @@ func (s *FakeWorkspace) ClusterPoliciesCreate(req Request) any {
 		return Response{StatusCode: 400, Body: fmt.Sprintf("request parsing error: %s", err)}
 	}
 
+	// The backend rejects definition and policy_family_id together.
+	if policy.Definition != "" && policy.PolicyFamilyId != "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "policy_family_id and definition cannot be used together",
+			},
+		}
+	}
+
 	if policy.Definition == "" && policy.PolicyFamilyId != "" {
 		policy.Definition = policyFamilyDefinition(policy.PolicyFamilyId)
 	}

@@ -1,0 +1,10 @@
+bundle:
+  name: cluster_policy_definition_and_family_conflict
+
+resources:
+  cluster_policies:
+    pol:
+      name: my_conflict_policy
+      # definition and policy_family_id are mutually exclusive; the backend rejects both.
+      policy_family_id: personal-vm
+      definition: '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'

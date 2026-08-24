@@ -1,0 +1,7 @@
+cleanup() {
+    $CLI bundle destroy --auto-approve &> LOG.destroy || true
+}
+trap cleanup EXIT
+
+title "Deploying a policy with both definition and policy_family_id must fail\n"
+musterr $CLI bundle deploy
