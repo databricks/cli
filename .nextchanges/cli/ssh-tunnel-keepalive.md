@@ -1,0 +1,1 @@
+Fixed idle `databricks ssh connect` sessions disconnecting after a few minutes. The tunnel now sends a websocket keepalive every 20 seconds, so a session nobody is typing into stays connected without setting `ServerAliveInterval` in the SSH client config.

@@ -86,6 +86,8 @@ type ClientOptions struct {
 	ServerMetadata string
 	// How often the CLI should reconnect to the server with new auth.
 	HandoverTimeout time.Duration
+	// How often the CLI pings the tunnel websocket to keep an idle session alive.
+	KeepaliveInterval time.Duration
 	// Max amount of time the server process is allowed to live
 	ServerTimeout time.Duration
 	// Max amount of time to wait for the SSH server task to reach RUNNING state
@@ -895,7 +897,7 @@ func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, server
 	requestHandoverTick := func() <-chan time.Time {
 		return time.After(opts.HandoverTimeout)
 	}
-	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, requestHandoverTick, createConn)
+	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, requestHandoverTick, opts.KeepaliveInterval, createConn)
 }
 
 // accessModeUILabel maps a cluster's access mode to the name shown in the Databricks UI.

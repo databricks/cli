@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/gorilla/websocket"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -37,8 +38,25 @@ func (f *firstByteWriter) Write(p []byte) (int, error) {
 	return f.w.Write(p)
 }
 
-func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, requestHandoverTick func() <-chan time.Time, createConn createWebsocketConnectionFunc) error {
-	proxy := newProxyConnection(createConn)
+// logPongs wraps a connection factory so every connection it creates — the initial one and each
+// one a handover creates — logs the pongs coming back for our keepalive pings. Debug visibility only:
+// the receiving loop stays the only judge of whether a connection is alive.
+func logPongs(ctx context.Context, createConn createWebsocketConnectionFunc) createWebsocketConnectionFunc {
+	return func(connCtx context.Context, connID string) (*websocket.Conn, error) {
+		conn, err := createConn(connCtx, connID)
+		if err != nil {
+			return nil, err
+		}
+		conn.SetPongHandler(func(string) error {
+			log.Debugf(ctx, "Received websocket keepalive pong")
+			return nil
+		})
+		return conn, nil
+	}
+}
+
+func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, requestHandoverTick func() <-chan time.Time, keepaliveInterval time.Duration, createConn createWebsocketConnectionFunc) error {
+	proxy := newProxyConnection(logPongs(ctx, createConn))
 	log.Infof(ctx, "Establishing SSH proxy connection...")
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -69,8 +87,32 @@ func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, reque
 			}
 		})
 		g.Go(func() error {
+			// Keep the websocket carrying traffic while the SSH session is idle. Both proxy loops
+			// are data-driven, so an idle session puts no frames on the connection at all and the
+			// server side reaps the stream it then considers dead (websocket close 4000).
+			ticker := time.NewTicker(keepaliveInterval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-gCtx.Done():
+					return gCtx.Err()
+				case <-ticker.C:
+					// Pings take the same serialised write path as data — gorilla forbids
+					// concurrent writers — so a ping that ticks during a handover blocks until it
+					// finishes and then goes out late. Harmless: a handover establishes a fresh
+					// connection, which resets the peer's idle clock anyway.
+					if err := proxy.sendMessage(websocket.PingMessage, nil); err != nil {
+						// Never fatal. A failed ping knows nothing the data loops don't, and an
+						// error returned here would cancel the session it exists to preserve.
+						// The receiving loop notices a genuinely dead connection within one read.
+						log.Debugf(gCtx, "Failed to send websocket keepalive ping: %v", err)
+					}
+				}
+			}
+		})
+		g.Go(func() error {
 			// When proxy.start returns (EOF from ssh, or the server closing the connection),
-			// cancel so the handover goroutine stops too and g.Wait can return.
+			// cancel so the handover and keepalive goroutines stop too and g.Wait can return.
 			defer cancel()
 			return proxy.start(gCtx, src, wrappedDst)
 		})
