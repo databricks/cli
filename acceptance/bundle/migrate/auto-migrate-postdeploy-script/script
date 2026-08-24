@@ -1,0 +1,22 @@
+# The deploy runs first, then the postdeploy script, then the migration. The migration is
+# not gated on the script: the resources are deployed either way, so the state describes
+# the same deployment whether or not the script succeeded.
+
+seed_empty_tfstate() {
+    mkdir -p .databricks/bundle/default/terraform
+    cat > .databricks/bundle/default/terraform/terraform.tfstate <<'JSON'
+{"version": 4, "serial": 1, "lineage": "test-lineage", "resources": []}
+JSON
+}
+
+seed_empty_tfstate
+title "postdeploy script output comes before the migration notice"
+trace $CLI bundle deploy
+
+title "Same when the postdeploy script fails: the migration still runs"
+rm -rf .databricks
+seed_empty_tfstate
+export POSTDEPLOY_EXITCODE=1
+trace errcode $CLI bundle deploy
+
+rm -f out.requests.txt
