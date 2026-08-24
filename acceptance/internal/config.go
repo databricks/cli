@@ -85,6 +85,17 @@ type TestConfig struct {
 	// List of request headers to include when recording requests.
 	IncludeRequestHeaders []string
 
+	// Map of name -> regexp. Each run of consecutive output lines matching one of the
+	// regexps is sorted before comparison. Use for output whose line order is not
+	// deterministic, e.g. "bundle deploy" reporting resources as they are applied in
+	// parallel. Entries are keyed by name so an inner test.toml can replace an
+	// inherited pattern by reusing its name, or switch it off via SortLinesOn.
+	SortLines map[string]string
+
+	// Map of SortLines name -> whether to apply it. If a name is not listed, defaults
+	// to true; set it to false to drop an inherited pattern for this test.
+	SortLinesOn map[string]bool
+
 	// List of gitignore patterns to ignore when checking output files
 	Ignore []string
 

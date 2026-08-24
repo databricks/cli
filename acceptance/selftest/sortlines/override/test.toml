@@ -1,0 +1,3 @@
+# Reusing the inherited name replaces the parent's pattern rather than adding to it:
+# "Fruit:" lines are left alone from here on, and "Veg:" lines are sorted instead.
+SortLines.fruit = '^Veg: '
