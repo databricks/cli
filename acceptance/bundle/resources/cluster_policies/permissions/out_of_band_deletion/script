@@ -5,7 +5,10 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
-policy_id="$(read_id.py test_cluster_policy)"
+# Fetch the id via summary + add_repl (a shell function) rather than read_id.py:
+# MSYS_NO_PATHCONV mangles the PATH-resolved python script location on Windows.
+policy_id=$($CLI bundle summary --output json | jq -r '.resources.cluster_policies.test_cluster_policy.id')
+add_repl "$policy_id" TEST_CLUSTER_POLICY_ID
 
 title "Permissions are set on the live policy"
 trace $CLI api get /api/2.0/permissions/cluster-policies/$policy_id | jq '{object_type, access_control_list}'
