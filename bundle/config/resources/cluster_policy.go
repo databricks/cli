@@ -23,6 +23,8 @@ type ClusterPolicy struct {
 	// Shadows the embedded compute.CreatePolicy.PolicyFamilyDefinitionOverrides (a string),
 	// same as Definition: also a policy document authorable as inline YAML.
 	PolicyFamilyDefinitionOverrides any `json:"policy_family_definition_overrides,omitempty"`
+
+	Permissions []ClusterPolicyPermission `json:"permissions,omitempty"`
 }
 
 func (s *ClusterPolicy) UnmarshalJSON(b []byte) error {

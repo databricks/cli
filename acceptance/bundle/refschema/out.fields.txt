@@ -333,6 +333,12 @@ resources.cluster_policies.*.policy_family_definition_overrides	string	ALL
 resources.cluster_policies.*.policy_family_id	string	ALL
 resources.cluster_policies.*.policy_id	string	REMOTE
 resources.cluster_policies.*.url	string	INPUT
+resources.cluster_policies.*.permissions.object_id	string	ALL
+resources.cluster_policies.*.permissions[*]	dresources.StatePermission	ALL
+resources.cluster_policies.*.permissions[*].group_name	string	ALL
+resources.cluster_policies.*.permissions[*].level	iam.PermissionLevel	ALL
+resources.cluster_policies.*.permissions[*].service_principal_name	string	ALL
+resources.cluster_policies.*.permissions[*].user_name	string	ALL
 resources.clusters.*.apply_policy_default_values	bool	ALL
 resources.clusters.*.autoscale	*compute.AutoScale	ALL
 resources.clusters.*.autoscale.max_workers	int	ALL
