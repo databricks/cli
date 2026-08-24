@@ -307,7 +307,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// Independent of the resource IDs above: this reads the deployment record, not
 		// the state. It makes its own API calls, so only 'bundle summary' asks for it.
 		if opts.InitDeploymentHistory {
-			bundle.ApplyContext(ctx, b, mutator.InitializeDeploymentHistory())
+			bundle.ApplyContext(ctx, b, mutator.InitializeDeploymentHistory(stateDesc.Engine))
 			if logdiag.HasError(ctx) {
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}

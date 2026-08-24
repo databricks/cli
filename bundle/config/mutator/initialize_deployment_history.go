@@ -5,16 +5,19 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dms"
 )
 
-type initializeDeploymentHistory struct{}
+type initializeDeploymentHistory struct {
+	engine engine.EngineType
+}
 
 // InitializeDeploymentHistory populates bundle.deployment.history from DMS for 'bundle summary'.
 // Makes extra API calls; only use when needed. No-op unless recording is on.
-func InitializeDeploymentHistory() bundle.Mutator {
-	return &initializeDeploymentHistory{}
+func InitializeDeploymentHistory(e engine.EngineType) bundle.Mutator {
+	return &initializeDeploymentHistory{engine: e}
 }
 
 func (m *initializeDeploymentHistory) Name() string {
@@ -22,22 +25,20 @@ func (m *initializeDeploymentHistory) Name() string {
 }
 
 func (m *initializeDeploymentHistory) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if !b.RecordsDeploymentHistory(ctx) {
+	// Only the direct engine records, so there is no history to report otherwise - and the
+	// state DB this reads the deployment from is only opened for direct.
+	if !m.engine.IsDirect() || !b.RecordsDeploymentHistory(ctx) {
 		return nil
 	}
 
-	w := b.WorkspaceClient(ctx)
-	deploymentID, err := dms.ResolveDeploymentID(ctx, w, b.Config.Workspace.StatePath)
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	deploymentID := b.DeploymentBundle.StateDB.DMSDeploymentID()
 	if deploymentID == "" {
 		// Nothing recorded yet: the bundle has not been deployed, or its deployment
 		// was destroyed.
 		return nil
 	}
 
-	client, err := dms.NewClient(w)
+	client, err := dms.NewClient(b.WorkspaceClient(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
