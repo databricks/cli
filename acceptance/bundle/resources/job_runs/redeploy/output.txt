@@ -60,9 +60,7 @@ Resources:
         "env": "prod"
       },
       "lifecycle": {
-        "triggers": {
-          "on_file_change": {}
-        }
+        "triggers": {}
       },
       "result_state": "SUCCESS"
     }
