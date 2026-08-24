@@ -1286,18 +1286,21 @@ func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {
 		args = append(args, "-buildvcs=false")
 	}
 
-	// Build with the FIPS toolchain so `go test` ships the same binary the
-	// Taskfile and release pipeline do; otherwise acceptance/fips (which asserts
-	// the FIPS build settings) fails on a plain `go test` run.
-	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch, "GOFIPS140=" + readGOFIPS140(t)})
+	// Build with the FIPS toolchain so a plain `go test` produces the same FIPS
+	// binary as `task` and the release build; otherwise acceptance/fips (which
+	// asserts the FIPS build settings) fails outside `task`.
+	repoRoot := ".."
+	RunCommand(t, args, repoRoot, []string{"GOOS=" + osName, "GOARCH=" + arch, "GOFIPS140=" + readGOFIPS140(t, repoRoot)})
 	return execPath
 }
 
-// readGOFIPS140 returns the GOFIPS140 version pinned in the repo Taskfile, the
-// single source of truth also used by the release pipeline.
-func readGOFIPS140(t *testing.T) string {
-	data, err := os.ReadFile(filepath.Join("..", "Taskfile.yml"))
-	require.NoError(t, err)
+// readGOFIPS140 returns the GOFIPS140 version the Taskfile pins for `task`
+// builds. The release pipeline pins the same value independently in
+// .goreleaser.yaml.
+func readGOFIPS140(t *testing.T, repoRoot string) string {
+	path := filepath.Join(repoRoot, "Taskfile.yml")
+	data, err := os.ReadFile(path)
+	require.NoError(t, err, "reading %s (acceptance tests must run with cwd=acceptance/)", path)
 
 	var taskfile struct {
 		Env struct {
