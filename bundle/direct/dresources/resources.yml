@@ -396,11 +396,16 @@ resources:
         reason: output_only
       - field: updated_by
         reason: output_only
-      # Aliases are managed on model versions through a separate API, and DoRead
-      # passes IncludeAliases=false, so GET never echoes them back. Without this a
-      # config that sets aliases reports a perpetual update (remote stays empty).
-      - field: aliases
-        reason: input_only
+      # Output-only alias fields populated by the backend on read; the user
+      # only sets alias_name and version_num.
+      - field: aliases[*].id
+        reason: output_only
+      - field: aliases[*].catalog_name
+        reason: output_only
+      - field: aliases[*].model_name
+        reason: output_only
+      - field: aliases[*].schema_name
+        reason: output_only
     provided_id_fields:
       # The name can technically be updated without recreate. We recreate for now though
       # to match TF implementation.
