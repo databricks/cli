@@ -42,7 +42,6 @@ func GenerateMaterializedConfig(config *TestConfig) string {
 
 	writeBool(&buf, "Cloud", config.Cloud)
 	writeBool(&buf, "CloudSlow", config.CloudSlow)
-	writeBool(&buf, "RequiresUnityCatalog", config.RequiresUnityCatalog)
 	writeBool(&buf, "RequiresCluster", config.RequiresCluster)
 	writeBool(&buf, "RequiresWarehouse", config.RequiresWarehouse)
 	writeBool(&buf, "RunsOnDbr", config.RunsOnDbr)
