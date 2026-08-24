@@ -1,10 +1,6 @@
 echo "*" > .gitignore
 trace $CLI bundle plan 2>&1
-# -q: jobs.independent has no dependency on the failing job, so where its "Created" line
-# lands relative to the errors below is not stable. This test is about which errors a
-# failing deploy reports, so it opts out of the per-resource lines; partial-progress
-# reporting is covered by the wal/* and postgres live_errors tests.
-musterr $CLI bundle deploy -q &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+musterr $CLI bundle deploy -q &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt  # -q: independent job races the failure
 trace print_requests.py --sort //jobs
 
 trace $CLI bundle summary
