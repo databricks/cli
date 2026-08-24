@@ -204,6 +204,9 @@ func TestResourcesBindSupport(t *testing.T) {
 		InstancePools: map[string]*resources.InstancePool{
 			"my_instance_pool": {},
 		},
+		ClusterPolicies: map[string]*resources.ClusterPolicy{
+			"my_cluster_policy": {},
+		},
 		Dashboards: map[string]*resources.Dashboard{
 			"my_dashboard": {},
 		},
@@ -366,6 +369,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockSchemasAPI().EXPECT().GetByFullName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockClustersAPI().EXPECT().GetByClusterId(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockInstancePoolsAPI().EXPECT().GetByInstancePoolId(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockGenieAPI().EXPECT().GetSpace(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVolumesAPI().EXPECT().Read(mock.Anything, mock.Anything).Return(nil, nil)

@@ -40,6 +40,7 @@ var SupportedResources = map[string]any{
 	"vector_search_indexes":   (*ResourceVectorSearchIndex)(nil),
 	"instance_pools":          (*ResourceInstancePool)(nil),
 	"secrets":                 (*ResourceSecret)(nil),
+	"cluster_policies":        (*ResourceClusterPolicy)(nil),
 
 	// Permissions
 	"jobs.permissions":                    (*ResourcePermissions)(nil),

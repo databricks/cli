@@ -41,6 +41,10 @@ var RequiredFields = map[string][]string{
 	"resources.catalogs.*": {"name"},
 	"resources.catalogs.*.managed_encryption_settings.azure_encryption_settings": {"azure_tenant_id"},
 
+	"resources.cluster_policies.*.libraries[*].cran":  {"package"},
+	"resources.cluster_policies.*.libraries[*].maven": {"coordinates"},
+	"resources.cluster_policies.*.libraries[*].pypi":  {"package"},
+
 	"resources.clusters.*.cluster_log_conf.dbfs":     {"destination"},
 	"resources.clusters.*.cluster_log_conf.s3":       {"destination"},
 	"resources.clusters.*.cluster_log_conf.volumes":  {"destination"},

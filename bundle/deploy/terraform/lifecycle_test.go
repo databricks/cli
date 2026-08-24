@@ -16,6 +16,7 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 	// Resources that are only supported in direct mode and should not be converted to Terraform
 	ignoredResources := []string{
 		"catalogs",
+		"cluster_policies",
 		"external_locations",
 		"genie_spaces",
 		"instance_pools",

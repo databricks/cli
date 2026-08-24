@@ -596,6 +596,51 @@
                   }
                 ]
               },
+              "resources.ClusterPolicy": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "definition": {
+                        "description": "Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).",
+                        "$ref": "#/$defs/interface"
+                      },
+                      "description": {
+                        "description": "Additional human-readable description of the cluster policy.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "libraries": {
+                        "description": "A list of libraries to be installed on the next cluster restart that uses this policy. The maximum number of libraries is 500.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/compute.Library"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "max_clusters_per_user": {
+                        "description": "Max number of clusters per user that can be active using this policy. If not present, there is no max limit.",
+                        "$ref": "#/$defs/int64"
+                      },
+                      "name": {
+                        "description": "Cluster Policy name requested by the user. This has to be unique. Length must be between 1 and 100\ncharacters.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "policy_family_definition_overrides": {
+                        "description": "Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).\nThe JSON document must be passed as a string and cannot be embedded in the requests.\n\nYou can use this to customize the policy definition inherited from the policy family.\nPolicy rules specified here are merged into the inherited policy definition.",
+                        "$ref": "#/$defs/interface"
+                      },
+                      "policy_family_id": {
+                        "description": "ID of the policy family. The cluster policy's policy definition inherits the policy\nfamily's policy definition.\n\nCannot be used with `definition`. Use `policy_family_definition_overrides` instead to\ncustomize the policy definition.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Dashboard": {
                 "oneOf": [
                   {
@@ -3406,6 +3451,9 @@
                     },
                     "catalogs": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Catalog"
+                    },
+                    "cluster_policies": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ClusterPolicy"
                     },
                     "clusters": {
                       "description": "The cluster definitions for the bundle, where each key is the name of a cluster.",
@@ -15005,6 +15053,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Cluster"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.ClusterPolicy": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ClusterPolicy"
                       }
                     },
                     {
