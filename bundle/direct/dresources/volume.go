@@ -79,7 +79,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 	return response, err
 }
 
-func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ *PlanEntry) (string, *catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,

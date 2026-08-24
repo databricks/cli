@@ -101,7 +101,7 @@ func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretSco
 }
 
 // We implement DoUpdateWithId to ensure that the updated ID gets recorded in state.
-func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, id string, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
+func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, id string, state *SecretScopeAclsState, _ *PlanEntry) (string, *SecretScopeAclsState, error) {
 	err := r.setACLs(ctx, state.ScopeName, state.Acls)
 	if err != nil {
 		return "", nil, err
@@ -109,8 +109,8 @@ func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, id string,
 	return state.ScopeName, nil, nil
 }
 
-func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState, _ *PlanEntry) (*SecretScopeAclsState, error) {
-	_, _, err := r.DoUpdateWithID(ctx, id, state)
+func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState, entry *PlanEntry) (*SecretScopeAclsState, error) {
+	_, _, err := r.DoUpdateWithID(ctx, id, state, entry)
 	return nil, err
 }
 

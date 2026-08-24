@@ -74,7 +74,7 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 }
 
 // DoUpdateWithID updates the catalog and returns the new ID if the name changes.
-func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateCatalog) (string, *catalog.CatalogInfo, error) {
+func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateCatalog, _ *PlanEntry) (string, *catalog.CatalogInfo, error) {
 	updateRequest := catalog.UpdateCatalog{
 		Comment:                      config.Comment,
 		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
