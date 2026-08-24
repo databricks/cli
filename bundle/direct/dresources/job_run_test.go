@@ -261,7 +261,7 @@ func TestJobRunStateUnmarshalWithoutLifecycle(t *testing.T) {
 
 	require.NoError(t, json.Unmarshal([]byte(`{}`), &state))
 
-	assert.Nil(t, state.Lifecycle.Triggers.OnFileChange.Files)
+	assert.Nil(t, state.Lifecycle.Triggers.OnFileChange)
 }
 
 // The planner diffs RemapState(remote) against PrepareState(config), so a run
