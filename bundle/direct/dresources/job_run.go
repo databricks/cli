@@ -3,7 +3,6 @@ package dresources
 import (
 	"cmp"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -31,7 +30,7 @@ const jobRunTimeout = 24 * time.Hour
 // downgrades a cleared trigger to update.
 var jobRunTriggerLocalPaths = []string{
 	"lifecycle.triggers.on_bundle_deploy",
-	"lifecycle.triggers.on_file_change.files",
+	"lifecycle.triggers.on_file_change",
 }
 
 func isJobRunTriggerPath(path string) bool {
@@ -52,29 +51,7 @@ type JobRunTriggersState struct {
 	// Fresh UUID each plan while armed so Old!=New forces recreate.
 	OnBundleDeploy string `json:"on_bundle_deploy,omitempty"`
 	// Content hashes from ResolveJobRunFileTriggers; any change recreates.
-	OnFileChange JobRunFileTriggerState `json:"on_file_change"`
-}
-
-// JobRunFileTriggerState wraps the hashes so turning the trigger off (Files nil)
-// diffs at one path, distinct from the per-file entries a changed file produces.
-type JobRunFileTriggerState struct {
-	Files map[string]string `json:"files,omitempty"`
-}
-
-// UnmarshalJSON accepts the wrapped map and the older path-to-hash map.
-func (s *JobRunFileTriggerState) UnmarshalJSON(b []byte) error {
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if files, ok := raw["files"]; ok && len(files) > 0 && files[0] == '{' {
-		return json.Unmarshal(files, &s.Files)
-	}
-	if len(raw) == 0 {
-		s.Files = nil
-		return nil
-	}
-	return json.Unmarshal(b, &s.Files)
+	OnFileChange map[string]string `json:"on_file_change,omitempty"`
 }
 
 // JobRunLifecycleState is the local-only trigger fingerprint. Nested by value,
@@ -89,9 +66,7 @@ func emptyJobRunLifecycleState() JobRunLifecycleState {
 	return JobRunLifecycleState{
 		Triggers: JobRunTriggersState{
 			OnBundleDeploy: "",
-			OnFileChange: JobRunFileTriggerState{
-				Files: nil,
-			},
+			OnFileChange:   nil,
 		},
 	}
 }
@@ -162,7 +137,7 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 		state.Lifecycle.Triggers.OnBundleDeploy = uuid.NewString()
 	}
 	if len(input.ResolvedFileTriggers) > 0 {
-		state.Lifecycle.Triggers.OnFileChange.Files = input.ResolvedFileTriggers
+		state.Lifecycle.Triggers.OnFileChange = input.ResolvedFileTriggers
 	}
 	return state
 }
@@ -449,7 +424,7 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 	pathString := path.String()
 	if isJobRunTriggerPath(pathString) {
 		removed := pathString == "lifecycle.triggers.on_bundle_deploy" && (change.New == nil || change.New == "")
-		removed = removed || pathString == "lifecycle.triggers.on_file_change.files" && change.New == nil
+		removed = removed || pathString == "lifecycle.triggers.on_file_change" && change.New == nil
 		if removed {
 			change.Action = deployplan.Update
 			change.Reason = "trigger removed"
