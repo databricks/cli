@@ -1,4 +1,5 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/state/default/files...
+Created jobs.test
 Error: cannot create resources.jobs.bar: cannot resolve "${resources.jobs.test.tasks[0].new_cluster.custom_tags.missing_tag}": tasks[0].new_cluster.custom_tags.missing_tag: key "missing_tag" not found in map
 
 Files: 7 uploaded, 0 deleted

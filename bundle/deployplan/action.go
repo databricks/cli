@@ -67,6 +67,16 @@ func (a ActionType) StringShort() string {
 	return items[0]
 }
 
+// AppliedLine renders the user-facing line reporting that action has been applied
+// to resourceKey, e.g. "Created jobs.foo". The past-tense verb is the short action
+// name plus "d" (create->Created, delete->Deleted, ...), capitalized to match the
+// sentence case of other output. "bundle plan" keeps the lower-case present tense,
+// so the two are still distinguishable at a glance.
+func AppliedLine(resourceKey string, action ActionType) string {
+	verb := action.StringShort() + "d"
+	return strings.ToUpper(verb[:1]) + verb[1:] + " " + strings.TrimPrefix(resourceKey, "resources.")
+}
+
 // GetHigherAction returns the action with higher severity between a and b.
 // Actions are ordered by severity in actionOrder map.
 func GetHigherAction(a, b ActionType) ActionType {

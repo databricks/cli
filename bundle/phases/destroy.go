@@ -136,7 +136,8 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
+		// destroy prints its own summary and never lists resources individually.
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, false)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())
