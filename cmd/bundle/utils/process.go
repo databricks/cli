@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
@@ -121,9 +120,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				// template has to come off the error value itself.
 				errTemplate = diag.ErrorTemplate(retErr)
 			}
-			if errTemplate != "" {
-				b.Metrics.SetStringValue(metrics.ErrorTemplate, errTemplate)
-			}
+			b.Metrics.ErrorTemplate = errTemplate
 			phases.LogDeployTelemetry(ctx, b, errMsg)
 		}()
 	}

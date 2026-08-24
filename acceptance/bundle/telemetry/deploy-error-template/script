@@ -11,6 +11,6 @@ errcode trace $CLI bundle deploy -qq
 
 title "The message carries the workspace path and the user; the template carries neither\n"
 trace print_telemetry_error_message
-trace print_telemetry_string_values
+trace print_telemetry_error_templates
 
 rm out.requests.txt

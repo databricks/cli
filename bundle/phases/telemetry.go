@@ -296,7 +296,6 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				TargetCount:                  b.Metrics.TargetCount,
 				WorkspaceArtifactPathType:    artifactPathType,
 				BoolValues:                   b.Metrics.BoolValues,
-				StringValues:                 b.Metrics.StringValues,
 				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
 				PythonAddedResourcesCount:    b.Metrics.PythonAddedResourcesCount,
 				PythonUpdatedResourcesCount:  b.Metrics.PythonUpdatedResourcesCount,
@@ -306,6 +305,12 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				ComplexVariableCount:         complexVariableCount,
 				LookupVariableCount:          lookupVariableCount,
 				BundleMutatorExecutionTimeMs: getExecutionTimes(b),
+
+				// Own alignment group: these names are long enough that sharing one
+				// would re-align every field above them.
+				ErrorTemplate:                    b.Metrics.ErrorTemplate,
+				DirectMigrateErrorTemplate:       b.Metrics.DirectMigrateErrorTemplate,
+				DirectMigrateCommitErrorTemplate: b.Metrics.DirectMigrateCommitErrorTemplate,
 			},
 		},
 	})

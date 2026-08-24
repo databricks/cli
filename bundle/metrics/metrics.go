@@ -11,22 +11,6 @@ const (
 	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
 	SelectUsed                          = "select_used"
 
-	// PII-free descriptions of the errors a deploy hit, recorded in
-	// experimental.string_values. Each value is a libs/safeerr message template:
-	// the error's format string with everything the user supplied left as a verb,
-	// plus the safe fields of any API error at the end of the chain. They are the
-	// aggregatable counterpart to error_message, which is scrubbed heuristically
-	// and stays privileged.
-	//   - error_template: the first error diagnostic the deploy logged.
-	//   - direct_migrate_error_template: why the post-deploy migration to the
-	//     direct engine failed. Recorded for both the opt-in population
-	//     (alongside direct_migrate_error) and the dry run (alongside
-	//     direct_drymigrate_success), so either failure population can be broken
-	//     down by cause rather than just counted. A migration stopped by warnings
-	//     alone has no error and so records nothing here.
-	ErrorTemplate              = "error_template"
-	DirectMigrateErrorTemplate = "direct_migrate_error_template"
-
 	// Outcome of the dry-run migration to the direct engine attempted after a
 	// successful terraform deploy WHEN THE USER OPTED OUT of direct (direct is
 	// the default, so this means engine: terraform). Only recorded when the state

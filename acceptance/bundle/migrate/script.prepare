@@ -6,5 +6,5 @@
 # assertion.
 print_migration_telemetry() {
     print_telemetry_bool_values | grep '^direct_' || true
-    print_telemetry_string_values | grep '^direct_' || true
+    print_telemetry_error_templates | grep '^direct_' || true
 }

@@ -58,7 +58,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
 		log.Warnf(ctx, "%sfailed to parse terraform state: %v", warnPrefix, err)
-		recordMigrateErrorTemplate(b, err)
+		recordErrorTemplate(&b.Metrics.DirectMigrateErrorTemplate, err)
 		if requestedEngine.Type == engine.EngineDirect {
 			b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
 			log.Warnf(ctx, "%s", autoMigrateStoppedNotice)
@@ -88,7 +88,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		cmdio.LogString(ctx, "Removing empty terraform state; direct engine will be used on the next deploy (selected via "+requestedEngine.Source+")...")
 		if err := backupTerraformState(ctx, b); err != nil {
 			b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
-			recordMigrateErrorTemplate(b, err)
+			recordErrorTemplate(&b.Metrics.DirectMigrateCommitErrorTemplate, err)
 			log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
 			return
 		}
@@ -111,7 +111,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 
 	if err != nil {
 		log.Warnf(ctx, "%s%v", warnPrefix, err)
-		recordMigrateErrorTemplate(b, err)
+		recordErrorTemplate(&b.Metrics.DirectMigrateErrorTemplate, err)
 	}
 	if hasWarnings || err != nil {
 		log.Warnf(ctx, "%s", feedbackNotice)
@@ -151,7 +151,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 
 	if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
-		recordMigrateErrorTemplate(b, err)
+		recordErrorTemplate(&b.Metrics.DirectMigrateCommitErrorTemplate, err)
 		log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
 		return
 	}
@@ -186,13 +186,14 @@ func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath s
 	return err
 }
 
-// recordMigrateErrorTemplate records a PII-free description of why the migration
-// failed. It is recorded for both populations — the opt-in one and the dry run —
-// because the booleans only say that a migration failed, and the interesting
-// question is which of the failures it was. See metrics.DirectMigrateErrorTemplate.
-func recordMigrateErrorTemplate(b *bundle.Bundle, err error) {
+// recordErrorTemplate stores a PII-free description of err in target, which is
+// the metric for the same failure class as the boolean recorded alongside it —
+// so a query tells a conversion failure from a commit failure by field, without
+// joining against the booleans. Recorded for both populations, the opt-in one
+// and the dry run, since the booleans only say that a migration failed.
+func recordErrorTemplate(target *string, err error) {
 	if template := diag.ErrorTemplate(err); template != "" {
-		b.Metrics.SetStringValue(metrics.DirectMigrateErrorTemplate, template)
+		*target = template
 	}
 }
 

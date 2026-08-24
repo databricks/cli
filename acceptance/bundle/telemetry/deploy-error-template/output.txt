@@ -15,5 +15,5 @@ Exit code: 1
 >>> print_telemetry_error_message
 access denied: [REDACTED_WORKSPACE_PATH](json) (403 INJECTED)
 
->>> print_telemetry_string_values
+>>> print_telemetry_error_templates
 error_template INJECTED 403

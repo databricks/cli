@@ -127,8 +127,10 @@ print_telemetry_error_message() {
     jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | .databricks_cli_log.bundle_deploy_event.error_message // empty )' out.requests.txt
 }
 
-print_telemetry_string_values() {
-    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.string_values // []) ) | map("\(.key) \(.value)") | .[]' out.requests.txt | sort
+# Print the PII-free error templates the deploy event carries, one "<field>
+# <template>" line each, skipping the ones this deploy did not set.
+print_telemetry_error_templates() {
+    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental // {}) ) | to_entries | map(select((.key | endswith("_template")) and (.value // "") != "")) | map("\(.key) \(.value)") | .[]' out.requests.txt | sort
 }
 
 sethome() {
