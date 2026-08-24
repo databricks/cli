@@ -120,3 +120,24 @@ func TestErrorTemplateMatchesFromErr(t *testing.T) {
 		assert.Equal(t, FromErr(err)[0].ErrorTemplate, ErrorTemplate(err))
 	}
 }
+
+// standInErr models a typed CLI error such as libs/filer's: user data in the
+// message, a PII-free classification as its stand-in.
+type standInErr struct{}
+
+func (standInErr) Error() string      { return "access denied: /Workspace/Users/a@b.com/x" }
+func (standInErr) SafeString() string { return "access denied" }
+
+// TestErrorTemplateUsesStandInWithoutSafeerr covers the call sites not raised
+// through safeerr, which is most of them: a typed error still describes itself.
+func TestErrorTemplateUsesStandInWithoutSafeerr(t *testing.T) {
+	assert.Equal(t, "access denied", ErrorTemplate(standInErr{}))
+
+	// Combined with an API error at the end of the chain.
+	err := safeerr.Errorf("pushing state: %w", standInErr{})
+	assert.Equal(t, "pushing state: access denied", ErrorTemplate(err))
+
+	// A stand-in never displaces a real template.
+	assert.Equal(t, "cannot update %s: %w",
+		ErrorTemplate(safeerr.Errorf("cannot update %s: %w", "resources.jobs.x", errors.New("boom"))))
+}

@@ -72,6 +72,14 @@ func FromErr(err error) Diagnostics {
 // has safe fields but no template.
 func ErrorTemplate(err error) string {
 	template := safeerr.ErrorTemplate(err)
+	if template == "" {
+		// Not raised through safeerr, but a typed error can still describe itself
+		// — libs/filer's errors do. This covers the call sites not yet converted,
+		// which is most of them.
+		if ss, ok := err.(safeerr.SafeStringer); ok {
+			template = ss.SafeString()
+		}
+	}
 	apiDescription := SafeAPIErrorDescription(err)
 
 	switch {

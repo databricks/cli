@@ -384,12 +384,12 @@ type safeStringerKey string
 
 func (k safeStringerKey) SafeString() string { return "jobs.*" }
 
-// safeStringerErr implements both error and SafeStringer, which resolves as
-// error so that %w keeps chaining.
-type safeStringerErr struct{}
+// standInOnlyErr is a typed error carrying user data in its message and a
+// PII-free classification as its stand-in, modelled on libs/filer's errors.
+type standInOnlyErr struct{}
 
-func (safeStringerErr) Error() string      { return "boom" }
-func (safeStringerErr) SafeString() string { return "SHOULD-NOT-APPEAR" }
+func (standInOnlyErr) Error() string      { return "access denied: /Workspace/Users/a@b.com/x" }
+func (standInOnlyErr) SafeString() string { return "access denied" }
 
 func TestSafeStringer(t *testing.T) {
 	key := safeStringerKey("resources.jobs.my_job")
@@ -443,15 +443,23 @@ func TestSafeStringerValueIsNotRetained(t *testing.T) {
 	assert.Equal(t, safeValue{v: "jobs.*"}, te.args[0])
 }
 
-func TestSafeStringerErrorIsTreatedAsError(t *testing.T) {
-	// Both interfaces: error wins, so %w still chains and the stand-in is unused.
+func TestSafeStringerErrorPrefersItsTemplate(t *testing.T) {
+	// A templated error under %w contributes its template, not a stand-in.
 	inner := Errorf("inner %d", Safe(1))
 	err := Errorf("outer: %w", inner)
 	assert.Equal(t, "outer: inner 1", ErrorTemplate(err))
+}
 
-	err = Errorf("outer: %w", safeStringerErr{})
-	assert.Equal(t, "outer: %w", ErrorTemplate(err))
-	assert.NotContains(t, ErrorTemplate(err), "SHOULD-NOT-APPEAR")
+func TestSafeStringerErrorFallsBackToStandIn(t *testing.T) {
+	// An error with no template of its own contributes its stand-in, which is how
+	// a typed error reports its classification without the path it carries.
+	err := Errorf("writing state: %w", standInOnlyErr{})
+	assert.Equal(t, "writing state: access denied: /Workspace/Users/a@b.com/x", err.Error())
+	assert.Equal(t, "writing state: access denied", ErrorTemplate(err))
+	assert.NotContains(t, ErrorTemplate(err), "/Workspace")
+
+	// Without a stand-in the verb stays, as before.
+	assert.Equal(t, "writing state: %w", ErrorTemplate(Errorf("writing state: %w", fs.ErrPermission)))
 }
 
 func TestSafeStringerOutranksSafe(t *testing.T) {

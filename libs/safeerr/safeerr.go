@@ -69,10 +69,10 @@ func Safe(v any) any {
 // "jobs.*" — enough to tell a failing job from a failing pipeline without
 // reporting which one.
 //
-// A value that is both an error and a SafeStringer is treated as an error, so
-// that %w keeps chaining its template. Otherwise SafeStringer wins over Safe:
-// wrapping such a value in Safe cannot put its user-supplied part back into the
-// template.
+// An error may also be a SafeStringer: under %w its own template is preferred,
+// and the stand-in is used only when it has none. SafeStringer otherwise wins
+// over Safe, so wrapping such a value in Safe cannot put its user-supplied part
+// back into the template.
 type SafeStringer interface {
 	SafeString() string
 }
@@ -209,12 +209,20 @@ func (e *templateError) substitute(spec string, verb byte, argIndex int) string 
 	}
 
 	if verb == 'w' {
-		// %w is only valid in fmt.Errorf, so it is never rendered. Chain the
-		// wrapped error's template instead, when it has one.
-		if err, ok := arg.(error); ok {
-			if inner := ErrorTemplate(err); inner != "" {
-				return inner
-			}
+		// %w is only valid in fmt.Errorf, so it is never rendered.
+		err, ok := arg.(error)
+		if !ok {
+			return spec
+		}
+		// The wrapped error's own template wins. Failing that, an error that
+		// supplies a stand-in contributes that instead, which is how the CLI's
+		// own typed errors report their classification without the path or name
+		// they carry. Only the wrapped error itself is consulted, not its chain.
+		if inner := ErrorTemplate(err); inner != "" {
+			return inner
+		}
+		if ss, ok := err.(SafeStringer); ok {
+			return ss.SafeString()
 		}
 		return spec
 	}
