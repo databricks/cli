@@ -1,34 +1,22 @@
-package dstate
+package dms
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
-
-	"github.com/databricks/cli/libs/dms"
 )
-
-// operationRecorder is what the state DB records through: the sink in production, and a
-// stand-in in this package's tests, which watch what a write reports without the queue in
-// between. The queue coalesces writes for one resource, so only the sink sees every one.
-type operationRecorder interface {
-	RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage)
-	recordFailure(resourceKey, resourceID string, cause error)
-	firstErr() error
-	close() error
-}
 
 // operationSinkQueueSize is how many resources may be waiting to be recorded before the
 // next write has to wait. Without a cap a deploy could finish far ahead of the service,
 // and DMS is what the next plan reads.
 const operationSinkQueueSize = 10
 
-// operationSink writes operations one at a time on a background goroutine, so a deploy never
+// OperationSink writes operations one at a time on a background goroutine, so a deploy never
 // waits on a round trip. queue holds bundle state keys, converted where they go on the wire,
 // and pending the newest update per key, so a second write for a resource replaces the first.
-type operationSink struct {
-	writer dms.OperationWriter
+type OperationSink struct {
+	writer OperationWriter
 
 	// queue holds the keys that have something waiting. One slot per resource, so a full
 	// queue means the deploy is that many resources ahead and the next write waits. Record
@@ -38,30 +26,25 @@ type operationSink struct {
 	// done is closed once the writer has drained the queue and returned.
 	done chan struct{}
 
-	// stopQueue closes the queue, wrapped so close can safely run twice.
+	// stopQueue closes the queue, wrapped so Close can safely run twice.
 	stopQueue func()
 
 	// mu guards the fields below.
 	mu sync.Mutex
 
 	// pending holds the newest update per resource key, absent once the writer takes it.
-	pending map[string]dms.OperationUpdate
+	pending map[string]OperationUpdate
 
 	err error
 }
 
-// newOperationSink starts the writer. It returns nil when recording is off, and every
-// method is a no-op on a nil sink. ctx must outlive close.
-func newOperationSink(ctx context.Context, writer dms.OperationWriter) *operationSink {
-	if writer == nil {
-		return nil
-	}
-
-	s := &operationSink{
+// NewOperationSink starts the writer. ctx must outlive Close.
+func NewOperationSink(ctx context.Context, writer OperationWriter) *OperationSink {
+	s := &OperationSink{
 		writer:  writer,
 		queue:   make(chan string, operationSinkQueueSize),
 		done:    make(chan struct{}),
-		pending: make(map[string]dms.OperationUpdate),
+		pending: make(map[string]OperationUpdate),
 	}
 	s.stopQueue = sync.OnceFunc(func() { close(s.queue) })
 
@@ -69,15 +52,11 @@ func newOperationSink(ctx context.Context, writer dms.OperationWriter) *operatio
 	return s
 }
 
-// RecordOperation implements dstate.OperationSink, turning every state write into an
-// operation so DMS mirrors the local state. state is the serialized envelope, and nil for
-// a delete. An earlier failure does not stop it: keep recording, best effort.
-func (s *operationSink) RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage) {
-	if s == nil {
-		return
-	}
-
-	update, err := dms.NewStateUpdate(resourceID, state, inProgress)
+// RecordOperation turns a state write into an operation so DMS mirrors the local state.
+// resourceKey is the bundle state key, state the serialized envelope, and nil for a delete.
+// An earlier failure does not stop it: keep recording, best effort.
+func (s *OperationSink) RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage) {
+	update, err := NewStateUpdate(resourceID, state, inProgress)
 	if err != nil {
 		s.setErr(fmt.Errorf("recording operation for %s: %w", resourceKey, err))
 		return
@@ -86,19 +65,15 @@ func (s *operationSink) RecordOperation(ctx context.Context, resourceKey string,
 	s.record(resourceKey, update)
 }
 
-// recordFailure records that a resource did not apply, so the history says why rather
+// RecordFailure records that a resource did not apply, so the history says why rather
 // than leaving the resource out.
-func (s *operationSink) recordFailure(resourceKey, resourceID string, cause error) {
-	if s == nil {
-		return
-	}
-
-	s.record(resourceKey, dms.NewFailureUpdate(resourceID, cause))
+func (s *OperationSink) RecordFailure(resourceKey, resourceID string, cause error) {
+	s.record(resourceKey, NewFailureUpdate(resourceID, cause))
 }
 
 // record makes update the one waiting for resourceKey, waiting itself while the queue is
-// full. Recording after close panics, so every caller must return before close.
-func (s *operationSink) record(resourceKey string, update dms.OperationUpdate) {
+// full. Recording after Close panics, so every caller must return before Close.
+func (s *OperationSink) record(resourceKey string, update OperationUpdate) {
 	s.mu.Lock()
 	waiting, queued := s.pending[resourceKey]
 	if queued {
@@ -115,7 +90,7 @@ func (s *operationSink) record(resourceKey string, update dms.OperationUpdate) {
 }
 
 // take claims the update waiting for resourceKey.
-func (s *operationSink) take(resourceKey string) (dms.OperationUpdate, bool) {
+func (s *OperationSink) take(resourceKey string) (OperationUpdate, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -124,7 +99,7 @@ func (s *operationSink) take(resourceKey string) (dms.OperationUpdate, bool) {
 	return update, ok
 }
 
-func (s *operationSink) run(ctx context.Context) {
+func (s *OperationSink) run(ctx context.Context) {
 	defer close(s.done)
 
 	for resourceKey := range s.queue {
@@ -136,27 +111,23 @@ func (s *operationSink) run(ctx context.Context) {
 		}
 
 		// Keep going after a failure, so one bad write does not drop everything behind it.
-		if err := s.writer.Write(ctx, dms.KeyFromState(resourceKey), update); err != nil {
+		if err := s.writer.Write(ctx, KeyFromState(resourceKey), update); err != nil {
 			s.setErr(fmt.Errorf("recording operation for %s with the deployment metadata service: %w", resourceKey, err))
 		}
 	}
 }
 
-// close drains what is waiting and returns the first write error, which fails the deploy:
+// Close drains what is waiting and returns the first write error, which fails the deploy:
 // DMS is the source of truth, so a missing record would have the next deploy create a
 // resource that already exists. Safe to call twice.
-func (s *operationSink) close() error {
-	if s == nil {
-		return nil
-	}
-
+func (s *OperationSink) Close() error {
 	s.stopQueue()
 	<-s.done
-	return s.firstErr()
+	return s.FirstErr()
 }
 
 // setErr keeps the first error; one failure is enough to fail the deploy.
-func (s *operationSink) setErr(err error) {
+func (s *OperationSink) setErr(err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -165,12 +136,8 @@ func (s *operationSink) setErr(err error) {
 	}
 }
 
-// firstErr returns the first recording error, or nil. A nil sink never errors.
-func (s *operationSink) firstErr() error {
-	if s == nil {
-		return nil
-	}
-
+// FirstErr returns the first recording error, or nil.
+func (s *OperationSink) FirstErr() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

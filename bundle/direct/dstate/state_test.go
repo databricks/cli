@@ -3,6 +3,7 @@ package dstate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,9 +26,9 @@ type fakeSink struct {
 	ops []string
 }
 
-func (f *fakeSink) recordFailure(resourceKey, resourceID string, cause error) {}
-func (f *fakeSink) firstErr() error                                           { return nil }
-func (f *fakeSink) close() error                                              { return nil }
+func (f *fakeSink) RecordFailure(resourceKey, resourceID string, cause error) {}
+func (f *fakeSink) FirstErr() error                                           { return nil }
+func (f *fakeSink) Close() error                                              { return nil }
 
 func (f *fakeSink) RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage) {
 	entry := fmt.Sprintf("%s id=%s state=%s", resourceKey, resourceID, string(state))
@@ -92,11 +93,19 @@ func TestStateWritesRecordOperations(t *testing.T) {
 func TestStateWritesRecordNothingWithoutSink(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
-	// No sink: recording is off, and the writes still succeed.
 	var db DeploymentState
 	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
+
+	// A bundle that does not record deployment history has no writer, so no sink is
+	// installed and every recording call is a no-op.
+	db.StartRecording(t.Context(), nil)
+	require.Nil(t, db.recorder())
+
 	require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil))
 	require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job"))
+	db.RecordFailure("jobs.my_job", "123", errors.New("boom"))
+	require.NoError(t, db.RecordingErr())
+	require.NoError(t, db.FinishRecording())
 	mustFinalize(t, &db)
 }
 

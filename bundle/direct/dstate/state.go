@@ -82,15 +82,26 @@ type DeploymentState struct {
 	DMSDeploymentID string
 }
 
+// operationRecorder is what the state DB records through: a dms.OperationSink in production,
+// and a stand-in in this package's tests, which watch what a write reports without the queue
+// in between. The queue coalesces writes for one resource, so only the sink sees every one.
+type operationRecorder interface {
+	RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage)
+	RecordFailure(resourceKey, resourceID string, cause error)
+	FirstErr() error
+	Close() error
+}
+
 // StartRecording has every subsequent state write recorded with DMS through writer, so what
 // the service holds mirrors the WAL. A nil writer records nothing, which is what a bundle that
 // does not record deployment history passes. It is called once the version exists, which is why
 // it is not an Open option, and ctx must outlive FinishRecording.
 func (db *DeploymentState) StartRecording(ctx context.Context, writer dms.OperationWriter) {
-	sink := newOperationSink(ctx, writer)
-	if sink == nil {
+	if writer == nil {
 		return
 	}
+
+	sink := dms.NewOperationSink(ctx, writer)
 
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -101,7 +112,7 @@ func (db *DeploymentState) StartRecording(ctx context.Context, writer dms.Operat
 // leaving the resource out. resourceID is the id it had before the failure.
 func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause error) {
 	if r := db.recorder(); r != nil {
-		r.recordFailure(resourceKey, resourceID, cause)
+		r.RecordFailure(resourceKey, resourceID, cause)
 	}
 }
 
@@ -109,7 +120,7 @@ func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause e
 // creating resources the service will not know about.
 func (db *DeploymentState) RecordingErr() error {
 	if r := db.recorder(); r != nil {
-		return r.firstErr()
+		return r.FirstErr()
 	}
 	return nil
 }
@@ -118,7 +129,7 @@ func (db *DeploymentState) RecordingErr() error {
 // twice, and on a state that never started recording.
 func (db *DeploymentState) FinishRecording() error {
 	if r := db.recorder(); r != nil {
-		return r.close()
+		return r.Close()
 	}
 	return nil
 }
