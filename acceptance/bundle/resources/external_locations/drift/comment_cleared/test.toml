@@ -1,7 +1,6 @@
 # External locations need real storage credentials with cloud IAM setup, so this
 # only runs against the mock server (same as the parent test).
 Cloud = false
-RequiresUnityCatalog = true
 # The parent test disables request recording; this one asserts on the payload.
 RecordRequests = true
 
