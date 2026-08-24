@@ -488,6 +488,10 @@
                         "description": "The kind of compute described by this compute specification.\n\nDepending on `kind`, different validations and default values will be applied.\n\nClusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.\n* [is_single_node](/api/workspace/clusters/create#is_single_node)\n* [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)\n\nBy using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind"
                       },
+                      "libraries": {
+                        "description": "A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created. Only supported in direct deployment mode.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/compute.Library"
+                      },
                       "lifecycle": {
                         "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted"
