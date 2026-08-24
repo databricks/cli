@@ -26,14 +26,29 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
-// jobRunTriggerLocalPaths are local-only fingerprints: clearing one is skip, not recreate.
-var jobRunTriggerLocalPaths = []string{
-	"lifecycle.triggers.on_bundle_deploy",
-	"lifecycle.triggers.on_file_change",
+// Parsed so HasPrefix catches parent and child paths; skip is only when the
+// trigger itself is cleared, not when a file hash under on_file_change changes.
+var (
+	jobRunTriggersPath       = structpath.MustParsePath("lifecycle.triggers")
+	jobRunOnBundleDeployPath = structpath.MustParsePath("lifecycle.triggers.on_bundle_deploy")
+	jobRunOnFileChangePath   = structpath.MustParsePath("lifecycle.triggers.on_file_change")
+)
+
+func samePath(a, b *structpath.PathNode) bool {
+	return a.HasPrefix(b) && b.HasPrefix(a)
 }
 
-func isJobRunTriggerPath(path string) bool {
-	return slices.Contains(jobRunTriggerLocalPaths, path)
+func jobRunTriggerRemoved(path *structpath.PathNode, change *ChangeDesc) bool {
+	switch {
+	case samePath(path, jobRunOnBundleDeployPath):
+		return change.New == nil || change.New == ""
+	case samePath(path, jobRunOnFileChangePath):
+		return change.New == nil
+	case samePath(path, jobRunTriggersPath):
+		return change.New == nil
+	default:
+		return false
+	}
 }
 
 // JobRunTriggersState is the persisted fingerprint of lifecycle.triggers.
@@ -396,11 +411,8 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // result_state either, so the lifecycle state is what tells the two apart.
 // Clearing a trigger skips its local-only fingerprint without re-firing the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
-	pathString := path.String()
-	if isJobRunTriggerPath(pathString) {
-		removed := pathString == "lifecycle.triggers.on_bundle_deploy" && (change.New == nil || change.New == "")
-		removed = removed || pathString == "lifecycle.triggers.on_file_change" && change.New == nil
-		if removed {
+	if path.HasPrefix(jobRunTriggersPath) {
+		if jobRunTriggerRemoved(path, change) {
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
 		}
