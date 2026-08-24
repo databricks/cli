@@ -44,9 +44,7 @@ Exit code: 1
     "value": {
       "job_id": [MY_JOB_ID],
       "lifecycle": {
-        "triggers": {
-          "on_file_change": {}
-        }
+        "triggers": {}
       },
       "result_state": "SUCCESS"
     }
