@@ -15,7 +15,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 {
   "resources[0].uc_securable.securable_kind": {
     "action": "skip",
-    "reason": "output_only",
+    "reason": "spec:output_only",
     "remote": "TABLE_DELTA"
   }
 }
