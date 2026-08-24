@@ -18,27 +18,23 @@ import (
 )
 
 // newRecording returns what this run records with DMS, or a disabled recording when
-// nothing is: recording needs the direct engine and the bundle's opt-in. The deployment ID
-// is resolved from the workspace node, and is empty on a first deploy.
+// nothing is: recording needs the direct engine and the bundle's opt-in.
 func newRecording(ctx context.Context, b *bundle.Bundle, eng engine.EngineType, versionType dms.VersionType) (dms.Recording, error) {
 	if !b.RecordsDeploymentHistory(ctx) || !eng.IsDirect() {
 		return dms.Disabled(), nil
 	}
 
 	w := b.WorkspaceClient(ctx)
-	statePath := b.Config.Workspace.StatePath
-	deploymentID, err := dms.ResolveDeploymentID(ctx, w, statePath)
-	if err != nil {
-		return nil, err
-	}
 	client, err := dms.NewClient(w)
 	if err != nil {
 		return nil, err
 	}
 	return dms.NewRecording(dms.RecordingOptions{
-		Client:       client,
-		DeploymentID: deploymentID,
-		StatePath:    statePath,
+		Client: client,
+		// Read the state from the same deployment, which the state DB looked up when it
+		// opened. Empty on a first deploy, where Prepare creates the deployment instead.
+		DeploymentID: b.DeploymentBundle.StateDB.DMSDeploymentID(),
+		StatePath:    b.Config.Workspace.StatePath,
 		VersionType:  versionType,
 		Metadata:     deploymentMetadata(b),
 	}), nil
