@@ -2,6 +2,8 @@ package dresources
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/snapshot"
@@ -18,7 +20,11 @@ type SnapshotState struct {
 	FullPath     string              `json:"full_path"`
 	BundleID     string              `json:"bundle_id"`
 	ACL          []snapshot.ACLEntry `json:"acl"`
-	ZipContent   string              `json:"-"`
+	// ZipPath locates the bundle zip staged locally by the deploy pipeline. It is
+	// small enough to round-trip through the plan file, so deploying from a plan
+	// restores it directly (no re-injection needed). The file name is the content
+	// hash, which is also the last component of RelativePath.
+	ZipPath string `json:"zip_path"`
 }
 
 type SnapshotRemote struct {
@@ -51,7 +57,7 @@ func (s *ResourceSnapshot) PrepareState(input *resources.Snapshot) *SnapshotStat
 		FullPath:     input.FullPath(),
 		BundleID:     input.BundleID,
 		ACL:          input.ACL,
-		ZipContent:   input.ZipContent,
+		ZipPath:      input.ZipPath,
 	}
 }
 
@@ -62,7 +68,7 @@ func (s *ResourceSnapshot) RemapState(remote *SnapshotRemote) *SnapshotState {
 		FullPath:     remote.FullPath,
 		BundleID:     "",
 		ACL:          nil,
-		ZipContent:   "",
+		ZipPath:      "",
 	}
 }
 
@@ -78,8 +84,13 @@ func (s *ResourceSnapshot) DoRead(ctx context.Context, id string) (*SnapshotRemo
 }
 
 func (s *ResourceSnapshot) DoCreate(ctx context.Context, state *SnapshotState) (string, *SnapshotRemote, error) {
+	content, err := os.ReadFile(state.ZipPath)
+	if err != nil {
+		return "", nil, fmt.Errorf("reading snapshot zip: %w", err)
+	}
+
 	path := state.RelativePath
-	info, err := s.uploader.Upload(ctx, path, state.BundleID, state.ACL, []byte(state.ZipContent))
+	info, err := s.uploader.Upload(ctx, path, state.BundleID, state.ACL, content)
 	if err != nil {
 		return "", nil, err
 	}

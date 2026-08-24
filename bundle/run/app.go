@@ -181,7 +181,8 @@ func (a *appRunner) resolvedSourceCodePath() (string, error) {
 			return dyn.InvalidValue, dynvar.ErrSkipResolution
 		}
 		// Prefer state-derived overrides (e.g. snapshot.full_path) over the
-		// config-computed value, which would be wrong when ZipContent is empty.
+		// config-computed value, which is only correct once the snapshot zip
+		// has been staged during deploy.
 		if v, ok := stateOverrides[path.String()]; ok {
 			return dyn.V(v), nil
 		}
@@ -201,7 +202,7 @@ func (a *appRunner) resolvedSourceCodePath() (string, error) {
 // snapshotStateOverrides returns a map of resource path → deployed value for
 // fields that are only correct in the persisted state (not computable from the
 // bundle config alone). Currently this covers the snapshot's full_path and
-// relative_path, whose content hash depends on ZipContent (json:"-").
+// relative_path, whose content hash is derived from the zip staged during deploy.
 func (a *appRunner) snapshotStateOverrides() map[string]string {
 	const snapshotKey = "resources.internal_immutable_snapshots.immutable"
 	entry, ok := a.bundle.DeploymentBundle.StateDB.GetResourceEntry(snapshotKey)

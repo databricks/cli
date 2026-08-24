@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"path"
+	"strings"
 
 	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/databricks-sdk-go"
@@ -14,8 +15,7 @@ import (
 // to be declared in user-authored databricks.yml files.
 //
 // JSON tags are present because the direct-deploy engine serialises the in-memory
-// state to a JSON plan file (resources.internal_immutable_snapshots.*). Fields
-// that must not leak into the plan file use json:"-".
+// state to a JSON plan file (resources.internal_immutable_snapshots.*).
 type Snapshot struct {
 	// BundleID is the stable UUID that identifies the bundle deployment, used
 	// as the first path component of the snapshot workspace path.
@@ -23,11 +23,12 @@ type Snapshot struct {
 	// ACL is the access control list applied to the uploaded snapshot, granting
 	// CAN_READ to the deploying user and to every principal in bundle.permissions.
 	ACL []snapshot.ACLEntry `json:"acl"`
-	// ZipContent holds the raw zip bytes of the bundle source tree. It is
-	// populated just before upload. The counterpart SnapshotState.ZipContent
-	// carries json:"-" so the zip bytes never reach the plan file; SyncZipContent
-	// re-injects them from here when deploying from a plan.
-	ZipContent string `json:"zip_content"`
+	// ZipPath is the local path of the bundle zip staged by the deploy pipeline.
+	// The file is named "<sha256>.zip", so its base name is the content hash used
+	// as the snapshot's relative path. Storing the path (not the bytes) keeps the
+	// zip off the config, the state, and the plan file, and lets DoCreate stream it
+	// straight from disk at upload time.
+	ZipPath string `json:"zip_path"`
 	// RemoteRoot is the workspace root path returned by the snapshot rootpath
 	// API (e.g. /Workspace/Users/<user>/.snapshots).
 	RemoteRoot string `json:"remote_root"`
@@ -36,7 +37,8 @@ type Snapshot struct {
 }
 
 func (s *Snapshot) RelativePath() string {
-	return path.Join(s.BundleID, snapshot.HashFromContent([]byte(s.ZipContent)))
+	hash := strings.TrimSuffix(path.Base(s.ZipPath), ".zip")
+	return path.Join(s.BundleID, hash)
 }
 
 func (s *Snapshot) FullPath() string {
@@ -68,7 +70,7 @@ func (s *Snapshot) GetURL() string {
 	// A snapshot is a workspace folder owned by the project's service principal, so
 	// a browser URL is constructible from its path. We don't surface one yet:
 	// workspaceurls has no folder-path helper, and the path is only known during
-	// deploy (its content hash depends on ZipContent, which is empty otherwise).
+	// deploy (its content hash is derived from the zip staged by the deploy pipeline).
 	return ""
 }
 

@@ -63,7 +63,8 @@ Building python_artifact...
           "user_name": "[USERNAME]",
           "permission_level": "CAN_READ"
         }
-      ]
+      ],
+      "zip_path": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH].zip"
     }
   }
 }
@@ -106,7 +107,8 @@ Building python_artifact...
           "user_name": "[USERNAME]",
           "permission_level": "CAN_READ"
         }
-      ]
+      ],
+      "zip_path": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH].zip"
     }
   },
   "remote_state": {
@@ -157,6 +159,13 @@ Building python_artifact...
       "reason": "missing_in_remote",
       "old": "/Workspace/Users/[UUID]/.snapshots",
       "new": "/Workspace/Users/[UUID]/.snapshots",
+      "remote": ""
+    },
+    "zip_path": {
+      "action": "recreate",
+      "reason": "immutable",
+      "old": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH].zip",
+      "new": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH].zip",
       "remote": ""
     }
   }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"math"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -1018,6 +1020,18 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	newState, err := adapter.PrepareState(inputConfig)
 	require.NoError(t, err, "PrepareState failed")
+
+	// The snapshot resource uploads a zip read from disk in DoCreate. Stage one and
+	// make the content-addressed path match its hash so the round-trip is consistent.
+	if ss, ok := newState.(*SnapshotState); ok {
+		content := []byte("test snapshot content")
+		hash := snapshot.HashFromContent(content)
+		zipPath := filepath.Join(t.TempDir(), hash+".zip")
+		require.NoError(t, os.WriteFile(zipPath, content, 0o600))
+		ss.ZipPath = filepath.ToSlash(zipPath)
+		ss.RelativePath = ss.BundleID + "/" + hash
+		ss.FullPath = ss.RemoteRoot + "/" + ss.RelativePath
+	}
 
 	ctx := t.Context()
 

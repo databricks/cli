@@ -3,10 +3,11 @@ package snapshot
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/snapshot"
 	"github.com/google/uuid"
@@ -16,14 +17,21 @@ import (
 const fileLimitWarning = 1000
 
 type snapshotUpload struct {
-	skipZip bool
+	// clean discards previously staged zips before staging the current one. It must
+	// be false when applying a pre-existing plan (deploy --plan): that plan's
+	// zip_path points at a file staged when the plan was produced, which cleaning
+	// would delete out from under DoCreate.
+	clean bool
 }
 
 // PlanUpload returns a mutator that registers the immutable snapshot as an internal
-// resource. Unless skipZip is set, it also builds the bundle zip and stages it in
-// memory on the resource; the zip is uploaded when the resource is created on apply.
-func PlanUpload(skipZip bool) bundle.Mutator {
-	return &snapshotUpload{skipZip: skipZip}
+// resource. It builds the bundle zip, stages it under the bundle's local state
+// directory as "<hash>.zip", and records the path on the resource; the staged file
+// is uploaded when the resource is created on apply. Pass clean=true to first
+// discard zips staged by a previous run; pass false when applying a pre-existing
+// plan so its staged zip is preserved.
+func PlanUpload(clean bool) bundle.Mutator {
+	return &snapshotUpload{clean: clean}
 }
 
 func (m *snapshotUpload) Name() string {
@@ -44,52 +52,47 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	if b.Config.Resources.Snapshots == nil {
 		b.Config.Resources.Snapshots = make(map[string]*resources.Snapshot)
 	}
-	if _, ok := b.Config.Resources.Snapshots["immutable"]; !ok {
-		b.Config.Resources.Snapshots["immutable"] = &resources.Snapshot{
-			BundleID:   BundleID(b),
-			ACL:        BuildACL(b),
-			RemoteRoot: remoteRoot,
+	if _, ok := b.Config.Resources.Snapshots["immutable"]; ok {
+		return nil
+	}
+
+	zipContent, fileCount, err := BundleZip(ctx, b)
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("failed to build snapshot zip: %w", err))
+	}
+
+	// Discard any zip staged by a previous plan/deploy so the folder only ever holds
+	// the current snapshot; content-addressed names would otherwise accumulate.
+	if m.clean {
+		if err := os.RemoveAll(b.GetLocalStateDir(ctx, "snapshots")); err != nil {
+			return diag.FromErr(fmt.Errorf("failed to clean snapshot dir: %w", err))
 		}
+	}
+	dir, err := b.LocalStateDir(ctx, "snapshots")
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	zipPath := filepath.Join(dir, snapshot.HashFromContent(zipContent)+".zip")
+	if err := os.WriteFile(zipPath, zipContent, 0o600); err != nil {
+		return diag.FromErr(fmt.Errorf("failed to write snapshot zip: %w", err))
+	}
+
+	b.Config.Resources.Snapshots["immutable"] = &resources.Snapshot{
+		BundleID:   BundleID(b),
+		ACL:        BuildACL(b),
+		RemoteRoot: remoteRoot,
+		ZipPath:    filepath.ToSlash(zipPath),
 	}
 
 	var diags diag.Diagnostics
-	if !m.skipZip {
-		zipContent, fileCount, err := BundleZip(ctx, b)
-		if err != nil {
-			return diag.FromErr(fmt.Errorf("failed to build snapshot zip: %w", err))
-		}
-
-		if fileCount > fileLimitWarning {
-			diags = append(diags, diag.Warningf(
-				"immutable folder deployment may not work correctly: bundle contains %d files (limit is %d)",
-				fileCount, fileLimitWarning,
-			)...)
-		}
-
-		b.Config.Resources.Snapshots["immutable"].ZipContent = string(zipContent)
+	if fileCount > fileLimitWarning {
+		diags = append(diags, diag.Warningf(
+			"immutable folder deployment may not work correctly: bundle contains %d files (limit is %d)",
+			fileCount, fileLimitWarning,
+		)...)
 	}
 
 	return diags
-}
-
-// SyncZipContent copies the zip content from b.Config.Resources.Snapshots["immutable"]
-// into the in-memory state cache entry for the snapshot resource. This is needed when
-// deploying from a plan file: the plan JSON omits ZipContent (json:"-"), so InitForApply
-// leaves it empty, causing DoCreate to upload an empty zip and derive a wrong snapshot ID.
-func SyncZipContent(b *bundle.Bundle) {
-	snap := b.Config.Resources.Snapshots["immutable"]
-	if snap == nil || snap.ZipContent == "" {
-		return
-	}
-	sv, ok := b.DeploymentBundle.StateCache.Load("resources.internal_immutable_snapshots.immutable")
-	if !ok {
-		return
-	}
-	state, ok := sv.Value.(*dresources.SnapshotState)
-	if !ok {
-		return
-	}
-	state.ZipContent = snap.ZipContent
 }
 
 // bundleIDNamespace is the UUID namespace used to derive the bundle ID.

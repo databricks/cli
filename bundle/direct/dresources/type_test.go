@@ -60,7 +60,8 @@ var knownMissingInRemoteType = map[string][]string{
 		"bundle_id",
 		"acl",
 		"remote_root",
-  },
+		"zip_path",
+	},
 	"job_runs": {
 		// Local-only trigger fingerprints under lifecycle.
 		"lifecycle",
@@ -106,9 +107,6 @@ var knownMissingInStateType = map[string][]string{
 		"backend_type",
 		"keyvault_metadata",
 		"name",
-	},
-	"internal_immutable_snapshots": {
-		"zip_content",
 	},
 }
 

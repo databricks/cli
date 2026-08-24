@@ -5,5 +5,4 @@ resources:
   internal_immutable_snapshots:
     immutable:
       bundle_id: 123
-      zip_content: |-
-        This is a test zip content.
+      zip_path: /tmp/snapshot.zip

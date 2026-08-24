@@ -253,7 +253,10 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	if immutable {
-		bundle.ApplyContext(ctx, b, snapshot.PlanUpload(false))
+		// Only clean previously staged zips when building a fresh plan. When applying
+		// a pre-existing plan (plan != nil), its zip_path points at a file staged when
+		// the plan was produced, so leave the snapshots folder intact.
+		bundle.ApplyContext(ctx, b, snapshot.PlanUpload(plan == nil))
 		if logdiag.HasError(ctx) {
 			return
 		}
@@ -286,12 +289,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
-		}
-		if immutable {
-			// The plan JSON omits ZipContent (json:"-"), so InitForApply leaves it
-			// empty in the state cache. Transfer the zip content built by PlanUpload
-			// above so DoCreate uploads the correct content and derives the right ID.
-			snapshot.SyncZipContent(b)
 		}
 	}
 
