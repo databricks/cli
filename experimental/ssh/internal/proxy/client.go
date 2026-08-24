@@ -106,6 +106,10 @@ func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, reque
 						// error returned here would cancel the session it exists to preserve.
 						// The receiving loop notices a genuinely dead connection within one read.
 						log.Debugf(gCtx, "Failed to send websocket keepalive ping: %v", err)
+					} else {
+						// The driver proxy does not return pongs (verified end to end), so this
+						// line is the only evidence in a customer's log that pings were flowing.
+						log.Debugf(gCtx, "Sent websocket keepalive ping")
 					}
 				}
 			}
