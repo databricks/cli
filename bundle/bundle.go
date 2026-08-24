@@ -158,10 +158,8 @@ type Bundle struct {
 	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
 
 	// RootPathIsNameTargetScoped reports whether workspace.root_path ends in the bundle
-	// name and target. It is recorded before variable resolution, while ${bundle.name}
-	// and ${bundle.target} are still literal, so a path that only happens to end in
-	// those two segments does not count. Destroy uses it to tell whether the directory
-	// above the root path belongs to this bundle alone.
+	// name and target. Recorded before variable resolution, so a path that only happens
+	// to end in those two segments does not count.
 	RootPathIsNameTargetScoped bool
 
 	// Metadata about the bundle deployment. This is the interface Databricks services

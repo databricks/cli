@@ -40,11 +40,9 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return nil
 }
 
-// removeBundleNameDir removes the directory above the deployment root, the one named
-// after the bundle, now that the deployment under it is gone. It runs only when
-// root_path is scoped by bundle name and target, so the directory holds nothing but
-// this bundle. The delete is not recursive, so it fails while another target is still
-// deployed there; that and an already-removed directory are both ignored.
+// removeBundleNameDir removes the directory named after the bundle now that the
+// deployment under it is gone. Not recursive, so it fails harmlessly while another
+// target is still deployed there.
 func removeBundleNameDir(ctx context.Context, b *bundle.Bundle) {
 	if !b.RootPathIsNameTargetScoped {
 		return

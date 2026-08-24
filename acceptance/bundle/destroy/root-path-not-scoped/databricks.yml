@@ -1,5 +1,0 @@
-bundle:
-  name: test-bundle
-
-workspace:
-  root_path: ~/.bundle/custom-root/inner

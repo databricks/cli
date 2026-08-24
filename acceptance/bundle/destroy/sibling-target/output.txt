@@ -1,35 +1,34 @@
 
 >>> [CLI] bundle deploy -t dev
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
-Files: 3 uploaded, 0 deleted
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Files: 5 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deploy -t prod
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/prod/files...
-Files: 3 uploaded, 0 deleted
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/prod/files...
+Files: 5 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 === Destroy one target while the other is still deployed
 >>> [CLI] bundle destroy -t dev --auto-approve
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
 
 Destroy: 0 deleted
 
-=== Assert the bundle directory is kept for the remaining target
->>> [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/test-bundle
+=== Assert the bundle directory is kept: the sibling target is still under it
+>>> [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]
 {
-  "path": "/Users/[USERNAME]/.bundle/test-bundle",
   "object_type": "DIRECTORY"
 }
 
 === Destroy the remaining target
 >>> [CLI] bundle destroy -t prod --auto-approve
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/prod
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/prod
 
 Destroy: 0 deleted
 
 === Assert the bundle directory is deleted
->>> errcode [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/test-bundle
-Error: Path (//Workspace/Users/[USERNAME]/.bundle/test-bundle) doesn't exist.
+>>> errcode [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]
+Error: Path (//Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]) doesn't exist.
 
 Exit code: 1
