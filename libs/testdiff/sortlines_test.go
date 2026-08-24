@@ -28,6 +28,13 @@ func TestSortLineRuns(t *testing.T) {
 			want:  "Created jobs.z\nError: boom\nCreated jobs.a\n",
 		},
 		{
+			// Same, with runs long enough to sort: each is ordered on its own, and the
+			// second run stays below the boundary even though it sorts first overall.
+			name:  "sorts each run independently",
+			input: "Updated jobs.z\nUpdated jobs.y\nError: boom\nCreated jobs.b\nCreated jobs.a\n",
+			want:  "Updated jobs.y\nUpdated jobs.z\nError: boom\nCreated jobs.a\nCreated jobs.b\n",
+		},
+		{
 			name:  "sorts a run that ends the input",
 			input: ">>> deploy\nDeleted jobs.b\nDeleted jobs.a",
 			want:  ">>> deploy\nDeleted jobs.a\nDeleted jobs.b",
