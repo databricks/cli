@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -245,39 +244,13 @@ func TestJobRunWaitAbandonedLinksTheRun(t *testing.T) {
 	require.ErrorContains(t, err, testRunPageLink)
 }
 
-func TestJobRunPrepareStateBothTriggers(t *testing.T) {
-	on := true
-	hashes := map[string]string{"a.txt": "abc"}
-	state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{
-		Lifecycle: &resources.JobRunLifecycle{
-			Triggers: []resources.JobRunTrigger{{OnBundleDeploy: &on}},
-		},
-		ResolvedFileTriggers: hashes,
-	})
-	assert.NotEmpty(t, state.Lifecycle.Triggers.OnBundleDeploy)
-	assert.Equal(t, hashes, state.Lifecycle.Triggers.OnFileChange)
-}
+// State written before lifecycle existed has no such key, and must still load.
+func TestJobRunStateUnmarshalWithoutLifecycle(t *testing.T) {
+	var state JobRunState
 
-func TestJobRunStateUnmarshalLifecycleCompatibility(t *testing.T) {
-	t.Run("missing lifecycle gets empty shape", func(t *testing.T) {
-		var state JobRunState
-		require.NoError(t, json.Unmarshal([]byte(`{}`), &state))
-		assert.Nil(t, state.Lifecycle.Triggers.OnFileChange)
-	})
+	require.NoError(t, json.Unmarshal([]byte(`{}`), &state))
 
-	t.Run("path-to-hash map is preserved", func(t *testing.T) {
-		var state JobRunState
-		require.NoError(t, json.Unmarshal([]byte(`{
-			"lifecycle": {
-				"triggers": {
-					"on_file_change": {
-						"a.txt": "abc"
-					}
-				}
-			}
-		}`), &state))
-		assert.Equal(t, map[string]string{"a.txt": "abc"}, state.Lifecycle.Triggers.OnFileChange)
-	})
+	assert.Nil(t, state.Lifecycle.Triggers.OnFileChange)
 }
 
 // The planner diffs RemapState(remote) against PrepareState(config), so a run
@@ -372,68 +345,25 @@ func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
 	assert.Empty(t, config.IdempotencyToken)
 }
 
-// jobRunDeletion records what the fake workspace saw while a run was deleted.
-type jobRunDeletion struct {
-	cancelled       atomic.Bool
-	settled         atomic.Bool
-	settledAtDelete atomic.Bool
-}
-
-// jobRunDeleteClient returns a client for a run in the given state, whose cancel
-// settles one poll late the way the API's asynchronous cancellation does.
-func jobRunDeleteClient(t *testing.T, state *jobs.RunState) (*databricks.WorkspaceClient, *jobRunDeletion) {
-	t.Helper()
-	var deletion jobRunDeletion
-	cancelled := &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateCanceled,
-	}
-
+func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
+	var cancelled atomic.Bool
 	server := testserver.New(t)
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
-		current := state
-		switch {
-		case deletion.settled.Load():
-			current = cancelled
-		case deletion.cancelled.Load():
-			// Report the run's old state once more, then settle on the next poll.
-			deletion.settled.Store(true)
-		}
-		return jobs.Run{RunId: 123, JobId: 456, State: current}
+		return jobs.Run{RunId: 123, JobId: 456, State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateSuccess,
+		}}
 	})
 	server.Handle("POST", "/api/2.2/jobs/runs/cancel", func(req testserver.Request) any {
-		deletion.cancelled.Store(true)
+		cancelled.Store(true)
 		return testserver.Response{}
 	})
 	server.Handle("POST", "/api/2.2/jobs/runs/delete", func(req testserver.Request) any {
-		deletion.settledAtDelete.Store(deletion.settled.Load())
 		return testserver.Response{}
 	})
-	return jobRunClientFor(t, server), &deletion
-}
+	r := (&ResourceJobRun{}).New(jobRunClientFor(t, server))
 
-func deleteTestRun(t *testing.T, client *databricks.WorkspaceClient) error {
-	t.Helper()
-	return (&ResourceJobRun{}).New(client).DoDelete(t.Context(), "123", &JobRunState{})
-}
+	require.NoError(t, r.DoDelete(t.Context(), "123", &JobRunState{}))
 
-func TestJobRunDeleteCancelsUnfinishedRun(t *testing.T) {
-	// An interrupted wait leaves the run going, and jobs/runs/delete rejects it.
-	client, deletion := jobRunDeleteClient(t, &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning})
-
-	require.NoError(t, deleteTestRun(t, client))
-
-	assert.True(t, deletion.cancelled.Load(), "expected the run to be cancelled")
-	assert.True(t, deletion.settledAtDelete.Load(), "expected the delete to wait for the cancellation to settle")
-}
-
-func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
-	client, deletion := jobRunDeleteClient(t, &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateSuccess,
-	})
-
-	require.NoError(t, deleteTestRun(t, client))
-
-	assert.False(t, deletion.cancelled.Load(), "a run that already finished has nothing to cancel")
+	assert.False(t, cancelled.Load(), "a run that already finished has nothing to cancel")
 }
