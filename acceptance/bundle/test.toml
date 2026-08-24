@@ -1,9 +1,10 @@
 # This allows recording per-deployment output files, e.g. $CLI bundle deploy > out.$DATABRICKS_BUNDLE_ENGINE.txt
 EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
 
-# Runs the whole bundle suite a second time with deployment history recording on, so the
-# deployment metadata service (DMS) is exercised by every test rather than only the
-# handful under bundle/dms. Empty is the default pair of engine runs.
+# Runs the whole bundle suite with deployment history recording on, so the deployment metadata
+# service (DMS) is exercised by every test rather than only the handful under bundle/dms. Empty
+# is the default pair of engine runs. CI gives this variant its own cell ("directdms"), so the
+# direct cell still runs each test once; a local run covers both.
 EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = ["", "true"]
 
 # DMS is only supported by the direct engine, and only against the local testserver:

@@ -77,7 +77,7 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
-    name: "task test (${{matrix.os.name}}, ${{matrix.deployment}})"
+    name: "task test (${{matrix.os.name}}, ${{matrix.deployment.name}})"
     runs-on: ${{ matrix.os.runner }}
 
     defaults:
@@ -111,9 +111,16 @@ jobs:
             runner:
               labels: macos-latest
 
+        # Each cell runs the suite once. envfilter picks the variants it covers: without the
+        # recording filter, the direct cell would run every bundle test twice, since
+        # bundle/test.toml matrixes deployment-history recording on top of the engine.
         deployment:
-          - "terraform"
-          - "direct"
+          - name: "terraform"
+            envfilter: "DATABRICKS_BUNDLE_ENGINE=terraform"
+          - name: "direct"
+            envfilter: "DATABRICKS_BUNDLE_ENGINE=direct,DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY="
+          - name: "directdms"
+            envfilter: "DATABRICKS_BUNDLE_ENGINE=direct,DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true"
 
         # Include "event_name" in the matrix so we can include/exclude based on it.
         event:
@@ -135,7 +142,7 @@ jobs:
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
-          cache-key: test-${{ matrix.deployment }}
+          cache-key: test-${{ matrix.deployment.name }}
 
       # Make origin/main available with enough history for `git diff --merge-base
       # origin/main`, which the acceptance subset selector uses to always run the
@@ -154,7 +161,7 @@ jobs:
 
       - name: Run tests
         env:
-          ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
+          ENVFILTER: ${{ matrix.deployment.envfilter }}
           # On pull requests, run only a subset of acceptance subtests on the slower
           # windows/macOS cells so neither lands on the critical path to merge. An
           # empty percentage disables subsetting, so Linux PRs and push-to-main run
@@ -171,7 +178,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-output-${{ matrix.os.name }}-${{ matrix.deployment }}
+          name: test-output-${{ matrix.os.name }}-${{ matrix.deployment.name }}
           path: test-output.json
           if-no-files-found: warn
           retention-days: 7
