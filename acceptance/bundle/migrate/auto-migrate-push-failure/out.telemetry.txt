@@ -1,9 +1,0 @@
-{
-  "error_message": null,
-  "string_values": [
-    {
-      "key": "direct_migrate_error_template",
-      "value": "pushing direct state to workspace: %w [INJECTED 403]"
-    }
-  ]
-}

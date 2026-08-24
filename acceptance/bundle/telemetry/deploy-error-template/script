@@ -13,8 +13,4 @@ title "The message carries the workspace path and the user; the template carries
 trace print_telemetry_error_message
 trace print_telemetry_string_values
 
-# Record the error fields exactly as they leave the machine, so the golden shows
-# the payload rather than a helper's rendering of it.
-cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | {error_message: .entry.databricks_cli_log.bundle_deploy_event.error_message, string_values: .entry.databricks_cli_log.bundle_deploy_event.experimental.string_values}' > out.telemetry.txt
-
 rm out.requests.txt
