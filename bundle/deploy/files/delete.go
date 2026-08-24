@@ -51,7 +51,7 @@ func removeBundleNameDir(ctx context.Context, b *bundle.Bundle) {
 	dir := path.Dir(b.Config.Workspace.RootPath)
 	err := b.WorkspaceClient(ctx).Workspace.Delete(ctx, workspace.Delete{Path: dir})
 	if err != nil {
-		log.Debugf(ctx, "Leaving %s in place: %s", dir, err)
+		log.Infof(ctx, "Leaving %s in place: %s", dir, err)
 	}
 }
 

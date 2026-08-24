@@ -23,7 +23,5 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 2 deleted
 
 === Assert the bundle directory is deleted
->>> errcode [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/test-bundle
+>>> musterr [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/test-bundle
 Error: Path (//Workspace/Users/[USERNAME]/.bundle/test-bundle) doesn't exist.
-
-Exit code: 1

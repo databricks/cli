@@ -3,7 +3,6 @@ package mutator
 import (
 	"context"
 	"fmt"
-	"path"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -12,10 +11,7 @@ import (
 
 // How the bundle name and target appear in a configured root_path, which this mutator
 // sees before variable resolution replaces them.
-const (
-	bundleNameRef   = "${bundle.name}"
-	bundleTargetRef = "${bundle.target}"
-)
+const nameTargetSuffix = "${bundle.name}/${bundle.target}"
 
 type defineDefaultWorkspaceRoot struct{}
 
@@ -51,9 +47,9 @@ func (m *defineDefaultWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle
 	return nil
 }
 
-// endsWithNameAndTarget reports whether the last two segments of rootPath are the
-// bundle name and target references.
+// endsWithNameAndTarget reports whether rootPath ends in the bundle name and target
+// references. Matched as a plain string: rootPath is not interpolated yet, so path
+// operations on it are not reliable.
 func endsWithNameAndTarget(rootPath string) bool {
-	rootPath = strings.TrimSuffix(rootPath, "/")
-	return path.Base(rootPath) == bundleTargetRef && path.Base(path.Dir(rootPath)) == bundleNameRef
+	return strings.HasSuffix(strings.TrimSuffix(rootPath, "/"), nameTargetSuffix)
 }

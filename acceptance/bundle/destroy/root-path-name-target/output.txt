@@ -10,10 +10,8 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 0 deleted
 
 === Assert the bundle directory is deleted
->>> errcode [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/explicit-[UNIQUE_NAME]/test-bundle
+>>> musterr [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/explicit-[UNIQUE_NAME]/test-bundle
 Error: Path (//Workspace/Users/[USERNAME]/.bundle/explicit-[UNIQUE_NAME]/test-bundle) doesn't exist.
-
-Exit code: 1
 
 === Assert the prefix above it is kept
 >>> [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/explicit-[UNIQUE_NAME]
