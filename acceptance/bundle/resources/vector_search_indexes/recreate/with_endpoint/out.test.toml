@@ -1,5 +1,5 @@
 Cloud = false
-CloudSlow = false
+CloudSlow = true
 RequiresUnityCatalog = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.DMS = ["", "true"]

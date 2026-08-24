@@ -143,8 +143,7 @@ func AddDefaultHandlers(server *Server) {
 				StatusCode: 500,
 			}
 		}
-		req.Workspace.WorkspaceDelete(request.Path, request.Recursive)
-		return ""
+		return req.Workspace.WorkspaceDelete(request.Path, request.Recursive)
 	})
 
 	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req Request) any {

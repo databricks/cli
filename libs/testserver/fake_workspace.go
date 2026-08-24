@@ -709,9 +709,21 @@ func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
 	return s.files[path].Data
 }
 
-func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
+// WorkspaceDelete implements POST /api/2.0/workspace/delete. As in the real API, a
+// non-recursive delete of a directory that still has children fails instead of removing
+// it, which is what lets a caller delete a directory only if it is empty.
+func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) Response {
 	defer s.LockUnlock()()
 	if !recursive {
+		if _, isDir := s.directories[path]; isDir && s.hasChildren(path) {
+			return Response{
+				StatusCode: 400,
+				Body: map[string]string{
+					"error_code": "DIRECTORY_NOT_EMPTY",
+					"message":    "Folder (" + path + ") is not empty",
+				},
+			}
+		}
 		delete(s.files, path)
 		delete(s.directories, path)
 	} else {
@@ -726,6 +738,24 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 			}
 		}
 	}
+	return Response{}
+}
+
+// hasChildren reports whether any file or directory lives under dirPath. Callers must
+// hold the lock.
+func (s *FakeWorkspace) hasChildren(dirPath string) bool {
+	prefix := dirPath + "/"
+	for key := range s.files {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	for key := range s.directories {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {

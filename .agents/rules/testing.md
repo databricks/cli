@@ -56,9 +56,9 @@ When writing tests, don't include an explanation in each test case in your respo
 
 ## Acceptance Tests
 
-**RULE: `Cloud`/`CloudSlow` add a cloud run; they never remove the local run.** Every test under `acceptance/` runs locally against the fake server in `libs/testserver`. `Cloud = true` in a `test.toml` or `out.test.toml` means "this test *also* runs against a real workspace when `CLOUD_ENV` is set" — it never means "this test does not run locally". Never tell the user a test doesn't run locally because it is `Cloud = true`.
+**RULE: `Cloud = true` adds a cloud run; it never removes the local run.** Every test under `acceptance/` runs locally against the fake server in `libs/testserver`. `Cloud = true` in a `test.toml` or `out.test.toml` means "this test *also* runs against a real workspace when `CLOUD_ENV` is set" — it never means "this test does not run locally". Never tell the user a test doesn't run locally because it is `Cloud = true`. `CloudSlow` does *not* enable a cloud run on its own; it only narrows an existing `Cloud = true` run (see below).
 
-The whole `Cloud*` family lives inside an `if isRunningOnCloud` branch in `getSkipReason` (`acceptance/acceptance_test.go`), so it can only ever subtract from the cloud run: `CloudSlow` drops it under `-short`, and `CloudEnvs` / `RequiresUnityCatalog` / `RequiresCluster` / `RequiresWarehouse` narrow it to environments that have the prerequisite. To find what skips a test *locally*, look at a different set: `GOOS`, `RunsOnDbr`, and `DATABRICKS_TEST_SKIPLOCAL` (which cloud CI runs set precisely because those tests already ran locally).
+The whole `Cloud*` family lives inside an `if isRunningOnCloud` branch in `getSkipReason` (`acceptance/acceptance_test.go`), so it can only ever subtract from the cloud run: `CloudSlow` (only meaningful when `Cloud = true`) drops it under `-short`, and `CloudEnvs` / `RequiresUnityCatalog` / `RequiresCluster` / `RequiresWarehouse` narrow it to environments that have the prerequisite. To find what skips a test *locally*, look at a different set: `GOOS`, `RunsOnDbr`, and `DATABRICKS_TEST_SKIPLOCAL` (which cloud CI runs set precisely because those tests already ran locally).
 
 `Cloud` is inherited, so a parent `test.toml` can opt a whole subtree in; a leaf `test.toml` with no `Cloud` line is not evidence of anything. Read the generated `out.test.toml` for a test's effective settings.
 
@@ -127,14 +127,14 @@ Ignore = ["databricks.yml"]   # parsed as EnvMatrix.Ignore, not top-level Ignore
 
 ### Reference
 
-- Tests live in `acceptance/` with a nested directory structure. All of them run locally; those with `Cloud`/`CloudSlow` set also run against a real workspace.
+- Tests live in `acceptance/` with a nested directory structure. All of them run locally; those with `Cloud = true` set also run against a real workspace.
 - Each test directory contains `databricks.yml`, `script`, and `output.txt`.
 - Source files: `test.toml`, `script`, `script.prepare`, `databricks.yml`, etc.
 - Tests are configured via `test.toml`. Config schema and explanation is in `acceptance/internal/config.go`. Certain options are also dumped to `out.test.toml` so that inherited values are visible on PRs.
 - Run a single test: `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder>`
 - Run a specific variant by appending `EnvMatrix` values to the test name: `go test ./acceptance -run 'TestAccept/.../DATABRICKS_BUNDLE_ENGINE=direct'`. When there are multiple `EnvMatrix` variables, they appear in alphabetical order.
 - Useful flags: `-v` for verbose output, `-tail` to follow test output (requires `-v`), `-logrequests` to log all HTTP requests/responses (requires `-v`).
-- Run tests on cloud: `deco env run -i -n aws-prod-ucws -- <go test command>` (requires `deco` tool and access to test env). This is an *additional* pass over the same test directories, restricted to those with `Cloud`/`CloudSlow` set; it does not replace the local run.
+- Run tests on cloud: `deco env run -i -n aws-prod-ucws -- <go test command>` (requires `deco` tool and access to test env). This is an *additional* pass over the same test directories, restricted to those with `Cloud = true` set; it does not replace the local run.
 - `script.prepare` files from parent directories are concatenated into the test script. Use them for shared bash helpers.
 
 ### Built-in shell helpers

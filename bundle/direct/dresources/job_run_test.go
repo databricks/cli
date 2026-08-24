@@ -379,25 +379,25 @@ func TestJobRunPrepareStateOnBundleDeploy(t *testing.T) {
 func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 	r := &ResourceJobRun{}
 
-	t.Run("clearing lifecycle downgrades to update", func(t *testing.T) {
+	t.Run("clearing lifecycle downgrades to skip", func(t *testing.T) {
 		change := &ChangeDesc{
 			Action: deployplan.Recreate,
 			Old:    &JobRunLifecycleState{Triggers: &JobRunTriggersState{OnBundleDeploy: "old"}},
 			New:    nil,
 		}
 		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle"), change, nil))
-		assert.Equal(t, deployplan.Update, change.Action)
+		assert.Equal(t, deployplan.Skip, change.Action)
 		assert.Equal(t, "trigger removed", change.Reason)
 	})
 
-	t.Run("clearing on_bundle_deploy leaf downgrades to update", func(t *testing.T) {
+	t.Run("clearing on_bundle_deploy leaf downgrades to skip", func(t *testing.T) {
 		change := &ChangeDesc{
 			Action: deployplan.Recreate,
 			Old:    "old",
 			New:    "",
 		}
 		require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath("lifecycle.triggers.on_bundle_deploy"), change, nil))
-		assert.Equal(t, deployplan.Update, change.Action)
+		assert.Equal(t, deployplan.Skip, change.Action)
 		assert.Equal(t, "trigger removed", change.Reason)
 	})
 

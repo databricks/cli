@@ -111,6 +111,13 @@ Destroy: 2 deleted
   "method": "POST",
   "path": "/api/2.0/workspace/delete",
   "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default",
     "recursive": true
   }

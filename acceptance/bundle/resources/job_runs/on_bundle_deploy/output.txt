@@ -102,16 +102,14 @@ Resources:
   }
 }
 
-=== removing on_bundle_deploy rewrites state without a run
+=== removing on_bundle_deploy is unchanged and does not run
 >>> [CLI] bundle plan
-update job_runs.my_run
-
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
   "lifecycle": {
-    "action": "update",
+    "action": "skip",
     "reason": "trigger removed",
     "old": {
       "triggers": {
@@ -129,9 +127,8 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 === bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
-Updated job_runs.my_run
 Files: 4 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //jobs/run-now
 

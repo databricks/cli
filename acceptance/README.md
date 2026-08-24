@@ -6,7 +6,7 @@ Acceptance tests are blackbox tests that are run against compiled binary.
 
 A test can *additionally* opt into running against a real workspace by setting `Cloud = true` in its `test.toml`. That is an extra run, not a different one: `Cloud = true` never means "this test does not run locally". Related settings:
 
-- `CloudSlow = true` implies `Cloud = true`, but the cloud run is skipped when `-short` is passed.
+- `CloudSlow = true` only narrows a `Cloud = true` test: its cloud run is skipped when `-short` is passed. On its own (without `Cloud = true`) it does not enable the cloud run.
 - `CloudEnvs` and `RequiresUnityCatalog` / `RequiresCluster` / `RequiresWarehouse` only narrow the cloud run further. They are ignored locally.
 - `Cloud` is inherited from parent `test.toml` files, so a whole subtree can be opted in at once. The root `acceptance/test.toml` defaults it to `Cloud = false`, i.e. local only.
 - Each test's effective settings are visible in its generated `out.test.toml`.

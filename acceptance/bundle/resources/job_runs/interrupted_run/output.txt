@@ -30,7 +30,7 @@ Exit code: 1
   }
 }
 
-=== a run that is still going is an update
+=== a run that is still going is skipped
 >>> jq .plan["resources.job_runs.my_run"] tmp.plan.json
 {
   "depends_on": [
@@ -39,13 +39,7 @@ Exit code: 1
       "label": "${resources.jobs.my_job.id}"
     }
   ],
-  "action": "update",
-  "new_state": {
-    "value": {
-      "job_id": [MY_JOB_ID],
-      "result_state": "SUCCESS"
-    }
-  },
+  "action": "skip",
   "remote_state": {
     "job_id": [MY_JOB_ID],
     "run_id": [MY_RUN_ID],
@@ -58,23 +52,20 @@ Exit code: 1
   },
   "changes": {
     "result_state": {
-      "action": "update",
+      "action": "skip",
       "reason": "run in progress",
       "new": "SUCCESS"
     }
   }
 }
 
-=== the deploy adopts that run and waits for it to finish
+=== Badness: the next deploy does not wait for that run
 >>> [CLI] bundle deploy --plan tmp.plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-interrupted-run/default/files...
-Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
-Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
-Updated job_runs.my_run
 Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
-=== the same run finished, and nothing was cancelled, deleted or triggered
+=== the same run is still tracked, and nothing was cancelled, deleted or triggered
 >>> read_state.py job_runs my_run id result_state
 job_runs my_run id='[MY_RUN_ID]' result_state=None
 

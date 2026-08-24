@@ -353,9 +353,9 @@ func TestJobRunFinishedWithoutSuccessIsRecreate(t *testing.T) {
 	}
 }
 
-// A run that has not stopped yet may still succeed, so the deploy adopts it and
-// waits for it.
-func TestJobRunInProgressIsUpdate(t *testing.T) {
+// A run that has not stopped yet may still succeed, so the plan leaves it
+// alone rather than recreating it. Skip does not resume an abandoned wait.
+func TestJobRunInProgressIsSkip(t *testing.T) {
 	for _, lifeCycleState := range []jobs.RunLifeCycleState{
 		jobs.RunLifeCycleStatePending,
 		jobs.RunLifeCycleStateRunning,
@@ -364,7 +364,7 @@ func TestJobRunInProgressIsUpdate(t *testing.T) {
 		t.Run(string(lifeCycleState), func(t *testing.T) {
 			change := jobRunResultStateAction(t, &jobs.RunState{LifeCycleState: lifeCycleState})
 
-			assert.Equal(t, deployplan.Update, change.Action)
+			assert.Equal(t, deployplan.Skip, change.Action)
 			assert.Equal(t, "run in progress", change.Reason)
 		})
 	}
