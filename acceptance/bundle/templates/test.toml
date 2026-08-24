@@ -2,7 +2,7 @@
 
 # Template tests materialize and deploy full projects, taking tens of seconds each.
 # Recording adds minutes without new coverage the rest of the suite provides.
-EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
+EnvMatrix.DMS = [""]
 
 [[Server]]
 Pattern = "POST /telemetry-ext"

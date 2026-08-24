@@ -1082,6 +1082,13 @@ func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
 	}
 }
 
+// envAliases are short EnvMatrix keys, expanded here into the variable the CLI reads. Every
+// matrix key ends up in the variant's test name, so a long one makes every name that carries
+// it hard to read. Tests may still name the variable itself; the alias is only shorter.
+var envAliases = map[string]string{
+	"DMS": "DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY",
+}
+
 // buildTestEnv builds the test environment from config.Env and customEnv.
 // customEnv (from EnvMatrix) takes precedence over config.Env.
 func buildTestEnv(configEnv map[string]string, customEnv []string) []string {
@@ -1097,6 +1104,16 @@ func buildTestEnv(configEnv map[string]string, customEnv []string) []string {
 
 	// Add customEnv second (takes precedence)
 	env = append(env, customEnv...)
+
+	// An alias sets the variable it stands for, unless the test set that itself.
+	for _, kv := range customEnv {
+		key, value, _ := strings.Cut(kv, "=")
+		full, ok := envAliases[key]
+		if !ok || hasKey(env, full) {
+			continue
+		}
+		env = append(env, full+"="+value)
+	}
 
 	return env
 }

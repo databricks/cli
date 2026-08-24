@@ -1,7 +1,7 @@
 # Recording needs a bundle it has seen from the start. This test seeds a state file,
 # so recording refuses it. TODO(DMS): drop this once existing state can be
 # handed over to the service (see the TODO in dstate.Open).
-EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
+EnvMatrix.DMS = [""]
 
 # vector_search_endpoints and vector_search_indexes have no terraform converter
 EnvMatrixExclude.no_vector_search_endpoint = ["INPUT_CONFIG=vector_search_endpoint.yml.tmpl"]

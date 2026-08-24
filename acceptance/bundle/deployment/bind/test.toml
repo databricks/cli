@@ -1,2 +1,2 @@
 # Bind operations are not yet supported by the Deployment Metadata Service (DMS)
-EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
+EnvMatrix.DMS = [""]

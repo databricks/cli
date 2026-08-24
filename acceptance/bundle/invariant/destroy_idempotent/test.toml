@@ -1,6 +1,6 @@
 # Recording needs a bundle from the start. This test rewinds state and wipes the
 # deployment record path, so recording refuses it.
-EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
+EnvMatrix.DMS = [""]
 
 EnvMatrix.READPLAN = ["", "1"]
 

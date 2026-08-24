@@ -5,6 +5,6 @@ IncludeRequestHeaders = ["User-Agent"]
 # This test asserts the User-Agent on every single request the CLI makes, so recording's
 # extra calls belong in the golden rather than being filtered out - but they are the same
 # header the existing requests already cover, so the DMS run only adds entries to maintain.
-EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
+EnvMatrix.DMS = [""]
 
 Env.DATABRICKS_CACHE_ENABLED = 'false'

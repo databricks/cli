@@ -1,5 +1,5 @@
 Cloud = false
 Phase = 1
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = [""]
+EnvMatrix.DMS = [""]
 EnvMatrix.READPLAN = ["", "1"]

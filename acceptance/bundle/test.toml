@@ -5,23 +5,23 @@ EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
 # service (DMS) is exercised by every test rather than only the handful under bundle/dms. Empty
 # is the default pair of engine runs. CI gives this variant its own cell ("directdms"), so the
 # direct cell still runs each test once; a local run covers both.
-EnvMatrix.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = ["", "true"]
+EnvMatrix.DMS = ["", "true"]
 
 # DMS is only supported by the direct engine, and only against the local testserver:
 # the service runs in dev and staging, so a cloud run has nothing to record to.
-EnvMatrixExclude.dms_needs_direct = ["DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true", "DATABRICKS_BUNDLE_ENGINE=terraform"]
-EnvMatrixExclude.dms_local_only = ["DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true", "CONFIG_Cloud=true"]
+EnvMatrixExclude.dms_needs_direct = ["DMS=true", "DATABRICKS_BUNDLE_ENGINE=terraform"]
+EnvMatrixExclude.dms_local_only = ["DMS=true", "CONFIG_Cloud=true"]
 
 # Saved plans don't carry the deployment stamp. A first plan writes the deployment record,
 # so `deploy --plan` creates resources without it and reports drift on the next plan.
-EnvMatrixExclude.dms_no_readplan = ["DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true", "READPLAN=1"]
+EnvMatrixExclude.dms_no_readplan = ["DMS=true", "READPLAN=1"]
 
 # Recording is gated off for users (see validate.ValidateRecordDeploymentHistory), so
 # force it on: the point of this run is to exercise it.
 Env.DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY = "1"
 
 # The DMS run asserts the same golden files as the engine runs.
-EnvRepl.DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY = false
+EnvRepl.DMS = false
 
 Ignore = ["databricks.yml"]
 

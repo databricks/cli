@@ -3,7 +3,7 @@ EnvMatrix.READPLAN = ["", "1"]
 # A 1000-task job serializes to ~110 KB, over the 64 KB per-operation state limit the
 # deployment metadata service accepts, so recording it fails the deploy. Raising the limit
 # or splitting the state is a service-side decision.
-EnvMatrixExclude.dms_state_too_large = ["DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true", "INPUT_CONFIG=job_pydabs_1000_tasks.yml.tmpl"]
+EnvMatrixExclude.dms_state_too_large = ["DMS=true", "INPUT_CONFIG=job_pydabs_1000_tasks.yml.tmpl"]
 
 # Secrets have sensitive fields (json:"-") that are stripped when a plan is serialized to JSON,
 # so deploying from a pre-computed plan file creates the secret with an empty value.

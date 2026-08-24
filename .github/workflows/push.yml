@@ -118,9 +118,9 @@ jobs:
           - name: "terraform"
             envfilter: "DATABRICKS_BUNDLE_ENGINE=terraform"
           - name: "direct"
-            envfilter: "DATABRICKS_BUNDLE_ENGINE=direct,DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY="
+            envfilter: "DATABRICKS_BUNDLE_ENGINE=direct,DMS="
           - name: "directdms"
-            envfilter: "DATABRICKS_BUNDLE_ENGINE=direct,DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true"
+            envfilter: "DATABRICKS_BUNDLE_ENGINE=direct,DMS=true"
 
         # Include "event_name" in the matrix so we can include/exclude based on it.
         event:
