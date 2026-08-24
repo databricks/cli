@@ -35,6 +35,7 @@ import (
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 )
 
 var (
@@ -1285,8 +1286,27 @@ func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {
 		args = append(args, "-buildvcs=false")
 	}
 
-	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch})
+	// Build with the FIPS toolchain so `go test` ships the same binary the
+	// Taskfile and release pipeline do; otherwise acceptance/fips (which asserts
+	// the FIPS build settings) fails on a plain `go test` run.
+	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch, "GOFIPS140=" + readGOFIPS140(t)})
 	return execPath
+}
+
+// readGOFIPS140 returns the GOFIPS140 version pinned in the repo Taskfile, the
+// single source of truth also used by the release pipeline.
+func readGOFIPS140(t *testing.T) string {
+	data, err := os.ReadFile(filepath.Join("..", "Taskfile.yml"))
+	require.NoError(t, err)
+
+	var taskfile struct {
+		Env struct {
+			GOFIPS140 string `yaml:"GOFIPS140"`
+		} `yaml:"env"`
+	}
+	require.NoError(t, yaml.Unmarshal(data, &taskfile))
+	require.NotEmpty(t, taskfile.Env.GOFIPS140, "GOFIPS140 not set in Taskfile.yml")
+	return taskfile.Env.GOFIPS140
 }
 
 // CreateReleaseArtifacts builds release artifacts for the given OS using amd64 and arm64 architectures,
