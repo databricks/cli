@@ -322,10 +322,11 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	filesReported = true
 	logDeploySummary(ctx, b, plan)
 
-	// Dry-run the migration to the direct engine and record the outcome in
-	// telemetry. If the user opted in (via bundle.engine or
-	// DATABRICKS_BUNDLE_ENGINE) and the dry-run is clean, the migration is
-	// committed; otherwise nothing is written and the deploy is unaffected.
+	// Migrate the state to the direct engine, if the user opted in (via
+	// bundle.engine or DATABRICKS_BUNDLE_ENGINE) and a dry-run of the migration
+	// comes back clean. Without the opt-in, or when the dry-run reports problems,
+	// nothing is written: only the outcome is recorded in telemetry, and the
+	// deploy is unaffected.
 	//
 	// Last, after the deploy has reported what it did: this is post-deploy work,
 	// and its warnings read as belonging to the deploy if they precede the
