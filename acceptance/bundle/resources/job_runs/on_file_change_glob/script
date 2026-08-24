@@ -58,6 +58,8 @@ update_file.py migrations/ignored.txt "ignored" "ignored-edited"
 trace $CLI bundle plan
 update_file.py migrations/ignored.txt "ignored-edited" "ignored"
 
-title "** is not recursive: it matches the same files as *"
+# Warning is on stderr of the untraced plan in changes(); trailing newline keeps it off the title.
+title "** is not recursive: it warns and matches the same files as *\n"
 update_file.py databricks.yml "migrations/*" "migrations/**"
 changes
+update_file.py databricks.yml "migrations/**" "migrations/*"

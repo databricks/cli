@@ -200,7 +200,11 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
-=== ** is not recursive: it matches the same files as *
+=== ** is not recursive: it warns and matches the same files as *
+Warning: lifecycle.triggers.on_file_change: ** in "migrations/**" is not recursive and matches the same files as *
+  in databricks.yml:18:29
+
+
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
   "lifecycle.triggers.on_file_change": {
