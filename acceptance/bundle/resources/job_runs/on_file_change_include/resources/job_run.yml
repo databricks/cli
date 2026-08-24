@@ -1,0 +1,7 @@
+resources:
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}
+      lifecycle:
+        triggers:
+          - on_file_change: watched.txt
