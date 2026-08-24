@@ -1,0 +1,22 @@
+cleanup() {
+    withdir bundle trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "first deploy"
+withdir bundle trace $CLI bundle deploy
+
+title "editing a same-named file in the bundle does not re-fire"
+update_file.py bundle/watched.txt "bundle-v1" "bundle-v2"
+withdir bundle trace $CLI bundle plan | contains.py "2 unchanged" "!recreate"
+update_file.py bundle/watched.txt "bundle-v2" "bundle-v1"
+
+title "editing a file at the sync root does not re-fire"
+update_file.py shared.txt "parent-v1" "parent-v2"
+withdir bundle trace $CLI bundle plan | contains.py "2 unchanged" "!recreate"
+update_file.py shared.txt "parent-v2" "parent-v1"
+
+title "editing the file next to the included YAML re-fires"
+update_file.py bundle/resources/watched.txt "include-v1" "include-v2"
+withdir bundle trace $CLI bundle plan | contains.py "recreate job_runs.my_run"
+update_file.py bundle/resources/watched.txt "include-v2" "include-v1"
