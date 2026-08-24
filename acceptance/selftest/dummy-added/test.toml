@@ -1,0 +1,3 @@
+# Temporary: verifies that test selection picks up an added test, locally and on cloud.
+Cloud = true
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
