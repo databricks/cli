@@ -1,0 +1,1 @@
+`bundle deploy` on the direct engine now reports each resource as soon as it is deployed, instead of listing them all after the deployment finishes. A deploy that fails part way through now reports the resources it did apply.

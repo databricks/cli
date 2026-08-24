@@ -2,6 +2,7 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-crash-test/default/files...
+Created jobs.job_a
 [PROCESS_KILLED]
 
 Exit code: [KILLED]
