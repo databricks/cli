@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -194,22 +196,24 @@ func TestParseTTL(t *testing.T) {
 	}
 }
 
-func TestJSONSetsExpiration(t *testing.T) {
-	tests := map[string]bool{
-		`{"spec":{"ttl":"604800s"}}`:                      true,
-		`{"spec":{"no_expiry":true}}`:                     true,
-		`{"spec":{"expire_time":"2030-01-01T00:00:00Z"}}`: true,
-		`{"spec":{"no_expiry":false}}`:                    false,
-		`{"spec":{"ttl":null}}`:                           false,
-		`{"spec":{"source_branch":"x"}}`:                  false,
-		`{"spec":{}}`:                                     false,
-		`{}`:                                              false,
-		``:                                                false,
-		`not json`:                                        false,
+func TestSpecHasExpiration(t *testing.T) {
+	tests := []struct {
+		name string
+		spec *postgres.BranchSpec
+		want bool
+	}{
+		{"nil spec", nil, false},
+		{"empty spec", &postgres.BranchSpec{}, false},
+		{"ttl set", &postgres.BranchSpec{Ttl: duration.New(sevenDays)}, true},
+		{"expire_time set", &postgres.BranchSpec{ExpireTime: sdktime.New(time.Now())}, true},
+		{"no_expiry true", &postgres.BranchSpec{NoExpiry: true}, true},
+		{"no_expiry false, unset", &postgres.BranchSpec{NoExpiry: false}, false},
+		{"no_expiry false, explicitly set", &postgres.BranchSpec{NoExpiry: false, ForceSendFields: []string{"NoExpiry"}}, true},
+		{"non-expiration field only", &postgres.BranchSpec{SourceBranch: "projects/p/branches/main"}, false},
 	}
-	for raw, want := range tests {
-		t.Run(raw, func(t *testing.T) {
-			assert.Equal(t, want, jsonSetsExpiration([]byte(raw)))
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, specHasExpiration(tc.spec))
 		})
 	}
 }

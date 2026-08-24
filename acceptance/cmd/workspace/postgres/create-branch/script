@@ -24,5 +24,14 @@ musterr $CLI postgres create-branch projects/acc-proj branch-none &> LOG.require
 title "Conflicting flags fail before any API call (no request recorded)"
 musterr $CLI postgres create-branch projects/acc-proj branch-conflict --ttl 1h --no-expiry &> LOG.conflict
 
+title "--no-expiry with a --json that also sets spec.no_expiry is a conflict, not a silent override"
+musterr $CLI postgres create-branch projects/acc-proj branch-both --no-expiry --json '{"spec":{"no_expiry":false}}' &> LOG.both
+
+title "Malformed --json fails client-side"
+musterr $CLI postgres create-branch projects/acc-proj branch-badjson --json 'not json' &> LOG.badjson
+
+title "An empty spec.ttl in --json fails client-side"
+musterr $CLI postgres create-branch projects/acc-proj branch-emptyttl --json '{"spec":{"ttl":""}}' &> LOG.emptyttl
+
 title "Recorded create-branch request bodies"
 print_requests.py //branches

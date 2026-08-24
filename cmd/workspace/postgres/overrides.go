@@ -1,11 +1,11 @@
 package postgres
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -85,16 +85,20 @@ func createBranchOverride(cmd *cobra.Command, req *postgres.CreateBranchRequest)
 
 	prevPreRunE := cmd.PreRunE
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
-		jsonHasExpiration := false
+		var jsonBranch postgres.Branch
 		if cmd.Flags().Changed("json") {
 			jf, err := postgresJSONFlag(cmd, "create-branch")
 			if err != nil {
 				return err
 			}
-			jsonHasExpiration = jsonSetsExpiration(jf.Raw())
+			// Decode --json into the SDK type via the same path the generated
+			// RunE uses, so expiration detection can't drift from the real merge.
+			if diags := jf.Unmarshal(&jsonBranch); diags.HasError() {
+				return diags.Error()
+			}
 		}
 
-		spec, err := reconcileBranchExpiration(req.Branch.Spec, cmd.Flags().Changed("ttl"), ttl, cmd.Flags().Changed("no-expiry"), noExpiry, jsonHasExpiration)
+		spec, err := reconcileBranchExpiration(req.Branch.Spec, cmd.Flags().Changed("ttl"), ttl, cmd.Flags().Changed("no-expiry"), noExpiry, specHasExpiration(jsonBranch.Spec))
 		if err != nil {
 			return err
 		}
@@ -190,33 +194,14 @@ func reconcileBranchExpiration(spec *postgres.BranchSpec, ttlChanged bool, ttl s
 	return spec, nil
 }
 
-// jsonSetsExpiration reports whether a --json request body actually sets a branch
-// expiration: a non-null spec.ttl or spec.expire_time, or spec.no_expiry: true. A
-// null value or no_expiry: false does not count (no_expiry=false is invalid and
-// is dropped on the wire), so those fall through to the "expiration required"
-// error rather than a confusing server rejection. Malformed JSON returns false
-// and is left for the generated --json path to report.
-func jsonSetsExpiration(raw []byte) bool {
-	if len(raw) == 0 {
-		return false
-	}
-	var probe struct {
-		Spec *struct {
-			Ttl        json.RawMessage `json:"ttl"`
-			ExpireTime json.RawMessage `json:"expire_time"`
-			NoExpiry   *bool           `json:"no_expiry"`
-		} `json:"spec"`
-	}
-	if err := json.Unmarshal(raw, &probe); err != nil || probe.Spec == nil {
-		return false
-	}
-	s := probe.Spec
-	return jsonValueSet(s.Ttl) || jsonValueSet(s.ExpireTime) || (s.NoExpiry != nil && *s.NoExpiry)
-}
-
-// jsonValueSet reports whether a raw JSON value is present and not null.
-func jsonValueSet(raw json.RawMessage) bool {
-	return len(raw) > 0 && strings.TrimSpace(string(raw)) != "null"
+// specHasExpiration reports whether a decoded BranchSpec sets an expiration:
+// spec.ttl, spec.expire_time, or spec.no_expiry. no_expiry present as false still
+// counts as "set" (detected via ForceSendFields, which the SDK decode populates
+// for explicit zero values), so combining it with --no-expiry is caught as a
+// conflict instead of the json silently overriding the flag on the wire.
+func specHasExpiration(s *postgres.BranchSpec) bool {
+	return s != nil && (s.Ttl != nil || s.ExpireTime != nil || s.NoExpiry ||
+		slices.Contains(s.ForceSendFields, "NoExpiry"))
 }
 
 // parseTTL parses the --ttl value into a *duration.Duration. It accepts the REST

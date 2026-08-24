@@ -7,6 +7,9 @@
 === the --no-wait path still works alongside --no-expiry
 === An expiration is required: no flag fails before any API call (no request recorded)
 === Conflicting flags fail before any API call (no request recorded)
+=== --no-expiry with a --json that also sets spec.no_expiry is a conflict, not a silent override
+=== Malformed --json fails client-side
+=== An empty spec.ttl in --json fails client-side
 === Recorded create-branch request bodies{
   "method": "POST",
   "path": "/api/2.0/postgres/projects/acc-proj/branches",
