@@ -1,1 +1,4 @@
+# Local-only: fixed policy name is not safe for concurrent cloud runs. Cloud
+# coverage of the permission behavior lives in the levels test.
+Cloud = false
 Ignore = [".databricks", "databricks.yml"]
