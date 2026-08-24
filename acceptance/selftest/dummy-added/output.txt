@@ -1,3 +1,0 @@
-
->>> echo dummy added test
-dummy added test
