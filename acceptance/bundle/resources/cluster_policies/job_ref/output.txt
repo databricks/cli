@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_job_ref/default/files...
 Created cluster_policies.pol
 Created jobs.j
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Deploy requests in dependency order: policy create precedes job create, job carries resolved policy id

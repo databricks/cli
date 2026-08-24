@@ -15,7 +15,7 @@ policy_id="$(read_id.py test_cluster_policy)"
 # API, the way an admin would in the UI, without touching databricks.yml. The
 # recorded bundle state is now stale, so the next plan must detect the drift.
 title "Edit the policy definition out of band"
-trace $CLI cluster-policies edit --json '{"policy_id":"'"$policy_id"'","name":"my_cluster_policy","definition":"{\"spark_version\":{\"type\":\"fixed\",\"value\":\"14.3.x-scala2.12\"}}"}'
+trace $CLI cluster-policies edit --json '{"policy_id":"'"$policy_id"'","name":"my_cluster_policy_oob","definition":"{\"spark_version\":{\"type\":\"fixed\",\"value\":\"14.3.x-scala2.12\"}}"}'
 
 # Discard the out-of-band request so the verification below captures only the
 # reconciling edit issued by the redeploy.

@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_oob/default/files...
 Created cluster_policies.test_cluster_policy
 Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
@@ -10,7 +10,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Edit the policy definition out of band
->>> [CLI] cluster-policies edit --json {"policy_id":"[TEST_CLUSTER_POLICY_ID]","name":"my_cluster_policy","definition":"{\"spark_version\":{\"type\":\"fixed\",\"value\":\"14.3.x-scala2.12\"}}"}
+>>> [CLI] cluster-policies edit --json {"policy_id":"[TEST_CLUSTER_POLICY_ID]","name":"my_cluster_policy_oob","definition":"{\"spark_version\":{\"type\":\"fixed\",\"value\":\"14.3.x-scala2.12\"}}"}
 
 === Plan detects the drift
 >>> [CLI] bundle plan
@@ -20,7 +20,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 === Redeploy reconciles the policy back to the configured definition
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_oob/default/files...
 Updated cluster_policies.test_cluster_policy
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
@@ -32,7 +32,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/policies/clusters/edit",
   "body": {
     "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
-    "name": "my_cluster_policy",
+    "name": "my_cluster_policy_oob",
     "policy_id": "[TEST_CLUSTER_POLICY_ID]"
   }
 }
@@ -45,6 +45,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 The following resources will be deleted:
   delete resources.cluster_policies.test_cluster_policy
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_oob/default
 
 Destroy: 1 deleted
