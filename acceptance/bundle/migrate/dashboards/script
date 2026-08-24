@@ -1,5 +1,6 @@
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 trace print_migration_telemetry
+rm out.requests.txt
 # Add all resource IDs to runtime replacements to avoid pattern matching ambiguity
 replace_ids.py
 print_state.py > out.original_state.json

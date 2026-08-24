@@ -3,6 +3,9 @@ trace $CLI bundle init default-python --config-file ./input.json
 cd my_default_python
 
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+# The script cd'd into the bundle; the recorded requests are at the test root.
+trace withdir .. print_migration_telemetry
+rm ../out.requests.txt
 trace print_state.py > ../out.state_original.json
 
 trace $CLI bundle deployment migrate
@@ -23,3 +26,5 @@ title "Extra plan: should have no drift"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan -o json > ../out.plan_after_deploy.json
 trace jq '.plan[] | .changes' ../out.plan_after_migration.json  # Badness: contains changes for whl
+
+rm -f ../out.requests.txt

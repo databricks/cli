@@ -1,6 +1,7 @@
 export DATABRICKS_BUNDLE_ENGINE=
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 trace print_migration_telemetry
+rm out.requests.txt
 print_state.py > out.original_state.json
 
 trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 6 resources'

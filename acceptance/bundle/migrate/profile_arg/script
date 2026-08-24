@@ -1,7 +1,13 @@
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_migration_telemetry
+rm out.requests.txt
 
 # only interested in output here; for some reason in test env -p is not validated
 trace $CLI bundle deployment migrate -p non_existent321
 
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy -t prod
+trace print_migration_telemetry
+rm out.requests.txt
 trace $CLI bundle deployment migrate -p non_existent321 -t prod
+
+rm -f out.requests.txt

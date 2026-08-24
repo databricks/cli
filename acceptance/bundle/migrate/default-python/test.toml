@@ -1,2 +1,5 @@
-RecordRequests = false
+# Recorded so the migration telemetry is observable; each block is printed
+# right after its deploy and the requests are removed, so nothing large lands
+# in a golden.
+RecordRequests = true
 Ignore = ["my_default_python"]
