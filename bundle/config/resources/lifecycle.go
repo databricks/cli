@@ -37,5 +37,5 @@ type JobRunLifecycle struct {
 // JobRunTrigger is one lifecycle.triggers entry.
 type JobRunTrigger struct {
 	OnBundleDeploy *bool   `json:"on_bundle_deploy,omitempty"`
-	OnFileChange   *string `json:"on_file_change,omitempty"` // path or glob under sync root
+	OnFileChange   *string `json:"on_file_change,omitempty"` // path or glob relative to the defining YAML file; must resolve under the sync root
 }

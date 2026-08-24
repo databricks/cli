@@ -1,6 +1,9 @@
 
 === deploy hashes the matched files
 >>> [CLI] bundle deploy
+Warning: lifecycle.triggers.on_file_change: pattern "migrations/*" also matched directories, which are not hashed
+  in databricks.yml:18:29
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-glob/default/files...
 Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
 Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
@@ -23,6 +26,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === editing one matched file re-fires
+Warning: lifecycle.triggers.on_file_change: pattern "migrations/*" also matched directories, which are not hashed
+  in databricks.yml:18:29
+
+
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
   "lifecycle.triggers.on_file_change": {
@@ -54,6 +61,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === bundle deploy
+Warning: lifecycle.triggers.on_file_change: pattern "migrations/*" also matched directories, which are not hashed
+  in databricks.yml:18:29
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-glob/default/files...
 Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
 Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
@@ -81,6 +91,10 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 }
 
 === editing a file in a subdirectory re-fires
+Warning: lifecycle.triggers.on_file_change: pattern "migrations/*" also matched directories, which are not hashed
+  in databricks.yml:18:29
+
+
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
   "lifecycle.triggers.on_file_change": {
@@ -112,6 +126,10 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 }
 
 === a new matching file re-fires
+Warning: lifecycle.triggers.on_file_change: pattern "migrations/*" also matched directories, which are not hashed
+  in databricks.yml:18:29
+
+
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
   "lifecycle.triggers.on_file_change": {
@@ -143,6 +161,10 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 }
 
 === removing a matched file re-fires
+Warning: lifecycle.triggers.on_file_change: pattern "migrations/*" also matched directories, which are not hashed
+  in databricks.yml:18:29
+
+
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
   "lifecycle.triggers.on_file_change": {
@@ -172,36 +194,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 }
 
 === editing a file below the glob does not re-fire
->>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
-{
-  "lifecycle.triggers.on_file_change": {
-    "action": "skip",
-    "reason": "missing_in_remote",
-    "old": {
-      "migrations/001.txt": "[FILE_HASH][3]",
-      "migrations/002.txt": "[FILE_HASH][1]",
-      "mysubdir/a.txt": "[FILE_HASH][2]"
-    },
-    "new": {
-      "migrations/001.txt": "[FILE_HASH][3]",
-      "migrations/002.txt": "[FILE_HASH][1]",
-      "mysubdir/a.txt": "[FILE_HASH][2]"
-    }
-  },
-  "result_state": {
-    "action": "skip",
-    "reason": "remote_already_set",
-    "new": "SUCCESS",
-    "remote": "SUCCESS"
-  }
-}
-
-=== editing a gitignored file does not re-fire
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-
-=== ** is not recursive: it warns and matches the same files as *
-Warning: lifecycle.triggers.on_file_change: ** in "migrations/**" is not recursive and matches the same files as *
+Warning: lifecycle.triggers.on_file_change: pattern "migrations/*" also matched directories, which are not hashed
   in databricks.yml:18:29
 
 
@@ -229,7 +222,17 @@ Warning: lifecycle.triggers.on_file_change: ** in "migrations/**" is not recursi
   }
 }
 
+=== editing a gitignored file does not re-fire
+>>> [CLI] bundle plan
+Warning: lifecycle.triggers.on_file_change: pattern "migrations/*" also matched directories, which are not hashed
+  in databricks.yml:18:29
+
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
 >>> [CLI] bundle destroy --auto-approve
+Warning: lifecycle.triggers.on_file_change: pattern "migrations/*" also matched directories, which are not hashed
+  in databricks.yml:18:29
+
 The following resources will be deleted:
   delete resources.job_runs.my_run
   delete resources.jobs.my_job
