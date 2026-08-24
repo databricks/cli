@@ -74,22 +74,12 @@ type DeploymentState struct {
 
 	// sink records each state write with DMS. Nil unless the bundle records deployment
 	// history, in which case StartRecording installs it.
-	sink operationRecorder
+	sink *dms.OperationSink
 
 	// DMSDeploymentID is the deployment Open read the state from, kept so what follows records
 	// under it without looking the workspace node up again. Empty when the bundle does not
 	// record deployment history or has never been deployed.
 	DMSDeploymentID string
-}
-
-// operationRecorder is what the state DB records through: a dms.OperationSink in production,
-// and a stand-in in this package's tests, which watch what a write reports without the queue
-// in between. The queue coalesces writes for one resource, so only the sink sees every one.
-type operationRecorder interface {
-	RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage)
-	RecordFailure(resourceKey, resourceID string, cause error)
-	FirstErr() error
-	Close() error
 }
 
 // StartRecording has every subsequent state write recorded with DMS through writer, so what
@@ -136,7 +126,7 @@ func (db *DeploymentState) FinishRecording() error {
 
 // recorder reads the sink under db.mu, which guards it, and returns nil when the bundle does
 // not record deployment history.
-func (db *DeploymentState) recorder() operationRecorder {
+func (db *DeploymentState) recorder() *dms.OperationSink {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	return db.sink

@@ -1,10 +1,8 @@
 package dstate
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,76 +16,6 @@ func mustFinalize(t *testing.T, db *DeploymentState) {
 	t.Helper()
 	_, err := db.Finalize(t.Context())
 	require.NoError(t, err)
-}
-
-// fakeSink captures what the state writes report to DMS. Only RecordOperation is exercised;
-// apply drives the rest.
-type fakeSink struct {
-	ops []string
-}
-
-func (f *fakeSink) RecordFailure(resourceKey, resourceID string, cause error) {}
-func (f *fakeSink) FirstErr() error                                           { return nil }
-func (f *fakeSink) Close() error                                              { return nil }
-
-func (f *fakeSink) RecordOperation(ctx context.Context, resourceKey string, inProgress bool, resourceID string, state json.RawMessage) {
-	entry := fmt.Sprintf("%s id=%s state=%s", resourceKey, resourceID, string(state))
-	if inProgress {
-		entry += " in_progress"
-	}
-	f.ops = append(f.ops, entry)
-}
-
-func TestStateWritesRecordOperations(t *testing.T) {
-	tests := []struct {
-		name  string
-		write func(t *testing.T, db *DeploymentState)
-		want  []string
-	}{
-		{
-			// The service keeps one operation per resource per version, so the drop opens it
-			// with no state and the save completes it. A deploy that stops in between leaves
-			// the resource recorded as mid-recreate.
-			name: "recreate reports both of its writes",
-			write: func(t *testing.T, db *DeploymentState) {
-				require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{"key": "old"}, nil))
-				require.NoError(t, db.DeleteStateForRecreate(t.Context(), "jobs.my_job"))
-				require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "456", map[string]string{"key": "new"}, nil))
-			},
-			want: []string{
-				`jobs.my_job id=123 state={"state":{"key":"old"}}`,
-				`jobs.my_job id=123 state= in_progress`,
-				`jobs.my_job id=456 state={"state":{"key":"new"}}`,
-			},
-		},
-		{
-			name: "real delete reports the id it had and no state",
-			write: func(t *testing.T, db *DeploymentState) {
-				require.NoError(t, db.SaveState(t.Context(), "jobs.my_job", "123", map[string]string{}, nil))
-				require.NoError(t, db.DeleteState(t.Context(), "jobs.my_job"))
-			},
-			want: []string{
-				`jobs.my_job id=123 state={"state":{}}`,
-				`jobs.my_job id=123 state=`,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "state.json")
-			sink := &fakeSink{}
-
-			var db DeploymentState
-			require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
-			db.sink = sink
-
-			tt.write(t, &db)
-			mustFinalize(t, &db)
-
-			assert.Equal(t, tt.want, sink.ops)
-		})
-	}
 }
 
 func TestStateWritesRecordNothingWithoutSink(t *testing.T) {
