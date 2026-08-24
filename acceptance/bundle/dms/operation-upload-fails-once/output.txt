@@ -57,9 +57,11 @@ Files: 3 uploaded, 0 deleted
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
+    "error_message": "",
     "resource_id": "main.dms_upload_fails_once_schema",
-    "status": "OPERATION_STATUS_IN_PROGRESS",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "",
+    "status": "OPERATION_STATUS_IN_PROGRESS"
   }
 }
 {
@@ -69,10 +71,11 @@ Files: 3 uploaded, 0 deleted
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "state": "{\"state\":{\"catalog_name\":\"other\",\"comment\":\"v1\",\"name\":\"dms_upload_fails_once_schema\"}}",
+    "error_message": "",
     "resource_id": "other.dms_upload_fails_once_schema",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "{\"state\":{\"catalog_name\":\"other\",\"comment\":\"v1\",\"name\":\"dms_upload_fails_once_schema\"}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 {

@@ -154,16 +154,6 @@ type StagedOperation struct {
 	ActionType  bundledeployments.OperationActionType `json:"action_type"`
 }
 
-// updateOperationRequest carries the values an update writes. action_type and resource_key
-// are left out: the service fixes them when the version stages the operation.
-type updateOperationRequest struct {
-	State        string                            `json:"state,omitempty"`
-	ErrorMessage string                            `json:"error_message,omitempty"`
-	ResourceId   string                            `json:"resource_id,omitempty"`
-	Status       bundledeployments.OperationStatus `json:"status,omitempty"`
-	SequenceId   string                            `json:"sequence_id,omitempty"`
-}
-
 // operationResponse is the part of an operation response the CLI reads back.
 type operationResponse struct {
 	// SequenceId is the concurrency token for the next update, typed as the service sends it.
@@ -188,22 +178,25 @@ func (r *rawClient) CreateVersion(ctx context.Context, deploymentID, versionID s
 	return &version, nil
 }
 
-// newUpdateRequest builds the request body for update. Each field is sent because the mask
-// names it: the service ignores the rest, and state is the largest field by far, so a
-// failure that keeps the recorded state sends none of it.
-func newUpdateRequest(update OperationUpdate, sequenceID string) updateOperationRequest {
-	body := updateOperationRequest{SequenceId: sequenceID}
+// newUpdateRequest builds the request body for update. A field the mask names is always
+// sent, even when empty: the service rejects a masked path the body omits, and an empty
+// value is how a field is cleared. A field the mask leaves out is absent entirely - state
+// is the largest by far, so a failure that keeps the recorded state sends none of it.
+// action_type and resource_key are never sent: the service fixes them when the version
+// stages the operation.
+func newUpdateRequest(update OperationUpdate, sequenceID string) map[string]any {
+	body := map[string]any{"sequence_id": sequenceID}
 	if update.Fields.Has(FieldState) {
-		body.State = string(update.State)
+		body[fieldNameState] = string(update.State)
 	}
 	if update.Fields.Has(FieldResourceID) {
-		body.ResourceId = update.ResourceID
+		body[fieldNameResourceID] = update.ResourceID
 	}
 	if update.Fields.Has(FieldErrorMessage) {
-		body.ErrorMessage = update.ErrorMessage
+		body[fieldNameErrorMessage] = update.ErrorMessage
 	}
 	if update.Fields.Has(FieldStatus) {
-		body.Status = update.Status
+		body[fieldNameStatus] = update.Status
 	}
 	return body
 }

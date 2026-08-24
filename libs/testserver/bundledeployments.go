@@ -345,6 +345,11 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 		if !slices.Contains(dmsUpdatableOperationFields, path) {
 			return dmsInvalidArgument("update_mask path " + path + " is not updatable")
 		}
+		// A masked path must carry a value; omitting it is an error rather than a
+		// no-op, so a client cannot silently drop a field it claims to write.
+		if _, ok := raw[path]; !ok {
+			return dmsInvalidArgument(path + " is required when '" + path + "' is in update_mask (an empty value clears it)")
+		}
 		update[path] = true
 	}
 

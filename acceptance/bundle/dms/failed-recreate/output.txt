@@ -57,9 +57,11 @@ Files: 3 uploaded, 0 deleted
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
+    "error_message": "",
     "resource_id": "main.dms_failed_recreate_schema",
-    "status": "OPERATION_STATUS_IN_PROGRESS",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "",
+    "status": "OPERATION_STATUS_IN_PROGRESS"
   }
 }
 {
@@ -70,8 +72,9 @@ Files: 3 uploaded, 0 deleted
   },
   "body": {
     "error_message": "Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
-    "status": "OPERATION_STATUS_FAILED",
-    "sequence_id": "1"
+    "resource_id": "",
+    "sequence_id": "1",
+    "status": "OPERATION_STATUS_FAILED"
   }
 }
 {

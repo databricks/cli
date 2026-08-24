@@ -24,15 +24,24 @@ const DescribesResource = FieldState | FieldErrorMessage | FieldResourceID | Fie
 // that does not name the resource.
 const KeepsState = FieldErrorMessage | FieldResourceID | FieldStatus
 
+// Field names on the wire, shared by the update mask and the update body so the two
+// cannot drift: the service rejects a masked path the body leaves out.
+const (
+	fieldNameState        = "state"
+	fieldNameErrorMessage = "error_message"
+	fieldNameResourceID   = "resource_id"
+	fieldNameStatus       = "status"
+)
+
 // wireNames pairs each field with its name on the wire, in the order a mask lists them.
 var wireNames = []struct {
 	field Fields
 	name  string
 }{
-	{FieldState, "state"},
-	{FieldErrorMessage, "error_message"},
-	{FieldResourceID, "resource_id"},
-	{FieldStatus, "status"},
+	{FieldState, fieldNameState},
+	{FieldErrorMessage, fieldNameErrorMessage},
+	{FieldResourceID, fieldNameResourceID},
+	{FieldStatus, fieldNameStatus},
 }
 
 // Has reports whether f contains every field in other.

@@ -51,8 +51,9 @@ Files: 5 uploaded, 0 deleted
   },
   "body": {
     "error_message": "cluster spec is invalid (400 INVALID_PARAMETER_VALUE)",
-    "status": "OPERATION_STATUS_FAILED",
-    "sequence_id": "0"
+    "resource_id": "",
+    "sequence_id": "0",
+    "status": "OPERATION_STATUS_FAILED"
   }
 }
 {

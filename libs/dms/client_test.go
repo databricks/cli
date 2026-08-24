@@ -119,9 +119,28 @@ func TestUpdateRequestSendsAFieldOnlyWhenTheMaskNamesIt(t *testing.T) {
 		ErrorMessage: "boom",
 	}
 
-	assert.Equal(t, updateOperationRequest{
-		ResourceId: "job-1",
-		Status:     bundledeployments.OperationStatusOperationStatusSucceeded,
-		SequenceId: "3",
+	assert.Equal(t, map[string]any{
+		"resource_id": "job-1",
+		"status":      bundledeployments.OperationStatusOperationStatusSucceeded,
+		"sequence_id": "3",
 	}, newUpdateRequest(update, "3"))
+}
+
+func TestUpdateRequestSendsAMaskedFieldEvenWhenEmpty(t *testing.T) {
+	// The service rejects a masked path the body omits, so a success - which names
+	// error_message in its mask and has none - must still send it as an empty value.
+	update := OperationUpdate{
+		Fields:     DescribesResource,
+		State:      json.RawMessage(`{"name":"foo"}`),
+		ResourceID: "job-1",
+		Status:     bundledeployments.OperationStatusOperationStatusSucceeded,
+	}
+
+	assert.Equal(t, map[string]any{
+		"state":         `{"name":"foo"}`,
+		"resource_id":   "job-1",
+		"error_message": "",
+		"status":        bundledeployments.OperationStatusOperationStatusSucceeded,
+		"sequence_id":   "0",
+	}, newUpdateRequest(update, "0"))
 }

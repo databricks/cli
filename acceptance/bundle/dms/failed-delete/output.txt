@@ -45,10 +45,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"stuck\",\"queue\":{\"enabled\":true}}}",
+    "error_message": "",
     "resource_id": "[NUMID]",
-    "status": "OPERATION_STATUS_SUCCEEDED",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"stuck\",\"queue\":{\"enabled\":true}}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
 {
@@ -108,8 +109,8 @@ API message: job is not deletable
   "body": {
     "error_message": "deleting id=[NUMID]: job is not deletable (400 INVALID_PARAMETER_VALUE)",
     "resource_id": "[NUMID]",
-    "status": "OPERATION_STATUS_FAILED",
-    "sequence_id": "0"
+    "sequence_id": "0",
+    "status": "OPERATION_STATUS_FAILED"
   }
 }
 {
