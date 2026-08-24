@@ -71,15 +71,17 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 	// (the bundle name, or the leaf of a workspace.root_path override), so match
 	// there and only descend into this run's subtrees. This avoids walking the
 	// thousands of directories other runs may have leaked under .bundle.
-	var roots []string
+	var roots, bundleDirs []string
 	for _, bundleRoot := range bundleRoots {
 		for _, child := range listChildDirs(ctx, t, w, bundleRoot) {
 			if strings.Contains(path.Base(child), prefix) {
+				bundleDirs = append(bundleDirs, child)
 				roots = append(roots, findDeploymentRoots(ctx, t, w, child)...)
 			}
 		}
 	}
 	slices.Sort(roots)
+	slices.Sort(bundleDirs)
 
 	t.Logf("%s bundle cleanup: found %d deployment(s) with prefix %q", time.Now().Format(time.RFC3339), len(roots), prefix)
 
@@ -121,6 +123,50 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 	// reclaimed by the periodic prefix sweep (sweep_test_resources.py).
 	if len(failed) > 0 {
 		t.Logf("WARNING: bundle cleanup failed to destroy %d deployment(s), leaked until swept: %s", len(failed), strings.Join(failed, ", "))
+	}
+
+	removeBundleDirs(ctx, t, w, bundleDirs, failed)
+}
+
+// removeBundleDirs deletes the ~/.bundle/<name> directories this run created.
+// Destroy removes the deployment root beneath such a directory but never the
+// directory itself, and every run picks a fresh bundle name, so nothing reuses
+// them: left behind they pile up against the workspace child-node limit, which
+// is what exhausted it before. The delete is recursive so a directory a killed
+// test left half-written goes too. A directory whose deployment failed to
+// destroy is kept, so its state is still there for the periodic sweep.
+func removeBundleDirs(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, bundleDirs, failed []string) {
+	const maxConcurrentDeletes = 20
+	sem := make(chan struct{}, maxConcurrentDeletes)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var failedRemovals, kept []string
+	for _, dir := range bundleDirs {
+		if slices.ContainsFunc(failed, func(root string) bool {
+			return root == dir || strings.HasPrefix(root, dir+"/")
+		}) {
+			kept = append(kept, dir)
+			continue
+		}
+		sem <- struct{}{}
+		wg.Go(func() {
+			defer func() { <-sem }()
+			err := w.Workspace.Delete(ctx, workspace.Delete{Path: dir, Recursive: true})
+			if err != nil && !errors.Is(err, apierr.ErrNotFound) {
+				mu.Lock()
+				failedRemovals = append(failedRemovals, dir)
+				mu.Unlock()
+			}
+		})
+	}
+	wg.Wait()
+
+	t.Logf("%s bundle cleanup: removed %d/%d bundle directory(ies), kept %d holding a failed destroy",
+		time.Now().Format(time.RFC3339), len(bundleDirs)-len(kept)-len(failedRemovals), len(bundleDirs)-len(kept), len(kept))
+
+	if len(failedRemovals) > 0 {
+		slices.Sort(failedRemovals)
+		t.Logf("WARNING: bundle cleanup could not remove %d bundle directory(ies): %s", len(failedRemovals), strings.Join(failedRemovals, ", "))
 	}
 }
 
