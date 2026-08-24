@@ -1,2 +1,4 @@
 # Proxy server successfully records a requests and returns a response.
 trace $CLI current-user me | jq .userName
+
+# Temporary: verifies that test selection picks up a modified test.
