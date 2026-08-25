@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/safeerr"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
@@ -73,7 +74,7 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 
 func resourcesStateToMap(ctx context.Context, state *resourcesState) (ExportedResourcesMap, error) {
 	if state.Version != SupportedStateVersion {
-		return nil, fmt.Errorf("unsupported deployment state version: %d. Try re-deploying the bundle", state.Version)
+		return nil, safeerr.Errorf("unsupported deployment state version: %d. Try re-deploying the bundle", safeerr.Safe(state.Version))
 	}
 
 	result := make(ExportedResourcesMap)

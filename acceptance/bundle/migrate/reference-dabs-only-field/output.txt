@@ -1,7 +1,20 @@
 
 === Terraform rejects the reference, so there is no state to migrate
->>> musterr DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-script: line 24: DATABRICKS_BUNDLE_ENGINE=terraform: command not found
-contains error: 'has no argument, nested block, or exported attribute named' not found in the output.
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warning: unknown field: autotermination_minutes
+  at task[0].new_cluster
+  in databricks.yml:16:13
 
-Exit code: 1
+Error: exit status 1
+
+Error: Unsupported attribute
+
+  on bundle.tf.json line 20, in resource.databricks_job.dst:
+  20:         "description": "${databricks_job.src.tasks[0].new_cluster.autotermination_minutes}",
+
+This object has no argument, nested block, or exported attribute named
+"tasks". Did you mean "tags"?
+
+
+Files: 4 uploaded, 0 deleted

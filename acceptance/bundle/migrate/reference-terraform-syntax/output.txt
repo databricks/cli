@@ -1,4 +1,5 @@
 
+=== Deploy on terraform
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.dst
@@ -6,6 +7,20 @@ Created jobs.src
 Files: 4 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
+=== Opt in: the migration reports success
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Warn: Direct engine requested in DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+Migrating state to direct deployment engine (opted in via DATABRICKS_BUNDLE_ENGINE environment variable)...
+Migrated 2 resources to direct deployment engine.
+
 >>> print_migration_telemetry
-direct_drymigrate_success true
-direct_drymigrate_warnings false
+direct_migrated_via_env true
+
+=== But the migrated state cannot be planned
+
+>>> musterr [CLI] bundle plan
+Error: invalid dependency "${databricks_job.src.id}", no such node ""
+

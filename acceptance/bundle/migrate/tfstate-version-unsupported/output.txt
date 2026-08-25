@@ -1,12 +1,33 @@
 
+=== Deploy on terraform, leaving a state the migration can read
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.my_job
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+Executing 'postdeploy' script
 
->>> update_file.py .databricks/bundle/default/terraform/terraform.tfstate "version": 4 "version": 5
+>>> print_migration_telemetry
+direct_drymigrate_success true
+direct_drymigrate_warnings false
 
-=== The migration refuses a state format it does not understand
->>> musterr [CLI] bundle deployment migrate
-Error: failed to parse terraform state: unsupported deployment state version: 5. Try re-deploying the bundle
+=== Opt in: the deploy succeeds, the migration cannot read the state
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Warn: Direct engine requested in DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Executing 'postdeploy' script
+Warn: post-deploy dry-run migration to direct: failed to parse terraform state: unsupported deployment state version: 5. Try re-deploying the bundle
+Warn: Direct engine was requested but the dry-run migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.
+
+>>> print_migration_telemetry
+direct_migrate_error true
+direct_migrate_saferr unsupported deployment state version: 5. Try re-deploying the bundle
+
+=== State is still terraform, so nothing was migrated
+
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate

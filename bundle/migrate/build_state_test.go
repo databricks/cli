@@ -437,16 +437,16 @@ resources:
 	db.OpenWithData(filepath.Join(t.TempDir(), "resources.json"), dstate.NewDatabase("lineage", 1))
 	require.NoError(t, db.UpgradeToWrite())
 
-	warnings, warnTemplate, err := migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
+	warnings, warnSaferr, err := migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
 
 	// No error: the conversion completed. But it warned, which is enough to stop
 	// an automatic migration, so the warning carries its own PII-free template.
 	require.NoError(t, err)
 	assert.True(t, warnings, "disagreeing methods must be reported as a warning")
-	assert.Equal(t, `jobs.%s field %q: method A and method B disagree`, warnTemplate)
+	assert.Equal(t, `jobs.%s field %q: method A and method B disagree`, warnSaferr)
 
 	// Neither the resource name nor the disagreeing values reach the template.
 	for _, secret := range []string{"dst", "stale-value", "source"} {
-		assert.NotContains(t, warnTemplate, secret)
+		assert.NotContains(t, warnSaferr, secret)
 	}
 }

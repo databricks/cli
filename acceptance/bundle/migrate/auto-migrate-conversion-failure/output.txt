@@ -17,7 +17,7 @@ Please forward these warnings to dabs-feedback@databricks.com
 >>> print_migration_telemetry
 direct_drymigrate_success false
 direct_drymigrate_warnings false
-direct_migrate_error_template unknown permission level %q for secret scope
+direct_migrate_saferr unknown permission level %q for secret scope
 
 === Opted in: the same failure stops the automatic migration
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
@@ -36,7 +36,7 @@ Warn: Direct engine was requested but the dry-run migration reported issues; aut
 
 >>> print_migration_telemetry
 direct_migrate_error true
-direct_migrate_error_template unknown permission level %q for secret scope
+direct_migrate_saferr unknown permission level %q for secret scope
 
 === State is still terraform, so nothing was migrated
 

@@ -308,9 +308,9 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 
 				// Own alignment group: these names are long enough that sharing one
 				// would re-align every field above them.
-				DirectMigrateErrorTemplate:       b.Metrics.DirectMigrateErrorTemplate,
-				DirectMigrateCommitErrorTemplate: b.Metrics.DirectMigrateCommitErrorTemplate,
-				DirectMigrateWarningTemplate:     b.Metrics.DirectMigrateWarningTemplate,
+				DirectMigrateSaferr:        b.Metrics.DirectMigrateSaferr,
+				DirectMigrateCommitSaferr:  b.Metrics.DirectMigrateCommitSaferr,
+				DirectMigrateWarningSaferr: b.Metrics.DirectMigrateWarningSaferr,
 			},
 		},
 	})

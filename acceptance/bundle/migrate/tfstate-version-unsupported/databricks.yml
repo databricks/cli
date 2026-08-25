@@ -1,6 +1,10 @@
 bundle:
   name: test-bundle
 
+experimental:
+  scripts:
+    postdeploy: python3 bump_state_version.py
+
 resources:
   jobs:
     my_job:

@@ -125,22 +125,22 @@ type BundleDeployExperimental struct {
 	// composed of source literals and closed enums only, so they need no
 	// scrubbing and can be grouped on directly.
 
-	// DirectMigrateErrorTemplate describes a post-deploy migration to the direct
+	// DirectMigrateSaferr describes a post-deploy migration to the direct
 	// engine whose state could not be read or converted. Set alongside
 	// direct_migrate_error on opt-in deploys and direct_drymigrate_success on the
 	// dry run.
-	DirectMigrateErrorTemplate string `json:"direct_migrate_error_template,omitempty"`
+	DirectMigrateSaferr string `json:"direct_migrate_saferr,omitempty"`
 
-	// DirectMigrateCommitErrorTemplate describes a migration whose state
+	// DirectMigrateCommitSaferr describes a migration whose state
 	// converted cleanly but could not be committed. Set alongside
 	// direct_migrate_commit_error.
-	DirectMigrateCommitErrorTemplate string `json:"direct_migrate_commit_error_template,omitempty"`
+	DirectMigrateCommitSaferr string `json:"direct_migrate_commit_saferr,omitempty"`
 
-	// DirectMigrateWarningTemplate describes the first warning a conversion
+	// DirectMigrateWarningSaferr describes the first warning a conversion
 	// emitted. A warning stops an automatic migration just as an error does, but
 	// carries no error to describe it. Set alongside direct_migrate_warnings, or
 	// direct_drymigrate_warnings on the dry run.
-	DirectMigrateWarningTemplate string `json:"direct_migrate_warning_template,omitempty"`
+	DirectMigrateWarningSaferr string `json:"direct_migrate_warning_saferr,omitempty"`
 }
 
 // BundleResourcesMetadata mirrors the universe proto. Per-resource-type counts

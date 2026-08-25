@@ -83,9 +83,9 @@ type Metrics struct {
 	// PII-free descriptions of the errors this deploy hit, reported without
 	// scrubbing. Each is a libs/safeerr message template; see the matching fields
 	// on protos.BundleDeployExperimental for what each one covers.
-	DirectMigrateErrorTemplate       string
-	DirectMigrateWarningTemplate     string
-	DirectMigrateCommitErrorTemplate string
+	DirectMigrateSaferr        string
+	DirectMigrateWarningSaferr string
+	DirectMigrateCommitSaferr  string
 
 	// StateEngine is the engine that ran the deploy, set in deployCore. Empty when
 	// telemetry is emitted without a deploy having run.

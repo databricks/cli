@@ -58,7 +58,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
 		log.Warnf(ctx, "%sfailed to parse terraform state: %v", warnPrefix, err)
-		recordErrorTemplate(&b.Metrics.DirectMigrateErrorTemplate, err)
+		recordErrorTemplate(&b.Metrics.DirectMigrateSaferr, err)
 		if requestedEngine.Type == engine.EngineDirect {
 			b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
 			log.Warnf(ctx, "%s", autoMigrateStoppedNotice)
@@ -88,7 +88,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		cmdio.LogString(ctx, "Removing empty terraform state; direct engine will be used on the next deploy (selected via "+requestedEngine.Source+")...")
 		if err := backupTerraformState(ctx, b); err != nil {
 			b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
-			recordErrorTemplate(&b.Metrics.DirectMigrateCommitErrorTemplate, err)
+			recordErrorTemplate(&b.Metrics.DirectMigrateCommitSaferr, err)
 			log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
 			return
 		}
@@ -111,7 +111,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 
 	if err != nil {
 		log.Warnf(ctx, "%s%v", warnPrefix, err)
-		recordErrorTemplate(&b.Metrics.DirectMigrateErrorTemplate, err)
+		recordErrorTemplate(&b.Metrics.DirectMigrateSaferr, err)
 	}
 	if hasWarnings || err != nil {
 		log.Warnf(ctx, "%s", feedbackNotice)
@@ -151,7 +151,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 
 	if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
-		recordErrorTemplate(&b.Metrics.DirectMigrateCommitErrorTemplate, err)
+		recordErrorTemplate(&b.Metrics.DirectMigrateCommitSaferr, err)
 		log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
 		return
 	}
@@ -351,10 +351,10 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	}
 
 	// warnPrefix labels the conversion's warnings as coming from the background dry run.
-	hasWarnings, warnTemplate, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
+	hasWarnings, warnSaferr, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
 	// Recorded even when the conversion goes on to fail: a warning is enough to
 	// stop an automatic migration on its own, and nothing else describes it.
-	b.Metrics.DirectMigrateWarningTemplate = warnTemplate
+	b.Metrics.DirectMigrateWarningSaferr = warnSaferr
 	if err != nil {
 		return tempStatePath, resourceCount, hasWarnings, nil, err
 	}
