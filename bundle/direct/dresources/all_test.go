@@ -1031,16 +1031,20 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	newState, err := adapter.PrepareState(inputConfig)
 	require.NoError(t, err, "PrepareState failed")
 
-	// The snapshot resource uploads a zip read from disk in DoCreate. Stage one and
-	// make the content-addressed path match its hash so the round-trip is consistent.
+	// The snapshot is content-addressed: DoCreate reads a zip from disk and the server
+	// returns a path derived from that zip's hash. The generic fixture has no ZipPath, so
+	// stage a real zip and align RelativePath/FullPath with its hash; otherwise the
+	// create→read round-trip compares a fixture path against a hash-derived remote path
+	// and fails. This is inherent to content-addressed resources, not a missing hook.
 	if ss, ok := newState.(*SnapshotState); ok {
+		snap := inputConfig.(*resources.Snapshot)
 		content := []byte("test snapshot content")
 		hash := snapshot.HashFromContent(content)
 		zipPath := filepath.Join(t.TempDir(), hash+".zip")
 		require.NoError(t, os.WriteFile(zipPath, content, 0o600))
 		ss.ZipPath = filepath.ToSlash(zipPath)
 		ss.RelativePath = ss.BundleID + "/" + hash
-		ss.FullPath = ss.RemoteRoot + "/" + ss.RelativePath
+		ss.FullPath = snap.RemoteRoot + "/" + ss.RelativePath
 	}
 
 	ctx := t.Context()

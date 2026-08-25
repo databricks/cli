@@ -15,7 +15,6 @@ type ResourceSnapshot struct {
 }
 
 type SnapshotState struct {
-	RemoteRoot   string              `json:"remote_root"`
 	RelativePath string              `json:"relative_path"`
 	FullPath     string              `json:"full_path"`
 	BundleID     string              `json:"bundle_id"`
@@ -52,7 +51,6 @@ func (s *ResourceSnapshot) New(client *databricks.WorkspaceClient) *ResourceSnap
 
 func (s *ResourceSnapshot) PrepareState(input *resources.Snapshot) *SnapshotState {
 	return &SnapshotState{
-		RemoteRoot:   input.RemoteRoot,
 		RelativePath: input.RelativePath(),
 		FullPath:     input.FullPath(),
 		BundleID:     input.BundleID,
@@ -63,7 +61,6 @@ func (s *ResourceSnapshot) PrepareState(input *resources.Snapshot) *SnapshotStat
 
 func (s *ResourceSnapshot) RemapState(remote *SnapshotRemote) *SnapshotState {
 	return &SnapshotState{
-		RemoteRoot:   "",
 		RelativePath: remote.RelativePath,
 		FullPath:     remote.FullPath,
 		BundleID:     "",
@@ -97,10 +94,10 @@ func (s *ResourceSnapshot) DoCreate(ctx context.Context, state *SnapshotState) (
 	return path, &SnapshotRemote{RelativePath: path, FullPath: info.Path}, nil
 }
 
-func (s *ResourceSnapshot) DoUpdate(ctx context.Context, id string, newState *SnapshotState, entry *PlanEntry) (*SnapshotRemote, error) {
-	return nil, nil
-}
-
+// DoDelete is a no-op: a snapshot is immutable and cannot be deleted, so this only
+// clears the state entry. DoUpdate is omitted entirely (the adapter treats it as
+// optional) because every change recreates the snapshot. IsGone below keeps
+// delete/destroy idempotent.
 func (s *ResourceSnapshot) DoDelete(ctx context.Context, id string, state *SnapshotState) error {
 	return nil
 }

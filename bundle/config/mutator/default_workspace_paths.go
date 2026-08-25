@@ -5,6 +5,7 @@ import (
 	"path"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -27,7 +28,7 @@ func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundl
 
 	if b.Config.Workspace.FilePath == "" {
 		if b.IsImmutableFolder() {
-			b.Config.Workspace.FilePath = "${resources.internal_immutable_snapshots.immutable.full_path}/files"
+			b.Config.Workspace.FilePath = resources.SnapshotFullPathRef + "/files"
 		} else {
 			b.Config.Workspace.FilePath = path.Join(root, "files")
 		}
@@ -39,7 +40,7 @@ func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundl
 
 	if b.Config.Workspace.ArtifactPath == "" {
 		if b.IsImmutableFolder() {
-			b.Config.Workspace.ArtifactPath = "${resources.internal_immutable_snapshots.immutable.full_path}/artifacts"
+			b.Config.Workspace.ArtifactPath = resources.SnapshotFullPathRef + "/artifacts"
 		} else {
 			b.Config.Workspace.ArtifactPath = path.Join(root, "artifacts")
 		}

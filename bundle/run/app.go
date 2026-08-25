@@ -2,7 +2,6 @@ package run
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -12,9 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
@@ -139,132 +135,11 @@ func (a *appRunner) start(ctx context.Context) error {
 
 func (a *appRunner) deploy(ctx context.Context) error {
 	w := a.bundle.WorkspaceClient(ctx)
-	config, err := a.resolvedConfig()
-	if err != nil {
-		return err
-	}
-	sourceCodePath, err := a.resolvedSourceCodePath()
-	if err != nil {
-		return err
-	}
-	deployment := appdeploy.BuildDeployment(sourceCodePath, config, a.app.GitSource)
+	// source_code_path and config already have their ${resources.*} references resolved
+	// against the deployed state during run setup (see
+	// DeploymentBundle.ResolveConfigAgainstState), so they are usable as-is.
+	deployment := appdeploy.BuildDeployment(a.app.SourceCodePath, a.app.Config, a.app.GitSource)
 	return appdeploy.Deploy(ctx, w, a.app.Name, deployment)
-}
-
-// resolvedSourceCodePath returns source_code_path with any ${resources.*} variable
-// references resolved against the current bundle state. This is needed for immutable
-// folder bundles where source_code_path contains a reference to the snapshot's
-// full_path, which is only known after deploy.
-func (a *appRunner) resolvedSourceCodePath() (string, error) {
-	if !dynvar.ContainsVariableReference(a.app.SourceCodePath) {
-		return a.app.SourceCodePath, nil
-	}
-
-	root := a.bundle.Config.Value()
-
-	// Build a lookup for ${resources.*} references. For most fields, the
-	// normalized config value is enough. For compute-only fields like the
-	// snapshot's full_path (a method, not a stored field), we supplement with
-	// the deployed state from the direct engine's state DB.
-	stateOverrides := a.snapshotStateOverrides()
-	normalized, _ := convert.Normalize(a.bundle.Config, root, convert.IncludeMissingFields)
-
-	sourceCodePathKey := dyn.MustPathFromString("resources." + a.Key() + ".source_code_path")
-	pathV, err := dyn.GetByPath(root, sourceCodePathKey)
-	if err != nil || !pathV.IsValid() {
-		return a.app.SourceCodePath, nil //nolint:nilerr
-	}
-
-	resourcesPrefix := dyn.MustPathFromString("resources")
-	resolved, err := dynvar.Resolve(pathV, func(path dyn.Path) (dyn.Value, error) {
-		if !path.HasPrefix(resourcesPrefix) {
-			return dyn.InvalidValue, dynvar.ErrSkipResolution
-		}
-		// Prefer state-derived overrides (e.g. snapshot.full_path) over the
-		// config-computed value, which is only correct once the snapshot zip
-		// has been staged during deploy.
-		if v, ok := stateOverrides[path.String()]; ok {
-			return dyn.V(v), nil
-		}
-		return dyn.GetByPath(normalized, path)
-	})
-	if err != nil {
-		return "", err
-	}
-
-	s, ok := resolved.AsString()
-	if !ok {
-		return a.app.SourceCodePath, nil
-	}
-	return s, nil
-}
-
-// snapshotStateOverrides returns a map of resource path → deployed value for
-// fields that are only correct in the persisted state (not computable from the
-// bundle config alone). Currently this covers the snapshot's full_path and
-// relative_path, whose content hash is derived from the zip staged during deploy.
-func (a *appRunner) snapshotStateOverrides() map[string]string {
-	const snapshotKey = "resources.internal_immutable_snapshots.immutable"
-	entry, ok := a.bundle.DeploymentBundle.StateDB.GetResourceEntry(snapshotKey)
-	if !ok {
-		return nil
-	}
-	var s struct {
-		RelativePath string `json:"relative_path"`
-		FullPath     string `json:"full_path"`
-	}
-	if err := json.Unmarshal(entry.State, &s); err != nil || s.FullPath == "" {
-		return nil
-	}
-	return map[string]string{
-		snapshotKey + ".full_path":     s.FullPath,
-		snapshotKey + ".relative_path": s.RelativePath,
-	}
-}
-
-// resolvedConfig returns the app config with any ${resources.*} variable references
-// resolved against the current bundle state. This is needed because the app runtime
-// configuration (env vars, command) can reference other bundle resources whose
-// properties are known only after the initialization phase.
-func (a *appRunner) resolvedConfig() (*resources.AppConfig, error) {
-	if a.app.Config == nil {
-		return nil, nil
-	}
-
-	root := a.bundle.Config.Value()
-
-	// Normalize the full config so that all typed fields are present, even those
-	// not explicitly set. This allows looking up resource properties by path.
-	normalized, _ := convert.Normalize(a.bundle.Config, root, convert.IncludeMissingFields)
-
-	// Get the app's config section as a dyn.Value to resolve references in it.
-	// The key is of the form "apps.<name>", so the full path is "resources.apps.<name>.config".
-	configPath := dyn.MustPathFromString("resources." + a.Key() + ".config")
-	configV, err := dyn.GetByPath(root, configPath)
-	if err != nil || !configV.IsValid() {
-		return a.app.Config, nil //nolint:nilerr // missing config path means use default config
-	}
-
-	resourcesPrefix := dyn.MustPathFromString("resources")
-
-	// Resolve ${resources.*} references in the app config against the full bundle config.
-	// Other variable types (bundle.*, workspace.*, variables.*) are already resolved
-	// during the initialization phase and are left in place if encountered here.
-	resolved, err := dynvar.Resolve(configV, func(path dyn.Path) (dyn.Value, error) {
-		if !path.HasPrefix(resourcesPrefix) {
-			return dyn.InvalidValue, dynvar.ErrSkipResolution
-		}
-		return dyn.GetByPath(normalized, path)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var config resources.AppConfig
-	if err := convert.ToTyped(&config, resolved); err != nil {
-		return nil, err
-	}
-	return &config, nil
 }
 
 func (a *appRunner) Cancel(ctx context.Context) error {

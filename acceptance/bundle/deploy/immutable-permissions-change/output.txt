@@ -49,4 +49,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-perms-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted
+Destroy: 2 deleted

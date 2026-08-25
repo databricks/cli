@@ -35,7 +35,6 @@ Validation OK!
   "action": "create",
   "new_state": {
     "value": {
-      "remote_root": "/Workspace/Users/[UUID]/.snapshots",
       "relative_path": "[UUID]/[SNAPSHOT_HASH]",
       "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
       "bundle_id": "[UUID]",
@@ -102,13 +101,6 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "new": "[UUID]",
       "remote": ""
     },
-    "remote_root": {
-      "action": "skip",
-      "reason": "missing_in_remote",
-      "old": "/Workspace/Users/[UUID]/.snapshots",
-      "new": "/Workspace/Users/[UUID]/.snapshots",
-      "remote": ""
-    },
     "zip_path": {
       "action": "skip",
       "reason": "missing_in_remote",
@@ -130,4 +122,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-no-artifacts-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted
+Destroy: 2 deleted

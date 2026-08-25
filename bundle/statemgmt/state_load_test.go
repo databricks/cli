@@ -1228,6 +1228,9 @@ func AssertFullResourceCoverage(t *testing.T, config *config.Root) {
 		field := resources.Field(i)
 		// Get Tag field from reflect.Value
 		tag := resources.Type().Field(i).Tag.Get("bundle")
+		// Internal resources (e.g. internal_immutable_snapshots) are created by the
+		// deploy pipeline, never declared in user config, so this fixture doesn't
+		// populate them and StateToBundle isn't expected to cover them.
 		if tag == "internal" {
 			continue
 		}

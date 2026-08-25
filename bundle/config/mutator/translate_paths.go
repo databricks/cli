@@ -16,6 +16,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
@@ -332,7 +333,7 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 				Locations: []dyn.Location{loc},
 			}}
 		}
-		t.remoteRoot = "${resources.internal_immutable_snapshots.immutable.full_path}/files"
+		t.remoteRoot = resources.SnapshotFullPathRef + "/files"
 	case config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment):
 		t.remoteRoot = t.b.SyncRootPath
 	default:

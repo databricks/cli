@@ -59,7 +59,6 @@ var knownMissingInRemoteType = map[string][]string{
 	"internal_immutable_snapshots": {
 		"bundle_id",
 		"acl",
-		"remote_root",
 		"zip_path",
 	},
 	"job_runs": {
@@ -107,6 +106,11 @@ var knownMissingInStateType = map[string][]string{
 		"backend_type",
 		"keyvault_metadata",
 		"name",
+	},
+	"internal_immutable_snapshots": {
+		// RemoteRoot is only the input used to compose FullPath; the state persists
+		// the composed FullPath (and RelativePath), so it isn't kept in state.
+		"remote_root",
 	},
 }
 
