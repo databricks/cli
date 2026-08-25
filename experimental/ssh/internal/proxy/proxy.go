@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -138,7 +139,7 @@ func (pc *proxyConnection) start(ctx context.Context, src io.ReadCloser, dst io.
 		// Both loops can still be stuck on conn.ReadMessage or src.Read and won't notice context cancellation,
 		// so we close the connection and the source (sshd stdout pipe or ssh client stdio) to unblock them.
 		<-gCtx.Done()
-		return errors.Join(pc.close(), pc.closeSource(src))
+		return errors.Join(pc.close(), pc.closeConnection(), pc.closeSource(src))
 	})
 	err := g.Wait()
 	if err == nil || isNormalClosure(err) {
@@ -272,6 +273,19 @@ func (pc *proxyConnection) close() error {
 		}
 	}
 	return nil
+}
+
+// closeConnection closes the underlying websocket. The close message pc.close sends only ends the
+// session if the peer is still there to react to it by closing the connection, and it does not even
+// go out once a failed write has put the connection into gorilla's permanent write-error state (one
+// timed-out keepalive ping is enough). Without this the receiving loop stays blocked in ReadMessage
+// and the session hangs instead of exiting.
+func (pc *proxyConnection) closeConnection() error {
+	err := pc.conn.Load().Close()
+	if errors.Is(err, net.ErrClosed) {
+		return nil
+	}
+	return err
 }
 
 func (pc *proxyConnection) closeSource(src io.ReadCloser) error {

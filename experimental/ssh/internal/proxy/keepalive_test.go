@@ -28,10 +28,15 @@ const (
 
 var errTestWriteFailed = errors.New("test: socket write failed")
 
+// unboundedParkDuration stands in for "parks until the kernel gives up", which is what a write with
+// no deadline does on a stalled socket. It must outlast the assertions of any test that parks a
+// write, so that a write path which forgets to bound itself is measured as a stall, not as a failure.
+const unboundedParkDuration = 30 * time.Second
+
 // pausableConn emulates the socket conditions a keepalive meets on a stalled peer: writes can be
-// made to fail outright, or to park the way a full send buffer does — blocking until the write
-// deadline expires. Wrapping the socket rather than the websocket keeps the production write path
-// (gorilla's own locking and deadline handling) in the test.
+// made to fail outright, or to park the way a full send buffer does — until the write's deadline
+// expires, or effectively forever if it has none. Wrapping the socket rather than the websocket keeps
+// the production write path (gorilla's own locking and deadline handling) in the test.
 type pausableConn struct {
 	net.Conn
 	mode         atomic.Int32
@@ -62,6 +67,8 @@ func (c *pausableConn) Write(p []byte) (int, error) {
 		c.signalParked()
 		if d := c.deadline.Load(); d != nil && !d.IsZero() {
 			time.Sleep(time.Until(*d))
+		} else {
+			time.Sleep(unboundedParkDuration)
 		}
 		return 0, os.ErrDeadlineExceeded
 	}
@@ -169,11 +176,11 @@ func TestKeepalivePingFailureDoesNotEndSession(t *testing.T) {
 	require.Eventually(t, func() bool { return socket.Load() != nil }, 10*time.Second, 10*time.Millisecond)
 	socket.Load().mode.Store(connWriteFail)
 
-	// Long enough for many pings to be attempted and fail.
+	// Long enough for tens of pings to be attempted and fail at the 20ms interval above.
 	select {
 	case err := <-done:
 		t.Fatalf("session ended after a failed keepalive ping: %v", err)
-	case <-time.After(2 * time.Second):
+	case <-time.After(time.Second):
 	}
 }
 
@@ -182,11 +189,8 @@ func TestKeepalivePingFailureDoesNotEndSession(t *testing.T) {
 // websocket's write lock, which the closing handshake also needs. Its deadline is what keeps that
 // from lasting until the kernel abandons its retransmits, minutes later.
 //
-// Scoped to the ping's own contribution. pausableConn parks only for as long as the write's deadline,
-// and a write whose caller set none fails at once, so the pre-existing unbounded park on the data
-// path is out of the picture. The session's own shutdown cannot be measured here either: it waits on
-// the receiving loop, which unblocks only when the peer reacts to the close frame, and a peer that
-// has silently gone away never does — with or without a keepalive.
+// A ping write with no deadline parks for unboundedParkDuration here, so this fails if the ping ever
+// goes back to a write path that does not bound itself.
 func TestKeepalivePingParkedInWriteDoesNotStallClose(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	server, _ := startKeepaliveTestServer(t)
@@ -223,6 +227,42 @@ func TestKeepalivePingParkedInWriteDoesNotStallClose(t *testing.T) {
 	}
 }
 
+// TestKeepalivePingFailureDoesNotHangTheSession covers what a failed ping actually costs. gorilla
+// puts the connection into a permanent write-error state after any failed write, so one timed-out
+// keepalive stops the close message going out too — and a session whose close message never reaches
+// the peer used to wait forever for the peer to close the connection, which is the same silent
+// black hole this feature exists to remove. The session must end, promptly and with an error.
+func TestKeepalivePingFailureDoesNotHangTheSession(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	server, _ := startKeepaliveTestServer(t)
+	defer server.Close()
+
+	var socket atomic.Pointer[pausableConn]
+	src, srcWriter := io.Pipe()
+	done := make(chan error, 1)
+	go func() {
+		done <- RunClientProxy(ctx, src, io.Discard, neverTick, 20*time.Millisecond,
+			keepaliveTestDialer(server.URL, func(c *pausableConn) { socket.Store(c) }))
+	}()
+
+	require.Eventually(t, func() bool { return socket.Load() != nil }, 10*time.Second, 10*time.Millisecond)
+	socket.Load().mode.Store(connWriteFail)
+	// Let a ping fail, which is what poisons the connection.
+	time.Sleep(100 * time.Millisecond)
+
+	// The session ends the way it would without a keepalive at all: the next write fails and the
+	// sending loop reports it. Before, the teardown could not close the connection and this hung.
+	_, err := srcWriter.Write([]byte("keystroke"))
+	require.NoError(t, err)
+
+	select {
+	case err := <-done:
+		require.Error(t, err, "a session that can no longer send must end with an error, not silently")
+	case <-time.After(30 * time.Second):
+		t.Fatal("session hung after a failed keepalive ping poisoned the connection")
+	}
+}
+
 // TestKeepalivePingDuringHandoverDoesNotDisruptIt asserts the two periodic behaviours of the tunnel
 // stay independent: a ping sent while a handover is in flight neither waits for the handover nor
 // breaks it. The keepalive writes from a third goroutine, so nothing else guarantees this.
@@ -236,6 +276,7 @@ func TestKeepalivePingDuringHandoverDoesNotDisruptIt(t *testing.T) {
 	// swapped the connection, which is when a ping must neither block nor interfere.
 	handoverDialing := make(chan struct{})
 	releaseHandover := make(chan struct{})
+	release := sync.OnceFunc(func() { close(releaseHandover) })
 	var dials atomic.Int32
 
 	client := setupTestClientWithDialHook(ctx, t, server.URL, func() {
@@ -245,6 +286,10 @@ func TestKeepalivePingDuringHandoverDoesNotDisruptIt(t *testing.T) {
 		}
 	})
 	defer client.Cleanup()
+	// Deferred after client.Cleanup so it runs before it: a t.Fatal below would otherwise leave the
+	// handover parked in the dial hook, and cleanup waits on proxy loops that cannot finish until it
+	// is released — which wedges the whole package instead of failing one test.
+	defer release()
 
 	handoverDone := make(chan error, 1)
 	go func() {
@@ -264,7 +309,7 @@ func TestKeepalivePingDuringHandoverDoesNotDisruptIt(t *testing.T) {
 		t.Fatal("keepalive ping waited on the in-flight handover")
 	}
 
-	close(releaseHandover)
+	release()
 
 	select {
 	case err := <-handoverDone:

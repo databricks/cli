@@ -101,10 +101,12 @@ func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, reque
 					// may simply fail. Harmless: a handover establishes a fresh connection, which
 					// resets the peer's idle clock anyway, and the next tick uses the new one.
 					if err := proxy.sendPing(); err != nil {
-						// Never fatal. A failed ping knows nothing the data loops don't, and an
-						// error returned here would cancel the session it exists to preserve.
-						// The receiving loop notices a genuinely dead connection within one read.
-						log.Debugf(gCtx, "Failed to send websocket keepalive ping: %v", err)
+						// Not fatal, but not harmless either: gorilla puts the connection into a
+						// permanent write-error state after any failed write, so nothing more can
+						// be sent on it. Reads are unaffected and may still be delivering output
+						// the user is waiting on, so the session is left to end the way it would
+						// anyway — the next write fails and the sending loop reports it.
+						log.Warnf(gCtx, "Failed to send websocket keepalive ping, the connection can no longer send: %v", err)
 					} else {
 						// The driver proxy does not return pongs (verified end to end), so this
 						// line is the only evidence in a customer's log that pings were flowing.
