@@ -352,7 +352,7 @@ func (db *DeploymentState) replayWAL(ctx context.Context) error {
 		return fmt.Errorf("WAL recovery failed: %w", err)
 	}
 	if hasEntries {
-		if err := db.unlockedSave(); err != nil {
+		if err := db.unlockedSave(ctx); err != nil {
 			return err
 		}
 	}
@@ -603,7 +603,7 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 // only then removes the WAL, and Open parses the state file before it looks at
 // the WAL. A torn write would therefore leave a state file that Open rejects
 // next to an intact WAL it never reads.
-func (db *DeploymentState) unlockedSave() error {
+func (db *DeploymentState) unlockedSave(ctx context.Context) error {
 	data, err := json.MarshalIndent(db.Data, "", " ")
 	if err != nil {
 		return err
@@ -614,7 +614,8 @@ func (db *DeploymentState) unlockedSave() error {
 		return fmt.Errorf("failed to create directory %#v: %w", dir, err)
 	}
 
-	// CreateTemp creates the file with mode 0o600, matching the state file.
+	// CreateTemp creates the file with mode 0o600, which is the mode a new state
+	// file gets; an existing one keeps its own mode, see below.
 	tmp, err := os.CreateTemp(dir, "."+filepath.Base(db.Path)+".tmp-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temp file for %#v: %w", db.Path, err)
@@ -631,6 +632,20 @@ func (db *DeploymentState) unlockedSave() error {
 	// Close before the rename: on Windows the file must not be open for writing.
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("failed to close %#v: %w", tmpPath, err)
+	}
+
+	// Carry over the mode of the state file being replaced. Writing in place used
+	// to leave it alone, whereas the temp file always starts at 0o600, so without
+	// this a state file deliberately made readable to a group or to CI silently
+	// narrows on the next deploy. Best-effort: persisting the state matters more
+	// than its mode, so a failure here warns and the save goes ahead. A state file
+	// that does not exist yet keeps the temp file's 0o600.
+	if info, err := os.Stat(db.Path); err == nil {
+		if err := os.Chmod(tmpPath, info.Mode().Perm()); err != nil {
+			log.Warnf(ctx, "Failed to preserve mode %o of %s: %v", info.Mode().Perm(), db.Path, err)
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		log.Warnf(ctx, "Failed to read mode of %s: %v", db.Path, err)
 	}
 
 	if err := os.Rename(tmpPath, db.Path); err != nil {

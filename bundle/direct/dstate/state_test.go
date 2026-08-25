@@ -281,3 +281,32 @@ func TestOpenFailureLeavesStateClosed(t *testing.T) {
 	assert.Equal(t, "test-lineage", db.Data.Lineage)
 	mustFinalize(t, &db)
 }
+
+// TestSaveKeepsStateFileMode pins that saving keeps the mode of the state file it
+// replaces. The file is written as a temp file and renamed into place, and a temp
+// file always starts at 0o600, so a state file deliberately made readable to a
+// group or to CI would otherwise narrow on every deploy.
+//
+// On Windows only the read-only bit is modelled, so this asserts the mode is
+// carried over rather than asserting a specific value.
+func TestSaveKeepsStateFileMode(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{"key": "val"}, nil))
+	mustFinalize(t, &db)
+
+	require.NoError(t, os.Chmod(path, 0o640))
+	before, err := os.Stat(path)
+	require.NoError(t, err)
+
+	var db2 DeploymentState
+	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.NoError(t, db2.SaveState("jobs.my_job", "456", map[string]string{"key": "val2"}, nil))
+	mustFinalize(t, &db2)
+
+	after, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Equal(t, before.Mode().Perm(), after.Mode().Perm())
+}
