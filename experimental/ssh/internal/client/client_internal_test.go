@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -371,6 +374,18 @@ func TestBuildRemoteShellArgs(t *testing.T) {
 		args := buildRemoteShellArgs(ClientOptions{AdditionalArgs: additional}, "/Workspace/Users/me@example.com")
 		assert.Equal(t, additional, args)
 	})
+}
+
+func TestBuildSSHArgsAsksTheServerToConfirmItIsStillThere(t *testing.T) {
+	args := buildSSHArgs("user", "/key", "proxy command", "myhost", "", ClientOptions{})
+
+	// An idle session sends no payload of its own, and payload is the only traffic that keeps the
+	// tunnel leg past the driver proxy from being reaped (DECO-28186). ssh stops parsing options
+	// at the destination, so an option placed after the host would be part of the remote command.
+	optIdx := slices.Index(args, "ServerAliveInterval="+strconv.Itoa(sshconfig.ServerAliveIntervalSeconds))
+	require.NotEqual(t, -1, optIdx, "ssh must be asked to send keepalives")
+	require.Equal(t, "-o", args[optIdx-1])
+	assert.Less(t, optIdx, slices.Index(args, "myhost"), "the option must precede the destination host")
 }
 
 func TestBuildSSHArgsPTYPlacement(t *testing.T) {

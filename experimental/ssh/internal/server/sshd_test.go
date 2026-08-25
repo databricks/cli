@@ -1,6 +1,7 @@
 package server
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -70,4 +71,19 @@ func TestEscapeEnvValue(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestSSHDConfigAsksTheClientToConfirmItIsStillThere(t *testing.T) {
+	config := sshdConfigContent("/keys/server-private-key", "/keys/authorized_keys", `SetEnv FOO="bar"`)
+
+	// sshd sends nothing on an idle session unless ClientAliveInterval is set, and payload is the
+	// only traffic that keeps the tunnel leg past the driver proxy from being reaped (DECO-28186).
+	// This is the half of the keepalive that reaches clients the CLI never configures.
+	assert.Contains(t, config, "\nClientAliveInterval "+strconv.Itoa(clientAliveIntervalSeconds)+"\n")
+
+	// The interval has to fire well inside the ~8 minute reap window, and ClientAliveCountMax
+	// (OpenSSH default 3) intervals have to outlast the longest legitimate pause on a healthy
+	// tunnel — the up to 30s a handover can hold the sending loop.
+	assert.Less(t, clientAliveIntervalSeconds, 8*60)
+	assert.Greater(t, 3*clientAliveIntervalSeconds, 30)
 }
