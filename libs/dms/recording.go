@@ -96,7 +96,8 @@ func NewRecording(opts RecordingOptions) Recording {
 }
 
 // Disabled returns a Recording that records nothing, for a bundle that does not record
-// deployment history.
+// deployment history. Returned rather than a nil Recording so the deploy and destroy phases
+// call through unconditionally; a nil would need a guard at each of their dozen call sites.
 func Disabled() Recording {
 	return disabled{}
 }
@@ -188,7 +189,7 @@ func (r *recording) Start(ctx context.Context, staged []StagedOperation) (*Opera
 		if isResourceExhaustedErr(err) {
 			return nil, fmt.Errorf("this bundle deploys %d resources, more than the deployment metadata service records in one version: %w", len(staged), err)
 		}
-		// A 409 ABORTED means another deploy claimed this version number in between
+		// A 409 Conflict means another deploy claimed this version number in between
 		// Prepare and here.
 		if isAbortedErr(err) {
 			return nil, fmt.Errorf("another deploy already claimed version %d of this deployment, try again: %w", r.versionNum, err)
@@ -289,7 +290,7 @@ func startHeartbeat(ctx context.Context, client *Client, deploymentID string, ve
 			case <-ticker.C:
 				err := client.Heartbeat(ctx, deploymentID, version)
 				if err != nil {
-					// A 409 ABORTED is expected if the version was completed
+					// A 409 Conflict is expected if the version was completed
 					// between the ticker firing and the heartbeat.
 					if isAbortedErr(err) {
 						log.Debugf(ctx, "Heartbeat stopped: version already completed")
@@ -312,7 +313,8 @@ func isResourceExhaustedErr(err error) bool {
 	return ok && apiErr.ErrorCode == "RESOURCE_EXHAUSTED"
 }
 
-// isAbortedErr reports whether err is an HTTP 409 ABORTED from the DMS API.
+// isAbortedErr reports whether err is an HTTP 409 Conflict from the DMS API, whose error
+// code is ABORTED.
 func isAbortedErr(err error) bool {
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	return ok && apiErr.StatusCode == http.StatusConflict && apiErr.ErrorCode == "ABORTED"

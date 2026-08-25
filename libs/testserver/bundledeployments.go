@@ -23,7 +23,7 @@ const maxOperationsPerVersion = 800
 // because the SDK enum is generated from the OpenAPI spec, which trails the service proto.
 const operationStatusPending bundledeployments.OperationStatus = "OPERATION_STATUS_PENDING"
 
-// State is kept in FakeWorkspace.dmsDeployments, keyed by deployment ID.
+// State is kept in FakeWorkspace.DmsDeployments, keyed by deployment ID.
 
 // dmsDeploymentNodeName is the workspace node name the service uses for deployments.
 // It must match DEPLOYMENT_NODE_NAME on the service side (DeploymentWhsClient).
@@ -34,23 +34,23 @@ const dmsDeploymentNodeName = "resources.deployment.json"
 // created.
 var dmsUpdatableOperationFields = []string{"state", "error_message", "resource_id", "status"}
 
-// dmsDeployment holds a deployment record together with the versions and
+// DmsDeployment holds a deployment record together with the versions and
 // resources recorded under it, so the read APIs (ListVersions/ListResources)
 // can serve back what deploys wrote.
-type dmsDeployment struct {
-	deployment bundledeployments.Deployment
-	versions   map[string]*bundledeployments.Version
+type DmsDeployment struct {
+	Deployment bundledeployments.Deployment
+	Versions   map[string]*bundledeployments.Version
 	// resources is the latest resource state per resource key, updated as
 	// operations are recorded.
-	resources map[string]bundledeployments.Resource
+	Resources map[string]bundledeployments.Resource
 	// operations holds the recorded operations by resource name. The service keeps
 	// one per resource per version, so a resource written twice in a version updates
 	// its operation rather than adding another.
-	operations map[string]*bundledeployments.Operation
+	Operations map[string]*bundledeployments.Operation
 	// lastSuccessfulVersionID is the highest version completed successfully.
 	// The read path treats a non-empty value as "DMS owns the state";
 	// the SDK Deployment struct does not yet carry this field.
-	lastSuccessfulVersionID string
+	LastSuccessfulVersionID string
 }
 
 func (s *FakeWorkspace) CreateDeployment(req Request) Response {
@@ -86,15 +86,15 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 	// The record carries no version yet; last_version_id stays empty until
 	// the first CreateVersion. A failed registration leaves a record with no versions.
 	deploymentID := strconv.FormatInt(objectID, 10)
-	s.dmsDeploymentNodes[deploymentID] = nodePath
+	s.DmsDeploymentNodes[deploymentID] = nodePath
 
 	dep.Name = "deployments/" + deploymentID
 	dep.Status = bundledeployments.DeploymentStatusDeploymentStatusActive
-	s.dmsDeployments[deploymentID] = &dmsDeployment{
-		deployment: dep,
-		versions:   map[string]*bundledeployments.Version{},
-		resources:  map[string]bundledeployments.Resource{},
-		operations: map[string]*bundledeployments.Operation{},
+	s.DmsDeployments[deploymentID] = &DmsDeployment{
+		Deployment: dep,
+		Versions:   map[string]*bundledeployments.Version{},
+		Resources:  map[string]bundledeployments.Resource{},
+		Operations: map[string]*bundledeployments.Operation{},
 	}
 	return Response{Body: dep}
 }
@@ -102,7 +102,7 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 func (s *FakeWorkspace) GetDeployment(deploymentID string) Response {
 	defer s.LockUnlock()()
 
-	d, ok := s.dmsDeployments[deploymentID]
+	d, ok := s.DmsDeployments[deploymentID]
 	if !ok {
 		return dmsNotFound("deployment " + deploymentID)
 	}
@@ -117,8 +117,8 @@ func (s *FakeWorkspace) GetDeployment(deploymentID string) Response {
 // deploymentBody renders a deployment with last_successful_version_id, which
 // the SDK struct doesn't yet carry. Embedding in a wrapper won't work because
 // Deployment.MarshalJSON silently drops sibling fields.
-func deploymentBody(d *dmsDeployment) (map[string]any, error) {
-	raw, err := json.Marshal(d.deployment)
+func deploymentBody(d *DmsDeployment) (map[string]any, error) {
+	raw, err := json.Marshal(d.Deployment)
 	if err != nil {
 		return nil, err
 	}
@@ -130,8 +130,8 @@ func deploymentBody(d *dmsDeployment) (map[string]any, error) {
 		return nil, err
 	}
 
-	if d.lastSuccessfulVersionID != "" {
-		body["last_successful_version_id"] = d.lastSuccessfulVersionID
+	if d.LastSuccessfulVersionID != "" {
+		body["last_successful_version_id"] = d.LastSuccessfulVersionID
 	}
 	return body, nil
 }
@@ -141,11 +141,11 @@ func (s *FakeWorkspace) DeleteDeployment(deploymentID string) Response {
 
 	// The service trashes the deployment's workspace node, so a later get-status
 	// on the node path reports the deployment as absent.
-	if nodePath, ok := s.dmsDeploymentNodes[deploymentID]; ok {
+	if nodePath, ok := s.DmsDeploymentNodes[deploymentID]; ok {
 		delete(s.files, nodePath)
 	}
-	delete(s.dmsDeploymentNodes, deploymentID)
-	delete(s.dmsDeployments, deploymentID)
+	delete(s.DmsDeploymentNodes, deploymentID)
+	delete(s.DmsDeployments, deploymentID)
 	return Response{Body: map[string]any{}}
 }
 
@@ -173,7 +173,7 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 
 	defer s.LockUnlock()()
 
-	d, ok := s.dmsDeployments[deploymentID]
+	d, ok := s.DmsDeployments[deploymentID]
 	if !ok {
 		return dmsNotFound("deployment " + deploymentID)
 	}
@@ -185,14 +185,14 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 		return dmsInvalidArgument("version_id must be a positive integer, got " + versionID)
 	}
 	var last int64
-	if d.deployment.LastVersionId != "" {
-		last, _ = strconv.ParseInt(d.deployment.LastVersionId, 10, 64)
+	if d.Deployment.LastVersionId != "" {
+		last, _ = strconv.ParseInt(d.Deployment.LastVersionId, 10, 64)
 	}
 	if next <= last {
-		return dmsInvalidArgument("version_id " + versionID + " must be greater than the most recent version " + d.deployment.LastVersionId)
+		return dmsInvalidArgument("version_id " + versionID + " must be greater than the most recent version " + d.Deployment.LastVersionId)
 	}
-	if version.PreviousVersionId != d.deployment.LastVersionId {
-		return dmsAborted("previous_version_id is outdated; the deployment's most recent version is " + d.deployment.LastVersionId)
+	if version.PreviousVersionId != d.Deployment.LastVersionId {
+		return dmsAborted("previous_version_id is outdated; the deployment's most recent version is " + d.Deployment.LastVersionId)
 	}
 
 	// Note: deployment lock not modelled. Tests kill the CLI mid-apply, leaving
@@ -229,25 +229,25 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 		seen[staged.ResourceKey] = true
 	}
 
-	d.deployment.LastVersionId = versionID
+	d.Deployment.LastVersionId = versionID
 	version.Name = "deployments/" + deploymentID + "/versions/" + versionID
 	version.VersionId = versionID
 	version.Status = bundledeployments.VersionStatusVersionStatusInProgress
-	d.versions[versionID] = &version
+	d.Versions[versionID] = &version
 
 	// The service denormalizes the version's provenance onto the deployment, which
 	// is where the read APIs serve it from. display_name is excluded: the service
 	// keeps that on the deployment's workspace node instead.
-	d.deployment.TargetName = version.TargetName
-	d.deployment.DeploymentMode = version.DeploymentMode
-	d.deployment.GitInfo = version.GitInfo
-	d.deployment.WorkspaceInfo = version.WorkspaceInfo
+	d.Deployment.TargetName = version.TargetName
+	d.Deployment.DeploymentMode = version.DeploymentMode
+	d.Deployment.GitInfo = version.GitInfo
+	d.Deployment.WorkspaceInfo = version.WorkspaceInfo
 
 	// Each staged operation starts pending at sequence 0, and the CLI fills in its outcome
 	// with UpdateOperation as the resource is applied.
 	for _, staged := range staged.Operations {
 		opName := "deployments/" + deploymentID + "/versions/" + versionID + "/operations/" + staged.ResourceKey
-		d.operations[opName] = &bundledeployments.Operation{
+		d.Operations[opName] = &bundledeployments.Operation{
 			Name:        opName,
 			ResourceKey: staged.ResourceKey,
 			ActionType:  staged.ActionType,
@@ -267,11 +267,11 @@ func (s *FakeWorkspace) CompleteVersion(req Request, deploymentID, versionID str
 
 	defer s.LockUnlock()()
 
-	d, ok := s.dmsDeployments[deploymentID]
+	d, ok := s.DmsDeployments[deploymentID]
 	if !ok {
 		return dmsNotFound("deployment " + deploymentID)
 	}
-	v, ok := d.versions[versionID]
+	v, ok := d.Versions[versionID]
 	if !ok {
 		return dmsNotFound("version " + versionID)
 	}
@@ -279,7 +279,7 @@ func (s *FakeWorkspace) CompleteVersion(req Request, deploymentID, versionID str
 	v.Status = bundledeployments.VersionStatusVersionStatusCompleted
 	v.CompletionReason = completeReq.CompletionReason
 	if completeReq.CompletionReason == bundledeployments.VersionCompleteVersionCompleteSuccess {
-		d.lastSuccessfulVersionID = versionID
+		d.LastSuccessfulVersionID = versionID
 	}
 	return Response{Body: *v}
 }
@@ -364,13 +364,13 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 
 	defer s.LockUnlock()()
 
-	d, ok := s.dmsDeployments[deploymentID]
+	d, ok := s.DmsDeployments[deploymentID]
 	if !ok {
 		return dmsNotFound("deployment " + deploymentID)
 	}
 
 	opName := "deployments/" + deploymentID + "/versions/" + versionID + "/operations/" + resourceKey
-	existing, ok := d.operations[opName]
+	existing, ok := d.Operations[opName]
 	if !ok {
 		return dmsNotFound("operation " + opName)
 	}
@@ -432,9 +432,9 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 	// regardless of the mask would drop a resource whose deploy failed before writing.
 	if update["state"] {
 		if existing.State == "" {
-			delete(d.resources, resourceKey)
+			delete(d.Resources, resourceKey)
 		} else {
-			d.resources[resourceKey] = bundledeployments.Resource{
+			d.Resources[resourceKey] = bundledeployments.Resource{
 				Name:           "deployments/" + deploymentID + "/resources/" + resourceKey,
 				ResourceKey:    resourceKey,
 				ResourceId:     existing.ResourceId,
@@ -444,10 +444,10 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 				State:          existing.State,
 			}
 		}
-	} else if resource, projected := d.resources[resourceKey]; projected && update["resource_id"] {
+	} else if resource, projected := d.Resources[resourceKey]; projected && update["resource_id"] {
 		// resource_id is mirrored too, for a resource the deployment still holds.
 		resource.ResourceId = existing.ResourceId
-		d.resources[resourceKey] = resource
+		d.Resources[resourceKey] = resource
 	}
 
 	return Response{Body: body}
@@ -456,21 +456,21 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 func (s *FakeWorkspace) ListResources(deploymentID string) Response {
 	defer s.LockUnlock()()
 
-	d, ok := s.dmsDeployments[deploymentID]
+	d, ok := s.DmsDeployments[deploymentID]
 	if !ok {
 		return dmsNotFound("deployment " + deploymentID)
 	}
 
 	// Sort by resource key so the response order is deterministic.
-	keys := make([]string, 0, len(d.resources))
-	for key := range d.resources {
+	keys := make([]string, 0, len(d.Resources))
+	for key := range d.Resources {
 		keys = append(keys, key)
 	}
 	slices.Sort(keys)
 
 	resources := make([]bundledeployments.Resource, 0, len(keys))
 	for _, key := range keys {
-		resources = append(resources, d.resources[key])
+		resources = append(resources, d.Resources[key])
 	}
 	return Response{Body: bundledeployments.ListResourcesResponse{Resources: resources}}
 }

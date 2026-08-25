@@ -61,6 +61,9 @@ type BindResult struct {
 // Call Finalize to commit the state or Cancel to discard.
 func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath, resourceKey, resourceID string) (*BindResult, error) {
 	// Check if the resource is already managed (bound to a different ID)
+	// TODO(DMS): bind and unbind do not tell the deployment metadata service about the
+	// resource, so a bound resource is missing from the recorded history and an unbound one
+	// still looks tracked. Opened with no DMS source for that reason.
 	var checkStateDB dstate.DeploymentState
 	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false), nil); err == nil {
 		existingID := checkStateDB.GetResourceID(resourceKey)

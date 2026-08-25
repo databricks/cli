@@ -82,6 +82,45 @@ type DeploymentState struct {
 	DMSDeploymentID string
 }
 
+type Header struct {
+	StateVersion int `json:"state_version"`
+
+	// CLIVersion is the version of the CLI that last wrote this state. It is
+	// refreshed from the WAL header on every deploy that commits changes, so it
+	// tracks the most recent writer rather than the CLI that created the state.
+	CLIVersion string `json:"cli_version"`
+
+	Lineage string `json:"lineage"`
+	Serial  int    `json:"serial"`
+
+	// Features maps each feature flag this state depends on to a (currently empty)
+	// value. This CLI writes no features; it only reads the field to detect a state
+	// that depends on features it lacks and refuse it (see migrateState). It is a
+	// map so a future CLI can attach per-feature data without reshaping the state.
+	// Empty/omitted for states that use no features.
+	Features map[string]struct{} `json:"features,omitempty"`
+}
+
+type Database struct {
+	Header
+
+	// Maps resource key to ResourceEntry which includes ID + full serialized state.
+	// This is not updated during write/deploy, those writes go to WAL instead.
+	// The State is then reconstructed from WAL.
+	State map[string]ResourceEntry `json:"state"`
+}
+
+type ResourceEntry struct {
+	ID        string                      `json:"__id__"`
+	State     json.RawMessage             `json:"state"`
+	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
+}
+
+type WALEntry struct {
+	Key   string         `json:"k"`
+	Value *ResourceEntry `json:"v,omitempty"` // nil means delete
+}
+
 // StartRecording has every subsequent state write recorded with DMS through sink, so what the
 // service holds mirrors the WAL. A nil sink records nothing, which is what a bundle that does
 // not record deployment history passes. It is called once the version exists, which is why it
@@ -128,45 +167,6 @@ func (db *DeploymentState) recorder() *dms.OperationSink {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	return db.sink
-}
-
-type Header struct {
-	StateVersion int `json:"state_version"`
-
-	// CLIVersion is the version of the CLI that last wrote this state. It is
-	// refreshed from the WAL header on every deploy that commits changes, so it
-	// tracks the most recent writer rather than the CLI that created the state.
-	CLIVersion string `json:"cli_version"`
-
-	Lineage string `json:"lineage"`
-	Serial  int    `json:"serial"`
-
-	// Features maps each feature flag this state depends on to a (currently empty)
-	// value. This CLI writes no features; it only reads the field to detect a state
-	// that depends on features it lacks and refuse it (see migrateState). It is a
-	// map so a future CLI can attach per-feature data without reshaping the state.
-	// Empty/omitted for states that use no features.
-	Features map[string]struct{} `json:"features,omitempty"`
-}
-
-type Database struct {
-	Header
-
-	// Maps resource key to ResourceEntry which includes ID + full serialized state.
-	// This is not updated during write/deploy, those writes go to WAL instead.
-	// The State is then reconstructed from WAL.
-	State map[string]ResourceEntry `json:"state"`
-}
-
-type ResourceEntry struct {
-	ID        string                      `json:"__id__"`
-	State     json.RawMessage             `json:"state"`
-	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
-}
-
-type WALEntry struct {
-	Key   string         `json:"k"`
-	Value *ResourceEntry `json:"v,omitempty"` // nil means delete
 }
 
 func NewDatabase(lineage string, serial int) Database {

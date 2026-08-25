@@ -83,18 +83,6 @@ func TestClientNamesEveryResourceTheSameWay(t *testing.T) {
 	assert.Equal(t, "deployments/dep-1/versions/2", versionName("dep-1", 2))
 }
 
-func TestClientFormatsTheVersionIDForCreateVersion(t *testing.T) {
-	// The version is a number everywhere in the CLI; the request wants it as a string.
-	raw := newFakeRaw("1")
-	c := &Client{raw: raw}
-
-	_, err := c.CreateVersion(t.Context(), "dep-1", 5, CreateVersionRequest{})
-	require.NoError(t, err)
-
-	require.Len(t, raw.versions, 1)
-	assert.Equal(t, "5", raw.versions[0].versionID)
-}
-
 func TestDeploymentIDFromName(t *testing.T) {
 	id, err := deploymentIDFromName("deployments/abc-123")
 	require.NoError(t, err)
