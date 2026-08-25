@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -654,7 +655,50 @@ func (s *FakeWorkspace) PostgresEndpointList(parent string) Response {
 }
 
 // PostgresEndpointUpdate updates a postgres endpoint.
+// endpointUpdateMaskPaths are the update_mask paths UpdateEndpoint accepts, as
+// probed against the real API. The backend rejects anything else with 400, most
+// notably the two members of the suspension oneof: it masks no_suspension and
+// suspend_timeout_duration together under "suspension" and refuses either field
+// name. Without this check the fake accepts any mask and hides that class of bug
+// until a cloud run.
+var endpointUpdateMaskPaths = []string{
+	// The Terraform provider masks the whole spec and sends every field in the
+	// body; the API accepts that.
+	"spec",
+
+	"spec.autoscaling_limit_max_cu",
+	"spec.autoscaling_limit_min_cu",
+	"spec.disabled",
+	"spec.group.enable_readable_secondaries",
+	"spec.group.max",
+	"spec.group.min",
+	"spec.settings.pg_settings",
+	"spec.suspension",
+}
+
+// validateUpdateMask mirrors the API's rejection of unknown update_mask paths.
+// Returns nil when every path is accepted.
+func validateUpdateMask(req Request, allowed []string) *Response {
+	mask := req.URL.Query().Get("update_mask")
+	if mask == "" {
+		return nil
+	}
+	for _, path := range strings.Split(mask, ",") {
+		path = strings.TrimSpace(path)
+		if path == "" || slices.Contains(allowed, path) {
+			continue
+		}
+		resp := postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", fmt.Sprintf("Unknown field path in update_mask: '%s'", path))
+		return &resp
+	}
+	return nil
+}
+
 func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Response {
+	if resp := validateUpdateMask(req, endpointUpdateMaskPaths); resp != nil {
+		return *resp
+	}
+
 	defer s.LockUnlock()()
 
 	endpoint, exists := s.PostgresEndpoints[name]
