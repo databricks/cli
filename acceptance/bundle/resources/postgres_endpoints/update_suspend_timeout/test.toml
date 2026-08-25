@@ -20,7 +20,3 @@
 # validates update_mask against the paths the real API accepts, so the local run
 # reproduces this rather than passing against a fake that ignores the mask.
 Badness = "Direct engine cannot apply a suspend_timeout_duration change: it masks the field under its own name, but the API only accepts the oneof group name spec.suspension"
-
-# Removal is blocked by the same mask path, and out.plan.remove.*.json records what
-# that leaves behind: the failed update keeps 300s in state, so every later deploy
-# plans the removal again and fails again.

@@ -1,7 +1,7 @@
 
 === Initial deployment with suspend_timeout_duration: 300s
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-suspend-[UNIQUE_NAME]/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/remove-postgres-endpoint-suspend-[UNIQUE_NAME]/default/files...
 Created postgres_branches.main
 Created postgres_endpoints.my_endpoint
 Created postgres_projects.my_project
@@ -23,10 +23,9 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== Change suspend_timeout_duration to 600s
->>> update_file.py databricks.yml suspend_timeout_duration: 300s suspend_timeout_duration: 600s
+=== Remove suspend_timeout_duration: both engines plan it, only terraform applies it
+>>> update_file.py databricks.yml       suspend_timeout_duration: 300s 
 
-=== Plan and deploy: both engines plan it, only terraform applies it
 >>> [CLI] bundle plan
 update postgres_endpoints.my_endpoint
 
@@ -37,6 +36,8 @@ Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint
+
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -52,6 +53,6 @@ This action will result in the deletion of the following Lakebase branches.
 All data stored in them will be permanently lost:
   delete resources.postgres_branches.main
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-suspend-[UNIQUE_NAME]/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/remove-postgres-endpoint-suspend-[UNIQUE_NAME]/default
 
 Destroy: 3 deleted

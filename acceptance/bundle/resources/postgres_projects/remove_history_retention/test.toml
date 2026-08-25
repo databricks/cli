@@ -1,0 +1,9 @@
+# Removing history_retention_duration does not take effect, and nothing ever says
+# so. The engine sends update_mask=spec.history_retention_duration with no value in
+# the body; the API keeps the previous value rather than clearing it (verified
+# against a real workspace on 2026-08-25, see out.project.*.txt), yet deploy reports
+# the resource as changed and saves the removal to state. The drift plan afterwards
+# is clean because the project GET does not echo spec, so remote comparison for this
+# field is suppressed as spec:input_only. Config and backend stay silently out of
+# step.
+Badness = "Removing history_retention_duration is reported as changed but the API keeps the old value, and the difference is then invisible: state records the removal and spec:input_only hides the remote value, so no later plan reports drift"
