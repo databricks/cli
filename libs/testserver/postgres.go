@@ -197,6 +197,10 @@ func (s *FakeWorkspace) PostgresProjectList() Response {
 
 // PostgresProjectUpdate updates a postgres project.
 func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response {
+	if resp := validateUpdateMask(req, projectUpdateMaskPaths); resp != nil {
+		return *resp
+	}
+
 	defer s.LockUnlock()()
 
 	project, exists := s.PostgresProjects[name]
@@ -359,6 +363,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 	// Apply user-provided spec fields to status (where input fields are surfaced).
 	if branch.Spec != nil {
 		branch.Status.IsProtected = branch.Spec.IsProtected
+		branch.Status.ExpireTime = branch.Spec.ExpireTime
 	}
 
 	// Clear spec - API only returns status
@@ -426,6 +431,10 @@ func (s *FakeWorkspace) PostgresBranchList(parent string) Response {
 
 // PostgresBranchUpdate updates a postgres branch.
 func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response {
+	if resp := validateUpdateMask(req, branchUpdateMaskPaths); resp != nil {
+		return *resp
+	}
+
 	defer s.LockUnlock()()
 
 	branch, exists := s.PostgresBranches[name]
@@ -449,6 +458,9 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 			branch.Status = &postgres.BranchStatus{}
 		}
 		branch.Status.IsProtected = updateBranch.Spec.IsProtected
+		if updateBranch.Spec.ExpireTime != nil {
+			branch.Status.ExpireTime = updateBranch.Spec.ExpireTime
+		}
 	}
 
 	branch.UpdateTime = nowTime()
@@ -661,12 +673,11 @@ func (s *FakeWorkspace) PostgresEndpointList(parent string) Response {
 }
 
 // PostgresEndpointUpdate updates a postgres endpoint.
-// endpointUpdateMaskPaths are the update_mask paths UpdateEndpoint accepts, as
-// probed against the real API. The backend rejects anything else with 400, most
-// notably the two members of the suspension oneof: it masks no_suspension and
-// suspend_timeout_duration together under "suspension" and refuses either field
-// name. Without this check the fake accepts any mask and hides that class of bug
-// until a cloud run.
+// The update_mask paths each postgres Update accepts, as probed against the real
+// API. The backend rejects anything else with 400, most notably the members of a
+// oneof: it masks them together under the group name and refuses the individual
+// field names. Without these lists the fake accepts any mask and hides that class
+// of bug until a cloud run.
 var endpointUpdateMaskPaths = []string{
 	// The Terraform provider masks the whole spec and sends every field in the
 	// body; the API accepts that.
@@ -680,6 +691,37 @@ var endpointUpdateMaskPaths = []string{
 	"spec.group.min",
 	"spec.settings.pg_settings",
 	"spec.suspension",
+}
+
+var branchUpdateMaskPaths = []string{
+	// The Terraform provider masks the whole spec.
+	"spec",
+
+	"spec.is_protected",
+
+	// expire_time, no_expiry and ttl are three sides of one oneof.
+	"spec.expiration",
+}
+
+var projectUpdateMaskPaths = []string{
+	// The Terraform provider masks the whole spec plus both initial_* specs.
+	"spec",
+	"initial_branch_spec",
+	"initial_endpoint_spec",
+
+	"spec.budget_policy_id",
+	"spec.custom_tags",
+	"spec.default_branch",
+	"spec.default_endpoint_settings.autoscaling_limit_max_cu",
+	"spec.default_endpoint_settings.autoscaling_limit_min_cu",
+	"spec.default_endpoint_settings.pg_settings",
+	"spec.display_name",
+	"spec.enable_pg_native_login",
+	"spec.history_retention_duration",
+
+	// default_endpoint_settings.no_suspension and .suspend_timeout_duration are
+	// two sides of one oneof.
+	"spec.default_endpoint_settings.suspension",
 }
 
 // validateUpdateMask mirrors the API's rejection of unknown update_mask paths.

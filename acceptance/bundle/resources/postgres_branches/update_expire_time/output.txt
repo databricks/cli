@@ -1,0 +1,51 @@
+
+=== Initial deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-expire-[UNIQUE_NAME]/default/files...
+Created postgres_branches.dev_branch
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch
+{
+  "branch_id": "dev-branch",
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "branch_id": "dev-branch",
+    "current_state": "READY",
+    "default": false,
+    "expire_time": "[EXPIRE_TIME_BEFORE]",
+    "is_protected": false,
+    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+    "source_branch_lsn": "[LSN]",
+    "source_branch_time": "[TIMESTAMP]",
+    "state_change_time": "[TIMESTAMP]"
+  },
+  "uid": "[BRANCH_UID]"
+}
+
+=== Change expire_time: engines diverge, see the per-engine out.* files
+>>> update_file.py databricks.yml [EXPIRE_TIME_BEFORE] [EXPIRE_TIME_AFTER]
+
+>>> print_requests.py --del-body project_id,branch_id --sort //postgres ^//operations/
+
+>>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.dev_branch
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.dev_branch
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-expire-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

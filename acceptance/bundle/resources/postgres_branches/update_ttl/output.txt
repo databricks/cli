@@ -1,0 +1,30 @@
+
+=== Initial deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-ttl-[UNIQUE_NAME]/default/files...
+Created postgres_branches.dev_branch
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Change ttl: engines diverge, see the per-engine out.* files
+>>> update_file.py databricks.yml ttl: 604800s ttl: 259200s
+
+>>> print_requests.py --del-body project_id,branch_id --sort //postgres ^//operations/
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.dev_branch
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.dev_branch
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-ttl-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

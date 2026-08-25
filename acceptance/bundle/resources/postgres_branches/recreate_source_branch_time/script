@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Initial deployment"
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "Change the fork point: source_branch_time is immutable, so this recreates"
+trace update_file.py databricks.yml "2026-01-01T00:00:00Z" "2026-02-01T00:00:00Z"
+trace $CLI bundle plan
+rm -f out.requests.txt
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py --del-body project_id,branch_id --sort '//postgres' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
