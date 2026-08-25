@@ -222,6 +222,9 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 		if updateProject.Spec.DisplayName != "" {
 			project.Status.DisplayName = updateProject.Spec.DisplayName
 		}
+		if updateProject.Spec.HistoryRetentionDuration != nil {
+			project.Status.HistoryRetentionDuration = updateProject.Spec.HistoryRetentionDuration
+		}
 		if updateProject.Spec.DefaultEndpointSettings != nil {
 			if project.Status.DefaultEndpointSettings == nil {
 				project.Status.DefaultEndpointSettings = &postgres.ProjectDefaultEndpointSettings{}
@@ -231,6 +234,9 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 			}
 			if updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu != 0 {
 				project.Status.DefaultEndpointSettings.AutoscalingLimitMaxCu = updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu
+			}
+			if updateProject.Spec.DefaultEndpointSettings.SuspendTimeoutDuration != nil {
+				project.Status.DefaultEndpointSettings.SuspendTimeoutDuration = updateProject.Spec.DefaultEndpointSettings.SuspendTimeoutDuration
 			}
 		}
 	}
