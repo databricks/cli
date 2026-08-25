@@ -1,5 +1,4 @@
 Cloud = true
-RequiresWarehouse = true
 
 # export-dir prints the local destination with OS-native separators, so the
 # output diverges on Windows. The exported-dashboard behavior is OS-independent,
