@@ -26,8 +26,7 @@ import (
 func Initialize(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: initialize")
 
-	bundle.ApplySeqContext(
-		ctx, b,
+	bundle.ApplySeqContext(ctx, b,
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
