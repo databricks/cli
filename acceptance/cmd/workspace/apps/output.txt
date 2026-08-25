@@ -97,6 +97,8 @@ Flags:
       --compute-size ComputeSize    Supported values: [LARGE, MEDIUM, XLARGE]
       --description string          The description of the app.
       --forward-user-access-token   Forward the user's access token to the app.
+      --git-provider string         Git provider. Case insensitive. Supported values: gitHub, gitHubEnterprise, bitbucketCloud, bitbucketServer, azureDevOpsServices, gitLab, gitLabEnterpriseEdition, awsCodeCommit.
+      --git-url string              URL of the Git repository the app deploys from.
   -h, --help                        help for update
       --json JSON                   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
       --source-code-path string     
