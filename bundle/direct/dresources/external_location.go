@@ -79,10 +79,8 @@ func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, conf
 		ReadOnly:                  config.ReadOnly,
 		SkipValidation:            config.SkipValidation,
 		Url:                       config.Url,
-		ForceSendFields:           nil, // set below
+		ForceSendFields:           utils.FilterFields[catalog.UpdateExternalLocation](append(slices.Clone(externalLocationForceSend), config.ForceSendFields...), "IsolationMode", "Owner"),
 	}
-
-	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateExternalLocation](append(slices.Clone(externalLocationForceSend), config.ForceSendFields...), "IsolationMode", "Owner")
 
 	return r.client.ExternalLocations.Update(ctx, updateRequest)
 }
@@ -106,14 +104,12 @@ func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string
 		ReadOnly:                  config.ReadOnly,
 		SkipValidation:            config.SkipValidation,
 		Url:                       config.Url,
-		ForceSendFields:           nil, // set below
+		ForceSendFields:           utils.FilterFields[catalog.UpdateExternalLocation](append(slices.Clone(externalLocationForceSend), config.ForceSendFields...), "IsolationMode", "Owner"),
 	}
 
 	if config.Name != id {
 		updateRequest.NewName = config.Name
 	}
-
-	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateExternalLocation](append(slices.Clone(externalLocationForceSend), config.ForceSendFields...), "IsolationMode", "Owner")
 
 	response, err := r.client.ExternalLocations.Update(ctx, updateRequest)
 	if err != nil {

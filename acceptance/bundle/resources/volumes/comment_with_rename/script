@@ -3,12 +3,11 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 VOLUME="main.test-schema-${UNIQUE_NAME}.vol_one"
 
-# print_requests.py consumes out.requests.txt, so it runs after the last request.
 cleanup() {
     trace $CLI bundle destroy --auto-approve
 
-    title "The rename carried the cleared comment alongside new_name"
-    trace print_requests.py --method PATCH //unity-catalog/volumes
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py --method PATCH //unity-catalog/volumes &> LOG.destroy_requests
 }
 trap cleanup EXIT
 
@@ -23,3 +22,6 @@ trace $CLI bundle deploy
 title "The rename and the clear both landed, so it converges in one pass"
 MSYS_NO_PATHCONV=1 trace $CLI api get "/api/2.1/unity-catalog/volumes/main.test-schema-${UNIQUE_NAME}.vol_two" | jq '.comment'
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged"
+
+title "The rename carried the cleared comment alongside new_name"
+trace print_requests.py --method PATCH //unity-catalog/volumes

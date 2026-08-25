@@ -22,18 +22,6 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.registered_models.model1
-  delete resources.schemas.schema1
-
-This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
-  delete resources.schemas.schema1
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
-
-Destroy: 2 deleted
-
 === The UpdateRegisteredModel payloads the deploys sent
 >>> print_requests.py --method PATCH //unity-catalog/models
 {
@@ -46,3 +34,15 @@ Destroy: 2 deleted
     "schema_name": "test-schema-[UNIQUE_NAME]"
   }
 }
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.registered_models.model1
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

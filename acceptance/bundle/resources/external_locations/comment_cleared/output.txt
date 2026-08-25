@@ -21,14 +21,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.external_locations.location1
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
-
-Destroy: 1 deleted
-
 === The UpdateExternalLocation payloads the deploys sent
 >>> print_requests.py --method PATCH //external-locations
 {
@@ -40,3 +32,11 @@ Destroy: 1 deleted
     "url": "s3://test-bucket/path"
   }
 }
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.external_locations.location1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

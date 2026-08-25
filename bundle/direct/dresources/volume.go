@@ -59,7 +59,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 		NewName: "", // Not supported by Update(). Needs DoUpdateWithID()
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: nil, // set below
+		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](append(slices.Clone(volumeForceSend), config.ForceSendFields...), "NewName", "Owner"),
 	}
 
 	nameFromID, err := getNameFromID(id)
@@ -70,8 +70,6 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 	if config.Name != nameFromID {
 		return nil, fmt.Errorf("internal error: unexpected change of name from %#v to %#v", nameFromID, config.Name)
 	}
-
-	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateVolumeRequestContent](append(slices.Clone(volumeForceSend), config.ForceSendFields...), "NewName", "Owner")
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil {
@@ -93,7 +91,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		NewName: "", // Initialized below if needed
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: nil, // set below
+		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](append(slices.Clone(volumeForceSend), config.ForceSendFields...), "Owner"),
 	}
 
 	items := strings.Split(id, ".")
@@ -105,8 +103,6 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 	if config.Name != nameFromID {
 		updateRequest.NewName = config.Name
 	}
-
-	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateVolumeRequestContent](append(slices.Clone(volumeForceSend), config.ForceSendFields...), "Owner")
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil || response == nil {

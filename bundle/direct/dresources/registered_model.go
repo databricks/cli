@@ -73,7 +73,7 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 	updateRequest := catalog.UpdateRegisteredModelRequest{
 		FullName:        id,
 		Comment:         config.Comment,
-		ForceSendFields: nil, // set below
+		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(slices.Clone(registeredModelForceSend), config.ForceSendFields...), "Owner", "NewName"),
 
 		// Owner is settable in the config (it comes from the embedded
 		// CreateRegisteredModelRequest) and create sends it, but update never has: a
@@ -96,8 +96,6 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 		Name:            config.Name,
 		CatalogName:     config.CatalogName,
 	}
-
-	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(slices.Clone(registeredModelForceSend), config.ForceSendFields...), "Owner", "NewName")
 
 	response, err := r.client.RegisteredModels.Update(ctx, updateRequest)
 	if err != nil {

@@ -66,10 +66,8 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 		Options:                      config.Options,
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              nil, // set below
+		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](append(slices.Clone(catalogForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "IsolationMode", "Owner"),
 	}
-
-	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateCatalog](append(slices.Clone(catalogForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "IsolationMode", "Owner")
 
 	response, err := r.client.Catalogs.Update(ctx, updateRequest)
 	if err != nil {
@@ -92,14 +90,12 @@ func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config 
 		Options:                      config.Options,
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              nil, // set below
+		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](append(slices.Clone(catalogForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "IsolationMode", "Owner"),
 	}
 
 	if config.Name != id {
 		updateRequest.NewName = config.Name
 	}
-
-	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateCatalog](append(slices.Clone(catalogForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "IsolationMode", "Owner")
 
 	response, err := r.client.Catalogs.Update(ctx, updateRequest)
 	if err != nil {

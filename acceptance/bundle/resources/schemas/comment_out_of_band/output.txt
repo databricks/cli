@@ -33,17 +33,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQU
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.schemas.schema1
-
-This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
-  delete resources.schemas.schema1
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
-
-Destroy: 1 deleted
-
 === The UpdateSchema payloads the deploys sent
 >>> print_requests.py --method PATCH //unity-catalog/schemas
 {
@@ -60,3 +49,14 @@ Destroy: 1 deleted
     "comment": ""
   }
 }
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
