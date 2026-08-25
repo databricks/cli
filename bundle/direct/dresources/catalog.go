@@ -76,7 +76,7 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 }
 
 // DoUpdateWithID updates the catalog and returns the new ID if the name changes.
-func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateCatalog, _ *PlanEntry) (string, *catalog.CatalogInfo, error) {
+func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateCatalog, entry *PlanEntry) (string, *catalog.CatalogInfo, error) {
 	updateRequest := catalog.UpdateCatalog{
 		Comment:                      config.Comment,
 		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
@@ -95,9 +95,8 @@ func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config 
 		updateRequest.NewName = config.Name
 	}
 
-	// No forceSendClearedFields here: the rename always carries new_name, so the payload is
-	// never empty, and DoUpdateWithID has no PlanEntry to consult. A field cleared in the
-	// same deploy as a rename is picked up by the DoUpdate on the next one.
+	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
+
 	response, err := r.client.Catalogs.Update(ctx, updateRequest)
 	if err != nil {
 		return "", nil, err
