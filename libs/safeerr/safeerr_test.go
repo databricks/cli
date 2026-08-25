@@ -247,10 +247,26 @@ func TestErrorTemplateFallsBackToRawFormat(t *testing.T) {
 		format string
 		args   []any
 	}{
-		{name: "explicit argument index", format: "%[1]s and %[1]s", args: []any{Safe("jobs")}},
-		{name: "star width", format: "%*d", args: []any{Safe(5), Safe(42)}},
-		{name: "star precision", format: "%.*f", args: []any{Safe(2), Safe(3.5)}},
-		{name: "dangling percent", format: "done: 100%", args: nil},
+		{
+			name:   "explicit argument index",
+			format: "%[1]s and %[1]s",
+			args:   []any{Safe("jobs")},
+		},
+		{
+			name:   "star width",
+			format: "%*d",
+			args:   []any{Safe(5), Safe(42)},
+		},
+		{
+			name:   "star precision",
+			format: "%.*f",
+			args:   []any{Safe(2), Safe(3.5)},
+		},
+		{
+			name:   "dangling percent",
+			format: "done: 100%",
+			args:   nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -309,19 +325,82 @@ func TestParseVerb(t *testing.T) {
 		wantNext int
 		wantOk   bool
 	}{
-		{format: "%s", wantSpec: "%s", wantVerb: 's', wantNext: 2, wantOk: true},
-		{format: "%%", wantSpec: "%%", wantVerb: '%', wantNext: 2, wantOk: true},
-		{format: "%+v", wantSpec: "%+v", wantVerb: 'v', wantNext: 3, wantOk: true},
-		{format: "%#v", wantSpec: "%#v", wantVerb: 'v', wantNext: 3, wantOk: true},
-		{format: "%-12q", wantSpec: "%-12q", wantVerb: 'q', wantNext: 5, wantOk: true},
-		{format: "%08.3f", wantSpec: "%08.3f", wantVerb: 'f', wantNext: 6, wantOk: true},
-		{format: "% d", wantSpec: "% d", wantVerb: 'd', wantNext: 3, wantOk: true},
-		{format: "%w", wantSpec: "%w", wantVerb: 'w', wantNext: 2, wantOk: true},
-		{format: "%[1]s", wantOk: false},
-		{format: "%*d", wantOk: false},
-		{format: "%.*f", wantOk: false},
-		{format: "%", wantOk: false},
-		{format: "%-", wantOk: false},
+		{
+			format:   "%s",
+			wantSpec: "%s",
+			wantVerb: 's',
+			wantNext: 2,
+			wantOk:   true,
+		},
+		{
+			format:   "%%",
+			wantSpec: "%%",
+			wantVerb: '%',
+			wantNext: 2,
+			wantOk:   true,
+		},
+		{
+			format:   "%+v",
+			wantSpec: "%+v",
+			wantVerb: 'v',
+			wantNext: 3,
+			wantOk:   true,
+		},
+		{
+			format:   "%#v",
+			wantSpec: "%#v",
+			wantVerb: 'v',
+			wantNext: 3,
+			wantOk:   true,
+		},
+		{
+			format:   "%-12q",
+			wantSpec: "%-12q",
+			wantVerb: 'q',
+			wantNext: 5,
+			wantOk:   true,
+		},
+		{
+			format:   "%08.3f",
+			wantSpec: "%08.3f",
+			wantVerb: 'f',
+			wantNext: 6,
+			wantOk:   true,
+		},
+		{
+			format:   "% d",
+			wantSpec: "% d",
+			wantVerb: 'd',
+			wantNext: 3,
+			wantOk:   true,
+		},
+		{
+			format:   "%w",
+			wantSpec: "%w",
+			wantVerb: 'w',
+			wantNext: 2,
+			wantOk:   true,
+		},
+		{
+			format: "%[1]s",
+			wantOk: false,
+		},
+		{
+			format: "%*d",
+			wantOk: false,
+		},
+		{
+			format: "%.*f",
+			wantOk: false,
+		},
+		{
+			format: "%",
+			wantOk: false,
+		},
+		{
+			format: "%-",
+			wantOk: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -468,4 +547,15 @@ func TestSafeStringerOutranksSafe(t *testing.T) {
 	err := Errorf("%s", Safe(safeStringerKey("resources.jobs.my_job")))
 	assert.Equal(t, "resources.jobs.my_job", err.Error())
 	assert.Equal(t, "jobs.*", ErrorTemplate(err))
+}
+
+func TestErrorTemplateWrapNilError(t *testing.T) {
+	// %w whose argument holds no error: a nil error interface matches no case in
+	// templateArgs, so nothing is retained and the verb stays in the template
+	// because there is no error to chain one from.
+	var wrapped error
+
+	err := Errorf("wrapping: %w", wrapped)
+	assert.Equal(t, fmt.Errorf("wrapping: %w", wrapped).Error(), err.Error())
+	assert.Equal(t, "wrapping: %w", ErrorTemplate(err))
 }

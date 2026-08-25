@@ -27,20 +27,64 @@ func TestSafeAPIErrorDescription(t *testing.T) {
 		err  error
 		want string
 	}{
-		{name: "not an api error", err: errors.New("boom"), want: ""},
-		{name: "code and status", err: apiError("PERMISSION_DENIED", http.StatusForbidden), want: "403 PERMISSION_DENIED"},
-		{name: "code only", err: apiError("RESOURCE_DOES_NOT_EXIST", 0), want: "RESOURCE_DOES_NOT_EXIST"},
-		{name: "status only", err: apiError("", http.StatusInternalServerError), want: "500"},
-		{name: "nothing safe", err: apiError("", 0), want: ""},
-		{name: "wrapped", err: fmt.Errorf("deploying: %w", apiError("QUOTA_EXCEEDED", 429)), want: "429 QUOTA_EXCEEDED"},
+		{
+			name: "not an api error",
+			err:  errors.New("boom"),
+			want: "",
+		},
+		{
+			name: "code and status",
+			err:  apiError("PERMISSION_DENIED", http.StatusForbidden),
+			want: "403 PERMISSION_DENIED",
+		},
+		{
+			name: "code only",
+			err:  apiError("RESOURCE_DOES_NOT_EXIST", 0),
+			want: "RESOURCE_DOES_NOT_EXIST",
+		},
+		{
+			name: "status only",
+			err:  apiError("", http.StatusInternalServerError),
+			want: "500",
+		},
+		{
+			name: "nothing safe",
+			err:  apiError("", 0),
+			want: "",
+		},
+		{
+			name: "wrapped",
+			err:  fmt.Errorf("deploying: %w", apiError("QUOTA_EXCEEDED", 429)),
+			want: "429 QUOTA_EXCEEDED",
+		},
 
 		// A code that does not have the shape of an enum member is dropped
 		// rather than trusted, so free text cannot ride along.
-		{name: "code with a path", err: apiError("cannot find /Workspace/Users/a@b.com/x", 404), want: "404"},
-		{name: "code with a quoted name", err: apiError(`job "Q4 forecast" missing`, 404), want: "404"},
-		{name: "code lowercase", err: apiError("permission_denied", 403), want: "403"},
-		{name: "code with a dot", err: apiError("PERMISSION.DENIED", 403), want: "403"},
-		{name: "code with a space", err: apiError("PERMISSION DENIED", 403), want: "403"},
+		{
+			name: "code with a path",
+			err:  apiError("cannot find /Workspace/Users/a@b.com/x", 404),
+			want: "404",
+		},
+		{
+			name: "code with a quoted name",
+			err:  apiError(`job "Q4 forecast" missing`, 404),
+			want: "404",
+		},
+		{
+			name: "code lowercase",
+			err:  apiError("permission_denied", 403),
+			want: "403",
+		},
+		{
+			name: "code with a dot",
+			err:  apiError("PERMISSION.DENIED", 403),
+			want: "403",
+		},
+		{
+			name: "code with a space",
+			err:  apiError("PERMISSION DENIED", 403),
+			want: "403",
+		},
 	}
 
 	for _, tt := range tests {

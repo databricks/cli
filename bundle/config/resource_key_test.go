@@ -13,17 +13,44 @@ func TestResourceKeySafeString(t *testing.T) {
 		key  string
 		want string
 	}{
-		{key: "resources.jobs.my_job", want: "jobs.*"},
-		{key: "resources.pipelines.my_pipeline", want: "pipelines.*"},
-		{key: "resources.jobs.my_job.permissions", want: "jobs.*.permissions"},
-		{key: "resources.schemas.my_schema.grants", want: "schemas.*.grants"},
-		{key: "resources.secret_scopes.my scope.permissions", want: "secret_scopes.*.permissions"},
+		{
+			key:  "resources.jobs.my_job",
+			want: "jobs.*",
+		},
+		{
+			key:  "resources.pipelines.my_pipeline",
+			want: "pipelines.*",
+		},
+		{
+			key:  "resources.jobs.my_job.permissions",
+			want: "jobs.*.permissions",
+		},
+		{
+			key:  "resources.schemas.my_schema.grants",
+			want: "schemas.*.grants",
+		},
+		{
+			key:  "resources.secret_scopes.my scope.permissions",
+			want: "secret_scopes.*.permissions",
+		},
 
 		// Shapes GetResourceTypeFromKey does not recognize report nothing.
-		{key: "resources.jobs", want: "*"},
-		{key: "jobs.my_job", want: "*"},
-		{key: "", want: "*"},
-		{key: "/Workspace/Users/someone@example.com/x", want: "*"},
+		{
+			key:  "resources.jobs",
+			want: "*",
+		},
+		{
+			key:  "jobs.my_job",
+			want: "*",
+		},
+		{
+			key:  "",
+			want: "*",
+		},
+		{
+			key:  "/Workspace/Users/someone@example.com/x",
+			want: "*",
+		},
 	}
 
 	for _, tt := range tests {

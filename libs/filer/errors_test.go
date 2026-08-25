@@ -121,14 +121,38 @@ func TestErrorSafeStringOmitsPath(t *testing.T) {
 		err            error
 		wantSafeString string
 	}{
-		{err: fileAlreadyExistsError{path: path}, wantSafeString: "file already exists"},
-		{err: fileDoesNotExistError{path: path}, wantSafeString: "file does not exist"},
-		{err: noSuchDirectoryError{path: path}, wantSafeString: "no such directory"},
-		{err: notADirectory{path: path}, wantSafeString: "not a directory"},
-		{err: notAFile{path: path}, wantSafeString: "not a file"},
-		{err: directoryNotEmptyError{path: path}, wantSafeString: "directory not empty"},
-		{err: permissionError{path: path}, wantSafeString: "access denied"},
-		{err: cannotDeleteRootError{}, wantSafeString: "unable to delete filer root"},
+		{
+			err:            fileAlreadyExistsError{path: path},
+			wantSafeString: "file already exists",
+		},
+		{
+			err:            fileDoesNotExistError{path: path},
+			wantSafeString: "file does not exist",
+		},
+		{
+			err:            noSuchDirectoryError{path: path},
+			wantSafeString: "no such directory",
+		},
+		{
+			err:            notADirectory{path: path},
+			wantSafeString: "not a directory",
+		},
+		{
+			err:            notAFile{path: path},
+			wantSafeString: "not a file",
+		},
+		{
+			err:            directoryNotEmptyError{path: path},
+			wantSafeString: "directory not empty",
+		},
+		{
+			err:            permissionError{path: path},
+			wantSafeString: "access denied",
+		},
+		{
+			err:            cannotDeleteRootError{},
+			wantSafeString: "unable to delete filer root",
+		},
 	}
 
 	for _, tt := range tests {
