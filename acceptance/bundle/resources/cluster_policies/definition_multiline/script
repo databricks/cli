@@ -1,0 +1,11 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle validate -o json | jq ".resources.cluster_policies"
+
+trace $CLI bundle deploy
+
+title "Create body preserves the block-scalar definition as a newline-escaped string"
+trace print_requests.py //policies/clusters
+
+trace $CLI bundle destroy --auto-approve
+rm out.requests.txt

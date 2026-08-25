@@ -46,15 +46,9 @@ type JobRunLifecycleState struct {
 	Triggers JobRunTriggersState `json:"triggers"`
 }
 
-// Zero value spelled out field by field, as exhaustruct requires.
 func emptyJobRunLifecycleState() JobRunLifecycleState {
-	return JobRunLifecycleState{
-		Triggers: JobRunTriggersState{
-			OnBundleDeploy: "",
-			OnFileChange:   nil,
-			OnValueChange:  nil,
-		},
-	}
+	var empty JobRunLifecycleState
+	return empty
 }
 
 // JobRunState is the RunNow request plus the outcome required for planning.
@@ -450,7 +444,7 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
 		}
-	case "lifecycle.triggers.on_file_change", "lifecycle.triggers.on_value_change", "lifecycle.triggers":
+	case "lifecycle.triggers.on_file_change", "lifecycle.triggers.on_value_change":
 		if change.New == nil {
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
