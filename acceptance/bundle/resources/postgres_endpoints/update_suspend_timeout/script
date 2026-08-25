@@ -16,6 +16,7 @@ trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 title "Change suspend_timeout_duration to 600s"
 trace update_file.py databricks.yml "suspend_timeout_duration: 300s" "suspend_timeout_duration: 600s"
 trace $CLI bundle plan
+$CLI bundle plan -o json > /tmp/full_plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 rm -f out.requests.txt
 trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
