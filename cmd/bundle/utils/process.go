@@ -231,7 +231,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			// which needDirectState already required.
 			if b.RecordsDeploymentHistory(ctx) {
 				var err error
-				b.DeploymentBundle.DmsClient, err = dms.NewBufferedClient(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath, phases.DeploymentMetadata(b))
+				b.DeploymentBundle.DmsBufferedClient, err = dms.NewBufferedClient(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath, phases.DeploymentMetadata(b))
 				if err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
@@ -240,12 +240,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				// Stamp the deployment before anything diffs the resources: the workspace
 				// has it, so leaving it unset would report drift on an untouched resource.
 				// The deploy phase stamps the version, once it claims one.
-				bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(b.DeploymentBundle.DmsClient.DeploymentID()))
+				bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(b.DeploymentBundle.DmsBufferedClient.DeploymentID()))
 				if logdiag.HasError(ctx) {
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
 			}
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), b.DeploymentBundle.DmsClient); err != nil {
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), b.DeploymentBundle.DmsBufferedClient); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}

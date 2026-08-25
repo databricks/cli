@@ -62,8 +62,8 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 
 // logDeploymentVersion logs the deployment version URL. Workspace ID is omitted
 // so the page stays clickable in a terminal and redirects correctly without it.
-func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, dmsClient *dms.BufferedClient) {
-	if dmsClient.Version() == 0 {
+func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, dmsBufferedClient *dms.BufferedClient) {
+	if dmsBufferedClient.Version() == 0 {
 		return
 	}
 
@@ -72,11 +72,11 @@ func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, dmsClient *dms.
 		// Only the link is lost, so report the version without it rather than failing
 		// a deploy over it.
 		log.Debugf(ctx, "Not linking to the recorded deployment: %s", err)
-		cmdio.LogString(ctx, fmt.Sprintf("Current Deployment Version: %s version %d", dmsClient.DeploymentID(), dmsClient.Version()))
+		cmdio.LogString(ctx, fmt.Sprintf("Current Deployment Version: %s version %d", dmsBufferedClient.DeploymentID(), dmsBufferedClient.Version()))
 		return
 	}
 
-	cmdio.LogString(ctx, "Current Deployment Version: "+workspaceurls.DeploymentURL(*baseURL, dmsClient.DeploymentID(), dmsClient.Version()))
+	cmdio.LogString(ctx, "Current Deployment Version: "+workspaceurls.DeploymentURL(*baseURL, dmsBufferedClient.DeploymentID(), dmsBufferedClient.Version()))
 }
 
 // DeploymentMetadata describes the bundle this deploy came from and where it

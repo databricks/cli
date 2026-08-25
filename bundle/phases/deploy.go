@@ -199,9 +199,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	//
 	// The version is created only after approval; CompleteVersion is deferred before
 	// lock.Release and no-ops until then.
-	dmsClient := b.DeploymentBundle.DmsClient
+	dmsBufferedClient := b.DeploymentBundle.DmsBufferedClient
 	defer func() {
-		if err := dmsClient.Close(ctx, !logdiag.HasError(ctx)); err != nil {
+		if err := dmsBufferedClient.Close(ctx, !logdiag.HasError(ctx)); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
@@ -268,16 +268,16 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	// Stamp the deployment and version before planning: Plan snapshots the config, and the
 	// version itself is created after approval. The deployment has to exist to be stamped.
-	if err := dmsClient.EnsureDeployment(ctx); err != nil {
+	if err := dmsBufferedClient.EnsureDeployment(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
-	if dmsClient.Version() != 0 {
+	if dmsBufferedClient.Version() != 0 {
 		// The deployment ID is stamped earlier, when the state is opened; only the
 		// version is new here. A first deploy has no ID until now, so stamp both.
 		bundle.ApplySeqContext(ctx, b,
-			metadata.AnnotateDeployment(dmsClient.DeploymentID()),
-			metadata.AnnotateDeploymentVersion(dmsClient.Version()),
+			metadata.AnnotateDeployment(dmsBufferedClient.DeploymentID()),
+			metadata.AnnotateDeploymentVersion(dmsBufferedClient.Version()),
 		)
 		if logdiag.HasError(ctx) {
 			return
@@ -342,11 +342,11 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		logdiag.LogError(ctx, err)
 		return
 	}
-	if err := dmsClient.CreateVersion(ctx, dms.VersionTypeDeploy, staged); err != nil {
+	if err := dmsBufferedClient.CreateVersion(ctx, dms.VersionTypeDeploy, staged); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
-	logDeploymentVersion(ctx, b, dmsClient)
+	logDeploymentVersion(ctx, b, dmsBufferedClient)
 
 	deployCore(ctx, b, plan, stateEngine)
 

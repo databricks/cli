@@ -72,9 +72,9 @@ type DeploymentState struct {
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
 
-	// dmsClient records each state write with DMS. Nil unless the bundle records deployment
-	// history, in which case RegisterDmsClient installs it.
-	dmsClient *dms.BufferedClient
+	// dmsBufferedClient records each state write with DMS. Nil unless the bundle records deployment
+	// history, in which case RegisterDmsBufferedClient installs it.
+	dmsBufferedClient *dms.BufferedClient
 }
 
 type Header struct {
@@ -116,17 +116,17 @@ type WALEntry struct {
 	Value *ResourceEntry `json:"v,omitempty"` // nil means delete
 }
 
-// RegisterDmsClient has every subsequent state write recorded with client, so what the service
-// holds mirrors the WAL. A nil client records nothing. Called once the version exists, which is
-// why it is not an Open option.
-func (db *DeploymentState) RegisterDmsClient(client *dms.BufferedClient) {
+// RegisterDmsBufferedClient has every subsequent state write recorded with client, so what the
+// service holds mirrors the WAL. A nil client records nothing. Called once the version exists,
+// which is why it is not an Open option.
+func (db *DeploymentState) RegisterDmsBufferedClient(client *dms.BufferedClient) {
 	if client == nil {
 		return
 	}
 
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.dmsClient = client
+	db.dmsBufferedClient = client
 }
 
 // RecordFailure records that a resource did not apply, so the history says why rather than
@@ -142,7 +142,7 @@ func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause e
 func (db *DeploymentState) recorder() *dms.BufferedClient {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	return db.dmsClient
+	return db.dmsBufferedClient
 }
 
 func NewDatabase(lineage string, serial int) Database {
@@ -179,13 +179,13 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 	if err == nil {
 		db.stateIDs[key] = newID
 	}
-	dmsClient := db.dmsClient
+	dmsBufferedClient := db.dmsBufferedClient
 	db.mu.Unlock()
 
 	if err != nil {
 		return err
 	}
-	if dmsClient == nil {
+	if dmsBufferedClient == nil {
 		return nil
 	}
 
@@ -196,7 +196,7 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 	if err != nil {
 		return err
 	}
-	dmsClient.RecordOperation(ctx, key, false, newID, recorded)
+	dmsBufferedClient.RecordOperation(ctx, key, false, newID, recorded)
 
 	return nil
 }
@@ -218,7 +218,7 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgre
 	if err == nil {
 		delete(db.stateIDs, key)
 	}
-	dmsClient := db.dmsClient
+	dmsBufferedClient := db.dmsBufferedClient
 	db.mu.Unlock()
 
 	if err != nil {
@@ -227,8 +227,8 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgre
 
 	// State is nil: the resource no longer exists. Recorded outside the lock for the
 	// same reason as SaveState.
-	if dmsClient != nil {
-		dmsClient.RecordOperation(ctx, key, inProgress, deletedID, nil)
+	if dmsBufferedClient != nil {
+		dmsBufferedClient.RecordOperation(ctx, key, inProgress, deletedID, nil)
 	}
 
 	return nil
@@ -299,10 +299,11 @@ type (
 )
 
 // Open reads the deployment state from disk, recovering the WAL when withRecovery is set.
-// With a non-nil dmsClient the resources come from DMS instead; lineage and serial still come
-// from the file, since that is what the write path increments. Open only reads through the
-// client - RegisterDmsClient installs it for writing, once a version exists to write under.
-func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsClient *dms.BufferedClient) error {
+// With a non-nil dmsBufferedClient the resources come from DMS instead; lineage and serial
+// still come from the file, since that is what the write path increments. Open only reads
+// through the client - RegisterDmsBufferedClient installs it for writing, once a version exists
+// to write under.
+func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsBufferedClient *dms.BufferedClient) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -310,7 +311,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		panic(fmt.Sprintf("state already opened: %v, cannot open %v", db.Path, path))
 	}
 
-	err := db.unlockedOpen(ctx, path, withRecovery, withWrite, dmsClient)
+	err := db.unlockedOpen(ctx, path, withRecovery, withWrite, dmsBufferedClient)
 	if err != nil {
 		// A failed open must leave the receiver closed. unlockedOpen assigns
 		// db.Path before every fallible step, so without this the receiver stays
@@ -332,7 +333,7 @@ func (db *DeploymentState) reset() {
 	db.stateIDs = nil
 }
 
-func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsClient *dms.BufferedClient) error {
+func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsBufferedClient *dms.BufferedClient) error {
 	db.Path = path
 	data, err := os.ReadFile(db.Path)
 	if err != nil {
@@ -373,11 +374,11 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		return fmt.Errorf("migrating state %s: %w", path, err)
 	}
 
-	if dmsClient != nil {
+	if dmsBufferedClient != nil {
 		// Only empty bundles can be recorded. Once DMS owns the deployment, pre-existing
 		// resources it never saw would be created again. TODO: support migration via state
 		// upgrade with feature flag and per-resource tombstones.
-		if dmsClient.DeploymentID() == "" && len(db.Data.State) > 0 {
+		if dmsBufferedClient.DeploymentID() == "" && len(db.Data.State) > 0 {
 			// The remedy is ordered deliberately: this error also blocks destroy, so the
 			// setting has to come out first or there is no way to tear the bundle down.
 			return fmt.Errorf(`cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded
@@ -389,8 +390,8 @@ To record this bundle's history, start it over as a new deployment:
 
 To keep the existing resources instead, unset experimental.record_deployment_history`, path)
 		}
-		if dmsClient.DeploymentID() != "" {
-			recorded, err := dmsClient.ListResources(ctx)
+		if dmsBufferedClient.DeploymentID() != "" {
+			recorded, err := dmsBufferedClient.ListResources(ctx)
 			if err != nil {
 				return err
 			}

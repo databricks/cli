@@ -135,7 +135,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType, dmsClient *dms.BufferedClient) {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType, dmsBufferedClient *dms.BufferedClient) {
 	if engine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
 	} else {
@@ -160,7 +160,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	}
 
 	// Complete version before deleting remote files; the deployment node is under statePath.
-	if err := dmsClient.Close(ctx, true); err != nil {
+	if err := dmsBufferedClient.Close(ctx, true); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
@@ -205,9 +205,9 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	// Set up DMS recording of this destroy. Version is created after approval; cancelled
 	// destroy records nothing. Deferred before lock.Release to hold the lock.
-	dmsClient := b.DeploymentBundle.DmsClient
+	dmsBufferedClient := b.DeploymentBundle.DmsBufferedClient
 	defer func() {
-		if err := dmsClient.Close(ctx, !logdiag.HasError(ctx)); err != nil {
+		if err := dmsBufferedClient.Close(ctx, !logdiag.HasError(ctx)); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
@@ -273,11 +273,11 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			logdiag.LogError(ctx, err)
 			return
 		}
-		if err := dmsClient.CreateVersion(ctx, dms.VersionTypeDestroy, staged); err != nil {
+		if err := dmsBufferedClient.CreateVersion(ctx, dms.VersionTypeDestroy, staged); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
-		destroyCore(ctx, b, plan, engine, dmsClient)
+		destroyCore(ctx, b, plan, engine, dmsBufferedClient)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}

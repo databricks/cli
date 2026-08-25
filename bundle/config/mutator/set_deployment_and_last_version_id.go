@@ -30,7 +30,7 @@ func (m *setDeploymentAndLastVersionID) Apply(ctx context.Context, b *bundle.Bun
 	}
 
 	// Read when the state was opened. Empty until the first recorded deploy, and after a destroy.
-	client := b.DeploymentBundle.DmsClient
+	client := b.DeploymentBundle.DmsBufferedClient
 	if client.DeploymentID() == "" {
 		return nil
 	}
