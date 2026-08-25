@@ -5,17 +5,18 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created jobs.my_job
 Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-Executing 'postdeploy' script
 
 >>> print_migration_telemetry
 direct_drymigrate_success true
 direct_drymigrate_warnings false
 
+>>> update_file.py databricks.yml #experimental experimental
+
 === Opt in: the deploy succeeds, the migration cannot read the state
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Warn: Direct engine requested in DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Files: 2 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 Executing 'postdeploy' script
 Warn: post-deploy dry-run migration to direct: failed to parse terraform state: unsupported deployment state version: 5. Try re-deploying the bundle

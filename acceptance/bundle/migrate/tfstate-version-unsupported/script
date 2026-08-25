@@ -5,8 +5,7 @@ trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 trace print_migration_telemetry
 rm -f out.requests.txt
 
-# Arm the post-deploy script, which runs between the deploy and the migration.
-touch .databricks/bump-state-version
+trace update_file.py databricks.yml "#experimental" "experimental"
 
 title "Opt in: the deploy succeeds, the migration cannot read the state"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy

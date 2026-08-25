@@ -1,20 +1,22 @@
 
-=== Terraform rejects the reference, so there is no state to migrate
->>> musterr [CLI] bundle deploy
+=== Deploy both jobs on terraform
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Warning: unknown field: autotermination_minutes
   at task[0].new_cluster
   in databricks.yml:16:13
 
-Error: exit status 1
+Warning: unknown field: autotermination_minutes
+  at task[0].new_cluster
+  in databricks.yml:16:13
 
-Error: Unsupported attribute
-
-  on bundle.tf.json line 20, in resource.databricks_job.dst:
-  20:         "description": "${databricks_job.src.tasks[0].new_cluster.autotermination_minutes}",
-
-This object has no argument, nested block, or exported attribute named
-"tasks". Did you mean "tags"?
-
-
+Created jobs.dst
+Created jobs.src
 Files: 4 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> update_file.py databricks.yml autotermination_minutes: 30 autotermination_minutes: ${resources.jobs.src.tasks[0].new_cluster.autotermination_minutes}
+
+=== The conversion cannot resolve the reference from either side
+>>> musterr [CLI] bundle deployment migrate
+Error: resources.jobs.dst: cannot resolve field "tasks[0].new_cluster.autotermination_minutes" (template "${resources.jobs.src.tasks[0].new_cluster.autotermination_minutes}"): jobs.dst field tasks[0].new_cluster.autotermination_minutes: method A: jobs: "tasks[0].new_cluster.autotermination_minutes" is a DABs-only field with no Terraform equivalent; method B: cannot look up "resources.jobs.src.tasks[0].new_cluster.autotermination_minutes": jobs: "tasks[0].new_cluster.autotermination_minutes" is a DABs-only field with no Terraform equivalent

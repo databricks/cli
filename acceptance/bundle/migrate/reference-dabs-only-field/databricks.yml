@@ -7,7 +7,7 @@ resources:
       name: source
       tasks:
         - task_key: t
-          new_cluster:
+          new_cluster: &cluster
             spark_version: 15.4.x-scala2.12
             node_type_id: Standard_DS3_v2
             num_workers: 1
@@ -16,4 +16,8 @@ resources:
             autotermination_minutes: 20
     dst:
       name: dst
-      description: ${resources.jobs.src.tasks[0].new_cluster.autotermination_minutes}
+      tasks:
+        - task_key: t
+          new_cluster:
+            <<: *cluster
+            autotermination_minutes: 30

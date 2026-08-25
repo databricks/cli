@@ -1,13 +1,33 @@
-# Recording why a reference to a DABs-only field never reaches the migration:
-# Interpolate rewrites it to Terraform syntax, and Terraform rejects the
-# attribute because it has no equivalent. The deploy fails first, so the state
-# conversion never runs on it.
-#
-# Set via export: musterr does not extract leading KEY=value the way trace does.
-export DATABRICKS_BUNDLE_ENGINE=terraform
+export DATABRICKS_BUNDLE_ENGINE=
 
-title "Terraform rejects the reference, so there is no state to migrate"
-trace musterr $CLI bundle deploy 2>&1 | contains.py 'has no argument, nested block, or exported attribute named'
+title "Deploy both jobs on terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+rm -f out.requests.txt
+
+# Point a DABs-only field at another resource's DABs-only field. Neither is in
+# terraform.tfstate, so both resolution methods fail. Introduced after the deploy
+# because Interpolate rewrites it to a Terraform attribute that does not exist,
+# which Terraform rejects outright.
+trace update_file.py databricks.yml "autotermination_minutes: 30" 'autotermination_minutes: ${resources.jobs.src.tasks[0].new_cluster.autotermination_minutes}'
+
+# Reached through the migrate command rather than a deploy: the automatic
+# migration needs a deploy, and any deploy carrying this reference is rejected by
+# Terraform before the conversion runs. So this asserts the error, not telemetry.
+#
+# The config loader also warns that autotermination_minutes is unknown on a job
+# cluster, so this particular field is a slightly synthetic way to reach the
+# path; the error itself is the one any DABs-only field produces.
+# Reached through the migrate command rather than a deploy: the automatic
+# migration needs a deploy, and any deploy carrying this reference is rejected by
+# Terraform before the conversion runs, so this asserts the error and not
+# telemetry. The config loader also warns that autotermination_minutes is unknown
+# on a job cluster, making this particular field a slightly synthetic way in; the
+# error itself is the one any DABs-only field produces.
+title "The conversion cannot resolve the reference from either side"
+trace musterr $CLI bundle deployment migrate
+
+# Not asserted, and it carries per-run timings.
+rm -f out.requests.txt
 
 # Not asserted, and it carries per-run timings.
 rm -f out.requests.txt
