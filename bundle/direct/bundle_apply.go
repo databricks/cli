@@ -46,7 +46,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	// The state DB records every write with DMS from here on, so the service mirrors the WAL.
 	// Writes go out on one background goroutine, off the apply path, and are drained below
 	// once every worker has finished recording.
-	b.StateDB.StartRecording(b.OpSink)
+	b.StateDB.RegisterDmsClient(b.DmsClient)
 
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		entry, err := plan.WriteLockEntry(resourceKey)
@@ -79,7 +79,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		// Stop resource CRUD once recording state with DMS has failed.
-		if err := b.StateDB.RecordingErr(); err != nil {
+		if err := b.DmsClient.Err(); err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
 		}
@@ -114,7 +114,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			if entry.Gone {
 				// Planning confirmed the resource is already deleted remotely; only
 				// remove it from the state, without calling the delete API.
-				err = b.StateDB.DeleteState(ctx, resourceKey)
+				err = b.StateDB.DeleteState(ctx, resourceKey, false)
 			} else {
 				err = d.Destroy(ctx, &b.StateDB)
 			}
@@ -181,10 +181,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return true
 	})
 
-	// Wait for the recorded operations before returning: the caller completes the
-	// DMS version right after, and a version must not be completed with uploads
-	// still in flight.
-	if err := b.StateDB.FinishRecording(); err != nil {
+	// Wait for the uploads and report a failure here, with the deploy's other errors.
+	// dms.BufferedClient.Close(ctx context.Context, success bool) error completes the version and
+	// reports this deployment's error state; it waits again but quietly, so this is not printed twice.
+	if err := b.DmsClient.Drain(); err != nil {
 		logdiag.LogError(ctx, err)
 	}
 }

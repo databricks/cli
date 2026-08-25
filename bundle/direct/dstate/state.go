@@ -72,9 +72,9 @@ type DeploymentState struct {
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
 
-	// sink records each state write with DMS. Nil unless the bundle records deployment
-	// history, in which case StartRecording installs it.
-	sink *dms.OperationSink
+	// dmsClient records each state write with DMS. Nil unless the bundle records deployment
+	// history, in which case RegisterDmsClient installs it.
+	dmsClient *dms.BufferedClient
 
 	// DMSDeploymentID is the deployment Open read the state from, kept so what follows records
 	// under it without looking the workspace node up again. Empty when the bundle does not
@@ -121,18 +121,17 @@ type WALEntry struct {
 	Value *ResourceEntry `json:"v,omitempty"` // nil means delete
 }
 
-// StartRecording has every subsequent state write recorded with DMS through sink, so what the
-// service holds mirrors the WAL. A nil sink records nothing, which is what a bundle that does
-// not record deployment history passes. It is called once the version exists, which is why it
-// is not an Open option.
-func (db *DeploymentState) StartRecording(sink *dms.OperationSink) {
-	if sink == nil {
+// RegisterDmsClient has every subsequent state write recorded with client, so what the service
+// holds mirrors the WAL. A nil client records nothing. Called once the version exists, which is
+// why it is not an Open option.
+func (db *DeploymentState) RegisterDmsClient(client *dms.BufferedClient) {
+	if client == nil {
 		return
 	}
 
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.sink = sink
+	db.dmsClient = client
 }
 
 // RecordFailure records that a resource did not apply, so the history says why rather than
@@ -143,30 +142,12 @@ func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause e
 	}
 }
 
-// RecordingErr reports the first failure to record an operation, so apply can stop before
-// creating resources the service will not know about.
-func (db *DeploymentState) RecordingErr() error {
-	if r := db.recorder(); r != nil {
-		return r.FirstErr()
-	}
-	return nil
-}
-
-// FinishRecording drains what is waiting and returns the first failure to record. Safe to call
-// twice, and on a state that never started recording.
-func (db *DeploymentState) FinishRecording() error {
-	if r := db.recorder(); r != nil {
-		return r.Close()
-	}
-	return nil
-}
-
-// recorder reads the sink under db.mu, which guards it, and returns nil when the bundle does
+// recorder reads the client under db.mu, which guards it, and returns nil when the bundle does
 // not record deployment history.
-func (db *DeploymentState) recorder() *dms.OperationSink {
+func (db *DeploymentState) recorder() *dms.BufferedClient {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	return db.sink
+	return db.dmsClient
 }
 
 func NewDatabase(lineage string, serial int) Database {
@@ -203,13 +184,13 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 	if err == nil {
 		db.stateIDs[key] = newID
 	}
-	sink := db.sink
+	dmsClient := db.dmsClient
 	db.mu.Unlock()
 
 	if err != nil {
 		return err
 	}
-	if sink == nil {
+	if dmsClient == nil {
 		return nil
 	}
 
@@ -220,24 +201,15 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 	if err != nil {
 		return err
 	}
-	sink.RecordOperation(ctx, key, false, newID, recorded)
+	dmsClient.RecordOperation(ctx, key, false, newID, recorded)
 
 	return nil
 }
 
-// DeleteState drops the resource's state entry: the resource is gone.
-func (db *DeploymentState) DeleteState(ctx context.Context, key string) error {
-	return db.deleteState(ctx, key, false)
-}
-
-// DeleteStateForRecreate drops the resource's state entry as the first half of a recreate.
-// The operation is recorded as still in progress, so an interrupted deploy does not leave
-// the resource described as finished.
-func (db *DeploymentState) DeleteStateForRecreate(ctx context.Context, key string) error {
-	return db.deleteState(ctx, key, true)
-}
-
-func (db *DeploymentState) deleteState(ctx context.Context, key string, inProgress bool) error {
+// DeleteState drops the resource's state entry: the resource is gone. inProgress records the
+// operation as unfinished, which is what the first half of a recreate wants - an interrupted
+// deploy must not leave the resource described as finished.
+func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgress bool) error {
 	db.AssertOpenedForWrite()
 
 	db.mu.Lock()
@@ -251,7 +223,7 @@ func (db *DeploymentState) deleteState(ctx context.Context, key string, inProgre
 	if err == nil {
 		delete(db.stateIDs, key)
 	}
-	sink := db.sink
+	dmsClient := db.dmsClient
 	db.mu.Unlock()
 
 	if err != nil {
@@ -260,8 +232,8 @@ func (db *DeploymentState) deleteState(ctx context.Context, key string, inProgre
 
 	// State is nil: the resource no longer exists. Recorded outside the lock for the
 	// same reason as SaveState.
-	if sink != nil {
-		sink.RecordOperation(ctx, key, inProgress, deletedID, nil)
+	if dmsClient != nil {
+		dmsClient.RecordOperation(ctx, key, inProgress, deletedID, nil)
 	}
 
 	return nil

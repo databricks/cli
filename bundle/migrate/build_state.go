@@ -206,7 +206,7 @@ func BuildStateFromTF(
 		}
 
 		// Migration rebuilds local state from terraform's; nothing is deployed, and
-		// the DMS sink is never set on this state, so the action is not reported.
+		// the DMS client is never set on this state, so the action is not reported.
 		if err := stateDB.SaveState(ctx, node, id, sv.Value, dependsOn); err != nil {
 			return warningsSeen, fmt.Errorf("%s: SaveState: %w", node, err)
 		}

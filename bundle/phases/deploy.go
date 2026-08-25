@@ -199,13 +199,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	//
 	// The version is created only after approval; CompleteVersion is deferred before
 	// lock.Release and no-ops until then.
-	recording, err := newRecording(ctx, b, stateEngine, dms.VersionTypeDeploy)
+	dmsClient, err := newDmsClient(ctx, b, stateEngine, dms.VersionTypeDeploy)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 	defer func() {
-		if err := recording.Finish(ctx, !logdiag.HasError(ctx)); err != nil {
+		if err := dmsClient.Close(ctx, !logdiag.HasError(ctx)); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
@@ -272,16 +272,16 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	// Settle deployment and version before planning. Plan snapshots the config, so
 	// both must be stamped before it is computed. Version itself is created after approval.
-	if err := recording.Prepare(ctx); err != nil {
+	if err := dmsClient.Prepare(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
-	if recording.Version() != 0 {
+	if dmsClient.Version() != 0 {
 		// The deployment ID is stamped earlier, when the state is opened; only the
 		// version is new here. A first deploy has no ID until now, so stamp both.
 		bundle.ApplySeqContext(ctx, b,
-			metadata.AnnotateDeployment(recording.DeploymentID()),
-			metadata.AnnotateDeploymentVersion(recording.Version()),
+			metadata.AnnotateDeployment(dmsClient.DeploymentID()),
+			metadata.AnnotateDeploymentVersion(dmsClient.Version()),
 		)
 		if logdiag.HasError(ctx) {
 			return
@@ -346,15 +346,14 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		logdiag.LogError(ctx, err)
 		return
 	}
-	sink, err := recording.Start(ctx, staged)
-	if err != nil {
+	if err := dmsClient.Start(ctx, staged); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
-	logDeploymentVersion(ctx, b, recording)
+	logDeploymentVersion(ctx, b, dmsClient)
 
 	// Record operations under that version, so DMS holds the deployed resource state.
-	b.DeploymentBundle.OpSink = sink
+	b.DeploymentBundle.DmsClient = dmsClient
 	deployCore(ctx, b, plan, stateEngine)
 
 	if logdiag.HasError(ctx) {

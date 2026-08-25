@@ -224,7 +224,7 @@ func TestDeleteState(t *testing.T) {
 
 	var db2 DeploymentState
 	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(true), WithWrite(true), nil))
-	require.NoError(t, db2.DeleteState(t.Context(), "jobs.my_job"))
+	require.NoError(t, db2.DeleteState(t.Context(), "jobs.my_job", false))
 	mustFinalize(t, &db2)
 
 	var db3 DeploymentState

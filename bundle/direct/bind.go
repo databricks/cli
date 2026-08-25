@@ -224,7 +224,7 @@ func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey st
 	}
 
 	// Delete the main resource
-	err = b.StateDB.DeleteState(ctx, resourceKey)
+	err = b.StateDB.DeleteState(ctx, resourceKey, false)
 	if err != nil {
 		return err
 	}
@@ -238,7 +238,7 @@ func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey st
 
 	for key := range b.StateDB.Data.State {
 		if key == permissionsKey || key == grantsKey || strings.HasPrefix(key, resourceKey+".") {
-			err = b.StateDB.DeleteState(ctx, key)
+			err = b.StateDB.DeleteState(ctx, key, false)
 			if err != nil {
 				return err
 			}

@@ -17,11 +17,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// newRecording returns what this run records with DMS, or a disabled recording when
-// nothing is: recording needs the direct engine and the bundle's opt-in.
-func newRecording(ctx context.Context, b *bundle.Bundle, eng engine.EngineType, versionType dms.VersionType) (dms.Recording, error) {
+// newDmsClient returns the client this run records with, or nil when it records nothing:
+// recording needs the direct engine and the bundle's opt-in.
+func newDmsClient(ctx context.Context, b *bundle.Bundle, eng engine.EngineType, versionType dms.VersionType) (*dms.BufferedClient, error) {
 	if !b.RecordsDeploymentHistory(ctx) || !eng.IsDirect() {
-		return dms.Disabled(), nil
+		// A nil client records nothing; the phases call through either way.
+		return nil, nil
 	}
 
 	w := b.WorkspaceClient(ctx)
@@ -29,7 +30,7 @@ func newRecording(ctx context.Context, b *bundle.Bundle, eng engine.EngineType, 
 	if err != nil {
 		return nil, err
 	}
-	return dms.NewRecording(dms.RecordingOptions{
+	return dms.NewBufferedClient(dms.Options{
 		Client: client,
 		// Read the state from the same deployment, which the state DB looked up when it
 		// opened. Empty on a first deploy, where Prepare creates the deployment instead.
@@ -86,8 +87,8 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 
 // logDeploymentVersion logs the deployment version URL. Workspace ID is omitted
 // so the page stays clickable in a terminal and redirects correctly without it.
-func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, recording dms.Recording) {
-	if recording.Version() == 0 {
+func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, dmsClient *dms.BufferedClient) {
+	if dmsClient.Version() == 0 {
 		return
 	}
 
@@ -96,11 +97,11 @@ func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, recording dms.R
 		// Only the link is lost, so report the version without it rather than failing
 		// a deploy over it.
 		log.Debugf(ctx, "Not linking to the recorded deployment: %s", err)
-		cmdio.LogString(ctx, fmt.Sprintf("Current Deployment Version: %s version %d", recording.DeploymentID(), recording.Version()))
+		cmdio.LogString(ctx, fmt.Sprintf("Current Deployment Version: %s version %d", dmsClient.DeploymentID(), dmsClient.Version()))
 		return
 	}
 
-	cmdio.LogString(ctx, "Current Deployment Version: "+workspaceurls.DeploymentURL(*baseURL, recording.DeploymentID(), recording.Version()))
+	cmdio.LogString(ctx, "Current Deployment Version: "+workspaceurls.DeploymentURL(*baseURL, dmsClient.DeploymentID(), dmsClient.Version()))
 }
 
 // deploymentMetadata describes the bundle this deploy came from and where it

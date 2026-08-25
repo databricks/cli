@@ -130,7 +130,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	//
 	// Recorded as a recreate rather than a delete: if the create below fails, this is the
 	// operation DMS is left with, and it says the resource is mid-recreate.
-	err = db.DeleteStateForRecreate(ctx, d.ResourceKey)
+	err = db.DeleteState(ctx, d.ResourceKey, true)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
@@ -172,7 +172,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		// The update emptied the resource out (e.g. all grants revoked). Keeping an entry
 		// would report the node as tracked-and-unchanged forever, while a fresh deploy of
 		// the same config plans no node at all; drop it so the two agree.
-		err = db.DeleteState(ctx, d.ResourceKey)
+		err = db.DeleteState(ctx, d.ResourceKey, false)
 		if err != nil {
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
@@ -268,7 +268,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 		}
 	}
 
-	err = db.DeleteState(ctx, d.ResourceKey)
+	err = db.DeleteState(ctx, d.ResourceKey, false)
 	if err != nil {
 		return fmt.Errorf("deleting state id=%s: %w", oldID, err)
 	}
