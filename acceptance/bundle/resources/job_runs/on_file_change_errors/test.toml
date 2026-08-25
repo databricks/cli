@@ -1,5 +1,2 @@
-# Git Bash otherwise rewrites /tmp/seed.txt to %TEMP%/seed.txt.
-Env.MSYS_NO_PATHCONV = "1"
-
 # The bundle is never deployed here, so there are no requests worth recording.
 RecordRequests = false
