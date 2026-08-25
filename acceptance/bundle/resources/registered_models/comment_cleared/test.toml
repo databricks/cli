@@ -7,5 +7,4 @@ Ignore = [
     ".databricks",
     ".gitignore",
     "databricks.yml",
-    "databricks.yml.in",
 ]

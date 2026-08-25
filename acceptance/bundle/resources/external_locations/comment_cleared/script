@@ -1,5 +1,4 @@
 echo "*" > .gitignore
-cp databricks.yml databricks.yml.orig
 
 # print_requests.py consumes out.requests.txt, so it runs after the last request.
 cleanup() {
@@ -14,7 +13,7 @@ title "Deploy with a comment"
 trace $CLI bundle deploy
 
 title "Remove the comment from the configuration and redeploy"
-grep -v 'comment:' databricks.yml.orig > databricks.yml
+update_file.py databricks.yml 'comment: declared in the bundle' ''
 trace $CLI bundle deploy
 
 title "The comment the bundle no longer declares"
