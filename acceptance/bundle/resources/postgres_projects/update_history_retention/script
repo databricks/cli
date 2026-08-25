@@ -21,6 +21,6 @@ trace $CLI bundle deploy
 
 # Unlike the suspension oneof, history_retention_duration is masked under its own
 # name, so the direct engine's update_mask is accepted and the change applies.
-trace print_requests.py --del-body project_id --sort '//postgres' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --del-body project_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI postgres get-project "${project_name}" | project_fields

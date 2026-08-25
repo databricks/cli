@@ -25,7 +25,7 @@ Recreated postgres_branches.dev_branch
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
->>> print_requests.py --del-body project_id,branch_id --sort //postgres ^//operations/
+>>> print_requests.py --del-body project_id,branch_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

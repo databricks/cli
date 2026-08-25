@@ -28,6 +28,6 @@ rm -f out.requests.txt
 errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 
 # The update_mask each engine sends is the whole point of the divergence.
-trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields > out.endpoint.$DATABRICKS_BUNDLE_ENGINE.txt

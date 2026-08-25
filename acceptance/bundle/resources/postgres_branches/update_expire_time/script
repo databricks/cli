@@ -21,5 +21,5 @@ trace update_file.py databricks.yml "2030-01-01T00:00:00Z" "2031-06-15T12:00:00Z
 trace $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 rm -f out.requests.txt
 errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
-trace print_requests.py --del-body project_id,branch_id --sort '//postgres' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --del-body project_id,branch_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI postgres get-branch "${branch_name}" | branch_fields > out.branch.$DATABRICKS_BUNDLE_ENGINE.txt

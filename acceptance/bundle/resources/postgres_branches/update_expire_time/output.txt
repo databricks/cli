@@ -29,7 +29,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === Change expire_time: engines diverge, see the per-engine out.* files
 >>> update_file.py databricks.yml [EXPIRE_TIME_BEFORE] [EXPIRE_TIME_AFTER]
 
->>> print_requests.py --del-body project_id,branch_id --sort //postgres ^//operations/
+>>> print_requests.py --del-body project_id,branch_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch
 

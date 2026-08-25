@@ -10,7 +10,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === Change ttl: engines diverge, see the per-engine out.* files
 >>> update_file.py databricks.yml ttl: 604800s ttl: 259200s
 
->>> print_requests.py --del-body project_id,branch_id --sort //postgres ^//operations/
+>>> print_requests.py --del-body project_id,branch_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

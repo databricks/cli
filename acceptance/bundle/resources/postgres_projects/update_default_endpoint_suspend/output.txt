@@ -32,7 +32,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === Change default_endpoint_settings.suspend_timeout_duration: engines diverge
 >>> update_file.py databricks.yml suspend_timeout_duration: 300s suspend_timeout_duration: 600s
 
->>> print_requests.py --del-body project_id --sort //postgres ^//operations/
+>>> print_requests.py --del-body project_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
 

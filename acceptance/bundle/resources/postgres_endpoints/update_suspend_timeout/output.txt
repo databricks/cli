@@ -27,7 +27,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 >>> update_file.py databricks.yml suspend_timeout_duration: 300s suspend_timeout_duration: 600s
 
 === Plan and deploy: engines diverge, see the per-engine out.* files
->>> print_requests.py --del-body project_id,branch_id,endpoint_id --sort //postgres
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint
 

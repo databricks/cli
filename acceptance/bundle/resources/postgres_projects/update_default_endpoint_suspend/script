@@ -22,5 +22,5 @@ trace update_file.py databricks.yml "suspend_timeout_duration: 300s" "suspend_ti
 trace $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 rm -f out.requests.txt
 errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
-trace print_requests.py --del-body project_id --sort '//postgres' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --del-body project_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI postgres get-project "${project_name}" | project_fields > out.project.$DATABRICKS_BUNDLE_ENGINE.txt
