@@ -22,6 +22,7 @@ Use ` + "`databricks ssh connect --help`" + ` to see all available flags.`,
 	cmd.AddCommand(newSetupCommand())
 	cmd.AddCommand(newConnectCommand())
 	cmd.AddCommand(newServerCommand())
+	cmd.AddCommand(newAgentShimCommand())
 
 	return cmd
 }

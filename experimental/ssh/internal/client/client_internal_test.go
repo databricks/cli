@@ -350,23 +350,62 @@ func TestHostKeyChangedHint(t *testing.T) {
 
 func TestBuildRemoteShellArgs(t *testing.T) {
 	const bashCmd = `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
+	const version = "1.2.3"
 
-	t.Run("interactive returns non-login bash command", func(t *testing.T) {
-		args := buildRemoteShellArgs(ClientOptions{}, "")
+	// A serverless session has a connection name and no cluster ID.
+	serverless := ClientOptions{ConnectionName: "my-conn"}
+
+	t.Run("serverless installs a launcher per agent, cds home, then opens bash", func(t *testing.T) {
+		const wsHome = "/Workspace/Users/me@example.com"
+		args := buildRemoteShellArgs(serverless, wsHome, version)
+		require.Len(t, args, 1)
+		// A wrapper is written for every supported agent before the shell opens.
+		for _, agent := range SupportedAgentNames() {
+			assert.Contains(t, args[0], `cat > "$HOME/.agent-shim/bin/`+agent+`"`)
+			assert.Contains(t, args[0], agentWrapperScript(wsHome, version, agent))
+		}
+		assert.Contains(t, args[0], `export PATH="$PATH:$HOME/.agent-shim/bin"`)
+		// The cd into the workspace home precedes the shell launch.
+		assert.True(t, strings.HasSuffix(args[0], `cd '`+wsHome+`' 2>/dev/null; `+bashCmd))
+	})
+
+	t.Run("dedicated cluster skips the launchers (serverless-only feature)", func(t *testing.T) {
+		args := buildRemoteShellArgs(ClientOptions{ClusterID: "abc-123"}, "/Workspace/Users/me@example.com", version)
 		require.Len(t, args, 1)
 		assert.Equal(t, bashCmd, args[0])
 	})
 
-	t.Run("interactive cds into workspace home when set", func(t *testing.T) {
-		args := buildRemoteShellArgs(ClientOptions{}, "/Workspace/Users/me@example.com")
+	t.Run("serverless without a workspace home skips the launchers", func(t *testing.T) {
+		// Without wsHome the wrappers can't locate the CLI, so only the shell opens.
+		args := buildRemoteShellArgs(serverless, "", version)
 		require.Len(t, args, 1)
-		assert.Equal(t, `cd '/Workspace/Users/me@example.com' 2>/dev/null; `+bashCmd, args[0])
+		assert.Equal(t, bashCmd, args[0])
 	})
 
 	t.Run("non-interactive passes additional args verbatim", func(t *testing.T) {
 		additional := []string{"ls", "-la"}
-		args := buildRemoteShellArgs(ClientOptions{AdditionalArgs: additional}, "/Workspace/Users/me@example.com")
+		args := buildRemoteShellArgs(ClientOptions{ConnectionName: "my-conn", AdditionalArgs: additional}, "/Workspace/Users/me@example.com", version)
 		assert.Equal(t, additional, args)
+	})
+}
+
+func TestAgentWrapperScript(t *testing.T) {
+	const wsHome = "/Workspace/Users/me@example.com"
+
+	t.Run("resolves the uploaded binary and delegates to agent-shim <agent>", func(t *testing.T) {
+		wrapper := agentWrapperScript(wsHome, "1.2.3", "codex")
+		assert.True(t, strings.HasPrefix(wrapper, "#!/usr/bin/env bash"))
+		// Architecture is resolved on the remote via uname -m.
+		assert.Contains(t, wrapper, "case \"$(uname -m)\" in")
+		// Binary path uses the version dir + arch subdir (${_arch} filled remotely); delegates to agent-shim <agent>.
+		assert.Contains(t, wrapper, `exec "`+wsHome+`/.databricks/ssh-tunnel/1.2.3/databricks_cli_1.2.3_linux_${_arch}/databricks" ssh agent-shim codex "$@"`)
+		// The workspace home is forwarded so the shim can name the working directory.
+		assert.Contains(t, wrapper, "export "+workspaceHomeEnv+"='"+wsHome+"'")
+	})
+
+	t.Run("dev builds use the version-less release subdir", func(t *testing.T) {
+		wrapper := agentWrapperScript(wsHome, "1.2.3-dev+abc", "claude")
+		assert.Contains(t, wrapper, `/ssh-tunnel/1.2.3-dev+abc/databricks_cli_linux_${_arch}/databricks`)
 	})
 }
 
@@ -381,7 +420,7 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 	}
 
 	t.Run("interactive forces a PTY before the destination", func(t *testing.T) {
-		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "/Workspace/Users/me@example.com", ClientOptions{})
+		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "/Workspace/Users/me@example.com", "1.2.3", ClientOptions{})
 		ptyIdx := indexOf(args, "-t")
 		hostIdx := indexOf(args, "myhost")
 		require.NotEqual(t, -1, ptyIdx, "-t must be present for interactive sessions")
@@ -393,7 +432,7 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 	})
 
 	t.Run("non-interactive does not force a PTY", func(t *testing.T) {
-		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
+		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "", "1.2.3", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
 		assert.Equal(t, -1, indexOf(args, "-t"), "no PTY for non-interactive passthrough")
 		hostIdx := indexOf(args, "myhost")
 		require.NotEqual(t, -1, hostIdx)
