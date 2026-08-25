@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
 // DeploymentNodeName is the workspace node DMS creates per deployment. Must
@@ -34,11 +35,11 @@ func ResolveDeploymentID(ctx context.Context, w *databricks.WorkspaceClient, sta
 	return strconv.FormatInt(obj.ObjectId, 10), nil
 }
 
-// LastVersion returns the deployment's most recent version, empty when it has none or when
-// deploymentID is empty. The version a run creates is the next one after it.
-func LastVersion(ctx context.Context, c *Client, deploymentID string) (string, error) {
+// ReadDeployment returns the deployment record, nil when deploymentID is empty. It carries the
+// last version, which the next one follows, and the metadata a run compares its own against.
+func ReadDeployment(ctx context.Context, c *Client, deploymentID string) (*bundledeployments.Deployment, error) {
 	if deploymentID == "" {
-		return "", nil
+		return nil, nil
 	}
 
 	// The ID came from a BUNDLE_DEPLOYMENT node that get-status returned, and by design the
@@ -47,9 +48,9 @@ func LastVersion(ctx context.Context, c *Client, deploymentID string) (string, e
 	dep, err := c.GetDeployment(ctx, deploymentID)
 	switch {
 	case errors.Is(err, apierr.ErrNotFound), errors.Is(err, apierr.ErrResourceDoesNotExist):
-		return "", fmt.Errorf("internal error: no deployment found for the file with object id %s: %w", deploymentID, err)
+		return nil, fmt.Errorf("internal error: no deployment found for the file with object id %s: %w", deploymentID, err)
 	case err != nil:
-		return "", fmt.Errorf("failed to get deployment: %w", err)
+		return nil, fmt.Errorf("failed to get deployment: %w", err)
 	}
-	return dep.LastVersionId, nil
+	return dep, nil
 }

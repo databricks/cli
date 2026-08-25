@@ -107,7 +107,7 @@ func TestRecordingStartReportsWhatTheServiceRefused(t *testing.T) {
 			f := &fakeDMS{}
 			r := testClient(t, f, VersionTypeDeploy, tt.versionErr)
 
-			err := r.Start(t.Context(), []StagedOperation{{ResourceKey: "jobs.foo"}})
+			err := r.Start(t.Context(), []StagedOperation{{ResourceKey: "resources.jobs.foo"}})
 
 			require.Error(t, err)
 			for _, want := range tt.wantMessages {
@@ -166,7 +166,7 @@ func TestNilClientIsNoOp(t *testing.T) {
 	// without checking.
 	var r *BufferedClient
 
-	require.NoError(t, r.Start(t.Context(), []StagedOperation{{ResourceKey: "jobs.foo"}}))
+	require.NoError(t, r.Start(t.Context(), []StagedOperation{{ResourceKey: "resources.jobs.foo"}}))
 	require.NoError(t, r.Close(t.Context(), true))
 	require.NoError(t, r.Drain())
 
@@ -249,4 +249,79 @@ func TestRecordBeforeStartIsAnError(t *testing.T) {
 	c.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(`{"state":{}}`))
 
 	assert.ErrorContains(t, c.Err(), "before the deployment version was created")
+}
+
+func TestEnsureDeploymentWritesOnlyWhatChanged(t *testing.T) {
+	// The deployment owns this metadata, so a run that says the same thing must not write it
+	// again, and one that says something new must write exactly the fields that differ.
+	held := &bundledeployments.Deployment{
+		DisplayName:    "my-bundle",
+		TargetName:     "default",
+		DeploymentMode: bundledeployments.DeploymentModeDeploymentModeDevelopment,
+	}
+	want := Metadata{
+		DisplayName: "my-bundle",
+		TargetName:  "default",
+		Mode:        bundledeployments.DeploymentModeDeploymentModeDevelopment,
+	}
+
+	tests := []struct {
+		name     string
+		metadata Metadata
+		wantMask string
+	}{
+		{
+			name:     "nothing changed",
+			metadata: want,
+		},
+		{
+			name:     "the target moved",
+			metadata: Metadata{DisplayName: "my-bundle", TargetName: "prod", Mode: bundledeployments.DeploymentModeDeploymentModeDevelopment},
+			wantMask: "target_name",
+		},
+		{
+			name:     "renamed and promoted",
+			metadata: Metadata{DisplayName: "renamed", TargetName: "prod", Mode: bundledeployments.DeploymentModeDeploymentModeProduction},
+			wantMask: "display_name,target_name,deployment_mode",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &fakeDMS{raw: newFakeRaw("1")}
+			c, err := NewBufferedClient(Options{
+				Client:       &Client{Service: f, raw: f.raw},
+				DeploymentID: "stored-id",
+				Deployment:   held,
+				Metadata:     tt.metadata,
+			})
+			require.NoError(t, err)
+
+			require.NoError(t, c.EnsureDeployment(t.Context()))
+
+			if tt.wantMask == "" {
+				assert.Empty(t, f.raw.deploymentUpdates, "nothing to write")
+				return
+			}
+			require.Len(t, f.raw.deploymentUpdates, 1)
+			assert.Equal(t, tt.wantMask, f.raw.deploymentUpdates[0].mask)
+		})
+	}
+}
+
+func TestEnsureDeploymentCreatesWithTheMetadata(t *testing.T) {
+	// A first deploy has no deployment, so the metadata goes on the create rather than an update.
+	f := &fakeDMS{raw: newFakeRaw("1")}
+	c, err := NewBufferedClient(Options{
+		Client:   &Client{Service: f, raw: f.raw},
+		Metadata: Metadata{DisplayName: "my-bundle", TargetName: "default"},
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, c.EnsureDeployment(t.Context()))
+
+	require.Len(t, f.created, 1)
+	assert.Equal(t, "my-bundle", f.created[0].Deployment.DisplayName)
+	assert.Equal(t, "default", f.created[0].Deployment.TargetName)
+	assert.Empty(t, f.raw.deploymentUpdates, "a create carries the metadata, so nothing to update")
 }

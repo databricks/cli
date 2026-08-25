@@ -35,7 +35,8 @@ func newDmsClient(ctx context.Context, b *bundle.Bundle, eng engine.EngineType, 
 	return dms.NewBufferedClient(dms.Options{
 		Client:        client,
 		DeploymentID:  b.DeploymentBundle.StateDB.DMSDeploymentID,
-		LastVersionID: b.DeploymentBundle.StateDB.DMSLastVersionID,
+		LastVersionID: lastVersionID(b.DeploymentBundle.StateDB.DMSDeployment),
+		Deployment:    b.DeploymentBundle.StateDB.DMSDeployment,
 		StatePath:     b.Config.Workspace.StatePath,
 		VersionType:   versionType,
 		Metadata:      deploymentMetadata(b),
@@ -57,7 +58,7 @@ func stagedOperations(plan *deployplan.Plan) ([]dms.StagedOperation, error) {
 			return nil, fmt.Errorf("%s: %w", action.ResourceKey, err)
 		}
 		staged = append(staged, dms.StagedOperation{
-			ResourceKey: dms.KeyFromState(action.ResourceKey),
+			ResourceKey: action.ResourceKey,
 			ActionType:  actionType,
 		})
 	}
@@ -155,4 +156,12 @@ func deploymentModeToSDK(mode config.Mode) bundledeployments.DeploymentMode {
 	default:
 		return ""
 	}
+}
+
+// lastVersionID is the deployment's most recent version, empty when there is no deployment yet.
+func lastVersionID(dep *bundledeployments.Deployment) string {
+	if dep == nil {
+		return ""
+	}
+	return dep.LastVersionId
 }

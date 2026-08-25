@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/google/uuid"
 )
 
@@ -76,11 +77,11 @@ type DeploymentState struct {
 	// history, in which case RegisterDmsClient installs it.
 	dmsClient *dms.BufferedClient
 
-	// DMSDeploymentID is the deployment Open read the state from, and DMSLastVersionID its most
-	// recent version. Kept so what follows records under them without looking either up again.
-	// Empty when the bundle does not record deployment history or has never been deployed.
-	DMSDeploymentID  string
-	DMSLastVersionID string
+	// DMSDeploymentID is the deployment Open read the state from, and DMSDeployment the record
+	// itself. Kept so what follows records under it without reading it again. Empty and nil when
+	// the bundle does not record deployment history or has never been deployed.
+	DMSDeploymentID string
+	DMSDeployment   *bundledeployments.Deployment
 }
 
 type Header struct {
@@ -314,8 +315,8 @@ type DMSSource struct {
 	// dms.ResolveDeploymentID), and empty before the first recorded deploy.
 	DeploymentID string
 
-	// LastVersionID is that deployment's most recent version, empty when it has none.
-	LastVersionID string
+	// Deployment is that deployment's record, nil before the first recorded deploy.
+	Deployment *bundledeployments.Deployment
 }
 
 // Open reads the deployment state from disk, recovering the WAL when withRecovery is set.
@@ -409,7 +410,7 @@ To record this bundle's history, start it over as a new deployment:
 To keep the existing resources instead, unset experimental.record_deployment_history`, path)
 		}
 		db.DMSDeploymentID = dmsSource.DeploymentID
-		db.DMSLastVersionID = dmsSource.LastVersionID
+		db.DMSDeployment = dmsSource.Deployment
 		if dmsSource.DeploymentID != "" {
 			if err := db.readDMSState(ctx, dmsSource); err != nil {
 				return err

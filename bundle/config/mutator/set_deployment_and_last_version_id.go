@@ -7,15 +7,14 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dms"
 )
 
 type setDeploymentAndLastVersionID struct {
 	engine engine.EngineType
 }
 
-// SetDeploymentAndLastVersionID populates bundle.deployment.history from DMS for
-// 'bundle summary'. Makes an extra API call; only use when needed.
+// SetDeploymentAndLastVersionID puts the deployment opening the state read into
+// bundle.deployment.history, where 'bundle summary' reports it. Reads nothing itself.
 func SetDeploymentAndLastVersionID(e engine.EngineType) bundle.Mutator {
 	return &setDeploymentAndLastVersionID{engine: e}
 }
@@ -30,27 +29,14 @@ func (m *setDeploymentAndLastVersionID) Apply(ctx context.Context, b *bundle.Bun
 		return nil
 	}
 
-	// Resolved from the state path when the state was opened, so this does not look it up again.
-	// Empty until the first recorded deploy, and after a destroy.
-	deploymentID := b.DeploymentBundle.StateDB.DMSDeploymentID
-	if deploymentID == "" {
+	// Read when the state was opened. Nil until the first recorded deploy, and after a destroy.
+	dep := b.DeploymentBundle.StateDB.DMSDeployment
+	if dep == nil {
 		return nil
 	}
 
-	client, err := dms.NewClient(b.WorkspaceClient(ctx))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	// The ID came from a workspace node the service created itself, so there is always a
-	// deployment behind it. last_version_id is empty until the first version.
-	dep, err := client.GetDeployment(ctx, deploymentID)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	b.Config.Bundle.Deployment.History = &config.DeploymentHistory{
-		DeploymentID:    deploymentID,
+		DeploymentID:    b.DeploymentBundle.StateDB.DMSDeploymentID,
 		LatestVersionID: dep.LastVersionId,
 	}
 	return nil

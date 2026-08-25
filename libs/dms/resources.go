@@ -10,7 +10,8 @@ import (
 // Resource is what DMS holds for one resource of a deployment, as of the last operation
 // that recorded it.
 type Resource struct {
-	Key ResourceKey
+	// Key is the bundle state key, as everything outside this package spells it.
+	Key string
 	ID  string
 
 	// State is the state the last operation recorded, as the opaque string the service
@@ -31,7 +32,7 @@ func (c *Client) ListResources(ctx context.Context, deploymentID string) ([]Reso
 			return nil, fmt.Errorf("listing resources from deployment metadata service: %w", err)
 		}
 		out = append(out, Resource{
-			Key:   ResourceKey(res.ResourceKey),
+			Key:   statePrefix + res.ResourceKey,
 			ID:    res.ResourceId,
 			State: res.State,
 		})

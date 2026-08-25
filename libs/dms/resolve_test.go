@@ -72,7 +72,7 @@ func TestResolveDeploymentIDPropagatesOtherErrors(t *testing.T) {
 	assert.ErrorContains(t, err, "looking up deployment at /Workspace/state/"+DeploymentNodeName)
 }
 
-func TestLastVersionReportsWhatTheDeploymentReadRefused(t *testing.T) {
+func TestReadDeploymentReportsWhatTheReadRefused(t *testing.T) {
 	tests := []struct {
 		name        string
 		getErr      error
@@ -98,7 +98,7 @@ func TestLastVersionReportsWhatTheDeploymentReadRefused(t *testing.T) {
 				return nil, tt.getErr
 			}}
 
-			_, err := LastVersion(t.Context(), &Client{Service: f}, "stored-id")
+			_, err := ReadDeployment(t.Context(), &Client{Service: f}, "stored-id")
 
 			require.Error(t, err)
 			assert.ErrorContains(t, err, tt.wantMessage)
@@ -106,18 +106,18 @@ func TestLastVersionReportsWhatTheDeploymentReadRefused(t *testing.T) {
 	}
 }
 
-func TestLastVersionWithoutADeploymentReadsNothing(t *testing.T) {
+func TestReadDeploymentWithoutOneReadsNothing(t *testing.T) {
 	// Nothing to read before the first recorded deploy, so it must not call the service: the
 	// fake would panic on GetDeployment.
-	last, err := LastVersion(t.Context(), &Client{Service: &fakeDMS{}}, "")
+	dep, err := ReadDeployment(t.Context(), &Client{Service: &fakeDMS{}}, "")
 
 	require.NoError(t, err)
-	assert.Empty(t, last)
+	assert.Nil(t, dep)
 }
 
-func TestLastVersionReturnsTheDeploymentsLatest(t *testing.T) {
-	last, err := LastVersion(t.Context(), &Client{Service: &fakeDMS{getDeployment: deploymentAt("7")}}, "stored-id")
+func TestReadDeploymentReturnsTheRecord(t *testing.T) {
+	dep, err := ReadDeployment(t.Context(), &Client{Service: &fakeDMS{getDeployment: deploymentAt("7")}}, "stored-id")
 
 	require.NoError(t, err)
-	assert.Equal(t, "7", last)
+	assert.Equal(t, "7", dep.LastVersionId)
 }

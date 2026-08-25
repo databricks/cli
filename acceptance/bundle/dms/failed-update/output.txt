@@ -32,13 +32,7 @@ Files: 3 uploaded, 0 deleted
   "body": {
     "cli_version": "[CLI_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
-    "target_name": "default",
-    "display_name": "dms-failed-update",
     "previous_version_id": "1",
-    "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-update/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-update/default"
-    },
     "operations": [
       {
         "resource_key": "schemas.foo",

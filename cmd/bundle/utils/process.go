@@ -241,17 +241,17 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
 
-				// The version this run creates is the next one after the deployment's most
-				// recent, so read it here with the ID rather than again later.
-				lastVersionID, err := dms.LastVersion(ctx, dmsClient, deploymentID)
+				// Read the deployment once here: what follows needs its last version, to know
+				// which version to create, and its metadata, to know what to bring up to date.
+				dep, err := dms.ReadDeployment(ctx, dmsClient, deploymentID)
 				if err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
 				dmsSource = &dstate.DMSSource{
-					Client:        dmsClient,
-					DeploymentID:  deploymentID,
-					LastVersionID: lastVersionID,
+					Client:       dmsClient,
+					DeploymentID: deploymentID,
+					Deployment:   dep,
 				}
 
 				// Stamp the deployment before anything diffs the resources: the workspace

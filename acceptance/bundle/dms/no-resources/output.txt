@@ -10,8 +10,13 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
   "body": {
+    "display_name": "dms-no-resources",
     "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/state",
-    "target_name": "default"
+    "target_name": "default",
+    "workspace_info": {
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default"
+    }
   }
 }
 {
@@ -22,13 +27,7 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
   },
   "body": {
     "cli_version": "[CLI_VERSION]",
-    "version_type": "VERSION_TYPE_DEPLOY",
-    "target_name": "default",
-    "display_name": "dms-no-resources",
-    "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default"
-    }
+    "version_type": "VERSION_TYPE_DEPLOY"
   }
 }
 {
@@ -69,13 +68,7 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
   "body": {
     "cli_version": "[CLI_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
-    "target_name": "default",
-    "display_name": "dms-no-resources",
-    "previous_version_id": "1",
-    "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-resources/default"
-    }
+    "previous_version_id": "1"
   }
 }
 {

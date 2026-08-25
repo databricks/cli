@@ -13,6 +13,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
+// statePrefix is what a bundle state key carries and a DMS resource key does not: state calls a
+// job "resources.jobs.foo", DMS calls it "jobs.foo". Every exported name here takes the state
+// form; the prefix comes off where a request is built, and back on where a resource is read.
+const statePrefix = "resources."
+
 // Client is every call the CLI makes to DMS, as methods below. Each one goes out through one
 // of two halves: the generated client for the calls it can express, and hand-written requests
 // for the two it cannot.
@@ -45,17 +50,21 @@ func versionName(deploymentID string, version int64) string {
 
 // CreateDeployment registers a deployment under parentPath and returns the id the server
 // assigned it, which is the id of the workspace node it creates there.
-func (c *Client) CreateDeployment(ctx context.Context, parentPath, targetName string) (string, error) {
-	dep, err := c.Service.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{
-		Deployment: bundledeployments.Deployment{
-			InitialParentPath: parentPath,
-			TargetName:        targetName,
-		},
-	})
+func (c *Client) CreateDeployment(ctx context.Context, parentPath string, metadata Metadata) (string, error) {
+	dep := metadata.deployment()
+	dep.InitialParentPath = parentPath
+
+	created, err := c.Service.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{Deployment: dep})
 	if err != nil {
 		return "", err
 	}
-	return deploymentIDFromName(dep.Name)
+	return deploymentIDFromName(created.Name)
+}
+
+// UpdateDeployment writes the fields mask names onto the deployment. The service ignores every
+// other field, so the mask is what decides the write.
+func (c *Client) UpdateDeployment(ctx context.Context, deploymentID string, metadata Metadata, mask string) error {
+	return c.raw.UpdateDeployment(ctx, deploymentID, metadata.deployment(), mask)
 }
 
 // GetDeployment reads the deployment record, which carries the last version recorded under it.
@@ -96,8 +105,8 @@ func (c *Client) Heartbeat(ctx context.Context, deploymentID string, version int
 
 // UpdateOperation fills in one operation the version staged, and returns the sequence id the
 // next update for that resource must send.
-func (c *Client) UpdateOperation(ctx context.Context, deploymentID string, version int64, key ResourceKey, sequenceID string, update OperationUpdate) (string, error) {
-	return c.raw.UpdateOperation(ctx, deploymentID, version, key, sequenceID, update)
+func (c *Client) UpdateOperation(ctx context.Context, deploymentID string, version int64, stateKey, sequenceID string, update OperationUpdate) (string, error) {
+	return c.raw.UpdateOperation(ctx, deploymentID, version, stateKey, sequenceID, update)
 }
 
 // deploymentIDFromName extracts the deployment ID from a DMS resource name of
@@ -117,30 +126,26 @@ type requester interface {
 	// is at DEVELOPMENT stage, which keeps it out of the SDK until it is promoted.
 	CreateVersion(ctx context.Context, deploymentID, versionID string, body CreateVersionRequest) (*bundledeployments.Version, error)
 
+	// UpdateDeployment is hand-written because the generated client has no such call yet.
+	UpdateDeployment(ctx context.Context, deploymentID string, deployment bundledeployments.Deployment, mask string) error
+
 	// UpdateOperation is hand-written because the SDK types sequence_id as an int64 while
 	// the service sends a JSON string, so it cannot read the response. sequenceID is the
 	// token the previous update for this resource returned, or 0 for the first, which is
 	// what staging leaves.
-	UpdateOperation(ctx context.Context, deploymentID string, version int64, key ResourceKey, sequenceID string, update OperationUpdate) (next string, err error)
+	UpdateOperation(ctx context.Context, deploymentID string, version int64, stateKey, sequenceID string, update OperationUpdate) (next string, err error)
 }
 
 // CreateVersionRequest is the CreateVersion request body.
 type CreateVersionRequest struct {
 	CliVersion  string      `json:"cli_version"`
 	VersionType VersionType `json:"version_type"`
-	TargetName  string      `json:"target_name,omitempty"`
-	// DisplayName names the deployment in the UI. The service keeps it on the
-	// deployment's node, so a version that omits it leaves the deployment unnamed.
-	DisplayName string `json:"display_name,omitempty"`
 	// PreviousVersionId is the deployment's most recent version, unset for a
 	// deployment's first version.
 	PreviousVersionId string `json:"previous_version_id,omitempty"`
-	// DeploymentMode is the bundle target's mode, unset when the target sets none.
-	DeploymentMode bundledeployments.DeploymentMode `json:"deployment_mode,omitempty"`
-	// GitInfo and WorkspaceInfo record where the deployed source came from and
-	// where it landed. The service denormalizes both onto the deployment.
-	GitInfo       *bundledeployments.GitInfo       `json:"git_info,omitempty"`
-	WorkspaceInfo *bundledeployments.WorkspaceInfo `json:"workspace_info,omitempty"`
+	// GitInfo records where this version's source came from. The rest of the provenance -
+	// display name, target, mode, workspace paths - belongs to the deployment.
+	GitInfo *bundledeployments.GitInfo `json:"git_info,omitempty"`
 	// Operations is every resource this version will touch; see StagedOperation. It sits in this
 	// body with the version's own fields because the request binds body: "version", and is input
 	// only - the response never carries it back.
@@ -151,7 +156,8 @@ type CreateVersionRequest struct {
 // creates it in OPERATION_STATUS_PENDING at sequence id 0, and the CLI fills in the outcome
 // with UpdateOperation as the resource is applied.
 type StagedOperation struct {
-	ResourceKey ResourceKey                           `json:"resource_key"`
+	// ResourceKey is the bundle state key; the request carries the form the service uses.
+	ResourceKey string                                `json:"resource_key"`
 	ActionType  bundledeployments.OperationActionType `json:"action_type"`
 }
 
@@ -167,6 +173,13 @@ type rawClient struct {
 }
 
 func (r *rawClient) CreateVersion(ctx context.Context, deploymentID, versionID string, body CreateVersionRequest) (*bundledeployments.Version, error) {
+	staged := make([]StagedOperation, len(body.Operations))
+	for i, op := range body.Operations {
+		op.ResourceKey = strings.TrimPrefix(op.ResourceKey, statePrefix)
+		staged[i] = op
+	}
+	body.Operations = staged
+
 	var version bundledeployments.Version
 	path := "/api/2.0/bundle/" + deploymentName(deploymentID) + "/versions"
 	err := r.client.Do(ctx, http.MethodPost, path,
@@ -177,6 +190,33 @@ func (r *rawClient) CreateVersion(ctx context.Context, deploymentID, versionID s
 		return nil, err
 	}
 	return &version, nil
+}
+
+// newDeploymentUpdate builds the request body for update, holding exactly the masked fields for
+// the same reason newUpdateRequest does. A map, not the SDK struct, whose omitempty tags would
+// drop a masked field that is empty - which is how deployment_mode is cleared when a target stops
+// setting mode.
+func newDeploymentUpdate(deployment bundledeployments.Deployment, mask string) map[string]any {
+	values := map[string]any{
+		"display_name":    deployment.DisplayName,
+		"target_name":     deployment.TargetName,
+		"deployment_mode": deployment.DeploymentMode,
+		"workspace_info":  deployment.WorkspaceInfo,
+	}
+
+	body := map[string]any{}
+	for field := range strings.SplitSeq(mask, ",") {
+		body[field] = values[field]
+	}
+	return body
+}
+
+func (r *rawClient) UpdateDeployment(ctx context.Context, deploymentID string, deployment bundledeployments.Deployment, mask string) error {
+	path := "/api/2.0/bundle/" + deploymentName(deploymentID)
+	return r.client.Do(ctx, http.MethodPatch, path,
+		auth.WorkspaceIDHeaders(r.client.Config),
+		map[string]any{"update_mask": mask},
+		newDeploymentUpdate(deployment, mask), nil)
 }
 
 // newUpdateRequest builds the request body for update. A field is in the body when the mask
@@ -201,11 +241,11 @@ func newUpdateRequest(update OperationUpdate, sequenceID string) map[string]any 
 	return body
 }
 
-func (r *rawClient) UpdateOperation(ctx context.Context, deploymentID string, version int64, key ResourceKey, sequenceID string, update OperationUpdate) (string, error) {
+func (r *rawClient) UpdateOperation(ctx context.Context, deploymentID string, version int64, stateKey, sequenceID string, update OperationUpdate) (string, error) {
 	body := newUpdateRequest(update, sequenceID)
 
 	var result operationResponse
-	path := "/api/2.0/bundle/" + versionName(deploymentID, version) + "/operations/" + string(key)
+	path := "/api/2.0/bundle/" + versionName(deploymentID, version) + "/operations/" + strings.TrimPrefix(stateKey, statePrefix)
 	err := r.client.Do(ctx, http.MethodPatch, path,
 		auth.WorkspaceIDHeaders(r.client.Config),
 		map[string]any{"update_mask": update.Fields.Mask()},

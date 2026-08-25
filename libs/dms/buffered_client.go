@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -45,8 +47,12 @@ type Options struct {
 	StatePath   string
 	VersionType VersionType
 
-	// Metadata is what the version records about the deploy; see Metadata.
+	// Metadata is what this run says about the bundle; see Metadata.
 	Metadata Metadata
+
+	// Deployment is what the service already holds, read with the last version, and nil before
+	// the first recorded deploy. Metadata that matches it is not written again.
+	Deployment *bundledeployments.Deployment
 }
 
 // Metadata is what a version records about the bundle, its source and where it
@@ -61,6 +67,57 @@ type Metadata struct {
 	Mode      bundledeployments.DeploymentMode
 	Git       *bundledeployments.GitInfo
 	Workspace *bundledeployments.WorkspaceInfo
+}
+
+// deploymentFields are the deployment's own metadata, in the order a mask lists them. Git is not
+// among them: the service derives the deployment's from the version that carried it.
+var deploymentFields = []string{"display_name", "target_name", "deployment_mode", "workspace_info"}
+
+// sameWorkspaceInfo compares the paths alone. The SDK records which fields a response carried in
+// ForceSendFields, so a record read back never deep-equals one built here, and comparing the
+// structs whole would report every run as a change.
+func sameWorkspaceInfo(want, current *bundledeployments.WorkspaceInfo) bool {
+	if want == nil || current == nil {
+		return want == nil && current == nil
+	}
+
+	a, b := *want, *current
+	a.ForceSendFields, b.ForceSendFields = nil, nil
+	return reflect.DeepEqual(a, b)
+}
+
+// deployment renders the metadata the deployment owns.
+func (m Metadata) deployment() bundledeployments.Deployment {
+	return bundledeployments.Deployment{
+		DisplayName:    m.DisplayName,
+		TargetName:     m.TargetName,
+		DeploymentMode: m.Mode,
+		WorkspaceInfo:  m.Workspace,
+	}
+}
+
+// staleFields returns the mask that brings current up to m, empty when the deployment already
+// says what this run would say.
+func (m Metadata) staleFields(current *bundledeployments.Deployment) string {
+	if current == nil {
+		return strings.Join(deploymentFields, ",")
+	}
+
+	want := m.deployment()
+	var stale []string
+	if want.DisplayName != current.DisplayName {
+		stale = append(stale, "display_name")
+	}
+	if want.TargetName != current.TargetName {
+		stale = append(stale, "target_name")
+	}
+	if want.DeploymentMode != current.DeploymentMode {
+		stale = append(stale, "deployment_mode")
+	}
+	if !sameWorkspaceInfo(want.WorkspaceInfo, current.WorkspaceInfo) {
+		stale = append(stale, "workspace_info")
+	}
+	return strings.Join(stale, ",")
 }
 
 // NewBufferedClient returns a client for the deployment described by opts, with the version it
@@ -82,6 +139,7 @@ func NewBufferedClient(opts Options) (*BufferedClient, error) {
 		statePath:         opts.StatePath,
 		versionType:       opts.VersionType,
 		metadata:          opts.Metadata,
+		current:           opts.Deployment,
 		versionNum:        versionNum,
 		previousVersionID: opts.LastVersionID,
 	}, nil
@@ -96,6 +154,9 @@ type BufferedClient struct {
 	statePath    string
 	versionType  VersionType
 	metadata     Metadata
+
+	// current is the deployment as the service holds it, nil when there is none yet.
+	current *bundledeployments.Deployment
 
 	// The version this run will create, known before it exists so the plan can be stamped with
 	// it, and the one it must follow.
@@ -120,7 +181,7 @@ type BufferedClient struct {
 	// sequenceIDs holds the token the last update for a resource returned. A resource absent
 	// from it has only what staging left, so its first update sends that. Unguarded: run is the
 	// only goroutine that writes, one update at a time.
-	sequenceIDs map[ResourceKey]string
+	sequenceIDs map[string]string
 
 	// mu guards the fields below.
 	mu sync.Mutex
@@ -157,18 +218,29 @@ func (c *BufferedClient) EnsureDeployment(ctx context.Context) error {
 	return c.ensureDeployment(ctx)
 }
 
-// ensureDeployment creates the deployment on a first deploy. initial_parent_path is required, and
-// the node the service creates under it is what the next run resolves the id from.
+// ensureDeployment creates the deployment on a first deploy, or writes the metadata this run
+// changed. initial_parent_path is required on create, and the node the service makes under it is
+// what the next run resolves the id from.
 func (c *BufferedClient) ensureDeployment(ctx context.Context) error {
-	if c.deploymentID != "" {
+	switch mask := c.metadata.staleFields(c.current); {
+	case c.deploymentID == "":
+		id, err := c.client.CreateDeployment(ctx, c.statePath, c.metadata)
+		if err != nil {
+			return fmt.Errorf("failed to create deployment: %w", err)
+		}
+		c.deploymentID = id
+	case mask != "":
+		if err := c.client.UpdateDeployment(ctx, c.deploymentID, c.metadata, mask); err != nil {
+			return fmt.Errorf("failed to update deployment: %w", err)
+		}
+	default:
 		return nil
 	}
 
-	id, err := c.client.CreateDeployment(ctx, c.statePath, c.metadata.TargetName)
-	if err != nil {
-		return fmt.Errorf("failed to create deployment: %w", err)
-	}
-	c.deploymentID = id
+	// The service now holds what this run says, so the second call - Start makes one after the
+	// deploy's own - has nothing left to write.
+	written := c.metadata.deployment()
+	c.current = &written
 	return nil
 }
 
@@ -190,13 +262,9 @@ func (c *BufferedClient) Start(ctx context.Context, staged []StagedOperation) er
 	version, err := c.client.CreateVersion(ctx, c.deploymentID, c.versionNum, CreateVersionRequest{
 		CliVersion:        build.GetInfo().Version,
 		VersionType:       c.versionType,
-		TargetName:        c.metadata.TargetName,
-		DisplayName:       c.metadata.DisplayName,
 		PreviousVersionId: c.previousVersionID,
-		DeploymentMode:    c.metadata.Mode,
 		Operations:        staged,
 		GitInfo:           c.metadata.Git,
-		WorkspaceInfo:     c.metadata.Workspace,
 	})
 	if err != nil {
 		// The service caps how many operations one version may stage, so a bundle past the
@@ -220,7 +288,7 @@ func (c *BufferedClient) Start(ctx context.Context, staged []StagedOperation) er
 	c.queue = make(chan string, bufferedOperations)
 	c.done = make(chan struct{})
 	c.pending = make(map[string]OperationUpdate)
-	c.sequenceIDs = make(map[ResourceKey]string)
+	c.sequenceIDs = make(map[string]string)
 	c.stopQueue = sync.OnceFunc(func() { close(c.queue) })
 	go c.run(ctx)
 
@@ -393,14 +461,14 @@ func (c *BufferedClient) run(ctx context.Context) {
 		}
 
 		// Keep going after a failure, so one bad write does not drop everything behind it.
-		if err := c.write(ctx, KeyFromState(resourceKey), update); err != nil {
+		if err := c.write(ctx, resourceKey, update); err != nil {
 			c.setErr(fmt.Errorf("recording operation for %s with the deployment metadata service: %w", resourceKey, err))
 		}
 	}
 }
 
 // write sends one update, at the sequence id the resource is at.
-func (c *BufferedClient) write(ctx context.Context, key ResourceKey, update OperationUpdate) error {
+func (c *BufferedClient) write(ctx context.Context, key string, update OperationUpdate) error {
 	sequenceID, written := c.sequenceIDs[key]
 	if !written {
 		sequenceID = stagedSequenceID

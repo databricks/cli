@@ -24,10 +24,10 @@ func TestStagedOperationsCoversEveryTouchedResource(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []dms.StagedOperation{
-		{ResourceKey: "jobs.foo", ActionType: bundledeployments.OperationActionTypeOperationActionTypeCreate},
-		{ResourceKey: "pipelines.bar", ActionType: bundledeployments.OperationActionTypeOperationActionTypeRecreate},
-		{ResourceKey: "schemas.baz", ActionType: bundledeployments.OperationActionTypeOperationActionTypeDelete},
-		{ResourceKey: "clusters.small", ActionType: bundledeployments.OperationActionTypeOperationActionTypeResize},
+		{ResourceKey: "resources.jobs.foo", ActionType: bundledeployments.OperationActionTypeOperationActionTypeCreate},
+		{ResourceKey: "resources.pipelines.bar", ActionType: bundledeployments.OperationActionTypeOperationActionTypeRecreate},
+		{ResourceKey: "resources.schemas.baz", ActionType: bundledeployments.OperationActionTypeOperationActionTypeDelete},
+		{ResourceKey: "resources.clusters.small", ActionType: bundledeployments.OperationActionTypeOperationActionTypeResize},
 	}, staged)
 }
 
@@ -44,7 +44,7 @@ func TestStagedOperationsLeavesOutUntouchedResources(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, []dms.StagedOperation{
-		{ResourceKey: "jobs.touched", ActionType: bundledeployments.OperationActionTypeOperationActionTypeUpdate},
+		{ResourceKey: "resources.jobs.touched", ActionType: bundledeployments.OperationActionTypeOperationActionTypeUpdate},
 	}, staged)
 }
 

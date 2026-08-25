@@ -88,6 +88,10 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 	deploymentID := strconv.FormatInt(objectID, 10)
 	s.DmsDeploymentNodes[deploymentID] = nodePath
 
+	if resp, ok := checkWorkspaceInfo(dep.WorkspaceInfo); !ok {
+		return resp
+	}
+
 	dep.Name = "deployments/" + deploymentID
 	dep.Status = bundledeployments.DeploymentStatusDeploymentStatusActive
 	s.DmsDeployments[deploymentID] = &DmsDeployment{
@@ -134,6 +138,77 @@ func deploymentBody(d *DmsDeployment) (map[string]any, error) {
 		body["last_successful_version_id"] = d.LastSuccessfulVersionID
 	}
 	return body, nil
+}
+
+// dmsUpdatableDeploymentFields are the update_mask paths UpdateDeployment accepts.
+var dmsUpdatableDeploymentFields = []string{"display_name", "target_name", "deployment_mode", "workspace_info"}
+
+// checkWorkspaceInfo rejects a bundle_root_path without the git_folder_path it is relative to,
+// which is what the service does.
+func checkWorkspaceInfo(ws *bundledeployments.WorkspaceInfo) (Response, bool) {
+	if ws != nil && (ws.GitFolderPath == "") != (ws.BundleRootPath == "") {
+		return dmsInvalidArgument("workspace_info.git_folder_path and workspace_info.bundle_root_path must be set together"), false
+	}
+	return Response{}, true
+}
+
+func (s *FakeWorkspace) UpdateDeployment(req Request, deploymentID string) Response {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(req.Body, &raw); err != nil {
+		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
+	}
+	var dep bundledeployments.Deployment
+	if err := json.Unmarshal(req.Body, &dep); err != nil {
+		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
+	}
+
+	updateMask := req.URL.Query().Get("update_mask")
+	if updateMask == "" {
+		return dmsInvalidArgument("update_mask is required")
+	}
+	update := map[string]bool{}
+	for path := range strings.SplitSeq(updateMask, ",") {
+		path = strings.TrimSpace(path)
+		if !slices.Contains(dmsUpdatableDeploymentFields, path) {
+			return dmsInvalidArgument("update_mask path " + path + " is not updatable")
+		}
+		if _, sent := raw[path]; !sent {
+			// An empty value is how a field is cleared, so the field has to be there to say so.
+			return dmsInvalidArgument(path + " is required when '" + path + "' is in update_mask (an empty value clears it)")
+		}
+		update[path] = true
+	}
+
+	if resp, ok := checkWorkspaceInfo(dep.WorkspaceInfo); !ok {
+		return resp
+	}
+
+	defer s.LockUnlock()()
+
+	d, ok := s.DmsDeployments[deploymentID]
+	if !ok {
+		return dmsNotFound("deployment " + deploymentID)
+	}
+
+	// Only the masked paths are written; every other field of the body is ignored.
+	if update["display_name"] {
+		d.Deployment.DisplayName = dep.DisplayName
+	}
+	if update["target_name"] {
+		d.Deployment.TargetName = dep.TargetName
+	}
+	if update["deployment_mode"] {
+		d.Deployment.DeploymentMode = dep.DeploymentMode
+	}
+	if update["workspace_info"] {
+		d.Deployment.WorkspaceInfo = dep.WorkspaceInfo
+	}
+
+	body, err := deploymentBody(d)
+	if err != nil {
+		return Response{StatusCode: 500, Body: map[string]string{"message": err.Error()}}
+	}
+	return Response{Body: body}
 }
 
 func (s *FakeWorkspace) DeleteDeployment(deploymentID string) Response {
@@ -198,12 +273,6 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 	// Note: deployment lock not modelled. Tests kill the CLI mid-apply, leaving
 	// the version in-progress forever, whereas the real service lets the lease expire.
 
-	// bundle_root_path is relative to git_folder_path, so the service rejects
-	// workspace_info that carries one without the other.
-	if ws := version.WorkspaceInfo; ws != nil && (ws.GitFolderPath == "") != (ws.BundleRootPath == "") {
-		return dmsInvalidArgument("workspace_info.git_folder_path and workspace_info.bundle_root_path must be set together")
-	}
-
 	// A version records its whole operation set up front; there is no API to add one later.
 	if len(staged.Operations) > maxOperationsPerVersion {
 		return Response{
@@ -235,13 +304,9 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 	version.Status = bundledeployments.VersionStatusVersionStatusInProgress
 	d.Versions[versionID] = &version
 
-	// The service denormalizes the version's provenance onto the deployment, which
-	// is where the read APIs serve it from. display_name is excluded: the service
-	// keeps that on the deployment's workspace node instead.
-	d.Deployment.TargetName = version.TargetName
-	d.Deployment.DeploymentMode = version.DeploymentMode
+	// The deployment's git provenance is derived from the version that carried it; the rest of
+	// its metadata is written through CreateDeployment and UpdateDeployment.
 	d.Deployment.GitInfo = version.GitInfo
-	d.Deployment.WorkspaceInfo = version.WorkspaceInfo
 
 	// Each staged operation starts pending at sequence 0, and the CLI fills in its outcome
 	// with UpdateOperation as the resource is applied.

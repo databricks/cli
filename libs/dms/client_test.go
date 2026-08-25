@@ -23,7 +23,7 @@ type fakeVersionRequest struct {
 type updaterCall struct {
 	deploymentID string
 	version      int64
-	key          ResourceKey
+	key          string
 	sequenceID   string
 	update       OperationUpdate
 }
@@ -36,6 +36,9 @@ type fakeRaw struct {
 	// versions collects CreateVersion calls, and versionErr fails them.
 	versions   []fakeVersionRequest
 	versionErr error
+
+	// deploymentUpdates collects UpdateDeployment calls.
+	deploymentUpdates []deploymentUpdate
 
 	// updates collects UpdateOperation calls. sequence is what the service reports back, and
 	// the call at index failOn fails instead.
@@ -59,7 +62,21 @@ func (f *fakeRaw) CreateVersion(ctx context.Context, deploymentID, versionID str
 	return &bundledeployments.Version{VersionId: versionID}, nil
 }
 
-func (f *fakeRaw) UpdateOperation(ctx context.Context, deploymentID string, version int64, key ResourceKey, sequenceID string, update OperationUpdate) (string, error) {
+// deploymentUpdate is an UpdateDeployment call captured by fakeRaw.
+type deploymentUpdate struct {
+	deployment bundledeployments.Deployment
+	mask       string
+}
+
+func (f *fakeRaw) UpdateDeployment(ctx context.Context, deploymentID string, deployment bundledeployments.Deployment, mask string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	f.deploymentUpdates = append(f.deploymentUpdates, deploymentUpdate{deployment: deployment, mask: mask})
+	return nil
+}
+
+func (f *fakeRaw) UpdateOperation(ctx context.Context, deploymentID string, version int64, key, sequenceID string, update OperationUpdate) (string, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -123,4 +140,12 @@ func TestUpdateRequestSendsExactlyTheMaskedFields(t *testing.T) {
 		"status":        bundledeployments.OperationStatusOperationStatusFailed,
 		"sequence_id":   "3",
 	}, newUpdateRequest(NewFailureUpdate("job-1", errors.New("boom")), "3"))
+
+	// The deployment's own fields follow the same rule. Clearing deployment_mode - a target that
+	// stops setting mode - sends it empty, which the SDK struct's omitempty would have dropped.
+	deployment := Metadata{DisplayName: "b", TargetName: "t"}.deployment()
+	assert.Equal(t, map[string]any{
+		"target_name":     "t",
+		"deployment_mode": bundledeployments.DeploymentMode(""),
+	}, newDeploymentUpdate(deployment, "target_name,deployment_mode"))
 }

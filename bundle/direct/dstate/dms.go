@@ -35,8 +35,8 @@ func (db *DeploymentState) readDMSState(ctx context.Context, src *DMSSource) err
 		if err != nil {
 			return err
 		}
-		resources[res.Key.StateKey()] = entry
-		stateIDs[res.Key.StateKey()] = entry.ID
+		resources[res.Key] = entry
+		stateIDs[res.Key] = entry.ID
 	}
 
 	db.Data.State = resources
@@ -51,7 +51,7 @@ func stateEntry(res dms.Resource) (ResourceEntry, error) {
 		// The service stores state as an opaque string, so it arrives as the serialized
 		// envelope the write side sent.
 		if err := json.Unmarshal([]byte(res.State), &recorded); err != nil {
-			return ResourceEntry{}, fmt.Errorf("interpreting state recorded for %s: %w", res.Key.StateKey(), err)
+			return ResourceEntry{}, fmt.Errorf("interpreting state recorded for %s: %w", res.Key, err)
 		}
 	}
 
