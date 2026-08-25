@@ -96,6 +96,8 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Deleted apps.myapp
+Deleted pipelines.mypipeline
 Destroy: 2 deleted
 
 >>> print_requests.py --sort ^//import-file/

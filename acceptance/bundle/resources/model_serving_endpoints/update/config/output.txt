@@ -130,4 +130,5 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
+Deleted model_serving_endpoints.test_endpoint
 Destroy: 1 deleted

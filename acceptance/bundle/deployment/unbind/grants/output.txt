@@ -43,6 +43,8 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
+Deleted schemas.schema_1
+Deleted schemas.schema_1.grants
 Destroy: 1 deleted
 
 >>> [CLI] schemas delete main.test-schema-[UNIQUE_NAME]

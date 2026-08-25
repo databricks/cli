@@ -32,4 +32,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Deleted apps.foo
+Deleted apps.foo.permissions
 Destroy: 1 deleted

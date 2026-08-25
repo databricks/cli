@@ -34,6 +34,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy-cascade-divergence/default
 
+Deleted pipelines.my_pipeline
 Destroy: 1 deleted
 
 >>> print_requests.py //api/2.0/pipelines

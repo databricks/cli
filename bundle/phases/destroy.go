@@ -136,9 +136,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
-		// Not reported per resource: destroy names them up front for consent and then
-		// reports only a count, so there is no per-resource output to report into.
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, false)
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, reportPerResource(b))
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())
@@ -163,6 +161,18 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	bundle.ApplyContext(ctx, b, files.Delete())
 
 	if !logdiag.HasError(ctx) && b.Quiet < bundle.QuietAll {
+		// The direct engine reported these as each resource was deleted, so a destroy
+		// that failed part way through has already said what it removed. Terraform
+		// gives no per-resource results, so report them from the plan instead, which
+		// only describes what was intended and is therefore limited to the success path.
+		if reportPerResource(b) && !engine.IsDirect() {
+			for _, a := range plan.GetActions() {
+				if a.ActionType == deployplan.Delete {
+					cmdio.LogString(ctx, deployplan.AppliedLine(a.ResourceKey, a.ActionType))
+				}
+			}
+		}
+
 		// Count top-level resources only, matching the approval list above (which
 		// skips children); this also keeps the count stable across engines. Gone
 		// resources are included: they are excluded from the approval prompt because

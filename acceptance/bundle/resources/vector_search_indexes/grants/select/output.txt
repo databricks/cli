@@ -43,4 +43,7 @@ For Direct Access indexes, all upserted vectors are permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/vs-index-grants-[UNIQUE_NAME]/default
 
+Deleted vector_search_endpoints.my_endpoint
+Deleted vector_search_indexes.my_index
+Deleted vector_search_indexes.my_index.grants
 Destroy: 2 deleted

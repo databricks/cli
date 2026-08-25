@@ -32,4 +32,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Deleted vector_search_endpoints.foo
+Deleted vector_search_endpoints.foo.permissions
 Destroy: 1 deleted

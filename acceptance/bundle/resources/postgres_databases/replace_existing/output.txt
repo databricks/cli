@@ -61,4 +61,8 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/replace-existing-database-[UNIQUE_NAME]/default
 
+Deleted postgres_branches.main
+Deleted postgres_databases.my_database
+Deleted postgres_projects.my_project
+Deleted postgres_roles.owner
 Destroy: 4 deleted

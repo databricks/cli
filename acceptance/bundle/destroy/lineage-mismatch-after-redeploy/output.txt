@@ -13,6 +13,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default
 
+Deleted jobs.test_job
 Destroy: 1 deleted
 
 === Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)

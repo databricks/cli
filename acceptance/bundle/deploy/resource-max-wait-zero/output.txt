@@ -16,6 +16,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Deleted clusters.my_cluster
 Destroy: 1 deleted
 
 === No cap: the deployment polls until the cluster is RUNNING
@@ -35,4 +36,5 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Deleted clusters.my_cluster
 Destroy: 1 deleted

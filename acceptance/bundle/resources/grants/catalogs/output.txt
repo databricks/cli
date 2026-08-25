@@ -77,6 +77,8 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/catalog-grants-[UNIQUE_NAME]/default
 
+Deleted catalogs.grants_catalog
+Deleted catalogs.grants_catalog.grants
 Destroy: 1 deleted
 
 >>> print_requests.py //permissions

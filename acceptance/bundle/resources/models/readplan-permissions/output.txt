@@ -59,4 +59,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Deleted models.mymodel
+Deleted models.mymodel.permissions
 Destroy: 1 deleted

@@ -15,4 +15,6 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-dup-grants-[UNIQUE_NAME]/default
 
+Deleted schemas.apps_schema
+Deleted schemas.apps_schema.grants
 Destroy: 1 deleted

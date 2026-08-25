@@ -79,6 +79,8 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
+Deleted pipelines.foo
+Deleted schemas.bar
 Destroy: 2 deleted
 
 === Assert the schema is deleted

@@ -113,4 +113,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev
 
+Deleted jobs.sample_job
+Deleted pipelines.lakeflow_project_etl
+Deleted pipelines.lakeflow_project_etl_2
 Destroy: 3 deleted

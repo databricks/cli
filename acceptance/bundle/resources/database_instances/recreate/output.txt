@@ -31,4 +31,5 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-recreate-[UNIQUE_NAME]/default
 
+Deleted database_instances.my_database
 Destroy: 1 deleted

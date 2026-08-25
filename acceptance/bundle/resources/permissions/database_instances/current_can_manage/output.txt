@@ -68,4 +68,6 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Deleted database_instances.foo
+Deleted database_instances.foo.permissions
 Destroy: 1 deleted

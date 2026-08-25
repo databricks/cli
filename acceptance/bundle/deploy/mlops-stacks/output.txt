@@ -147,6 +147,14 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
 
+Deleted experiments.experiment
+Deleted experiments.experiment.permissions
+Deleted jobs.batch_inference_job
+Deleted jobs.batch_inference_job.permissions
+Deleted jobs.model_training_job
+Deleted jobs.model_training_job.permissions
+Deleted registered_models.model
+Deleted registered_models.model.grants
 Destroy: 4 deleted
 
 >>> [CLI] schemas delete main.project_name_[UNIQUE_NAME]

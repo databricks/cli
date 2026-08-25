@@ -86,6 +86,8 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default
 
+Deleted job_runs.my_run
+Deleted jobs.my_job
 Destroy: 2 deleted
 
 >>> print_requests.py //jobs/runs/delete

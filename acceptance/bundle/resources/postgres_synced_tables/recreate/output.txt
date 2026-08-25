@@ -39,5 +39,9 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default
 
+Deleted postgres_catalogs.my_catalog
+Deleted postgres_projects.my_project
+Deleted postgres_synced_tables.my_table
+Deleted schemas.pipeline_storage
 Destroy: 4 deleted
 Cleaning up temporary source table

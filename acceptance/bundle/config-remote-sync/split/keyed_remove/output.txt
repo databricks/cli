@@ -84,4 +84,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
 
+Deleted jobs.remove_job
+Deleted jobs.twoblock_remove_job
 Destroy: 2 deleted

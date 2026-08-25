@@ -65,4 +65,5 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
+Deleted jobs.my_job
 Destroy: 1 deleted

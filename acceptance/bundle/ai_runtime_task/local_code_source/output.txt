@@ -131,4 +131,5 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default
 
+Deleted jobs.train
 Destroy: 1 deleted

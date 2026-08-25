@@ -36,4 +36,6 @@ The conversation history attached to them is permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Deleted genie_spaces.foo
+Deleted genie_spaces.foo.permissions
 Destroy: 1 deleted

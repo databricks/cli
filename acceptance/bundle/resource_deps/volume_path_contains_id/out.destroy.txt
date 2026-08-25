@@ -13,4 +13,7 @@ is removed from the catalog, but the underlying files are not deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Deleted volumes.bar
+Deleted volumes.baz
+Deleted volumes.foo
 Destroy: 3 deleted

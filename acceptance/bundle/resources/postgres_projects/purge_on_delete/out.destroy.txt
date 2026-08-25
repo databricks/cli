@@ -9,4 +9,6 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-purge-[UNIQUE_NAME]/default
 
+Deleted postgres_projects.hard_delete
+Deleted postgres_projects.soft_delete
 Destroy: 2 deleted

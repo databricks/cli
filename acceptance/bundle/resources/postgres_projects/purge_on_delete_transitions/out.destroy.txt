@@ -7,4 +7,5 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/pg-purge-transitions-[UNIQUE_NAME]/default
 
+Deleted postgres_projects.proj
 Destroy: 1 deleted

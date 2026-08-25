@@ -36,4 +36,6 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Deleted postgres_projects.foo
+Deleted postgres_projects.foo.permissions
 Destroy: 1 deleted

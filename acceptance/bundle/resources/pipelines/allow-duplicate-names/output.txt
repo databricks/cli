@@ -52,6 +52,7 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-bundle-deploy-pipeline-duplicate-names-[UNIQUE_NAME]/default
 
+Deleted pipelines.pipeline_one
 Destroy: 1 deleted
 
 >>> [CLI] pipelines delete [UUID]

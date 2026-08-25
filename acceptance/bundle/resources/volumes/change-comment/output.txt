@@ -101,6 +101,7 @@ is removed from the catalog, but the underlying files are not deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Deleted volumes.volume1
 Destroy: 1 deleted
 
 >>> print_requests.py //unity

@@ -82,4 +82,6 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-[UNIQUE_NAME]/default
 
+Deleted postgres_branches.main
+Deleted postgres_projects.my_project
 Destroy: 2 deleted

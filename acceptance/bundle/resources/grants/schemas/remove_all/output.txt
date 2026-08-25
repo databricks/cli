@@ -24,4 +24,5 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-all-[UNIQUE_NAME]/default
 
+Deleted schemas.grants_schema
 Destroy: 1 deleted

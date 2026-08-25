@@ -76,4 +76,8 @@ is removed from the catalog, but the underlying files are not deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default
 
+Deleted schemas.schema1
+Deleted schemas.schema2
+Deleted volumes.foo
+Deleted volumes.foo.grants
 Destroy: 3 deleted

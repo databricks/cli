@@ -96,4 +96,5 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default
 
+Deleted alerts.myalert
 Destroy: 1 deleted

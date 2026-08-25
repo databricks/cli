@@ -173,6 +173,9 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-recreate-postgres-role-[UNIQUE_NAME]/default
 
+Deleted postgres_branches.main
+Deleted postgres_projects.my_project
+Deleted postgres_roles.my_role
 Destroy: 3 deleted
 
 >>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/

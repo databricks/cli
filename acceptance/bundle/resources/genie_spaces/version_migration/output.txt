@@ -26,4 +26,5 @@ The conversation history attached to them is permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/genie-version-migration-[UNIQUE_NAME]/default
 
+Deleted genie_spaces.foo
 Destroy: 1 deleted

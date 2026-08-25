@@ -54,4 +54,6 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default
 
+Deleted database_catalogs.my_catalog
+Deleted database_instances.my_instance
 Destroy: 2 deleted

@@ -26,4 +26,5 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/apps-uc-securable-drift/default
 
+Deleted apps.myapp
 Destroy: 1 deleted

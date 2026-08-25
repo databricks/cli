@@ -40,4 +40,6 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default
 
+Deleted schemas.grants_schema
+Deleted schemas.grants_schema.grants
 Destroy: 1 deleted

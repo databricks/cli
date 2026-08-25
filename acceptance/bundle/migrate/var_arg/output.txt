@@ -27,6 +27,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/migrate-var-test/dev
 
+Deleted jobs.test_job
 Destroy: 1 deleted
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy --var job_name=Custom Job Name
@@ -57,4 +58,5 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/migrate-var-test/dev
 
+Deleted jobs.test_job
 Destroy: 1 deleted

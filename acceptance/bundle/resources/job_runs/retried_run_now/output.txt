@@ -45,4 +45,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-retried-run-now/default
 
+Deleted job_runs.my_run
+Deleted jobs.my_job
 Destroy: 2 deleted

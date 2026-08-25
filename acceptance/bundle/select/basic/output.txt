@@ -138,4 +138,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default
 
+Deleted jobs.bar
+Deleted jobs.baz
+Deleted jobs.foo
 Destroy: 3 deleted

@@ -76,4 +76,8 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default
 
+Deleted jobs.my_job
+Deleted jobs.my_job.permissions
+Deleted schemas.my_schema
+Deleted schemas.my_schema.grants
 Destroy: 2 deleted
