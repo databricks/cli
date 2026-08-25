@@ -27,6 +27,13 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     "new": "sk-test-plaintext-key",
     "remote": ""
   },
+  "config.served_entities[1].external_model.custom_provider_config.api_key_auth.value_plaintext": {
+    "action": "skip",
+    "reason": "spec:input_only",
+    "old": "custom-plaintext-key",
+    "new": "custom-plaintext-key",
+    "remote": ""
+  },
   "description": {
     "action": "skip",
     "reason": "empty",
@@ -63,6 +70,21 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
             "task": "llm/v1/chat"
           },
           "name": "prod"
+        },
+        {
+          "external_model": {
+            "custom_provider_config": {
+              "api_key_auth": {
+                "key": "Authorization",
+                "value_plaintext": "custom-plaintext-key"
+              },
+              "custom_provider_url": "https://custom-provider.example"
+            },
+            "name": "my-custom-model",
+            "provider": "custom",
+            "task": "llm/v1/chat"
+          },
+          "name": "prod-custom"
         }
       ],
       "traffic_config": {
