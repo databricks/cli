@@ -17,6 +17,7 @@ var permissionResourceToObjectType = map[string]string{
 	"alerts":                  "/alertsv2/",
 	"apps":                    "/apps/",
 	"clusters":                "/clusters/",
+	"cluster_policies":        "/cluster-policies/",
 	"instance_pools":          "/instance-pools/",
 	"dashboards":              "/dashboards/",
 	"genie_spaces":            "/genie/",

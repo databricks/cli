@@ -1,5 +1,4 @@
 Cloud = true
-RequiresUnityCatalog = true
 
 # RecordRequests captures the config-remote-sync telemetry event so the script
 # can assert the per-operation change counts (add_count/remove_count/...).

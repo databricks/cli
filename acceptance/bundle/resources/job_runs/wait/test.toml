@@ -1,6 +1,5 @@
 # Runs the job for real on cloud. Serverless needs Unity Catalog.
 Cloud = true
-RequiresUnityCatalog = true
 
 # The wait polls GetRun until the run is terminal, so the recorded requests
 # depend on how long the run takes.

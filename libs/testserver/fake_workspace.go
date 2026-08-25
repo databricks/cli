@@ -197,6 +197,7 @@ type FakeWorkspace struct {
 	ModelRegistryModelIDs map[string]string // model name -> numeric ID
 	Clusters              map[string]compute.ClusterDetails
 	InstancePools         map[string]compute.GetInstancePool
+	ClusterPolicies       map[string]compute.Policy
 	Catalogs              map[string]catalog.CatalogInfo
 	ExternalLocations     map[string]catalog.ExternalLocationInfo
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
@@ -429,7 +430,13 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				SingleUserName:   TestUser.UserName,
 			},
 		},
-		InstancePools:                      map[string]compute.GetInstancePool{},
+		InstancePools: map[string]compute.GetInstancePool{},
+		ClusterPolicies: map[string]compute.Policy{
+			// Seeded so the stateful list keeps backing the variable-lookup tests
+			// (e.g. acceptance/bundle/variables/env_overrides resolves these by name).
+			"5678": {PolicyId: "5678", Name: "wrong-cluster-policy"},
+			"9876": {PolicyId: "9876", Name: "some-test-cluster-policy"},
+		},
 		VectorSearchIndexesPendingDeletion: map[string]int{},
 	}
 }
@@ -698,9 +705,21 @@ func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
 	return s.files[path].Data
 }
 
-func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
+// WorkspaceDelete implements POST /api/2.0/workspace/delete. As in the real API, a
+// non-recursive delete of a directory that still has children fails instead of removing
+// it, which is what lets a caller delete a directory only if it is empty.
+func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) Response {
 	defer s.LockUnlock()()
 	if !recursive {
+		if _, isDir := s.directories[path]; isDir && s.hasChildren(path) {
+			return Response{
+				StatusCode: 400,
+				Body: map[string]string{
+					"error_code": "DIRECTORY_NOT_EMPTY",
+					"message":    "Folder (" + path + ") is not empty",
+				},
+			}
+		}
 		delete(s.files, path)
 		delete(s.directories, path)
 	} else {
@@ -715,6 +734,24 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 			}
 		}
 	}
+	return Response{}
+}
+
+// hasChildren reports whether any file or directory lives under dirPath. Callers must
+// hold the lock.
+func (s *FakeWorkspace) hasChildren(dirPath string) bool {
+	prefix := dirPath + "/"
+	for key := range s.files {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	for key := range s.directories {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {

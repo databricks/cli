@@ -114,11 +114,12 @@ func TestRenderListJSONWithAgents(t *testing.T) {
 		Summary: map[string]scopeSummary{installer.ScopeGlobal: {Installed: 0, Total: 0}},
 		Agents: []agentEntry{
 			{
-				Name:        "claude-code",
-				DisplayName: "Claude Code",
-				Managed:     true,
-				Detected:    true,
-				Installed:   map[string]installInfo{installer.ScopeGlobal: {Delivery: "plugin", Version: "0.2.6"}},
+				Name:                 "claude-code",
+				DisplayName:          "Claude Code",
+				Managed:              true,
+				Detected:             true,
+				SupportsProjectScope: true,
+				Installed:            map[string]installInfo{installer.ScopeGlobal: {Delivery: "plugin", Version: "0.2.6"}},
 			},
 			{
 				Name:        "cursor",
@@ -146,6 +147,7 @@ func TestRenderListJSONWithAgents(t *testing.T) {
 	assert.Equal(t, "Claude Code", first["display_name"])
 	assert.Equal(t, true, first["managed"])
 	assert.Equal(t, true, first["detected"])
+	assert.Equal(t, true, first["supports_project_scope"])
 	installed := first["installed"].(map[string]any)
 	global := installed["global"].(map[string]any)
 	assert.Equal(t, "0.2.6", global["version"])
@@ -156,6 +158,7 @@ func TestRenderListJSONWithAgents(t *testing.T) {
 	second := agentsRaw[1].(map[string]any)
 	assert.Contains(t, second, "installed")
 	assert.Empty(t, second["installed"])
+	assert.Equal(t, false, second["supports_project_scope"])
 }
 
 func TestBuildAgentEntries(t *testing.T) {
@@ -182,17 +185,22 @@ func TestBuildAgentEntries(t *testing.T) {
 	assert.Equal(t, "Claude Code", byName["claude-code"].DisplayName)
 	assert.Equal(t, "0.2.6", byName["claude-code"].Installed[installer.ScopeGlobal].Version)
 	assert.Equal(t, "databricks plugin · v0.2.6 · up to date", agentStatusLabel(byName["claude-code"], "0.2.6"))
+	// SupportsProjectScope is wired straight from the registry: claude-code allows
+	// project scope, whereas the managed/skills-only global-only agents below do not.
+	assert.True(t, byName["claude-code"].SupportsProjectScope)
 
 	require.Contains(t, byName, "codex")
 	assert.True(t, byName["codex"].Managed)
 	assert.Equal(t, "0.2.5", byName["codex"].Installed[installer.ScopeGlobal].Version)
 	assert.Equal(t, "databricks plugin · v0.2.5 · update available", agentStatusLabel(byName["codex"], "0.2.6"))
+	assert.False(t, byName["codex"].SupportsProjectScope)
 
 	// The JSON output carries an entry for every registry agent, including
 	// skills-only agents like Cursor and managed agents with no recorded install.
 	require.Contains(t, byName, "cursor")
 	assert.False(t, byName["cursor"].Managed)
 	assert.Empty(t, byName["cursor"].Installed)
+	assert.False(t, byName["cursor"].SupportsProjectScope)
 
 	require.Contains(t, byName, "copilot")
 	assert.True(t, byName["copilot"].Managed)

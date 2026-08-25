@@ -178,7 +178,7 @@ resources:
     # A run is immutable and fire-once, so any change recreates it. Omitting
     # `field` matches every field (root; see TestFieldRuleOmittedIsRoot).
     # `field: ""` would instead match nothing. The one exception is a run that is
-    # still going, which ResourceJobRun.OverrideChangeDesc downgrades to an update.
+    # still going, which ResourceJobRun.OverrideChangeDesc downgrades to skip.
     recreate_on_changes:
       - reason: immutable
 
@@ -317,38 +317,16 @@ resources:
       # reports empty. This is not a backend default, so suppress remote changes.
       - field: budget_policy_id
         reason: no_update_api
-      # Accepted on write but not returned by GET.
-      - field: config.served_entities[*].burst_scaling_enabled
-        reason: input_only
       # table_names creates a profile and is not returned; inference_table_config round-trips.
       # The spec annotated this input_only in the v0.171 spec but no longer does, so the rule
       # has to be manual again.
       - field: telemetry_config.table_names
         reason: input_only
       # Write-only secrets: the backend stores them and returns the reference field, not the plaintext.
-      - field: config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.anthropic_config.anthropic_api_key_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.cohere_config.cohere_api_key_plaintext
-        reason: input_only
+      # custom_provider_config is not in the OpenAPI spec so the generator cannot reach it.
       - field: config.served_entities[*].external_model.custom_provider_config.api_key_auth.value_plaintext
         reason: input_only
       - field: config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.openai_config.openai_api_key_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.palm_config.palm_api_key_plaintext
         reason: input_only
     ignore_local_changes:
       - field: budget_policy_id
@@ -652,6 +630,14 @@ resources:
     # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L109-L118
     # DataSecurityModeDiffSuppressFunc: suppress when old != "" && new == ""
     #- field: data_security_mode
+
+  cluster_policies:
+    backend_defaults:
+      # A policy authored with policy_family_id and no definition gets its definition
+      # computed from the policy family by the backend and returned on read. Config
+      # leaves definition empty, so old/new are nil and backend_defaults skips the
+      # server-computed remote value; without this every deploy sees drift and re-Edits.
+      - field: definition
 
   instance_pools:
     # Field behaviors follow the TF provider tags cross-referenced with the edit API (compute.EditInstancePool):

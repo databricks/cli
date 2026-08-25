@@ -1,1 +1,13 @@
-Cloud = false
+# The assertion here is that the *backend* rewrites schema_json into Spark type names, which
+# the test server only mimics, so the cloud run is the one that matters -- see #6352, which
+# removed the superfluous Cloud = false. Inheriting CloudSlow = true left it nightly-only at
+# 12-18 minutes per env, all of it waiting for the index. Nothing here needs a queryable index,
+# only the created spec and a clean re-plan, so cap the wait and run it on every PR instead.
+Cloud = true
+CloudSlow = false
+Env.DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT = "30"
+
+# The cap makes deploy warn that it stopped waiting; see ../basic/test.toml.
+[[Repls]]
+Old = 'Warn: [^\n]*Stopped waiting[^\n]*\n'
+New = ''
