@@ -7,7 +7,7 @@ Warning: invalid value "BOGUS" for enum field. Valid values are [READ WRITE MANA
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created secret_scopes.my_scope
 Created secret_scopes.my_scope.permissions
-Files: 5 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Warn: post-deploy dry-run migration to direct: unknown permission level "BOGUS" for secret scope
 Warn: The warnings above are from a dry-run migration to the direct deployment engine (https://docs.databricks.com/aws/en/dev-tools/bundles/direct).
