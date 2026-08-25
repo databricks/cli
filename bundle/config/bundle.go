@@ -47,6 +47,7 @@ type Bundle struct {
 	ClusterId string `json:"cluster_id,omitempty"`
 
 	// Engine specifies the deployment engine to use ("terraform" or "direct").
+	// Defaults to "direct"; set "terraform" to opt out.
 	// Can be overridden with the DATABRICKS_BUNDLE_ENGINE environment variable.
 	Engine engine.EngineType `json:"engine,omitempty"`
 
