@@ -41,7 +41,7 @@ Since v1.14.0, after deploying with terraform, automatic migration to direct eng
 
 #### Manual migration via "bundle deployment migrate" command
 
-Migrating via this command is still possible, but no longer necessary.
+Migrating via this command is still possible, but no longer necessary. The command writes local state only, so it doubles as a way to preview the direct engine without committing to it: run `bundle plan` to check that it works, then `bundle deploy` to commit the migration — or, before that deploy, remove `.databricks` to undo it.
 
 The full sequence of operations:
 
