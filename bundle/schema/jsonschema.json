@@ -1396,7 +1396,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "on_file_change": {
-                        "description": "Path or glob relative to the defining YAML file. It must resolve under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Incompatible with lifecycle.prevent_destroy.",
+                        "description": "Path or glob relative to the defining YAML file. It must resolve under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Only files the bundle syncs are hashed, so .gitignore and sync.exclude apply. Use * to match a single directory level; ** is not supported. Incompatible with lifecycle.prevent_destroy.",
                         "$ref": "#/$defs/string"
                       }
                     },
