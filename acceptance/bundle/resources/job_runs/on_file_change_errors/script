@@ -25,5 +25,7 @@ update_file.py databricks.yml "missing/*.txt" "src/**"
 trace musterr $CLI bundle validate
 
 title "an absolute pattern is rejected"
-update_file.py databricks.yml "src/**" "/tmp/seed.txt"
+# Copied from a committed file rather than passed to update_file.py: Git Bash on
+# Windows rewrites a leading-slash argument into a Windows path.
+cp absolute_pattern.yml databricks.yml
 trace musterr $CLI bundle validate
