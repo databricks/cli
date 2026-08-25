@@ -15,13 +15,7 @@ trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 
 title "Change suspend_timeout_duration to 600s"
 trace update_file.py databricks.yml "suspend_timeout_duration: 300s" "suspend_timeout_duration: 600s"
-
-# The engines diverge from here on, so each step goes to a per-engine file.
-# Terraform plans and applies the change. The direct engine plans nothing:
-# structdiff compares duration.Duration field by field, and that type holds a
-# single unexported protobuf pointer, so 300s and 600s look equal to it. The
-# edit is silently dropped and the endpoint keeps its old value.
-trace $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
-trace $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle plan
+trace $CLI bundle deploy
 rm -f out.requests.txt
-trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields > out.endpoint.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
