@@ -46,6 +46,7 @@ func (r *JobRun) HasOnBundleDeploy() bool {
 	return false
 }
 
+// HasOnFileChange reports whether any trigger re-fires when matched files change.
 func (r *JobRun) HasOnFileChange() bool {
 	if r.Lifecycle == nil {
 		return false
@@ -58,6 +59,7 @@ func (r *JobRun) HasOnFileChange() bool {
 	return false
 }
 
+// HasOnValueChange reports whether any trigger re-fires when a resolved value changes.
 func (r *JobRun) HasOnValueChange() bool {
 	if r.Lifecycle == nil {
 		return false

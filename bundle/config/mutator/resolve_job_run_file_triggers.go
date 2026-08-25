@@ -8,6 +8,7 @@ import (
 	"io"
 	"maps"
 	"os"
+	pathlib "path"
 	"path/filepath"
 	"strings"
 
@@ -48,15 +49,11 @@ func (*resolveJobRunFileTriggers) Apply(ctx context.Context, b *bundle.Bundle) d
 				continue
 			}
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d].on_file_change", name, i)
-			hashes, d := resolveFileTrigger(b, path, strings.TrimSpace(*t.OnFileChange), syncable)
+			hashes, d := resolveFileTrigger(b, path, *t.OnFileChange, syncable)
 			diags = diags.Extend(d)
 			maps.Copy(out, hashes)
 		}
-		if len(out) == 0 {
-			jr.ResolvedFileTriggers = nil
-		} else {
-			jr.ResolvedFileTriggers = out
-		}
+		jr.ResolvedFileTriggers = out
 	}
 	return diags
 }
@@ -99,24 +96,37 @@ func syncableRelPaths(ctx context.Context, b *bundle.Bundle) (map[string]struct{
 func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[string]struct{}) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := make(map[string]string)
-	localPattern := filepath.FromSlash(pattern)
-	// Keep hashes under SyncRoot; same IsLocal gate as translate_paths.
-	if !filepath.IsLocal(localPattern) {
+	// filepath.Glob treats ** as two *, so doublestar-style patterns match less than expected.
+	if strings.Contains(pattern, "**") {
+		return out, diags.Append(diag.Diagnostic{
+			Severity:  diag.Error,
+			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: ** in %q is not supported; use * for a single directory level", pattern),
+			Locations: b.Config.GetLocations(loc),
+		})
+	}
+	// filepath.Join would otherwise rebase an absolute pattern under the bundle
+	// root (Join("/bundle", "/etc/passwd") is "/bundle/etc/passwd").
+	if filepath.IsAbs(filepath.FromSlash(pattern)) || pathlib.IsAbs(pattern) {
+		return out, diags.Append(diag.Diagnostic{
+			Severity:  diag.Error,
+			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q must be relative to the defining YAML file", pattern),
+			Locations: b.Config.GetLocations(loc),
+		})
+	}
+	// NormalizePaths has already rewritten YAML-relative globs to be bundle-root
+	// relative. Join that onto the bundle root, then require the result stay
+	// under the sync root (an ancestor of the bundle when sync.paths uses ..).
+	joined := filepath.Join(b.BundleRootPath, filepath.FromSlash(pattern))
+	relPattern, err := filepath.Rel(b.SyncRootPath, joined)
+	if err != nil || !filepath.IsLocal(relPattern) {
 		return out, diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q is not under the sync root", pattern),
 			Locations: b.Config.GetLocations(loc),
 		})
 	}
-	// filepath.Glob treats ** as two *, so doublestar-style patterns match less than expected.
-	if strings.Contains(pattern, "**") {
-		diags = diags.Append(diag.Diagnostic{
-			Severity:  diag.Warning,
-			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: ** in %q is not recursive and matches the same files as *", pattern),
-			Locations: b.Config.GetLocations(loc),
-		})
-	}
-	matches, err := filepath.Glob(filepath.Join(b.SyncRootPath, localPattern))
+	key := filepath.ToSlash(relPattern)
+	matches, err := filepath.Glob(joined)
 	if err != nil {
 		return out, diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
@@ -125,7 +135,7 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[stri
 		})
 	}
 	if len(matches) == 0 {
-		out[filepath.ToSlash(pattern)] = missingFileHash
+		out[key] = missingFileHash
 		return out, diags.Append(diag.Diagnostic{
 			Severity:  diag.Warning,
 			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: no files match %q", pattern),
@@ -175,12 +185,22 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[stri
 		}
 		out[filepath.ToSlash(rel)] = hash
 	}
-	// Directories or excluded files would leave hashes empty and disarm the trigger.
-	// Unlike a missing-file warning, this cannot re-arm when a file appears later.
-	if regularMatches == 0 && (sawNonRegular || ignoredMatches > 0) {
+	if regularMatches == 0 && ignoredMatches > 0 {
 		return out, diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q matches only directories or files excluded from sync, leaving nothing to hash", pattern),
+			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q matches only files excluded from sync, leaving nothing to hash", pattern),
+			Locations: b.Config.GetLocations(loc),
+		})
+	}
+	if sawNonRegular {
+		msg := fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q also matched directories, which are not hashed", pattern)
+		if regularMatches == 0 {
+			out[key] = missingFileHash
+			msg = fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q matches only directories", pattern)
+		}
+		diags = diags.Append(diag.Diagnostic{
+			Severity:  diag.Warning,
+			Summary:   msg,
 			Locations: b.Config.GetLocations(loc),
 		})
 	}

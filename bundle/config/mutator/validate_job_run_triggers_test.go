@@ -89,7 +89,7 @@ func TestValidateJobRunTriggers(t *testing.T) {
 				{OnBundleDeploy: &trueVal},
 			},
 			preventDestroy: true,
-			summary:        "lifecycle.triggers.on_bundle_deploy, on_file_change, or on_value_change is incompatible with lifecycle.prevent_destroy",
+			summary:        "lifecycle.triggers.on_bundle_deploy is incompatible with lifecycle.prevent_destroy",
 		},
 		{
 			name: "on_file_change with prevent_destroy",
@@ -97,7 +97,26 @@ func TestValidateJobRunTriggers(t *testing.T) {
 				{OnFileChange: &fileChange},
 			},
 			preventDestroy: true,
-			summary:        "lifecycle.triggers.on_bundle_deploy, on_file_change, or on_value_change is incompatible with lifecycle.prevent_destroy",
+			summary:        "lifecycle.triggers.on_file_change is incompatible with lifecycle.prevent_destroy",
+		},
+		{
+			name: "both triggers with prevent_destroy",
+			triggers: []resources.JobRunTrigger{
+				{OnFileChange: &fileChange},
+				{OnBundleDeploy: &trueVal},
+			},
+			preventDestroy: true,
+			summary:        "lifecycle.triggers.on_bundle_deploy and on_file_change are incompatible with lifecycle.prevent_destroy",
+		},
+		{
+			name: "all triggers with prevent_destroy",
+			triggers: []resources.JobRunTrigger{
+				{OnFileChange: &fileChange},
+				{OnBundleDeploy: &trueVal},
+				{OnValueChange: &valueChange},
+			},
+			preventDestroy: true,
+			summary:        "lifecycle.triggers.on_bundle_deploy, on_file_change and on_value_change are incompatible with lifecycle.prevent_destroy",
 		},
 		{
 			name:           "prevent_destroy alone",
@@ -129,7 +148,7 @@ func TestValidateJobRunTriggers(t *testing.T) {
 				{OnValueChange: &valueChange},
 			},
 			preventDestroy: true,
-			summary:        "lifecycle.triggers.on_bundle_deploy, on_file_change, or on_value_change is incompatible with lifecycle.prevent_destroy",
+			summary:        "lifecycle.triggers.on_value_change is incompatible with lifecycle.prevent_destroy",
 		},
 		{
 			name: "on_value_change and on_file_change on one entry",

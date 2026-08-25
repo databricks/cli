@@ -84,7 +84,8 @@ type IResource interface {
 	DoUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (remoteState any, e error)
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID. Returns new id and optionally remote state.
-	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
+	// Example: func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, newState *catalog.CreateCatalog, entry *PlanEntry) (string, *catalog.CatalogInfo, error)
+	DoUpdateWithID(ctx context.Context, id string, newState any, entry *PlanEntry) (newID string, remoteState any, e error)
 
 	// [Optional] DoResize resizes the resource. Only supported by clusters
 	DoResize(ctx context.Context, id string, newState any, entry *PlanEntry) error
@@ -593,12 +594,12 @@ func (a *Adapter) HasDoUpdateWithID() bool {
 }
 
 // DoUpdateWithID updates the resource and may change its ID. Returns newID and remoteState if available.
-func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any) (string, any, error) {
+func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any, entry *PlanEntry) (string, any, error) {
 	if a.doUpdateWithID == nil {
 		return "", nil, errors.New("internal error: DoUpdateWithID not found")
 	}
 
-	outs, err := a.doUpdateWithID.Call(ctx, oldID, newState)
+	outs, err := a.doUpdateWithID.Call(ctx, oldID, newState, entry)
 	if err != nil {
 		return "", nil, err
 	}

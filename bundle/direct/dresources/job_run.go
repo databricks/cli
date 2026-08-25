@@ -29,17 +29,6 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
-// jobRunTriggerLocalPaths are local-only fingerprints: clearing one is skip, not recreate.
-var jobRunTriggerLocalPaths = []string{
-	"lifecycle.triggers.on_bundle_deploy",
-	"lifecycle.triggers.on_file_change",
-	"lifecycle.triggers.on_value_change",
-}
-
-func isJobRunTriggerPath(path string) bool {
-	return slices.Contains(jobRunTriggerLocalPaths, path)
-}
-
 // JobRunTriggersState is the persisted fingerprint of lifecycle.triggers.
 type JobRunTriggersState struct {
 	// Fresh UUID each plan while armed so Old!=New forces recreate.
@@ -455,18 +444,17 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // result_state either, so the lifecycle state is what tells the two apart.
 // Clearing a trigger skips its local-only fingerprint without re-firing the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
-	pathString := path.String()
-	if isJobRunTriggerPath(pathString) {
-		removed := pathString == "lifecycle.triggers.on_bundle_deploy" && (change.New == nil || change.New == "")
-		removed = removed || pathString == "lifecycle.triggers.on_file_change" && change.New == nil
-		removed = removed || pathString == "lifecycle.triggers.on_value_change" && change.New == nil
-		if removed {
+	switch path.String() {
+	case "lifecycle.triggers.on_bundle_deploy":
+		if change.New == nil || change.New == "" {
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
 		}
-		return nil
-	}
-	switch path.String() {
+	case "lifecycle.triggers.on_file_change", "lifecycle.triggers.on_value_change", "lifecycle.triggers":
+		if change.New == nil {
+			change.Action = deployplan.Skip
+			change.Reason = "trigger removed"
+		}
 	case "result_state":
 		// The planner passes no remote state when the run could not be read.
 		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
@@ -474,10 +462,8 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 		}
 		change.Action = deployplan.Skip
 		change.Reason = "run in progress"
-		return nil
-	default:
-		return nil
 	}
+	return nil
 }
 
 // DoDelete deletes the run via jobs/runs/delete, on both destroy and the

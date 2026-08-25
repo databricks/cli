@@ -19,7 +19,7 @@ trace read_id.py my_job
 read_id.py my_run > /dev/null
 trace print_requests.py //jobs/run-now
 
-title "editing one matched file re-fires"
+title "editing one matched file re-fires\n"
 update_file.py migrations/001.txt "one" "one-edited"
 changes
 # The deploy is not traced: readplanarg makes the command line differ per variant.
@@ -29,24 +29,24 @@ read_id.py my_run > /dev/null
 trace print_requests.py --keep //jobs/runs/delete
 trace print_requests.py //jobs/run-now
 
-title "editing a file in a subdirectory re-fires"
+title "editing a file in a subdirectory re-fires\n"
 # printf keeps LF on Windows, where update_file.py's text-mode rewrite would
 # restore CRLF and leave the file hashing differently than the deploy above.
 printf 'sub-edited\n' > mysubdir/a.txt
 changes
 printf 'sub\n' > mysubdir/a.txt
 
-title "a new matching file re-fires"
+title "a new matching file re-fires\n"
 printf 'three\n' > migrations/003.txt
 changes
 rm migrations/003.txt
 
-title "removing a matched file re-fires"
+title "removing a matched file re-fires\n"
 mv migrations/002.txt tmp.002.txt
 changes
 mv tmp.002.txt migrations/002.txt
 
-title "editing a file below the glob does not re-fire"
+title "editing a file below the glob does not re-fire\n"
 # migrations/* matches the archive directory itself, which is skipped: the glob
 # does not descend into it.
 update_file.py migrations/archive/003.txt "three" "three-edited"
@@ -57,9 +57,3 @@ title "editing a gitignored file does not re-fire"
 update_file.py migrations/ignored.txt "ignored" "ignored-edited"
 trace $CLI bundle plan
 update_file.py migrations/ignored.txt "ignored-edited" "ignored"
-
-# Warning is on stderr of the untraced plan in changes(); trailing newline keeps it off the title.
-title "** is not recursive: it warns and matches the same files as *\n"
-update_file.py databricks.yml "migrations/*" "migrations/**"
-changes
-update_file.py databricks.yml "migrations/**" "migrations/*"

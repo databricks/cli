@@ -1,5 +1,5 @@
 
-=== a pattern outside the sync root is rejected
+=== a pattern that escapes the sync root is rejected
 >>> musterr [CLI] bundle validate
 Error: lifecycle.triggers.on_file_change: pattern "../shared/*.txt" is not under the sync root
   in databricks.yml:24:29
@@ -12,9 +12,9 @@ Workspace:
 
 Found 1 error
 
-=== a glob that only matches directories is rejected
->>> musterr [CLI] bundle validate
-Error: lifecycle.triggers.on_file_change: pattern "dirs/*" matches only directories or files excluded from sync, leaving nothing to hash
+=== a glob that only matches directories warns
+>>> [CLI] bundle validate
+Warning: lifecycle.triggers.on_file_change: pattern "dirs/*" matches only directories
   in databricks.yml:24:29
 
 Name: job-runs-on-file-change-errors
@@ -23,11 +23,11 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-errors/default
 
-Found 1 error
+Found 1 warning
 
-=== a glob matching only a directory and an excluded file is rejected
+=== a glob matching a directory and an excluded file is rejected
 >>> musterr [CLI] bundle validate
-Error: lifecycle.triggers.on_file_change: pattern "mixed/*" matches only directories or files excluded from sync, leaving nothing to hash
+Error: lifecycle.triggers.on_file_change: pattern "mixed/*" matches only files excluded from sync, leaving nothing to hash
   in databricks.yml:24:29
 
 Name: job-runs-on-file-change-errors
@@ -40,7 +40,7 @@ Found 1 error
 
 === a glob matching only excluded files is rejected
 >>> musterr [CLI] bundle validate
-Error: lifecycle.triggers.on_file_change: pattern "allexcluded/*" matches only directories or files excluded from sync, leaving nothing to hash
+Error: lifecycle.triggers.on_file_change: pattern "allexcluded/*" matches only files excluded from sync, leaving nothing to hash
   in databricks.yml:24:29
 
 Name: job-runs-on-file-change-errors
@@ -63,3 +63,29 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-errors/default
 
 Found 1 warning
+
+=== ** is not supported
+>>> musterr [CLI] bundle validate
+Error: lifecycle.triggers.on_file_change: ** in "src/**" is not supported; use * for a single directory level
+  in databricks.yml:24:29
+
+Name: job-runs-on-file-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-errors/default
+
+Found 1 error
+
+=== an absolute pattern is rejected
+>>> musterr [CLI] bundle validate
+Error: lifecycle.triggers.on_file_change: pattern "/tmp/seed.txt" must be relative to the defining YAML file
+  in databricks.yml:24:29
+
+Name: job-runs-on-file-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-errors/default
+
+Found 1 error

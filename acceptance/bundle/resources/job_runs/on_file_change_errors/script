@@ -1,12 +1,12 @@
-title "a pattern outside the sync root is rejected"
+title "a pattern that escapes the sync root is rejected"
 trace musterr $CLI bundle validate
 
-title "a glob that only matches directories is rejected"
+title "a glob that only matches directories warns"
 # dirs/* matches dirs/nested, a directory, so nothing is left to hash.
 update_file.py databricks.yml "../shared/*.txt" "dirs/*"
-trace musterr $CLI bundle validate
+trace $CLI bundle validate
 
-title "a glob matching only a directory and an excluded file is rejected"
+title "a glob matching a directory and an excluded file is rejected"
 # mixed/excluded.txt is dropped by sync.exclude; mixed/nested is a directory.
 update_file.py databricks.yml "dirs/*" "mixed/*"
 trace musterr $CLI bundle validate
@@ -19,3 +19,11 @@ trace musterr $CLI bundle validate
 title "a pattern that matches nothing warns"
 update_file.py databricks.yml "allexcluded/*" "missing/*.txt"
 trace $CLI bundle validate
+
+title "** is not supported"
+update_file.py databricks.yml "missing/*.txt" "src/**"
+trace musterr $CLI bundle validate
+
+title "an absolute pattern is rejected"
+update_file.py databricks.yml "src/**" "/tmp/seed.txt"
+trace musterr $CLI bundle validate

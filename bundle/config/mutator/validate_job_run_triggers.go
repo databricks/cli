@@ -26,13 +26,14 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 		if jr == nil || jr.Lifecycle == nil {
 			continue
 		}
-		// Recreate-every-deploy cannot coexist with prevent_destroy.
-		if (jr.HasOnBundleDeploy() || jr.HasOnFileChange() || jr.HasOnValueChange()) && jr.Lifecycle.PreventDestroy {
-			diags = diags.Append(diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   "lifecycle.triggers.on_bundle_deploy, on_file_change, or on_value_change is incompatible with lifecycle.prevent_destroy",
-				Locations: b.Config.GetLocations(fmt.Sprintf("resources.job_runs.%s.lifecycle", name)),
-			})
+		if jr.Lifecycle.PreventDestroy {
+			if summary := preventDestroyError(jr.HasOnBundleDeploy(), jr.HasOnFileChange(), jr.HasOnValueChange()); summary != "" {
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   summary,
+					Locations: b.Config.GetLocations(fmt.Sprintf("resources.job_runs.%s.lifecycle", name)),
+				})
+			}
 		}
 		for i, t := range jr.Lifecycle.Triggers {
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d]", name, i)
@@ -77,4 +78,28 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 		}
 	}
 	return diags
+}
+
+// preventDestroyError names the armed triggers that conflict with prevent_destroy,
+// or returns an empty string when none are armed.
+func preventDestroyError(onBundleDeploy, onFileChange, onValueChange bool) string {
+	var names []string
+	if onBundleDeploy {
+		names = append(names, "on_bundle_deploy")
+	}
+	if onFileChange {
+		names = append(names, "on_file_change")
+	}
+	if onValueChange {
+		names = append(names, "on_value_change")
+	}
+	switch len(names) {
+	case 0:
+		return ""
+	case 1:
+		return fmt.Sprintf("lifecycle.triggers.%s is incompatible with lifecycle.prevent_destroy", names[0])
+	default:
+		last := len(names) - 1
+		return fmt.Sprintf("lifecycle.triggers.%s and %s are incompatible with lifecycle.prevent_destroy", strings.Join(names[:last], ", "), names[last])
+	}
 }

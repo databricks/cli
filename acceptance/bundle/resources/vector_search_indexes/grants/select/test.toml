@@ -1,4 +1,3 @@
-RequiresUnityCatalog = true
 RecordRequests = true
 
 # The index's only dependent is its own grants child, which needs the index id but not a

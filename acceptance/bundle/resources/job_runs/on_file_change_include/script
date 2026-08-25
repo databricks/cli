@@ -1,0 +1,17 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "first deploy"
+trace $CLI bundle deploy
+
+title "editing a same-named file at the bundle root does not re-fire"
+update_file.py watched.txt "root-v1" "root-v2"
+trace $CLI bundle plan | contains.py "2 unchanged" "!recreate"
+update_file.py watched.txt "root-v2" "root-v1"
+
+title "editing the file next to the included YAML re-fires"
+update_file.py resources/watched.txt "include-v1" "include-v2"
+trace $CLI bundle plan | contains.py "recreate job_runs.my_run"
+update_file.py resources/watched.txt "include-v2" "include-v1"
