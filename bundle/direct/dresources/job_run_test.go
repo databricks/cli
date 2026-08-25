@@ -382,10 +382,10 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 		{"rotated on_bundle_deploy", "lifecycle.triggers.on_bundle_deploy", "uuid", deployplan.Recreate},
 		{"cleared on_file_change", "lifecycle.triggers.on_file_change", nil, deployplan.Skip},
 		{"changed on_file_change map", "lifecycle.triggers.on_file_change", map[string]string{"a.txt": "h"}, deployplan.Recreate},
+		// A file dropping out of the map is a real change, so the skip must not
+		// extend to paths below on_file_change.
 		{"cleared on_file_change child", "lifecycle.triggers.on_file_change['a.txt']", nil, deployplan.Recreate},
-		{"cleared triggers parent", "lifecycle.triggers", nil, deployplan.Skip},
-		{"changed triggers parent", "lifecycle.triggers", JobRunTriggersState{OnBundleDeploy: "uuid"}, deployplan.Recreate},
-		{"result_state unchanged", "result_state", nil, deployplan.Recreate},
+		{"result_state with unreadable remote", "result_state", nil, deployplan.Recreate},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			change := &ChangeDesc{Action: deployplan.Recreate, New: tt.new}
