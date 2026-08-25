@@ -29,8 +29,15 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "uid": "[UUID]"
 }
 
-=== Change default_endpoint_settings.suspend_timeout_duration: engines diverge
+=== Change default_endpoint_settings.suspend_timeout_duration: both engines plan it, only terraform applies it
 >>> update_file.py databricks.yml suspend_timeout_duration: 300s suspend_timeout_duration: 600s
+
+>>> [CLI] bundle plan
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
 
 >>> print_requests.py --del-body project_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

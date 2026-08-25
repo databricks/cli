@@ -26,10 +26,27 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 === Change suspend_timeout_duration to 600s
 >>> update_file.py databricks.yml suspend_timeout_duration: 300s suspend_timeout_duration: 600s
 
-=== Plan and deploy: engines diverge, see the per-engine out.* files
+=== Plan and deploy: both engines plan it, only terraform applies it
+>>> [CLI] bundle plan
+update postgres_endpoints.my_endpoint
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle plan -o json
+
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint
+
+=== Remove suspend_timeout_duration: blocked by the same oneof mask
+>>> update_file.py databricks.yml       suspend_timeout_duration: 600s 
+
+>>> [CLI] bundle plan
+update postgres_endpoints.my_endpoint
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

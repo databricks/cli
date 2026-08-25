@@ -68,6 +68,18 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "uid": "[UUID]"
 }
 
+=== Remove history_retention_duration and re-deploy
+>>> update_file.py databricks.yml       history_retention_duration: 259200s 
+
+>>> [CLI] bundle plan
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> print_requests.py --del-body project_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_projects.my_project

@@ -10,16 +10,17 @@ title "Initial deployment"
 trace $CLI bundle deploy
 rm -f out.requests.txt
 
-title "Change ttl: engines diverge, see the per-engine out.* files"
+title "Change ttl: both engines plan it, only terraform applies it"
 trace update_file.py databricks.yml "ttl: 604800s" "ttl: 259200s"
 
-# Both plan the change. Only terraform applies it: ttl is a member of the
+# Only terraform applies it: ttl is a member of the
 # expiration oneof, and the direct engine masks it under its own name.
 #
 # There is no read-back assertion: the API derives expire_time from
 # creation_time + ttl and never echoes ttl, which the testserver does not model.
 # The update_mask each engine sends is what this test is about.
-trace $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_branches.dev_branch" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 trace print_requests.py --del-body project_id,branch_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json

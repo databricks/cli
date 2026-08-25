@@ -155,9 +155,9 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 		secret.Owner = updateSecret.Owner
 		secret.EffectiveOwner = updateSecret.Owner
 	}
-	if updateSecret.ExpireTime != nil {
-		secret.ExpireTime = updateSecret.ExpireTime
-	}
+	// The CLI masks the whole secret with update_mask=*, so an absent expire_time
+	// clears the existing one rather than leaving it in place.
+	secret.ExpireTime = updateSecret.ExpireTime
 
 	secret.UpdateTime = sdktime.New(time.Now())
 	secret.UpdatedBy = "test-user@databricks.com"

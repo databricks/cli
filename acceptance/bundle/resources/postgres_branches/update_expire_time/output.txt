@@ -26,8 +26,15 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "uid": "[BRANCH_UID]"
 }
 
-=== Change expire_time: engines diverge, see the per-engine out.* files
+=== Change expire_time: both engines plan it, only terraform applies it
 >>> update_file.py databricks.yml [EXPIRE_TIME_BEFORE] [EXPIRE_TIME_AFTER]
+
+>>> [CLI] bundle plan
+update postgres_branches.dev_branch
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan -o json
 
 >>> print_requests.py --del-body project_id,branch_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

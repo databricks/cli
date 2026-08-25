@@ -24,3 +24,11 @@ trace $CLI bundle deploy
 trace print_requests.py --del-body project_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI postgres get-project "${project_name}" | project_fields
+
+title "Remove history_retention_duration and re-deploy"
+trace update_file.py databricks.yml "      history_retention_duration: 259200s" ""
+trace $CLI bundle plan
+rm -f out.requests.txt
+errcode $CLI bundle deploy &> out.deploy.remove.$DATABRICKS_BUNDLE_ENGINE.txt
+trace print_requests.py --del-body project_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.remove.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI postgres get-project "${project_name}" | project_fields > out.project.remove.$DATABRICKS_BUNDLE_ENGINE.txt

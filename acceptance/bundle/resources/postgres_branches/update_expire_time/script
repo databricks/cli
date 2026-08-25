@@ -13,12 +13,13 @@ trace $CLI bundle deploy
 rm -f out.requests.txt
 trace $CLI postgres get-branch "${branch_name}" | branch_fields
 
-title "Change expire_time: engines diverge, see the per-engine out.* files"
+title "Change expire_time: both engines plan it, only terraform applies it"
 trace update_file.py databricks.yml "2030-01-01T00:00:00Z" "2031-06-15T12:00:00Z"
 
-# Both plan the change. Only terraform applies it: expire_time is a member of the
+# Only terraform applies it: expire_time is a member of the
 # expiration oneof, and the direct engine masks it under its own name. See test.toml.
-trace $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_branches.dev_branch" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 trace print_requests.py --del-body project_id,branch_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json

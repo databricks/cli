@@ -16,14 +16,16 @@ trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 title "Change suspend_timeout_duration to 600s"
 trace update_file.py databricks.yml "suspend_timeout_duration: 300s" "suspend_timeout_duration: 600s"
 
-title "Plan and deploy: engines diverge, see the per-engine out.* files"
+title "Plan and deploy: both engines plan it, only terraform applies it"
 
-# The engines diverge from here on, so each step goes to a per-engine file.
+# Both engines plan the same change, so the plan stays in output.txt. They
+# diverge from the deploy on, so those steps go to per-engine files.
 # Both plan the update. Only terraform applies it: the direct engine builds
 # update_mask from the plan's change paths and sends spec.suspend_timeout_duration,
 # which the API rejects because that field is a member of the suspension oneof and
 # only the group name spec.suspension is accepted. See test.toml.
-trace $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 
@@ -31,3 +33,10 @@ errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields > out.endpoint.$DATABRICKS_BUNDLE_ENGINE.txt
+
+title "Remove suspend_timeout_duration: blocked by the same oneof mask"
+trace update_file.py databricks.yml "      suspend_timeout_duration: 600s" ""
+trace $CLI bundle plan
+rm -f out.requests.txt
+errcode $CLI bundle deploy &> out.deploy.remove.$DATABRICKS_BUNDLE_ENGINE.txt
+trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.remove.$DATABRICKS_BUNDLE_ENGINE.json
