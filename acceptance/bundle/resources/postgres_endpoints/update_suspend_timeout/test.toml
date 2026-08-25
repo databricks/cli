@@ -1,0 +1,28 @@
+# Local only. On a real workspace the second deploy below fails:
+#
+#   PATCH .../endpoints/my-endpoint?update_mask=spec.suspend_timeout_duration
+#   400 INVALID_PARAMETER_VALUE
+#   Unknown field path in update_mask: 'spec.suspend_timeout_duration'
+#
+# suspend_timeout_duration and no_suspension are two sides of one oneof, and the
+# API masks oneof members under the group name instead of the field name. The
+# field's own doc comment in the SDK says so: "When updating, use
+# `spec.suspension` in the update_mask". The direct engine builds the mask from
+# the plan's change paths, so it sends the field name and the backend rejects it.
+#
+# Nothing to do with the diffing fix this test covers. Until this test existed
+# the direct engine planned no change for a duration edit, so it never sent the
+# PATCH and the wrong mask path was unreachable. Fixing the diff made the request
+# happen, which is what exposed the mask bug.
+#
+# The local run passes because the testserver ignores update_mask entirely, so
+# the same request succeeds against the fake. That is also the reason this only
+# showed up on aws, the sole cloud where Lakebase runs.
+#
+# Re-enable on cloud once the mask is built from the static per-resource path map
+# (https://github.com/databricks/cli/pull/6374), which maps
+# suspend_timeout_duration -> suspension and teaches the testserver to reject
+# unknown mask paths so the next one of these fails locally.
+Cloud = false
+
+Badness = "Cannot run on cloud: the direct engine masks suspend_timeout_duration under its own name, but the API only accepts the oneof group name spec.suspension"
