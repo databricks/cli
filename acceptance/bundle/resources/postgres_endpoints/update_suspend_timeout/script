@@ -40,3 +40,9 @@ trace $CLI bundle plan
 rm -f out.requests.txt
 errcode $CLI bundle deploy &> out.deploy.remove.$DATABRICKS_BUNDLE_ENGINE.txt
 trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.remove.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields > out.endpoint.remove.$DATABRICKS_BUNDLE_ENGINE.txt
+
+# Plan again to record the drift the failed removal leaves behind: direct still has
+# the removal pending, terraform applied it and is clean.
+trace $CLI bundle plan &> out.plan.remove.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.remove.$DATABRICKS_BUNDLE_ENGINE.json

@@ -32,3 +32,8 @@ rm -f out.requests.txt
 errcode $CLI bundle deploy &> out.deploy.remove.$DATABRICKS_BUNDLE_ENGINE.txt
 trace print_requests.py --del-body project_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.remove.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI postgres get-project "${project_name}" | project_fields > out.project.remove.$DATABRICKS_BUNDLE_ENGINE.txt
+
+# The get above shows whether the removal reached the resource. Plan again to
+# record the drift it leaves behind.
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" | {action, changes}' > out.plan.remove.$DATABRICKS_BUNDLE_ENGINE.json

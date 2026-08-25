@@ -1,0 +1,17 @@
+{
+  "action": "skip",
+  "changes": {
+    "display_name": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": "Test Project for History Retention Update",
+      "new": "Test Project for History Retention Update"
+    },
+    "pg_version": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": 16,
+      "new": 16
+    }
+  }
+}

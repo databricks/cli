@@ -48,6 +48,10 @@ Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
+>>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint
+
+>>> [CLI] bundle plan -o json
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_branches.main

@@ -226,7 +226,10 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 		if updateProject.Spec.DisplayName != "" {
 			project.Status.DisplayName = updateProject.Spec.DisplayName
 		}
-		if maskCovers(req, "spec.history_retention_duration") {
+		// Verified against a real workspace: dropping the field from config sends a
+		// mask naming it with no value in the body, and the API keeps the previous
+		// value rather than clearing it. So a removal never takes effect.
+		if updateProject.Spec.HistoryRetentionDuration != nil {
 			project.Status.HistoryRetentionDuration = updateProject.Spec.HistoryRetentionDuration
 		}
 		if updateProject.Spec.DefaultEndpointSettings != nil {
@@ -722,21 +725,6 @@ var projectUpdateMaskPaths = []string{
 	// default_endpoint_settings.no_suspension and .suspend_timeout_duration are
 	// two sides of one oneof.
 	"spec.default_endpoint_settings.suspension",
-}
-
-// maskCovers reports whether the request's update_mask selects path, either
-// naming it outright or naming an ancestor ("spec" covers "spec.display_name").
-// A masked path absent from the request body means "clear this field", which is
-// how a removal from bundle config reaches the API.
-func maskCovers(req Request, path string) bool {
-	mask := req.URL.Query().Get("update_mask")
-	for entry := range strings.SplitSeq(mask, ",") {
-		entry = strings.TrimSpace(entry)
-		if entry == "*" || entry == path || strings.HasPrefix(path, entry+".") {
-			return true
-		}
-	}
-	return false
 }
 
 // validateUpdateMask mirrors the API's rejection of unknown update_mask paths.
