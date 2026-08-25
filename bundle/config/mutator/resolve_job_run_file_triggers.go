@@ -8,6 +8,7 @@ import (
 	"io"
 	"maps"
 	"os"
+	pathlib "path"
 	"path/filepath"
 	"strings"
 
@@ -48,7 +49,7 @@ func (*resolveJobRunFileTriggers) Apply(ctx context.Context, b *bundle.Bundle) d
 				continue
 			}
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d].on_file_change", name, i)
-			hashes, d := resolveFileTrigger(b, path, strings.TrimSpace(*t.OnFileChange), syncable)
+			hashes, d := resolveFileTrigger(b, path, *t.OnFileChange, syncable)
 			diags = diags.Extend(d)
 			maps.Copy(out, hashes)
 		}
@@ -95,7 +96,6 @@ func syncableRelPaths(ctx context.Context, b *bundle.Bundle) (map[string]struct{
 func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[string]struct{}) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := make(map[string]string)
-	localPattern := filepath.FromSlash(pattern)
 	// filepath.Glob treats ** as two *, so doublestar-style patterns match less than expected.
 	if strings.Contains(pattern, "**") {
 		return out, diags.Append(diag.Diagnostic{
@@ -104,10 +104,19 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[stri
 			Locations: b.Config.GetLocations(loc),
 		})
 	}
+	// filepath.Join would otherwise rebase an absolute pattern under the bundle
+	// root (Join("/bundle", "/etc/passwd") is "/bundle/etc/passwd").
+	if filepath.IsAbs(filepath.FromSlash(pattern)) || pathlib.IsAbs(pattern) {
+		return out, diags.Append(diag.Diagnostic{
+			Severity:  diag.Error,
+			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q must be relative to the defining YAML file", pattern),
+			Locations: b.Config.GetLocations(loc),
+		})
+	}
 	// NormalizePaths has already rewritten YAML-relative globs to be bundle-root
 	// relative. Join that onto the bundle root, then require the result stay
 	// under the sync root (an ancestor of the bundle when sync.paths uses ..).
-	joined := filepath.Join(b.BundleRootPath, localPattern)
+	joined := filepath.Join(b.BundleRootPath, filepath.FromSlash(pattern))
 	relPattern, err := filepath.Rel(b.SyncRootPath, joined)
 	if err != nil || !filepath.IsLocal(relPattern) {
 		return out, diags.Append(diag.Diagnostic{
@@ -116,6 +125,7 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[stri
 			Locations: b.Config.GetLocations(loc),
 		})
 	}
+	key := filepath.ToSlash(relPattern)
 	matches, err := filepath.Glob(joined)
 	if err != nil {
 		return out, diags.Append(diag.Diagnostic{
@@ -125,7 +135,7 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[stri
 		})
 	}
 	if len(matches) == 0 {
-		out[filepath.ToSlash(pattern)] = missingFileHash
+		out[key] = missingFileHash
 		return out, diags.Append(diag.Diagnostic{
 			Severity:  diag.Warning,
 			Summary:   fmt.Sprintf("lifecycle.triggers.on_file_change: no files match %q", pattern),
@@ -185,7 +195,7 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[stri
 	if sawNonRegular {
 		msg := fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q also matched directories, which are not hashed", pattern)
 		if regularMatches == 0 {
-			out[filepath.ToSlash(pattern)] = missingFileHash
+			out[key] = missingFileHash
 			msg = fmt.Sprintf("lifecycle.triggers.on_file_change: pattern %q matches only directories", pattern)
 		}
 		diags = diags.Append(diag.Diagnostic{
