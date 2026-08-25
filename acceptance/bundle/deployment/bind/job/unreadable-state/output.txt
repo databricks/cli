@@ -1,0 +1,21 @@
+
+=== Deploy job_1
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.job_1
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Leave behind a WAL from a different lineage, as a crashed deploy would
+=== Bind must refuse: the state cannot be read, so we cannot tell if job_1 is already managed
+
+>>> errcode [CLI] bundle deployment bind job_1 [EXTERNAL_JOB_ID] --auto-approve
+Error: cannot check whether resources.jobs.job_1 is already bound: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: WAL recovery failed: WAL lineage ("wal-lineage-bbb") does not match state lineage ("[UUID]")
+
+
+Exit code: 1
+
+=== Nothing was bound: the WAL is untouched and no bind state was written
+>>> diff.py resources.json.wal .databricks/bundle/default/resources.json.wal
+
+>>> assert_not_exists.py .databricks/bundle/default/resources.json.temp-bind
