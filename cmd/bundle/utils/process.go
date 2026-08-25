@@ -209,7 +209,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// `bundle debug states`, which would otherwise print the same hint
 		// even though they will not migrate.
 		if opts.Deploy && b.MigratingToDirect {
-			log.Warnf(ctx, "Direct engine requested in %s but the existing state uses %q. Deploying on %q; will attempt to migrate the state to the direct engine after this deploy.", requiredEngine.Source, stateDesc.Engine, stateDesc.Engine)
+			log.Warnf(ctx, "Direct engine selected via %s but the existing state uses %q. Deploying on %q; will attempt to migrate the state to the direct engine after this deploy.", requiredEngine.Source, stateDesc.Engine, stateDesc.Engine)
 		}
 
 		// --select is only supported by the direct engine, which tracks resource
@@ -418,7 +418,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 }
 
 // ResolveEngineSetting determines the effective engine setting by combining bundle config and env var.
-// Priority: bundle.engine config > DATABRICKS_BUNDLE_ENGINE env var.
+// Priority: bundle.engine config > DATABRICKS_BUNDLE_ENGINE env var > engine.Default.
 func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineSetting, error) {
 	configEngine := b.Config.Bundle.Engine
 
@@ -440,7 +440,7 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable"}, nil
 	}
 
-	return engine.EngineSetting{}, nil
+	return engine.EngineSetting{Type: engine.Default, Source: engine.SourceDefault, IsDefault: true}, nil
 }
 
 // isNewerVersion reports whether the state's recorded CLI version is strictly

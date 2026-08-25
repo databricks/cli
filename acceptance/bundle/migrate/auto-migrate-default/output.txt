@@ -1,5 +1,5 @@
 
-=== Initial deploy uses terraform engine
+=== Initial deploy opts out of direct, so it uses the terraform engine
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.test_job
@@ -10,17 +10,17 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 direct_drymigrate_success true
 direct_drymigrate_warnings false
 
-=== Opt in via env var only (no bundle.engine in config): auto-migration triggers
->>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
-Warn: Direct engine selected via DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+=== Redeploy with nothing set: direct is the default, so auto-migration triggers
+>>> [CLI] bundle deploy
+Warn: Direct engine selected via default but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
-Migrating state to direct deployment engine (selected via DATABRICKS_BUNDLE_ENGINE environment variable)...
+Migrating state to direct deployment engine (selected via default)...
 Migrated 1 resource to direct deployment engine.
 
 >>> print_migration_telemetry
-direct_migrated_via_env true
+direct_migrated_via_default true
 
 === Direct-engine state is now in place; terraform state is backed up
 
@@ -35,3 +35,11 @@ direct_migrated_via_env true
 >>> [CLI] bundle debug states --force-pull
 resources.json: remote direct state serial=3 lineage="[UUID]"
 [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=3 lineage="[UUID]"
+
+=== Subsequent deploy is a no-op on direct
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_migration_telemetry
