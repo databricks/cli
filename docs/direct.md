@@ -39,7 +39,7 @@ There are known issues, see https://github.com/databricks/cli/issues?q=state%3Ao
 The direct engine uses its own state file, also JSON, but with a different schema from terraform state file.
 Since v1.14.0, after deploying with terraform, automatic migration to direct engine is attempted. If successful, it replaces terraform state with direct state so following operations use direct engine.
 
-#### Manual deployment via "bundle deployment migrate" command
+#### Manual migration via "bundle deployment migrate" command
 
 Migrating via this command is still possible, but no longer necessary.
 
