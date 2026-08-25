@@ -1,10 +1,11 @@
 package aircmd
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"math"
-	"sort"
+	"slices"
 	"strconv"
 
 	"github.com/databricks/cli/libs/log"
@@ -104,7 +105,7 @@ func computeETA(params map[string]string, history []ml.Metric) *trainingETA {
 	// History should already be ordered by step; sort by timestamp defensively so
 	// the rate is measured over increasing wall-clock time.
 	points := append([]ml.Metric(nil), history...)
-	sort.SliceStable(points, func(i, j int) bool { return points[i].Timestamp < points[j].Timestamp })
+	slices.SortStableFunc(points, func(a, b ml.Metric) int { return cmp.Compare(a.Timestamp, b.Timestamp) })
 	if len(points) > etaWindowPoints {
 		points = points[len(points)-etaWindowPoints:]
 	}

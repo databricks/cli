@@ -1,8 +1,8 @@
 
 === list (text)
 >>> [CLI] experimental air list
-   Run ID           Experiment  Status     Started              Duration  MLflow                  User                   Accelerators
-   [NUMID]  qwen-train  ● SUCCESS  [TIMESTAMP]       12s  qwen-train-001          [USERNAME]  8x H100
+   Run ID           Experiment  Status     Started              Duration  ETA  MLflow                  User                   Accelerators
+   [NUMID]  qwen-train  ● SUCCESS  [TIMESTAMP]       12s    -  qwen-train-001          [USERNAME]  8x H100
 
 === list (json)
 >>> [CLI] experimental air list -o json
@@ -25,8 +25,8 @@
 
 === list --all-status (text, via AiTrainingService index)
 >>> [CLI] experimental air list --all-status
-   Run ID           Experiment  Status     Started              Duration  MLflow                  User                   Accelerators
-   [NUMID]  qwen-train  ● SUCCESS  [TIMESTAMP]       12s  qwen-train-001          [USERNAME]  8x H100
+   Run ID           Experiment  Status     Started              Duration  ETA  MLflow                  User                   Accelerators
+   [NUMID]  qwen-train  ● SUCCESS  [TIMESTAMP]       12s    -  qwen-train-001          [USERNAME]  8x H100
 
 === list --all-status (json)
 >>> [CLI] experimental air list --all-status -o json
