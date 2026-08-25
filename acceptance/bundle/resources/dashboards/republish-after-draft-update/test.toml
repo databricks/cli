@@ -1,7 +1,6 @@
 # Regression test for stale-publish detection. The dashboard "published" state is a
 # direct-engine concept derived from the publish/update timestamps, so run direct only.
 Cloud = false
-RequiresWarehouse = true
 # This test asserts plan output, not the recorded request sequence, so keep request
 # recording off (inherited as true from the parent) to avoid flaky ordering.
 RecordRequests = false

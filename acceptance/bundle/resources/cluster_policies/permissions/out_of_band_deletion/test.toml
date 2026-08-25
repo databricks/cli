@@ -1,0 +1,9 @@
+# Local-only: fixed policy name is not safe for concurrent cloud runs. Cloud
+# coverage of the permission behavior lives in the levels test.
+Cloud = false
+
+# `api get` is passed a leading-slash path; without this, Git Bash on Windows
+# rewrites /api/... to C:\Program Files\Git\api\... before the CLI sees it.
+Env.MSYS_NO_PATHCONV = "1"
+
+Ignore = [".databricks", "databricks.yml"]

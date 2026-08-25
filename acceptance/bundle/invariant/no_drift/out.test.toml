@@ -1,5 +1,4 @@
 Cloud = true
-RequiresUnityCatalog = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.DMS = ["", "true"]
 EnvMatrix.INPUT_CONFIG = [
@@ -9,6 +8,7 @@ EnvMatrix.INPUT_CONFIG = [
   "catalog_optional_fields.yml.tmpl",
   "cluster.yml.tmpl",
   "cluster_apply_policy_default_values.yml.tmpl",
+  "cluster_policy.yml.tmpl",
   "dashboard.yml.tmpl",
   "job_apply_policy_default_values_job_cluster.yml.tmpl",
   "job_apply_policy_default_values_task_cluster.yml.tmpl",

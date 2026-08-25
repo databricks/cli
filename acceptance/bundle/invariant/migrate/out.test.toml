@@ -1,5 +1,4 @@
 Cloud = true
-RequiresUnityCatalog = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.DMS = [""]
 EnvMatrix.INPUT_CONFIG = [
