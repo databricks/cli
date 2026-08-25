@@ -30,15 +30,16 @@ func newDmsClient(ctx context.Context, b *bundle.Bundle, eng engine.EngineType, 
 	if err != nil {
 		return nil, err
 	}
+	// The deployment and its last version were read when the state was opened. Both are empty
+	// on a first deploy, where Start creates the deployment.
 	return dms.NewBufferedClient(dms.Options{
-		Client: client,
-		// Read the state from the same deployment, which the state DB looked up when it
-		// opened. Empty on a first deploy, where Prepare creates the deployment instead.
-		DeploymentID: b.DeploymentBundle.StateDB.DMSDeploymentID,
-		StatePath:    b.Config.Workspace.StatePath,
-		VersionType:  versionType,
-		Metadata:     deploymentMetadata(b),
-	}), nil
+		Client:        client,
+		DeploymentID:  b.DeploymentBundle.StateDB.DMSDeploymentID,
+		LastVersionID: b.DeploymentBundle.StateDB.DMSLastVersionID,
+		StatePath:     b.Config.Workspace.StatePath,
+		VersionType:   versionType,
+		Metadata:      deploymentMetadata(b),
+	})
 }
 
 // stagedOperations lists the resources the plan will touch, for CreateVersion to stage an

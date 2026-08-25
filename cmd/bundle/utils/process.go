@@ -59,11 +59,6 @@ type ProcessOptions struct {
 	// Implies ReadState
 	InitIDs bool
 
-	// If true, calls FetchDeploymentAndLastVersionID() to look up the bundle's recorded
-	// deployment. Independent of InitIDs, and costs its own API calls.
-	// Implies ReadState
-	InitDeploymentHistory bool
-
 	// if true, pass ErrorOnEmptyState to statemgmt.Load
 	// Implies ReadState
 	ErrorOnEmptyState bool
@@ -196,7 +191,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		return b, nil, err
 	}
 
-	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.InitDeploymentHistory || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
@@ -245,9 +240,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
+
+				// The version this run creates is the next one after the deployment's most
+				// recent, so read it here with the ID rather than again later.
+				lastVersionID, err := dms.LastVersion(ctx, dmsClient, deploymentID)
+				if err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
 				dmsSource = &dstate.DMSSource{
-					Client:       dmsClient,
-					DeploymentID: deploymentID,
+					Client:        dmsClient,
+					DeploymentID:  deploymentID,
+					LastVersionID: lastVersionID,
 				}
 
 				// Stamp the deployment before anything diffs the resources: the workspace
@@ -293,6 +297,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 			mutators := []bundle.Mutator{
 				statemgmt.Load(state, modes...),
+				// Reports what opening the state already read, so it costs nothing.
+				mutator.SetDeploymentAndLastVersionID(stateDesc.Engine),
 			}
 			// InitializeURLs makes an extra API call; only run it when URLs are needed.
 			if opts.InitIDs {
@@ -304,14 +310,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
-		// Independent of the resource IDs above: this reads the deployment record, not
-		// the state. It makes its own API calls, so only 'bundle summary' asks for it.
-		if opts.InitDeploymentHistory {
-			bundle.ApplyContext(ctx, b, mutator.FetchDeploymentAndLastVersionID(stateDesc.Engine))
-			if logdiag.HasError(ctx) {
-				return b, stateDesc, root.ErrAlreadyPrinted
-			}
-		}
 	}
 
 	var plan *deployplan.Plan

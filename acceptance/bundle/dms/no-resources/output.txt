@@ -54,11 +54,11 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 >>> print_requests.py --dms //api/2.0/bundle --get
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/bundle/deployments/[NUMID]"
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
 }
 {
   "method": "POST",

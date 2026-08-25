@@ -10,21 +10,21 @@ import (
 	"github.com/databricks/cli/libs/dms"
 )
 
-type fetchDeploymentAndLastVersionID struct {
+type setDeploymentAndLastVersionID struct {
 	engine engine.EngineType
 }
 
-// FetchDeploymentAndLastVersionID populates bundle.deployment.history from DMS for
+// SetDeploymentAndLastVersionID populates bundle.deployment.history from DMS for
 // 'bundle summary'. Makes an extra API call; only use when needed.
-func FetchDeploymentAndLastVersionID(e engine.EngineType) bundle.Mutator {
-	return &fetchDeploymentAndLastVersionID{engine: e}
+func SetDeploymentAndLastVersionID(e engine.EngineType) bundle.Mutator {
+	return &setDeploymentAndLastVersionID{engine: e}
 }
 
-func (m *fetchDeploymentAndLastVersionID) Name() string {
-	return "FetchDeploymentAndLastVersionID"
+func (m *setDeploymentAndLastVersionID) Name() string {
+	return "SetDeploymentAndLastVersionID"
 }
 
-func (m *fetchDeploymentAndLastVersionID) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *setDeploymentAndLastVersionID) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Only the direct engine records, so there is no history to report otherwise.
 	if !m.engine.IsDirect() || !b.RecordsDeploymentHistory(ctx) {
 		return nil

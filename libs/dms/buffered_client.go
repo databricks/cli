@@ -32,9 +32,13 @@ const (
 type Options struct {
 	Client *Client
 
-	// DeploymentID is resolved from the deployment's workspace node, empty until the
-	// first recorded deploy (Prepare creates the deployment then).
+	// DeploymentID is resolved from the deployment's workspace node when the state is opened,
+	// and empty until the first recorded deploy - Start creates the deployment then.
 	DeploymentID string
+
+	// LastVersionID is the deployment's most recent version, read with it, and empty when the
+	// deployment has none. The version this run creates is the next one after it.
+	LastVersionID string
 
 	// StatePath is the bundle's remote state directory, under which DMS registers
 	// the deployment node.
@@ -59,16 +63,28 @@ type Metadata struct {
 	Workspace *bundledeployments.WorkspaceInfo
 }
 
-// NewBufferedClient returns a client for the deployment described by opts. The buffer does not
-// run until Start creates the version there is something to record under.
-func NewBufferedClient(opts Options) *BufferedClient {
-	return &BufferedClient{
-		client:       opts.Client,
-		deploymentID: opts.DeploymentID,
-		statePath:    opts.StatePath,
-		versionType:  opts.VersionType,
-		metadata:     opts.Metadata,
+// NewBufferedClient returns a client for the deployment described by opts, with the version it
+// will create settled: the plan is stamped with that number before the version exists. The buffer
+// does not run until Start creates it.
+func NewBufferedClient(opts Options) (*BufferedClient, error) {
+	versionNum := int64(1)
+	if opts.LastVersionID != "" {
+		last, err := strconv.ParseInt(opts.LastVersionID, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse last_version_id %q: %w", opts.LastVersionID, err)
+		}
+		versionNum = last + 1
 	}
+
+	return &BufferedClient{
+		client:            opts.Client,
+		deploymentID:      opts.DeploymentID,
+		statePath:         opts.StatePath,
+		versionType:       opts.VersionType,
+		metadata:          opts.Metadata,
+		versionNum:        versionNum,
+		previousVersionID: opts.LastVersionID,
+	}, nil
 }
 
 // BufferedClient is everything one deploy or destroy records with DMS. Operations are buffered
@@ -81,9 +97,8 @@ type BufferedClient struct {
 	versionType  VersionType
 	metadata     Metadata
 
-	// populated by Prepare: the version number this deploy intends to create. It is known
-	// before the version exists so it can be stamped onto the resources the plan is
-	// computed from.
+	// The version this run will create, known before it exists so the plan can be stamped with
+	// it, and the one it must follow.
 	versionNum        int64
 	previousVersionID string
 
@@ -133,23 +148,27 @@ func (c *BufferedClient) Version() int64 {
 	return c.versionNum
 }
 
-// Prepare settles the deployment and the version number this run will create, without
-// creating it. Both are needed before the plan, which the version number is stamped onto.
-func (c *BufferedClient) Prepare(ctx context.Context) error {
+// EnsureDeployment creates the deployment if the bundle has none, so a deploy can stamp its id
+// onto the resources the plan is computed from. Start creates it too, but that is after the plan.
+func (c *BufferedClient) EnsureDeployment(ctx context.Context) error {
 	if c == nil {
 		return nil
 	}
+	return c.ensureDeployment(ctx)
+}
 
-	versionID, err := c.resolveNextVersion(ctx)
-	if err != nil {
-		return err
+// ensureDeployment creates the deployment on a first deploy. initial_parent_path is required, and
+// the node the service creates under it is what the next run resolves the id from.
+func (c *BufferedClient) ensureDeployment(ctx context.Context) error {
+	if c.deploymentID != "" {
+		return nil
 	}
 
-	versionNum, err := strconv.ParseInt(versionID, 10, 64)
+	id, err := c.client.CreateDeployment(ctx, c.statePath, c.metadata.TargetName)
 	if err != nil {
-		return fmt.Errorf("failed to parse version ID %q: %w", versionID, err)
+		return fmt.Errorf("failed to create deployment: %w", err)
 	}
-	c.versionNum = versionNum
+	c.deploymentID = id
 	return nil
 }
 
@@ -161,13 +180,8 @@ func (c *BufferedClient) Start(ctx context.Context, staged []StagedOperation) er
 		return nil
 	}
 
-	// A deploy calls Prepare itself, because the version number is stamped onto every job and
-	// pipeline before the plan is computed. A destroy creates a version too, but stamps
-	// nothing, so it has no reason to settle the deployment any earlier than here.
-	if c.versionNum == 0 {
-		if err := c.Prepare(ctx); err != nil {
-			return err
-		}
+	if err := c.ensureDeployment(ctx); err != nil {
+		return err
 	}
 
 	// The server rejects this unless the version number exceeds last_version_id and
@@ -250,46 +264,6 @@ func (c *BufferedClient) Close(ctx context.Context, success bool) error {
 	}
 
 	return nil
-}
-
-// resolveNextVersion creates the deployment if this is the first deploy, and returns
-// the version ID to create under it.
-func (c *BufferedClient) resolveNextVersion(ctx context.Context) (versionID string, err error) {
-	if c.deploymentID != "" {
-		// The ID came from a BUNDLE_DEPLOYMENT node that get-status returned, and by
-		// design the service has a deployment for every such node, so a not-found
-		// here means that invariant is broken rather than anything the user did.
-		dep, getErr := c.client.GetDeployment(ctx, c.deploymentID)
-		switch {
-		case errors.Is(getErr, apierr.ErrNotFound), errors.Is(getErr, apierr.ErrResourceDoesNotExist):
-			return "", fmt.Errorf("internal error: no deployment found for the file with object id %s: %w", c.deploymentID, getErr)
-		case getErr != nil:
-			return "", fmt.Errorf("failed to get deployment: %w", getErr)
-		case dep.LastVersionId == "":
-			// The record exists but carries no version: a deploy whose first version was
-			// rejected still leaves the record behind. Retry at version 1.
-			versionID = "1"
-		default:
-			lastVersion, parseErr := strconv.ParseInt(dep.LastVersionId, 10, 64)
-			if parseErr != nil {
-				return "", fmt.Errorf("failed to parse last_version_id %q: %w", dep.LastVersionId, parseErr)
-			}
-			versionID = strconv.FormatInt(lastVersion+1, 10)
-			c.previousVersionID = dep.LastVersionId
-		}
-	} else {
-		// First deploy: create the deployment so the server assigns an ID.
-		// initial_parent_path is required - the node the service creates under it is
-		// what ResolveDeploymentID reads back later.
-		id, createErr := c.client.CreateDeployment(ctx, c.statePath, c.metadata.TargetName)
-		if createErr != nil {
-			return "", fmt.Errorf("failed to create deployment: %w", createErr)
-		}
-		c.deploymentID = id
-		versionID = "1"
-	}
-
-	return versionID, nil
 }
 
 // startHeartbeat starts a background goroutine that sends heartbeats to keep

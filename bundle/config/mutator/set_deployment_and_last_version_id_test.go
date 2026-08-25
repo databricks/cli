@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFetchDeploymentAndLastVersionIDIsNoOpWhenNothingIsRecorded(t *testing.T) {
+func TestSetDeploymentAndLastVersionIDIsNoOpWhenNothingIsRecorded(t *testing.T) {
 	// The mutator must not make the API call that would find a deployment when there is none to
 	// report: recording off, an engine that does not record, or a bundle never deployed.
 	cases := []struct {
@@ -32,7 +32,7 @@ func TestFetchDeploymentAndLastVersionIDIsNoOpWhenNothingIsRecorded(t *testing.T
 				},
 			}
 
-			diags := bundle.ApplySeq(t.Context(), b, FetchDeploymentAndLastVersionID(tc.engine))
+			diags := bundle.ApplySeq(t.Context(), b, SetDeploymentAndLastVersionID(tc.engine))
 			require.NoError(t, diags.Error())
 			assert.Nil(t, b.Config.Bundle.Deployment.History)
 		})

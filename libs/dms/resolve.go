@@ -33,3 +33,23 @@ func ResolveDeploymentID(ctx context.Context, w *databricks.WorkspaceClient, sta
 	}
 	return strconv.FormatInt(obj.ObjectId, 10), nil
 }
+
+// LastVersion returns the deployment's most recent version, empty when it has none or when
+// deploymentID is empty. The version a run creates is the next one after it.
+func LastVersion(ctx context.Context, c *Client, deploymentID string) (string, error) {
+	if deploymentID == "" {
+		return "", nil
+	}
+
+	// The ID came from a BUNDLE_DEPLOYMENT node that get-status returned, and by design the
+	// service has a deployment for every such node, so not-found means that invariant is broken
+	// rather than anything the user did.
+	dep, err := c.GetDeployment(ctx, deploymentID)
+	switch {
+	case errors.Is(err, apierr.ErrNotFound), errors.Is(err, apierr.ErrResourceDoesNotExist):
+		return "", fmt.Errorf("internal error: no deployment found for the file with object id %s: %w", deploymentID, err)
+	case err != nil:
+		return "", fmt.Errorf("failed to get deployment: %w", err)
+	}
+	return dep.LastVersionId, nil
+}

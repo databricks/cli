@@ -3,8 +3,6 @@ package dms
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -66,14 +64,18 @@ func deploymentAt(lastVersion string) func(string) (*bundledeployments.Deploymen
 
 // testRecording records the stored deployment through f, failing CreateVersion with
 // versionErr when set.
-func testClient(f *fakeDMS, versionType VersionType, versionErr error) *BufferedClient {
+func testClient(t *testing.T, f *fakeDMS, versionType VersionType, versionErr error) *BufferedClient {
+	t.Helper()
 	f.raw = newFakeRaw("1")
 	f.raw.versionErr = versionErr
-	return NewBufferedClient(Options{
-		Client:       &Client{Service: f, raw: f.raw},
-		DeploymentID: "stored-id",
-		VersionType:  versionType,
+	c, err := NewBufferedClient(Options{
+		Client:        &Client{Service: f, raw: f.raw},
+		DeploymentID:  "stored-id",
+		LastVersionID: "4",
+		VersionType:   versionType,
 	})
+	require.NoError(t, err)
+	return c
 }
 
 func TestRecordingStartReportsWhatTheServiceRefused(t *testing.T) {
@@ -81,48 +83,29 @@ func TestRecordingStartReportsWhatTheServiceRefused(t *testing.T) {
 	exhausted := &apierr.APIError{StatusCode: 429, ErrorCode: "RESOURCE_EXHAUSTED"}
 
 	tests := []struct {
-		name          string
-		getDeployment func(string) (*bundledeployments.Deployment, error)
-		versionErr    error
-		wantMessages  []string
-		wantCause     error
+		name         string
+		versionErr   error
+		wantMessages []string
+		wantCause    error
 	}{
 		{
-			name: "the deployment cannot be read",
-			getDeployment: func(string) (*bundledeployments.Deployment, error) {
-				return nil, errors.New("boom")
-			},
-			wantMessages: []string{"failed to get deployment"},
+			name:         "another deploy claimed the version number",
+			versionErr:   aborted,
+			wantMessages: []string{"another deploy already claimed version 5", "try again"},
+			wantCause:    aborted,
 		},
 		{
-			// The service has a deployment for every BUNDLE_DEPLOYMENT node, so a not-found for
-			// a node get-status just returned is a broken invariant, not anything the user did.
-			name: "the deployment the workspace node names is gone",
-			getDeployment: func(string) (*bundledeployments.Deployment, error) {
-				return nil, fmt.Errorf("deployment: %w", apierr.ErrNotFound)
-			},
-			wantMessages: []string{"internal error: no deployment found for the file with object id stored-id"},
-		},
-		{
-			name:          "another deploy claimed the version number",
-			getDeployment: deploymentAt("4"),
-			versionErr:    aborted,
-			wantMessages:  []string{"another deploy already claimed version 5", "try again"},
-			wantCause:     aborted,
-		},
-		{
-			name:          "the bundle stages more operations than a version holds",
-			getDeployment: deploymentAt("4"),
-			versionErr:    exhausted,
-			wantMessages:  []string{"this bundle deploys 1 resources"},
-			wantCause:     exhausted,
+			name:         "the bundle stages more operations than a version holds",
+			versionErr:   exhausted,
+			wantMessages: []string{"this bundle deploys 1 resources"},
+			wantCause:    exhausted,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &fakeDMS{getDeployment: tt.getDeployment}
-			r := testClient(f, VersionTypeDeploy, tt.versionErr)
+			f := &fakeDMS{}
+			r := testClient(t, f, VersionTypeDeploy, tt.versionErr)
 
 			err := r.Start(t.Context(), []StagedOperation{{ResourceKey: "jobs.foo"}})
 
@@ -155,8 +138,8 @@ func TestRecordingFinishDeletesTheDeploymentOnlyForACompletedDestroy(t *testing.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &fakeDMS{getDeployment: deploymentAt("2")}
-			r := testClient(f, tt.versionType, nil)
+			f := &fakeDMS{}
+			r := testClient(t, f, tt.versionType, nil)
 
 			err := r.Start(t.Context(), nil)
 			require.NoError(t, err)
@@ -183,7 +166,6 @@ func TestNilClientIsNoOp(t *testing.T) {
 	// without checking.
 	var r *BufferedClient
 
-	require.NoError(t, r.Prepare(t.Context()))
 	require.NoError(t, r.Start(t.Context(), []StagedOperation{{ResourceKey: "jobs.foo"}}))
 	require.NoError(t, r.Close(t.Context(), true))
 	require.NoError(t, r.Drain())

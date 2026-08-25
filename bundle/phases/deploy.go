@@ -270,9 +270,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	// Settle deployment and version before planning. Plan snapshots the config, so
-	// both must be stamped before it is computed. Version itself is created after approval.
-	if err := dmsClient.Prepare(ctx); err != nil {
+	// Stamp the deployment and version before planning: Plan snapshots the config, and the
+	// version itself is created after approval. The deployment has to exist to be stamped.
+	if err := dmsClient.EnsureDeployment(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}

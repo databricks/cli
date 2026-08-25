@@ -76,10 +76,11 @@ type DeploymentState struct {
 	// history, in which case RegisterDmsClient installs it.
 	dmsClient *dms.BufferedClient
 
-	// DMSDeploymentID is the deployment Open read the state from, kept so what follows records
-	// under it without looking the workspace node up again. Empty when the bundle does not
-	// record deployment history or has never been deployed.
-	DMSDeploymentID string
+	// DMSDeploymentID is the deployment Open read the state from, and DMSLastVersionID its most
+	// recent version. Kept so what follows records under them without looking either up again.
+	// Empty when the bundle does not record deployment history or has never been deployed.
+	DMSDeploymentID  string
+	DMSLastVersionID string
 }
 
 type Header struct {
@@ -312,6 +313,9 @@ type DMSSource struct {
 	// DeploymentID is resolved from the deployment's workspace node (see
 	// dms.ResolveDeploymentID), and empty before the first recorded deploy.
 	DeploymentID string
+
+	// LastVersionID is that deployment's most recent version, empty when it has none.
+	LastVersionID string
 }
 
 // Open reads the deployment state from disk, recovering the WAL when withRecovery is set.
@@ -405,6 +409,7 @@ To record this bundle's history, start it over as a new deployment:
 To keep the existing resources instead, unset experimental.record_deployment_history`, path)
 		}
 		db.DMSDeploymentID = dmsSource.DeploymentID
+		db.DMSLastVersionID = dmsSource.LastVersionID
 		if dmsSource.DeploymentID != "" {
 			if err := db.readDMSState(ctx, dmsSource); err != nil {
 				return err
