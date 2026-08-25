@@ -14,7 +14,7 @@ Found 1 error
 
 === a glob that only matches directories warns
 >>> [CLI] bundle validate
-Warning: lifecycle.triggers.on_file_change: pattern "dirs/*" matches only directories
+Warning: lifecycle.triggers.on_file_change: pattern "dirs/*" matches only directories or files excluded from sync, so nothing is hashed
   in databricks.yml:24:29
 
 Name: job-runs-on-file-change-errors
@@ -25,9 +25,9 @@ Workspace:
 
 Found 1 warning
 
-=== a glob matching a directory and an excluded file is rejected
->>> musterr [CLI] bundle validate
-Error: lifecycle.triggers.on_file_change: pattern "mixed/*" matches only files excluded from sync, leaving nothing to hash
+=== a glob matching a directory and an excluded file warns
+>>> [CLI] bundle validate
+Warning: lifecycle.triggers.on_file_change: pattern "mixed/*" matches only directories or files excluded from sync, so nothing is hashed
   in databricks.yml:24:29
 
 Name: job-runs-on-file-change-errors
@@ -36,11 +36,11 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-errors/default
 
-Found 1 error
+Found 1 warning
 
-=== a glob matching only excluded files is rejected
->>> musterr [CLI] bundle validate
-Error: lifecycle.triggers.on_file_change: pattern "allexcluded/*" matches only files excluded from sync, leaving nothing to hash
+=== a glob matching only excluded files warns
+>>> [CLI] bundle validate
+Warning: lifecycle.triggers.on_file_change: pattern "allexcluded/*" matches only directories or files excluded from sync, so nothing is hashed
   in databricks.yml:24:29
 
 Name: job-runs-on-file-change-errors
@@ -49,7 +49,7 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-errors/default
 
-Found 1 error
+Found 1 warning
 
 === a pattern that matches nothing warns
 >>> [CLI] bundle validate
