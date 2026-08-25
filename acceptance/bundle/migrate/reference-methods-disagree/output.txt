@@ -1,0 +1,38 @@
+
+=== Deploy on terraform: the methods agree, so the dry run is clean
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.dst
+Created jobs.src
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_migration_telemetry
+direct_drymigrate_success true
+direct_drymigrate_warnings false
+
+>>> update_file.py databricks.yml #experimental experimental
+
+=== Opt in: the methods disagree, which stops the migration without an error
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Warn: Direct engine requested in DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+Executing 'postdeploy' script
+Warn: post-deploy dry-run migration to direct: resource jobs.dst field name: method A value "source-drifted" and method B value "source" disagree; using longer (method A)
+Warn: The warnings above are from a dry-run migration to the direct deployment engine (https://docs.databricks.com/aws/en/dev-tools/bundles/direct).
+Your deployment is not affected and works normally, but you may experience these issues when migrating to the direct deployment engine.
+Please forward these warnings to dabs-feedback@databricks.com
+Warn: Direct engine was requested but the dry-run migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.
+
+>>> print_migration_telemetry
+direct_migrate_warnings true
+direct_migrate_warning_saferr jobs.%s field %q: method A and method B disagree
+
+=== State is still terraform, so nothing was migrated
+
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate
