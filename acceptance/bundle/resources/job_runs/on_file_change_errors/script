@@ -23,3 +23,7 @@ trace $CLI bundle validate
 title "** is not supported"
 update_file.py databricks.yml "missing/*.txt" "src/**"
 trace musterr $CLI bundle validate
+
+title "an absolute pattern is rejected"
+update_file.py databricks.yml "src/**" "/tmp/seed.txt"
+trace musterr $CLI bundle validate

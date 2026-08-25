@@ -34,15 +34,29 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 		assert.Equal(t, contentHash("world"), hashes["b.txt"])
 	})
 
-	t.Run("trims pattern whitespace", func(t *testing.T) {
+	t.Run("rejects an absolute pattern", func(t *testing.T) {
 		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, "seed.txt"), []byte("v1"), 0o644))
-		pattern := "  seed.txt  "
+		pattern := "/etc/passwd"
 		b := bundleWithFileTrigger(dir, pattern)
 
 		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
+		require.True(t, diags.HasError())
+		require.Equal(t, `lifecycle.triggers.on_file_change: pattern "/etc/passwd" must be relative to the defining YAML file`, diags[0].Summary)
+		assert.Empty(t, b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers)
+	})
+
+	t.Run("missing pattern is keyed relative to the sync root", func(t *testing.T) {
+		parent := t.TempDir()
+		bundleDir := filepath.Join(parent, "bundle")
+		require.NoError(t, os.Mkdir(bundleDir, 0o755))
+
+		pattern := "../missing.txt"
+		b := bundleWithFileTrigger(parent, pattern)
+		b.BundleRootPath = bundleDir
+
+		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 		require.False(t, diags.HasError())
-		assert.Equal(t, contentHash("v1"), b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers["seed.txt"])
+		assert.Equal(t, map[string]string{"missing.txt": ""}, b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers)
 	})
 
 	t.Run("globs from the bundle root when the sync root is an ancestor", func(t *testing.T) {

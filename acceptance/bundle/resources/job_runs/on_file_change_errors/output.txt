@@ -76,3 +76,16 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-errors/default
 
 Found 1 error
+
+=== an absolute pattern is rejected
+>>> musterr [CLI] bundle validate
+Error: lifecycle.triggers.on_file_change: pattern "/tmp/seed.txt" must be relative to the defining YAML file
+  in databricks.yml:24:29
+
+Name: job-runs-on-file-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-errors/default
+
+Found 1 error

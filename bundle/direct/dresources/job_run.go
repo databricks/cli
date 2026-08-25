@@ -26,31 +26,6 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
-// Parsed so HasPrefix catches parent and child paths; skip is only when the
-// trigger itself is cleared, not when a file hash under on_file_change changes.
-var (
-	jobRunTriggersPath       = structpath.MustParsePath("lifecycle.triggers")
-	jobRunOnBundleDeployPath = structpath.MustParsePath("lifecycle.triggers.on_bundle_deploy")
-	jobRunOnFileChangePath   = structpath.MustParsePath("lifecycle.triggers.on_file_change")
-)
-
-func samePath(a, b *structpath.PathNode) bool {
-	return a.HasPrefix(b) && b.HasPrefix(a)
-}
-
-func jobRunTriggerRemoved(path *structpath.PathNode, change *ChangeDesc) bool {
-	switch {
-	case samePath(path, jobRunOnBundleDeployPath):
-		return change.New == nil || change.New == ""
-	case samePath(path, jobRunOnFileChangePath):
-		return change.New == nil
-	case samePath(path, jobRunTriggersPath):
-		return change.New == nil
-	default:
-		return false
-	}
-}
-
 // JobRunTriggersState is the persisted fingerprint of lifecycle.triggers.
 type JobRunTriggersState struct {
 	// Fresh UUID each plan while armed so Old!=New forces recreate.
@@ -411,14 +386,17 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // result_state either, so the lifecycle state is what tells the two apart.
 // Clearing a trigger skips its local-only fingerprint without re-firing the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
-	if path.HasPrefix(jobRunTriggersPath) {
-		if jobRunTriggerRemoved(path, change) {
+	switch path.String() {
+	case "lifecycle.triggers.on_bundle_deploy":
+		if change.New == nil || change.New == "" {
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
 		}
-		return nil
-	}
-	switch path.String() {
+	case "lifecycle.triggers.on_file_change", "lifecycle.triggers":
+		if change.New == nil {
+			change.Action = deployplan.Skip
+			change.Reason = "trigger removed"
+		}
 	case "result_state":
 		// The planner passes no remote state when the run could not be read.
 		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
@@ -426,10 +404,8 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 		}
 		change.Action = deployplan.Skip
 		change.Reason = "run in progress"
-		return nil
-	default:
-		return nil
 	}
+	return nil
 }
 
 // DoDelete deletes the run via jobs/runs/delete, on both destroy and the
