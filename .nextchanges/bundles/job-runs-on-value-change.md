@@ -1,1 +1,1 @@
-direct: `resources.job_runs` can set `lifecycle.triggers.on_value_change` to an interpolated expression (for example `${resources.jobs.foo.id}`) to re-fire the run when that value changes. Removing the trigger does not recreate the existing run.
+direct: `resources.job_runs` can set `lifecycle.triggers.on_value_change` to an interpolated expression (for example `${resources.jobs.foo.id}`) to re-fire the run when that value changes. Long resolved values are recorded as a SHA-256 hash. Removing the trigger does not recreate the existing run.

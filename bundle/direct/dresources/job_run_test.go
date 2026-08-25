@@ -10,8 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -346,6 +348,33 @@ func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
 	assert.Empty(t, config.IdempotencyToken)
 }
 
+func TestCompactJobRunValue(t *testing.T) {
+	assert.Equal(t, strings.Repeat("a", jobRunValueHashLength), compactJobRunValue(strings.Repeat("a", jobRunValueHashLength)))
+	assert.Equal(
+		t,
+		"sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055",
+		compactJobRunValue(strings.Repeat("a", jobRunValueHashLength+1)),
+	)
+}
+
+func TestJobRunValueChangeStateNormalizesAfterAllReferencesResolve(t *testing.T) {
+	expr := "${resources.jobs.other.id}-${resources.jobs.extra.id}"
+	var trigger resources.JobRunTrigger
+	trigger.OnValueChange = &expr
+	var input resources.JobRun
+	input.Lifecycle = &resources.JobRunLifecycle{}
+	input.Lifecycle.Triggers = []resources.JobRunTrigger{trigger}
+	state := (&ResourceJobRun{}).PrepareState(&input)
+	path := structpath.NewStringKey(structpath.MustParsePath("lifecycle.triggers.on_value_change"), expr)
+	sv := structvar.NewStructVar(state, map[string]string{path.String(): expr})
+
+	require.NoError(t, sv.ResolveRef("${resources.jobs.other.id}", int64(123)))
+	assert.Equal(t, map[string]string{expr: "123-${resources.jobs.extra.id}"}, state.Lifecycle.Triggers.OnValueChange)
+
+	require.NoError(t, sv.ResolveRef("${resources.jobs.extra.id}", int64(456)))
+	assert.Equal(t, map[string]string{"123-456": "123-456"}, state.Lifecycle.Triggers.OnValueChange)
+}
+
 func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
 	var cancelled atomic.Bool
 	server := testserver.New(t)
@@ -374,21 +403,27 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 	for _, tt := range []struct {
 		name   string
 		path   string
+		old    any
 		new    any
 		action deployplan.ActionType
 	}{
-		{"cleared on_bundle_deploy string", "lifecycle.triggers.on_bundle_deploy", "", deployplan.Skip},
-		{"nil on_bundle_deploy", "lifecycle.triggers.on_bundle_deploy", nil, deployplan.Skip},
-		{"rotated on_bundle_deploy", "lifecycle.triggers.on_bundle_deploy", "uuid", deployplan.Recreate},
-		{"cleared on_file_change", "lifecycle.triggers.on_file_change", nil, deployplan.Skip},
-		{"changed on_file_change map", "lifecycle.triggers.on_file_change", map[string]string{"a.txt": "h"}, deployplan.Recreate},
+		{"cleared on_bundle_deploy string", "lifecycle.triggers.on_bundle_deploy", "old", "", deployplan.Skip},
+		{"nil on_bundle_deploy", "lifecycle.triggers.on_bundle_deploy", "old", nil, deployplan.Skip},
+		{"rotated on_bundle_deploy", "lifecycle.triggers.on_bundle_deploy", "old", "uuid", deployplan.Recreate},
+		{"cleared on_file_change", "lifecycle.triggers.on_file_change", map[string]string{"a.txt": "h"}, nil, deployplan.Skip},
+		{"changed on_file_change map", "lifecycle.triggers.on_file_change", map[string]string{"a.txt": "h"}, map[string]string{"a.txt": "new"}, deployplan.Recreate},
 		// A file dropping out of the map is a real change, so the skip must not
-		// extend to paths below on_file_change.
-		{"cleared on_file_change child", "lifecycle.triggers.on_file_change['a.txt']", nil, deployplan.Recreate},
-		{"result_state with unreadable remote", "result_state", nil, deployplan.Recreate},
+		// extend to on_file_change entries.
+		{"removed one on_file_change", "lifecycle.triggers.on_file_change", map[string]string{"a.txt": "h", "b.txt": "h"}, map[string]string{"a.txt": "h"}, deployplan.Recreate},
+		{"cleared on_file_change child", "lifecycle.triggers.on_file_change['a.txt']", "h", nil, deployplan.Recreate},
+		{"cleared on_value_change", "lifecycle.triggers.on_value_change", map[string]string{"a": "a"}, nil, deployplan.Skip},
+		{"removed one on_value_change", "lifecycle.triggers.on_value_change", map[string]string{"a": "a", "b": "b"}, map[string]string{"b": "b"}, deployplan.Skip},
+		{"changed on_value_change", "lifecycle.triggers.on_value_change", map[string]string{"a": "a"}, map[string]string{"b": "b"}, deployplan.Recreate},
+		{"cleared on_value_change child", "lifecycle.triggers.on_value_change['b']", "b", nil, deployplan.Skip},
+		{"result_state with unreadable remote", "result_state", "", nil, deployplan.Recreate},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			change := &ChangeDesc{Action: deployplan.Recreate, New: tt.new}
+			change := &ChangeDesc{Action: deployplan.Recreate, Old: tt.old, New: tt.new}
 			require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath(tt.path), change, nil))
 			assert.Equal(t, tt.action, change.Action)
 		})

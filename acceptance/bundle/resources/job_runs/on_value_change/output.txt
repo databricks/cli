@@ -22,6 +22,14 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
+=== long values are stored as hashes
+>>> print_state.py
+{
+  "a1": "a1",
+  "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055": "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055",
+  "v1": "v1"
+}
+
 === redeploy with unchanged values plans nothing
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -46,16 +54,18 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
     "reason": "immutable",
     "old": {
       "a1": "a1",
+      "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055": "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055",
       "v1": "v1"
     },
     "new": {
       "a1": "a1",
+      "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055": "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055",
       "v2": "v2"
     }
   },
   "lifecycle.triggers.on_value_change['v1']": {
-    "action": "recreate",
-    "reason": "immutable",
+    "action": "skip",
+    "reason": "trigger removed",
     "old": "v1"
   },
   "lifecycle.triggers.on_value_change['v2']": {
@@ -98,7 +108,18 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
   }
 }
 
-=== removing on_value_change is unchanged and does not run
+=== removing one on_value_change is unchanged and does not run
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //jobs/run-now
+
+=== removing the last on_value_change is unchanged and does not run
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

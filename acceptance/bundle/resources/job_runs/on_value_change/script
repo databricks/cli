@@ -14,6 +14,9 @@ trace read_id.py my_job
 read_id.py my_run > /dev/null
 trace print_requests.py //jobs/run-now
 
+title "long values are stored as hashes"
+trace print_state.py | jq '.state["resources.job_runs.my_run"].state.lifecycle.triggers.on_value_change'
+
 title "redeploy with unchanged values plans nothing"
 trace $CLI bundle plan
 trace $CLI bundle deploy
@@ -28,11 +31,18 @@ read_id.py my_run > /dev/null
 trace print_requests.py --keep //jobs/runs/delete
 trace print_requests.py //jobs/run-now
 
-title "removing on_value_change is unchanged and does not run"
+title "removing one on_value_change is unchanged and does not run"
+update_file.py databricks.yml '          - on_value_change: ${var.other}
+' ''
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now
+
+title "removing the last on_value_change is unchanged and does not run"
 update_file.py databricks.yml '      lifecycle:
         triggers:
           - on_value_change: ${var.stamp}
-          - on_value_change: ${var.other}
+          - on_value_change: ${var.long}
 ' ''
 trace $CLI bundle plan
 trace $CLI bundle deploy

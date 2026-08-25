@@ -6,6 +6,8 @@ variables:
     default: v1
   other:
     default: a1
+  long:
+    default: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 resources:
   jobs:
@@ -23,3 +25,4 @@ resources:
         triggers:
           - on_value_change: ${var.stamp}
           - on_value_change: ${var.other}
+          - on_value_change: ${var.long}

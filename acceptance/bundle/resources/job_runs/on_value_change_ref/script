@@ -27,3 +27,12 @@ title "redeploy with unchanged ids plans nothing"
 trace $CLI bundle plan
 trace $CLI bundle deploy
 trace print_requests.py //jobs/run-now
+
+title "replacing a referenced job re-fires the run"
+other_id=$(read_id.py other)
+trace $CLI jobs delete "$other_id"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace read_id.py other
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now

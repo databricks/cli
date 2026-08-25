@@ -50,7 +50,7 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 === state records the concatenated resolved ids
 >>> print_state.py
 {
-  "${resources.jobs.other.id}-${resources.jobs.extra.id}": "[OTHER_ID]-[EXTRA_ID]"
+  "[OTHER_ID]-[EXTRA_ID]": "[OTHER_ID]-[EXTRA_ID]"
 }
 
 === redeploy with unchanged ids plans nothing
@@ -63,6 +63,37 @@ Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 4 unchanged
 
 >>> print_requests.py //jobs/run-now
+
+=== replacing a referenced job re-fires the run
+>>> [CLI] jobs delete [OTHER_ID]
+
+>>> [CLI] bundle plan
+recreate job_runs.my_run
+create jobs.other
+
+Plan: 2 to add, 0 to change, 1 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-ref/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
+Recreated job_runs.my_run
+Created jobs.other
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 1 deleted, 2 unchanged
+
+>>> read_id.py other
+[OTHER_ID_3]
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

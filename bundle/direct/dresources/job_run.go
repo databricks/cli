@@ -3,6 +3,8 @@ package dresources
 import (
 	"cmp"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"slices"
@@ -29,13 +31,18 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
+const (
+	jobRunValueHashPrefix = "sha256:"
+	jobRunValueHashLength = len(jobRunValueHashPrefix) + sha256.Size*2
+)
+
 // JobRunTriggersState is the persisted fingerprint of lifecycle.triggers.
 type JobRunTriggersState struct {
 	// Fresh UUID each plan while armed so Old!=New forces recreate.
 	OnBundleDeploy string `json:"on_bundle_deploy,omitempty"`
 	// Content hashes from ResolveJobRunFileTriggers; any change recreates.
 	OnFileChange map[string]string `json:"on_file_change,omitempty"`
-	// Resolved expression per watched value; any change recreates.
+	// Resolved value fingerprints; any change recreates.
 	OnValueChange map[string]string `json:"on_value_change,omitempty"`
 }
 
@@ -122,6 +129,7 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	if values := jobRunValueChangeState(input); len(values) > 0 {
 		state.Lifecycle.Triggers.OnValueChange = values
 	}
+	state.NormalizeAfterResolve()
 	return state
 }
 
@@ -136,9 +144,6 @@ func (*ResourceJobRun) PrepareInputConfig(input *resources.JobRun, _ string) (*s
 		path := structpath.NewStringKey(structpath.MustParsePath("lifecycle.triggers.on_value_change"), expr)
 		refs[path.String()] = expr
 	}
-	if len(refs) == 0 {
-		refs = nil
-	}
 	return &structvar.StructVar{Value: input, Refs: refs}, nil
 }
 
@@ -152,9 +157,6 @@ func jobRunValueChangeState(input *resources.JobRun) map[string]string {
 			continue
 		}
 		expr := strings.TrimSpace(*t.OnValueChange)
-		if expr == "" {
-			continue
-		}
 		out[expr] = expr
 	}
 	if len(out) == 0 {
@@ -163,15 +165,33 @@ func jobRunValueChangeState(input *resources.JobRun) map[string]string {
 	return out
 }
 
-// DropJobRunValueChangeConfigRefs drops lifecycle.triggers[N].on_value_change.
-// ExtractReferences treats [0] on a struct as a no-op, so that path is the
-// wrapper and cannot hold the resolved id.
-func DropJobRunValueChangeConfigRefs(refs map[string]string) {
-	for k := range refs {
-		if strings.Contains(k, ".triggers[") && strings.HasSuffix(k, "].on_value_change") {
-			delete(refs, k)
-		}
+// NormalizeAfterResolve rekeys watched values by their fingerprint, so that the
+// identity of a trigger is the value it resolved to and not the expression text.
+// An entry still holding a reference is left alone until it fully resolves.
+func (s *JobRunState) NormalizeAfterResolve() {
+	values := s.Lifecycle.Triggers.OnValueChange
+	if len(values) == 0 {
+		return
 	}
+	normalized := make(map[string]string, len(values))
+	for key, value := range values {
+		if dynvar.ContainsVariableReference(value) {
+			normalized[key] = value
+			continue
+		}
+		fingerprint := compactJobRunValue(value)
+		normalized[fingerprint] = fingerprint
+	}
+	s.Lifecycle.Triggers.OnValueChange = normalized
+}
+
+// compactJobRunValue hashes a value only when the digest is shorter than it.
+func compactJobRunValue(value string) string {
+	if len(value) <= jobRunValueHashLength {
+		return value
+	}
+	sum := sha256.Sum256([]byte(value))
+	return jobRunValueHashPrefix + hex.EncodeToString(sum[:])
 }
 
 // makeJobRunRemote maps the GetRun response into the RunNow-shaped remote: GET
@@ -444,8 +464,17 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
 		}
-	case "lifecycle.triggers.on_file_change", "lifecycle.triggers.on_value_change":
+	case "lifecycle.triggers.on_file_change":
+		// Only a cleared trigger skips: a file dropping out of the map means the
+		// match disappeared, which is a real change.
 		if change.New == nil {
+			change.Action = deployplan.Skip
+			change.Reason = "trigger removed"
+		}
+	case "lifecycle.triggers.on_value_change":
+		// A watched value always resolves to something, so entries disappear only
+		// when the config stops watching them.
+		if valueTriggersOnlyRemoved(change.Old, change.New) {
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
 		}
@@ -456,8 +485,34 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 		}
 		change.Action = deployplan.Skip
 		change.Reason = "run in progress"
+	default:
+		// The per-entry change that accompanies the map above.
+		parent := path.Parent()
+		if change.New == nil && parent != nil && parent.String() == "lifecycle.triggers.on_value_change" {
+			change.Action = deployplan.Skip
+			change.Reason = "trigger removed"
+		}
 	}
 	return nil
+}
+
+// valueTriggersOnlyRemoved reports whether the remaining fingerprints are a
+// strict subset of the old ones, i.e. entries were dropped and none added.
+func valueTriggersOnlyRemoved(oldValue, newValue any) bool {
+	if newValue == nil {
+		return true
+	}
+	oldMap, okOld := oldValue.(map[string]string)
+	newMap, okNew := newValue.(map[string]string)
+	if !okOld || !okNew {
+		return false
+	}
+	for key, value := range newMap {
+		if oldMap[key] != value {
+			return false
+		}
+	}
+	return len(newMap) < len(oldMap)
 }
 
 // DoDelete deletes the run via jobs/runs/delete, on both destroy and the
