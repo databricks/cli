@@ -1,0 +1,22 @@
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created apps.my_app
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> update_file.py databricks.yml #catalogs catalogs
+
+>>> update_file.py databricks.yml value: plain value: ${resources.catalogs.my_catalog.name}
+
+=== Direct requested: the catalog is skipped by terraform and the migration still succeeds
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Warn: Direct engine requested in DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+Migrating state to direct deployment engine (opted in via DATABRICKS_BUNDLE_ENGINE environment variable)...
+Migrated 1 resource to direct deployment engine.
+
+>>> print_migration_telemetry
+direct_migrated_via_env true

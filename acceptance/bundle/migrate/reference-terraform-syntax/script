@@ -1,0 +1,4 @@
+export DATABRICKS_BUNDLE_ENGINE=
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt

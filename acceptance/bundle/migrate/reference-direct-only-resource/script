@@ -1,0 +1,18 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# Recording that a reference into a direct-only resource type does not break the
+# migration. Terraform cannot deploy catalogs at all, so the reference resolves
+# to nothing in terraform.tfstate — but apps.config is inline app.yaml rather
+# than an API field, so ExtractReferences drops the reference before it is ever
+# resolved. See bundle/direct/bundle_plan.go: refs are kept only for fields that
+# exist in the state type.
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+rm -f out.requests.txt
+
+trace update_file.py databricks.yml "#catalogs" "catalogs"
+trace update_file.py databricks.yml "value: plain" 'value: ${resources.catalogs.my_catalog.name}'
+
+title "Direct requested: the catalog is skipped by terraform and the migration still succeeds"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt

@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    src:
+      name: source
+    dst:
+      name: dst
+      # Terraform's own reference syntax, which users copy from Terraform docs or
+      # carry over from a raw Terraform project. DABs does not resolve it, so it
+      # reaches Terraform verbatim and Terraform resolves it.
+      description: ${databricks_job.src.id}

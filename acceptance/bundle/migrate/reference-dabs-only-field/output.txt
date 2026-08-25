@@ -1,0 +1,7 @@
+
+=== Terraform rejects the reference, so there is no state to migrate
+>>> musterr DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+script: line 24: DATABRICKS_BUNDLE_ENGINE=terraform: command not found
+contains error: 'has no argument, nested block, or exported attribute named' not found in the output.
+
+Exit code: 1

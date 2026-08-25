@@ -1,0 +1,15 @@
+export DATABRICKS_BUNDLE_ENGINE=
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+rm -f out.requests.txt
+
+# Bump the recorded state format version. The migration parses terraform.tfstate
+# itself and only understands version 4, so this is what a state written by a
+# future terraform looks like to it.
+trace update_file.py .databricks/bundle/default/terraform/terraform.tfstate '"version": 4' '"version": 5'
+
+title "The migration refuses a state format it does not understand"
+trace musterr $CLI bundle deployment migrate
+
+# Not asserted, and the two state reads are issued concurrently so their recorded
+# order varies between runs.
+rm -f out.requests.txt

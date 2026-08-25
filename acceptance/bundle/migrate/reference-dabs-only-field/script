@@ -1,0 +1,8 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# Recording why a reference to a DABs-only field never reaches the migration:
+# Interpolate rewrites it to Terraform syntax, and Terraform rejects the
+# attribute because it has no equivalent. The deploy fails first, so the state
+# conversion never runs on it.
+title "Terraform rejects the reference, so there is no state to migrate"
+trace musterr DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy 2>&1 | contains.py 'has no argument, nested block, or exported attribute named'
