@@ -66,6 +66,7 @@ var knownMissingInRemoteType = map[string][]string{
 // These are bundle-specific fields that exist in InputType but not in StateType.
 var commonMissingInStateType = []string{
 	"grants",
+	"libraries",
 	"lifecycle",
 	"permissions",
 }
