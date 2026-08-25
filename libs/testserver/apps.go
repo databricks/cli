@@ -16,6 +16,18 @@ const (
 	appStatusUnavailableMessage = "App status is unavailable."
 )
 
+// setUcSecurableKinds mimics the platform computing an output-only
+// securable_kind (e.g. TABLE_DELTA) for UC TABLE securables. The client never
+// sends it, but the backend returns it on every read; VOLUME and other
+// securable types get none. See https://github.com/databricks/cli/issues/6342
+func setUcSecurableKinds(app *apps.App) {
+	for _, res := range app.Resources {
+		if res.UcSecurable != nil && res.UcSecurable.SecurableType == apps.AppResourceUcSecurableUcSecurableTypeTable {
+			res.UcSecurable.SecurableKind = "TABLE_DELTA"
+		}
+	}
+}
+
 func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 	var updateReq apps.AsyncUpdateAppRequest
 	if err := json.Unmarshal(req.Body, &updateReq); err != nil {
@@ -66,6 +78,7 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: http.StatusInternalServerError}
 		}
 	}
+	setUcSecurableKinds(&existing)
 	s.Apps[name] = existing
 
 	return Response{
@@ -355,6 +368,8 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 			}},
 		})
 	}
+
+	setUcSecurableKinds(&app)
 
 	s.Apps[name] = app
 	return Response{

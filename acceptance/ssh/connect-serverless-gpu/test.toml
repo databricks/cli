@@ -1,7 +1,6 @@
 Cloud = false
 
 # Serverless GPU is only available in newer environments
-RequiresUnityCatalog = true
 
 # Assert the serverless GPU bootstrap job the CLI submits on a local run.
 RecordRequests = true

@@ -78,7 +78,7 @@ func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, conf
 }
 
 // DoUpdateWithID updates the external location and returns the new ID if the name changes.
-func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateExternalLocation) (string, *catalog.ExternalLocationInfo, error) {
+func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateExternalLocation, _ *PlanEntry) (string, *catalog.ExternalLocationInfo, error) {
 	updateRequest := catalog.UpdateExternalLocation{
 		Comment:                   config.Comment,
 		CredentialName:            config.CredentialName,

@@ -1,1 +1,0 @@
-Fixed `bundle.git.branch`, `bundle.git.commit`, and `bundle.git.origin_url` being empty for bundles deployed from a workspace Git folder that has Git CLI access. The workspace API does not report git metadata for those folders, so it is now read from the Repos API instead.

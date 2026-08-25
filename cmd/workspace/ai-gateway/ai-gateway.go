@@ -29,8 +29,7 @@ Govern AI workloads in Unity Catalog. This API manages the Unity Catalog
   securables that bring centralized access control, lineage, and auditing to
   AI-serving entities: model services (governed access to foundation models and
   external LLMs), model provider services (governed connections to external
-  model providers), MCP services (governed Model Context Protocol servers), and
-  agent services (governed agents).`,
+  model providers), and MCP services (governed Model Context Protocol servers).`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
@@ -104,10 +103,9 @@ Create an MCP service.
   references.
 
   Arguments:
-    PARENT: Resource name of the parent schema. Format: schemas/{catalog}.{schema}.
-      Each {...} component is capped at 255 characters individually.
-    MCP_SERVICE_ID: Leaf identifier for the MCP service (the unqualified name within the
-      parent schema, e.g. "my_mcp_service").`
+    PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
+      {...} component is capped at 255 characters individually.
+    MCP_SERVICE_ID: Name for the MCP service, e.g. "my_mcp_service".`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -198,10 +196,9 @@ Create a model provider service.
   catalog.
 
   Arguments:
-    PARENT: Resource name of the parent schema. Format: schemas/{catalog}.{schema}.
-      Each {...} component is capped at 255 characters individually.
-    MODEL_PROVIDER_SERVICE_ID: Leaf identifier for the provider service (the unqualified name within the
-      parent schema, e.g. "openai_prod").`
+    PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
+      {...} component is capped at 255 characters individually.
+    MODEL_PROVIDER_SERVICE_ID: Name for the model provider service, e.g. "openai_prod".`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -291,10 +288,9 @@ Create a model service.
   catalog.
 
   Arguments:
-    PARENT: Resource name of the parent schema. Format: schemas/{catalog}.{schema}.
-      Each {...} component is capped at 255 characters individually.
-    MODEL_SERVICE_ID: Leaf identifier for the model service (the unqualified name within the
-      parent schema, e.g. "my_model_service").`
+    PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
+      {...} component is capped at 255 characters individually.
+    MODEL_SERVICE_ID: Name for the model service, e.g. "my_model_service".`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -773,7 +769,7 @@ func newListMcpServices() *cobra.Command {
 	var listMcpServicesLimit int
 
 	cmd.Flags().IntVar(&listMcpServicesReq.PageSize, "page-size", listMcpServicesReq.PageSize, `Maximum number of MCP services to return.`)
-	cmd.Flags().StringVar(&listMcpServicesReq.Parent, "parent", listMcpServicesReq.Parent, `Resource name of the parent schema to list within, as schemas/{catalog}.{schema}.`)
+	cmd.Flags().StringVar(&listMcpServicesReq.Parent, "parent", listMcpServicesReq.Parent, `Name of the parent schema to list within, as schemas/{catalog}.{schema}.`)
 	cmd.Flags().Var(&listMcpServicesReq.View, "view", `View selector controlling which fields are populated per row. Supported values: [BASIC, FULL]`)
 
 	// Limit flag for total result capping.
@@ -853,7 +849,7 @@ func newListModelProviderServices() *cobra.Command {
 	var listModelProviderServicesLimit int
 
 	cmd.Flags().IntVar(&listModelProviderServicesReq.PageSize, "page-size", listModelProviderServicesReq.PageSize, `Maximum number of provider services to return.`)
-	cmd.Flags().StringVar(&listModelProviderServicesReq.Parent, "parent", listModelProviderServicesReq.Parent, `Resource name of the parent schema to list within, as schemas/{catalog}.{schema}.`)
+	cmd.Flags().StringVar(&listModelProviderServicesReq.Parent, "parent", listModelProviderServicesReq.Parent, `Name of the parent schema to list within, as schemas/{catalog}.{schema}.`)
 	cmd.Flags().Var(&listModelProviderServicesReq.View, "view", `View selector controlling which fields are populated per row. Supported values: [BASIC, FULL]`)
 
 	// Limit flag for total result capping.
@@ -933,7 +929,7 @@ func newListModelServices() *cobra.Command {
 	var listModelServicesLimit int
 
 	cmd.Flags().IntVar(&listModelServicesReq.PageSize, "page-size", listModelServicesReq.PageSize, `Maximum number of model services to return.`)
-	cmd.Flags().StringVar(&listModelServicesReq.Parent, "parent", listModelServicesReq.Parent, `Resource name of the parent schema to list within, as schemas/{catalog}.{schema}.`)
+	cmd.Flags().StringVar(&listModelServicesReq.Parent, "parent", listModelServicesReq.Parent, `Name of the parent schema to list within, as schemas/{catalog}.{schema}.`)
 	cmd.Flags().Var(&listModelServicesReq.View, "view", `View selector controlling which fields are populated per row. Supported values: [BASIC, FULL]`)
 
 	// Limit flag for total result capping.

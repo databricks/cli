@@ -15,14 +15,14 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 {
   "config.served_entities[0].burst_scaling_enabled": {
     "action": "skip",
-    "reason": "input_only",
+    "reason": "spec:input_only",
     "old": true,
     "new": true,
     "remote": false
   },
   "config.served_entities[0].external_model.openai_config.openai_api_key_plaintext": {
     "action": "skip",
-    "reason": "input_only",
+    "reason": "spec:input_only",
     "old": "sk-test-plaintext-key",
     "new": "sk-test-plaintext-key",
     "remote": ""

@@ -4,19 +4,19 @@ package terraform_dabs_map
 
 // alerts / databricks_alert_v2: 1 dabs-only
 // alerts / databricks_alert_v2: 3 tf-only
-// apps / databricks_app: 17 dabs-only
+// apps / databricks_app: 6 dabs-only
 // apps / databricks_app: 1 tf-only
 // clusters / databricks_cluster: 26 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 40 dabs-only
+// jobs / databricks_job: 7 dabs-only
 // jobs / databricks_job: 259 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 25 dabs-only
+// pipelines / databricks_pipeline: 6 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
@@ -99,19 +99,6 @@ var DABsOnlyFields = map[string]FieldSet{
 				"value_from": {}, // apps.*.config.env.value_from
 			},
 		},
-		"forward_user_access_token": {},
-		"git_source": {
-			"branch": {}, // apps.*.git_source.branch
-			"commit": {}, // apps.*.git_source.commit
-			"git_repository": {
-				"provider": {}, // apps.*.git_source.git_repository.provider
-				"url":      {}, // apps.*.git_source.git_repository.url
-			},
-			"resolved_commit":  {}, // apps.*.git_source.resolved_commit
-			"source_code_path": {}, // apps.*.git_source.source_code_path
-			"tag":              {}, // apps.*.git_source.tag
-		},
-		"source_code_path": {},
 	},
 	"jobs": {
 		"job_clusters": {
@@ -120,16 +107,8 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 		"tasks": {
-			"ai_runtime_task": {
-				"docker_image_url":         {}, // jobs.*.tasks.ai_runtime_task.docker_image_url
-				"mlflow_artifact_location": {}, // jobs.*.tasks.ai_runtime_task.mlflow_artifact_location
-			},
 			"for_each_task": {
 				"task": {
-					"ai_runtime_task": {
-						"docker_image_url":         {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.docker_image_url
-						"mlflow_artifact_location": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.mlflow_artifact_location
-					},
 					"for_each_task": {
 						"concurrency": {}, // jobs.*.tasks.for_each_task.task.for_each_task.concurrency
 						"inputs":      {}, // jobs.*.tasks.for_each_task.task.for_each_task.inputs
@@ -144,43 +123,6 @@ var DABsOnlyFields = map[string]FieldSet{
 				"autotermination_minutes": {}, // jobs.*.tasks.new_cluster.autotermination_minutes
 			},
 		},
-		"triggers": {
-			"continuous": {
-				"task_retry_mode": {}, // jobs.*.triggers.continuous.task_retry_mode
-			},
-			"file_arrival": {
-				"min_time_between_triggers_seconds": {}, // jobs.*.triggers.file_arrival.min_time_between_triggers_seconds
-				"url":                               {}, // jobs.*.triggers.file_arrival.url
-				"wait_after_last_change_seconds":    {}, // jobs.*.triggers.file_arrival.wait_after_last_change_seconds
-			},
-			"model": {
-				"aliases":                           {}, // jobs.*.triggers.model.aliases
-				"condition":                         {}, // jobs.*.triggers.model.condition
-				"min_time_between_triggers_seconds": {}, // jobs.*.triggers.model.min_time_between_triggers_seconds
-				"securable_name":                    {}, // jobs.*.triggers.model.securable_name
-				"wait_after_last_change_seconds":    {}, // jobs.*.triggers.model.wait_after_last_change_seconds
-			},
-			"pause_status": {}, // jobs.*.triggers.pause_status
-			"periodic": {
-				"interval": {}, // jobs.*.triggers.periodic.interval
-				"unit":     {}, // jobs.*.triggers.periodic.unit
-			},
-			"schedule": {
-				"quartz_cron_expression": {}, // jobs.*.triggers.schedule.quartz_cron_expression
-				"timezone_id":            {}, // jobs.*.triggers.schedule.timezone_id
-			},
-			"sql_condition": {
-				"sql_query_id": {}, // jobs.*.triggers.sql_condition.sql_query_id
-				"trigger_mode": {}, // jobs.*.triggers.sql_condition.trigger_mode
-				"warehouse_id": {}, // jobs.*.triggers.sql_condition.warehouse_id
-			},
-			"table_update": {
-				"condition":                         {}, // jobs.*.triggers.table_update.condition
-				"min_time_between_triggers_seconds": {}, // jobs.*.triggers.table_update.min_time_between_triggers_seconds
-				"table_names":                       {}, // jobs.*.triggers.table_update.table_names
-				"wait_after_last_change_seconds":    {}, // jobs.*.triggers.table_update.wait_after_last_change_seconds
-			},
-		},
 	},
 	"pipelines": {
 		"cascade_on_destroy": {},
@@ -191,61 +133,6 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 		"dry_run": {},
-		"ingestion_definition": {
-			"objects": {
-				"schema": {
-					"connector_options": {
-						"api_source_connector_options": {
-							"options": {
-								"*": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.api_source_connector_options.options.*
-							},
-						},
-						"kafka_options": {
-							"key_transformer": {
-								"input_column":  {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.input_column
-								"output_column": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.output_column
-							},
-							"value_transformer": {
-								"input_column":  {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.input_column
-								"output_column": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.output_column
-							},
-						},
-					},
-					"fanout_options": {
-						"transforms": {
-							"input_column":  {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.input_column
-							"output_column": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.output_column
-						},
-					},
-				},
-				"table": {
-					"connector_options": {
-						"api_source_connector_options": {
-							"options": {
-								"*": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.api_source_connector_options.options.*
-							},
-						},
-						"kafka_options": {
-							"key_transformer": {
-								"input_column":  {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.input_column
-								"output_column": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.output_column
-							},
-							"value_transformer": {
-								"input_column":  {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.input_column
-								"output_column": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.output_column
-							},
-						},
-					},
-				},
-			},
-			"source_configurations": {
-				"api_source_connector_config": {
-					"configs": {
-						"*": {}, // pipelines.*.ingestion_definition.source_configurations.api_source_connector_config.configs.*
-					},
-				},
-			},
-		},
 		"parameters": {
 			"*": {}, // pipelines.*.parameters.*
 		},

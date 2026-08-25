@@ -25,6 +25,9 @@ var hasIsOwner = map[string]bool{
 
 var ignoredResources = map[string]bool{
 	"secret_scopes": true,
+	// Cluster policies only support CAN_USE; injecting the current user as
+	// CAN_MANAGE/IS_OWNER would be rejected by the permissions API.
+	"cluster_policies": true,
 }
 
 // When processing permissions, we need to implement these constraints:

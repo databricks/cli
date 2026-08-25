@@ -99,6 +99,7 @@ Flags:
       --forward-user-access-token   Forward the user's access token to the app.
   -h, --help                        help for update
       --json JSON                   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --source-code-path string     
       --space string                Name of the space this app belongs to.
       --usage-policy-id string
 
