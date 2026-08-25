@@ -59,7 +59,7 @@ type ProcessOptions struct {
 	// Implies ReadState
 	InitIDs bool
 
-	// If true, calls InitializeDeploymentHistory() to look up the bundle's recorded
+	// If true, calls FetchDeploymentAndLastVersionID() to look up the bundle's recorded
 	// deployment. Independent of InitIDs, and costs its own API calls.
 	// Implies ReadState
 	InitDeploymentHistory bool
@@ -307,7 +307,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// Independent of the resource IDs above: this reads the deployment record, not
 		// the state. It makes its own API calls, so only 'bundle summary' asks for it.
 		if opts.InitDeploymentHistory {
-			bundle.ApplyContext(ctx, b, mutator.InitializeDeploymentHistory(stateDesc.Engine))
+			bundle.ApplyContext(ctx, b, mutator.FetchDeploymentAndLastVersionID(stateDesc.Engine))
 			if logdiag.HasError(ctx) {
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}

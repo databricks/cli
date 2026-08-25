@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestInitializeDeploymentHistoryIsNoOpWhenNothingIsRecorded(t *testing.T) {
-	// The mutator must not make the API calls that would find a deployment when there is
-	// none to report: recording off, or an engine that does not record.
+func TestFetchDeploymentAndLastVersionIDIsNoOpWhenNothingIsRecorded(t *testing.T) {
+	// The mutator must not make the API call that would find a deployment when there is none to
+	// report: recording off, an engine that does not record, or a bundle never deployed.
 	cases := []struct {
 		name         string
 		engine       engine.EngineType
@@ -21,6 +21,7 @@ func TestInitializeDeploymentHistoryIsNoOpWhenNothingIsRecorded(t *testing.T) {
 		{"experimental unset", engine.EngineDirect, nil},
 		{"recording disabled", engine.EngineDirect, &config.Experimental{RecordDeploymentHistory: false}},
 		{"terraform records nothing", engine.EngineTerraform, &config.Experimental{RecordDeploymentHistory: true}},
+		{"never deployed", engine.EngineDirect, &config.Experimental{RecordDeploymentHistory: true}},
 	}
 
 	for _, tc := range cases {
@@ -31,7 +32,7 @@ func TestInitializeDeploymentHistoryIsNoOpWhenNothingIsRecorded(t *testing.T) {
 				},
 			}
 
-			diags := bundle.ApplySeq(t.Context(), b, InitializeDeploymentHistory(tc.engine))
+			diags := bundle.ApplySeq(t.Context(), b, FetchDeploymentAndLastVersionID(tc.engine))
 			require.NoError(t, diags.Error())
 			assert.Nil(t, b.Config.Bundle.Deployment.History)
 		})
