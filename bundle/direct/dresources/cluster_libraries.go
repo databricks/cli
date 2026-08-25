@@ -98,7 +98,7 @@ func (r *ResourceLibraries) DoRead(ctx context.Context, id string) (*LibrariesSt
 		return nil, err
 	}
 
-	state := &LibrariesState{ClusterId: id}
+	state := &LibrariesState{ClusterId: id, EmbeddedSlice: nil}
 	for _, s := range statuses.LibraryStatuses {
 		// Libraries set for all clusters via the UI are not managed by the bundle
 		// (following the permissions convention of ignoring inherited entries).
@@ -241,6 +241,8 @@ func (r *ResourceLibraries) waitForInstall(ctx context.Context, id string, desir
 				return nil, retries.Halt(fmt.Errorf("library %s failed to install: %s", libraryMapKey(*s.Library), strings.Join(s.Messages, "; ")))
 			case compute.LibraryInstallStatusInstalled, compute.LibraryInstallStatusSkipped, compute.LibraryInstallStatusRestored:
 				pending--
+			case compute.LibraryInstallStatusPending, compute.LibraryInstallStatusResolving, compute.LibraryInstallStatusInstalling, compute.LibraryInstallStatusUninstallOnRestart:
+				// Still in progress (or being removed); keep polling.
 			}
 		}
 
