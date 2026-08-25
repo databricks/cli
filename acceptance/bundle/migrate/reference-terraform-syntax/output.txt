@@ -19,7 +19,7 @@ Migrated 2 resources to direct deployment engine.
 >>> print_migration_telemetry
 direct_migrated_via_env true
 
-=== But the migrated state cannot be planned
+=== Badness: the migrated state cannot be planned
 
 >>> musterr [CLI] bundle plan
 Error: invalid dependency "${databricks_job.src.id}", no such node ""
