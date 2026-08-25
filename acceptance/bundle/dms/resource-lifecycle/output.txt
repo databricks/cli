@@ -101,7 +101,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
     "resource_id": "main.dms_resource_lifecycle_schema",
     "sequence_id": "0",
     "state": "",
-    "status": "OPERATION_STATUS_IN_PROGRESS"
+    "status": "OPERATION_STATUS_PENDING"
   }
 }
 {

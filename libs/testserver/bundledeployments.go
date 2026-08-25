@@ -417,6 +417,19 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 		update[path] = true
 	}
 
+	// The service parses the status as a proto enum, so a value outside the enum arrives as
+	// UNSPECIFIED and is refused. Checked here too: a status the API does not have otherwise
+	// passes every local test and fails only against a real workspace.
+	if update["status"] {
+		switch op.Status {
+		case bundledeployments.OperationStatusOperationStatusSucceeded,
+			bundledeployments.OperationStatusOperationStatusFailed,
+			operationStatusPending:
+		default:
+			return dmsInvalidArgument("status is required and must not be UNSPECIFIED when 'status' is in update_mask")
+		}
+	}
+
 	// A resource_id can be written but not cleared, and only alongside the state it belongs to.
 	if update["resource_id"] {
 		if op.ResourceId == "" {

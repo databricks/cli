@@ -17,10 +17,11 @@ const maxStateSize = 64 * 1024
 // maxErrorMessageSize is how much of a failure's message the service stores.
 const maxErrorMessageSize = 16 * 1024
 
-// StatusInProgress marks an operation whose writes are not finished. Not taken from the
-// SDK: the enum is generated from the OpenAPI spec, which trails the service proto
-// (databricks-eng/universe#2394529).
-const StatusInProgress bundledeployments.OperationStatus = "OPERATION_STATUS_IN_PROGRESS"
+// StatusPending is what the service calls an operation it has recorded but not applied, which
+// is where a recreate sits between deleting the old resource and creating the new one. Not in
+// the SDK: the enum ships server-first while it is staged DEVELOPMENT, so the generated client
+// carries only the terminal two.
+const StatusPending bundledeployments.OperationStatus = "OPERATION_STATUS_PENDING"
 
 // OperationUpdate is one write to an operation the version staged: the fields it claims
 // and their values. It is built where the outcome is known, so a malformed one fails the
@@ -48,7 +49,7 @@ func NewStateUpdate(resourceID string, state json.RawMessage, inProgress bool) (
 
 	status := bundledeployments.OperationStatusOperationStatusSucceeded
 	if inProgress {
-		status = StatusInProgress
+		status = StatusPending
 	}
 
 	return OperationUpdate{

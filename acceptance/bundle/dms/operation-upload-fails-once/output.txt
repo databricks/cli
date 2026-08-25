@@ -55,7 +55,7 @@ Files: 3 uploaded, 0 deleted
     "resource_id": "main.dms_upload_fails_once_schema",
     "sequence_id": "0",
     "state": "",
-    "status": "OPERATION_STATUS_IN_PROGRESS"
+    "status": "OPERATION_STATUS_PENDING"
   }
 }
 {
