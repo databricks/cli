@@ -49,9 +49,9 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 === state records the concatenated resolved ids
 >>> print_state.py
-{
-  "[OTHER_ID]-[EXTRA_ID]": "[OTHER_ID]-[EXTRA_ID]"
-}
+[
+  "[OTHER_ID]-[EXTRA_ID]"
+]
 
 === redeploy with unchanged ids plans nothing
 >>> [CLI] bundle plan

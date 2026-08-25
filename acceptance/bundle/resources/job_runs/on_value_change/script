@@ -31,6 +31,15 @@ read_id.py my_run > /dev/null
 trace print_requests.py --keep //jobs/runs/delete
 trace print_requests.py //jobs/run-now
 
+title "converging two values re-fires"
+update_file.py databricks.yml "default: a1" "default: v2"
+trace $CLI bundle plan
+trace changes
+trace $CLI bundle deploy
+read_id.py my_run > /dev/null
+trace print_requests.py --keep //jobs/runs/delete
+trace print_requests.py //jobs/run-now
+
 title "removing one on_value_change is unchanged and does not run"
 update_file.py databricks.yml '          - on_value_change: ${var.other}
 ' ''

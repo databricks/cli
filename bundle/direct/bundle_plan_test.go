@@ -80,7 +80,7 @@ resources:
 
 func TestExtractReferences_DoesNotTreatConfigSliceAsStateStruct(t *testing.T) {
 	type triggersState struct {
-		OnValueChange map[string]string `json:"on_value_change,omitempty"`
+		OnValueChange []string `json:"on_value_change,omitempty"`
 	}
 	type lifecycleState struct {
 		Triggers triggersState `json:"triggers"`

@@ -365,14 +365,14 @@ func TestJobRunValueChangeStateNormalizesAfterAllReferencesResolve(t *testing.T)
 	input.Lifecycle = &resources.JobRunLifecycle{}
 	input.Lifecycle.Triggers = []resources.JobRunTrigger{trigger}
 	state := (&ResourceJobRun{}).PrepareState(&input)
-	path := structpath.NewStringKey(structpath.MustParsePath("lifecycle.triggers.on_value_change"), expr)
+	path := structpath.NewIndex(structpath.MustParsePath("lifecycle.triggers.on_value_change"), 0)
 	sv := structvar.NewStructVar(state, map[string]string{path.String(): expr})
 
 	require.NoError(t, sv.ResolveRef("${resources.jobs.other.id}", int64(123)))
-	assert.Equal(t, map[string]string{expr: "123-${resources.jobs.extra.id}"}, state.Lifecycle.Triggers.OnValueChange)
+	assert.Equal(t, []string{"123-${resources.jobs.extra.id}"}, state.Lifecycle.Triggers.OnValueChange)
 
 	require.NoError(t, sv.ResolveRef("${resources.jobs.extra.id}", int64(456)))
-	assert.Equal(t, map[string]string{"123-456": "123-456"}, state.Lifecycle.Triggers.OnValueChange)
+	assert.Equal(t, []string{"123-456"}, state.Lifecycle.Triggers.OnValueChange)
 }
 
 func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
@@ -416,10 +416,13 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 		// extend to on_file_change entries.
 		{"removed one on_file_change", "lifecycle.triggers.on_file_change", map[string]string{"a.txt": "h", "b.txt": "h"}, map[string]string{"a.txt": "h"}, deployplan.Recreate},
 		{"cleared on_file_change child", "lifecycle.triggers.on_file_change['a.txt']", "h", nil, deployplan.Recreate},
-		{"cleared on_value_change", "lifecycle.triggers.on_value_change", map[string]string{"a": "a"}, nil, deployplan.Skip},
-		{"removed one on_value_change", "lifecycle.triggers.on_value_change", map[string]string{"a": "a", "b": "b"}, map[string]string{"b": "b"}, deployplan.Skip},
-		{"changed on_value_change", "lifecycle.triggers.on_value_change", map[string]string{"a": "a"}, map[string]string{"b": "b"}, deployplan.Recreate},
-		{"cleared on_value_change child", "lifecycle.triggers.on_value_change['b']", "b", nil, deployplan.Skip},
+		{"cleared on_value_change", "lifecycle.triggers.on_value_change", []string{"a"}, nil, deployplan.Skip},
+		{"removed last on_value_change", "lifecycle.triggers.on_value_change", []string{"a", "b"}, []string{"a"}, deployplan.Skip},
+		{"removed first on_value_change", "lifecycle.triggers.on_value_change", []string{"a", "b"}, []string{"b"}, deployplan.Skip},
+		{"changed on_value_change", "lifecycle.triggers.on_value_change", []string{"a"}, []string{"b"}, deployplan.Recreate},
+		{"converged on_value_change", "lifecycle.triggers.on_value_change", []string{"a", "b"}, []string{"a", "a"}, deployplan.Recreate},
+		{"cleared on_value_change child", "lifecycle.triggers.on_value_change[1]", "b", nil, deployplan.Skip},
+		{"shifted on_value_change child", "lifecycle.triggers.on_value_change[0]", "a", "b", deployplan.Skip},
 		{"result_state with unreadable remote", "result_state", "", nil, deployplan.Recreate},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

@@ -914,8 +914,8 @@ resources.job_runs.*.lifecycle.triggers	dresources.JobRunTriggersState	STATE
 resources.job_runs.*.lifecycle.triggers.on_bundle_deploy	string	STATE
 resources.job_runs.*.lifecycle.triggers.on_file_change	map[string]string	STATE
 resources.job_runs.*.lifecycle.triggers.on_file_change.*	string	STATE
-resources.job_runs.*.lifecycle.triggers.on_value_change	map[string]string	STATE
-resources.job_runs.*.lifecycle.triggers.on_value_change.*	string	STATE
+resources.job_runs.*.lifecycle.triggers.on_value_change	[]string	STATE
+resources.job_runs.*.lifecycle.triggers.on_value_change[*]	string	STATE
 resources.job_runs.*.lifecycle.triggers[*]	resources.JobRunTrigger	INPUT
 resources.job_runs.*.lifecycle.triggers[*].on_bundle_deploy	*bool	INPUT
 resources.job_runs.*.lifecycle.triggers[*].on_file_change	*string	INPUT

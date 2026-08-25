@@ -24,11 +24,11 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === long values are stored as hashes
 >>> print_state.py
-{
-  "a1": "a1",
-  "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055": "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055",
-  "v1": "v1"
-}
+[
+  "v1",
+  "a1",
+  "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055"
+]
 
 === redeploy with unchanged values plans nothing
 >>> [CLI] bundle plan
@@ -52,26 +52,16 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
   "lifecycle.triggers.on_value_change": {
     "action": "recreate",
     "reason": "immutable",
-    "old": {
-      "a1": "a1",
-      "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055": "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055",
-      "v1": "v1"
-    },
-    "new": {
-      "a1": "a1",
-      "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055": "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055",
-      "v2": "v2"
-    }
-  },
-  "lifecycle.triggers.on_value_change['v1']": {
-    "action": "skip",
-    "reason": "trigger removed",
-    "old": "v1"
-  },
-  "lifecycle.triggers.on_value_change['v2']": {
-    "action": "recreate",
-    "reason": "immutable",
-    "new": "v2"
+    "old": [
+      "v1",
+      "a1",
+      "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055"
+    ],
+    "new": [
+      "v2",
+      "a1",
+      "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055"
+    ]
   },
   "result_state": {
     "action": "skip",
@@ -95,6 +85,63 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
   "path": "/api/2.2/jobs/runs/delete",
   "body": {
     "run_id": [MY_RUN_ID]
+  }
+}
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+=== converging two values re-fires
+>>> [CLI] bundle plan
+recreate job_runs.my_run
+
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> changes
+{
+  "lifecycle.triggers.on_value_change": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": [
+      "v2",
+      "a1",
+      "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055"
+    ],
+    "new": [
+      "v2",
+      "v2",
+      "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055"
+    ]
+  },
+  "result_state": {
+    "action": "skip",
+    "reason": "remote_already_set",
+    "new": "SUCCESS",
+    "remote": "SUCCESS"
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID_3]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_3]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_3]: SUCCESS
+Recreated job_runs.my_run
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+
+>>> print_requests.py --keep //jobs/runs/delete
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/delete",
+  "body": {
+    "run_id": [MY_RUN_ID_2]
   }
 }
 

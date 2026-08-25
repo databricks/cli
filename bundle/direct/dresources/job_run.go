@@ -42,8 +42,9 @@ type JobRunTriggersState struct {
 	OnBundleDeploy string `json:"on_bundle_deploy,omitempty"`
 	// Content hashes from ResolveJobRunFileTriggers; any change recreates.
 	OnFileChange map[string]string `json:"on_file_change,omitempty"`
-	// Resolved value fingerprints; any change recreates.
-	OnValueChange map[string]string `json:"on_value_change,omitempty"`
+	// Fingerprints in trigger order. A list so two watches that resolve to the
+	// same value stay distinct (a map would treat converging them as a removal).
+	OnValueChange []string `json:"on_value_change,omitempty"`
 }
 
 // JobRunLifecycleState is the local-only trigger fingerprint. Nested by value,
@@ -137,52 +138,39 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 // expression so the deploy graph depends on that value, not the config wrapper.
 func (*ResourceJobRun) PrepareInputConfig(input *resources.JobRun, _ string) (*structvar.StructVar, error) {
 	refs := map[string]string{}
-	for expr := range jobRunValueChangeState(input) {
+	parent := structpath.MustParsePath("lifecycle.triggers.on_value_change")
+	for i, expr := range jobRunValueChangeState(input) {
 		if _, ok := dynvar.NewRef(dyn.V(expr)); !ok {
 			continue
 		}
-		path := structpath.NewStringKey(structpath.MustParsePath("lifecycle.triggers.on_value_change"), expr)
-		refs[path.String()] = expr
+		refs[structpath.NewIndex(parent, i).String()] = expr
 	}
 	return &structvar.StructVar{Value: input, Refs: refs}, nil
 }
 
-func jobRunValueChangeState(input *resources.JobRun) map[string]string {
+func jobRunValueChangeState(input *resources.JobRun) []string {
 	if input.Lifecycle == nil {
 		return nil
 	}
-	out := make(map[string]string)
+	var out []string
 	for _, t := range input.Lifecycle.Triggers {
 		if t.OnValueChange == nil {
 			continue
 		}
-		expr := strings.TrimSpace(*t.OnValueChange)
-		out[expr] = expr
-	}
-	if len(out) == 0 {
-		return nil
+		out = append(out, strings.TrimSpace(*t.OnValueChange))
 	}
 	return out
 }
 
-// NormalizeAfterResolve rekeys watched values by their fingerprint, so that the
-// identity of a trigger is the value it resolved to and not the expression text.
-// An entry still holding a reference is left alone until it fully resolves.
+// NormalizeAfterResolve hashes a watch once it no longer contains a reference.
 func (s *JobRunState) NormalizeAfterResolve() {
 	values := s.Lifecycle.Triggers.OnValueChange
-	if len(values) == 0 {
-		return
-	}
-	normalized := make(map[string]string, len(values))
-	for key, value := range values {
+	for i, value := range values {
 		if dynvar.ContainsVariableReference(value) {
-			normalized[key] = value
 			continue
 		}
-		fingerprint := compactJobRunValue(value)
-		normalized[fingerprint] = fingerprint
+		values[i] = compactJobRunValue(value)
 	}
-	s.Lifecycle.Triggers.OnValueChange = normalized
 }
 
 // compactJobRunValue hashes a value only when the digest is shorter than it.
@@ -472,8 +460,6 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 			change.Reason = "trigger removed"
 		}
 	case "lifecycle.triggers.on_value_change":
-		// A watched value always resolves to something, so entries disappear only
-		// when the config stops watching them.
 		if valueTriggersOnlyRemoved(change.Old, change.New) {
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
@@ -486,33 +472,42 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 		change.Action = deployplan.Skip
 		change.Reason = "run in progress"
 	default:
-		// The per-entry change that accompanies the map above.
 		parent := path.Parent()
-		if change.New == nil && parent != nil && parent.String() == "lifecycle.triggers.on_value_change" {
+		if parent != nil && parent.String() == "lifecycle.triggers.on_value_change" {
+			// Classified on the list; a deletion that shifts later entries is not
+			// a change to those fingerprints.
 			change.Action = deployplan.Skip
-			change.Reason = "trigger removed"
+			change.Reason = deployplan.ReasonDrop
 		}
 	}
 	return nil
 }
 
-// valueTriggersOnlyRemoved reports whether the remaining fingerprints are a
-// strict subset of the old ones, i.e. entries were dropped and none added.
+// valueTriggersOnlyRemoved is true when new is old minus some watches (order kept).
+// Converging two watches replaces a fingerprint, so it is not a removal.
 func valueTriggersOnlyRemoved(oldValue, newValue any) bool {
 	if newValue == nil {
 		return true
 	}
-	oldMap, okOld := oldValue.(map[string]string)
-	newMap, okNew := newValue.(map[string]string)
+	oldList, okOld := oldValue.([]string)
+	newList, okNew := newValue.([]string)
 	if !okOld || !okNew {
 		return false
 	}
-	for key, value := range newMap {
-		if oldMap[key] != value {
-			return false
+	if len(newList) >= len(oldList) {
+		return false
+	}
+	return isStringSubsequence(oldList, newList)
+}
+
+func isStringSubsequence(oldList, newList []string) bool {
+	i := 0
+	for _, value := range oldList {
+		if i < len(newList) && value == newList[i] {
+			i++
 		}
 	}
-	return len(newMap) < len(oldMap)
+	return i == len(newList)
 }
 
 // DoDelete deletes the run via jobs/runs/delete, on both destroy and the
