@@ -1,0 +1,16 @@
+
+=== bundle plan fails with cluster libraries on terraform engine
+>>> errcode [CLI] bundle plan
+Error: cluster libraries are only supported in direct deployment mode
+  in databricks.yml:12:9
+
+
+Exit code: 1
+
+=== bundle deploy fails with cluster libraries on terraform engine
+>>> errcode [CLI] bundle deploy
+Error: cluster libraries are only supported in direct deployment mode
+  in databricks.yml:12:9
+
+
+Exit code: 1

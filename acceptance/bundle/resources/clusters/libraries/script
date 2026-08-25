@@ -1,0 +1,16 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy a cluster with a pypi and a local wheel library"
+trace $CLI bundle deploy
+
+title "Libraries installed via the Libraries API (wheel rewritten to its uploaded path)"
+trace print_requests.py //libraries/install
+
+title "Removing the wheel and redeploying uninstalls it"
+update_file.py databricks.yml "        - whl: ./dist/*.whl" ""
+trace $CLI bundle deploy
+trace print_requests.py //libraries/uninstall

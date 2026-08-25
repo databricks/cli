@@ -1,0 +1,1 @@
+Add support for a `libraries` list on the `clusters` resource type in Declarative Automation Bundles. Libraries (whl, jar, pypi, maven, cran, egg, requirements) are installed on the all-purpose cluster via the Libraries API; local wheels/jars are built and uploaded automatically. Cluster libraries are only supported in direct deployment mode.
