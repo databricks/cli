@@ -188,6 +188,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
 		validate.ValidateJobRunIdempotencyToken(),
 
+		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
+		mutator.ValidateJobRunTriggers(),
+
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
 		// points to a Terraform-only field with no DABs equivalent.

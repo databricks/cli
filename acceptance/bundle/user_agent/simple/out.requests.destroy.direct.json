@@ -14,7 +14,11 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json"
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json"
+  }
 }
 {
   "headers": {
@@ -130,6 +134,18 @@
     "AcquisitionTime": "[TIMESTAMP]",
     "IsForced": false,
     "User": "[USERNAME]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle"
   }
 }
 {

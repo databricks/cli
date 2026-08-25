@@ -36,6 +36,7 @@ var unsupportedResources = []string{
 	"vector_search_indexes",
 	"job_runs",
 	"secrets",
+	"cluster_policies",
 }
 
 func TestApplyBundlePermissions(t *testing.T) {

@@ -2,5 +2,4 @@ Cloud = true
 RecordRequests = false
 RunsOnDbr = true
 
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

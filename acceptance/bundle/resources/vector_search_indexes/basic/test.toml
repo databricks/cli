@@ -1,0 +1,17 @@
+# Index provisioning takes ~30 minutes, which exceeded the test timeout and made this the
+# slowest test in the cloud job. Nothing here depends on the index being queryable — the
+# assertions only need it to exist — so cap the wait instead. The cap is what this test's
+# runtime now consists of (~2x cap: once on create, once on delete), so keep it small.
+Env.DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT = "30"
+
+# With the wait capped this is no longer slow, so run it on every PR rather than only in the
+# nightly job. The parent sets CloudSlow=true for the tests that still wait ~30 minutes.
+CloudSlow = false
+Cloud = true
+
+# The cap makes deploy warn that it stopped waiting. Drop the line rather than baking it into
+# the golden: it is a property of this test's configuration, not of the behaviour under test.
+# Trailing \n so the whole line goes, leaving no blank line behind.
+[[Repls]]
+Old = 'Warn: [^\n]*Stopped waiting[^\n]*\n'
+New = ''

@@ -5,9 +5,17 @@ package schema
 type Resources struct {
 	AccessControlRuleSet                         map[string]any `json:"databricks_access_control_rule_set,omitempty"`
 	AccountFederationPolicy                      map[string]any `json:"databricks_account_federation_policy,omitempty"`
+	AccountIamDirectGroupMemberV2                map[string]any `json:"databricks_account_iam_direct_group_member_v2,omitempty"`
+	AccountIamGroupV2                            map[string]any `json:"databricks_account_iam_group_v2,omitempty"`
+	AccountIamServicePrincipalV2                 map[string]any `json:"databricks_account_iam_service_principal_v2,omitempty"`
+	AccountIamUserV2                             map[string]any `json:"databricks_account_iam_user_v2,omitempty"`
+	AccountIamWorkspaceAssignmentV2              map[string]any `json:"databricks_account_iam_workspace_assignment_v2,omitempty"`
 	AccountNetworkPolicy                         map[string]any `json:"databricks_account_network_policy,omitempty"`
 	AccountSettingUserPreferenceV2               map[string]any `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                             map[string]any `json:"databricks_account_setting_v2,omitempty"`
+	AiGatewayMcpService                          map[string]any `json:"databricks_ai_gateway_mcp_service,omitempty"`
+	AiGatewayModelProviderService                map[string]any `json:"databricks_ai_gateway_model_provider_service,omitempty"`
+	AiGatewayModelService                        map[string]any `json:"databricks_ai_gateway_model_service,omitempty"`
 	AiSearchEndpoint                             map[string]any `json:"databricks_ai_search_endpoint,omitempty"`
 	AiSearchIndex                                map[string]any `json:"databricks_ai_search_index,omitempty"`
 	AibiDashboardEmbeddingAccessPolicySetting    map[string]any `json:"databricks_aibi_dashboard_embedding_access_policy_setting,omitempty"`
@@ -109,6 +117,7 @@ type Resources struct {
 	PolicyInfo                                   map[string]any `json:"databricks_policy_info,omitempty"`
 	PostgresBranch                               map[string]any `json:"databricks_postgres_branch,omitempty"`
 	PostgresCatalog                              map[string]any `json:"databricks_postgres_catalog,omitempty"`
+	PostgresCdfConfig                            map[string]any `json:"databricks_postgres_cdf_config,omitempty"`
 	PostgresDataApi                              map[string]any `json:"databricks_postgres_data_api,omitempty"`
 	PostgresDatabase                             map[string]any `json:"databricks_postgres_database,omitempty"`
 	PostgresEndpoint                             map[string]any `json:"databricks_postgres_endpoint,omitempty"`
@@ -161,6 +170,12 @@ type Resources struct {
 	WorkspaceConf                                map[string]any `json:"databricks_workspace_conf,omitempty"`
 	WorkspaceEntityTagAssignment                 map[string]any `json:"databricks_workspace_entity_tag_assignment,omitempty"`
 	WorkspaceFile                                map[string]any `json:"databricks_workspace_file,omitempty"`
+	WorkspaceIamDirectGroupMemberV2              map[string]any `json:"databricks_workspace_iam_direct_group_member_v2,omitempty"`
+	WorkspaceIamGroupV2                          map[string]any `json:"databricks_workspace_iam_group_v2,omitempty"`
+	WorkspaceIamServicePrincipalV2               map[string]any `json:"databricks_workspace_iam_service_principal_v2,omitempty"`
+	WorkspaceIamUserV2                           map[string]any `json:"databricks_workspace_iam_user_v2,omitempty"`
+	WorkspaceIamWorkspaceAssignmentV2            map[string]any `json:"databricks_workspace_iam_workspace_assignment_v2,omitempty"`
+	WorkspaceIamWorkspaceIdentityDetailV2        map[string]any `json:"databricks_workspace_iam_workspace_identity_detail_v2,omitempty"`
 	WorkspaceNetworkOption                       map[string]any `json:"databricks_workspace_network_option,omitempty"`
 	WorkspaceSettingV2                           map[string]any `json:"databricks_workspace_setting_v2,omitempty"`
 }
@@ -169,9 +184,17 @@ func NewResources() *Resources {
 	return &Resources{
 		AccessControlRuleSet:                         make(map[string]any),
 		AccountFederationPolicy:                      make(map[string]any),
+		AccountIamDirectGroupMemberV2:                make(map[string]any),
+		AccountIamGroupV2:                            make(map[string]any),
+		AccountIamServicePrincipalV2:                 make(map[string]any),
+		AccountIamUserV2:                             make(map[string]any),
+		AccountIamWorkspaceAssignmentV2:              make(map[string]any),
 		AccountNetworkPolicy:                         make(map[string]any),
 		AccountSettingUserPreferenceV2:               make(map[string]any),
 		AccountSettingV2:                             make(map[string]any),
+		AiGatewayMcpService:                          make(map[string]any),
+		AiGatewayModelProviderService:                make(map[string]any),
+		AiGatewayModelService:                        make(map[string]any),
 		AiSearchEndpoint:                             make(map[string]any),
 		AiSearchIndex:                                make(map[string]any),
 		AibiDashboardEmbeddingAccessPolicySetting:    make(map[string]any),
@@ -273,6 +296,7 @@ func NewResources() *Resources {
 		PolicyInfo:                                  make(map[string]any),
 		PostgresBranch:                              make(map[string]any),
 		PostgresCatalog:                             make(map[string]any),
+		PostgresCdfConfig:                           make(map[string]any),
 		PostgresDataApi:                             make(map[string]any),
 		PostgresDatabase:                            make(map[string]any),
 		PostgresEndpoint:                            make(map[string]any),
@@ -325,6 +349,12 @@ func NewResources() *Resources {
 		WorkspaceConf:                               make(map[string]any),
 		WorkspaceEntityTagAssignment:                make(map[string]any),
 		WorkspaceFile:                               make(map[string]any),
+		WorkspaceIamDirectGroupMemberV2:             make(map[string]any),
+		WorkspaceIamGroupV2:                         make(map[string]any),
+		WorkspaceIamServicePrincipalV2:              make(map[string]any),
+		WorkspaceIamUserV2:                          make(map[string]any),
+		WorkspaceIamWorkspaceAssignmentV2:           make(map[string]any),
+		WorkspaceIamWorkspaceIdentityDetailV2:       make(map[string]any),
 		WorkspaceNetworkOption:                      make(map[string]any),
 		WorkspaceSettingV2:                          make(map[string]any),
 	}

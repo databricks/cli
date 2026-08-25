@@ -29,6 +29,7 @@ func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine 
 		mutator.ValidateDirectOnlyResources(engine),
 		mutator.ValidateLifecycleStarted(engine),
 		mutator.ValidateCascadeOnDestroy(engine),
+		mutator.ValidateJobRunTriggers(),
 		statemgmt.CheckRunningResource(engine),
 	)
 }

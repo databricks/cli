@@ -17,6 +17,14 @@ import (
 
 type OutputHandler func(context.Context, <-chan Event)
 
+// FileCounts reports how many files a sync run uploaded and deleted. A file
+// whose remote name changed (e.g. a script converted to a notebook) is counted
+// as both an upload and a delete, because that is what the sync performs.
+type FileCounts struct {
+	Uploaded int
+	Deleted  int
+}
+
 type SyncOptions struct {
 	WorktreeRoot vfs.Path
 	LocalRoot    vfs.Path
@@ -54,6 +62,11 @@ type Sync struct {
 	// Synchronization progress events are sent to this event notifier.
 	notifier EventNotifier
 	seq      int
+
+	// fileCounts holds the counts from the most recent run. Kept here rather than
+	// derived from the event stream because the notifier is a no-op unless the
+	// caller supplies an OutputHandler.
+	fileCounts FileCounts
 
 	// WaitGroup is automatically created when an output handler is provided in the SyncOptions.
 	// Close call is required to ensure the output handler goroutine handles all events in time.
@@ -171,6 +184,7 @@ func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 	if err != nil {
 		return files, err
 	}
+	s.fileCounts = FileCounts{Uploaded: len(change.put), Deleted: len(change.delete)}
 
 	s.notifyStart(ctx, change)
 	if change.IsEmpty() {
@@ -193,6 +207,11 @@ func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 
 	s.notifyComplete(ctx, change)
 	return files, nil
+}
+
+// FileCounts returns the upload and delete counts from the most recent run.
+func (s *Sync) FileCounts() FileCounts {
+	return s.fileCounts
 }
 
 // GetFileList returns the local files selected for sync, without syncing them.

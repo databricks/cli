@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/patchwheel"
 )
 
 type switchToPatchedWheels struct{}
@@ -63,10 +64,14 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 				continue
 			}
 			for depInd, dep := range specptr.Dependencies {
-				repl := replacements[dep]
+				// A dependency may carry a pip extras suffix (e.g. "foo.whl[train]");
+				// the patched-wheel replacements are keyed by the bare path, so strip
+				// it for the lookup and re-append it to the patched path.
+				base, extras := patchwheel.SplitWheelExtras(dep)
+				repl := replacements[base]
 				if repl != "" {
-					log.Debugf(ctx, "Updating resources.jobs.%s.environments[%d].spec.dependencies[%d] from %s to %s", jobName, envInd, depInd, dep, repl)
-					specptr.Dependencies[depInd] = repl
+					log.Debugf(ctx, "Updating resources.jobs.%s.environments[%d].spec.dependencies[%d] from %s to %s", jobName, envInd, depInd, dep, repl+extras)
+					specptr.Dependencies[depInd] = repl + extras
 				} else {
 					log.Debugf(ctx, "Not updating resources.jobs.%s.environments[%d].spec.dependencies[%d] from %s. Available replacements: %v", jobName, envInd, depInd, dep, slices.Sorted(maps.Keys(replacements)))
 				}

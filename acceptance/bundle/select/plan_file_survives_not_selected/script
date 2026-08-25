@@ -1,0 +1,16 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+# Filter to one of three jobs and serialize the plan. The plan file records
+# not_selected=2. (Kept out of recorded output: the JSON embeds remote state.)
+$CLI bundle plan --select jobs.foo -o json > plan.json
+
+# Deploy from the plan file WITHOUT re-passing --select. b.Select is empty here,
+# so the ", 2 not selected" suffix must come from the serialized plan.NotSelected,
+# not from the flag. This is the regression guard for that wiring.
+title "bundle deploy --plan (no --select)\n"
+trace $CLI bundle deploy --plan plan.json

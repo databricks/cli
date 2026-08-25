@@ -40,17 +40,18 @@ type PipelineRemote struct {
 	pipelines.CreatePipeline
 
 	// Remote-specific fields from pipelines.GetPipelineResponse
-	Cause                   string                              `json:"cause,omitempty"`
-	ClusterId               string                              `json:"cluster_id,omitempty"`
-	CreatorUserName         string                              `json:"creator_user_name,omitempty"`
-	EffectiveBudgetPolicyId string                              `json:"effective_budget_policy_id,omitempty"`
-	EffectivePublishingMode pipelines.PublishingMode            `json:"effective_publishing_mode,omitempty"`
-	Health                  pipelines.GetPipelineResponseHealth `json:"health,omitempty"`
-	LastModified            int64                               `json:"last_modified,omitempty"`
-	LatestUpdates           []pipelines.UpdateStateInfo         `json:"latest_updates,omitempty"`
-	PipelineId              string                              `json:"pipeline_id,omitempty"`
-	RunAsUserName           string                              `json:"run_as_user_name,omitempty"`
-	State                   pipelines.PipelineState             `json:"state,omitempty"`
+	Cause                        string                              `json:"cause,omitempty"`
+	ClusterId                    string                              `json:"cluster_id,omitempty"`
+	CreatorUserName              string                              `json:"creator_user_name,omitempty"`
+	EffectiveBudgetPolicyId      string                              `json:"effective_budget_policy_id,omitempty"`
+	EffectivePublishingMode      pipelines.PublishingMode            `json:"effective_publishing_mode,omitempty"`
+	EffectiveServerlessComputeId string                              `json:"effective_serverless_compute_id,omitempty"`
+	Health                       pipelines.GetPipelineResponseHealth `json:"health,omitempty"`
+	LastModified                 int64                               `json:"last_modified,omitempty"`
+	LatestUpdates                []pipelines.UpdateStateInfo         `json:"latest_updates,omitempty"`
+	PipelineId                   string                              `json:"pipeline_id,omitempty"`
+	RunAsUserName                string                              `json:"run_as_user_name,omitempty"`
+	State                        pipelines.PipelineState             `json:"state,omitempty"`
 }
 
 // Custom marshaler needed because embedded CreatePipeline has its own MarshalJSON
@@ -140,18 +141,19 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 		}
 	}
 	return &PipelineRemote{
-		CreatePipeline:          createPipeline,
-		Cause:                   p.Cause,
-		ClusterId:               p.ClusterId,
-		CreatorUserName:         p.CreatorUserName,
-		EffectiveBudgetPolicyId: p.EffectiveBudgetPolicyId,
-		EffectivePublishingMode: p.EffectivePublishingMode,
-		Health:                  p.Health,
-		LastModified:            p.LastModified,
-		LatestUpdates:           p.LatestUpdates,
-		PipelineId:              p.PipelineId,
-		RunAsUserName:           p.RunAsUserName,
-		State:                   p.State,
+		CreatePipeline:               createPipeline,
+		Cause:                        p.Cause,
+		ClusterId:                    p.ClusterId,
+		CreatorUserName:              p.CreatorUserName,
+		EffectiveBudgetPolicyId:      p.EffectiveBudgetPolicyId,
+		EffectivePublishingMode:      p.EffectivePublishingMode,
+		EffectiveServerlessComputeId: p.EffectiveServerlessComputeId,
+		Health:                       p.Health,
+		LastModified:                 p.LastModified,
+		LatestUpdates:                p.LatestUpdates,
+		PipelineId:                   p.PipelineId,
+		RunAsUserName:                p.RunAsUserName,
+		State:                        p.State,
 	}
 }
 

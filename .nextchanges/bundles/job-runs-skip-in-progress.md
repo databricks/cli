@@ -1,0 +1,1 @@
+`job_runs` now plans skip for a run that is still in progress and when `on_bundle_deploy` is removed, instead of treating either case as an update. ([#6357](https://github.com/databricks/cli/pull/6357))

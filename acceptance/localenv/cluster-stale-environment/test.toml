@@ -3,11 +3,10 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 # The script writes pyproject.toml as the merge input; --dry-run leaves it unchanged.
 Ignore = ["pyproject.toml"]
 
-[Env]
-DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
-
+Env.DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
 # A cluster target does not manage [tool.databricks.environment], so a leftover
 # serverless environment_version is reported as stale.
+
 [[Server]]
 Pattern = "GET /api/2.1/clusters/list"
 Response.Body = '''

@@ -22,7 +22,7 @@ const (
 	colBlue    = lipgloss.Color("#6CA8F0") // MLflow link
 )
 
-const mlflowColWidth = 18
+const mlflowColWidth = 22
 
 // listStyles renders the runs table. The renderer carries the color profile, so
 // styles render plain under --no-color / non-tty.
@@ -105,10 +105,21 @@ func (s listStyles) renderRow(cols listCols, r listRow, selected, links bool) st
 		gutter = "▸"
 	}
 
+	runIDLink := ""
+	if links {
+		runIDLink = r.RunURL
+	}
+	experimentLink := ""
+	if links {
+		experimentLink = r.ExperimentURL
+	}
+
+	// Underline only cells that actually carry a link, so unlinked text isn't
+	// styled as clickable.
 	cells := []string{
 		s.cell(base, gutter, 1, fg(colN7), false, false, ""),
-		s.cell(base, r.RunID, cols.runID, fg(colRunID), false, false, ""),
-		s.cell(base, r.Experiment, cols.experiment, fg(colN11), false, false, ""),
+		s.cell(base, r.RunID, cols.runID, fg(colRunID), false, runIDLink != "", runIDLink),
+		s.cell(base, r.Experiment, cols.experiment, fg(colN11), false, experimentLink != "", experimentLink),
 		s.cell(base, "● "+r.Status, cols.status, fg(statusColor(r.Status)), false, false, ""),
 		s.cell(base, startedDisplay(r), cols.started, fg(colN9), false, false, ""),
 		s.cell(base, r.Duration, cols.duration, fg(colN9), true, false, ""),
@@ -159,7 +170,11 @@ func (s listStyles) mlflowCell(base lipgloss.Style, r listRow, selected, links b
 	if links {
 		link = r.MLflowURL
 	}
-	return s.cell(base, mlflowDisplay(r.MLflowURL), mlflowColWidth, fg, false, true, link)
+	label := r.MLflowLabel
+	if label == "" || label == "-" {
+		label = "-"
+	}
+	return s.cell(base, label, mlflowColWidth, fg, false, true, link)
 }
 
 // statusColor maps an air run status word to its data color.
@@ -187,29 +202,6 @@ func startedDisplay(r listRow) string {
 		return s[:19]
 	}
 	return s
-}
-
-// mlflowDisplay shortens an MLflow run URL to a "…/runs/<id-prefix>" label; the
-// OSC 8 target keeps the full URL.
-func mlflowDisplay(url string) string {
-	id := mlflowRunID(url)
-	if id == "" {
-		return truncate(url, mlflowColWidth)
-	}
-	if len(id) > 8 {
-		id = id[:8] + "…"
-	}
-	return "…/runs/" + id
-}
-
-// mlflowRunID extracts the run-id path segment from an MLflow URL.
-func mlflowRunID(url string) string {
-	_, after, ok := strings.Cut(url, "/runs/")
-	if !ok {
-		return ""
-	}
-	id, _, _ := strings.Cut(after, "/")
-	return id
 }
 
 // pad pads (or truncates) s to a visible width of n, right-aligned when right is
