@@ -69,9 +69,11 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 	updateRequest := catalog.UpdateRegisteredModelRequest{
 		FullName:        id,
 		Comment:         config.Comment,
-		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](config.ForceSendFields, "Owner", "NewName"),
+		ForceSendFields: nil, // set below, so the cleared fields go through the same exclusions
 
-		// Owner is not part of the configuration tree
+		// Owner is settable in the config (it comes from the embedded
+		// CreateRegisteredModelRequest) and create sends it, but update never has: a
+		// change to it is silently dropped rather than applied.
 		Owner: "",
 
 		// Name updates are not supported yet without recreating. Can be added as a follow-up.
@@ -91,7 +93,8 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 		CatalogName:     config.CatalogName,
 	}
 
-	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
+	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(cleared, config.ForceSendFields...), "Owner", "NewName")
 
 	response, err := r.client.RegisteredModels.Update(ctx, updateRequest)
 	if err != nil {

@@ -71,10 +71,11 @@ func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, conf
 		ReadOnly:                  config.ReadOnly,
 		SkipValidation:            config.SkipValidation,
 		Url:                       config.Url,
-		ForceSendFields:           utils.FilterFields[catalog.UpdateExternalLocation](config.ForceSendFields, "IsolationMode", "Owner"),
+		ForceSendFields:           nil, // set below, so the cleared fields go through the same exclusions
 	}
 
-	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
+	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateExternalLocation](append(cleared, config.ForceSendFields...), "IsolationMode", "Owner")
 
 	return r.client.ExternalLocations.Update(ctx, updateRequest)
 }
@@ -98,14 +99,15 @@ func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string
 		ReadOnly:                  config.ReadOnly,
 		SkipValidation:            config.SkipValidation,
 		Url:                       config.Url,
-		ForceSendFields:           utils.FilterFields[catalog.UpdateExternalLocation](config.ForceSendFields, "IsolationMode", "Owner"),
+		ForceSendFields:           nil, // set below, so the cleared fields go through the same exclusions
 	}
 
 	if config.Name != id {
 		updateRequest.NewName = config.Name
 	}
 
-	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
+	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateExternalLocation](append(cleared, config.ForceSendFields...), "IsolationMode", "Owner")
 
 	response, err := r.client.ExternalLocations.Update(ctx, updateRequest)
 	if err != nil {

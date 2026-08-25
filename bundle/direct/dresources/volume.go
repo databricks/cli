@@ -55,7 +55,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 		NewName: "", // Not supported by Update(). Needs DoUpdateWithID()
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "NewName", "Owner"),
+		ForceSendFields: nil, // set below, so the cleared fields go through the same exclusions
 	}
 
 	nameFromID, err := getNameFromID(id)
@@ -67,7 +67,8 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 		return nil, fmt.Errorf("internal error: unexpected change of name from %#v to %#v", nameFromID, config.Name)
 	}
 
-	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
+	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateVolumeRequestContent](append(cleared, config.ForceSendFields...), "NewName", "Owner")
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil {
@@ -89,7 +90,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		NewName: "", // Initialized below if needed
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "Owner"),
+		ForceSendFields: nil, // set below, so the cleared fields go through the same exclusions
 	}
 
 	items := strings.Split(id, ".")
@@ -102,7 +103,8 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		updateRequest.NewName = config.Name
 	}
 
-	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
+	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateVolumeRequestContent](append(cleared, config.ForceSendFields...), "Owner")
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil || response == nil {

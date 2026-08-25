@@ -328,7 +328,11 @@ func applyUpdatedFields(existing, update any, fields map[string]json.RawMessage)
 		dstField.Set(src.Field(i))
 		forceSend := dst.FieldByName("ForceSendFields")
 		if forceSend.IsValid() && forceSend.CanSet() {
-			forceSend.Set(reflect.Append(forceSend, reflect.ValueOf(src.Type().Field(i).Name)))
+			goName := src.Type().Field(i).Name
+			// Repeated updates would otherwise keep appending the same name.
+			if !slices.Contains(forceSend.Interface().([]string), goName) {
+				forceSend.Set(reflect.Append(forceSend, reflect.ValueOf(goName)))
+			}
 		}
 	}
 }

@@ -62,10 +62,11 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 		Options:                      config.Options,
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner"),
+		ForceSendFields:              nil, // set below, so the cleared fields go through the same exclusions
 	}
 
-	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
+	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateCatalog](append(cleared, config.ForceSendFields...), "EnablePredictiveOptimization", "IsolationMode", "Owner")
 
 	response, err := r.client.Catalogs.Update(ctx, updateRequest)
 	if err != nil {
@@ -88,14 +89,15 @@ func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config 
 		Options:                      config.Options,
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner"),
+		ForceSendFields:              nil, // set below, so the cleared fields go through the same exclusions
 	}
 
 	if config.Name != id {
 		updateRequest.NewName = config.Name
 	}
 
-	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
+	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateCatalog](append(cleared, config.ForceSendFields...), "EnablePredictiveOptimization", "IsolationMode", "Owner")
 
 	response, err := r.client.Catalogs.Update(ctx, updateRequest)
 	if err != nil {

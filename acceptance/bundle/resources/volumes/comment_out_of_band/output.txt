@@ -11,8 +11,15 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === The remote comment is drift, so the plan updates the volume
 >>> [CLI] bundle plan --output json
 {
-  "action": "update",
-  "remote": "set outside the bundle"
+  "comment": {
+    "action": "update",
+    "remote": "set outside the bundle"
+  },
+  "storage_location": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+  }
 }
 
 === Redeploy clears the comment

@@ -56,10 +56,11 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalo
 		NewName:                      "", // We recreate schemas on name change intentionally.
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateSchema](config.ForceSendFields, "EnablePredictiveOptimization", "NewName", "Owner"),
+		ForceSendFields:              nil, // set below, so the cleared fields go through the same exclusions
 	}
 
-	updateRequest.ForceSendFields = append(updateRequest.ForceSendFields, forceSendClearedFields(&updateRequest, entry.Changes)...)
+	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateSchema](append(cleared, config.ForceSendFields...), "EnablePredictiveOptimization", "NewName", "Owner")
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)
 	if err != nil {
