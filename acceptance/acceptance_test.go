@@ -1289,28 +1289,37 @@ func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {
 	// Build with the FIPS toolchain so a plain `go test` produces the same FIPS
 	// binary as `task` and the release build; otherwise acceptance/fips (which
 	// asserts the FIPS build settings) fails outside `task`.
-	repoRoot := ".."
-	RunCommand(t, args, repoRoot, []string{"GOOS=" + osName, "GOARCH=" + arch, "GOFIPS140=" + readGOFIPS140(t, repoRoot)})
+	version, err := gofips140Version()
+	require.NoError(t, err)
+	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch, "GOFIPS140=" + version})
 	return execPath
 }
 
-// readGOFIPS140 returns the GOFIPS140 version the Taskfile pins for `task`
-// builds. The release pipeline pins the same value independently in
-// .goreleaser.yaml.
-func readGOFIPS140(t *testing.T, repoRoot string) string {
-	path := filepath.Join(repoRoot, "Taskfile.yml")
+// gofips140Version returns the GOFIPS140 version the Taskfile pins for `task`
+// builds; the release pipeline pins the same value independently in
+// .goreleaser.yaml. Read once and cached, since BuildCLI runs per OS/arch and
+// the value is constant within a run. The path is relative to the acceptance
+// package dir, which is `go test`'s working directory.
+var gofips140Version = sync.OnceValues(func() (string, error) {
+	path := filepath.Join("..", "Taskfile.yml")
 	data, err := os.ReadFile(path)
-	require.NoError(t, err, "reading %s (acceptance tests must run with cwd=acceptance/)", path)
+	if err != nil {
+		return "", fmt.Errorf("reading %s (acceptance tests must run with cwd=acceptance/): %w", path, err)
+	}
 
 	var taskfile struct {
 		Env struct {
 			GOFIPS140 string `yaml:"GOFIPS140"`
 		} `yaml:"env"`
 	}
-	require.NoError(t, yaml.Unmarshal(data, &taskfile))
-	require.NotEmpty(t, taskfile.Env.GOFIPS140, "GOFIPS140 not set in Taskfile.yml")
-	return taskfile.Env.GOFIPS140
-}
+	if err := yaml.Unmarshal(data, &taskfile); err != nil {
+		return "", fmt.Errorf("parsing %s: %w", path, err)
+	}
+	if taskfile.Env.GOFIPS140 == "" {
+		return "", fmt.Errorf("GOFIPS140 not set in %s", path)
+	}
+	return taskfile.Env.GOFIPS140, nil
+})
 
 // CreateReleaseArtifacts builds release artifacts for the given OS using amd64 and arm64 architectures,
 // archives them into zip files, and returns the directory containing the release artifacts.
