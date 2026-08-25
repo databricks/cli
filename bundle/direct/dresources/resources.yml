@@ -322,12 +322,6 @@ resources:
       # has to be manual again.
       - field: telemetry_config.table_names
         reason: input_only
-      # Write-only secrets: the backend stores them and returns the reference field, not the plaintext.
-      # custom_provider_config is not in the OpenAPI spec so the generator cannot reach it.
-      - field: config.served_entities[*].external_model.custom_provider_config.api_key_auth.value_plaintext
-        reason: input_only
-      - field: config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token_plaintext
-        reason: input_only
     ignore_local_changes:
       - field: budget_policy_id
         reason: no_update_api
