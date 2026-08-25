@@ -1,3 +1,5 @@
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+update postgres_endpoints.my_endpoint
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged

@@ -46,6 +46,13 @@ func equalValues(v1, v2 reflect.Value) bool {
 		return false
 	}
 
+	if IsOpaqueStruct(v1Type) {
+		// A marshaling failure is reported as "not equal" so the change surfaces
+		// rather than being silently dropped.
+		equal, err := equalJSON(v1, v2)
+		return err == nil && equal
+	}
+
 	kind := v1.Kind()
 
 	// Perform nil checks for nilable types.
