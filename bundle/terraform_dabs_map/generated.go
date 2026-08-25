@@ -6,7 +6,8 @@ package terraform_dabs_map
 // alerts / databricks_alert_v2: 3 tf-only
 // apps / databricks_app: 6 dabs-only
 // apps / databricks_app: 1 tf-only
-// clusters / databricks_cluster: 26 tf-only
+// clusters / databricks_cluster: 1 renames
+// clusters / databricks_cluster: 11 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
@@ -34,6 +35,9 @@ package terraform_dabs_map
 // TerraformToDABsFieldMap maps DABs group name → nested TF segments → DABs segment name.
 // Navigate using TF field name segments; DABs is the corresponding DABs name when it differs.
 var TerraformToDABsFieldMap = map[string]RenameTree{
+	"clusters": {
+		"library": {NewName: "libraries"},
+	},
 	"jobs": {
 		"environment": {NewName: "environments"},
 		"git_source": {Children: RenameTree{
@@ -168,27 +172,8 @@ var TerraformOnlyFields = map[string]FieldSet{
 		},
 		"idempotency_token": {},
 		"is_pinned":         {},
-		"library": {
-			"cran": {
-				"package": {}, // databricks_cluster.*.library.cran.package
-				"repo":    {}, // databricks_cluster.*.library.cran.repo
-			},
-			"egg": {}, // databricks_cluster.*.library.egg
-			"jar": {}, // databricks_cluster.*.library.jar
-			"maven": {
-				"coordinates": {}, // databricks_cluster.*.library.maven.coordinates
-				"exclusions":  {}, // databricks_cluster.*.library.maven.exclusions
-				"repo":        {}, // databricks_cluster.*.library.maven.repo
-			},
-			"pypi": {
-				"package": {}, // databricks_cluster.*.library.pypi.package
-				"repo":    {}, // databricks_cluster.*.library.pypi.repo
-			},
-			"requirements": {}, // databricks_cluster.*.library.requirements
-			"whl":          {}, // databricks_cluster.*.library.whl
-		},
-		"no_wait": {},
-		"url":     {},
+		"no_wait":           {},
+		"url":               {},
 	},
 	"dashboards": {
 		"dashboard_change_detected": {},
@@ -569,6 +554,9 @@ var TerraformOnlyFields = map[string]FieldSet{
 // DABsToTerraformRenameMap maps DABs group name → nested DABs segments → TF segment name.
 // Navigate using DABs field name segments; NewName is the TF name when it differs.
 var DABsToTerraformRenameMap = map[string]RenameTree{
+	"clusters": {
+		"libraries": {NewName: "library"},
+	},
 	"jobs": {
 		"environments": {NewName: "environment"},
 		"git_source": {Children: RenameTree{
