@@ -1,22 +1,59 @@
 
-=== Deploy both jobs on terraform
+=== Deploy on terraform: the dry run already reports the failure
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Warning: unknown field: autotermination_minutes
   at task[0].new_cluster
-  in databricks.yml:16:13
+  in databricks.yml:17:13
 
 Warning: unknown field: autotermination_minutes
   at task[0].new_cluster
-  in databricks.yml:16:13
+  in databricks.yml:17:13
 
 Created jobs.dst
 Created jobs.src
 Files: 4 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+Warn: post-deploy dry-run migration to direct: resources.jobs.dst: cannot resolve field "tasks[0].new_cluster.autotermination_minutes" (template "${resources.jobs.src.tasks[0].new_cluster.autotermination_minutes}"): jobs.dst field tasks[0].new_cluster.autotermination_minutes: method A: jobs: "tasks[0].new_cluster.autotermination_minutes" is a DABs-only field with no Terraform equivalent; method B: cannot look up "resources.jobs.src.tasks[0].new_cluster.autotermination_minutes": jobs: "tasks[0].new_cluster.autotermination_minutes" is a DABs-only field with no Terraform equivalent
+Warn: The warnings above are from a dry-run migration to the direct deployment engine (https://docs.databricks.com/aws/en/dev-tools/bundles/direct).
+Your deployment is not affected and works normally, but you may experience these issues when migrating to the direct deployment engine.
+Please forward these warnings to dabs-feedback@databricks.com
 
->>> update_file.py databricks.yml autotermination_minutes: 30 autotermination_minutes: ${resources.jobs.src.tasks[0].new_cluster.autotermination_minutes}
+>>> print_migration_telemetry
+direct_drymigrate_success false
+direct_drymigrate_warnings false
+direct_migrate_saferr jobs.*: cannot resolve field %q (template %q): jobs.%s field %s: method A: %w; method B: cannot look up %q: %w
 
-=== The conversion cannot resolve the reference from either side
->>> musterr [CLI] bundle deployment migrate
-Error: resources.jobs.dst: cannot resolve field "tasks[0].new_cluster.autotermination_minutes" (template "${resources.jobs.src.tasks[0].new_cluster.autotermination_minutes}"): jobs.dst field tasks[0].new_cluster.autotermination_minutes: method A: jobs: "tasks[0].new_cluster.autotermination_minutes" is a DABs-only field with no Terraform equivalent; method B: cannot look up "resources.jobs.src.tasks[0].new_cluster.autotermination_minutes": jobs: "tasks[0].new_cluster.autotermination_minutes" is a DABs-only field with no Terraform equivalent
+>>> update_file.py databricks.yml name: test-bundle name: test-bundle
+  engine: direct
+
+=== Opt in via config: the same failure stops the automatic migration
+>>> [CLI] bundle deploy
+Warn: Direct engine requested in bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warning: unknown field: autotermination_minutes
+  at task[0].new_cluster
+  in databricks.yml:18:13
+
+Warning: unknown field: autotermination_minutes
+  at task[0].new_cluster
+  in databricks.yml:18:13
+
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+Warn: post-deploy dry-run migration to direct: resources.jobs.dst: cannot resolve field "tasks[0].new_cluster.autotermination_minutes" (template "${resources.jobs.src.tasks[0].new_cluster.autotermination_minutes}"): jobs.dst field tasks[0].new_cluster.autotermination_minutes: method A: jobs: "tasks[0].new_cluster.autotermination_minutes" is a DABs-only field with no Terraform equivalent; method B: cannot look up "resources.jobs.src.tasks[0].new_cluster.autotermination_minutes": jobs: "tasks[0].new_cluster.autotermination_minutes" is a DABs-only field with no Terraform equivalent
+Warn: The warnings above are from a dry-run migration to the direct deployment engine (https://docs.databricks.com/aws/en/dev-tools/bundles/direct).
+Your deployment is not affected and works normally, but you may experience these issues when migrating to the direct deployment engine.
+Please forward these warnings to dabs-feedback@databricks.com
+Warn: Direct engine was requested but the dry-run migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.
+
+>>> print_migration_telemetry
+direct_migrate_error true
+direct_migrate_saferr jobs.*: cannot resolve field %q (template %q): jobs.%s field %s: method A: %w; method B: cannot look up %q: %w
+
+=== State is still terraform, so nothing was migrated
+
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate

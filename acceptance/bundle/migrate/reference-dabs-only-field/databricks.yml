@@ -12,7 +12,8 @@ resources:
             node_type_id: Standard_DS3_v2
             num_workers: 1
             # autotermination_minutes has no Terraform equivalent for a job
-            # cluster, so it is absent from terraform.tfstate.
+            # cluster, so it is absent from terraform.tfstate. Terraform never
+            # sees this reference either: the field is dropped on conversion.
             autotermination_minutes: 20
     dst:
       name: dst
@@ -20,4 +21,4 @@ resources:
         - task_key: t
           new_cluster:
             <<: *cluster
-            autotermination_minutes: 30
+            autotermination_minutes: ${resources.jobs.src.tasks[0].new_cluster.autotermination_minutes}
