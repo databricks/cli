@@ -1,0 +1,47 @@
+
+=== Initial deployment with suspend_timeout_duration: 300s
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-suspend-[UNIQUE_NAME]/default/files...
+Created postgres_branches.main
+Created postgres_endpoints.my_endpoint
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint
+{
+  "endpoint_id": "my-endpoint",
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "uid": "[ENDPOINT_UID]",
+  "status": {
+    "endpoint_id": "my-endpoint",
+    "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
+    "autoscaling_limit_min_cu": 0.5,
+    "autoscaling_limit_max_cu": 8,
+    "suspend_timeout_duration": "300s"
+  }
+}
+
+=== Change suspend_timeout_duration to 600s
+>>> update_file.py databricks.yml suspend_timeout_duration: 300s suspend_timeout_duration: 600s
+
+>>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_endpoints.my_endpoint
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-suspend-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted

@@ -73,8 +73,13 @@ def get_field_behaviors(schemas, type_name, resource_name=None, array_element_ty
         array_element_types = {}
 
     def extract(schema, prefix, visited, depth, inherited):
-        if depth > 4:
-            return {}
+        # Bound recursion as a runaway guard only; `visited` already guarantees
+        # termination (each type is expanded at most once). Real fields reach depth 5
+        # (e.g. external_model.custom_provider_config.bearer_token_auth.token_plaintext),
+        # so keep ample headroom above that.
+        max_depth = 10
+        if depth > max_depth:
+            raise Exception(f"Nested field found at depth {depth} ({max_depth=})")
         results = {}
         for name, prop in schema.get("fields", {}).items():
             path = f"{prefix}.{name}" if prefix else name
