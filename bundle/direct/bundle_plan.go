@@ -1007,7 +1007,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		maps.Copy(refs, inputStructVar.Refs)
-		dresources.DropJobRunValueChangeConfigRefs(refs)
 
 		var dependsOn []deployplan.DependsOnEntry
 		for _, reference := range refs {
@@ -1154,7 +1153,10 @@ func extractReferences(root dyn.Value, node string, stateType reflect.Type) (map
 		// bundle:"readonly" field like volumes' volume_path — is dropped before deploy, so a
 		// reference it carries cannot resolve into state and is not a dependency here. Such
 		// references are still resolved earlier during initialize.
-		if structaccess.ValidatePath(stateType, fieldPath) == nil {
+		// Strict: config paths are native DABs paths, so tolerating Terraform's
+		// [0]-on-struct would let a config list path resolve onto a state field of
+		// a different shape (e.g. job_runs' lifecycle.triggers).
+		if structaccess.ValidatePathStrict(stateType, fieldPath) == nil {
 			// Store the original string that contains references, not individual references.
 			refs[fieldPath.String()] = ref.Str
 		}

@@ -2,6 +2,7 @@ package direct
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -75,6 +76,33 @@ resources:
 	assert.Equal(t, map[string]string{
 		"comment": "${resources.schemas.kept.name}",
 	}, refs)
+}
+
+func TestExtractReferences_DoesNotTreatConfigSliceAsStateStruct(t *testing.T) {
+	type triggersState struct {
+		OnValueChange map[string]string `json:"on_value_change,omitempty"`
+	}
+	type lifecycleState struct {
+		Triggers triggersState `json:"triggers"`
+	}
+	type state struct {
+		Lifecycle lifecycleState `json:"lifecycle"`
+	}
+
+	const yml = `
+resources:
+  job_runs:
+    run:
+      lifecycle:
+        triggers:
+          - on_value_change: "${resources.jobs.watched.id}"
+`
+	root, err := yamlloader.LoadYAML("test", bytes.NewBufferString(yml))
+	require.NoError(t, err)
+
+	refs, err := extractReferences(root, "resources.job_runs.run", reflect.TypeFor[*state]())
+	require.NoError(t, err)
+	assert.Empty(t, refs)
 }
 
 func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
