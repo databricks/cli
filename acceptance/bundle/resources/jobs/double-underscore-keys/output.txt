@@ -22,6 +22,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-jobs-test-[UNIQUE_NAME]/default
 
-Deleted jobs.foo
-Deleted jobs.foo__bar
 Destroy: 2 deleted

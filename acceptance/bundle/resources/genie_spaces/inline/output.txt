@@ -17,5 +17,4 @@ The conversation history attached to them is permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-genie-space-inline-[UNIQUE_NAME]/default
 
-Deleted genie_spaces.sales_analytics
 Destroy: 1 deleted

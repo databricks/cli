@@ -145,7 +145,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleted jobs.my_job
-Deleted jobs.no_tasks_job
-Deleted jobs.rename_task_job
 Destroy: 3 deleted

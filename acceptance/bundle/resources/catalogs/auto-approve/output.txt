@@ -55,8 +55,6 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleted catalogs.bar
-Deleted schemas.foo
 Destroy: 2 deleted
 
 === Assert the catalog is deleted

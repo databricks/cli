@@ -58,5 +58,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-target-qps-[UNIQUE_NAME]/default
 
-Deleted vector_search_endpoints.my_endpoint
 Destroy: 1 deleted

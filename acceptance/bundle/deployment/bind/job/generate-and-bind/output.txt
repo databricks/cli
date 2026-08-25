@@ -32,7 +32,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-generate-bind-[UNIQUE_NAME]
 
-Deleted jobs.test_job_key
 Destroy: 1 deleted
 
 === Check that job is bound and does not exist after bundle is destroyed:

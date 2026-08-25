@@ -302,16 +302,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleted jobs.chain_bottom
-Deleted jobs.chain_mid
-Deleted jobs.chain_top
-Deleted jobs.diamond_bottom
-Deleted jobs.diamond_left
-Deleted jobs.diamond_right
-Deleted jobs.diamond_top
-Deleted jobs.independent1
-Deleted jobs.independent2
-Deleted jobs.multi_child
-Deleted jobs.multi_parent1
-Deleted jobs.multi_parent2
 Destroy: 12 deleted

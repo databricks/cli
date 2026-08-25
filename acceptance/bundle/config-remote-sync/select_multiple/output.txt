@@ -72,7 +72,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleted jobs.job_a
-Deleted jobs.job_b
-Deleted jobs.job_c
 Destroy: 3 deleted

@@ -64,7 +64,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleted cluster_policies.json_string
-Deleted cluster_policies.multiline
-Deleted cluster_policies.yaml
 Destroy: 3 deleted

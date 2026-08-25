@@ -104,5 +104,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default
 
-Deleted jobs.job_with_run_as
 Destroy: 1 deleted

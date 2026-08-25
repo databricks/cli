@@ -24,6 +24,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleted pipelines.foo
-Deleted pipelines.foo.permissions
 Destroy: 1 deleted

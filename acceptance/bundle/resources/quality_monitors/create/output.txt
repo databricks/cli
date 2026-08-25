@@ -26,5 +26,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/quality-monitor-update-[UNIQUE_NAME]/default
 
-Deleted quality_monitors.monitor1
 Destroy: 1 deleted

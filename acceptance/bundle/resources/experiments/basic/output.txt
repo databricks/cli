@@ -178,5 +178,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default
 
-Deleted experiments.my_experiment
 Destroy: 1 deleted

@@ -43,5 +43,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default
 
-Deleted dashboards.my_dashboard
 Destroy: 1 deleted

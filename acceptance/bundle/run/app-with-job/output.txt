@@ -95,6 +95,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]
 
-Deleted apps.test_app
-Deleted jobs.foo
 Destroy: 2 deleted

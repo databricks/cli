@@ -45,6 +45,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default
 
-Deleted vector_search_endpoints.my_endpoint
-Deleted vector_search_endpoints.my_endpoint.permissions
 Destroy: 1 deleted

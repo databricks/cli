@@ -46,8 +46,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleted jobs.job_1
-Deleted jobs.job_1.permissions
 Destroy: 1 deleted
 
 >>> [CLI] jobs delete [NUMID]

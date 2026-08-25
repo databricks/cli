@@ -18,6 +18,4 @@ The conversation history attached to them is permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/genie-serialized-space-[UNIQUE_NAME]/default
 
-Deleted genie_spaces.from_file
-Deleted genie_spaces.from_inline
 Destroy: 2 deleted

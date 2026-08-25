@@ -1,9 +1,7 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    # -q: cleanup, not the subject of the test, and the engines disagree on whether the
-    # scope's permissions are a node of their own.
-    trace $CLI bundle destroy --auto-approve -q
+    trace $CLI bundle destroy --auto-approve
     rm out.requests.txt
 }
 trap cleanup EXIT

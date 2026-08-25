@@ -114,7 +114,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
 
-Deleted sql_warehouses.test_sql_warehouse
 Destroy: 1 deleted
 
 === Verify the destroy request

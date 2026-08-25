@@ -63,9 +63,6 @@ is removed from the catalog, but the underlying files are not deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default
 
-Deleted schemas.grants_schema
-Deleted volumes.grants_volume
-Deleted volumes.grants_volume.grants
 Destroy: 2 deleted
 
 >>> print_requests.py //permissions

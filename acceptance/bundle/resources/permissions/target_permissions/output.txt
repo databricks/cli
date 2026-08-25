@@ -18,6 +18,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/test-bundle
 
-Deleted jobs.foo
-Deleted jobs.foo.permissions
 Destroy: 1 deleted

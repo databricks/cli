@@ -13,7 +13,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-replace-endpoint-[UNIQUE_NAME]/default
 
-Deleted postgres_branches.develop
-Deleted postgres_endpoints.primary
-Deleted postgres_projects.my_project
 Destroy: 3 deleted

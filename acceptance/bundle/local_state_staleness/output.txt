@@ -32,7 +32,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]
 
-Deleted jobs.test_job
 Destroy: 1 deleted
 
 >>> rm -rf [TEST_TMP_DIR]/bundle_a

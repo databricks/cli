@@ -13,5 +13,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/select-plan-[UNIQUE_NAME]/default
 
-Deleted jobs.foo
 Destroy: 1 deleted

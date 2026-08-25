@@ -44,7 +44,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleted postgres_branches.branch
-Deleted postgres_projects.project
-Deleted postgres_roles.role
 Destroy: 3 deleted

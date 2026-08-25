@@ -219,10 +219,6 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default
 
-Deleted postgres_branches.main
-Deleted postgres_databases.my_database
-Deleted postgres_projects.my_project
-Deleted postgres_roles.owner
 Destroy: 4 deleted
 
 >>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/

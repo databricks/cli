@@ -71,11 +71,4 @@ is removed from the catalog, but the underlying files are not deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleted clusters.test_cluster
-Deleted experiments.test_experiment
-Deleted jobs.job_one
-Deleted jobs.job_two
-Deleted registered_models.test_model
-Deleted sql_warehouses.test_warehouse
-Deleted volumes.test_volume
 Destroy: 7 deleted

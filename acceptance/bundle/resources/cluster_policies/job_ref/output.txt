@@ -105,8 +105,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster_policy_job_ref/default
 
-Deleted cluster_policies.pol
-Deleted jobs.j
 Destroy: 2 deleted
 
 >>> print_requests.py //policies/clusters //jobs

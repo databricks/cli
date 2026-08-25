@@ -32,5 +32,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default
 
-Deleted pipelines.foo
 Destroy: 1 deleted

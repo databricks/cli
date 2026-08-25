@@ -17,7 +17,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/destroy-dashboard-[UNIQUE_NAME]/default
 
-Deleted dashboards.dashboard1
 Destroy: 1 deleted
 
 >>> [CLI] lakeview get [DASHBOARD_ID]

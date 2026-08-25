@@ -161,7 +161,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default
 
-Deleted jobs.job_with_permissions
 Destroy: 1 deleted
 
 >>> print_requests.py //jobs/

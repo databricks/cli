@@ -32,6 +32,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleted clusters.foo
-Deleted clusters.foo.permissions
 Destroy: 1 deleted

@@ -110,8 +110,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleted catalogs.test_catalog
-Deleted catalogs.test_catalog.grants
-Deleted external_locations.test_location
-Deleted external_locations.test_location.grants
 Destroy: 2 deleted

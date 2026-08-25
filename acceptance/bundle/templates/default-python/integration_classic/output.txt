@@ -99,8 +99,6 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
 
-Deleted jobs.sample_job
-Deleted pipelines.project_name_[UNIQUE_NAME]_etl
 Destroy: 2 deleted
 
 >>> [CLI] bundle validate -t prod
@@ -501,8 +499,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod
 
-Deleted jobs.sample_job
-Deleted jobs.sample_job.permissions
-Deleted pipelines.project_name_[UNIQUE_NAME]_etl
-Deleted pipelines.project_name_[UNIQUE_NAME]_etl.permissions
 Destroy: 2 deleted

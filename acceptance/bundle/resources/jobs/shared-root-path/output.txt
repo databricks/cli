@@ -34,5 +34,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Shared/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleted jobs.foo
 Destroy: 1 deleted

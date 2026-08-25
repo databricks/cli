@@ -4,7 +4,7 @@
 
 >>> [CLI] bundle deploy -qq
 
->>> [CLI] bundle destroy --auto-approve -q
+>>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.secret_scopes.first
 

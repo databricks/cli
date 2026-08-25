@@ -13,5 +13,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-ssd-count-0-[UNIQUE_NAME]/default
 
-Deleted clusters.test_cluster
 Destroy: 1 deleted

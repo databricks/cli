@@ -106,7 +106,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default
 
-Deleted instance_pools.test_instance_pool
 Destroy: 1 deleted
 
 === Verify the destroy request

@@ -74,5 +74,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default
 
-Deleted apps.mykey
 Destroy: 1 deleted

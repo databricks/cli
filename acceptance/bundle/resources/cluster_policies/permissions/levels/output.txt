@@ -31,6 +31,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster-policy-permission-levels-[UNIQUE_NAME]/default
 
-Deleted cluster_policies.test_cluster_policy
-Deleted cluster_policies.test_cluster_policy.permissions
 Destroy: 1 deleted

@@ -51,8 +51,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleted apps.my_app
-Deleted apps.my_app.permissions
-Deleted jobs.my_job
-Deleted jobs.my_job.permissions
 Destroy: 2 deleted

@@ -27,6 +27,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-collapse-[UNIQUE_NAME]/default
 
-Deleted secret_scopes.my_scope
-Deleted secret_scopes.my_scope.permissions
 Destroy: 1 deleted

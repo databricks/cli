@@ -22,8 +22,8 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
   in databricks.yml:22:3
 
 Uploading immutable bundle snapshot...
-Created jobs.my_job.permissions
 Updated jobs.my_job
+Created jobs.my_job.permissions
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
 Second snapshot path: /Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py
@@ -49,6 +49,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-perms-[UNIQUE_NAME]/default
 
-Deleted jobs.my_job
-Deleted jobs.my_job.permissions
 Destroy: 1 deleted

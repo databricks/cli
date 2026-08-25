@@ -39,6 +39,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green
 
-Deleted jobs.interim_gold_layer_job
-Deleted jobs.interim_gold_layer_job.permissions
 Destroy: 1 deleted
