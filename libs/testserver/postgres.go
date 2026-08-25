@@ -683,7 +683,7 @@ func validateUpdateMask(req Request, allowed []string) *Response {
 	if mask == "" {
 		return nil
 	}
-	for _, path := range strings.Split(mask, ",") {
+	for path := range strings.SplitSeq(mask, ",") {
 		path = strings.TrimSpace(path)
 		if path == "" || slices.Contains(allowed, path) {
 			continue
