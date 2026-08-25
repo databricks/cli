@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -90,7 +89,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 	// should report the engine that ran.
 	b.Metrics.StateEngine = stateEngine.ThisOrDefault()
 	if stateEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, reportPerResource(b))
 		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
 		// Capture the finalized state for deploy telemetry. It carries each
 		// resource's state-size in bytes (from the WAL replay Finalize just
@@ -118,6 +117,12 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 	)
 }
 
+// reportPerResource reports whether the deploy should list resources individually
+// (-q and -qq drop those lines).
+func reportPerResource(b *bundle.Bundle) bool {
+	return b.Quiet < bundle.QuietSummary
+}
+
 // logFileSummary reports what the file sync did. Separate from the resource summary
 // because a deploy that only changes business logic (a .py or .sql file) leaves every
 // resource unchanged, so without this line its summary is all zeros and looks like a
@@ -132,22 +137,20 @@ func logFileSummary(ctx context.Context, b *bundle.Bundle) {
 
 // logDeploySummary prints the per-resource actions that were applied followed by the
 // resource summary line. -q drops the per-resource lines, -qq drops the summary too.
-// The past-tense verb is the short action name plus "d" (create→Created,
-// delete→Deleted, ...), capitalized to match the sentence case of other output.
-// "bundle plan" keeps the lower-case present tense, so the two are still
-// distinguishable at a glance.
-func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
+// The direct engine prints its own lines as it goes, so only the terraform engine
+// reports them from the plan here.
+func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType) {
 	if b.Quiet >= bundle.QuietAll {
 		return
 	}
 
-	if b.Quiet < bundle.QuietSummary {
+	// The direct engine already printed these lines as each resource was applied.
+	if reportPerResource(b) && !stateEngine.IsDirect() {
 		for _, action := range plan.GetActions() {
 			if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
 				continue
 			}
-			verb := action.ActionType.StringShort() + "d"
-			cmdio.LogString(ctx, strings.ToUpper(verb[:1])+verb[1:]+" "+strings.TrimPrefix(action.ResourceKey, "resources."))
+			cmdio.LogString(ctx, deployplan.AppliedLine(action.ResourceKey, action.ActionType))
 		}
 	}
 
@@ -319,7 +322,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// still propagates. Earlier failures report the files only, since the plan
 	// counts would then describe what was intended rather than what was applied.
 	filesReported = true
-	logDeploySummary(ctx, b, plan)
+	logDeploySummary(ctx, b, plan, stateEngine)
 
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 

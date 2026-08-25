@@ -3,6 +3,7 @@ Warning: required field "branch_id" is not set
   in databricks.yml:21:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-no-id-[UNIQUE_NAME]/default/files...
+Created postgres_projects.my_project
 Error: cannot create resources.postgres_branches.main: Field 'branch_id' is required, expected non-default value (not "")! (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches

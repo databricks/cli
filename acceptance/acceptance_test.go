@@ -994,6 +994,7 @@ func runTest(t *testing.T,
 	printedRepls := false
 
 	pathFilter := preparePathFilter(config, customEnv)
+	sortLines := compileSortLines(t, config)
 
 	// Compare expected outputs
 	for relPath := range outputs {
@@ -1001,7 +1002,7 @@ func runTest(t *testing.T,
 			continue
 		}
 
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+		doComparison(t, repls, sortLines, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -1032,7 +1033,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+			doComparison(t, repls, sortLines, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 
@@ -1105,7 +1106,24 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
+// compileSortLines compiles the enabled SortLines patterns from the test config.
+// Patterns are returned in name order so the result does not depend on map iteration.
+func compileSortLines(t *testing.T, config internal.TestConfig) []*regexp.Regexp {
+	result := make([]*regexp.Regexp, 0, len(config.SortLines))
+	for _, name := range slices.Sorted(maps.Keys(config.SortLines)) {
+		if on, ok := config.SortLinesOn[name]; ok && !on {
+			continue
+		}
+		re, err := regexp.Compile(config.SortLines[name])
+		if err != nil {
+			t.Fatalf("Invalid SortLines pattern %s = %#v: %s", name, config.SortLines[name], err)
+		}
+		result = append(result, re)
+	}
+	return result
+}
+
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, sortLines []*regexp.Regexp, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -1122,6 +1140,14 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	// The reference value is stored after applying replacements.
 	if !NoRepl {
 		valueNew = repls.Replace(valueNew)
+	}
+
+	// Canonicalize line runs whose order the command does not guarantee. Applied to
+	// the reference too so a hand-edited golden compares the same way; sorting is
+	// idempotent, so a stored reference is unaffected.
+	for _, re := range sortLines {
+		valueRef = testdiff.SortLineRuns(valueRef, re)
+		valueNew = testdiff.SortLineRuns(valueNew, re)
 	}
 
 	// In update mode, regenerating the reference files is the goal: each branch below

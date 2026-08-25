@@ -1,6 +1,7 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.my_job
 Error: access denied: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json (403 INJECTED)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Ftest-bundle%2Fdefault%2Fstate%2Fresources.json?overwrite=true
