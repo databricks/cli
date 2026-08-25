@@ -17,7 +17,7 @@ import (
 func testListRows() []listRow {
 	return []listRow{
 		{RunID: "1", Experiment: "qwen-train", User: "me@example.com", Status: "SUCCESS", StartedAt: new("2026-06-05T17:32:39.000000+00:00"), Duration: "1m 14s", MLflowURL: "https://h/ml/experiments/E/runs/04c41514fbb0/artifacts/logs/node_0", Accelerators: "8x H100"},
-		{RunID: "2", Experiment: "llama-train", User: "me@example.com", Status: "RUNNING", StartedAt: new("2026-06-05T18:43:24.000000+00:00"), Duration: "3m 32s", MLflowURL: "-", Accelerators: "1x A10"},
+		{RunID: "2", Experiment: "llama-train", User: "me@example.com", Status: "RUNNING", StartedAt: new("2026-06-05T18:43:24.000000+00:00"), Duration: "3m 32s", ETA: "~48m 20s", MLflowURL: "-", Accelerators: "1x A10"},
 		{RunID: "3", Experiment: "mixtral", User: "me@example.com", Status: "FAILED", StartedAt: nil, Duration: "-", MLflowURL: "-", Accelerators: "-"},
 	}
 }
@@ -159,8 +159,9 @@ func TestListModelView(t *testing.T) {
 
 	assert.NotContains(t, out, "\x1b", "Ascii profile + no links should produce no escapes")
 	for _, want := range []string{
-		"Run ID", "Experiment", "Status", "Started", "Duration", "MLflow", "User", "Accelerators",
+		"Run ID", "Experiment", "Status", "Started", "Duration", "ETA", "MLflow", "User", "Accelerators",
 		"qwen-train", "● SUCCESS", "● RUNNING", "● FAILED",
+		"~48m 20s",            // ETA on the running row
 		"…/runs/04c41514…",    // shortened MLflow link
 		"2026-06-05T17:32:39", // started trimmed to seconds
 		"▸",                   // selection gutter on the first row

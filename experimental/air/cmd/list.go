@@ -44,10 +44,13 @@ type listRow struct {
 	StartedAt *string `json:"started_at"`
 	IsSweep   bool    `json:"is_sweep"`
 
-	// Experiment, Duration, MLflowURL and Accelerators are table-only columns,
-	// omitted from JSON to match `air list --json`.
-	Experiment   string `json:"-"`
-	Duration     string `json:"-"`
+	// Experiment, Duration, ETA, MLflowURL and Accelerators are table-only
+	// columns, omitted from JSON to match `air list --json`.
+	Experiment string `json:"-"`
+	Duration   string `json:"-"`
+	// ETA is a best-effort remaining-time estimate ("~48m 20s"), set only for a
+	// running run we could estimate; empty renders as "-".
+	ETA          string `json:"-"`
 	MLflowURL    string `json:"-"`
 	Accelerators string `json:"-"`
 }
@@ -288,15 +291,25 @@ func warnIfTruncated(ctx context.Context, f *runFetcher) {
 	}
 }
 
-// setMLflowLinks fills in each row's MLflow link in parallel, best-effort: a row
-// whose IDs can't be resolved keeps its "-" placeholder.
+// setMLflowLinks fills in each row's MLflow link — and, for a running run, its
+// ETA — in parallel, best-effort: a row whose IDs can't be resolved keeps its "-"
+// placeholder, and a run we can't estimate simply has no ETA.
 func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, entries []listedRun) {
 	var g errgroup.Group
 	g.SetLimit(enrichConcurrency)
 	for i := range entries {
 		g.Go(func() error {
-			if ids := mlflowIDsForTask(ctx, w, entries[i].taskRunID); ids != nil {
-				entries[i].row.MLflowURL = mlflowLogsURL(w.Config.Host, ids)
+			ids := mlflowIDsForTask(ctx, w, entries[i].taskRunID)
+			if ids == nil {
+				return nil
+			}
+			entries[i].row.MLflowURL = mlflowLogsURL(w.Config.Host, ids)
+			// The ETA needs a progress-metric history fetch, so it's computed only
+			// for running rows (the only ones that can have one).
+			if entries[i].row.Status == string(jobs.RunLifeCycleStateRunning) {
+				if eta := estimateTrainingETA(ctx, w, ids.RunID); eta != nil {
+					entries[i].row.ETA = eta.compact()
+				}
 			}
 			return nil
 		})

@@ -72,6 +72,7 @@ type runView struct {
 	retries      int
 	maxRetries   string
 	duration     string
+	eta          string
 	experiment   string
 	mlflowLabel  string
 	mlflowURL    string
@@ -99,6 +100,7 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 		retries:      data.AttemptNumber,
 		maxRetries:   data.MaxRetriesDisplay,
 		duration:     data.DurationDisplay,
+		eta:          data.ETADisplay,
 		experiment:   data.ExperimentDisplay,
 		mlflowLabel:  na,
 		user:         data.UserDisplay,
@@ -331,12 +333,19 @@ func renderFields(p palette, colorOn bool, v runView) string {
 		field(p, "Retries", p.n12.Render(strconv.Itoa(v.retries))),
 		field(p, "Max Retries", p.n12.Render(v.maxRetries)),
 		field(p, "Duration", p.n12.Render(v.duration)),
+	}
+	// The ETA is shown only for a running run we could estimate; amber marks it as
+	// live, in-progress information.
+	if v.eta != "" {
+		rows = append(rows, field(p, "ETA", p.amber.Render(v.eta)))
+	}
+	rows = append(rows,
 		field(p, "Experiment", p.n12.Render(v.experiment)),
 		field(p, "MLflow Run", link(colorOn, p.blue, v.mlflowLabel, v.mlflowURL)),
 		field(p, "User", p.n12.Render(v.user)),
 		field(p, "Accelerators", p.n12.Render(v.accelerators)),
 		field(p, "Environment", p.n12.Render(v.environment)),
-	}
+	)
 	return strings.Join(rows, "\n")
 }
 
