@@ -159,8 +159,8 @@ func TestHandover(t *testing.T) {
 	t.Run("without keepalive", func(t *testing.T) {
 		runHandoverExchange(t, time.Hour)
 	})
-	// Pings share the proxy's serialised write path with the data stream: they must not corrupt or
-	// reorder it, nor trip gorilla's concurrent-write panic.
+	// Pings and the data stream share the connection's write lock: they must not corrupt or reorder
+	// the stream, nor trip gorilla's concurrent-write panic.
 	t.Run("with keepalive", func(t *testing.T) {
 		runHandoverExchange(t, time.Millisecond)
 	})
