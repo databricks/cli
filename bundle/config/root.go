@@ -620,8 +620,15 @@ func GetNodeAndType(path dyn.Path) (dyn.Path, string) {
 	}
 
 	if len(path) >= 4 {
-		if path[3].Key() == "permissions" || path[3].Key() == "grants" || path[3].Key() == "libraries" {
-			return path[:4], path[1].Key() + "." + path[3].Key()
+		sub := path[3].Key()
+		if sub == "permissions" || sub == "grants" {
+			return path[:4], path[1].Key() + "." + sub
+		}
+		// libraries is a sub-resource only for clusters. Other resource types
+		// (e.g. pipelines) have a native libraries field that is a plain field,
+		// not a child resource.
+		if sub == "libraries" && path[1].Key() == "clusters" {
+			return path[:4], path[1].Key() + "." + sub
 		}
 	}
 

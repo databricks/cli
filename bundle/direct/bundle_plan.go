@@ -930,7 +930,8 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("libraries")),
+		// libraries is a sub-resource only for clusters; other resource types have a native libraries field.
+		dyn.NewPattern(dyn.Key("resources"), dyn.Key("clusters"), dyn.AnyKey(), dyn.Key("libraries")),
 	}
 
 	// Walk?
