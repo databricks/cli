@@ -1,0 +1,58 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_permissions_recreate/default/files...
+Created cluster_policies.test_cluster_policy
+Created cluster_policies.test_cluster_policy.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Permissions are set on the live policy
+>>> [CLI] api get /api/2.0/permissions/cluster-policies/[TEST_CLUSTER_POLICY_ID]
+{
+  "object_type": "cluster-policy",
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_USE"
+        }
+      ],
+      "group_name": "users"
+    }
+  ]
+}
+
+=== Delete the policy out of band
+>>> [CLI] cluster-policies delete [TEST_CLUSTER_POLICY_ID]
+
+=== Permissions API still returns the ACLs for the deleted policy (no 404)
+>>> [CLI] api get /api/2.0/permissions/cluster-policies/[TEST_CLUSTER_POLICY_ID]
+{
+  "object_type": "cluster-policy",
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_USE"
+        }
+      ],
+      "group_name": "users"
+    }
+  ]
+}
+
+=== Plan recreates the gone policy
+>>> [CLI] bundle plan
+create cluster_policies.test_cluster_policy
+update cluster_policies.test_cluster_policy.permissions
+
+Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_permissions_recreate/default
+
+Destroy: 1 deleted
