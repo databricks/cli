@@ -1,0 +1,110 @@
+
+>>> local_aws_attributes
+Warning: There are no files to sync, please check your .gitignore
+
+{
+  "with_pool": {},
+  "without_pool": {
+    "availability": "SPOT"
+  }
+}
+
+>>> [CLI] bundle plan
+update jobs.with_pool
+update jobs.without_pool
+
+Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> job_requests
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/reset",
+  "body": {
+    "job_id": [WITH_POOL_ID],
+    "new_settings": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "with_pool",
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "new_cluster": {
+            "aws_attributes": {},
+            "instance_pool_id": "pool-id",
+            "num_workers": 1,
+            "spark_version": "13.3.x-scala2.12"
+          },
+          "notebook_task": {
+            "notebook_path": "/Workspace/nb"
+          },
+          "task_key": "key"
+        }
+      ]
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/reset",
+  "body": {
+    "job_id": [WITHOUT_POOL_ID],
+    "new_settings": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "without_pool",
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "new_cluster": {
+            "aws_attributes": {
+              "availability": "SPOT"
+            },
+            "node_type_id": "m5.large",
+            "num_workers": 1,
+            "spark_version": "13.3.x-scala2.12"
+          },
+          "notebook_task": {
+            "notebook_path": "/Workspace/nb"
+          },
+          "task_key": "key"
+        }
+      ]
+    }
+  }
+}
+
+>>> remote_aws_attributes
+with_pool:
+{
+  "instance_pool_id": "pool-id",
+  "node_type_id": null,
+  "aws_attributes": {}
+}
+without_pool:
+{
+  "instance_pool_id": null,
+  "node_type_id": "m5.large",
+  "aws_attributes": {
+    "availability": "SPOT"
+  }
+}

@@ -1,0 +1,34 @@
+# Project each job's cluster spec down to the fields this test asserts, so a new
+# field in the Jobs API response cannot break the goldens.
+remote_aws_attributes() {
+    for name in with_pool without_pool; do
+        echo "$name:"
+        $CLI jobs get "${JOB_IDS[$name]}" | jq '.settings.tasks[0].new_cluster | {instance_pool_id, node_type_id, aws_attributes}'
+    done
+}
+
+# The resolved config the engine actually deploys: aws_attributes as it survives
+# the mutator pipeline. This is where the empty string is lost, so record it
+# alongside the request and the remote state.
+local_aws_attributes() {
+    $CLI bundle validate -o json | jq '.resources.jobs | map_values(.tasks[0].new_cluster.aws_attributes)'
+}
+
+# The two jobs are deployed concurrently, so order by job name rather than
+# print_requests.py --sort: that sorts on the rendered request, whose job_id
+# differs per run.
+job_requests() {
+    print_requests.py //jobs | jq -s 'sort_by(.body.new_settings.name // .body.name) | .[]'
+}
+
+# Plan, deploy, and read back. The engines disagree on whether the ARN is
+# cleared, so every phase records into its own per-engine file.
+phase() {
+    {
+        trace local_aws_attributes
+        trace $CLI bundle plan
+        trace $CLI bundle deploy
+        trace job_requests
+        trace remote_aws_attributes
+    } &> "out.$1.$DATABRICKS_BUNDLE_ENGINE.txt"
+}

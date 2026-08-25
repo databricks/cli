@@ -1,0 +1,32 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    with_pool:
+      name: with_pool
+      tasks:
+        - task_key: key
+          notebook_task:
+            notebook_path: /Workspace/nb
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            num_workers: 1
+            instance_pool_id: pool-id
+            aws_attributes:
+              availability: SPOT
+              instance_profile_arn: arn:aws:iam::123456789012:instance-profile/original
+
+    without_pool:
+      name: without_pool
+      tasks:
+        - task_key: key
+          notebook_task:
+            notebook_path: /Workspace/nb
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            num_workers: 1
+            node_type_id: m5.large
+            aws_attributes:
+              availability: SPOT
+              instance_profile_arn: arn:aws:iam::123456789012:instance-profile/original
