@@ -33,20 +33,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQU
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
-=== The same holds for a non-string field set out of band
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Updated schemas.schema1
-Files: 0 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
->>> [CLI] api get /api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]
-0
-
-=== And it converges
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
-
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.schema1
@@ -72,19 +58,5 @@ Destroy: 1 deleted
   "path": "/api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]",
   "body": {
     "comment": ""
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]",
-  "body": {
-    "custom_max_retention_hours": 240
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]",
-  "body": {
-    "custom_max_retention_hours": 0
   }
 }

@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
@@ -65,11 +66,14 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.
 	return response.FullName, response, nil
 }
 
-func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, entry *PlanEntry) (*catalog.RegisteredModelInfo, error) {
+// See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
+var registeredModelForceSend = []string{"Comment"}
+
+func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ *PlanEntry) (*catalog.RegisteredModelInfo, error) {
 	updateRequest := catalog.UpdateRegisteredModelRequest{
 		FullName:        id,
 		Comment:         config.Comment,
-		ForceSendFields: nil, // set below, so the cleared fields go through the same exclusions
+		ForceSendFields: nil, // set below
 
 		// Owner is settable in the config (it comes from the embedded
 		// CreateRegisteredModelRequest) and create sends it, but update never has: a
@@ -93,8 +97,7 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 		CatalogName:     config.CatalogName,
 	}
 
-	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
-	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(cleared, config.ForceSendFields...), "Owner", "NewName")
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(slices.Clone(registeredModelForceSend), config.ForceSendFields...), "Owner", "NewName")
 
 	response, err := r.client.RegisteredModels.Update(ctx, updateRequest)
 	if err != nil {

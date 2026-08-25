@@ -31,11 +31,3 @@ MSYS_NO_PATHCONV=1 trace $CLI api get "/api/2.1/unity-catalog/schemas/$SCHEMA" |
 title "Redeploy is a no-op"
 trace $CLI bundle deploy
 
-# 240h (10 days) is inside UC's valid 7-30 day window; smaller values are rejected.
-title "The same holds for a non-string field set out of band"
-MSYS_NO_PATHCONV=1 $CLI api patch "/api/2.1/unity-catalog/schemas/$SCHEMA" --json '{"custom_max_retention_hours":240}' > /dev/null
-trace $CLI bundle deploy
-MSYS_NO_PATHCONV=1 trace $CLI api get "/api/2.1/unity-catalog/schemas/$SCHEMA" | jq '.custom_max_retention_hours'
-
-title "And it converges"
-trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"

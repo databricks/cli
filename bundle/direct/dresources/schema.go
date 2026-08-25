@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
@@ -46,8 +47,24 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSch
 	return response.FullName, response, nil
 }
 
+// UC drops a field the payload omits, so a value the config stops declaring never
+// reaches the backend and every later plan reports the same pending change. Worse, when
+// nothing else is in the payload UC rejects it outright with "Nothing to update" (400),
+// which made a schema undeployable once someone set a description on it outside the
+// bundle. Sending these explicitly is the only way to express "the bundle owns this".
+//
+// Only fields verified against a real workspace belong here: {"comment": ""} clears it. Do
+// not add a field without probing it -- UC rejects an empty value on some (owner: "" is
+// "Could not find principal with name .", new_name: "" is "not a valid name"), and
+// ForceSendFields is inert for maps, so listing properties would be a no-op.
+//
+// custom_max_retention_hours is deliberately absent even though {"...": 0} does clear it:
+// terraform never sends it, so force-sending would make the two engines produce different
+// payloads for the same config.
+var schemaForceSend = []string{"Comment"}
+
 // DoUpdate updates the schema in place and returns remote state.
-func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, entry *PlanEntry) (*catalog.SchemaInfo, error) {
+func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, _ *PlanEntry) (*catalog.SchemaInfo, error) {
 	updateRequest := catalog.UpdateSchema{
 		Comment:                      config.Comment,
 		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
@@ -56,11 +73,10 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalo
 		NewName:                      "", // We recreate schemas on name change intentionally.
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              nil, // set below, so the cleared fields go through the same exclusions
+		ForceSendFields:              nil, // set below
 	}
 
-	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
-	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateSchema](append(cleared, config.ForceSendFields...), "EnablePredictiveOptimization", "NewName", "Owner")
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateSchema](append(slices.Clone(schemaForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "NewName", "Owner")
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)
 	if err != nil {

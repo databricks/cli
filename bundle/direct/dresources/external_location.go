@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
@@ -52,8 +53,15 @@ func (r *ResourceExternalLocation) DoCreate(ctx context.Context, config *catalog
 	return response.Name, response, nil
 }
 
+// See schemaForceSend. Unlike the other four this one is not probed: an external
+// location needs a storage credential with cloud IAM setup, which the test workspaces do
+// not provision, so its acceptance test is local-only. Comment is carried here because it
+// is the same field on the same UC PATCH family, where all four siblings clear on
+// {"comment": ""}; re-probe before adding anything else.
+var externalLocationForceSend = []string{"Comment"}
+
 // DoUpdate updates the external location in place and returns remote state.
-func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, config *catalog.CreateExternalLocation, entry *PlanEntry) (*catalog.ExternalLocationInfo, error) {
+func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, config *catalog.CreateExternalLocation, _ *PlanEntry) (*catalog.ExternalLocationInfo, error) {
 	updateRequest := catalog.UpdateExternalLocation{
 		Comment:                   config.Comment,
 		CredentialName:            config.CredentialName,
@@ -71,17 +79,16 @@ func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, conf
 		ReadOnly:                  config.ReadOnly,
 		SkipValidation:            config.SkipValidation,
 		Url:                       config.Url,
-		ForceSendFields:           nil, // set below, so the cleared fields go through the same exclusions
+		ForceSendFields:           nil, // set below
 	}
 
-	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
-	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateExternalLocation](append(cleared, config.ForceSendFields...), "IsolationMode", "Owner")
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateExternalLocation](append(slices.Clone(externalLocationForceSend), config.ForceSendFields...), "IsolationMode", "Owner")
 
 	return r.client.ExternalLocations.Update(ctx, updateRequest)
 }
 
 // DoUpdateWithID updates the external location and returns the new ID if the name changes.
-func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateExternalLocation, entry *PlanEntry) (string, *catalog.ExternalLocationInfo, error) {
+func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateExternalLocation, _ *PlanEntry) (string, *catalog.ExternalLocationInfo, error) {
 	updateRequest := catalog.UpdateExternalLocation{
 		Comment:                   config.Comment,
 		CredentialName:            config.CredentialName,
@@ -99,15 +106,14 @@ func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string
 		ReadOnly:                  config.ReadOnly,
 		SkipValidation:            config.SkipValidation,
 		Url:                       config.Url,
-		ForceSendFields:           nil, // set below, so the cleared fields go through the same exclusions
+		ForceSendFields:           nil, // set below
 	}
 
 	if config.Name != id {
 		updateRequest.NewName = config.Name
 	}
 
-	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
-	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateExternalLocation](append(cleared, config.ForceSendFields...), "IsolationMode", "Owner")
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateExternalLocation](append(slices.Clone(externalLocationForceSend), config.ForceSendFields...), "IsolationMode", "Owner")
 
 	response, err := r.client.ExternalLocations.Update(ctx, updateRequest)
 	if err != nil {

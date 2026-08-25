@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -48,14 +49,17 @@ func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVol
 	return response.FullName, response, nil
 }
 
-func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, entry *PlanEntry) (*catalog.VolumeInfo, error) {
+// See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
+var volumeForceSend = []string{"Comment"}
+
+func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ *PlanEntry) (*catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,
 		NewName: "", // Not supported by Update(). Needs DoUpdateWithID()
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: nil, // set below, so the cleared fields go through the same exclusions
+		ForceSendFields: nil, // set below
 	}
 
 	nameFromID, err := getNameFromID(id)
@@ -67,8 +71,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 		return nil, fmt.Errorf("internal error: unexpected change of name from %#v to %#v", nameFromID, config.Name)
 	}
 
-	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
-	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateVolumeRequestContent](append(cleared, config.ForceSendFields...), "NewName", "Owner")
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateVolumeRequestContent](append(slices.Clone(volumeForceSend), config.ForceSendFields...), "NewName", "Owner")
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil {
@@ -82,7 +85,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 	return response, err
 }
 
-func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, entry *PlanEntry) (string, *catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ *PlanEntry) (string, *catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,
@@ -90,7 +93,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		NewName: "", // Initialized below if needed
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: nil, // set below, so the cleared fields go through the same exclusions
+		ForceSendFields: nil, // set below
 	}
 
 	items := strings.Split(id, ".")
@@ -103,8 +106,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		updateRequest.NewName = config.Name
 	}
 
-	cleared := forceSendClearedFields(&updateRequest, entry.Changes)
-	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateVolumeRequestContent](append(cleared, config.ForceSendFields...), "Owner")
+	updateRequest.ForceSendFields = utils.FilterFields[catalog.UpdateVolumeRequestContent](append(slices.Clone(volumeForceSend), config.ForceSendFields...), "Owner")
 
 	response, err := r.client.Volumes.Update(ctx, updateRequest)
 	if err != nil || response == nil {
