@@ -620,7 +620,7 @@ func GetNodeAndType(path dyn.Path) (dyn.Path, string) {
 	}
 
 	if len(path) >= 4 {
-		if path[3].Key() == "permissions" || path[3].Key() == "grants" {
+		if path[3].Key() == "permissions" || path[3].Key() == "grants" || path[3].Key() == "libraries" {
 			return path[:4], path[1].Key() + "." + path[3].Key()
 		}
 	}

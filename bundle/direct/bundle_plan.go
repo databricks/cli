@@ -713,7 +713,7 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 	// Check if the 4th component is "permissions" or "grants" (sub-resource)
 	if path.Len() > 4 {
 		first := path.SkipPrefix(3).Prefix(1)
-		if key, ok := first.StringKey(); ok && (key == "permissions" || key == "grants") {
+		if key, ok := first.StringKey(); ok && (key == "permissions" || key == "grants" || key == "libraries") {
 			return path.Prefix(4).String(), path.SkipPrefix(4)
 		}
 	}
@@ -930,6 +930,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("libraries")),
 	}
 
 	// Walk?
