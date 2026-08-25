@@ -1,0 +1,1 @@
+Bundle templates now generate serverless jobs and notebooks with `environment_version: "5"` instead of `"4"`. This affects the `default-python`, `default-scala`, `dbt-sql`, `pydabs`, and `lakeflow-pipelines` templates. Serverless environment version 5 stays on Python 3.12, so the generated `databricks-connect` requirement is unchanged.
