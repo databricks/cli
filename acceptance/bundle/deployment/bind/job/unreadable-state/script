@@ -9,6 +9,6 @@ job_id=$($CLI jobs create --json '{"name": "External Job"}' | jq -r '.job_id')
 add_repl "$job_id" EXTERNAL_JOB_ID
 trace errcode $CLI bundle deployment bind job_1 "$job_id" --auto-approve
 
-title "Nothing was bound: the WAL is still there and no bind state was written"
-trace assert_exists.py .databricks/bundle/default/resources.json.wal
+title "Nothing was bound: the WAL is untouched and no bind state was written"
+trace diff.py resources.json.wal .databricks/bundle/default/resources.json.wal
 trace assert_not_exists.py .databricks/bundle/default/resources.json.temp-bind

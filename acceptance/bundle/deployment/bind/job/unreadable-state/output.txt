@@ -15,7 +15,7 @@ Error: cannot check whether resources.jobs.job_1 is already bound: reading state
 
 Exit code: 1
 
-=== Nothing was bound: the WAL is still there and no bind state was written
->>> assert_exists.py .databricks/bundle/default/resources.json.wal
+=== Nothing was bound: the WAL is untouched and no bind state was written
+>>> diff.py resources.json.wal .databricks/bundle/default/resources.json.wal
 
 >>> assert_not_exists.py .databricks/bundle/default/resources.json.temp-bind
