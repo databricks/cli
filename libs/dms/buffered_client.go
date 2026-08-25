@@ -14,6 +14,7 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
@@ -29,31 +30,6 @@ const (
 	VersionTypeDeploy  VersionType = bundledeployments.VersionTypeVersionTypeDeploy
 	VersionTypeDestroy VersionType = bundledeployments.VersionTypeVersionTypeDestroy
 )
-
-// Options are the dependencies and deployment identity a BufferedClient needs.
-type Options struct {
-	Client *Client
-
-	// DeploymentID is resolved from the deployment's workspace node when the state is opened,
-	// and empty until the first recorded deploy - Start creates the deployment then.
-	DeploymentID string
-
-	// LastVersionID is the deployment's most recent version, read with it, and empty when the
-	// deployment has none. The version this run creates is the next one after it.
-	LastVersionID string
-
-	// StatePath is the bundle's remote state directory, under which DMS registers
-	// the deployment node.
-	StatePath   string
-	VersionType VersionType
-
-	// Metadata is what this run says about the bundle; see Metadata.
-	Metadata Metadata
-
-	// Deployment is what the service already holds, read with the last version, and nil before
-	// the first recorded deploy. Metadata that matches it is not written again.
-	Deployment *bundledeployments.Deployment
-}
 
 // Metadata is what a version records about the bundle, its source and where it
 // landed. The service copies these onto the deployment, so they describe it as of
@@ -120,28 +96,60 @@ func (m Metadata) staleFields(current *bundledeployments.Deployment) string {
 	return strings.Join(stale, ",")
 }
 
-// NewBufferedClient returns a client for the deployment described by opts, with the version it
-// will create settled: the plan is stamped with that number before the version exists. The buffer
-// does not run until Start creates it.
-func NewBufferedClient(opts Options) (*BufferedClient, error) {
-	versionNum := int64(1)
-	if opts.LastVersionID != "" {
-		last, err := strconv.ParseInt(opts.LastVersionID, 10, 64)
+// NewBufferedClient returns the client for the deployment registered under statePath, reading
+// what the service already holds: the deployment's id, and its most recent version, which the
+// version this run creates follows. Both are empty before the first recorded deploy, where the
+// deployment itself is created later.
+func NewBufferedClient(ctx context.Context, w *databricks.WorkspaceClient, statePath string, metadata Metadata) (*BufferedClient, error) {
+	client, err := NewClient(w)
+	if err != nil {
+		return nil, err
+	}
+	deploymentID, err := resolveDeploymentID(ctx, w, statePath)
+	if err != nil {
+		return nil, err
+	}
+	// No id means nothing was recorded yet, so there is no record to read: the deployment is
+	// created with the first version.
+	var dep *bundledeployments.Deployment
+	if deploymentID != "" {
+		dep, err = client.Service.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
+			Name: deploymentName(deploymentID),
+		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse last_version_id %q: %w", opts.LastVersionID, err)
+			return nil, err
+		}
+	}
+	return newBufferedClient(client, statePath, metadata, deploymentID, dep)
+}
+
+// newBufferedClient settles the version this client will create - the plan is stamped with that
+// number before the version exists - and is where a test injects its own client. The buffer does
+// not run until it is opened by
+// BufferedClient.CreateVersion(ctx context.Context, versionType VersionType, staged []StagedOperation) error.
+func newBufferedClient(client *Client, statePath string, metadata Metadata, deploymentID string, dep *bundledeployments.Deployment) (*BufferedClient, error) {
+	lastVersionID := ""
+	if dep != nil {
+		lastVersionID = dep.LastVersionId
+	}
+
+	versionNum := int64(1)
+	if lastVersionID != "" {
+		last, err := strconv.ParseInt(lastVersionID, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse last_version_id %q: %w", lastVersionID, err)
 		}
 		versionNum = last + 1
 	}
 
 	return &BufferedClient{
-		client:            opts.Client,
-		deploymentID:      opts.DeploymentID,
-		statePath:         opts.StatePath,
-		versionType:       opts.VersionType,
-		metadata:          opts.Metadata,
-		current:           opts.Deployment,
+		client:            client,
+		deploymentID:      deploymentID,
+		statePath:         statePath,
+		metadata:          metadata,
+		current:           dep,
 		versionNum:        versionNum,
-		previousVersionID: opts.LastVersionID,
+		previousVersionID: lastVersionID,
 	}, nil
 }
 
@@ -163,17 +171,18 @@ type BufferedClient struct {
 	versionNum        int64
 	previousVersionID string
 
-	// populated by Start, once the version actually exists. A deploy the user declines
-	// never gets here, so there is nothing to complete or heartbeat.
+	// populated by BufferedClient.CreateVersion, once the version actually exists. A deploy the
+	// user declines never gets here, so there is nothing to complete or heartbeat.
 	versionCreated bool
 	stopHeartbeat  context.CancelFunc
 
-	// completed makes Finish idempotent, so a caller that completes the version early can
+	// completed makes Close idempotent, so a caller that completes the version early can
 	// still defer it unconditionally.
 	completed bool
 
-	// The buffer, live between Start and Close. queue holds bundle state keys, and pending the
-	// newest update per key, so a second write for a resource replaces the first.
+	// The buffer, live between BufferedClient.CreateVersion and Close. queue holds bundle state
+	// keys, and pending the newest update per key, so a second write for a resource replaces
+	// the first.
 	queue     chan string
 	done      chan struct{}
 	stopQueue func()
@@ -192,8 +201,8 @@ type BufferedClient struct {
 	err error
 }
 
-// DeploymentID is the deployment being recorded under. Empty until Prepare, which creates
-// the deployment on a first deploy.
+// DeploymentID is the deployment being recorded under. Empty on a first deploy until
+// EnsureDeployment or BufferedClient.CreateVersion creates it.
 func (c *BufferedClient) DeploymentID() string {
 	if c == nil {
 		return ""
@@ -201,7 +210,24 @@ func (c *BufferedClient) DeploymentID() string {
 	return c.deploymentID
 }
 
-// Version is the version number Prepare claimed, and zero before it runs.
+// LastVersionID is the deployment's most recent version as of the state read, and empty when
+// it had none.
+func (c *BufferedClient) LastVersionID() string {
+	if c == nil {
+		return ""
+	}
+	return c.previousVersionID
+}
+
+// ListResources is the resource state the service holds for this deployment.
+func (c *BufferedClient) ListResources(ctx context.Context) ([]Resource, error) {
+	if c == nil {
+		return nil, nil
+	}
+	return c.client.ListResources(ctx, c.deploymentID)
+}
+
+// Version is the version number this client will create, and zero when it records nothing.
 func (c *BufferedClient) Version() int64 {
 	if c == nil {
 		return 0
@@ -210,7 +236,8 @@ func (c *BufferedClient) Version() int64 {
 }
 
 // EnsureDeployment creates the deployment if the bundle has none, so a deploy can stamp its id
-// onto the resources the plan is computed from. Start creates it too, but that is after the plan.
+// onto the resources the plan is computed from. BufferedClient.CreateVersion does so too, but
+// that is after the plan.
 func (c *BufferedClient) EnsureDeployment(ctx context.Context) error {
 	if c == nil {
 		return nil
@@ -237,20 +264,23 @@ func (c *BufferedClient) ensureDeployment(ctx context.Context) error {
 		return nil
 	}
 
-	// The service now holds what this run says, so the second call - Start makes one after the
-	// deploy's own - has nothing left to write.
+	// The service now holds what this run says, so the second call - BufferedClient.CreateVersion
+	// makes one after the deploy's own - has nothing left to write.
 	written := c.metadata.deployment()
 	c.current = &written
 	return nil
 }
 
-// Start creates the version, staging an operation for each resource, and starts the buffer that
-// fills them in. The staged set is fixed here: the service has no call to add one later, so a
+// CreateVersion claims the version this client settled on, staging an operation for each
+// resource, and opens the buffer that fills them in. The staged set is fixed here: the service has no call to add one later, so a
 // resource left out can never be recorded.
-func (c *BufferedClient) Start(ctx context.Context, staged []StagedOperation) error {
+func (c *BufferedClient) CreateVersion(ctx context.Context, versionType VersionType, staged []StagedOperation) error {
 	if c == nil {
 		return nil
 	}
+	// Recorded here, not at construction: the client is built where the state is opened, which
+	// serves deploy and destroy alike, and only the phase knows which this run is.
+	c.versionType = versionType
 
 	if err := c.ensureDeployment(ctx); err != nil {
 		return err
@@ -272,8 +302,8 @@ func (c *BufferedClient) Start(ctx context.Context, staged []StagedOperation) er
 		if isResourceExhaustedErr(err) {
 			return fmt.Errorf("this bundle deploys %d resources, more than the deployment metadata service records in one version: %w", len(staged), err)
 		}
-		// A 409 Conflict means another deploy claimed this version number in between
-		// Prepare and here.
+		// A 409 Conflict means another deploy claimed this version number between the read
+		// that settled it and here.
 		if isAbortedErr(err) {
 			return fmt.Errorf("another deploy already claimed version %d of this deployment, try again: %w", c.versionNum, err)
 		}
@@ -295,7 +325,8 @@ func (c *BufferedClient) Start(ctx context.Context, staged []StagedOperation) er
 	return nil
 }
 
-// Close drains what is buffered, then completes the version. A no-op before Start, and safe twice.
+// Close drains what is buffered, then completes the version. A no-op before
+// BufferedClient.CreateVersion, and safe twice.
 func (c *BufferedClient) Close(ctx context.Context, success bool) error {
 	if c == nil {
 		return nil
@@ -384,7 +415,8 @@ func isAbortedErr(err error) bool {
 // plan reads.
 const bufferedOperations = 10
 
-// stagedSequenceID is what CreateVersion leaves on a staged operation, so a resource's first
+// stagedSequenceID is what BufferedClient.CreateVersion leaves on a staged operation, so a
+// resource's first
 // update sends it as the precondition.
 const stagedSequenceID = "0"
 

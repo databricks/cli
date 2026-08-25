@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dms"
@@ -16,32 +15,6 @@ import (
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
-
-// newDmsClient returns the client this run records with, or nil when it records nothing:
-// recording needs the direct engine and the bundle's opt-in.
-func newDmsClient(ctx context.Context, b *bundle.Bundle, eng engine.EngineType, versionType dms.VersionType) (*dms.BufferedClient, error) {
-	if !b.RecordsDeploymentHistory(ctx) || !eng.IsDirect() {
-		// A nil client records nothing; the phases call through either way.
-		return nil, nil
-	}
-
-	w := b.WorkspaceClient(ctx)
-	client, err := dms.NewClient(w)
-	if err != nil {
-		return nil, err
-	}
-	// The deployment and its last version were read when the state was opened. Both are empty
-	// on a first deploy, where Start creates the deployment.
-	return dms.NewBufferedClient(dms.Options{
-		Client:        client,
-		DeploymentID:  b.DeploymentBundle.StateDB.DMSDeploymentID,
-		LastVersionID: lastVersionID(b.DeploymentBundle.StateDB.DMSDeployment),
-		Deployment:    b.DeploymentBundle.StateDB.DMSDeployment,
-		StatePath:     b.Config.Workspace.StatePath,
-		VersionType:   versionType,
-		Metadata:      deploymentMetadata(b),
-	})
-}
 
 // stagedOperations lists the resources the plan will touch, for CreateVersion to stage an
 // operation each. Skipped and undefined actions are left out: nothing is applied for them, so
@@ -106,9 +79,9 @@ func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, dmsClient *dms.
 	cmdio.LogString(ctx, "Current Deployment Version: "+workspaceurls.DeploymentURL(*baseURL, dmsClient.DeploymentID(), dmsClient.Version()))
 }
 
-// deploymentMetadata describes the bundle this deploy came from and where it
+// DeploymentMetadata describes the bundle this deploy came from and where it
 // landed, mirroring what bundle/deploy/metadata computes for the metadata file.
-func deploymentMetadata(b *bundle.Bundle) dms.Metadata {
+func DeploymentMetadata(b *bundle.Bundle) dms.Metadata {
 	p := dms.Metadata{
 		DisplayName: b.Config.Bundle.Name,
 		TargetName:  b.Config.Bundle.Target,
@@ -156,12 +129,4 @@ func deploymentModeToSDK(mode config.Mode) bundledeployments.DeploymentMode {
 	default:
 		return ""
 	}
-}
-
-// lastVersionID is the deployment's most recent version, empty when there is no deployment yet.
-func lastVersionID(dep *bundledeployments.Deployment) string {
-	if dep == nil {
-		return ""
-	}
-	return dep.LastVersionId
 }

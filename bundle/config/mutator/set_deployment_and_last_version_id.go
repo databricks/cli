@@ -29,15 +29,15 @@ func (m *setDeploymentAndLastVersionID) Apply(ctx context.Context, b *bundle.Bun
 		return nil
 	}
 
-	// Read when the state was opened. Nil until the first recorded deploy, and after a destroy.
-	dep := b.DeploymentBundle.StateDB.DMSDeployment
-	if dep == nil {
+	// Read when the state was opened. Empty until the first recorded deploy, and after a destroy.
+	client := b.DeploymentBundle.DmsClient
+	if client.DeploymentID() == "" {
 		return nil
 	}
 
 	b.Config.Bundle.Deployment.History = &config.DeploymentHistory{
-		DeploymentID:    b.DeploymentBundle.StateDB.DMSDeploymentID,
-		LatestVersionID: dep.LastVersionId,
+		DeploymentID:    client.DeploymentID(),
+		LatestVersionID: client.LastVersionID(),
 	}
 	return nil
 }

@@ -1,7 +1,6 @@
 package dstate
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -17,15 +16,10 @@ type RecordedState struct {
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
-// readDMSState replaces the file-derived resource state with what DMS recorded. Recording is
+// applyDMSState replaces the file-derived resource state with what DMS recorded. Recording is
 // only enabled for net-new deployments, so DMS owns the resource set outright: an empty set
 // means a successful deploy of nothing, not missing data. The caller holds db.mu.
-func (db *DeploymentState) readDMSState(ctx context.Context, src *DMSSource) error {
-	recorded, err := src.Client.ListResources(ctx, src.DeploymentID)
-	if err != nil {
-		return err
-	}
-
+func (db *DeploymentState) applyDMSState(recorded []dms.Resource) error {
 	// Built first and assigned together, so a malformed envelope leaves the state as it was
 	// rather than half replaced.
 	resources := make(map[string]ResourceEntry, len(recorded))

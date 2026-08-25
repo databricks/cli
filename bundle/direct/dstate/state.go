@@ -18,7 +18,6 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/google/uuid"
 )
 
@@ -76,12 +75,6 @@ type DeploymentState struct {
 	// dmsClient records each state write with DMS. Nil unless the bundle records deployment
 	// history, in which case RegisterDmsClient installs it.
 	dmsClient *dms.BufferedClient
-
-	// DMSDeploymentID is the deployment Open read the state from, and DMSDeployment the record
-	// itself. Kept so what follows records under it without reading it again. Empty and nil when
-	// the bundle does not record deployment history or has never been deployed.
-	DMSDeploymentID string
-	DMSDeployment   *bundledeployments.Deployment
 }
 
 type Header struct {
@@ -305,24 +298,11 @@ type (
 	WithWrite bool
 )
 
-// DMSSource tells Open to read resource state from the deployment metadata
-// service instead of the state file. Callers pass it only when the bundle set
-// experimental.record_deployment_history; a nil *DMSSource keeps Open file-only.
-type DMSSource struct {
-	Client *dms.Client
-
-	// DeploymentID is resolved from the deployment's workspace node (see
-	// dms.ResolveDeploymentID), and empty before the first recorded deploy.
-	DeploymentID string
-
-	// Deployment is that deployment's record, nil before the first recorded deploy.
-	Deployment *bundledeployments.Deployment
-}
-
 // Open reads the deployment state from disk, recovering the WAL when withRecovery is set.
-// With a non-nil dmsSource the resources come from DMS instead; lineage and serial still
-// come from the file, since that is what the write path increments.
-func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsSource *DMSSource) error {
+// With a non-nil dmsClient the resources come from DMS instead; lineage and serial still come
+// from the file, since that is what the write path increments. Open only reads through the
+// client - RegisterDmsClient installs it for writing, once a version exists to write under.
+func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsClient *dms.BufferedClient) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -330,7 +310,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		panic(fmt.Sprintf("state already opened: %v, cannot open %v", db.Path, path))
 	}
 
-	err := db.unlockedOpen(ctx, path, withRecovery, withWrite, dmsSource)
+	err := db.unlockedOpen(ctx, path, withRecovery, withWrite, dmsClient)
 	if err != nil {
 		// A failed open must leave the receiver closed. unlockedOpen assigns
 		// db.Path before every fallible step, so without this the receiver stays
@@ -352,7 +332,7 @@ func (db *DeploymentState) reset() {
 	db.stateIDs = nil
 }
 
-func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsSource *DMSSource) error {
+func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsClient *dms.BufferedClient) error {
 	db.Path = path
 	data, err := os.ReadFile(db.Path)
 	if err != nil {
@@ -393,11 +373,11 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		return fmt.Errorf("migrating state %s: %w", path, err)
 	}
 
-	if dmsSource != nil {
+	if dmsClient != nil {
 		// Only empty bundles can be recorded. Once DMS owns the deployment, pre-existing
 		// resources it never saw would be created again. TODO: support migration via state
 		// upgrade with feature flag and per-resource tombstones.
-		if dmsSource.DeploymentID == "" && len(db.Data.State) > 0 {
+		if dmsClient.DeploymentID() == "" && len(db.Data.State) > 0 {
 			// The remedy is ordered deliberately: this error also blocks destroy, so the
 			// setting has to come out first or there is no way to tear the bundle down.
 			return fmt.Errorf(`cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded
@@ -409,10 +389,12 @@ To record this bundle's history, start it over as a new deployment:
 
 To keep the existing resources instead, unset experimental.record_deployment_history`, path)
 		}
-		db.DMSDeploymentID = dmsSource.DeploymentID
-		db.DMSDeployment = dmsSource.Deployment
-		if dmsSource.DeploymentID != "" {
-			if err := db.readDMSState(ctx, dmsSource); err != nil {
+		if dmsClient.DeploymentID() != "" {
+			recorded, err := dmsClient.ListResources(ctx)
+			if err != nil {
+				return err
+			}
+			if err := db.applyDMSState(recorded); err != nil {
 				return err
 			}
 		}

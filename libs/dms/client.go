@@ -18,7 +18,7 @@ import (
 // form; the prefix comes off where a request is built, and back on where a resource is read.
 const statePrefix = "resources."
 
-// Client is every call the CLI makes to DMS, as methods below. Each one goes out through one
+// Client carries the calls the CLI makes to DMS, as methods below. Each one goes out through one
 // of two halves: the generated client for the calls it can express, and hand-written requests
 // for the two it cannot.
 type Client struct {
@@ -65,13 +65,6 @@ func (c *Client) CreateDeployment(ctx context.Context, parentPath string, metada
 // other field, so the mask is what decides the write.
 func (c *Client) UpdateDeployment(ctx context.Context, deploymentID string, metadata Metadata, mask string) error {
 	return c.raw.UpdateDeployment(ctx, deploymentID, metadata.deployment(), mask)
-}
-
-// GetDeployment reads the deployment record, which carries the last version recorded under it.
-func (c *Client) GetDeployment(ctx context.Context, deploymentID string) (*bundledeployments.Deployment, error) {
-	return c.Service.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
-		Name: deploymentName(deploymentID),
-	})
 }
 
 // DeleteDeployment removes the deployment record, which a completed destroy does.

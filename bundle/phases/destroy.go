@@ -205,11 +205,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	// Set up DMS recording of this destroy. Version is created after approval; cancelled
 	// destroy records nothing. Deferred before lock.Release to hold the lock.
-	dmsClient, err := newDmsClient(ctx, b, engine, dms.VersionTypeDestroy)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
+	dmsClient := b.DeploymentBundle.DmsClient
 	defer func() {
 		if err := dmsClient.Close(ctx, !logdiag.HasError(ctx)); err != nil {
 			logdiag.LogError(ctx, err)
@@ -277,11 +273,10 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			logdiag.LogError(ctx, err)
 			return
 		}
-		if err := dmsClient.Start(ctx, staged); err != nil {
+		if err := dmsClient.CreateVersion(ctx, dms.VersionTypeDestroy, staged); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
-		b.DeploymentBundle.DmsClient = dmsClient
 		destroyCore(ctx, b, plan, engine, dmsClient)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")

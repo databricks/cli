@@ -55,25 +55,17 @@ func (f *fakeDMS) Heartbeat(ctx context.Context, req bundledeployments.Heartbeat
 	return &bundledeployments.HeartbeatResponse{}, nil
 }
 
-// deploymentAt answers GetDeployment with a deployment whose last version is lastVersion.
-func deploymentAt(lastVersion string) func(string) (*bundledeployments.Deployment, error) {
-	return func(name string) (*bundledeployments.Deployment, error) {
-		return &bundledeployments.Deployment{Name: name, LastVersionId: lastVersion}, nil
-	}
-}
-
 // testRecording records the stored deployment through f, failing CreateVersion with
 // versionErr when set.
-func testClient(t *testing.T, f *fakeDMS, versionType VersionType, versionErr error) *BufferedClient {
+func testClient(t *testing.T, f *fakeDMS, versionErr error) *BufferedClient {
 	t.Helper()
 	f.raw = newFakeRaw("1")
 	f.raw.versionErr = versionErr
-	c, err := NewBufferedClient(Options{
-		Client:        &Client{Service: f, raw: f.raw},
-		DeploymentID:  "stored-id",
-		LastVersionID: "4",
-		VersionType:   versionType,
-	})
+	c, err := newBufferedClient(
+		&Client{Service: f, raw: f.raw},
+		"", Metadata{}, "stored-id",
+		&bundledeployments.Deployment{LastVersionId: "4"},
+	)
 	require.NoError(t, err)
 	return c
 }
@@ -105,9 +97,9 @@ func TestRecordingStartReportsWhatTheServiceRefused(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &fakeDMS{}
-			r := testClient(t, f, VersionTypeDeploy, tt.versionErr)
+			r := testClient(t, f, tt.versionErr)
 
-			err := r.Start(t.Context(), []StagedOperation{{ResourceKey: "resources.jobs.foo"}})
+			err := r.CreateVersion(t.Context(), VersionTypeDeploy, []StagedOperation{{ResourceKey: "resources.jobs.foo"}})
 
 			require.Error(t, err)
 			for _, want := range tt.wantMessages {
@@ -139,9 +131,9 @@ func TestRecordingFinishDeletesTheDeploymentOnlyForACompletedDestroy(t *testing.
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &fakeDMS{}
-			r := testClient(t, f, tt.versionType, nil)
+			r := testClient(t, f, nil)
 
-			err := r.Start(t.Context(), nil)
+			err := r.CreateVersion(t.Context(), tt.versionType, nil)
 			require.NoError(t, err)
 			require.NoError(t, r.Close(t.Context(), tt.success))
 
@@ -166,7 +158,7 @@ func TestNilClientIsNoOp(t *testing.T) {
 	// without checking.
 	var r *BufferedClient
 
-	require.NoError(t, r.Start(t.Context(), []StagedOperation{{ResourceKey: "resources.jobs.foo"}}))
+	require.NoError(t, r.CreateVersion(t.Context(), VersionTypeDeploy, []StagedOperation{{ResourceKey: "resources.jobs.foo"}}))
 	require.NoError(t, r.Close(t.Context(), true))
 	require.NoError(t, r.Drain())
 
@@ -289,12 +281,7 @@ func TestEnsureDeploymentWritesOnlyWhatChanged(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &fakeDMS{raw: newFakeRaw("1")}
-			c, err := NewBufferedClient(Options{
-				Client:       &Client{Service: f, raw: f.raw},
-				DeploymentID: "stored-id",
-				Deployment:   held,
-				Metadata:     tt.metadata,
-			})
+			c, err := newBufferedClient(&Client{Service: f, raw: f.raw}, "", tt.metadata, "stored-id", held)
 			require.NoError(t, err)
 
 			require.NoError(t, c.EnsureDeployment(t.Context()))
@@ -312,10 +299,7 @@ func TestEnsureDeploymentWritesOnlyWhatChanged(t *testing.T) {
 func TestEnsureDeploymentCreatesWithTheMetadata(t *testing.T) {
 	// A first deploy has no deployment, so the metadata goes on the create rather than an update.
 	f := &fakeDMS{raw: newFakeRaw("1")}
-	c, err := NewBufferedClient(Options{
-		Client:   &Client{Service: f, raw: f.raw},
-		Metadata: Metadata{DisplayName: "my-bundle", TargetName: "default"},
-	})
+	c, err := newBufferedClient(&Client{Service: f, raw: f.raw}, "", Metadata{DisplayName: "my-bundle", TargetName: "default"}, "", nil)
 	require.NoError(t, err)
 
 	require.NoError(t, c.EnsureDeployment(t.Context()))

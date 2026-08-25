@@ -199,11 +199,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	//
 	// The version is created only after approval; CompleteVersion is deferred before
 	// lock.Release and no-ops until then.
-	dmsClient, err := newDmsClient(ctx, b, stateEngine, dms.VersionTypeDeploy)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
+	dmsClient := b.DeploymentBundle.DmsClient
 	defer func() {
 		if err := dmsClient.Close(ctx, !logdiag.HasError(ctx)); err != nil {
 			logdiag.LogError(ctx, err)
@@ -346,14 +342,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		logdiag.LogError(ctx, err)
 		return
 	}
-	if err := dmsClient.Start(ctx, staged); err != nil {
+	if err := dmsClient.CreateVersion(ctx, dms.VersionTypeDeploy, staged); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 	logDeploymentVersion(ctx, b, dmsClient)
 
-	// Record operations under that version, so DMS holds the deployed resource state.
-	b.DeploymentBundle.DmsClient = dmsClient
 	deployCore(ctx, b, plan, stateEngine)
 
 	if logdiag.HasError(ctx) {

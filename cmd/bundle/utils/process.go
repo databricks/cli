@@ -226,43 +226,26 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
 
-			// Recording makes the service the source of truth for state.
-			var dmsSource *dstate.DMSSource
+			// Recording makes the service the source of truth for state, so the client is
+			// built before the state is opened and read through. The engine is direct here,
+			// which needDirectState already required.
 			if b.RecordsDeploymentHistory(ctx) {
-				w := b.WorkspaceClient(ctx)
-				deploymentID, err := dms.ResolveDeploymentID(ctx, w, b.Config.Workspace.StatePath)
+				var err error
+				b.DeploymentBundle.DmsClient, err = dms.NewBufferedClient(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath, phases.DeploymentMetadata(b))
 				if err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
-				}
-				dmsClient, err := dms.NewClient(w)
-				if err != nil {
-					logdiag.LogError(ctx, err)
-					return b, stateDesc, root.ErrAlreadyPrinted
-				}
-
-				// Read the deployment once here: what follows needs its last version, to know
-				// which version to create, and its metadata, to know what to bring up to date.
-				dep, err := dms.ReadDeployment(ctx, dmsClient, deploymentID)
-				if err != nil {
-					logdiag.LogError(ctx, err)
-					return b, stateDesc, root.ErrAlreadyPrinted
-				}
-				dmsSource = &dstate.DMSSource{
-					Client:       dmsClient,
-					DeploymentID: deploymentID,
-					Deployment:   dep,
 				}
 
 				// Stamp the deployment before anything diffs the resources: the workspace
 				// has it, so leaving it unset would report drift on an untouched resource.
 				// The deploy phase stamps the version, once it claims one.
-				bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(deploymentID))
+				bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(b.DeploymentBundle.DmsClient.DeploymentID()))
 				if logdiag.HasError(ctx) {
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
 			}
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dmsSource); err != nil {
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), b.DeploymentBundle.DmsClient); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
