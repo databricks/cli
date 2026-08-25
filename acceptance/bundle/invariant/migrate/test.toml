@@ -14,6 +14,8 @@ EnvMatrixExclude.no_external_location = ["INPUT_CONFIG=external_location.yml.tmp
 EnvMatrixExclude.no_genie_space = ["INPUT_CONFIG=genie_space.yml.tmpl"]
 # Instance pools are direct-only; the terraform deploy that seeds the migration fails for them.
 EnvMatrixExclude.no_instance_pool = ["INPUT_CONFIG=instance_pool.yml.tmpl"]
+# Cluster policies are direct-only; the terraform deploy that seeds the migration fails for them.
+EnvMatrixExclude.no_cluster_policy = ["INPUT_CONFIG=cluster_policy.yml.tmpl"]
 
 # Cross-resource permission references (e.g. ${resources.jobs.job_b.permissions[0].level})
 # don't work in terraform mode: the terraform interpolator converts the path to
@@ -37,6 +39,8 @@ EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml
 # migrate deploys via Terraform first, and the TF provider rejects an uppercase
 # volume schema_name ("inconsistent final plan"). Covered by no_drift on direct.
 EnvMatrixExclude.no_volume_uppercase = ["INPUT_CONFIG=volume_uppercase_name.yml.tmpl"]
+
+EnvMatrixExclude.no_secret = ["INPUT_CONFIG=secret.yml.tmpl"]
 
 # Terraform types sampling_fraction as an integer and truncates 0.5; covered by no_drift.
 EnvMatrixExclude.no_model_serving_endpoint_telemetry = ["INPUT_CONFIG=model_serving_endpoint_telemetry.yml.tmpl"]

@@ -3,10 +3,15 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 )
+
+// How the bundle name and target appear in a configured root_path, which this mutator
+// sees before variable resolution replaces them.
+const nameTargetSuffix = "${bundle.name}/${bundle.target}"
 
 type defineDefaultWorkspaceRoot struct{}
 
@@ -21,6 +26,7 @@ func (m *defineDefaultWorkspaceRoot) Name() string {
 
 func (m *defineDefaultWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.Config.Workspace.RootPath != "" {
+		b.RootPathIsNameTargetScoped = endsWithNameAndTarget(b.Config.Workspace.RootPath)
 		return nil
 	}
 
@@ -37,5 +43,13 @@ func (m *defineDefaultWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle
 		b.Config.Bundle.Name,
 		b.Config.Bundle.Target,
 	)
+	b.RootPathIsNameTargetScoped = true
 	return nil
+}
+
+// endsWithNameAndTarget reports whether rootPath ends in the bundle name and target
+// references. Matched as a plain string: rootPath is not interpolated yet, so path
+// operations on it are not reliable.
+func endsWithNameAndTarget(rootPath string) bool {
+	return strings.HasSuffix(strings.TrimSuffix(rootPath, "/"), nameTargetSuffix)
 }

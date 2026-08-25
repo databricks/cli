@@ -5,15 +5,16 @@
 === Deploy (migrates state)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.my_job
+Updated jobs.my_job.permissions
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
 
 === Print state after deploy
 >>> print_state.py
 {
  "state_version": 2,
- "cli_version": "0.0.0-test",
+ "cli_version": "[CLI_VERSION]",
  "lineage": "test-lineage",
  "serial": 2,
  "state": {

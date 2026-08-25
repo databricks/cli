@@ -4,7 +4,7 @@ package terraform_dabs_map
 
 // alerts / databricks_alert_v2: 1 dabs-only
 // alerts / databricks_alert_v2: 3 tf-only
-// apps / databricks_app: 16 dabs-only
+// apps / databricks_app: 6 dabs-only
 // apps / databricks_app: 1 tf-only
 // clusters / databricks_cluster: 26 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
@@ -99,18 +99,6 @@ var DABsOnlyFields = map[string]FieldSet{
 				"value_from": {}, // apps.*.config.env.value_from
 			},
 		},
-		"git_source": {
-			"branch": {}, // apps.*.git_source.branch
-			"commit": {}, // apps.*.git_source.commit
-			"git_repository": {
-				"provider": {}, // apps.*.git_source.git_repository.provider
-				"url":      {}, // apps.*.git_source.git_repository.url
-			},
-			"resolved_commit":  {}, // apps.*.git_source.resolved_commit
-			"source_code_path": {}, // apps.*.git_source.source_code_path
-			"tag":              {}, // apps.*.git_source.tag
-		},
-		"source_code_path": {},
 	},
 	"jobs": {
 		"job_clusters": {

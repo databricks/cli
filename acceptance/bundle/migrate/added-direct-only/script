@@ -1,0 +1,26 @@
+export DATABRICKS_BUNDLE_ENGINE=terraform
+
+title "Deploy with terraform (instance_pools is commented out; terraform cannot deploy it)"
+trace $CLI bundle deploy
+
+title "Add a direct-only resource to the config without deploying it"
+trace update_file.py databricks.yml "#instance_pools" "instance_pools"
+
+title "Deploying on terraform rejects it, which is what sends the user to migrate"
+trace musterr $CLI bundle deploy
+
+title "Migration ignores the direct-only resource; it will be created on the next deploy"
+trace $CLI bundle deployment migrate
+
+title "After migration: plan shows the direct-only resource as \"to add\""
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
+
+title "Deploy creates it; verify via recorded requests"
+rm out.requests.txt
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_requests.py //instance-pools/create
+
+title "No further actions planned"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
+
+rm out.requests.txt

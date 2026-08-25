@@ -16,6 +16,9 @@ EnvMatrixExclude.no_genie_space = ["INPUT_CONFIG=genie_space.yml.tmpl"]
 # instance_pools resource is not supported on v0.293.0
 EnvMatrixExclude.no_instance_pool = ["INPUT_CONFIG=instance_pool.yml.tmpl"]
 
+# cluster_policies resource is not supported on v0.293.0
+EnvMatrixExclude.no_cluster_policy = ["INPUT_CONFIG=cluster_policy.yml.tmpl"]
+
 # job_runs resource is not supported on v0.293.0
 EnvMatrixExclude.no_job_run = ["INPUT_CONFIG=job_run.yml.tmpl"]
 
@@ -29,3 +32,6 @@ EnvMatrixExclude.no_volume_path_job_ref = ["INPUT_CONFIG=volume_path_job_ref.yml
 # The 1000-task scale case is covered by no_drift. Running it here adds ~1.5 min
 # per variant (two full deploys at 1000 tasks) without incremental coverage.
 EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml.tmpl"]
+
+# secret resource is not supported on v0.293.0
+EnvMatrixExclude.no_secret = ["INPUT_CONFIG=secret.yml.tmpl"]

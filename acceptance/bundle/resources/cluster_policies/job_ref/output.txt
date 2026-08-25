@@ -1,0 +1,124 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_job_ref/default/files...
+Created cluster_policies.pol
+Created jobs.j
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Deploy requests in dependency order: policy create precedes job create, job carries resolved policy id
+>>> print_requests.py //policies/clusters //jobs
+{
+  "method": "POST",
+  "path": "/api/2.0/policies/clusters/create",
+  "body": {
+    "definition": "{\n  \"spark_version\": {\n    \"type\": \"fixed\",\n    \"value\": \"13.3.x-scala2.12\"\n  }\n}",
+    "name": "my_policy"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/cluster_policy_job_ref/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "my_job",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "new_cluster": {
+          "num_workers": 1,
+          "policy_id": "[POL_ID]",
+          "spark_version": "13.3.x-scala2.12"
+        },
+        "task_key": "main"
+      }
+    ]
+  }
+}
+
+=== Update both the policy and the job
+>>> update_file.py databricks.yml my_policy my_policy_2
+
+>>> update_file.py databricks.yml my_job my_job_2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster_policy_job_ref/default/files...
+Updated cluster_policies.pol
+Updated jobs.j
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //policies/clusters //jobs
+{
+  "method": "POST",
+  "path": "/api/2.0/policies/clusters/edit",
+  "body": {
+    "definition": "{\n  \"spark_version\": {\n    \"type\": \"fixed\",\n    \"value\": \"13.3.x-scala2.12\"\n  }\n}",
+    "name": "my_policy_2",
+    "policy_id": "[POL_ID]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/reset",
+  "body": {
+    "job_id": [NUMID],
+    "new_settings": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/cluster_policy_job_ref/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "my_job_2",
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "new_cluster": {
+            "num_workers": 1,
+            "policy_id": "[POL_ID]",
+            "spark_version": "13.3.x-scala2.12"
+          },
+          "task_key": "main"
+        }
+      ]
+    }
+  }
+}
+
+=== Destroy: job delete precedes policy delete
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.pol
+  delete resources.jobs.j
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster_policy_job_ref/default
+
+Destroy: 2 deleted
+
+>>> print_requests.py //policies/clusters //jobs
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [NUMID]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/policies/clusters/delete",
+  "body": {
+    "policy_id": "[POL_ID]"
+  }
+}

@@ -1,9 +1,10 @@
 
 === submit with a git code_source
 >>> [CLI] experimental air run -f run.yaml
+Submitting experiment: submit-smoke
 Uploading [SNAPSHOT_TARBALL]...
-Submitted run 555
-View at: [DATABRICKS_URL]/jobs/runs/555
+Submitted workload with Job Run ID: 555
+View job run at: [DATABRICKS_URL]/jobs/runs/555
 
 Tip: use --watch to stream logs until the run completes.
 

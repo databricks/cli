@@ -97,8 +97,11 @@ func prepareJobSettingsForUpdate(js *jobs.JobSettings) {
 		}
 	}
 	for ind := range js.JobClusters {
-		ModifyRequestOnInstancePool(&js.JobClusters[ind].NewCluster)
-		initializeNumWorkers(&js.JobClusters[ind].NewCluster)
+		nc := js.JobClusters[ind].NewCluster
+		if nc != nil {
+			ModifyRequestOnInstancePool(nc)
+			initializeNumWorkers(nc)
+		}
 	}
 }
 

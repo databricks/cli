@@ -3,7 +3,6 @@ package aircmd
 import (
 	"encoding/json"
 	"io"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -17,6 +16,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// stubValidateConfig registers an OK ValidateConfig response so submitWorkload's
+// pre-flight passes. Register before AddDefaultHandlers (the router is first-wins).
+func stubValidateConfig(server *testserver.Server) {
+	server.Handle("POST", "/api/2.0/ai-training/config:validate", func(req testserver.Request) any {
+		return validateConfigResponse{}
+	})
+}
 
 func TestDlRuntimeImage(t *testing.T) {
 	ctx := t.Context()
@@ -128,64 +135,6 @@ func TestBuildSubmitPayloadInlineDependencies(t *testing.T) {
 	}
 }
 
-// TestEnvironmentDependencies covers how declared deps are resolved to a flat list:
-// an inline list (no file version), a requirements file (path resolved against the
-// config dir, version read from the file), none, and a missing file.
-func TestEnvironmentDependencies(t *testing.T) {
-	inline := &runConfig{Environment: &environmentConfig{
-		Dependencies: dependencies{set: true, isList: true, list: []string{"torch", "numpy"}},
-	}}
-	deps, version, err := environmentDependencies(inline, "run.yaml")
-	require.NoError(t, err)
-	assert.Equal(t, []string{"torch", "numpy"}, deps)
-	assert.Empty(t, version)
-
-	dir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "reqs.yaml"), []byte("version: \"5\"\ndependencies:\n  - pandas\n"), 0o600))
-	fromFile := &runConfig{Environment: &environmentConfig{
-		Dependencies: dependencies{set: true, isList: false, path: "reqs.yaml"},
-	}}
-	deps, version, err = environmentDependencies(fromFile, filepath.Join(dir, "run.yaml"))
-	require.NoError(t, err)
-	assert.Equal(t, []string{"pandas"}, deps)
-	assert.Equal(t, "5", version)
-
-	deps, _, err = environmentDependencies(&runConfig{}, "run.yaml")
-	require.NoError(t, err)
-	assert.Nil(t, deps)
-
-	missing := &runConfig{Environment: &environmentConfig{
-		Dependencies: dependencies{set: true, isList: false, path: "nope.yaml"},
-	}}
-	_, _, err = environmentDependencies(missing, filepath.Join(dir, "run.yaml"))
-	require.ErrorContains(t, err, "failed to read requirements file")
-}
-
-// TestReadRequirementsDependencies covers reading a requirements file's dependency
-// list and version, with a missing key yielding an empty list and a -r include
-// rejected.
-func TestReadRequirementsDependencies(t *testing.T) {
-	dir := t.TempDir()
-
-	reqPath := filepath.Join(dir, "requirements.yaml")
-	require.NoError(t, os.WriteFile(reqPath, []byte("version: \"5\"\ndependencies:\n  - torch==2.3.0\n  - numpy\n"), 0o600))
-	deps, version, err := readRequirementsDependencies(reqPath)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"torch==2.3.0", "numpy"}, deps)
-	assert.Equal(t, "5", version)
-
-	emptyPath := filepath.Join(dir, "empty.yaml")
-	require.NoError(t, os.WriteFile(emptyPath, []byte("version: \"5\"\n"), 0o600))
-	deps, _, err = readRequirementsDependencies(emptyPath)
-	require.NoError(t, err)
-	assert.Empty(t, deps)
-
-	includePath := filepath.Join(dir, "include.yaml")
-	require.NoError(t, os.WriteFile(includePath, []byte("dependencies:\n  - -r other.txt\n"), 0o600))
-	_, _, err = readRequirementsDependencies(includePath)
-	require.ErrorContains(t, err, "requirements-file include")
-}
-
 func TestSubmitToken(t *testing.T) {
 	cfg := &runConfig{IdempotencyToken: new("from-config")}
 
@@ -216,6 +165,7 @@ func TestSubmitWorkload(t *testing.T) {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 777}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
@@ -225,7 +175,7 @@ func TestSubmitWorkload(t *testing.T) {
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	runID, dashboardURL, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key")
+	runID, dashboardURL, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
 	require.NoError(t, err)
 	assert.Equal(t, int64(777), runID)
 	assert.Contains(t, dashboardURL, "/jobs/runs/777")
@@ -260,6 +210,7 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 777}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -268,7 +219,7 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 	cfg, err := loadRunConfigWithOverrides(t.Context(), cfgPath, []string{"compute.num_accelerators=4"})
 	require.NoError(t, err)
 
-	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key")
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
 	require.NoError(t, err)
 
 	require.Len(t, got.Tasks, 1)
@@ -290,6 +241,7 @@ func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 555}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -310,7 +262,7 @@ code_source:
 
 	// The DABs upload path logs via cmdio; the real `air run` context carries it.
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem")
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -331,6 +283,7 @@ func TestSubmitWorkloadWithGitPinnedCodeSource(t *testing.T) {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 555}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -353,7 +306,7 @@ code_source:
 	require.NoError(t, err)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem")
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -380,6 +333,7 @@ func TestSubmitWorkloadPlainTarNameIsUnique(t *testing.T) {
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		return jobs.SubmitRunResponse{RunId: 555}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -431,6 +385,7 @@ func TestSubmitWorkloadGitArchiveCaching(t *testing.T) {
 		}
 		return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -474,6 +429,7 @@ func TestSubmitWorkloadUploadsGitSidecars(t *testing.T) {
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		return jobs.SubmitRunResponse{RunId: 555}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -531,6 +487,7 @@ func TestSubmitWorkloadWithRemoteVolumeCodeSource(t *testing.T) {
 	server.Handle("PUT", "/api/2.0/fs/files/Volumes/{path...}", func(req testserver.Request) any {
 		return testserver.Response{StatusCode: 204}
 	})
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -550,7 +507,7 @@ code_source:
 	require.NoError(t, err)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem")
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -578,36 +535,18 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 			paths = append(paths, req.URL.Path)
 			return testserver.Response{StatusCode: 200}
 		})
+		stubValidateConfig(server)
 		testserver.AddDefaultHandlers(server)
 		pw, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 		require.NoError(t, err)
 
 		cfg := *base
 		cfg.UsagePolicyName = new("nope")
-		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "")
+		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "", false)
 		require.ErrorContains(t, err, `no usage policy named "nope"`)
 		for _, p := range paths {
 			assert.NotContains(t, p, "/workspace/", "no workspace write may precede policy resolution")
 		}
-	})
-
-	t.Run("bad requirements file fails before any upload", func(t *testing.T) {
-		server := testserver.New(t)
-		t.Cleanup(server.Close)
-		var uploaded bool
-		server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(testserver.Request) any {
-			uploaded = true
-			return nil
-		})
-		testserver.AddDefaultHandlers(server)
-		tw, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
-		require.NoError(t, err)
-
-		cfg := *base
-		cfg.Environment = &environmentConfig{Dependencies: dependencies{set: true, isList: false, path: "missing.yaml"}}
-		_, _, err = submitWorkload(t.Context(), tw, &cfg, cfgPath, "")
-		require.ErrorContains(t, err, "failed to read requirements file")
-		assert.False(t, uploaded, "no artifacts should be uploaded when dependency resolution fails")
 	})
 }
 
@@ -627,6 +566,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		server.Handle("GET", "/api/2.0/serverless-policies", func(req testserver.Request) any {
 			return usagePoliciesResponse{Policies: []usagePolicy{{PolicyID: policyID, PolicyName: "team-a"}}}
 		})
+		stubValidateConfig(server)
 		testserver.AddDefaultHandlers(server)
 		w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 		require.NoError(t, err)
@@ -639,7 +579,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		cfg, err := loadRunConfig(cfgPath)
 		require.NoError(t, err)
 
-		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem")
+		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
 		require.NoError(t, err)
 		assert.Equal(t, policyID, got.BudgetPolicyId)
 	})
@@ -650,7 +590,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		cfg, err := loadRunConfig(cfgPath)
 		require.NoError(t, err)
 
-		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem")
+		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
 		require.NoError(t, err)
 		assert.Equal(t, policyID, got.BudgetPolicyId)
 	})

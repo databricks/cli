@@ -9,7 +9,6 @@ cat > .gitignore << EOF
 ignored-folder/
 script
 output.txt
-repls.json
 EOF
 
 cleanup() {

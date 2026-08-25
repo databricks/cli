@@ -1,6 +1,6 @@
 cleanup() {
-    $CLI bundle destroy --auto-approve &> out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt
-    print_requests.py --sort --get //unity &> out.destroy_requests.$DATABRICKS_BUNDLE_ENGINE.json
+    $CLI bundle destroy --auto-approve &> out.destroy.txt
+    print_requests.py --sort --get //unity &> out.destroy_requests.json
 }
 
 trace $CLI bundle validate -o json | jq .resources
@@ -8,7 +8,7 @@ trace $CLI bundle plan
 $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 trap cleanup EXIT
-trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace errcode $CLI bundle deploy &> out.deploy.txt
 
 # bar.name is created from baz.id (resolved during deploy), and foo.comment is
 # created with bar.volume_path, whose embedded baz.id reference also resolves

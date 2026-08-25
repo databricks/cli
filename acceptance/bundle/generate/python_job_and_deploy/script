@@ -28,7 +28,7 @@ JOB_ID=$($CLI jobs create --json '{
 echo "Created job"
 # Disable MSYS_NO_PATHCONV when invoking python scripts: with it set, Git Bash on Windows
 # fails to translate the script path so the python interpreter can't find the file.
-env -u MSYS_NO_PATHCONV add_repl.py "$JOB_ID" JOB_ID
+add_repl "$JOB_ID" JOB_ID
 
 cleanup() {
     title "Cleanup: delete the original job and notebook"

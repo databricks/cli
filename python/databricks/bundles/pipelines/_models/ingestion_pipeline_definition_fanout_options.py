@@ -16,8 +16,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class IngestionPipelineDefinitionFanoutOptions:
     """
-    :meta private: [EXPERIMENTAL]
-
     Fanout configuration for multi-table routing from streaming sources.
     Routes each input record to a destination table based on a routing
     key derived from the record. The key value becomes the table name
@@ -26,18 +24,14 @@ class IngestionPipelineDefinitionFanoutOptions:
 
     fanout_by: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Column path or SQL expression whose value determines the destination table.
+    [Beta] Column path or SQL expression whose value determines the destination table.
     Supports dotted paths (e.g. "value.event_name") and expressions
     (e.g. "value:event_name::string").
     """
 
     transforms: VariableOrList[Transformer] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Optional transforms applied to each route's DataFrame before writing
+    [Beta] Optional transforms applied to each route's DataFrame before writing
     to the destination table.
     """
 
@@ -54,18 +48,14 @@ class IngestionPipelineDefinitionFanoutOptionsDict(TypedDict, total=False):
 
     fanout_by: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Column path or SQL expression whose value determines the destination table.
+    [Beta] Column path or SQL expression whose value determines the destination table.
     Supports dotted paths (e.g. "value.event_name") and expressions
     (e.g. "value:event_name::string").
     """
 
     transforms: VariableOrList[TransformerParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Optional transforms applied to each route's DataFrame before writing
+    [Beta] Optional transforms applied to each route's DataFrame before writing
     to the destination table.
     """
 

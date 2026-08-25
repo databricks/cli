@@ -9,8 +9,10 @@ INCLUDE_PYTHON = os.environ["PY"] == "yes"
 READPLAN = os.environ["READPLAN"] != ""
 
 CLOUD_ENV = os.environ.get("CLOUD_ENV")
-if CLOUD_ENV and SERVERLESS and not os.environ.get("TEST_METASTORE_ID"):
-    sys.exit(f"SKIP_TEST SERVERLESS=yes but TEST_METASTORE_ID is empty in this env {CLOUD_ENV=}")
+if CLOUD_ENV and SERVERLESS:
+    # Serverless needs Unity Catalog. Every cloud test env has a metastore, so
+    # crash here rather than silently skipping if one ever stops providing it.
+    os.environ["TEST_METASTORE_ID"]
 
 BUILDING = "Building python_artifact"
 UPLOADING_WHL = re.compile(r"^Uploading .*whl\.\.\.$", re.M)

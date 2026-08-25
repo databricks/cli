@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/muesli/termenv"
 	"go.yaml.in/yaml/v3"
@@ -21,6 +23,10 @@ const (
 	configBoxTitle   = "Configuration"
 	metadataBoxTitle = "Metadata"
 )
+
+// jobsRunsGetPath is the Jobs GetRun endpoint, called with a raw request to read
+// the run's environments[] block, which the typed SDK Run does not expose.
+const jobsRunsGetPath = "/api/2.2/jobs/runs/get"
 
 // minBoxInnerWidth keeps all boxes a uniform, comfortable width; boxHPad and
 // boxVPad are the horizontal and vertical padding inside each box.
@@ -92,6 +98,11 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	renderer, colorOn := cmdio.NewRenderer(ctx, out)
 	p := newPalette(renderer)
 
+	// The serverless environment version lives on the run's environments[].spec,
+	// which the typed SDK Run drops, so read it with a raw request. Empty (a run
+	// with no serverless environment) stays "N/A".
+	data.EnvironmentDisplay = orNA(aiRuntimeEnvironmentVersion(ctx, w, run.RunId))
+
 	view := runView{
 		runID:        data.RunID,
 		dashboardURL: data.DashboardURL,
@@ -143,6 +154,40 @@ func genAIComputeTask(run *jobs.Run) *jobs.GenAiComputeTask {
 		return nil
 	}
 	return run.Tasks[0].GenAiComputeTask
+}
+
+// aiRuntimeEnvironmentVersion returns the serverless environment version an
+// ai_runtime run used (e.g. "4"), read from the Jobs GetRun response's
+// environments[] entry keyed by aiRuntimeEnvironmentKey. The typed SDK Run has
+// no environments field, so the value is fetched with a raw request. Best-effort:
+// returns "" (logged) on any error or when the run declares no environment.
+func aiRuntimeEnvironmentVersion(ctx context.Context, w *databricks.WorkspaceClient, runID int64) string {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		log.Warnf(ctx, "air get: could not create client to read environment: %v", err)
+		return ""
+	}
+	var resp struct {
+		Environments []struct {
+			EnvironmentKey string `json:"environment_key"`
+			Spec           struct {
+				EnvironmentVersion string `json:"environment_version"`
+			} `json:"spec"`
+		} `json:"environments"`
+	}
+	// For a GET the SDK serializes the request value into query parameters, so
+	// run_id is passed as the request, mirroring the other raw calls in this package.
+	query := map[string]any{"run_id": runID}
+	if err := apiClient.Do(ctx, http.MethodGet, jobsRunsGetPath, nil, nil, query, &resp); err != nil {
+		log.Warnf(ctx, "air get: could not read environment for run %d: %v", runID, err)
+		return ""
+	}
+	for _, e := range resp.Environments {
+		if e.EnvironmentKey == aiRuntimeEnvironmentKey {
+			return e.Spec.EnvironmentVersion
+		}
+	}
+	return ""
 }
 
 // resolveConfigYAML returns the config box body: from the downloaded config file

@@ -16,6 +16,7 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 	// Resources that are only supported in direct mode and should not be converted to Terraform
 	ignoredResources := []string{
 		"catalogs",
+		"cluster_policies",
 		"external_locations",
 		"genie_spaces",
 		"instance_pools",
@@ -45,7 +46,7 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 				}, nil),
 			}, nil)
 
-			tfroot, err := BundleToTerraformWithDynValue(ctx, vin)
+			tfroot, err := BundleToTerraformWithDynValue(ctx, vin, false)
 			require.NoError(t, err)
 
 			bytes, err := json.Marshal(tfroot.Resource)

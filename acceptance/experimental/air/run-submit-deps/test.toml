@@ -8,6 +8,10 @@ Pattern = "HEAD /"
 Response.Body = ''
 
 [[Server]]
+Pattern = "POST /api/2.0/ai-training/config:validate"
+Response.Body = '{}'
+
+[[Server]]
 Pattern = "POST /api/2.2/jobs/runs/submit"
 Response.Body = '''
 {"run_id": 555}
@@ -17,7 +21,3 @@ Response.Body = '''
 [[Repls]]
 Old = 'deps-smoke_[0-9a-f]{16}'
 New = 'deps-smoke_[RUN_ID]'
-
-[[Repls]]
-Old = 'deps-file-smoke_[0-9a-f]{16}'
-New = 'deps-file-smoke_[RUN_ID]'

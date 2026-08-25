@@ -242,9 +242,10 @@ type ResourceModelServingTelemetryConfigTableNames struct {
 }
 
 type ResourceModelServingTelemetryConfig struct {
-	TelemetryProfileId   string                                                   `json:"telemetry_profile_id,omitempty"`
-	InferenceTableConfig *ResourceModelServingTelemetryConfigInferenceTableConfig `json:"inference_table_config,omitempty"`
-	TableNames           *ResourceModelServingTelemetryConfigTableNames           `json:"table_names,omitempty"`
+	EnabledTelemetryFeatures []string                                                 `json:"enabled_telemetry_features,omitempty"`
+	TelemetryProfileId       string                                                   `json:"telemetry_profile_id,omitempty"`
+	InferenceTableConfig     *ResourceModelServingTelemetryConfigInferenceTableConfig `json:"inference_table_config,omitempty"`
+	TableNames               *ResourceModelServingTelemetryConfigTableNames           `json:"table_names,omitempty"`
 }
 
 type ResourceModelServing struct {

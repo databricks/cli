@@ -37,6 +37,28 @@ import (
 
 const internalFolder = ".internal"
 
+// QuietLevel is how much of the informational output to suppress, controlled by
+// repeating -q. Warnings and errors are never suppressed.
+type QuietLevel int
+
+const (
+	// QuietNone prints everything.
+	QuietNone QuietLevel = iota
+
+	// QuietSummary (-q) drops the per-resource action lines, keeping the summary.
+	QuietSummary
+
+	// QuietAll (-qq) also drops the summary and the progress lines ("Uploading
+	// bundle files to ...", "Building ...", "Executing 'postdeploy' script"), so
+	// only warnings and errors remain.
+	QuietAll
+)
+
+// SuppressProgress reports whether progress and summary output should be skipped.
+func (b *Bundle) SuppressProgress() bool {
+	return b.Quiet >= QuietAll
+}
+
 // AiCodeSnapshotDir is the sync-relative dir the aicode mutator writes AI Runtime
 // code snapshots into. Force-included in sync (see GetSyncIncludePatterns) so user
 // ignore rules can't filter the deployed job's code_source_path archives out.
@@ -135,6 +157,11 @@ type Bundle struct {
 	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
 	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
 
+	// RootPathIsNameTargetScoped reports whether workspace.root_path ends in the bundle
+	// name and target. Recorded before variable resolution, so a path that only happens
+	// to end in those two segments does not count.
+	RootPathIsNameTargetScoped bool
+
 	// Metadata about the bundle deployment. This is the interface Databricks services
 	// rely on to integrate with bundles when they need additional information about
 	// a bundle deployment.
@@ -148,6 +175,10 @@ type Bundle struct {
 
 	// Files that are synced to the workspace.file_path
 	Files []fileset.File
+
+	// FileCounts is how many files the deploy uploaded and deleted. Unlike Files,
+	// which lists everything tracked, this counts only what actually changed.
+	FileCounts libsync.FileCounts
 
 	// Stores an initialized copy of this bundle's Terraform wrapper.
 	Terraform *tfexec.Terraform
@@ -171,6 +202,19 @@ type Bundle struct {
 	// Select contains resource selectors passed via --select flag.
 	// When non-empty, only the specified resources are included in deployment.
 	Select []string
+
+	// MigratingToDirect is set when the direct engine is requested but the existing
+	// state still uses terraform, so the state is migrated to the direct engine after
+	// this deploy. Resources that only the direct engine supports are skipped by this
+	// run rather than rejected: terraform cannot deploy them, and since terraform
+	// could never have deployed them they are absent from its state. The next deploy,
+	// which runs on the migrated state, creates them.
+	MigratingToDirect bool
+
+	// Quiet is the output verbosity reduction requested via -q/--quiet, which is
+	// repeatable: QuietSummary drops the per-resource lines, QuietAll additionally
+	// drops the summary and progress lines, leaving warnings and errors.
+	Quiet QuietLevel
 
 	// SkipLocalFileValidation makes path translation tolerant of missing local files.
 	// When set, TranslatePaths computes workspace paths without verifying files exist.

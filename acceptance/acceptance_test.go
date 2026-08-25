@@ -10,7 +10,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/fs"
 	"maps"
 	"math/rand/v2"
 	"net/http"
@@ -36,6 +35,7 @@ import (
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 )
 
 var (
@@ -93,8 +93,6 @@ const (
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
 	MaxFileSize      = 1_000_000
-	// Filename to save replacements to (used by diff.py)
-	ReplsFile = "repls.json"
 	// Filename for materialized config (used as golden file)
 	MaterializedConfigFile = "out.test.toml"
 
@@ -103,11 +101,19 @@ const (
 	// The tests the don't set SERVERLESS variable or set to empty string will also be run.
 	EnvFilterVar = "ENVFILTER"
 
-	// File where scripts can output custom replacements
-	// export $job_id=100200300
-	// $ echo "$job_id:MY_JOB" >> ACC_REPLS  # This will replace 100200300 with [MY_JOB] in the output
-	// TODO: this should be merged with repls.json functionality, currently these replacements are not parsed by diff.py
-	userReplacementsFilename = "ACC_REPLS"
+	// Env var with the path to the file holding all replacements applied to the output.
+	// It is kept outside of the test directory, otherwise "bundle deploy" uploads it.
+	//
+	// Every line is one replacement encoded as a JSON object: "Old" is a regular expression
+	// (written by the harness), "Literal" is a value to replace verbatim (appended by
+	// add_repl.py). The harness writes its own replacements first, then the scripts add theirs:
+	//
+	//   $ job_id=100200300
+	//   $ add_repl "$job_id" MY_JOB   # replaces 100200300 with [MY_JOB] in the output
+	//
+	// The file is read back here (see loadScriptReplacements) and by the python helpers
+	// (see bin/repls.py).
+	ReplsEnvVar = "ACC_REPLS"
 )
 
 var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
@@ -123,11 +129,6 @@ var Scripts = map[string]bool{
 	EntryPointScript: true,
 	CleanupScript:    true,
 	PrepareScript:    true,
-}
-
-var Ignored = map[string]bool{
-	ReplsFile:                true,
-	userReplacementsFilename: true,
 }
 
 func TestAccept(t *testing.T) {
@@ -300,6 +301,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		require.NoError(t, err)
 		t.Logf("Writing coverage to %s", coverDir)
 	}
+
+	// Build the CLI with the FIPS toolchain so a plain `go test` produces the
+	// same FIPS binary as `task` (which sets GOFIPS140 in its env) and the
+	// release pipeline; without it acceptance/fips fails outside `task`. The
+	// build below inherits os.Environ(), so setting it here is enough.
+	t.Setenv("GOFIPS140", readGOFIPS140(t, cwd))
 
 	execPath := ""
 	cliVersion := ""
@@ -499,12 +506,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Fatalf("Invalid config %s: %s", configPath, err)
 			}
 
-			// Apply default: CloudSlow implies Cloud. Do this before generating
-			// the materialized config so the implication is visible in out.test.toml.
-			if isTruePtr(config.CloudSlow) {
-				config.Cloud = config.CloudSlow
-			}
-
 			// Generate materialized config for this test.
 			// We do this before skipping the test, so the configs are generated for all tests.
 			materializedConfig := internal.GenerateMaterializedConfig(&config)
@@ -686,34 +687,14 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 			return fmt.Sprintf("Disabled via CloudEnvs.%s setting in %s (CLOUD_ENV=%s)", cloudEnvBase, configPath, cloudEnv)
 		}
 
-		if isTruePtr(config.CloudSlow) {
-			if testing.Short() {
-				return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
-			}
+		if !isTruePtr(config.Cloud) {
+			return fmt.Sprintf("Disabled via Cloud setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
 		}
 
-		isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
-		if !isCloudEnabled {
-			return fmt.Sprintf("Disabled via Cloud/CloudSlow setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudSlow=%v)",
-				configPath,
-				cloudEnv,
-				isTruePtr(config.Cloud),
-				isTruePtr(config.CloudSlow),
-			)
+		// CloudSlow only narrows an already-enabled cloud run: skip it under -short.
+		if isTruePtr(config.CloudSlow) && testing.Short() {
+			return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
 		}
-
-		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID is empty)", configPath)
-		}
-
-		if isTruePtr(config.RequiresWarehouse) && os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresWarehouse setting in %s (TEST_DEFAULT_WAREHOUSE_ID is empty)", configPath)
-		}
-
-		if isTruePtr(config.RequiresCluster) && os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID is empty)", configPath)
-		}
-
 	}
 
 	return ""
@@ -888,6 +869,9 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
+	replsPath := filepath.Join(t.TempDir(), ReplsEnvVar)
+	cmd.Env = append(cmd.Env, ReplsEnvVar+"="+replsPath)
+
 	// populate CLOUD_ENV_BASE
 	envBase := getCloudEnvBase(cloudEnv)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV_BASE="+envBase)
@@ -898,10 +882,17 @@ func runTest(t *testing.T,
 	// User replacements:
 	repls.Repls = append(repls.Repls, config.Repls...)
 
-	// Save replacements to temp test directory so that it can be read by diff.py
-	replsJson, err := json.MarshalIndent(repls.Repls, "", "  ")
-	require.NoError(t, err)
-	testutil.WriteFile(t, filepath.Join(tmpDir, ReplsFile), string(replsJson))
+	// Save replacements so that they can be read by the scripts (diff.py, sort_lines.py).
+	// One JSON object per line, because scripts append their own replacements to this file.
+	var replsLines strings.Builder
+	for _, repl := range repls.Repls {
+		line, err := json.Marshal(repl)
+		require.NoError(t, err)
+		replsLines.Write(line)
+		replsLines.WriteByte('\n')
+	}
+	testutil.WriteFile(t, replsPath, replsLines.String())
+	replsWritten := len(repls.Repls)
 
 	if coverDir != "" {
 		// Creating individual coverage directory for each test, because writing to the same one
@@ -925,7 +916,7 @@ func runTest(t *testing.T,
 	// Disable the passive update notice explicitly. It is already suppressed
 	// implicitly (dev builds, non-TTY stderr, CI), but tests that run released
 	// binaries (e.g. -useversion) must never reach GitHub or print the notice
-	// into compared output. Tests can override this via [Env] in test.toml.
+	// into compared output. Tests can override this via Env.* in test.toml.
 	cmd.Env = append(cmd.Env, "DATABRICKS_CLI_DISABLE_UPDATE_CHECK=true")
 
 	// Neutralize Databricks-internal development-environment interference so
@@ -953,7 +944,9 @@ func runTest(t *testing.T,
 
 	absDir, err := filepath.Abs(dir)
 	require.NoError(t, err)
-	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
+	// Use forward slashes so paths built from $TESTDIR (e.g. echoed in trace
+	// output) are stable across OSes and don't need per-test slash replacements.
+	cmd.Env = append(cmd.Env, "TESTDIR="+filepath.ToSlash(absDir))
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
 	if !isRunningOnCloud {
@@ -1003,7 +996,7 @@ func runTest(t *testing.T,
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
 
-	loadUserReplacements(t, &repls, tmpDir)
+	loadScriptReplacements(t, &repls, replsPath, replsWritten)
 
 	printedRepls := false
 
@@ -1026,9 +1019,6 @@ func runTest(t *testing.T,
 			continue
 		}
 		if _, ok := outputs[relPath]; ok {
-			continue
-		}
-		if _, ok := Ignored[relPath]; ok {
 			continue
 		}
 		if config.CompiledIgnoreObject.MatchesPath(relPath) && !strings.HasPrefix(relPath, "out") {
@@ -1291,6 +1281,24 @@ func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {
 
 	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch})
 	return execPath
+}
+
+// readGOFIPS140 returns the GOFIPS140 version the Taskfile pins for `task`
+// builds; the release pipeline pins the same value independently in
+// .goreleaser.yaml.
+func readGOFIPS140(t *testing.T, cwd string) string {
+	path := filepath.Join(cwd, "..", "Taskfile.yml")
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	var taskfile struct {
+		Env struct {
+			GOFIPS140 string `yaml:"GOFIPS140"`
+		} `yaml:"env"`
+	}
+	require.NoError(t, yaml.Unmarshal(data, &taskfile))
+	require.NotEmpty(t, taskfile.Env.GOFIPS140, "GOFIPS140 not set in Taskfile.yml")
+	return taskfile.Env.GOFIPS140
 }
 
 // CreateReleaseArtifacts builds release artifacts for the given OS using amd64 and arm64 architectures,
@@ -1810,26 +1818,32 @@ func setupTerraform(t *testing.T, cwd, buildDir string, repls *testdiff.Replacem
 	repls.SetPath(terraformExecPath, "[TERRAFORM]")
 }
 
-func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {
-	b, err := os.ReadFile(filepath.Join(tmpDir, userReplacementsFilename))
-	if errors.Is(err, fs.ErrNotExist) {
-		return
-	}
+// loadScriptReplacements adds the replacements appended to replsPath by the scripts.
+// The first offset lines were written by the harness itself and are already in repls.
+func loadScriptReplacements(t *testing.T, repls *testdiff.ReplacementsContext, replsPath string, offset int) {
+	b, err := os.ReadFile(replsPath)
 	require.NoError(t, err)
-	lines := strings.SplitSeq(string(b), "\n")
-	for line := range lines {
+	lines := strings.Split(string(b), "\n")
+	for _, line := range lines[min(offset, len(lines)):] {
 		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue
 		}
-		items := strings.Split(line, ":")
-		if len(items) <= 1 {
-			t.Errorf("Error parsing %s: %#v", userReplacementsFilename, line)
+		// Scripts only add literal replacements; regular expressions come from the harness.
+		var entry struct {
+			Literal string
+			New     string
+			Order   int
+		}
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			t.Errorf("Error parsing %s: %#v: %s", ReplsEnvVar, line, err)
 			continue
 		}
-		repl := items[len(items)-1]
-		old := line[:len(line)-len(repl)-1]
-		repls.SetWithOrder(old, "["+repl+"]", -100)
+		if entry.Literal == "" || entry.New == "" {
+			t.Errorf("Incomplete entry in %s: %#v", ReplsEnvVar, line)
+			continue
+		}
+		repls.SetWithOrder(entry.Literal, entry.New, entry.Order)
 	}
 }
 

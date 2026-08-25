@@ -3,7 +3,7 @@
 -- The streaming table below ingests all JSON files in /databricks-datasets/retail-org/sales_orders/
 -- See also https://docs.databricks.com/sql/language-manual/sql-ref-syntax-ddl-create-streaming-table.html
 
-USE CATALOG {{"{{"}}catalog{{"}}"}};
+USE CATALOG `{{"{{"}}catalog{{"}}"}}`;
 USE IDENTIFIER({{"{{"}}schema{{"}}"}});
 
 CREATE OR REFRESH STREAMING TABLE

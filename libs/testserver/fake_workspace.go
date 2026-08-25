@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -196,6 +197,7 @@ type FakeWorkspace struct {
 	ModelRegistryModelIDs map[string]string // model name -> numeric ID
 	Clusters              map[string]compute.ClusterDetails
 	InstancePools         map[string]compute.GetInstancePool
+	ClusterPolicies       map[string]compute.Policy
 	Catalogs              map[string]catalog.CatalogInfo
 	ExternalLocations     map[string]catalog.ExternalLocationInfo
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
@@ -428,7 +430,13 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				SingleUserName:   TestUser.UserName,
 			},
 		},
-		InstancePools:                      map[string]compute.GetInstancePool{},
+		InstancePools: map[string]compute.GetInstancePool{},
+		ClusterPolicies: map[string]compute.Policy{
+			// Seeded so the stateful list keeps backing the variable-lookup tests
+			// (e.g. acceptance/bundle/variables/env_overrides resolves these by name).
+			"5678": {PolicyId: "5678", Name: "wrong-cluster-policy"},
+			"9876": {PolicyId: "9876", Name: "some-test-cluster-policy"},
+		},
 		VectorSearchIndexesPendingDeletion: map[string]int{},
 	}
 }
@@ -441,26 +449,96 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
+// gitInfoBlock is the git_info block get-status adds for return_git_info=true.
+// workspace.ObjectInfo does not model it (the field is undocumented), so it is
+// merged into the response separately, see withGitInfo.
+//
+// A Git folder that has Git CLI access does not store the git metadata on the
+// workspace object, so Branch, HeadCommitID and URL are empty for one; only a
+// standard Git folder reports them.
+type gitInfoBlock struct {
+	Branch       string `json:"branch,omitempty"`
+	HeadCommitID string `json:"head_commit_id,omitempty"`
+	ID           int64  `json:"id"`
+	Path         string `json:"path"`
+	URL          string `json:"url,omitempty"`
+}
+
+// withGitInfo returns info as an object with a git_info block added.
+//
+// It cannot be a struct embedding workspace.ObjectInfo: ObjectInfo declares
+// MarshalJSON, which gets promoted to the embedding struct, so the outer
+// git_info field would be dropped from the output without any error. The
+// intermediate map holds json.RawMessage rather than any, so that large ids do
+// not lose precision by passing through float64.
+func withGitInfo(info workspace.ObjectInfo, gi gitInfoBlock) (any, error) {
+	infoJSON, err := json.Marshal(info)
+	if err != nil {
+		return nil, err
+	}
+	out := map[string]json.RawMessage{}
+	if err := json.Unmarshal(infoJSON, &out); err != nil {
+		return nil, err
+	}
+	giJSON, err := json.Marshal(gi)
+	if err != nil {
+		return nil, err
+	}
+	out["git_info"] = giJSON
+	return out, nil
+}
+
+// gitFolderFor returns the Git folder containing objectPath, which is the
+// longest registered Git folder path that is a prefix of it. get-status reports
+// the containing folder's metadata for paths inside a Git folder, not just for
+// its root.
+func (s *FakeWorkspace) gitFolderFor(objectPath string) (workspace.RepoInfo, bool) {
+	longest := ""
+	for repoPath := range s.repoIdByPath {
+		if objectPath != repoPath && !strings.HasPrefix(objectPath, repoPath+"/") {
+			continue
+		}
+		if len(repoPath) > len(longest) {
+			longest = repoPath
+		}
+	}
+	if longest == "" {
+		return workspace.RepoInfo{}, false
+	}
+	return s.Repos[strconv.FormatInt(s.repoIdByPath[longest], 10)], true
+}
+
+// isGitCliFolder reports whether a Git folder at this path has Git CLI access.
+// Those are materialized as plain DIRECTORY nodes outside /Repos, while a
+// standard Git folder under /Repos keeps the REPO object type. The /Workspace
+// mount prefix is optional on a request, so it is not part of the distinction.
+func isGitCliFolder(repoPath string) bool {
+	return !strings.HasPrefix(strings.TrimPrefix(repoPath, "/Workspace"), "/Repos/")
+}
+
+func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string, returnGitInfo bool) Response {
 	defer s.LockUnlock()()
 
 	// The real API collapses duplicate slashes, so look up the cleaned path.
 	cleaned := path.Clean(requestPath)
 
 	var info workspace.ObjectInfo
-	if dirInfo, ok := s.directories[cleaned]; ok {
-		info = dirInfo
-	} else if entry, ok := s.files[cleaned]; ok {
-		info = entry.Info
-	} else if repoId, ok := s.repoIdByPath[cleaned]; ok {
+	// A Git folder root is reported as the repo, before any directory entry for
+	// the same path: mkdirs of a path inside a Git folder seeds its ancestors,
+	// which would otherwise shadow the root and report the wrong object id.
+	if repoId, ok := s.repoIdByPath[cleaned]; ok {
 		// Control-plane repos (under /Repos) report the REPO object type, while
 		// Git-CLI-enabled folders elsewhere are materialized as plain DIRECTORY
 		// nodes. Both resolve to a valid repo ID via the repos API.
 		objectType := workspace.ObjectTypeRepo
-		if !strings.HasPrefix(cleaned, "/Repos/") {
+		if isGitCliFolder(cleaned) {
 			objectType = workspace.ObjectTypeDirectory
 		}
 		info = workspace.ObjectInfo{ObjectType: objectType, Path: cleaned, ObjectId: repoId}
+	} else if dirInfo, ok := s.directories[cleaned]; ok {
+		info = dirInfo
+	} else if entry, ok := s.files[cleaned]; ok {
+		info = entry.Info
 	} else {
 		// Match the real Workspace API wording, which echoes the requested path.
 		return Response{
@@ -475,6 +553,29 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 	// "/Workspace/..." is preserved instead, so only strip the doubled form.
 	if strings.HasPrefix(requestPath, "//Workspace/") {
 		info.Path = strings.TrimPrefix(info.Path, "/Workspace")
+	}
+
+	if returnGitInfo {
+		if repo, ok := s.gitFolderFor(cleaned); ok {
+			// The real API reports the Git folder root without the /Workspace mount
+			// prefix, whichever spelling the folder was created with.
+			gi := gitInfoBlock{ID: repo.Id, Path: strings.TrimPrefix(repo.Path, "/Workspace")}
+			if isGitCliFolder(repo.Path) {
+				info.DirectoryInfo = &workspace.DirectoryInfo{IsGitFolder: true}
+			} else {
+				gi.Branch = repo.Branch
+				gi.HeadCommitID = repo.HeadCommitId
+				gi.URL = repo.Url
+			}
+			body, err := withGitInfo(info, gi)
+			if err != nil {
+				return Response{
+					StatusCode: 500,
+					Body:       fmt.Sprintf("internal error: %s", err),
+				}
+			}
+			return Response{Body: body}
+		}
 	}
 
 	return Response{Body: info}
@@ -604,9 +705,21 @@ func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
 	return s.files[path].Data
 }
 
-func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
+// WorkspaceDelete implements POST /api/2.0/workspace/delete. As in the real API, a
+// non-recursive delete of a directory that still has children fails instead of removing
+// it, which is what lets a caller delete a directory only if it is empty.
+func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) Response {
 	defer s.LockUnlock()()
 	if !recursive {
+		if _, isDir := s.directories[path]; isDir && s.hasChildren(path) {
+			return Response{
+				StatusCode: 400,
+				Body: map[string]string{
+					"error_code": "DIRECTORY_NOT_EMPTY",
+					"message":    "Folder (" + path + ") is not empty",
+				},
+			}
+		}
 		delete(s.files, path)
 		delete(s.directories, path)
 	} else {
@@ -621,6 +734,24 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 			}
 		}
 	}
+	return Response{}
+}
+
+// hasChildren reports whether any file or directory lives under dirPath. Callers must
+// hold the lock.
+func (s *FakeWorkspace) hasChildren(dirPath string) bool {
+	prefix := dirPath + "/"
+	for key := range s.files {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	for key := range s.directories {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {

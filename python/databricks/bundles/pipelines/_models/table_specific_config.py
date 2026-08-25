@@ -123,9 +123,7 @@ class TableSpecificConfig:
 
     source_metadata_column: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Name of the struct column added to each ingested record to hold per row source
+    [Beta] (Optional) Name of the struct column added to each ingested record to hold per row source
     metadata.
     """
 
@@ -247,9 +245,7 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     source_metadata_column: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] (Optional) Name of the struct column added to each ingested record to hold per row source
+    [Beta] (Optional) Name of the struct column added to each ingested record to hold per row source
     metadata.
     """
 

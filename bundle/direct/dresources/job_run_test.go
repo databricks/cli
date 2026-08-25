@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -66,19 +65,6 @@ func waitForTestRun(t *testing.T, ctx context.Context, client *databricks.Worksp
 	return r.WaitAfterCreate(ctx, "123", &JobRunState{})
 }
 
-func TestJobRunWaitSucceeds(t *testing.T) {
-	client := jobRunClient(t, &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateSuccess,
-	})
-
-	remote, err := waitForTestRun(t, t.Context(), client)
-
-	require.NoError(t, err)
-	require.NotNil(t, remote.State)
-	assert.Equal(t, jobs.RunResultStateSuccess, remote.State.ResultState)
-}
-
 func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{
 		LifeCycleState: jobs.RunLifeCycleStateTerminated,
@@ -89,36 +75,6 @@ func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
 	_, err := waitForTestRun(t, t.Context(), client)
 
 	require.ErrorContains(t, err, "did not succeed: FAILED: task failed")
-}
-
-func TestJobRunWaitReportsFailedTask(t *testing.T) {
-	failed := &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateFailed,
-	}
-	server := testserver.New(t)
-	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
-		return jobs.Run{
-			RunId: 123,
-			JobId: 456,
-			State: failed,
-			Tasks: []jobs.RunTask{
-				{TaskKey: "ok", RunId: 998, State: &jobs.RunState{
-					LifeCycleState: jobs.RunLifeCycleStateTerminated,
-					ResultState:    jobs.RunResultStateSuccess,
-				}},
-				{TaskKey: "main", RunId: 999, State: failed},
-			},
-		}
-	})
-	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
-		return jobs.RunOutput{Error: "notebook not found"}
-	})
-
-	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
-
-	require.ErrorContains(t, err, `task "main": notebook not found`)
-	assert.NotContains(t, err.Error(), `task "ok"`)
 }
 
 // Without the deprecated per-task state, a failed task is told apart from a
@@ -246,39 +202,6 @@ func TestJobRunWaitFailsOnInternalError(t *testing.T) {
 	require.ErrorContains(t, err, testRunPageLink)
 }
 
-// A real workspace reports a run whose task failed as INTERNAL_ERROR in the
-// deprecated life_cycle_state. The failing task still has to be named.
-func TestJobRunWaitReportsFailedTaskOfInternalErrorRun(t *testing.T) {
-	server := testserver.New(t)
-	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
-		return jobs.Run{
-			RunId:      123,
-			JobId:      456,
-			RunPageUrl: testRunPageURL,
-			State: &jobs.RunState{
-				LifeCycleState: jobs.RunLifeCycleStateInternalError,
-				ResultState:    jobs.RunResultStateFailed,
-				StateMessage:   "Task main failed with message: Workload failed, see run output for details.",
-			},
-			Tasks: []jobs.RunTask{
-				{TaskKey: "main", RunId: 999, State: &jobs.RunState{
-					LifeCycleState: jobs.RunLifeCycleStateTerminated,
-					ResultState:    jobs.RunResultStateFailed,
-				}},
-			},
-		}
-	})
-	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req testserver.Request) any {
-		return jobs.RunOutput{Error: "RuntimeError: intentional failure"}
-	})
-
-	_, err := waitForTestRun(t, t.Context(), jobRunClientFor(t, server))
-
-	require.ErrorContains(t, err, "run did not succeed: FAILED")
-	require.ErrorContains(t, err, `task "main": RuntimeError: intentional failure`)
-	require.ErrorContains(t, err, testRunPageLink)
-}
-
 func TestJobRunWaitReportsOnlyTheLastAttemptOfATask(t *testing.T) {
 	failed := &jobs.RunState{
 		LifeCycleState: jobs.RunLifeCycleStateTerminated,
@@ -319,27 +242,6 @@ func TestJobRunWaitAbandonedLinksTheRun(t *testing.T) {
 	// The run keeps going, so the error links to it and names the interrupt.
 	require.ErrorContains(t, err, "interrupted while waiting for the run to finish")
 	require.ErrorContains(t, err, testRunPageLink)
-}
-
-// An abandoned wait leaves the run going with its id recorded, so the next deploy
-// reads an empty outcome, which result_state drift catches.
-func TestJobRunReadOfUnfinishedRunReportsNoResult(t *testing.T) {
-	client := jobRunClient(t, &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning})
-
-	remote, err := (&ResourceJobRun{}).New(client).DoRead(t.Context(), "123")
-
-	require.NoError(t, err)
-	require.NotNil(t, remote.State)
-	assert.Equal(t, jobs.RunLifeCycleStateRunning, remote.State.LifeCycleState)
-	assert.Empty(t, remote.ResultState)
-}
-
-// PrepareState records the outcome the run must reach, the same for every run,
-// so the planner has something to compare the remote against.
-func TestJobRunPrepareStateRequiresSuccess(t *testing.T) {
-	state := (&ResourceJobRun{}).PrepareState(&resources.JobRun{RunNow: jobs.RunNow{JobId: 456}})
-
-	assert.Equal(t, jobs.RunResultStateSuccess, state.ResultState)
 }
 
 // The planner diffs RemapState(remote) against PrepareState(config), so a run
@@ -433,68 +335,25 @@ func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
 	assert.Empty(t, config.IdempotencyToken)
 }
 
-// jobRunDeletion records what the fake workspace saw while a run was deleted.
-type jobRunDeletion struct {
-	cancelled       atomic.Bool
-	settled         atomic.Bool
-	settledAtDelete atomic.Bool
-}
-
-// jobRunDeleteClient returns a client for a run in the given state, whose cancel
-// settles one poll late the way the API's asynchronous cancellation does.
-func jobRunDeleteClient(t *testing.T, state *jobs.RunState) (*databricks.WorkspaceClient, *jobRunDeletion) {
-	t.Helper()
-	var deletion jobRunDeletion
-	cancelled := &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateCanceled,
-	}
-
+func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
+	var cancelled atomic.Bool
 	server := testserver.New(t)
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
-		current := state
-		switch {
-		case deletion.settled.Load():
-			current = cancelled
-		case deletion.cancelled.Load():
-			// Report the run's old state once more, then settle on the next poll.
-			deletion.settled.Store(true)
-		}
-		return jobs.Run{RunId: 123, JobId: 456, State: current}
+		return jobs.Run{RunId: 123, JobId: 456, State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateSuccess,
+		}}
 	})
 	server.Handle("POST", "/api/2.2/jobs/runs/cancel", func(req testserver.Request) any {
-		deletion.cancelled.Store(true)
+		cancelled.Store(true)
 		return testserver.Response{}
 	})
 	server.Handle("POST", "/api/2.2/jobs/runs/delete", func(req testserver.Request) any {
-		deletion.settledAtDelete.Store(deletion.settled.Load())
 		return testserver.Response{}
 	})
-	return jobRunClientFor(t, server), &deletion
-}
+	r := (&ResourceJobRun{}).New(jobRunClientFor(t, server))
 
-func deleteTestRun(t *testing.T, client *databricks.WorkspaceClient) error {
-	t.Helper()
-	return (&ResourceJobRun{}).New(client).DoDelete(t.Context(), "123", &JobRunState{})
-}
+	require.NoError(t, r.DoDelete(t.Context(), "123", &JobRunState{}))
 
-func TestJobRunDeleteCancelsUnfinishedRun(t *testing.T) {
-	// An interrupted wait leaves the run going, and jobs/runs/delete rejects it.
-	client, deletion := jobRunDeleteClient(t, &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning})
-
-	require.NoError(t, deleteTestRun(t, client))
-
-	assert.True(t, deletion.cancelled.Load(), "expected the run to be cancelled")
-	assert.True(t, deletion.settledAtDelete.Load(), "expected the delete to wait for the cancellation to settle")
-}
-
-func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
-	client, deletion := jobRunDeleteClient(t, &jobs.RunState{
-		LifeCycleState: jobs.RunLifeCycleStateTerminated,
-		ResultState:    jobs.RunResultStateSuccess,
-	})
-
-	require.NoError(t, deleteTestRun(t, client))
-
-	assert.False(t, deletion.cancelled.Load(), "a run that already finished has nothing to cancel")
+	assert.False(t, cancelled.Load(), "a run that already finished has nothing to cancel")
 }

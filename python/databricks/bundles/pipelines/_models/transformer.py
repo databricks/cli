@@ -28,9 +28,25 @@ class Transformer:
     [Beta] Required: the wire format of the data.
     """
 
+    input_column: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Optional input column to transform. When set, the transformer reads
+    from this column instead of the default source column.
+    """
+
     json_options: VariableOrOptional[JsonTransformerOptions] = None
     """
     [Beta]
+    """
+
+    output_column: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Optional output column name. When set, the transformed result is
+    written to this column instead of replacing the input column.
     """
 
     @classmethod
@@ -49,9 +65,25 @@ class TransformerDict(TypedDict, total=False):
     [Beta] Required: the wire format of the data.
     """
 
+    input_column: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Optional input column to transform. When set, the transformer reads
+    from this column instead of the default source column.
+    """
+
     json_options: VariableOrOptional[JsonTransformerOptionsParam]
     """
     [Beta]
+    """
+
+    output_column: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Optional output column name. When set, the transformed result is
+    written to this column instead of replacing the input column.
     """
 
 
