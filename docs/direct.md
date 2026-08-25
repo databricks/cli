@@ -1,6 +1,6 @@
 ## Status
 
-Status: Generally Available (GA). The direct engine is the default for new deployments.
+Status: Generally Available (GA). The direct engine is the default; existing Terraform deployments are migrated to it automatically.
 Known issues: https://github.com/databricks/cli/issues?q=state%3Aopen%20label%3Aengine%2Fdirect
 
 ## Reporting bugs
@@ -36,8 +36,9 @@ There are known issues, see https://github.com/databricks/cli/issues?q=state%3Ao
 
 ### Migrating the existing deployment
 
-The direct engine uses its own state file, also JSON, but with a different schema from terraform state file.
-In order to migrate an existing Terraform-based deployment, use the `databricks bundle deployment migrate` command. The command reads IDs from the existing deployment.
+Since direct is the default engine, existing Terraform-based deployments are migrated automatically: unless you opt out, `databricks bundle deploy` deploys on Terraform as before and then converts the state to the direct engine, provided a dry-run of the conversion reports no errors or warnings. If it does report something, the state is left on Terraform and the warnings are printed.
+
+To migrate manually instead — for example after opting out, or when the automatic migration reported issues — use the `databricks bundle deployment migrate` command. The direct engine uses its own state file, also JSON, but with a different schema from terraform state file; the command reads IDs from the existing deployment.
 
 The full sequence of operations:
 
