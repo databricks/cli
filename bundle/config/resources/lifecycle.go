@@ -41,6 +41,7 @@ type JobRunTrigger struct {
 	OnValueChange  *string `json:"on_value_change,omitempty"` // interpolated expr; re-fire when the resolved value changes
 }
 
+// ArmedCount returns the number of trigger fields set on this entry.
 func (t JobRunTrigger) ArmedCount() int {
 	n := 0
 	if t.OnBundleDeploy != nil {

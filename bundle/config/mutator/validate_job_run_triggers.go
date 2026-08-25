@@ -27,7 +27,7 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 			continue
 		}
 		if jr.Lifecycle.PreventDestroy {
-			if summary := preventDestroyError(jr.HasOnBundleDeploy(), jr.HasOnFileChange(), jr.HasOnValueChange()); summary != "" {
+			if summary := preventDestroyError(jr.ArmedTriggerNames()); summary != "" {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   summary,
@@ -46,6 +46,7 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 				})
 				continue
 			case 1:
+				// Exactly one key: valid.
 			default:
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
@@ -82,17 +83,7 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 
 // preventDestroyError names the armed triggers that conflict with prevent_destroy,
 // or returns an empty string when none are armed.
-func preventDestroyError(onBundleDeploy, onFileChange, onValueChange bool) string {
-	var names []string
-	if onBundleDeploy {
-		names = append(names, "on_bundle_deploy")
-	}
-	if onFileChange {
-		names = append(names, "on_file_change")
-	}
-	if onValueChange {
-		names = append(names, "on_value_change")
-	}
+func preventDestroyError(names []string) string {
 	switch len(names) {
 	case 0:
 		return ""

@@ -59,17 +59,29 @@ func (r *JobRun) HasOnFileChange() bool {
 	return false
 }
 
-// HasOnValueChange reports whether any trigger re-fires when a resolved value changes.
-func (r *JobRun) HasOnValueChange() bool {
+// ArmedTriggerNames returns the names of the trigger fields any entry arms, in
+// schema order so that diagnostics naming them are stable.
+func (r *JobRun) ArmedTriggerNames() []string {
 	if r.Lifecycle == nil {
-		return false
+		return nil
 	}
+	var onBundleDeploy, onFileChange, onValueChange bool
 	for _, t := range r.Lifecycle.Triggers {
-		if t.OnValueChange != nil {
-			return true
-		}
+		onBundleDeploy = onBundleDeploy || (t.OnBundleDeploy != nil && *t.OnBundleDeploy)
+		onFileChange = onFileChange || t.OnFileChange != nil
+		onValueChange = onValueChange || t.OnValueChange != nil
 	}
-	return false
+	var names []string
+	if onBundleDeploy {
+		names = append(names, "on_bundle_deploy")
+	}
+	if onFileChange {
+		names = append(names, "on_file_change")
+	}
+	if onValueChange {
+		names = append(names, "on_value_change")
+	}
+	return names
 }
 
 func (r *JobRun) UnmarshalJSON(b []byte) error {
