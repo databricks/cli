@@ -2,6 +2,7 @@ package resourcemutator
 
 import (
 	"context"
+	"maps"
 	"slices"
 	"strings"
 
@@ -136,7 +137,12 @@ func ApplySecretScopeFixups(b *bundle.Bundle, eng engine.EngineType) (string, er
 
 	// Secret scopes assigns the create MANAGE ACL on it by default. So we always add it to
 	// the client ACL list as a default.
-	for key, scope := range b.Config.Resources.SecretScopes {
+	//
+	// Sorted because the key travels out to a diagnostic and to migration
+	// telemetry: with two invalid scopes, map order would decide which one is
+	// reported and the output would vary between runs.
+	for _, key := range slices.Sorted(maps.Keys(b.Config.Resources.SecretScopes)) {
+		scope := b.Config.Resources.SecretScopes[key]
 		if scope == nil {
 			continue
 		}

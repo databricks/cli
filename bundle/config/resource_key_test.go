@@ -51,6 +51,17 @@ func TestResourceKeySafeString(t *testing.T) {
 			key:  "/Workspace/Users/someone@example.com/x",
 			want: "*",
 		},
+
+		// A key whose second segment is not a resource type this package defines
+		// must not put that segment in a telemetry field.
+		{
+			key:  "resources.ALICE_EXAMPLE_COM.job",
+			want: "*",
+		},
+		{
+			key:  "resources.someone@example.com.job",
+			want: "*",
+		},
 	}
 
 	for _, tt := range tests {

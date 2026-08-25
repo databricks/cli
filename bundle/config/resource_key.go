@@ -33,6 +33,14 @@ func (k ResourceKey) SafeString() string {
 	// name. Rebuild the key's own shape so the stand-in reads like the value.
 	// The "resources." prefix is dropped: every key carries it, so it is noise.
 	group, kind, hasKind := strings.Cut(resourceType, ".")
+
+	// GetResourceTypeFromKey reads the group straight out of the key without
+	// checking it, so a key of an unexpected shape would put its second segment
+	// in a telemetry field. Report only a group this package defines.
+	if _, ok := SupportedResources()[group]; !ok {
+		return "*"
+	}
+
 	if hasKind {
 		return group + ".*." + kind
 	}

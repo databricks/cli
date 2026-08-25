@@ -386,6 +386,14 @@ func TestParseVerb(t *testing.T) {
 			wantOk: false,
 		},
 		{
+			format: "%2[2]s",
+			wantOk: false,
+		},
+		{
+			format: "%.2[2]s",
+			wantOk: false,
+		},
+		{
 			format: "%*d",
 			wantOk: false,
 		},
@@ -558,4 +566,42 @@ func TestErrorTemplateWrapNilError(t *testing.T) {
 	err := Errorf("wrapping: %w", wrapped)
 	assert.Equal(t, fmt.Errorf("wrapping: %w", wrapped).Error(), err.Error())
 	assert.Equal(t, "wrapping: %w", ErrorTemplate(err))
+}
+
+// cyclicErr unwraps to whatever it is pointed at, which a test uses to close a
+// loop back to an ancestor.
+type cyclicErr struct{ inner error }
+
+func (*cyclicErr) Error() string      { return "cyclic" }
+func (c *cyclicErr) Unwrap() error    { return c.inner }
+func (*cyclicErr) SafeString() string { return "cyclic" }
+
+func TestErrorTemplateCyclicChainTerminates(t *testing.T) {
+	// An error whose Unwrap reaches back to the templated error that wraps it.
+	// Following it would recurse forever, so the traversal is bounded.
+	c := &cyclicErr{}
+	err := Errorf("outer: %w", c)
+	c.inner = err
+
+	// The assertion is that this returns at all rather than exhausting the stack.
+	assert.NotEmpty(t, ErrorTemplate(err))
+}
+
+func TestErrorTemplateDepthBound(t *testing.T) {
+	// A chain deeper than the bound stops contributing rather than recursing.
+	err := New("root")
+	for range maxTemplateDepth + 10 {
+		err = Errorf("%w", err)
+	}
+	assert.NotPanics(t, func() { ErrorTemplate(err) })
+}
+
+func TestErrorTemplateStandInUnderOrdinaryVerb(t *testing.T) {
+	// %s rather than %w: the error still contributes its stand-in, so a typed
+	// error reports its classification either way.
+	err := Errorf("writing state: %s", standInOnlyErr{})
+
+	assert.Equal(t, "writing state: access denied: /Workspace/Users/a@b.com/x", err.Error())
+	assert.Equal(t, "writing state: access denied", ErrorTemplate(err))
+	assert.NotContains(t, ErrorTemplate(err), "/Workspace")
 }

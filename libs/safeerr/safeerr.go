@@ -84,11 +84,23 @@ type SafeStringer interface {
 // own template in place of the verb, recursively. A %w wrapping any other error
 // stays a bare %w, since nothing about that error is known to be safe.
 func ErrorTemplate(err error) string {
+	return errorTemplate(err, 0)
+}
+
+// maxTemplateDepth bounds how far a template is followed through %w. A chain
+// deeper than this is either pathological or cyclic — an error whose Unwrap
+// eventually reaches an ancestor — and following it would exhaust the stack.
+const maxTemplateDepth = 32
+
+func errorTemplate(err error, depth int) string {
+	if depth > maxTemplateDepth {
+		return ""
+	}
 	te, ok := errors.AsType[*templateError](err)
 	if !ok {
 		return ""
 	}
-	return te.expand()
+	return te.expand(depth)
 }
 
 // safeValue marks one argument of Errorf as free of user data.
@@ -161,7 +173,7 @@ func templateArgs(args []any) []any {
 
 // expand walks the template, substituting safe values and chained templates and
 // leaving every other verb in place.
-func (e *templateError) expand() string {
+func (e *templateError) expand(depth int) string {
 	var sb strings.Builder
 	argIndex := 0
 
@@ -187,7 +199,7 @@ func (e *templateError) expand() string {
 			continue
 		}
 
-		sb.WriteString(e.substitute(spec, verb, argIndex))
+		sb.WriteString(e.substitute(spec, verb, argIndex, depth))
 		argIndex++
 	}
 
@@ -195,7 +207,7 @@ func (e *templateError) expand() string {
 }
 
 // substitute returns the text to emit for a single verb.
-func (e *templateError) substitute(spec string, verb byte, argIndex int) string {
+func (e *templateError) substitute(spec string, verb byte, argIndex, depth int) string {
 	if argIndex >= len(e.args) {
 		// More verbs than arguments; go vet reports the call itself.
 		return spec
@@ -205,6 +217,12 @@ func (e *templateError) substitute(spec string, verb byte, argIndex int) string 
 	if s, ok := arg.(safeValue); ok {
 		arg = s.v
 	} else if verb != 'w' {
+		// An error retained for %w chaining can still describe itself under an
+		// ordinary verb, which is how a typed error reports its classification
+		// when a call site uses %s rather than %w.
+		if ss, ok := arg.(SafeStringer); ok {
+			return ss.SafeString()
+		}
 		return spec
 	}
 
@@ -218,7 +236,7 @@ func (e *templateError) substitute(spec string, verb byte, argIndex int) string 
 		// supplies a stand-in contributes that instead, which is how the CLI's
 		// own typed errors report their classification without the path or name
 		// they carry. Only the wrapped error itself is consulted, not its chain.
-		if inner := ErrorTemplate(err); inner != "" {
+		if inner := errorTemplate(err, depth+1); inner != "" {
 			return inner
 		}
 		if ss, ok := err.(SafeStringer); ok {
@@ -267,11 +285,16 @@ func parseVerb(format string, i int) (spec string, verb byte, next int, ok bool)
 // skipNumber advances past a width or precision, rejecting the '*' and '['
 // forms that consume an argument of their own.
 func skipNumber(format string, j int) (int, bool) {
-	if j < len(format) && (format[j] == '*' || format[j] == '[') {
+	if j < len(format) && format[j] == '*' {
 		return 0, false
 	}
 	for j < len(format) && format[j] >= '0' && format[j] <= '9' {
 		j++
+	}
+	// An explicit argument index may also follow a literal width or precision
+	// (%2[2]s, %.2[2]s), so reject '[' here and not only ahead of the digits.
+	if j < len(format) && format[j] == '[' {
+		return 0, false
 	}
 	return j, true
 }
