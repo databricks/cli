@@ -351,7 +351,10 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	}
 
 	// warnPrefix labels the conversion's warnings as coming from the background dry run.
-	hasWarnings, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
+	hasWarnings, warnTemplate, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
+	// Recorded even when the conversion goes on to fail: a warning is enough to
+	// stop an automatic migration on its own, and nothing else describes it.
+	b.Metrics.DirectMigrateWarningTemplate = warnTemplate
 	if err != nil {
 		return tempStatePath, resourceCount, hasWarnings, nil, err
 	}

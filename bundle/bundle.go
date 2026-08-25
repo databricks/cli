@@ -84,6 +84,7 @@ type Metrics struct {
 	// scrubbing. Each is a libs/safeerr message template; see the matching fields
 	// on protos.BundleDeployExperimental for what each one covers.
 	DirectMigrateErrorTemplate       string
+	DirectMigrateWarningTemplate     string
 	DirectMigrateCommitErrorTemplate string
 
 	// StateEngine is the engine that ran the deploy, set in deployCore. Empty when

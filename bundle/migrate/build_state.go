@@ -31,8 +31,12 @@ func BuildStateFromTF(
 	tfAttrs TFStateAttrs,
 	tfIDs map[string]string,
 	warnPrefix string,
-) (bool, error) {
+) (bool, string, error) {
 	warningsSeen := false
+	// PII-free description of the first warning, for telemetry. A warning stops
+	// an automatic migration just as an error does, but carries no error to
+	// describe it, so it is built here from the parts that are safe to report.
+	warnTemplate := ""
 	// Collect all resource nodes (same patterns as makePlan).
 	var nodes []string
 	patterns := []dyn.Pattern{
@@ -50,7 +54,7 @@ func BuildStateFromTF(
 			},
 		)
 		if err != nil {
-			return warningsSeen, err
+			return warningsSeen, warnTemplate, err
 		}
 	}
 
@@ -68,34 +72,35 @@ func BuildStateFromTF(
 
 		group := config.GetResourceTypeFromKey(node)
 		if group == "" {
-			return warningsSeen, safeerr.Errorf("cannot determine resource type for %q", key)
+			return warningsSeen, warnTemplate, safeerr.Errorf("cannot determine resource type for %q", key)
 		}
 
 		adapter, ok := adapters[group]
 		if !ok {
 			warningsSeen = true
 			log.Warnf(ctx, warnPrefix+"unsupported resource type %q for %s, skipping", group, node)
+			setWarnTemplate(&warnTemplate, safeerr.Errorf("unsupported resource type %q for %s, skipping", safeerr.Safe(group), key))
 			continue
 		}
 
 		inputConfig, err := configRoot.GetResourceConfig(node)
 		if err != nil {
-			return warningsSeen, safeerr.Errorf("%s: getting config: %w", key, err)
+			return warningsSeen, warnTemplate, safeerr.Errorf("%s: getting config: %w", key, err)
 		}
 
 		inputSV, err := adapter.PrepareInputConfig(inputConfig, node)
 		if err != nil {
-			return warningsSeen, safeerr.Errorf("%s: PrepareInputConfig: %w", key, err)
+			return warningsSeen, warnTemplate, safeerr.Errorf("%s: PrepareInputConfig: %w", key, err)
 		}
 
 		newStateValue, err := adapter.PrepareState(inputSV.Value)
 		if err != nil {
-			return warningsSeen, safeerr.Errorf("%s: PrepareState: %w", key, err)
+			return warningsSeen, warnTemplate, safeerr.Errorf("%s: PrepareState: %w", key, err)
 		}
 
 		refs, err := direct.ExtractReferences(configRoot.Value(), node, adapter.StateType())
 		if err != nil {
-			return warningsSeen, safeerr.Errorf("%s: extracting references: %w", key, err)
+			return warningsSeen, warnTemplate, safeerr.Errorf("%s: extracting references: %w", key, err)
 		}
 		maps.Copy(refs, inputSV.Refs)
 
@@ -146,7 +151,7 @@ func BuildStateFromTF(
 		// is absent there (model_serving_endpoints, database_instances).
 		if _, ok := sv.Refs["object_id"]; ok {
 			if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "object_id"), id); err != nil {
-				return warningsSeen, safeerr.Errorf("%s: setting object_id: %w", key, err)
+				return warningsSeen, warnTemplate, safeerr.Errorf("%s: setting object_id: %w", key, err)
 			}
 			delete(sv.Refs, "object_id")
 		}
@@ -173,28 +178,33 @@ func BuildStateFromTF(
 		for _, pending := range pendingRefs {
 			fieldPath, err := structpath.ParsePath(pending.fieldPathStr)
 			if err != nil {
-				return warningsSeen, safeerr.Errorf("%s: parsing field path %q: %w", key, pending.fieldPathStr, err)
+				return warningsSeen, warnTemplate, safeerr.Errorf("%s: parsing field path %q: %w", key, pending.fieldPathStr, err)
 			}
 
 			// ResolveFieldRef returns the fully resolved value for this field,
 			// using either Method A (TF state lookup) or Method B (template evaluation).
 			value, warned, err := ResolveFieldRef(ctx, tfAttrs, srcGroup, srcName, fieldPath, pending.refTemplate, warnPrefix)
 			if err != nil {
-				return warningsSeen, safeerr.Errorf("%s: cannot resolve field %q (template %q): %w", key, pending.fieldPathStr, pending.refTemplate, err)
+				return warningsSeen, warnTemplate, safeerr.Errorf("%s: cannot resolve field %q (template %q): %w", key, pending.fieldPathStr, pending.refTemplate, err)
 			}
 			if warned {
 				warningsSeen = true
+				// The disagreeing values are user data; the resource type and the
+				// stage are not.
+				setWarnTemplate(&warnTemplate, safeerr.Errorf(
+					"%s.%s field %q: method A and method B disagree",
+					safeerr.Safe(srcGroup), srcName, pending.fieldPathStr))
 			}
 
 			// Set the resolved value directly and remove the ref entry.
 			if err := structaccess.Set(sv.Value, fieldPath, value); err != nil {
-				return warningsSeen, safeerr.Errorf("%s: cannot set resolved value for field %q: %w", key, pending.fieldPathStr, err)
+				return warningsSeen, warnTemplate, safeerr.Errorf("%s: cannot set resolved value for field %q: %w", key, pending.fieldPathStr, err)
 			}
 			delete(sv.Refs, pending.fieldPathStr)
 		}
 
 		if len(sv.Refs) > 0 {
-			return warningsSeen, safeerr.Errorf("%s: unresolved references: %v", key, sv.Refs)
+			return warningsSeen, warnTemplate, safeerr.Errorf("%s: unresolved references: %v", key, sv.Refs)
 		}
 
 		// Handle etag for dashboards: read it directly from TF state attributes.
@@ -204,15 +214,24 @@ func BuildStateFromTF(
 		if v, err := LookupTFField(tfAttrs, group, srcName, structpath.NewStringKey(nil, "etag")); err == nil {
 			if etag, ok := v.(string); ok && etag != "" {
 				if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag); err != nil {
-					return warningsSeen, safeerr.Errorf("%s: cannot set etag: %w", key, err)
+					return warningsSeen, warnTemplate, safeerr.Errorf("%s: cannot set etag: %w", key, err)
 				}
 			}
 		}
 
 		if err := stateDB.SaveState(node, id, sv.Value, dependsOn); err != nil {
-			return warningsSeen, safeerr.Errorf("%s: SaveState: %w", key, err)
+			return warningsSeen, warnTemplate, safeerr.Errorf("%s: SaveState: %w", key, err)
 		}
 	}
 
-	return warningsSeen, nil
+	return warningsSeen, warnTemplate, nil
+}
+
+// setWarnTemplate records err's message template in target unless one is already
+// there: the first warning is the one reported, matching how the first error
+// diagnostic is the one a deploy reports.
+func setWarnTemplate(target *string, err error) {
+	if *target == "" {
+		*target = safeerr.ErrorTemplate(err)
+	}
 }

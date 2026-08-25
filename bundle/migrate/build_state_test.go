@@ -51,7 +51,7 @@ func runBuildStateFromTF(
 	db.OpenWithData(statePath, dstate.NewDatabase("lineage", 1))
 	require.NoError(t, db.UpgradeToWrite())
 
-	_, err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
+	_, _, err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
 	require.NoError(t, err)
 
 	_, err = db.Finalize(t.Context())
@@ -323,7 +323,7 @@ func buildStateErrFromTF(
 	db.OpenWithData(filepath.Join(t.TempDir(), "resources.json"), dstate.NewDatabase("lineage", 1))
 	require.NoError(t, db.UpgradeToWrite())
 
-	_, err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
+	_, _, err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
 	return err
 }
 
@@ -400,5 +400,53 @@ resources:
 				assert.NotContains(t, safeerr.ErrorTemplate(err), secret, "template must not")
 			}
 		})
+	}
+}
+
+// TestBuildStateFromTFMethodsDisagree covers the one blocking outcome that is
+// not an error: both resolution methods succeed but return different values, so
+// the conversion warns and keeps going. MigrateToDirect stops on a warning just
+// as it does on an error, but there is no error to describe — nothing records
+// which field disagreed.
+func TestBuildStateFromTFMethodsDisagree(t *testing.T) {
+	yaml := `
+resources:
+  jobs:
+    src:
+      name: source
+    dst:
+      name: dst
+      description: ${resources.jobs.src.name}
+`
+	// Method A reads dst's own description; Method B reads src's name. They
+	// disagree here, which is what the backend normalizing a value on write
+	// looks like to the conversion.
+	tfAttrs := migrate.TFStateAttrs{
+		"databricks_job": {
+			"src": json.RawMessage(`{"id": "1", "name": "source"}`),
+			"dst": json.RawMessage(`{"id": "2", "name": "dst", "description": "stale-value"}`),
+		},
+	}
+	tfIDs := map[string]string{"resources.jobs.src": "1", "resources.jobs.dst": "2"}
+
+	root := rootFromYAML(t, yaml)
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	var db dstate.DeploymentState
+	db.OpenWithData(filepath.Join(t.TempDir(), "resources.json"), dstate.NewDatabase("lineage", 1))
+	require.NoError(t, db.UpgradeToWrite())
+
+	warnings, warnTemplate, err := migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
+
+	// No error: the conversion completed. But it warned, which is enough to stop
+	// an automatic migration, so the warning carries its own PII-free template.
+	require.NoError(t, err)
+	assert.True(t, warnings, "disagreeing methods must be reported as a warning")
+	assert.Equal(t, `jobs.%s field %q: method A and method B disagree`, warnTemplate)
+
+	// Neither the resource name nor the disagreeing values reach the template.
+	for _, secret := range []string{"dst", "stale-value", "source"} {
+		assert.NotContains(t, warnTemplate, secret)
 	}
 }

@@ -310,6 +310,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				// would re-align every field above them.
 				DirectMigrateErrorTemplate:       b.Metrics.DirectMigrateErrorTemplate,
 				DirectMigrateCommitErrorTemplate: b.Metrics.DirectMigrateCommitErrorTemplate,
+				DirectMigrateWarningTemplate:     b.Metrics.DirectMigrateWarningTemplate,
 			},
 		},
 	})

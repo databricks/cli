@@ -135,6 +135,12 @@ type BundleDeployExperimental struct {
 	// converted cleanly but could not be committed. Set alongside
 	// direct_migrate_commit_error.
 	DirectMigrateCommitErrorTemplate string `json:"direct_migrate_commit_error_template,omitempty"`
+
+	// DirectMigrateWarningTemplate describes the first warning a conversion
+	// emitted. A warning stops an automatic migration just as an error does, but
+	// carries no error to describe it. Set alongside direct_migrate_warnings, or
+	// direct_drymigrate_warnings on the dry run.
+	DirectMigrateWarningTemplate string `json:"direct_migrate_warning_template,omitempty"`
 }
 
 // BundleResourcesMetadata mirrors the universe proto. Per-resource-type counts
