@@ -44,7 +44,7 @@ Billing
   budget-policy                       *Public Preview* A service serves REST API about Budget policies.
   budgets                             *Public Preview* These APIs manage budget configurations for this account.
   log-delivery                        These APIs manage log delivery configurations for this account.
-  usage-dashboards                    *Public Preview* These APIs manage usage dashboards for this account.
+  usage-dashboards                    These APIs manage usage dashboards for this account.
 
 OAuth
   custom-app-integration              These APIs enable administrators to manage custom OAuth app integrations, which is required for adding/using Custom OAuth App Integration like Tableau Cloud for Databricks in AWS cloud.

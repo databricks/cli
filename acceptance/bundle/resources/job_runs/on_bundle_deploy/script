@@ -26,9 +26,9 @@ title "second run-now after recreate"
 trace print_requests.py --keep //jobs/runs/delete
 trace print_requests.py //jobs/run-now
 
-title "removing on_bundle_deploy rewrites state without a run"
+title "removing on_bundle_deploy is unchanged and does not run"
 # Drop the lifecycle block so the next plan compares a nil fingerprint against
-# the UUID left in state: a state-only update that clears it, never a recreate.
+# the UUID left in state. The removed trigger is skipped, never recreated.
 update_file.py databricks.yml "      lifecycle:
         triggers:
           - on_bundle_deploy: true

@@ -461,6 +461,16 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"cluster_policies.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &PermissionsState{
+			ObjectID: "/cluster-policies/cluster-policy-permissions",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_USE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
 	"instance_pools.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/instance-pools/pool-permissions",

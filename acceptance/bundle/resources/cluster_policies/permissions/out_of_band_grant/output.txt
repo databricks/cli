@@ -1,0 +1,78 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_permissions_drift/default/files...
+Created cluster_policies.test_cluster_policy
+Created cluster_policies.test_cluster_policy.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Plan is a no-op immediately after deploy
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Grant an extra principal out of band
+>>> [CLI] cluster-policies set-permissions [TEST_CLUSTER_POLICY_ID] --json {"access_control_list":[{"group_name":"users","permission_level":"CAN_USE"},{"user_name":"intruder@example.com","permission_level":"CAN_USE"}]}
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_USE"
+        }
+      ],
+      "group_name": "users"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_USE"
+        }
+      ],
+      "display_name": "intruder@example.com",
+      "user_name": "intruder@example.com"
+    }
+  ],
+  "object_id": "/cluster-policies/[TEST_CLUSTER_POLICY_ID]",
+  "object_type": "cluster-policy"
+}
+
+=== Plan detects the permission drift
+>>> [CLI] bundle plan
+update cluster_policies.test_cluster_policy.permissions
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+=== Redeploy reconciles the ACL back to the configured grants
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_permissions_drift/default/files...
+Updated cluster_policies.test_cluster_policy.permissions
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //permissions/cluster-policies
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/cluster-policies/[TEST_CLUSTER_POLICY_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "group_name": "users",
+        "permission_level": "CAN_USE"
+      }
+    ]
+  }
+}
+
+=== Plan is a no-op again
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.test_cluster_policy
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_permissions_drift/default
+
+Destroy: 1 deleted

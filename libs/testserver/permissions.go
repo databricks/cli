@@ -238,6 +238,22 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		}
 	}
 
+	// Cluster policies only support CAN_USE; the real API rejects other levels
+	// with this exact message. Model it so deploys fail the same way on cloud.
+	if requestObjectType == "cluster-policies" {
+		for _, acl := range updateRequest.AccessControlList {
+			if acl.PermissionLevel != "" && acl.PermissionLevel != "CAN_USE" {
+				return Response{
+					StatusCode: 400,
+					Body: map[string]string{
+						"error_code": "INVALID_PARAMETER_VALUE",
+						"message":    fmt.Sprintf("Unknown Cluster Policy Permission Level: %s", acl.PermissionLevel),
+					},
+				}
+			}
+		}
+	}
+
 	responseObjectID := fmt.Sprintf("/%s/%s", requestObjectType, objectId)
 
 	// Get existing permissions or create new ones

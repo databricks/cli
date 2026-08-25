@@ -102,7 +102,6 @@ type DataSourceAiGatewayModelServicesModelServicesProviderConfig struct {
 }
 
 type DataSourceAiGatewayModelServicesModelServices struct {
-	BrowseOnly        bool                                                         `json:"browse_only,omitempty"`
 	Comment           string                                                       `json:"comment,omitempty"`
 	Config            *DataSourceAiGatewayModelServicesModelServicesConfig         `json:"config,omitempty"`
 	CreateTime        string                                                       `json:"create_time,omitempty"`
@@ -123,7 +122,6 @@ type DataSourceAiGatewayModelServicesProviderConfig struct {
 }
 
 type DataSourceAiGatewayModelServices struct {
-	IncludeBrowse  bool                                            `json:"include_browse,omitempty"`
 	ModelServices  []DataSourceAiGatewayModelServicesModelServices `json:"model_services,omitempty"`
 	PageSize       int                                             `json:"page_size,omitempty"`
 	Parent         string                                          `json:"parent,omitempty"`

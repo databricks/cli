@@ -28,6 +28,14 @@ from databricks.bundles.pipelines._models.kafka_options import (
     KafkaOptions,
     KafkaOptionsParam,
 )
+from databricks.bundles.pipelines._models.linked_in_ads_options import (
+    LinkedInAdsOptions,
+    LinkedInAdsOptionsParam,
+)
+from databricks.bundles.pipelines._models.marketo_options import (
+    MarketoOptions,
+    MarketoOptionsParam,
+)
 from databricks.bundles.pipelines._models.meta_marketing_options import (
     MetaMarketingOptions,
     MetaMarketingOptionsParam,
@@ -105,6 +113,23 @@ class ConnectorOptions:
     [Beta]
     """
 
+    linkedin_ads_options: VariableOrOptional[LinkedInAdsOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] LinkedIn Ads specific options for ingestion.
+    sync_start_date and lookback_window_days apply to both the prebuilt analytics
+    tables and custom reports. custom_report_options defines a custom (user-defined)
+    adAnalytics report and is only valid on a table object.
+    """
+
+    marketo_options: VariableOrOptional[MarketoOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Marketo specific options for ingestion
+    """
+
     meta_ads_options: VariableOrOptional[MetaMarketingOptions] = None
     """
     [Beta] Meta Marketing (Meta Ads) specific options for ingestion
@@ -147,7 +172,7 @@ class ConnectorOptions:
 
     zendesk_support_options: VariableOrOptional[ZendeskSupportOptions] = None
     """
-    [Beta] Zendesk Support specific options for ingestion
+    [Public Preview] Zendesk Support specific options for ingestion
     """
 
     @classmethod
@@ -199,6 +224,23 @@ class ConnectorOptionsDict(TypedDict, total=False):
     [Beta]
     """
 
+    linkedin_ads_options: VariableOrOptional[LinkedInAdsOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] LinkedIn Ads specific options for ingestion.
+    sync_start_date and lookback_window_days apply to both the prebuilt analytics
+    tables and custom reports. custom_report_options defines a custom (user-defined)
+    adAnalytics report and is only valid on a table object.
+    """
+
+    marketo_options: VariableOrOptional[MarketoOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Marketo specific options for ingestion
+    """
+
     meta_ads_options: VariableOrOptional[MetaMarketingOptionsParam]
     """
     [Beta] Meta Marketing (Meta Ads) specific options for ingestion
@@ -241,7 +283,7 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     zendesk_support_options: VariableOrOptional[ZendeskSupportOptionsParam]
     """
-    [Beta] Zendesk Support specific options for ingestion
+    [Public Preview] Zendesk Support specific options for ingestion
     """
 
 

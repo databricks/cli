@@ -45,6 +45,7 @@ type Resources struct {
 	VectorSearchIndexes   map[string]*resources.VectorSearchIndex    `json:"vector_search_indexes,omitempty"`
 	InstancePools         map[string]*resources.InstancePool         `json:"instance_pools,omitempty"`
 	Secrets               map[string]*resources.Secret               `json:"secrets,omitempty"`
+	ClusterPolicies       map[string]*resources.ClusterPolicy        `json:"cluster_policies,omitempty"`
 
 	// Internal resources
 	Snapshots map[string]*resources.Snapshot `json:"internal_immutable_snapshots,omitempty" bundle:"internal"`
@@ -135,6 +136,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["instance_pools"], r.InstancePools),
 		collectResourceMap(descriptions["internal_immutable_snapshots"], r.Snapshots),
 		collectResourceMap(descriptions["secrets"], r.Secrets),
+		collectResourceMap(descriptions["cluster_policies"], r.ClusterPolicies),
 	}
 }
 
@@ -204,5 +206,6 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"vector_search_indexes":        (&resources.VectorSearchIndex{}).ResourceDescription(),
 		"internal_immutable_snapshots": (&resources.Snapshot{}).ResourceDescription(),
 		"secrets":                      (&resources.Secret{}).ResourceDescription(),
+    "cluster_policies":             (&resources.ClusterPolicy{}).ResourceDescription(),
 	}
 }

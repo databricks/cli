@@ -40,6 +40,7 @@ var SupportedResources = map[string]any{
 	"vector_search_indexes":   (*ResourceVectorSearchIndex)(nil),
 	"instance_pools":          (*ResourceInstancePool)(nil),
 	"secrets":                 (*ResourceSecret)(nil),
+	"cluster_policies":        (*ResourceClusterPolicy)(nil),
 
 	// Permissions
 	"jobs.permissions":                    (*ResourcePermissions)(nil),
@@ -47,6 +48,7 @@ var SupportedResources = map[string]any{
 	"apps.permissions":                    (*ResourcePermissions)(nil),
 	"alerts.permissions":                  (*ResourcePermissions)(nil),
 	"clusters.permissions":                (*ResourcePermissions)(nil),
+	"cluster_policies.permissions":        (*ResourcePermissions)(nil),
 	"database_instances.permissions":      (*ResourcePermissions)(nil),
 	"postgres_projects.permissions":       (*ResourcePermissions)(nil),
 	"experiments.permissions":             (*ResourcePermissions)(nil),

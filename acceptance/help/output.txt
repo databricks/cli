@@ -163,7 +163,7 @@ Tags
   workspace-entity-tag-assignments       *Beta* Manage tag assignments on workspace-scoped objects.
 
 Postgres
-  postgres                               *Beta* Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.
+  postgres                               Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.
 
 Environments
   environments                           APIs to manage environment resources.

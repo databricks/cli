@@ -37,6 +37,7 @@ var unsupportedResources = []string{
 	"job_runs",
 	"internal_immutable_snapshots",
 	"secrets",
+	"cluster_policies",
 }
 
 func TestApplyBundlePermissions(t *testing.T) {

@@ -365,33 +365,18 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 	cmdio.LogString(ctx, fmt.Sprintf("Output from %s: id=%d: %s", ResourceKey(ctx), runID, msg))
 }
 
-// DoUpdate rewrites state after a cleared trigger (no API call) or finishes the
-// wait an interrupted deploy abandoned.
-func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, config *JobRunState, entry *PlanEntry) (*JobRunRemote, error) {
-	// Clearing a trigger only drops its local-only fingerprint from state; wait on
-	// the run only when some other field changed.
-	if !entry.Changes.HasChangeExcept("lifecycle", "lifecycle.triggers", "lifecycle.triggers.on_bundle_deploy") {
-		config.ResultState = ""
-		return nil, nil
-	}
-	remote, err := r.waitForRun(ctx, id)
-	config.ResultState = ""
-	return remote, err
-}
-
-// OverrideChangeDesc downgrades result_state drift to an update while the run is
-// still going, so a run that may yet succeed is adopted and waited on. A run that
+// OverrideChangeDesc downgrades result_state drift to skip while the run is
+// still going, so a run that may yet succeed is not recreated. A run that
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
-// Clearing a trigger downgrades the recreate to a state-only update so the
-// fingerprint is dropped from state without re-firing the run.
+// Clearing a trigger skips its local-only fingerprint without re-firing the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
 	switch path.String() {
 	case "lifecycle", "lifecycle.triggers", "lifecycle.triggers.on_bundle_deploy":
 		// A cleared trigger sets New empty; structdiff may report it at lifecycle,
-		// lifecycle.triggers, or the leaf. DoUpdate treats these paths as no-ops.
+		// lifecycle.triggers, or the leaf.
 		if change.New == nil || change.New == "" {
-			change.Action = deployplan.Update
+			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
 		}
 		return nil
@@ -400,7 +385,7 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
 			return nil
 		}
-		change.Action = deployplan.Update
+		change.Action = deployplan.Skip
 		change.Reason = "run in progress"
 		return nil
 	default:

@@ -6,6 +6,8 @@ apps: apps.App
 
 catalogs: catalog.CreateCatalog
 
+cluster_policies: compute.CreatePolicy
+
 clusters: compute.ClusterSpec
 
 dashboards: dashboards.Dashboard

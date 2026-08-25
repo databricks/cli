@@ -499,12 +499,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Fatalf("Invalid config %s: %s", configPath, err)
 			}
 
-			// Apply default: CloudSlow implies Cloud. Do this before generating
-			// the materialized config so the implication is visible in out.test.toml.
-			if isTruePtr(config.CloudSlow) {
-				config.Cloud = config.CloudSlow
-			}
-
 			// Generate materialized config for this test.
 			// We do this before skipping the test, so the configs are generated for all tests.
 			materializedConfig := internal.GenerateMaterializedConfig(&config)
@@ -686,34 +680,14 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 			return fmt.Sprintf("Disabled via CloudEnvs.%s setting in %s (CLOUD_ENV=%s)", cloudEnvBase, configPath, cloudEnv)
 		}
 
-		if isTruePtr(config.CloudSlow) {
-			if testing.Short() {
-				return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
-			}
+		if !isTruePtr(config.Cloud) {
+			return fmt.Sprintf("Disabled via Cloud setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
 		}
 
-		isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
-		if !isCloudEnabled {
-			return fmt.Sprintf("Disabled via Cloud/CloudSlow setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudSlow=%v)",
-				configPath,
-				cloudEnv,
-				isTruePtr(config.Cloud),
-				isTruePtr(config.CloudSlow),
-			)
+		// CloudSlow only narrows an already-enabled cloud run: skip it under -short.
+		if isTruePtr(config.CloudSlow) && testing.Short() {
+			return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
 		}
-
-		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID is empty)", configPath)
-		}
-
-		if isTruePtr(config.RequiresWarehouse) && os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresWarehouse setting in %s (TEST_DEFAULT_WAREHOUSE_ID is empty)", configPath)
-		}
-
-		if isTruePtr(config.RequiresCluster) && os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID is empty)", configPath)
-		}
-
 	}
 
 	return ""

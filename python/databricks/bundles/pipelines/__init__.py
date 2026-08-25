@@ -121,12 +121,27 @@ __all__ = [
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
+    "LinkedInAdsOptions",
+    "LinkedInAdsOptionsDict",
+    "LinkedInAdsOptionsLinkedInAdsCustomReportOptions",
+    "LinkedInAdsOptionsLinkedInAdsCustomReportOptionsDict",
+    "LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity",
+    "LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularityParam",
+    "LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinder",
+    "LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinderParam",
+    "LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularity",
+    "LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularityParam",
+    "LinkedInAdsOptionsLinkedInAdsCustomReportOptionsParam",
+    "LinkedInAdsOptionsParam",
     "LocalFileInfo",
     "LocalFileInfoDict",
     "LocalFileInfoParam",
     "LogAnalyticsInfo",
     "LogAnalyticsInfoDict",
     "LogAnalyticsInfoParam",
+    "MarketoOptions",
+    "MarketoOptionsDict",
+    "MarketoOptionsParam",
     "MavenLibrary",
     "MavenLibraryDict",
     "MavenLibraryParam",
@@ -460,6 +475,28 @@ from databricks.bundles.pipelines._models.lifecycle import (
     LifecycleDict,
     LifecycleParam,
 )
+from databricks.bundles.pipelines._models.linked_in_ads_options import (
+    LinkedInAdsOptions,
+    LinkedInAdsOptionsDict,
+    LinkedInAdsOptionsParam,
+)
+from databricks.bundles.pipelines._models.linked_in_ads_options_linked_in_ads_custom_report_options import (
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptions,
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsDict,
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsParam,
+)
+from databricks.bundles.pipelines._models.linked_in_ads_options_linked_in_ads_custom_report_options_linked_in_ads_entity_granularity import (
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity,
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularityParam,
+)
+from databricks.bundles.pipelines._models.linked_in_ads_options_linked_in_ads_custom_report_options_linked_in_ads_finder import (
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinder,
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinderParam,
+)
+from databricks.bundles.pipelines._models.linked_in_ads_options_linked_in_ads_custom_report_options_linked_in_ads_time_granularity import (
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularity,
+    LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularityParam,
+)
 from databricks.bundles.pipelines._models.local_file_info import (
     LocalFileInfo,
     LocalFileInfoDict,
@@ -469,6 +506,11 @@ from databricks.bundles.pipelines._models.log_analytics_info import (
     LogAnalyticsInfo,
     LogAnalyticsInfoDict,
     LogAnalyticsInfoParam,
+)
+from databricks.bundles.pipelines._models.marketo_options import (
+    MarketoOptions,
+    MarketoOptionsDict,
+    MarketoOptionsParam,
 )
 from databricks.bundles.pipelines._models.maven_library import (
     MavenLibrary,

@@ -153,6 +153,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				InstancePools: map[string]*resources.InstancePool{
 					"instance_pool1": {CreateInstancePool: compute.CreateInstancePool{InstancePoolName: "instance_pool1", NodeTypeId: "i3.xlarge"}},
 				},
+				ClusterPolicies: map[string]*resources.ClusterPolicy{
+					"cluster_policy1": {CreatePolicy: compute.CreatePolicy{Name: "cluster_policy1"}},
+				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
 						DashboardConfig: resources.DashboardConfig{
