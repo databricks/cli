@@ -56,15 +56,15 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		ExpireTime:     inputSecret.ExpireTime,
 		CreateTime:     now,
 		UpdateTime:     now,
-		CreatedBy:      "test-user@databricks.com",
-		UpdatedBy:      "test-user@databricks.com",
+		CreatedBy:      s.CurrentUser().UserName,
+		UpdatedBy:      s.CurrentUser().UserName,
 		EffectiveOwner: inputSecret.Owner,
 		MetastoreId:    "test-metastore-id",
 	}
 
 	if secret.Owner == "" {
-		secret.Owner = "test-user@databricks.com"
-		secret.EffectiveOwner = "test-user@databricks.com"
+		secret.Owner = s.CurrentUser().UserName
+		secret.EffectiveOwner = s.CurrentUser().UserName
 	}
 
 	s.UCSecrets[fullName] = secret
@@ -155,12 +155,15 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 		secret.Owner = updateSecret.Owner
 		secret.EffectiveOwner = updateSecret.Owner
 	}
-	// The CLI masks the whole secret with update_mask=*, so an absent expire_time
-	// clears the existing one rather than leaving it in place.
-	secret.ExpireTime = updateSecret.ExpireTime
+	// Verified against a real workspace: even with update_mask=*, an absent
+	// expire_time leaves the existing one in place rather than clearing it, so a
+	// removal never takes effect and the next plan asks for it again.
+	if updateSecret.ExpireTime != nil {
+		secret.ExpireTime = updateSecret.ExpireTime
+	}
 
 	secret.UpdateTime = sdktime.New(time.Now())
-	secret.UpdatedBy = "test-user@databricks.com"
+	secret.UpdatedBy = s.CurrentUser().UserName
 
 	s.UCSecrets[fullName] = secret
 
