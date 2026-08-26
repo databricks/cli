@@ -16,6 +16,9 @@ const (
 	// Default cap on how long an SSH tunnel server is allowed to live. Fixed when the
 	// server job is submitted, so it is only settable by the invocation that starts it.
 	defaultServerTimeout = 24 * time.Hour
+	// Off by default: holding the run open for detached processes keeps the cluster from
+	// auto-terminating, so it is the caller who decides to spend that time.
+	defaultKeepDetachedFor = time.Duration(0)
 
 	taskStartupTimeout    = 10 * time.Minute
 	gpuTaskStartupTimeout = 45 * time.Minute
