@@ -305,6 +305,20 @@ resources:
 	}
 }
 
+// openEmptyWriteState opens an empty write-mode deployment state under a fresh
+// temp dir and registers cleanup that closes the WAL file. The error and warning
+// paths below never reach the Finalize that the success helper relies on to close
+// it, and Windows cannot remove the temp dir while the .wal handle is still open.
+func openEmptyWriteState(t *testing.T) *dstate.DeploymentState {
+	t.Helper()
+
+	db := &dstate.DeploymentState{}
+	db.OpenWithData(filepath.Join(t.TempDir(), "resources.json"), dstate.NewDatabase("lineage", 1))
+	require.NoError(t, db.UpgradeToWrite())
+	t.Cleanup(func() { _, _ = db.Finalize(t.Context()) })
+	return db
+}
+
 // buildStateErrFromTF is runBuildStateFromTF's failure counterpart: it returns
 // the error instead of requiring success.
 func buildStateErrFromTF(
@@ -319,11 +333,9 @@ func buildStateErrFromTF(
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
 
-	var db dstate.DeploymentState
-	db.OpenWithData(filepath.Join(t.TempDir(), "resources.json"), dstate.NewDatabase("lineage", 1))
-	require.NoError(t, db.UpgradeToWrite())
+	db := openEmptyWriteState(t)
 
-	_, _, err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
+	_, _, err = migrate.BuildStateFromTF(t.Context(), &root, adapters, db, tfAttrs, tfIDs, "")
 	return err
 }
 
@@ -433,11 +445,9 @@ resources:
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
 
-	var db dstate.DeploymentState
-	db.OpenWithData(filepath.Join(t.TempDir(), "resources.json"), dstate.NewDatabase("lineage", 1))
-	require.NoError(t, db.UpgradeToWrite())
+	db := openEmptyWriteState(t)
 
-	warnings, warnSaferr, err := migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
+	warnings, warnSaferr, err := migrate.BuildStateFromTF(t.Context(), &root, adapters, db, tfAttrs, tfIDs, "")
 
 	// No error: the conversion completed. But it warned, which is enough to stop
 	// an automatic migration, so the warning carries its own PII-free template.
