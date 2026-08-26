@@ -17,94 +17,96 @@ const unsafeValue = "resources.jobs.my_secret_job"
 
 func TestErrorf(t *testing.T) {
 	tests := []struct {
-		name         string
-		format       string
-		args         []any
-		wantMessage  string
-		wantTemplate string
+		name            string
+		format          string
+		args            []any
+		wantMessage     string
+		wantSafeMessage string
 	}{
 		{
-			name:         "no verbs",
-			format:       "state conversion failed",
-			wantMessage:  "state conversion failed",
-			wantTemplate: "state conversion failed",
+			name:            "no verbs",
+			format:          "state conversion failed",
+			wantMessage:     "state conversion failed",
+			wantSafeMessage: "state conversion failed",
 		},
 		{
-			name:         "unsafe string",
-			format:       "%s: getting config",
-			args:         []any{unsafeValue},
-			wantMessage:  unsafeValue + ": getting config",
-			wantTemplate: "%s: getting config",
+			name:            "unsafe string",
+			format:          "%s: getting config",
+			args:            []any{unsafeValue},
+			wantMessage:     unsafeValue + ": getting config",
+			wantSafeMessage: "%s: getting config",
 		},
 		{
-			name:         "unsafe int",
-			format:       "unsupported deployment state version: %d",
-			args:         []any{7},
-			wantMessage:  "unsupported deployment state version: 7",
-			wantTemplate: "unsupported deployment state version: %d",
+			name:            "unsafe int",
+			format:          "unsupported deployment state version: %d",
+			args:            []any{7},
+			wantMessage:     "unsupported deployment state version: 7",
+			wantSafeMessage: "unsupported deployment state version: %d",
 		},
 		{
-			name:         "safe value is substituted",
-			format:       "%s: cannot set resolved value for field %q",
-			args:         []any{unsafeValue, Safe("tasks[0].job_id")},
-			wantMessage:  unsafeValue + `: cannot set resolved value for field "tasks[0].job_id"`,
-			wantTemplate: `%s: cannot set resolved value for field "tasks[0].job_id"`,
+			name:            "safe value is substituted",
+			format:          "%s: cannot set resolved value for field %q",
+			args:            []any{unsafeValue, Safe("tasks[0].job_id")},
+			wantMessage:     unsafeValue + `: cannot set resolved value for field "tasks[0].job_id"`,
+			wantSafeMessage: `%s: cannot set resolved value for field "tasks[0].job_id"`,
 		},
 		{
-			name:         "only safe values",
-			format:       "cannot convert %s to %s",
-			args:         []any{Safe("string"), Safe("int64")},
-			wantMessage:  "cannot convert string to int64",
-			wantTemplate: "cannot convert string to int64",
+			name:            "only safe values",
+			format:          "cannot convert %s to %s",
+			args:            []any{Safe("string"), Safe("int64")},
+			wantMessage:     "cannot convert string to int64",
+			wantSafeMessage: "cannot convert string to int64",
 		},
 		{
-			name:         "escaped percent is preserved",
-			format:       "100%% of %s",
-			args:         []any{unsafeValue},
-			wantMessage:  "100% of " + unsafeValue,
-			wantTemplate: "100%% of %s",
+			// SafeError is a message rather than a format string, so %% renders as
+			// a literal percent just as it does in the real message.
+			name:            "escaped percent renders as a percent",
+			format:          "100%% of %s",
+			args:            []any{unsafeValue},
+			wantMessage:     "100% of " + unsafeValue,
+			wantSafeMessage: "100% of %s",
 		},
 		{
-			name:         "flags and width on an unsafe verb",
-			format:       "%-12s|",
-			args:         []any{"job"},
-			wantMessage:  "job         |",
-			wantTemplate: "%-12s|",
+			name:            "flags and width on an unsafe verb",
+			format:          "%-12s|",
+			args:            []any{"job"},
+			wantMessage:     "job         |",
+			wantSafeMessage: "%-12s|",
 		},
 		{
-			name:         "flags and width on a safe verb",
-			format:       "%-12s|",
-			args:         []any{Safe("job")},
-			wantMessage:  "job         |",
-			wantTemplate: "job         |",
+			name:            "flags and width on a safe verb",
+			format:          "%-12s|",
+			args:            []any{Safe("job")},
+			wantMessage:     "job         |",
+			wantSafeMessage: "job         |",
 		},
 		{
-			name:         "width and precision on a safe verb",
-			format:       "%08.3f",
-			args:         []any{Safe(3.5)},
-			wantMessage:  "0003.500",
-			wantTemplate: "0003.500",
+			name:            "width and precision on a safe verb",
+			format:          "%08.3f",
+			args:            []any{Safe(3.5)},
+			wantMessage:     "0003.500",
+			wantSafeMessage: "0003.500",
 		},
 		{
-			name:         "plus v on an unsafe verb",
-			format:       "reading state: %+v",
-			args:         []any{struct{ Path string }{unsafeValue}},
-			wantMessage:  "reading state: {Path:" + unsafeValue + "}",
-			wantTemplate: "reading state: %+v",
+			name:            "plus v on an unsafe verb",
+			format:          "reading state: %+v",
+			args:            []any{struct{ Path string }{unsafeValue}},
+			wantMessage:     "reading state: {Path:" + unsafeValue + "}",
+			wantSafeMessage: "reading state: %+v",
 		},
 		{
-			name:         "safe bool",
-			format:       "recovery enabled: %v",
-			args:         []any{Safe(true)},
-			wantMessage:  "recovery enabled: true",
-			wantTemplate: "recovery enabled: true",
+			name:            "safe bool",
+			format:          "recovery enabled: %v",
+			args:            []any{Safe(true)},
+			wantMessage:     "recovery enabled: true",
+			wantSafeMessage: "recovery enabled: true",
 		},
 		{
-			name:         "mixed safe and unsafe in order",
-			format:       "%s: %s for %s in %s",
-			args:         []any{Safe("jobs"), unsafeValue, Safe("PrepareState"), "/home/user/bundle"},
-			wantMessage:  "jobs: " + unsafeValue + " for PrepareState in /home/user/bundle",
-			wantTemplate: "jobs: %s for PrepareState in %s",
+			name:            "mixed safe and unsafe in order",
+			format:          "%s: %s for %s in %s",
+			args:            []any{Safe("jobs"), unsafeValue, Safe("PrepareState"), "/home/user/bundle"},
+			wantMessage:     "jobs: " + unsafeValue + " for PrepareState in /home/user/bundle",
+			wantSafeMessage: "jobs: %s for PrepareState in %s",
 		},
 	}
 
@@ -112,7 +114,7 @@ func TestErrorf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := Errorf(tt.format, tt.args...)
 			assert.Equal(t, tt.wantMessage, err.Error())
-			assert.Equal(t, tt.wantTemplate, ErrorTemplate(err))
+			assert.Equal(t, tt.wantSafeMessage, SafeError(err))
 		})
 	}
 }
@@ -177,7 +179,7 @@ func TestErrorfMessageMatchesFmt(t *testing.T) {
 	}
 }
 
-func TestErrorTemplateChains(t *testing.T) {
+func TestSafeErrorChains(t *testing.T) {
 	inner := Errorf("cannot convert %s to %s", Safe("string"), Safe("int64"))
 	middle := Errorf("%s: cannot set resolved value for field %q: %w", unsafeValue, Safe("tasks[0].job_id"), inner)
 	outer := Errorf("%s: SaveState: %w", unsafeValue, middle)
@@ -187,61 +189,61 @@ func TestErrorTemplateChains(t *testing.T) {
 		outer.Error())
 	assert.Equal(t,
 		`%s: SaveState: %s: cannot set resolved value for field "tasks[0].job_id": cannot convert string to int64`,
-		ErrorTemplate(outer))
+		SafeError(outer))
 
 	// Each level still reports its own template.
-	assert.Equal(t, `%s: cannot set resolved value for field "tasks[0].job_id": cannot convert string to int64`, ErrorTemplate(middle))
-	assert.Equal(t, "cannot convert string to int64", ErrorTemplate(inner))
+	assert.Equal(t, `%s: cannot set resolved value for field "tasks[0].job_id": cannot convert string to int64`, SafeError(middle))
+	assert.Equal(t, "cannot convert string to int64", SafeError(inner))
 }
 
-func TestErrorTemplateChainsThroughForeignError(t *testing.T) {
+func TestSafeErrorChainsThroughForeignError(t *testing.T) {
 	// A %w wrapping an error with no template keeps the bare verb.
 	err := Errorf("reading %s: %w", "/home/user/state.json", fs.ErrNotExist)
 
 	assert.Equal(t, "reading /home/user/state.json: "+fs.ErrNotExist.Error(), err.Error())
-	assert.Equal(t, "reading %s: %w", ErrorTemplate(err))
+	assert.Equal(t, "reading %s: %w", SafeError(err))
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestErrorTemplateChainsThroughUntemplatedWrap(t *testing.T) {
+func TestSafeErrorChainsThroughPlainWrap(t *testing.T) {
 	// A plain fmt.Errorf in the middle of the chain contributes nothing, so the
 	// innermost template that is known reaches the top.
 	inner := Errorf("cannot look up %q", Safe("continuous.pause_status"))
 	err := fmt.Errorf("%s: %w", unsafeValue, inner)
 
-	assert.Equal(t, `cannot look up "continuous.pause_status"`, ErrorTemplate(err))
+	assert.Equal(t, `cannot look up "continuous.pause_status"`, SafeError(err))
 }
 
-func TestErrorTemplateChainsSeveralWrappedErrors(t *testing.T) {
+func TestSafeErrorChainsSeveralWrappedErrors(t *testing.T) {
 	first := Errorf("group %s has no adapter", Safe("quality_monitors"))
 	err := Errorf("%s: %w and %w", unsafeValue, first, fs.ErrPermission)
 
-	assert.Equal(t, "%s: group quality_monitors has no adapter and %w", ErrorTemplate(err))
+	assert.Equal(t, "%s: group quality_monitors has no adapter and %w", SafeError(err))
 	assert.ErrorIs(t, err, fs.ErrPermission)
 	assert.ErrorIs(t, err, first)
 }
 
-func TestErrorTemplateWithoutTemplate(t *testing.T) {
-	assert.Empty(t, ErrorTemplate(nil))
-	assert.Empty(t, ErrorTemplate(errors.New(unsafeValue)))
-	assert.Empty(t, ErrorTemplate(fmt.Errorf("reading %s", unsafeValue)))
-	assert.Empty(t, ErrorTemplate(fs.ErrNotExist))
+func TestSafeErrorWithoutSafeErr(t *testing.T) {
+	assert.Empty(t, SafeError(nil))
+	assert.Empty(t, SafeError(errors.New(unsafeValue)))
+	assert.Empty(t, SafeError(fmt.Errorf("reading %s", unsafeValue)))
+	assert.Empty(t, SafeError(fs.ErrNotExist))
 }
 
 func TestNew(t *testing.T) {
 	err := New("state conversion failed")
 	assert.Equal(t, "state conversion failed", err.Error())
-	assert.Equal(t, "state conversion failed", ErrorTemplate(err))
+	assert.Equal(t, "state conversion failed", SafeError(err))
 }
 
 func TestNewDoesNotFormat(t *testing.T) {
 	// New takes a literal message, so verbs in it are neither expanded nor lost.
 	err := New("100% of %s attempts failed")
 	assert.Equal(t, "100% of %s attempts failed", err.Error())
-	assert.Equal(t, "100% of %s attempts failed", ErrorTemplate(err))
+	assert.Equal(t, "100% of %s attempts failed", SafeError(err))
 }
 
-func TestErrorTemplateFallsBackToRawFormat(t *testing.T) {
+func TestSafeErrorFallsBackToRawFormat(t *testing.T) {
 	tests := []struct {
 		name   string
 		format string
@@ -272,8 +274,9 @@ func TestErrorTemplateFallsBackToRawFormat(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// The format string is a source literal, so reporting it verbatim is
-			// safe even though its verbs were not analysed.
-			assert.Equal(t, tt.format, ErrorTemplate(Errorf(tt.format, tt.args...)))
+			// safe even though its verbs were not analysed. The marker says the
+			// scan bailed rather than that the format happened to render this way.
+			assert.Equal(t, tt.format+"(safeerrerr)", SafeError(Errorf(tt.format, tt.args...)))
 		})
 	}
 }
@@ -295,9 +298,9 @@ func TestErrorsAsType(t *testing.T) {
 	assert.Equal(t, "open", pathErr.Op)
 }
 
-// TestTemplateNeverLeaksUnsafeValues is the security property of the package:
+// TestSafeErrorNeverLeaksUnsafeValues is the security property of the package:
 // nothing that was not marked Safe reaches the template.
-func TestTemplateNeverLeaksUnsafeValues(t *testing.T) {
+func TestSafeErrorNeverLeaksUnsafeValues(t *testing.T) {
 	const secret = "SECRET-a1b2c3"
 
 	errs := []error{
@@ -313,7 +316,7 @@ func TestTemplateNeverLeaksUnsafeValues(t *testing.T) {
 
 	for _, err := range errs {
 		require.Contains(t, err.Error(), secret, "message should carry the value")
-		assert.NotContains(t, ErrorTemplate(err), secret, "template must not carry the value")
+		assert.NotContains(t, SafeError(err), secret, "safe message must not carry the value")
 	}
 }
 
@@ -425,44 +428,41 @@ func TestParseVerb(t *testing.T) {
 	}
 }
 
-// TestErrorTemplateIsStableAcrossCalls guards against expand mutating state.
-func TestErrorTemplateIsStableAcrossCalls(t *testing.T) {
+// TestSafeErrorIsStableAcrossCalls guards against expand mutating state.
+func TestSafeErrorIsStableAcrossCalls(t *testing.T) {
 	err := Errorf("%s: field %q: %w", unsafeValue, Safe("id"), Errorf("inner %d", Safe(2)))
-	first := ErrorTemplate(err)
-	assert.Equal(t, first, ErrorTemplate(err))
-	assert.Equal(t, first, ErrorTemplate(err))
+	first := SafeError(err)
+	assert.Equal(t, first, SafeError(err))
+	assert.Equal(t, first, SafeError(err))
 }
 
 // TestUnsafeArgsAreNotRetained checks that unsafe values are dropped at
 // construction rather than kept alive inside the error for later inspection.
 func TestUnsafeArgsAreNotRetained(t *testing.T) {
+	// The safe message is rendered at construction, so the error holds a string
+	// and never the arguments themselves. Nothing unsafe is reachable from it.
 	err := Errorf("%s: %d", unsafeValue, 42)
 
-	te, ok := errors.AsType[*templateError](err)
+	te, ok := errors.AsType[*safeErr](err)
 	require.True(t, ok)
-	require.Len(t, te.args, 2)
-	for i, arg := range te.args {
-		assert.Nil(t, arg, "argument %d should not be retained", i)
-	}
+	assert.Equal(t, "%s: %d", te.safeErr)
+	assert.NotContains(t, te.safeErr, unsafeValue)
 }
 
-func TestSafeArgsAreRetainedForTemplating(t *testing.T) {
+func TestSafeArgsAreRendered(t *testing.T) {
 	err := Errorf("%s: %s", Safe("jobs"), unsafeValue)
 
-	te, ok := errors.AsType[*templateError](err)
-	require.True(t, ok)
-	require.Len(t, te.args, 2)
-	assert.Equal(t, safeValue{v: "jobs"}, te.args[0])
-	assert.Nil(t, te.args[1])
+	assert.Equal(t, "jobs: "+unsafeValue, err.Error())
+	assert.Equal(t, "jobs: %s", SafeError(err))
 }
 
-func TestErrorTemplateDeepChain(t *testing.T) {
+func TestSafeErrorDeepChain(t *testing.T) {
 	err := New("root cause")
 	for range 5 {
 		err = Errorf("%s: %w", unsafeValue, err)
 	}
 
-	assert.Equal(t, strings.Repeat("%s: ", 5)+"root cause", ErrorTemplate(err))
+	assert.Equal(t, strings.Repeat("%s: ", 5)+"root cause", SafeError(err))
 }
 
 // safeStringerKey stands in for a resource key: the full value carries a
@@ -482,32 +482,32 @@ func TestSafeStringer(t *testing.T) {
 	key := safeStringerKey("resources.jobs.my_job")
 
 	tests := []struct {
-		name         string
-		format       string
-		args         []any
-		wantMessage  string
-		wantTemplate string
+		name            string
+		format          string
+		args            []any
+		wantMessage     string
+		wantSafeMessage string
 	}{
 		{
-			name:         "s verb",
-			format:       "cannot update %s: %w",
-			args:         []any{key, fs.ErrPermission},
-			wantMessage:  "cannot update resources.jobs.my_job: " + fs.ErrPermission.Error(),
-			wantTemplate: "cannot update jobs.*: %w",
+			name:            "s verb",
+			format:          "cannot update %s: %w",
+			args:            []any{key, fs.ErrPermission},
+			wantMessage:     "cannot update resources.jobs.my_job: " + fs.ErrPermission.Error(),
+			wantSafeMessage: "cannot update jobs.*: %w",
 		},
 		{
-			name:         "q verb quotes the stand-in like the value",
-			format:       "%q not found",
-			args:         []any{key},
-			wantMessage:  `"resources.jobs.my_job" not found`,
-			wantTemplate: `"jobs.*" not found`,
+			name:            "q verb quotes the stand-in like the value",
+			format:          "%q not found",
+			args:            []any{key},
+			wantMessage:     `"resources.jobs.my_job" not found`,
+			wantSafeMessage: `"jobs.*" not found`,
 		},
 		{
-			name:         "alongside Safe and unsafe args",
-			format:       "cannot %s %s: field %q: %s",
-			args:         []any{Safe("update"), key, Safe("tasks[0].job_id"), unsafeValue},
-			wantMessage:  "cannot update resources.jobs.my_job: field \"tasks[0].job_id\": " + unsafeValue,
-			wantTemplate: `cannot update jobs.*: field "tasks[0].job_id": %s`,
+			name:            "alongside Safe and unsafe args",
+			format:          "cannot %s %s: field %q: %s",
+			args:            []any{Safe("update"), key, Safe("tasks[0].job_id"), unsafeValue},
+			wantMessage:     "cannot update resources.jobs.my_job: field \"tasks[0].job_id\": " + unsafeValue,
+			wantSafeMessage: `cannot update jobs.*: field "tasks[0].job_id": %s`,
 		},
 	}
 
@@ -515,7 +515,7 @@ func TestSafeStringer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := Errorf(tt.format, tt.args...)
 			assert.Equal(t, tt.wantMessage, err.Error())
-			assert.Equal(t, tt.wantTemplate, ErrorTemplate(err))
+			assert.Equal(t, tt.wantSafeMessage, SafeError(err))
 		})
 	}
 }
@@ -523,18 +523,18 @@ func TestSafeStringer(t *testing.T) {
 func TestSafeStringerValueIsNotRetained(t *testing.T) {
 	err := Errorf("%s", safeStringerKey("resources.jobs.my_job"))
 
-	te, ok := errors.AsType[*templateError](err)
+	te, ok := errors.AsType[*safeErr](err)
 	require.True(t, ok)
-	require.Len(t, te.args, 1)
-	// Only the stand-in survives; the key itself is gone.
-	assert.Equal(t, safeValue{v: "jobs.*"}, te.args[0])
+	// Only the stand-in reaches the safe message; the key itself is gone.
+	assert.Equal(t, "jobs.*", te.safeErr)
+	assert.NotContains(t, te.safeErr, "my_job")
 }
 
-func TestSafeStringerErrorPrefersItsTemplate(t *testing.T) {
+func TestSafeStringerErrorPrefersItsSafeMessage(t *testing.T) {
 	// A templated error under %w contributes its template, not a stand-in.
 	inner := Errorf("inner %d", Safe(1))
 	err := Errorf("outer: %w", inner)
-	assert.Equal(t, "outer: inner 1", ErrorTemplate(err))
+	assert.Equal(t, "outer: inner 1", SafeError(err))
 }
 
 func TestSafeStringerErrorFallsBackToStandIn(t *testing.T) {
@@ -542,11 +542,11 @@ func TestSafeStringerErrorFallsBackToStandIn(t *testing.T) {
 	// a typed error reports its classification without the path it carries.
 	err := Errorf("writing state: %w", standInOnlyErr{})
 	assert.Equal(t, "writing state: access denied: /Workspace/Users/a@b.com/x", err.Error())
-	assert.Equal(t, "writing state: access denied", ErrorTemplate(err))
-	assert.NotContains(t, ErrorTemplate(err), "/Workspace")
+	assert.Equal(t, "writing state: access denied", SafeError(err))
+	assert.NotContains(t, SafeError(err), "/Workspace")
 
 	// Without a stand-in the verb stays, as before.
-	assert.Equal(t, "writing state: %w", ErrorTemplate(Errorf("writing state: %w", fs.ErrPermission)))
+	assert.Equal(t, "writing state: %w", SafeError(Errorf("writing state: %w", fs.ErrPermission)))
 }
 
 func TestSafeStringerOutranksSafe(t *testing.T) {
@@ -554,10 +554,10 @@ func TestSafeStringerOutranksSafe(t *testing.T) {
 	// into the template.
 	err := Errorf("%s", Safe(safeStringerKey("resources.jobs.my_job")))
 	assert.Equal(t, "resources.jobs.my_job", err.Error())
-	assert.Equal(t, "jobs.*", ErrorTemplate(err))
+	assert.Equal(t, "jobs.*", SafeError(err))
 }
 
-func TestErrorTemplateWrapNilError(t *testing.T) {
+func TestSafeErrorWrapNilError(t *testing.T) {
 	// %w whose argument holds no error: a nil error interface matches no case in
 	// templateArgs, so nothing is retained and the verb stays in the template
 	// because there is no error to chain one from.
@@ -565,7 +565,7 @@ func TestErrorTemplateWrapNilError(t *testing.T) {
 
 	err := Errorf("wrapping: %w", wrapped)
 	assert.Equal(t, fmt.Errorf("wrapping: %w", wrapped).Error(), err.Error())
-	assert.Equal(t, "wrapping: %w", ErrorTemplate(err))
+	assert.Equal(t, "wrapping: %w", SafeError(err))
 }
 
 // cyclicErr unwraps to whatever it is pointed at, which a test uses to close a
@@ -576,7 +576,7 @@ func (*cyclicErr) Error() string      { return "cyclic" }
 func (c *cyclicErr) Unwrap() error    { return c.inner }
 func (*cyclicErr) SafeString() string { return "cyclic" }
 
-func TestErrorTemplateCyclicChainTerminates(t *testing.T) {
+func TestSafeErrorCyclicChainTerminates(t *testing.T) {
 	// An error whose Unwrap reaches back to the templated error that wraps it.
 	// Following it would recurse forever, so the traversal is bounded.
 	c := &cyclicErr{}
@@ -584,24 +584,36 @@ func TestErrorTemplateCyclicChainTerminates(t *testing.T) {
 	c.inner = err
 
 	// The assertion is that this returns at all rather than exhausting the stack.
-	assert.NotEmpty(t, ErrorTemplate(err))
+	assert.NotEmpty(t, SafeError(err))
 }
 
-func TestErrorTemplateDepthBound(t *testing.T) {
-	// A chain deeper than the bound stops contributing rather than recursing.
+func TestSafeErrorDeepChainTerminates(t *testing.T) {
+	// Each layer's safe message is rendered at construction from the layer below,
+	// so a deep chain costs nothing at read time and cannot recurse.
 	err := New("root")
-	for range maxTemplateDepth + 10 {
+	for range 100 {
 		err = Errorf("%w", err)
 	}
-	assert.NotPanics(t, func() { ErrorTemplate(err) })
+	assert.NotPanics(t, func() { SafeError(err) })
+	assert.Equal(t, "root", SafeError(err))
 }
 
-func TestErrorTemplateStandInUnderOrdinaryVerb(t *testing.T) {
+func TestSafeErrorStandInUnderOrdinaryVerb(t *testing.T) {
 	// %s rather than %w: the error still contributes its stand-in, so a typed
 	// error reports its classification either way.
 	err := Errorf("writing state: %s", standInOnlyErr{})
 
 	assert.Equal(t, "writing state: access denied: /Workspace/Users/a@b.com/x", err.Error())
-	assert.Equal(t, "writing state: access denied", ErrorTemplate(err))
-	assert.NotContains(t, ErrorTemplate(err), "/Workspace")
+	assert.Equal(t, "writing state: access denied", SafeError(err))
+	assert.NotContains(t, SafeError(err), "/Workspace")
+}
+
+func TestSafeErrorIsCapped(t *testing.T) {
+	// A safe message is a telemetry field, so it cannot grow without bound even
+	// though every part of it comes from source literals.
+	err := New(strings.Repeat("x", maxSafeErrorSize*2))
+	assert.Len(t, SafeError(err), maxSafeErrorSize)
+
+	err = Errorf("%s", Safe(strings.Repeat("y", maxSafeErrorSize*2)))
+	assert.Len(t, SafeError(err), maxSafeErrorSize)
 }

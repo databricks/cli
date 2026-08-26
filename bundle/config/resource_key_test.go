@@ -90,6 +90,6 @@ func TestResourceKeyInSafeerr(t *testing.T) {
 		ResourceKey("resources.jobs.my_job"), safeerr.New("disk full"))
 
 	assert.Equal(t, "resources.jobs.my_job: SaveState: disk full", err.Error())
-	assert.Equal(t, "jobs.*: SaveState: disk full", safeerr.ErrorTemplate(err))
-	assert.NotContains(t, safeerr.ErrorTemplate(err), "my_job")
+	assert.Equal(t, "jobs.*: SaveState: disk full", safeerr.SafeError(err))
+	assert.NotContains(t, safeerr.SafeError(err), "my_job")
 }

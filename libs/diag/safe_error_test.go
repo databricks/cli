@@ -94,14 +94,14 @@ func TestSafeAPIErrorDescription(t *testing.T) {
 	}
 }
 
-// TestFromErrErrorTemplateCarriesNoUserData is the property the field exists
+// TestFromErrSafeErrorCarriesNoUserData is the property the field exists
 // for: whatever the summary holds, the template holds none of it.
 
 func TestFromErrNil(t *testing.T) {
 	assert.Nil(t, FromErr(nil))
 }
 
-// TestErrorTemplateMatchesFromErr keeps the exported helper and the field in
+// TestSafeErrorMatchesFromErr keeps the exported helper and the field in
 // step, since callers holding an error use one and callers holding a diagnostic
 // use the other.
 
@@ -112,16 +112,16 @@ type standInErr struct{}
 func (standInErr) Error() string      { return "access denied: /Workspace/Users/a@b.com/x" }
 func (standInErr) SafeString() string { return "access denied" }
 
-// TestErrorTemplateUsesStandInWithoutSafeerr covers the call sites not raised
+// TestSafeErrorUsesStandInWithoutSafeerr covers the call sites not raised
 // through safeerr, which is most of them: a typed error still describes itself.
-func TestErrorTemplateUsesStandInWithoutSafeerr(t *testing.T) {
-	assert.Equal(t, "access denied", ErrorTemplate(standInErr{}))
+func TestSafeErrorUsesStandInWithoutSafeerr(t *testing.T) {
+	assert.Equal(t, "access denied", SafeError(standInErr{}))
 
 	// Combined with an API error at the end of the chain.
 	err := safeerr.Errorf("pushing state: %w", standInErr{})
-	assert.Equal(t, "pushing state: access denied", ErrorTemplate(err))
+	assert.Equal(t, "pushing state: access denied", SafeError(err))
 
 	// A stand-in never displaces a real template.
 	assert.Equal(t, "cannot update %s: %w",
-		ErrorTemplate(safeerr.Errorf("cannot update %s: %w", "resources.jobs.x", errors.New("boom"))))
+		SafeError(safeerr.Errorf("cannot update %s: %w", "resources.jobs.x", errors.New("boom"))))
 }

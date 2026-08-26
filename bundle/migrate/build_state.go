@@ -232,6 +232,6 @@ func BuildStateFromTF(
 // diagnostic is the one a deploy reports.
 func setWarnSaferr(target *string, err error) {
 	if *target == "" {
-		*target = safeerr.ErrorTemplate(err)
+		*target = safeerr.SafeError(err)
 	}
 }

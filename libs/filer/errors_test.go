@@ -177,6 +177,6 @@ func TestErrorSafeStringReachesTemplate(t *testing.T) {
 	err := safeerr.Errorf("pushing direct state to workspace: %w", permissionError{path: path})
 
 	assert.Equal(t, "pushing direct state to workspace: access denied: "+path, err.Error())
-	assert.Equal(t, "pushing direct state to workspace: access denied", safeerr.ErrorTemplate(err))
-	assert.NotContains(t, safeerr.ErrorTemplate(err), path)
+	assert.Equal(t, "pushing direct state to workspace: access denied", safeerr.SafeError(err))
+	assert.NotContains(t, safeerr.SafeError(err), path)
 }

@@ -404,12 +404,12 @@ resources:
 			err := buildStateErrFromTF(t, tc.yaml, tc.tfAttrs, tc.tfIDs)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.wantErrContains)
-			assert.Equal(t, tc.wantTemplate, safeerr.ErrorTemplate(err))
+			assert.Equal(t, tc.wantTemplate, safeerr.SafeError(err))
 
 			// The names the message carries must not reach the template.
 			for _, secret := range []string{"src_secret", "dst_secret"} {
 				assert.Contains(t, err.Error(), secret, "message should name the resource")
-				assert.NotContains(t, safeerr.ErrorTemplate(err), secret, "template must not")
+				assert.NotContains(t, safeerr.SafeError(err), secret, "template must not")
 			}
 		})
 	}
