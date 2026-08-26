@@ -11,17 +11,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerateHostConfigAsksTheServerToConfirmItIsStillThere(t *testing.T) {
+func TestGenerateHostConfigSetsServerAliveInterval(t *testing.T) {
 	config := GenerateHostConfig("myhost", "root", "/keys/myhost", "databricks ssh connect --proxy")
 
-	// An idle session sends no payload of its own, and payload is the only traffic that keeps the
-	// tunnel leg past the driver proxy from being reaped (DECO-28186). `ssh setup` and `--ide`
-	// reach ssh through this block and nothing else, so the option has to be in it.
+	// `ssh setup` and `--ide` reach ssh through this block and nothing else, so the option has to
+	// be in it.
 	assert.Contains(t, config, fmt.Sprintf("\n    ServerAliveInterval %d\n", ServerAliveIntervalSeconds))
 
 	// The interval has to fire well inside the ~8 minute reap window, and ServerAliveCountMax
 	// (OpenSSH default 3) intervals have to outlast the longest legitimate pause on a healthy
-	// tunnel — the up to 30s a handover can hold the sending loop.
+	// tunnel — the up to 30s a handover can hold the sending loop. The 30 below is
+	// proxy.proxyHandoverInitTimeout's current value; it is unexported, so it can't be referenced.
 	assert.Less(t, ServerAliveIntervalSeconds, 8*60)
 	assert.Greater(t, 3*ServerAliveIntervalSeconds, 30)
 }

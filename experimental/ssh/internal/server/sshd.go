@@ -18,13 +18,13 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-// clientAliveIntervalSeconds is how often sshd asks the client to confirm it is still there. It is
-// the same mechanism as the client's own ServerAliveInterval (sshconfig.ServerAliveIntervalSeconds)
-// driven from the other end of the tunnel: the reply is a real SSH packet, so an idle session still
-// puts payload bytes on every hop, which is the only kind of traffic that keeps the leg past the
-// driver proxy from being reaped (see DECO-28186). Configuring it here covers clients the CLI does
-// not configure — a hand-written ProxyCommand host block, or an IDE that supplies its own ssh
-// options — where nothing sets ServerAliveInterval.
+// clientAliveIntervalSeconds is how often sshd asks the client to confirm it is still there. It
+// drives the keepalive from the server end of the tunnel; sshconfig.ServerAliveIntervalSeconds
+// documents why an SSH keepalive is what keeps the leg past the driver proxy from being reaped.
+// Configuring it here covers clients the CLI does not configure — a hand-written ProxyCommand host
+// block, or an IDE that supplies its own ssh options — where nothing sets ServerAliveInterval.
+// The two intervals are deliberately independent: neither package imports the other, and each end
+// keeps its own leg warm, so they need not track a single shared value.
 //
 // It also brings in ClientAliveCountMax (OpenSSH default 3), so sshd reclaims a session whose
 // client has gone away after ~90s instead of holding it open until the server's shutdown delay.

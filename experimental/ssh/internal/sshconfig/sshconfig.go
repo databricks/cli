@@ -23,10 +23,7 @@ const (
 // still there. The reply is a real SSH packet, so the keepalive puts payload bytes on every hop
 // of the tunnel — and payload is what an idle session needs. The driver proxy terminates
 // websocket control frames itself, so the proxy's own websocket ping never becomes payload on
-// the leg past it, and that leg is reaped after ~8 minutes without any (see DECO-28186). Setting
-// this option by hand is the workaround the reporting customer verified over ~2 hours idle, and
-// 30s is the value measured to hold an otherwise-idle tunnel open, with wide margin under the
-// reap window.
+// the leg past it, and that leg is reaped after ~8 minutes without any.
 //
 // It also brings in ServerAliveCountMax (OpenSSH default 3), so a tunnel that stops responding
 // is torn down after ~90s with ssh's own "server not responding" message instead of hanging.

@@ -376,12 +376,11 @@ func TestBuildRemoteShellArgs(t *testing.T) {
 	})
 }
 
-func TestBuildSSHArgsAsksTheServerToConfirmItIsStillThere(t *testing.T) {
+func TestBuildSSHArgsSetsServerAliveInterval(t *testing.T) {
 	args := buildSSHArgs("user", "/key", "proxy command", "myhost", "", ClientOptions{})
 
-	// An idle session sends no payload of its own, and payload is the only traffic that keeps the
-	// tunnel leg past the driver proxy from being reaped. ssh stops parsing options
-	// at the destination, so an option placed after the host would be part of the remote command.
+	// ssh stops parsing options at the destination, so an option placed after the host would be
+	// treated as part of the remote command rather than as an ssh option.
 	optIdx := slices.Index(args, "ServerAliveInterval="+strconv.Itoa(sshconfig.ServerAliveIntervalSeconds))
 	require.NotEqual(t, -1, optIdx, "ssh must be asked to send keepalives")
 	require.Equal(t, "-o", args[optIdx-1])
