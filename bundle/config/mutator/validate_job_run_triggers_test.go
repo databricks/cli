@@ -157,6 +157,14 @@ func TestValidateJobRunTriggers(t *testing.T) {
 			},
 			summary: "lifecycle.triggers entry must set only one of on_bundle_deploy, on_file_change, or on_value_change",
 		},
+		{
+			name: "duplicate on_value_change",
+			triggers: []resources.JobRunTrigger{
+				{OnValueChange: &valueChange},
+				{OnValueChange: &valueChange},
+			},
+			summary: "lifecycle.triggers.on_value_change expressions must be unique",
+		},
 	}
 
 	for _, tt := range tests {

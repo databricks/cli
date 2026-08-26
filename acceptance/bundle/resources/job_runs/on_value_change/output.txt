@@ -6,7 +6,7 @@ Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_
 Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
 Created job_runs.my_run
 Created jobs.my_job
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> read_id.py my_job
@@ -24,11 +24,11 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === long values are stored as hashes
 >>> print_state.py
-[
-  "v1",
-  "a1",
-  "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055"
-]
+{
+  "${var.long}": "sha256:[VALUE_HASH][0]",
+  "${var.other}": "a1",
+  "${var.stamp}": "v1"
+}
 
 === redeploy with unchanged values plans nothing
 >>> [CLI] bundle plan
@@ -52,16 +52,22 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
   "lifecycle.triggers.on_value_change": {
     "action": "recreate",
     "reason": "immutable",
-    "old": [
-      "v1",
-      "a1",
-      "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055"
-    ],
-    "new": [
-      "v2",
-      "a1",
-      "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055"
-    ]
+    "old": {
+      "${var.long}": "sha256:[VALUE_HASH][0]",
+      "${var.other}": "a1",
+      "${var.stamp}": "v1"
+    },
+    "new": {
+      "${var.long}": "sha256:[VALUE_HASH][0]",
+      "${var.other}": "a1",
+      "${var.stamp}": "v2"
+    }
+  },
+  "lifecycle.triggers.on_value_change['${var.stamp}']": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": "v1",
+    "new": "v2"
   },
   "result_state": {
     "action": "skip",
@@ -98,7 +104,18 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
   }
 }
 
-=== converging two values re-fires
+=== removing one on_value_change is unchanged and does not run
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //jobs/run-now
+
+=== changing a remaining watch to a removed value re-fires
 >>> [CLI] bundle plan
 recreate job_runs.my_run
 
@@ -109,16 +126,26 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
   "lifecycle.triggers.on_value_change": {
     "action": "recreate",
     "reason": "immutable",
-    "old": [
-      "v2",
-      "a1",
-      "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055"
-    ],
-    "new": [
-      "v2",
-      "v2",
-      "sha256:d66304b6180365e47c858f6c84d3da065caf4b3350c9f45277a1af82e3dbb055"
-    ]
+    "old": {
+      "${var.long}": "sha256:[VALUE_HASH][0]",
+      "${var.other}": "a1",
+      "${var.stamp}": "v2"
+    },
+    "new": {
+      "${var.long}": "sha256:[VALUE_HASH][0]",
+      "${var.stamp}": "a1"
+    }
+  },
+  "lifecycle.triggers.on_value_change['${var.other}']": {
+    "action": "skip",
+    "reason": "trigger removed",
+    "old": "a1"
+  },
+  "lifecycle.triggers.on_value_change['${var.stamp}']": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": "v2",
+    "new": "a1"
   },
   "result_state": {
     "action": "skip",
@@ -154,17 +181,6 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
     "job_id": [MY_JOB_ID]
   }
 }
-
-=== removing one on_value_change is unchanged and does not run
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default/files...
-Files: 3 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
-
->>> print_requests.py //jobs/run-now
 
 === removing the last on_value_change is unchanged and does not run
 >>> [CLI] bundle plan

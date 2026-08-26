@@ -191,6 +191,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
 		mutator.ValidateJobRunTriggers(),
 
+		// Interpolate ${var.*} in on_value_change; keys stay the original expression.
+		mutator.ResolveJobRunValueTriggers(),
+
 		// Expand on_file_change globs and hash matched files into ResolvedFileTriggers.
 		mutator.ResolveJobRunFileTriggers(),
 

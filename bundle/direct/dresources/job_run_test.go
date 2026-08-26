@@ -359,20 +359,16 @@ func TestCompactJobRunValue(t *testing.T) {
 
 func TestJobRunValueChangeStateNormalizesAfterAllReferencesResolve(t *testing.T) {
 	expr := "${resources.jobs.other.id}-${resources.jobs.extra.id}"
-	var trigger resources.JobRunTrigger
-	trigger.OnValueChange = &expr
-	var input resources.JobRun
-	input.Lifecycle = &resources.JobRunLifecycle{}
-	input.Lifecycle.Triggers = []resources.JobRunTrigger{trigger}
+	input := resources.JobRun{ResolvedValueTriggers: map[string]string{expr: expr}}
 	state := (&ResourceJobRun{}).PrepareState(&input)
-	path := structpath.NewIndex(structpath.MustParsePath("lifecycle.triggers.on_value_change"), 0)
+	path := structpath.NewBracketString(structpath.MustParsePath(jobRunOnValueChangePath), expr)
 	sv := structvar.NewStructVar(state, map[string]string{path.String(): expr})
 
 	require.NoError(t, sv.ResolveRef("${resources.jobs.other.id}", int64(123)))
-	assert.Equal(t, []string{"123-${resources.jobs.extra.id}"}, state.Lifecycle.Triggers.OnValueChange)
+	assert.Equal(t, map[string]string{expr: "123-${resources.jobs.extra.id}"}, state.Lifecycle.Triggers.OnValueChange)
 
 	require.NoError(t, sv.ResolveRef("${resources.jobs.extra.id}", int64(456)))
-	assert.Equal(t, []string{"123-456"}, state.Lifecycle.Triggers.OnValueChange)
+	assert.Equal(t, map[string]string{expr: "123-456"}, state.Lifecycle.Triggers.OnValueChange)
 }
 
 func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
@@ -416,13 +412,13 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 		// extend to on_file_change entries.
 		{"removed one on_file_change", "lifecycle.triggers.on_file_change", map[string]string{"a.txt": "h", "b.txt": "h"}, map[string]string{"a.txt": "h"}, deployplan.Recreate},
 		{"cleared on_file_change child", "lifecycle.triggers.on_file_change['a.txt']", "h", nil, deployplan.Recreate},
-		{"cleared on_value_change", "lifecycle.triggers.on_value_change", []string{"a"}, nil, deployplan.Skip},
-		{"removed last on_value_change", "lifecycle.triggers.on_value_change", []string{"a", "b"}, []string{"a"}, deployplan.Skip},
-		{"removed first on_value_change", "lifecycle.triggers.on_value_change", []string{"a", "b"}, []string{"b"}, deployplan.Skip},
-		{"changed on_value_change", "lifecycle.triggers.on_value_change", []string{"a"}, []string{"b"}, deployplan.Recreate},
-		{"converged on_value_change", "lifecycle.triggers.on_value_change", []string{"a", "b"}, []string{"a", "a"}, deployplan.Recreate},
-		{"cleared on_value_change child", "lifecycle.triggers.on_value_change[1]", "b", nil, deployplan.Skip},
-		{"shifted on_value_change child", "lifecycle.triggers.on_value_change[0]", "a", "b", deployplan.Skip},
+		{"cleared on_value_change", jobRunOnValueChangePath, map[string]string{"${var.a}": "a"}, nil, deployplan.Skip},
+		// Removing a watch must not re-fire, but a watch that now resolves to the
+		// value a removed watch used to hold must: it is a change under its own key.
+		{"removed one on_value_change", jobRunOnValueChangePath, map[string]string{"${var.a}": "a", "${var.b}": "b"}, map[string]string{"${var.a}": "a"}, deployplan.Skip},
+		{"reused a removed value", jobRunOnValueChangePath, map[string]string{"${var.a}": "a", "${var.b}": "b"}, map[string]string{"${var.a}": "b"}, deployplan.Recreate},
+		{"removed one on_value_change child", jobRunOnValueChangePath + "['${var.b}']", "b", nil, deployplan.Skip},
+		{"changed on_value_change", jobRunOnValueChangePath + "['${var.a}']", "a", "b", deployplan.Recreate},
 		{"result_state with unreadable remote", "result_state", "", nil, deployplan.Recreate},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
