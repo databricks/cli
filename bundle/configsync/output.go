@@ -69,6 +69,10 @@ func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChang
 	}
 
 	output := DiffOutput{Status: status, Files: files, Changes: changes}
+	if output.Changes == nil {
+		// Serialize as {} rather than null so a consumer can iterate it unconditionally.
+		output.Changes = Changes{}
+	}
 	if err != nil {
 		output.Error = err.Error()
 	}

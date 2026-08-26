@@ -4,5 +4,5 @@
   "status": "skipped",
   "error": "state snapshot not available: resources state snapshot not found remotely at resources-config-sync-snapshot.json: state snapshot not found",
   "files": null,
-  "changes": null
+  "changes": {}
 }
