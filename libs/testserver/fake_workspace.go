@@ -5,9 +5,11 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -20,6 +22,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/google/uuid"
 
+	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/files"
@@ -253,6 +256,85 @@ func (s *FakeWorkspace) LockUnlock() func() {
 	}
 	s.mu.Lock()
 	return func() { s.mu.Unlock() }
+}
+
+// parseUpdateFields decodes an update payload into its raw fields, so a handler can tell
+// a field explicitly set to a zero value from one the caller omitted.
+func parseUpdateFields(body []byte) (map[string]json.RawMessage, *Response) {
+	var fields map[string]json.RawMessage
+
+	if err := json.Unmarshal(body, &fields); err != nil {
+		return nil, &Response{
+			Body:       fmt.Sprintf("internal error: %s", err),
+			StatusCode: http.StatusInternalServerError,
+		}
+	}
+	return fields, nil
+}
+
+// parseUCUpdate is parseUpdateFields for the UC APIs that reject a payload carrying no
+// field to act on, answering "<operation> Nothing to update." (400) rather than treating it
+// as a no-op. A key set to null does not count.
+//
+// Verified against a real workspace for schemas, volumes and catalogs: {} and
+// {"comment": null} are rejected, while {"comment": ""} and
+// {"custom_max_retention_hours": 0} are accepted. Registered models accept {} instead, so
+// they use parseUpdateFields.
+func parseUCUpdate(body []byte, operation string) (map[string]json.RawMessage, *Response) {
+	fields, errResponse := parseUpdateFields(body)
+	if errResponse != nil {
+		return nil, errResponse
+	}
+
+	for _, value := range fields {
+		if string(value) != "null" {
+			return fields, nil
+		}
+	}
+
+	return nil, &Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    operation + " Nothing to update.",
+		},
+	}
+}
+
+// applyUpdatedFields copies every field the update payload names from update onto
+// existing, matched by JSON name, and marks it force-send so a zero value survives the
+// response encoding (the stored *Info types are all omitempty).
+//
+// Fields the payload omits are left untouched: a partial-update API changes only what the
+// caller names, and modelling that is the whole point of these fakes. Fields the payload
+// names but the stored type lacks (new_name, force) are skipped for the caller to handle.
+// existing must be a pointer; update is passed by value.
+func applyUpdatedFields(existing, update any, fields map[string]json.RawMessage) {
+	dst := reflect.ValueOf(existing).Elem()
+	src := reflect.ValueOf(update)
+
+	for i := range src.Type().NumField() {
+		name := structtag.JSONTag(src.Type().Field(i).Tag.Get("json")).Name()
+		if name == "" || name == "-" {
+			continue
+		}
+		if _, ok := fields[name]; !ok {
+			continue
+		}
+		dstField := dst.FieldByName(src.Type().Field(i).Name)
+		if !dstField.IsValid() || !dstField.CanSet() || dstField.Type() != src.Field(i).Type() {
+			continue
+		}
+		dstField.Set(src.Field(i))
+		forceSend := dst.FieldByName("ForceSendFields")
+		if forceSend.IsValid() && forceSend.CanSet() {
+			goName := src.Type().Field(i).Name
+			// Repeated updates would otherwise keep appending the same name.
+			if !slices.Contains(forceSend.Interface().([]string), goName) {
+				forceSend.Set(reflect.Append(forceSend, reflect.ValueOf(goName)))
+			}
+		}
+	}
 }
 
 // Generic functions to handle map operations

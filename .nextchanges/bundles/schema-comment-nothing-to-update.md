@@ -1,0 +1,1 @@
+Fixed `bundle deploy` on the direct engine failing with `Nothing to update`, or reporting a change it never applied, when a schema, catalog, volume, registered model or external location field was removed from the configuration or set outside the bundle. The update now sends the fields the plan reports as cleared instead of dropping them.
