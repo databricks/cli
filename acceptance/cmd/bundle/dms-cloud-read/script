@@ -1,13 +1,3 @@
-# DMS is placed on DEV and STAGING shards only, and CLOUD_ENV cannot tell the
-# staging env apart from the prod ones (both set CLOUD_ENV=aws). The workspace
-# host can: staging control planes carry ".staging." in the domain. Skip
-# elsewhere rather than fail, so adding this test to the shared cloud matrix
-# does not red-line the prod envs.
-case "$DATABRICKS_HOST" in
-    *.staging.*) ;;
-    *) echo "DMS is deployed to staging only; skipping on $DATABRICKS_HOST"; exit 0 ;;
-esac
-
 # list-deployments returns every deployment in the workspace, so assert on its
 # shape rather than its contents: the set grows as other tests and engineers
 # deploy, and the ids are server-assigned.

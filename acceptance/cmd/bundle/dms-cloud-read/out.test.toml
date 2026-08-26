@@ -1,5 +1,6 @@
 Local = false
 Cloud = true
+RequiresDms = true
 CloudEnvs.aws = true
 CloudEnvs.azure = false
 CloudEnvs.gcp = false

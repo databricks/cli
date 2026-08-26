@@ -47,6 +47,7 @@ func GenerateMaterializedConfig(config *TestConfig) string {
 	writeBool(&buf, "RequiresCluster", config.RequiresCluster)
 	writeBool(&buf, "RequiresClassic", config.RequiresClassic)
 	writeBool(&buf, "RequiresWarehouse", config.RequiresWarehouse)
+	writeBool(&buf, "RequiresDms", config.RequiresDms)
 	writeBool(&buf, "RunsOnDbr", config.RunsOnDbr)
 	if config.Phase != 0 {
 		fmt.Fprintf(&buf, "Phase = %d\n", config.Phase)

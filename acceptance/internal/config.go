@@ -67,6 +67,14 @@ type TestConfig struct {
 	// If true and Cloud=true, run this test only if a default warehouse is available in the cloud environment
 	RequiresWarehouse *bool
 
+	// If true and Cloud=true, run this test only where DMS (the
+	// bundle-deployments service) is deployed. It is placed on dev and staging
+	// shards only, and CLOUD_ENV cannot tell those apart from prod, so test
+	// environments that have it export DATABRICKS_TEST_DMS=true. Absent that,
+	// the test is skipped rather than failing against a control plane where the
+	// routes do not exist.
+	RequiresDms *bool
+
 	// If set, current user will be set to a service principal-like UUID instead of email (default is false)
 	IsServicePrincipal *bool
 

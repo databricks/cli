@@ -107,6 +107,10 @@ const (
 	// tests marked RequiresClassic are skipped there.
 	EnvNoClassic = "DATABRICKS_TEST_NO_CLASSIC"
 
+	// Set to "true" by test environments where DMS (the bundle-deployments
+	// service) is deployed, so tests marked RequiresDms run only there.
+	EnvDms = "DATABRICKS_TEST_DMS"
+
 	// File where scripts can output custom replacements
 	// export $job_id=100200300
 	// $ echo "$job_id:MY_JOB" >> ACC_REPLS  # This will replace 100200300 with [MY_JOB] in the output
@@ -727,6 +731,10 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 
 		if isTruePtr(config.RequiresClassic) && os.Getenv(EnvNoClassic) == "true" {
 			return fmt.Sprintf("Disabled via RequiresClassic setting in %s (%s=true)", configPath, EnvNoClassic)
+		}
+
+		if isTruePtr(config.RequiresDms) && os.Getenv(EnvDms) != "true" {
+			return fmt.Sprintf("Disabled via RequiresDms setting in %s (%s is not true)", configPath, EnvDms)
 		}
 
 	} else {
