@@ -1,0 +1,33 @@
+# The fake workspace reports "main", which is this repo's default branch too.
+url=https://github.com/databricks/bundle-examples
+
+# A Git folder under /Repos and one outside it. Once a Git folder has Git CLI
+# access the workspace API reports no git metadata for it, so both resolve
+# through the Repos API; the resolved metadata must be identical either way.
+repo=/Workspace/Repos/$CURRENT_USER_NAME/test-repo-$UNIQUE_NAME
+folder=/Workspace/Users/$CURRENT_USER_NAME/test-folder-$UNIQUE_NAME
+
+$CLI repos create $url gitHub --path "$repo" > /dev/null
+$CLI repos create $url gitHub --path "$folder" > /dev/null
+
+# A directory inside the Git folder, so the subdirectory case below resolves a
+# path that exists rather than a missing one.
+$CLI workspace mkdirs "$repo/subdir"
+
+cleanup() {
+    $CLI repos delete "$repo" 2>>LOG.cleanup
+    $CLI repos delete "$folder" 2>>LOG.cleanup
+}
+trap cleanup EXIT
+
+title "the root of a Git folder under /Repos\n"
+trace $CLI bundle debug fetch-repository-info --path "$repo"
+
+title "a subdirectory of it, which resolves to the same root\n"
+trace $CLI bundle debug fetch-repository-info --path "$repo/subdir"
+
+title "the root of a Git folder outside /Repos\n"
+trace $CLI bundle debug fetch-repository-info --path "$folder"
+
+title "a path in no Git folder at all\n"
+trace $CLI bundle debug fetch-repository-info --path "/Workspace/Users/$CURRENT_USER_NAME"

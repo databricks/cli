@@ -87,6 +87,9 @@ type agentEntry struct {
 	// Detected is the CLI's presence verdict (Agent.IsPreselected), so consumers get
 	// the same answer the CLI would act on.
 	Detected bool `json:"detected"`
+	// SupportsProjectScope mirrors agents.Agent.SupportsProjectScope so consumers can
+	// offer a project-scoped install without hardcoding which agents allow it.
+	SupportsProjectScope bool `json:"supports_project_scope"`
 	// Installed maps CLI scope -> the install found there; always present, empty
 	// when nothing is installed, matching the skills shape.
 	Installed map[string]installInfo `json:"installed"`
@@ -231,10 +234,11 @@ func buildAgentEntries(ctx context.Context, states map[string]*installer.Install
 	entries := make([]agentEntry, 0, len(agents.Registry))
 	for _, a := range agents.Registry {
 		entry := agentEntry{
-			Name:        a.Name,
-			DisplayName: a.DisplayName,
-			Managed:     a.Plugin != nil,
-			Detected:    a.IsPreselected(ctx),
+			Name:                 a.Name,
+			DisplayName:          a.DisplayName,
+			Managed:              a.Plugin != nil,
+			Detected:             a.IsPreselected(ctx),
+			SupportsProjectScope: a.SupportsProjectScope,
 		}
 
 		// Always emit an installed map, empty when nothing is installed, so the

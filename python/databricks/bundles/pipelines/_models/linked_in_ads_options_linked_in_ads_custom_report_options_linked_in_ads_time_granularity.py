@@ -1,0 +1,22 @@
+from enum import Enum
+from typing import Literal
+
+
+class LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularity(Enum):
+    """
+    :meta private: [EXPERIMENTAL]
+
+    Time aggregation. Used by analytics/statistics; ignored for
+    attributedRevenueMetrics. Defaults to DAILY when unspecified.
+    """
+
+    ALL = "ALL"
+    DAILY = "DAILY"
+    MONTHLY = "MONTHLY"
+    YEARLY = "YEARLY"
+
+
+LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularityParam = (
+    Literal["ALL", "DAILY", "MONTHLY", "YEARLY"]
+    | LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularity
+)

@@ -543,6 +543,33 @@ resources:
                 "azure_tenant_id":
                   "description": |-
                     PLACEHOLDER
+    "cluster_policies":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "permissions":
+          "description": |-
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "$fields":
+            "group_name":
+              "description": |-
+                The name of the group granted the permission level.
+            "level":
+              "description": |-
+                The permission level to apply. Cluster policies only support `CAN_USE`.
+            "service_principal_name":
+              "description": |-
+                The name of the service principal granted the permission level.
+            "user_name":
+              "description": |-
+                The name of the user granted the permission level.
     "clusters":
       "description": |-
         The cluster definitions for the bundle, where each key is the name of a cluster.
@@ -978,7 +1005,18 @@ resources:
       "$fields":
         "lifecycle":
           "description": |-
-            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed and when the run re-fires.
+          "$fields":
+            "prevent_destroy":
+              "description": |-
+                Lifecycle setting to prevent the resource from being destroyed.
+            "triggers":
+              "description": |-
+                Conditions that re-fire this job run (in addition to configuration changes).
+              "$fields":
+                "on_bundle_deploy":
+                  "description": |-
+                    If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.
         "python_named_params":
           "description": |-
             PLACEHOLDER

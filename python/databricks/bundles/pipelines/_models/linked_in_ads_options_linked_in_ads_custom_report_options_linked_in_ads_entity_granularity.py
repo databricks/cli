@@ -1,0 +1,22 @@
+from enum import Enum
+from typing import Literal
+
+
+class LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity(
+    Enum
+):
+    """
+    :meta private: [EXPERIMENTAL]
+
+    Entity pivot to group by.
+    """
+
+    CAMPAIGN = "CAMPAIGN"
+    CREATIVE = "CREATIVE"
+    CAMPAIGN_GROUP = "CAMPAIGN_GROUP"
+
+
+LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularityParam = (
+    Literal["CAMPAIGN", "CREATIVE", "CAMPAIGN_GROUP"]
+    | LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity
+)

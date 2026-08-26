@@ -11,8 +11,8 @@ paths:
 ## Test Types
 
 - **Unit tests**: Standard Go tests alongside source files
-- **Integration tests**: `integration/` directory, requires live Databricks workspace
-- **Acceptance tests**: `acceptance/` directory, uses mock HTTP server
+- **Acceptance tests**: `acceptance/` directory. Every test runs locally against the mock HTTP server; a subset *additionally* runs against a real workspace (`Cloud = true`). This is where new end-to-end coverage belongs.
+- **Integration tests**: `integration/` directory, requires a live Databricks workspace. **Deprecated — do not add tests here.** Write an acceptance test with `Cloud = true` instead, so the same test runs both locally and against a real workspace.
 
 ## Choosing a test level
 
@@ -21,6 +21,8 @@ paths:
 **Unit tests are still the right tool** for pure functions, utility code, parsing/formatting helpers, and anything you can meaningfully test without mocking the whole world. Don't force a unit into an acceptance test just because the code lives under `cmd/`, and don't add a mutator unit test that only duplicates what an acceptance test already covers.
 
 When in doubt: would the test fail in a useful way if a mutator earlier in the pipeline changed? If yes, the test wants to be an acceptance test.
+
+**RULE: Do not add new tests under `integration/`. That tree is deprecated.** When coverage needs a real workspace, write an acceptance test and set `Cloud = true` in its `test.toml`. You get the local run against the fake server *and* the real-workspace run from one test, instead of a workspace-only test that never runs in the local suite.
 
 ## Unit tests
 
@@ -53,6 +55,12 @@ func TestApplySomeChangeFixesThings(t *testing.T) {
 When writing tests, don't include an explanation in each test case in your responses. Only the tests are needed.
 
 ## Acceptance Tests
+
+**RULE: `Cloud = true` adds a cloud run; it never removes the local run.** Every test under `acceptance/` runs locally against the fake server in `libs/testserver`. `Cloud = true` in a `test.toml` or `out.test.toml` means "this test *also* runs against a real workspace when `CLOUD_ENV` is set" — it never means "this test does not run locally". Never tell the user a test doesn't run locally because it is `Cloud = true`. `CloudSlow` does *not* enable a cloud run on its own; it only narrows an existing `Cloud = true` run (see below).
+
+The whole `Cloud*` family lives inside an `if isRunningOnCloud` branch in `getSkipReason` (`acceptance/acceptance_test.go`), so it can only ever subtract from the cloud run: `CloudSlow` (only meaningful when `Cloud = true`) drops it under `-short`, and `CloudEnvs` narrows it to the listed clouds. To find what skips a test *locally*, look at a different set: `GOOS`, `RunsOnDbr`, and `DATABRICKS_TEST_SKIPLOCAL` (which cloud CI runs set precisely because those tests already ran locally).
+
+`Cloud` is inherited, so a parent `test.toml` can opt a whole subtree in; a leaf `test.toml` with no `Cloud` line is not evidence of anything. Read the generated `out.test.toml` for a test's effective settings.
 
 **RULE: Never edit generated acceptance output files directly.** Files named `output.txt`, `out.test.toml`, `out.requests.txt`, or anything starting with `out` are regenerated. Use the `-update` flag to regenerate them.
 
@@ -91,11 +99,13 @@ acceptance/cmd/fs/cp/file-to-dir/
 
 If the only reason for divergence is a server-side default that one engine sets and the other doesn't, set the field explicitly in `databricks.yml` so both engines produce identical output. Don't paper over it with per-engine files.
 
-**RULE: On Windows, Git Bash auto-converts a leading-`/` path argument (e.g. `/api/2.0/...`) into a Windows path, so `$CLI` sees the wrong path and the testserver 404s.** Set `MSYS_NO_PATHCONV = "1"` in the test directory's `test.toml` under `[Env]`. Quoting the argument in bash does NOT help — the conversion is done by the Windows binary's argument processing. Precedent: `acceptance/cmd/workspace/export-dir-*/test.toml`.
+**RULE: On Windows, Git Bash auto-converts a leading-`/` path argument (e.g. `/api/2.0/...`) into a Windows path, so `$CLI` sees the wrong path and the testserver 404s.** Set `Env.MSYS_NO_PATHCONV = "1"` in the test directory's `test.toml`. Quoting the argument in bash does NOT help — the conversion is done by the Windows binary's argument processing. Precedent: `acceptance/cmd/workspace/export-dir-*/test.toml`.
 
 **RULE: `EnvMatrix.<VAR> = []` removes that variable from the inherited matrix** (see `ExpandEnvMatrix` in `acceptance/internal/config.go`). The root `test.toml` matrixes `DATABRICKS_BUNDLE_ENGINE = [terraform, direct]`, so a non-bundle test opts out of both engine runs with `EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []`. The `out.test.toml` snapshot of inherited values is generated and committed by design.
 
-**RULE: Write matrix variables in dotted form (`EnvMatrix.<VAR> = [...]`) at the top of `test.toml`, not under a `[EnvMatrix]` header.** In TOML every key after a `[EnvMatrix]` header belongs to that table until the next header — a blank line does not end it. So a top-level key like `Ignore` placed below `[EnvMatrix]` is silently parsed as `EnvMatrix.Ignore` (a bogus matrix variable) instead of the real top-level field, and the test runs with the field unset. Dotted form keeps each key's table explicit and is immune to ordering:
+**RULE: Write every map-valued setting in dotted form at the top of `test.toml`, never under a table header.** This covers `Env`, `EnvMatrix`, `EnvMatrixExclude`, `EnvRepl`, `GOOS` and `CloudEnvs` — e.g. `Env.MSYS_NO_PATHCONV = "1"`, `GOOS.windows = false`. In TOML every key after a `[EnvMatrix]` header belongs to that table until the next header — a blank line does not end it. So a top-level key like `Ignore` placed below `[EnvMatrix]` is silently parsed as `EnvMatrix.Ignore` (a bogus matrix variable) instead of the real top-level field, and the test runs with the field unset. Dotted form keeps each key's table explicit and is immune to ordering.
+
+`[[Repls]]` and `[[Server]]` are the exception: they are arrays of tables whose elements carry several keys each, so they keep the header form (as does `[Server.Response.Headers]`, which belongs to a `[[Server]]` element). Place dotted keys *above* the first such header — below one they would be captured by it, which is the same trap in reverse.
 
 GOOD:
 
@@ -117,14 +127,14 @@ Ignore = ["databricks.yml"]   # parsed as EnvMatrix.Ignore, not top-level Ignore
 
 ### Reference
 
-- Tests live in `acceptance/` with a nested directory structure.
+- Tests live in `acceptance/` with a nested directory structure. All of them run locally; those with `Cloud = true` set also run against a real workspace.
 - Each test directory contains `databricks.yml`, `script`, and `output.txt`.
 - Source files: `test.toml`, `script`, `script.prepare`, `databricks.yml`, etc.
 - Tests are configured via `test.toml`. Config schema and explanation is in `acceptance/internal/config.go`. Certain options are also dumped to `out.test.toml` so that inherited values are visible on PRs.
 - Run a single test: `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder>`
 - Run a specific variant by appending `EnvMatrix` values to the test name: `go test ./acceptance -run 'TestAccept/.../DATABRICKS_BUNDLE_ENGINE=direct'`. When there are multiple `EnvMatrix` variables, they appear in alphabetical order.
 - Useful flags: `-v` for verbose output, `-tail` to follow test output (requires `-v`), `-logrequests` to log all HTTP requests/responses (requires `-v`).
-- Run tests on cloud: `deco env run -i -n aws-prod-ucws -- <go test command>` (requires `deco` tool and access to test env).
+- Run tests on cloud: `deco env run -i -n aws-prod-ucws -- <go test command>` (requires `deco` tool and access to test env). This is an *additional* pass over the same test directories, restricted to those with `Cloud = true` set; it does not replace the local run.
 - `script.prepare` files from parent directories are concatenated into the test script. Use them for shared bash helpers.
 
 ### Built-in shell helpers

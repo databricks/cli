@@ -27,18 +27,7 @@ var TestMetastore = catalog.MetastoreAssignment{
 
 func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/policies/clusters/list", func(req Request) any {
-		return compute.ListPoliciesResponse{
-			Policies: []compute.Policy{
-				{
-					PolicyId: "5678",
-					Name:     "wrong-cluster-policy",
-				},
-				{
-					PolicyId: "9876",
-					Name:     "some-test-cluster-policy",
-				},
-			},
-		}
+		return req.Workspace.ClusterPoliciesList(req)
 	})
 
 	server.Handle("GET", "/api/2.0/instance-pools/list", func(req Request) any {
@@ -60,6 +49,13 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/instance-pools/delete", func(req Request) any { return req.Workspace.InstancePoolsDelete(req) })
 	server.Handle("GET", "/api/2.0/instance-pools/get", func(req Request) any {
 		return req.Workspace.InstancePoolsGet(req, req.URL.Query().Get("instance_pool_id"))
+	})
+
+	server.Handle("POST", "/api/2.0/policies/clusters/create", func(req Request) any { return req.Workspace.ClusterPoliciesCreate(req) })
+	server.Handle("POST", "/api/2.0/policies/clusters/edit", func(req Request) any { return req.Workspace.ClusterPoliciesEdit(req) })
+	server.Handle("POST", "/api/2.0/policies/clusters/delete", func(req Request) any { return req.Workspace.ClusterPoliciesDelete(req) })
+	server.Handle("GET", "/api/2.0/policies/clusters/get", func(req Request) any {
+		return req.Workspace.ClusterPoliciesGet(req, req.URL.Query().Get("policy_id"))
 	})
 
 	server.Handle("GET", "/api/2.1/clusters/list", func(req Request) any {
@@ -86,7 +82,8 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(req Request) any {
 		path := req.URL.Query().Get("path")
-		return req.Workspace.WorkspaceGetStatus(path)
+		returnGitInfo := req.URL.Query().Get("return_git_info") == "true"
+		return req.Workspace.WorkspaceGetStatus(path, returnGitInfo)
 	})
 
 	server.Handle("GET", "/api/2.0/workspace/list", func(req Request) any {
@@ -142,8 +139,7 @@ func AddDefaultHandlers(server *Server) {
 				StatusCode: 500,
 			}
 		}
-		req.Workspace.WorkspaceDelete(request.Path, request.Recursive)
-		return ""
+		return req.Workspace.WorkspaceDelete(request.Path, request.Recursive)
 	})
 
 	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req Request) any {

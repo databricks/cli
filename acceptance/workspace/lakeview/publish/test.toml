@@ -1,4 +1,3 @@
 RecordRequests = true
 
-[Env]
-MSYS_NO_PATHCONV = "1"
+Env.MSYS_NO_PATHCONV = "1"

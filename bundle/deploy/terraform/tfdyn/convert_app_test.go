@@ -14,10 +14,10 @@ import (
 
 func TestConvertApp(t *testing.T) {
 	src := resources.App{
-		SourceCodePath: "./app",
 		App: apps.App{
-			Name:        "app_id",
-			Description: "app description",
+			SourceCodePath: "./app",
+			Name:           "app_id",
+			Description:    "app description",
 			Resources: []apps.AppResource{
 				{
 					Name: "job1",
@@ -96,9 +96,9 @@ func TestConvertApp(t *testing.T) {
 
 func TestConvertAppWithNoDescription(t *testing.T) {
 	src := resources.App{
-		SourceCodePath: "./app",
 		App: apps.App{
-			Name: "app_id",
+			SourceCodePath: "./app",
+			Name:           "app_id",
 			Resources: []apps.AppResource{
 				{
 					Name: "job1",

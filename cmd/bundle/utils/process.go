@@ -27,6 +27,7 @@ import (
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
+	"golang.org/x/mod/semver"
 )
 
 type ProcessOptions struct {
@@ -206,7 +207,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// `bundle debug states`, which would otherwise print the same hint
 		// even though they will not migrate.
 		if opts.Deploy && b.MigratingToDirect {
-			log.Warnf(ctx, "Direct engine requested in %s but the existing state uses %q. Deploying on %q; will attempt to migrate the state to the direct engine after this deploy.", requiredEngine.Source, stateDesc.Engine, stateDesc.Engine)
+			if requiredEngine.IsDefault {
+				// The user did not ask for direct; it is the default. Frame the
+				// auto-migration as an informational notice rather than a warning,
+				// and do not claim the user selected anything.
+				cmdio.LogString(ctx, "Notice: the direct deployment engine is the default as of CLI v1.14.0.\n\n"+
+					"This bundle will be automatically migrated to use the direct deployment engine after this deployment.\n\n"+
+					"Learn more: https://docs.databricks.com/dev-tools/bundles/direct\n")
+			} else {
+				log.Warnf(ctx, "Direct engine selected via %s but the existing state uses %q. Deploying on %q; will attempt to migrate the state to the direct engine after this deploy.", requiredEngine.Source, stateDesc.Engine, stateDesc.Engine)
+			}
 		}
 
 		// --select is only supported by the direct engine, which tracks resource
@@ -225,6 +235,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+
+			// Warn when the state was last written by a newer CLI than the one
+			// running now. The state schema version is a hard gate (dstate.Open
+			// rejects a too-new state_version), but a state can be written by a
+			// newer CLI that shares this schema; that is allowed, and this only
+			// hints that a downgrade may be unintended.
+			currentVersion := build.GetInfo().Version
+			if stateVersion := b.DeploymentBundle.StateDB.StateCLIVersion(); isNewerVersion(stateVersion, currentVersion) {
+				log.Warnf(ctx, "State was last deployed with CLI version %s but current version is %s", stateVersion, currentVersion)
 			}
 		}
 
@@ -382,7 +402,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 }
 
 // ResolveEngineSetting determines the effective engine setting by combining bundle config and env var.
-// Priority: bundle.engine config > DATABRICKS_BUNDLE_ENGINE env var.
+// Priority: bundle.engine config > DATABRICKS_BUNDLE_ENGINE env var > engine.Default.
 func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineSetting, error) {
 	configEngine := b.Config.Bundle.Engine
 
@@ -404,7 +424,20 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable"}, nil
 	}
 
-	return engine.EngineSetting{}, nil
+	return engine.EngineSetting{Type: engine.Default, Source: engine.SourceDefault, IsDefault: true}, nil
+}
+
+// isNewerVersion reports whether the state's recorded CLI version is strictly
+// newer than the running build. Both are bare versions without a leading "v".
+// An empty stateVersion (state not written by any CLI yet) or an unparseable
+// version returns false, so we never warn on missing or malformed data.
+func isNewerVersion(stateVersion, currentVersion string) bool {
+	sv := "v" + stateVersion
+	cv := "v" + currentVersion
+	if !semver.IsValid(sv) || !semver.IsValid(cv) {
+		return false
+	}
+	return semver.Compare(sv, cv) > 0
 }
 
 func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {

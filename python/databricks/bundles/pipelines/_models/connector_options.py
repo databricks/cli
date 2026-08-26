@@ -4,6 +4,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.pipelines._models.api_source_connector_options import (
+    ApiSourceConnectorOptions,
+    ApiSourceConnectorOptionsParam,
+)
 from databricks.bundles.pipelines._models.confluence_connector_options import (
     ConfluenceConnectorOptions,
     ConfluenceConnectorOptionsParam,
@@ -23,6 +27,14 @@ from databricks.bundles.pipelines._models.jira_connector_options import (
 from databricks.bundles.pipelines._models.kafka_options import (
     KafkaOptions,
     KafkaOptionsParam,
+)
+from databricks.bundles.pipelines._models.linked_in_ads_options import (
+    LinkedInAdsOptions,
+    LinkedInAdsOptionsParam,
+)
+from databricks.bundles.pipelines._models.marketo_options import (
+    MarketoOptions,
+    MarketoOptionsParam,
 )
 from databricks.bundles.pipelines._models.meta_marketing_options import (
     MetaMarketingOptions,
@@ -63,6 +75,13 @@ class ConnectorOptions:
     Wrapper message for source-specific options to support multiple connector types
     """
 
+    api_source_connector_options: VariableOrOptional[ApiSourceConnectorOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Connector-specific options for API Source connectors.
+    """
+
     confluence_options: VariableOrOptional[ConfluenceConnectorOptions] = None
     """
     [Public Preview] Confluence specific options for ingestion
@@ -92,6 +111,23 @@ class ConnectorOptions:
     kafka_options: VariableOrOptional[KafkaOptions] = None
     """
     [Beta]
+    """
+
+    linkedin_ads_options: VariableOrOptional[LinkedInAdsOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] LinkedIn Ads specific options for ingestion.
+    sync_start_date and lookback_window_days apply to both the prebuilt analytics
+    tables and custom reports. custom_report_options defines a custom (user-defined)
+    adAnalytics report and is only valid on a table object.
+    """
+
+    marketo_options: VariableOrOptional[MarketoOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Marketo specific options for ingestion
     """
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptions] = None
@@ -136,9 +172,7 @@ class ConnectorOptions:
 
     zendesk_support_options: VariableOrOptional[ZendeskSupportOptions] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Zendesk Support specific options for ingestion
+    [Public Preview] Zendesk Support specific options for ingestion
     """
 
     @classmethod
@@ -151,6 +185,13 @@ class ConnectorOptions:
 
 class ConnectorOptionsDict(TypedDict, total=False):
     """"""
+
+    api_source_connector_options: VariableOrOptional[ApiSourceConnectorOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Connector-specific options for API Source connectors.
+    """
 
     confluence_options: VariableOrOptional[ConfluenceConnectorOptionsParam]
     """
@@ -181,6 +222,23 @@ class ConnectorOptionsDict(TypedDict, total=False):
     kafka_options: VariableOrOptional[KafkaOptionsParam]
     """
     [Beta]
+    """
+
+    linkedin_ads_options: VariableOrOptional[LinkedInAdsOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] LinkedIn Ads specific options for ingestion.
+    sync_start_date and lookback_window_days apply to both the prebuilt analytics
+    tables and custom reports. custom_report_options defines a custom (user-defined)
+    adAnalytics report and is only valid on a table object.
+    """
+
+    marketo_options: VariableOrOptional[MarketoOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Marketo specific options for ingestion
     """
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptionsParam]
@@ -225,9 +283,7 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     zendesk_support_options: VariableOrOptional[ZendeskSupportOptionsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Zendesk Support specific options for ingestion
+    [Public Preview] Zendesk Support specific options for ingestion
     """
 
 

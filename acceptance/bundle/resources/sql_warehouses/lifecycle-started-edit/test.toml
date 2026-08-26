@@ -1,10 +1,11 @@
 RecordRequests = true
 
 # Starting warehouses is slow, so run on cloud nightly (CloudSlow) instead of every PR
-# to confirm the real Edit-restarts behaviour without per-PR timeouts.
+# to confirm the real Edit-restarts behaviour without per-PR timeouts. The parent
+# disables Cloud, so re-enable it here alongside CloudSlow.
+Cloud = true
 CloudSlow = true
 
 Ignore = [".databricks", "databricks.yml"]
 
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

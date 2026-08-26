@@ -21,10 +21,12 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 ### Building and Testing
 
 - `./task build` - Build the CLI binary
-- `./task test` - Run unit and acceptance tests for all packages
+- `./task test` - Run unit and acceptance tests for all packages. This runs the *entire* acceptance suite locally against the fake server in `libs/testserver`.
 - `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder> -tail -test.v` - run a single acceptance test
-- `./task integration` - Run integration tests (requires environment variables)
+- `./task integration` - Run integration tests (requires environment variables). The `integration/` tree is deprecated; new coverage that needs a real workspace goes into an acceptance test with `Cloud = true`.
 - `./task cover` - Generate test coverage reports
+
+Every acceptance test runs locally. `Cloud = true` in a `test.toml` means the test *also* runs against a real workspace when `CLOUD_ENV` is set — never that it skips the local run. See `.agents/rules/testing.md`.
 
 ### Code Quality
 
@@ -83,8 +85,8 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 **Mutators**: Transform bundle configuration through a pipeline. Located in `bundle/config/mutator/` and `bundle/mutator/`. Each mutator implements the `Mutator` interface.
 
 **Direct vs Terraform Deployment**: The CLI supports two deployment modes controlled by `DATABRICKS_BUNDLE_ENGINE` environment variable:
-- `terraform` (default) - Uses Terraform for resource management
-- `direct` - Direct API calls without Terraform
+- `direct` (default) - Direct API calls without Terraform
+- `terraform` - Uses Terraform for resource management
 
 # Development Tips
 

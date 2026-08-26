@@ -1,10 +1,8 @@
 Cloud = true
-RequiresUnityCatalog = true
 
 Ignore = [
     ".databricks",
     "databricks.yml",
 ]
 
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

@@ -51,12 +51,12 @@ class IngestionPipelineDefinition:
 
     connector_type: VariableOrOptional[ConnectorType] = None
     """
-    [Beta] (Optional) Connector Type for sources. Ex: CDC, Query Based.
+    [Public Preview] (Optional) Connector Type for sources. Ex: CDC, Query Based.
     """
 
     data_staging_options: VariableOrOptional[DataStagingOptions] = None
     """
-    [Beta] (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
+    [Public Preview] (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
     with Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.
     If not specified, the volume for staged data will be created in catalog and schema/target specified in the
     top level pipeline definition.
@@ -132,12 +132,12 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
 
     connector_type: VariableOrOptional[ConnectorTypeParam]
     """
-    [Beta] (Optional) Connector Type for sources. Ex: CDC, Query Based.
+    [Public Preview] (Optional) Connector Type for sources. Ex: CDC, Query Based.
     """
 
     data_staging_options: VariableOrOptional[DataStagingOptionsParam]
     """
-    [Beta] (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
+    [Public Preview] (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
     with Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.
     If not specified, the volume for staged data will be created in catalog and schema/target specified in the
     top level pipeline definition.

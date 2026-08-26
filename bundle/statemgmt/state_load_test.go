@@ -59,6 +59,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.vector_search_indexes.test_vector_search_index":      {ID: "vs-index-1"},
 		"resources.instance_pools.test_instance_pool":                   {ID: "1"},
 		"resources.secrets.test_secret":                                 {ID: "main.default.test_secret"},
+		"resources.cluster_policies.test_cluster_policy":                {ID: "cp-1"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -153,6 +154,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "1", config.Resources.InstancePools["test_instance_pool"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.InstancePools["test_instance_pool"].ModifiedStatus)
+
+	assert.Equal(t, "cp-1", config.Resources.ClusterPolicies["test_cluster_policy"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ClusterPolicies["test_cluster_policy"].ModifiedStatus)
 
 	assert.Equal(t, "main.default.test_secret", config.Resources.Secrets["test_secret"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Secrets["test_secret"].ModifiedStatus)
@@ -402,6 +406,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			ClusterPolicies: map[string]*resources.ClusterPolicy{
+				"test_cluster_policy": {
+					CreatePolicy: compute.CreatePolicy{
+						Name: "test_cluster_policy",
+					},
+				},
+			},
 		},
 	}
 
@@ -506,6 +517,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.InstancePools["test_instance_pool"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.InstancePools["test_instance_pool"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.ClusterPolicies["test_cluster_policy"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ClusterPolicies["test_cluster_policy"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -914,6 +928,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			ClusterPolicies: map[string]*resources.ClusterPolicy{
+				"test_cluster_policy": {
+					CreatePolicy: compute.CreatePolicy{
+						Name: "test_cluster_policy",
+					},
+				},
+				"test_cluster_policy_new": {
+					CreatePolicy: compute.CreatePolicy{
+						Name: "test_cluster_policy_new",
+					},
+				},
+			},
 		},
 	}
 	state := ExportedResourcesMap{
@@ -973,6 +999,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.vector_search_indexes.test_vector_search_index_old":      {ID: "vs-index-old"},
 		"resources.instance_pools.test_instance_pool":                       {ID: "1"},
 		"resources.instance_pools.test_instance_pool_old":                   {ID: "2"},
+		"resources.cluster_policies.test_cluster_policy":                    {ID: "cp-1"},
+		"resources.cluster_policies.test_cluster_policy_old":                {ID: "cp-2"},
 		"resources.secrets.test_secret":                                     {ID: "main.default.test_secret"},
 		"resources.secrets.test_secret_old":                                 {ID: "main.default.test_secret_old"},
 	}
@@ -1176,6 +1204,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.InstancePools["test_instance_pool_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.InstancePools["test_instance_pool_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.InstancePools["test_instance_pool_new"].ModifiedStatus)
+
+	assert.Equal(t, "cp-1", config.Resources.ClusterPolicies["test_cluster_policy"].ID)
+	assert.Empty(t, config.Resources.ClusterPolicies["test_cluster_policy"].ModifiedStatus)
+	assert.Equal(t, "cp-2", config.Resources.ClusterPolicies["test_cluster_policy_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ClusterPolicies["test_cluster_policy_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.ClusterPolicies["test_cluster_policy_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ClusterPolicies["test_cluster_policy_new"].ModifiedStatus)
 
 	assert.Equal(t, "main.default.test_secret", config.Resources.Secrets["test_secret"].ID)
 	assert.Empty(t, config.Resources.Secrets["test_secret"].ModifiedStatus)

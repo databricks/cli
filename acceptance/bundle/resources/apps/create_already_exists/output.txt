@@ -19,6 +19,7 @@
     "state": "ACTIVE"
   },
   "default_source_code_path": "/Workspace/Users/[USERNAME]/test-app-already-exists",
+  "forward_user_access_token": true,
   "id": "1000",
   "name": "test-app-already-exists",
   "service_principal_client_id": "[UUID]",

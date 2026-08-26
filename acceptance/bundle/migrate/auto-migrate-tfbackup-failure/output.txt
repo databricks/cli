@@ -12,12 +12,12 @@ direct_drymigrate_warnings false
 
 === Opt in via env var; inject 403 on the DELETE of remote terraform.tfstate
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
-Warn: Direct engine requested in DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Warn: Direct engine selected via DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Migrating state to direct deployment engine (opted in via DATABRICKS_BUNDLE_ENGINE environment variable)...
-Warn: automatic migration to direct engine failed: pushing direct state to workspace: deleting remote terraform state: Fault injected by test.
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Migrating state to direct deployment engine (selected via DATABRICKS_BUNDLE_ENGINE environment variable)...
+Warn: automatic migration to direct engine failed: pushing direct state to workspace: deleting remote terraform state: Fault injected by test.
 
 >>> print_migration_telemetry
 direct_migrate_commit_error true

@@ -1,0 +1,11 @@
+{
+  "pages": [
+    {
+      "name": "main",
+      "displayName": "Main",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1",
+      "layout": []
+    }
+  ]
+}

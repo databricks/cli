@@ -27,6 +27,11 @@ resources:
   apps:
 
     ignore_remote_changes:
+      - field: git_source
+        reason: spec:input_only
+      - field: source_code_path
+        reason: spec:input_only
+
       - field: active_deployment
         reason: spec:output_only
       - field: app_status
@@ -36,6 +41,8 @@ resources:
       - field: create_time
         reason: spec:output_only
       - field: creator
+        reason: spec:output_only
+      - field: default_git_source
         reason: spec:output_only
       - field: default_source_code_path
         reason: spec:output_only
@@ -53,6 +60,8 @@ resources:
         reason: spec:output_only
       - field: pending_deployment
         reason: spec:output_only
+      - field: resources[*].uc_securable.securable_kind
+        reason: spec:output_only
       - field: service_principal_client_id
         reason: spec:output_only
       - field: service_principal_id
@@ -69,6 +78,8 @@ resources:
         reason: spec:output_only
 
   # catalogs: no api field behaviors
+
+  # cluster_policies: no api field behaviors
 
   # clusters: no api field behaviors
 
@@ -108,13 +119,15 @@ resources:
     ignore_remote_changes:
       - field: custom_tags
         reason: spec:input_only
+      - field: custom_tags[*].key
+        reason: spec:input_only
+      - field: custom_tags[*].value
+        reason: spec:input_only
       - field: enable_pg_native_login
         reason: spec:input_only
       - field: enable_readable_secondaries
         reason: spec:input_only
       - field: node_count
-        reason: spec:input_only
-      - field: parent_instance_ref.lsn
         reason: spec:input_only
       - field: retention_window_in_days
         reason: spec:input_only
@@ -124,6 +137,16 @@ resources:
         reason: spec:input_only
 
       - field: child_instance_refs
+        reason: spec:output_only
+      - field: child_instance_refs[*].branch_time
+        reason: spec:output_only
+      - field: child_instance_refs[*].effective_lsn
+        reason: spec:output_only
+      - field: child_instance_refs[*].lsn
+        reason: spec:output_only
+      - field: child_instance_refs[*].name
+        reason: spec:output_only
+      - field: child_instance_refs[*].uid
         reason: spec:output_only
       - field: creation_time
         reason: spec:output_only
@@ -144,10 +167,6 @@ resources:
       - field: effective_stopped
         reason: spec:output_only
       - field: effective_usage_policy_id
-        reason: spec:output_only
-      - field: parent_instance_ref.effective_lsn
-        reason: spec:output_only
-      - field: parent_instance_ref.uid
         reason: spec:output_only
       - field: pg_version
         reason: spec:output_only
@@ -193,6 +212,35 @@ resources:
   model_serving_endpoints:
 
     ignore_remote_changes:
+      - field: config.served_entities[*].burst_scaling_enabled
+        reason: spec:input_only
+      - field: config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext
+        reason: spec:input_only
+      - field: config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id_plaintext
+        reason: spec:input_only
+      - field: config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key_plaintext
+        reason: spec:input_only
+      - field: config.served_entities[*].external_model.anthropic_config.anthropic_api_key_plaintext
+        reason: spec:input_only
+      - field: config.served_entities[*].external_model.cohere_config.cohere_api_key_plaintext
+        reason: spec:input_only
+      - field: config.served_entities[*].external_model.custom_provider_config.api_key_auth.value_plaintext
+        reason: spec:input_only
+      - field: config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token_plaintext
+        reason: spec:input_only
+      - field: config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token_plaintext
+        reason: spec:input_only
+      - field: config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key_plaintext
+        reason: spec:input_only
+      - field: config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret_plaintext
+        reason: spec:input_only
+      - field: config.served_entities[*].external_model.openai_config.openai_api_key_plaintext
+        reason: spec:input_only
+      - field: config.served_entities[*].external_model.palm_config.palm_api_key_plaintext
+        reason: spec:input_only
+      - field: config.served_models[*].burst_scaling_enabled
+        reason: spec:input_only
+
       - field: telemetry_config.inference_table_config.name
         reason: spec:output_only
 
@@ -287,6 +335,10 @@ resources:
         reason: spec:input_only
       - field: custom_tags
         reason: spec:input_only
+      - field: custom_tags[*].key
+        reason: spec:input_only
+      - field: custom_tags[*].value
+        reason: spec:input_only
       - field: default_branch
         reason: spec:input_only
       - field: default_endpoint_settings
@@ -327,6 +379,14 @@ resources:
         reason: spec:input_only
       - field: extra_columns
         reason: spec:input_only
+      - field: extra_columns[*].column_name
+        reason: spec:input_only
+      - field: extra_columns[*].column_type
+        reason: spec:input_only
+      - field: extra_columns[*].compute
+        reason: spec:input_only
+      - field: extra_columns[*].maintenance
+        reason: spec:input_only
       - field: new_pipeline_spec
         reason: spec:input_only
       - field: postgres_database
@@ -340,6 +400,12 @@ resources:
       - field: timeseries_key
         reason: spec:input_only
       - field: type_overrides
+        reason: spec:input_only
+      - field: type_overrides[*].column_name
+        reason: spec:input_only
+      - field: type_overrides[*].pg_type
+        reason: spec:input_only
+      - field: type_overrides[*].size
         reason: spec:input_only
 
   # quality_monitors: no api field behaviors

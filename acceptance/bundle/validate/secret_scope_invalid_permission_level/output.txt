@@ -1,0 +1,31 @@
+
+>>> [CLI] bundle validate
+Warning: invalid value "12" for enum field. Valid values are [READ WRITE MANAGE]
+  at resources.secret_scopes.bad_levels.permissions[0].level
+
+Warning: invalid value "fuzz_badlevel" for enum field. Valid values are [READ WRITE MANAGE]
+  at resources.secret_scopes.bad_levels.permissions[1].level
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 2 warnings
+
+>>> [CLI] bundle validate --strict
+Warning: invalid value "12" for enum field. Valid values are [READ WRITE MANAGE]
+  at resources.secret_scopes.bad_levels.permissions[0].level
+
+Warning: invalid value "fuzz_badlevel" for enum field. Valid values are [READ WRITE MANAGE]
+  at resources.secret_scopes.bad_levels.permissions[1].level
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 2 warnings
+Error: 2 warnings were found. Warnings are not allowed in strict mode

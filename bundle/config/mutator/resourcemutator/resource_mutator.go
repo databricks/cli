@@ -208,6 +208,10 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): resources.genie_spaces.*.serialized_space
 		ConfigureGenieSpaceSerializedSpace(),
 
+		// Reads (dynamic): resources.cluster_policies.*.definition
+		// Updates (dynamic): resources.cluster_policies.*.definition (inline YAML -> JSON string)
+		ConfigureClusterPolicyDefinition(),
+
 		// Reads (typed): resources.alerts.*.file_path
 		// Updates (typed): resources.alerts.* (loads alert configuration from .dbalert.json file)
 		mutator.LoadDBAlertFiles(),
