@@ -152,7 +152,7 @@ func TestErrorf(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("MatchesFmt/"+tt.name, func(t *testing.T) {
 			//nolint:govet // tt.format is a table value, so vet cannot check the verbs
-			assert.Equal(t, fmt.Errorf(tt.format, unpackArgs(tt.args)...).Error(), tt.wantMessage)
+			assert.Equal(t, tt.wantMessage, fmt.Errorf(tt.format, unpackArgs(tt.args)...).Error())
 		})
 	}
 }
