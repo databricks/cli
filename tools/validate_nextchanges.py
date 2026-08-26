@@ -15,6 +15,7 @@ import argparse
 import json
 import pathlib
 import re
+import subprocess
 import sys
 
 CHANGELOG_DIR = ".nextchanges"
@@ -38,6 +39,154 @@ README = "README.md"
 # drift. The release renderer only reads *.md fragments, so it ignores this.
 NEXTVERSION_GO = "nextversion.go"
 
+# A fragment is a single changelog entry: one line that starts with "* " and
+# ends with a period. An optional trailing PR link group "([#N](pull-url))" — or
+# a comma-separated list "([#N](…), [#M](…))" for entries spanning several PRs —
+# may follow the period. Every "#N" reference must be written as a full markdown
+# link: a bare or paren-wrapped "#N" would render as an unintended auto-link in
+# CHANGELOG.md, and nothing expands links anymore.
+BULLET_PREFIX = "* "
+_PR_LINK = r"\[#\d+\]\(https://github\.com/databricks/cli/pull/\d+\)"
+TRAILING_PR_LINKS_RE = re.compile(rf" \((?P<links>{_PR_LINK}(?:, {_PR_LINK})*)\)$")
+_PR_LINK_NUM_RE = re.compile(r"\[#(\d+)\]")
+
+# A "#N" not preceded by "[" is a raw, unexpanded reference (bare, or wrapped in
+# parens); the "[#N]" of a markdown link is preceded by "[" and so is excluded.
+RAW_REF_RE = re.compile(r"(?<!\[)#\d+")
+# A PR markdown link, capturing the text and URL numbers so they can be compared.
+PR_LINK_RE = re.compile(r"\[#(\d+)\]\(https://github\.com/databricks/cli/pull/(\d+)\)")
+
+
+def fragment_format_problem(text):
+    r"""Return why ``text`` is not a valid fragment, or ``None`` if it is.
+
+    A fragment is exactly one changelog entry: a single non-empty line that
+    starts with ``"* "`` and ends with ``"."``. An optional trailing PR link
+    group (``([#N](pull-url))``, or a comma-separated list) may follow the period.
+
+    >>> fragment_format_problem("* Added the `foo` command.")
+    >>> fragment_format_problem("* Fixed a bug. ([#6208](https://github.com/databricks/cli/pull/6208))")
+    >>> fragment_format_problem("Added the `foo` command.")
+    'must start with a "* " bullet marker'
+    >>> fragment_format_problem("* Added the `foo` command")
+    'must end with a period'
+    >>> fragment_format_problem("* First entry.\n* Second entry.")
+    'must be a single entry on one line'
+    >>> fragment_format_problem("   ")
+    'empty fragment'
+    """
+    stripped = text.strip()
+    if not stripped:
+        return "empty fragment"
+    if "\n" in stripped:
+        return "must be a single entry on one line"
+    if not stripped.startswith(BULLET_PREFIX):
+        return 'must start with a "* " bullet marker'
+    # The trailing PR link group follows the period; ignore it when checking
+    # that the entry text itself ends with a period.
+    if not TRAILING_PR_LINKS_RE.sub("", stripped).endswith("."):
+        return "must end with a period"
+    return None
+
+
+def trailing_pr_numbers(text):
+    r"""Return the PR numbers in ``text``'s trailing PR link group (possibly
+    several), or an empty list if there is none.
+
+    >>> trailing_pr_numbers("* A change. ([#6208](https://github.com/databricks/cli/pull/6208))")
+    ['6208']
+    >>> trailing_pr_numbers("* A change. ([#12](https://github.com/databricks/cli/pull/12), [#34](https://github.com/databricks/cli/pull/34))")
+    ['12', '34']
+    >>> trailing_pr_numbers("* A change.")
+    []
+    """
+    m = TRAILING_PR_LINKS_RE.search(text.strip())
+    return _PR_LINK_NUM_RE.findall(m.group("links")) if m else []
+
+
+def link_problem(text):
+    r"""Return a problem with the ``#`` references in ``text``, or ``None``.
+
+    Every reference must be a full markdown link; a bare or paren-wrapped ``#N``
+    (which GitHub would auto-link in the rendered CHANGELOG.md) is rejected. A PR
+    link's text number and URL number must also agree.
+
+    >>> link_problem("* Fixed a bug. ([#5](https://github.com/databricks/cli/pull/5))")
+    >>> link_problem("* Fixed a bug (#5).")
+    'unexpanded reference #5: write it as a markdown link, e.g. [#5](https://github.com/databricks/cli/pull/5)'
+    >>> link_problem("* Reverts #7 for now.")
+    'unexpanded reference #7: write it as a markdown link, e.g. [#7](https://github.com/databricks/cli/pull/7)'
+    >>> link_problem("* Oops. ([#5](https://github.com/databricks/cli/pull/9))")
+    'PR link text #5 does not match its URL (pull/9)'
+    """
+    m = RAW_REF_RE.search(text)
+    if m:
+        ref = m.group(0)
+        return f"unexpanded reference {ref}: write it as a markdown link, e.g. [{ref}](https://github.com/databricks/cli/pull/{ref[1:]})"
+    for lm in PR_LINK_RE.finditer(text):
+        if lm.group(1) != lm.group(2):
+            return f"PR link text #{lm.group(1)} does not match its URL (pull/{lm.group(2)})"
+    return None
+
+
+def pr_link_problem(text, require_pr_link, expected_pr):
+    r"""Return a problem with ``text``'s trailing PR link group, or ``None``.
+
+    ``expected_pr`` is the PR that introduced the fragment (see
+    ``infer_expected_pr``); it must appear among the linked PRs, so an entry may
+    also list follow-up PRs. ``require_pr_link`` makes the link mandatory — set
+    whenever the change is associated with a PR (see ``main``).
+
+    >>> pr_link_problem("* A change.", False, None)
+    >>> pr_link_problem("* A change.", True, "5")
+    'missing trailing PR link: end with ([#5](https://github.com/databricks/cli/pull/5))'
+    >>> pr_link_problem("* A change.", True, None)
+    'missing trailing PR link: end with ([#<PR>](https://github.com/databricks/cli/pull/<PR>))'
+    >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5))", True, "5")
+    >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5), [#9](https://github.com/databricks/cli/pull/9))", True, "9")
+    >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5))", True, "9")
+    'trailing PR link #5 must include the PR that added this fragment (#9)'
+    >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5))", False, None)
+    """
+    numbers = trailing_pr_numbers(text)
+    if not numbers:
+        if not require_pr_link:
+            return None
+        pr = expected_pr or "<PR>"
+        return f"missing trailing PR link: end with ([#{pr}](https://github.com/databricks/cli/pull/{pr}))"
+    if expected_pr is not None and expected_pr not in numbers:
+        shown = ", ".join("#" + n for n in numbers)
+        return f"trailing PR link {shown} must include the PR that added this fragment (#{expected_pr})"
+    return None
+
+
+def infer_expected_pr(path, fallback_pr, root):
+    """Return the PR number that introduced the fragment at ``path``.
+
+    databricks/cli squash-merges end the commit subject with ``(#N)``, so the
+    commit that most recently added the file names its PR. A fragment not yet on
+    main (added on the current branch, or uncommitted) has no such commit, so
+    ``fallback_pr`` — the current PR — is used. ``git`` runs in ``root`` so the
+    repo being validated is queried even when ``--root`` differs from the process
+    CWD. Requires full git history (the workflow checks out with
+    ``fetch-depth: 0``); best-effort, so any git failure falls back rather than
+    erroring."""
+    try:
+        result = subprocess.run(
+            ["git", "log", "-1", "--diff-filter=A", "--format=%s", "--", str(path)],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd=root,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return fallback_pr
+    if result.returncode == 0:
+        m = re.search(r"\(#(\d+)\)\s*$", result.stdout.strip())
+        if m:
+            return m.group(1)
+    return fallback_pr
+
 
 def load_sections(root):
     """Return the section slugs from .codegen.json, in changelog order.
@@ -54,10 +203,13 @@ def load_sections(root):
     return tuple(sections)
 
 
-def find_problems(changelog_dir, sections):
+def find_problems(changelog_dir, sections, require_pr_link=False, fallback_pr=None, root=None):
     """Return a list of ``(path, message)`` for anything unexpected under
     ``.nextchanges/``: files that aren't a section fragment or known scaffolding,
-    empty fragments, and a missing/malformed version file."""
+    malformed fragments, a trailing PR link that is missing or names the wrong
+    PR, and a missing/malformed version file. ``require_pr_link`` and
+    ``fallback_pr`` drive the PR-link checks (set in CI / from the branch's PR,
+    see ``main``); ``root`` is the repo the PR inference queries via git."""
     problems = []
     known_sections = set(sections)
     for path in sorted(changelog_dir.rglob("*")):
@@ -81,8 +233,16 @@ def find_problems(changelog_dir, sections):
                 continue
             if not name.endswith(".md"):
                 problems.append((path, "unexpected file (fragments must be *.md)"))
-            elif not path.read_text(encoding="utf-8").strip():
-                problems.append((path, "empty fragment"))
+            else:
+                text = path.read_text(encoding="utf-8")
+                problem = fragment_format_problem(text) or link_problem(text)
+                if problem is None:
+                    # Only infer the expected PR (a git call) once the fragment
+                    # is structurally valid.
+                    expected_pr = infer_expected_pr(path, fallback_pr, root)
+                    problem = pr_link_problem(text, require_pr_link, expected_pr)
+                if problem:
+                    problems.append((path, problem))
             continue
 
         # Wrong depth or an unknown section directory.
@@ -96,9 +256,46 @@ def find_problems(changelog_dir, sections):
     return problems
 
 
+def current_branch_pr(root):
+    """Best-effort PR number for the current branch (via ``gh``), or ``None``.
+
+    Used locally to associate the branch with a PR: its presence means the link
+    is required, and its value is the fallback PR for not-yet-merged fragments.
+    ``gh`` runs in ``root`` so it resolves the repo being validated. Any failure —
+    ``gh`` missing, offline, unauthenticated, or no PR for the branch — returns
+    ``None`` so local runs never hard-fail on tooling."""
+    try:
+        result = subprocess.run(
+            ["gh", "pr", "view", "--json", "number", "-q", ".number"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd=root,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    out = result.stdout.strip()
+    return out if result.returncode == 0 and out.isdigit() else None
+
+
+def has_fragments(changelog_dir):
+    """Whether any *.md fragment (excluding README.md) exists under a section."""
+    return any(p.name != README for p in changelog_dir.glob("*/*.md"))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--root", type=pathlib.Path, default=pathlib.Path.cwd(), help="repository root")
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="fail closed: require every fragment's trailing PR link even when the branch's PR can't be auto-detected (set in CI)",
+    )
+    parser.add_argument(
+        "--pr-number",
+        default=None,
+        help="the PR under review; used as the expected link for not-yet-merged fragments (CI passes it for pull requests)",
+    )
     args = parser.parse_args(argv)
 
     changelog_dir = args.root / CHANGELOG_DIR
@@ -107,11 +304,26 @@ def main(argv=None):
 
     sections = load_sections(args.root)
 
-    problems = find_problems(changelog_dir, sections)
+    # A trailing PR link is required whenever the change can be associated with a
+    # PR, and must name that PR. CI passes --strict (pull requests and pushes to
+    # main) so enforcement never fails open there, plus --pr-number for pull
+    # requests. Locally we best-effort detect the branch's open PR — but only
+    # when there are fragments to check, to avoid a `gh` call on unrelated runs.
+    require_pr_link = args.strict
+    fallback_pr = args.pr_number
+    if not require_pr_link and has_fragments(changelog_dir):
+        branch_pr = current_branch_pr(args.root)
+        if branch_pr is not None:
+            require_pr_link = True
+            fallback_pr = fallback_pr or branch_pr
+
+    problems = find_problems(changelog_dir, sections, require_pr_link, fallback_pr, args.root)
     if problems:
         for path, msg in problems:
             print(f"{path}: {msg}", file=sys.stderr)
         print(f"\nFragments must live at {CHANGELOG_DIR}/<section>/<name>.md", file=sys.stderr)
+        print("and be a single line with a `* ` bullet marker and a trailing period, e.g.", file=sys.stderr)
+        print("  * Added the `databricks quickstart` command.", file=sys.stderr)
         print(f"Valid sections: {', '.join(sections)}", file=sys.stderr)
         print(f"{CHANGELOG_DIR}/{VERSION_FILE} must hold the next release version.", file=sys.stderr)
         sys.exit(1)
