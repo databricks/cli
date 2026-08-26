@@ -192,6 +192,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		mutator.ValidateJobRunTriggers(),
 
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
+		// Errors when a cross-resource reference targets a resource that is not defined.
+		validate.DanglingResourceReferences(),
+
+		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
 		// points to a Terraform-only field with no DABs equivalent.
 		validate.TFOnlyReferences(),
