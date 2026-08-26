@@ -1,4 +1,3 @@
-import atexit
 import collections
 import ctypes
 import ctypes.util
@@ -14,6 +13,9 @@ from dbruntime.databricks_repl_context import get_context
 
 SSH_TUNNEL_BASENAME = "databricks_cli"
 
+# How often the linger loop re-checks for detached processes still holding the run open.
+LINGER_POLL_SECONDS = 15
+
 # Exit statuses collected by the SIGCHLD subreaper handler, keyed by pid. The handler
 # can reap the server subprocess before Popen.wait() does, in which case Popen would
 # report exit code 0; this map preserves the real status.
@@ -27,10 +29,14 @@ dbutils.widgets.text("shutdownDelay", "10m")
 dbutils.widgets.text("sessionId", "")
 dbutils.widgets.text("serverless", "false")
 dbutils.widgets.text("usagePolicyId", "")
+dbutils.widgets.text("keepDetachedForSeconds", "0")
 
 
 def cleanup():
-    subprocess.run(["pkill", "-f", SSH_TUNNEL_BASENAME], check=False)
+    # Terminate an SSH server left behind by a previous, hard-killed run. The pattern matches
+    # the server's own argv rather than the CLI binary name alone, so detached work that
+    # happens to run the CLI is not swept away with it.
+    subprocess.run(["pkill", "-f", f"{SSH_TUNNEL_BASENAME}.*ssh server --cluster="], check=False)
 
 
 def setup_subreaper():
@@ -76,9 +82,78 @@ def kill_all_children():
         print(f"Error while killing child processes: {e}")
 
 
-def setup_exit_handler():
-    # Register the cleanup function to be called when the script exits
-    atexit.register(kill_all_children)
+def kill_server_group(server_pgid):
+    """Terminate the SSH server's own process group.
+
+    That group holds exactly what the tunnel started: the server and the sshd processes it
+    spawned per connection. A process that deliberately left the group - which is what tmux,
+    setsid and disown do - is not in it, so detached work survives this. Killing by parentage
+    instead (pkill -P) would sweep those too, because PR_SET_CHILD_SUBREAPER makes this
+    process adopt every orphan in the session.
+    """
+    try:
+        os.killpg(server_pgid, signal.SIGTERM)
+        print(f"Terminated SSH server process group {server_pgid}")
+    except ProcessLookupError:
+        print(f"SSH server process group {server_pgid} is already gone")
+
+
+def detached_descendants(server_pgid):
+    """Adopted children of this process that are outside the SSH server's process group.
+
+    PR_SET_CHILD_SUBREAPER makes every orphan in the session reparent to this process, so
+    work that detached itself - tmux, setsid, disown, a plain background command - resurfaces
+    here as a direct child. The server's own sshd children stay in its group and are excluded.
+    """
+    result = subprocess.run(
+        ["ps", "-o", "pid=,pgid=,stat=", "--ppid", str(os.getpid())],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    survivors = []
+    for line in result.stdout.splitlines():
+        fields = line.split()
+        if len(fields) < 3:
+            continue
+        pid, pgid, stat = fields
+        # Zombies are already dead; the SIGCHLD handler collects them.
+        if stat.startswith("Z"):
+            continue
+        if pgid != str(server_pgid):
+            survivors.append(pid)
+    return survivors
+
+
+def wait_for_detached_descendants(server_pgid, timeout_seconds):
+    """Hold the notebook open while detached work is still running.
+
+    WSFS authorises an I/O by walking the live process tree for a registered ancestor, and
+    this process is the registered one. Returning while detached work is still alive would
+    reparent it to PID 1, outside the registered subtree, and silently strip its /Workspace
+    and /Volumes access - trading a visible failure for an invisible one. Holding the run
+    open instead keeps the cluster from auto-terminating, which is why it is opt-in and
+    bounded by --keep-detached-for.
+    """
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        survivors = detached_descendants(server_pgid)
+        if not survivors:
+            print("No detached processes left, releasing the run", flush=True)
+            return
+        if time.monotonic() > deadline:
+            print(
+                f"Reached the --keep-detached-for limit of {timeout_seconds}s with "
+                f"{len(survivors)} detached process(es) still running: {','.join(survivors)}. "
+                "Releasing the run; they lose /Workspace and /Volumes access from here.",
+                flush=True,
+            )
+            return
+        print(
+            f"Holding the run open for {len(survivors)} detached process(es): {','.join(survivors)}",
+            flush=True,
+        )
+        time.sleep(LINGER_POLL_SECONDS)
 
 
 def run_ssh_server():
@@ -128,6 +203,7 @@ def run_ssh_server():
         raise RuntimeError("Session ID is required. Please provide it using the 'sessionId' widget.")
     serverless = dbutils.widgets.get("serverless")
     usage_policy_id = dbutils.widgets.get("usagePolicyId")
+    keep_detached_for_seconds = int(dbutils.widgets.get("keepDetachedForSeconds") or 0)
 
     # Mark this process's WSFS command origin so workspace-file activity from the
     # remote SSH session is attributable
@@ -178,11 +254,28 @@ def run_ssh_server():
     if usage_policy_id:
         server_args.append(f"--usage-policy-id={usage_policy_id}")
 
+    # The server does not linger itself; it uses this to persist the mode for reconnects and
+    # to warn about detached work it is about to leave behind when the mode is off.
+    if keep_detached_for_seconds > 0:
+        server_args.append(f"--keep-detached-for={keep_detached_for_seconds}s")
+
     # Tee the server output instead of inheriting stdout: the run-page logs remain the only
     # place to debug a RUNNING server, but on failure we attach the log tail to the exception
     # so "ssh connect" can print it (the Jobs run-output API has no stdout logs for notebook tasks).
     tail = collections.deque(maxlen=100)
-    proc = subprocess.Popen(server_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
+    proc = subprocess.Popen(
+        server_args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        errors="replace",
+        # Make the server a session and process group leader, so teardown can target exactly
+        # the processes the tunnel started. See kill_server_group.
+        start_new_session=True,
+    )
+    # The server leads the new group, so the group id is its pid. Recorded here because the
+    # pid may already have been reaped by the time we tear the group down.
+    server_pgid = proc.pid
     try:
         for line in proc.stdout:
             # flush so the run-page logs stay live while the server is running
@@ -196,11 +289,19 @@ def run_ssh_server():
             # The tail size matches maxRunFailureTraceBytes, the cap the client prints to the terminal.
             raise RuntimeError(f"SSH server exited with code {returncode}. Last server logs:\n" + "".join(tail)[-2000:])
     finally:
-        kill_all_children()
+        # Always reap the server and the sshd children it spawned; they are the only things
+        # in its process group. What happens to work that left that group depends on the mode:
+        # keep it and hold the run open as its WSFS anchor, or sweep it as we always have.
+        # Narrowing the sweep without lingering would leave survivors alive but cut off from
+        # /Workspace, which is a worse failure than the one it fixes.
+        kill_server_group(server_pgid)
+        if keep_detached_for_seconds > 0:
+            wait_for_detached_descendants(server_pgid, keep_detached_for_seconds)
+        else:
+            kill_all_children()
 
 
 if __name__ == "__main__":
     cleanup()
     setup_subreaper()
-    setup_exit_handler()
     run_ssh_server()

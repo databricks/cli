@@ -21,6 +21,8 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -44,6 +46,12 @@ type ServerOptions struct {
 	// UsagePolicyID the job was submitted with. Persisted to metadata.json so reconnects
 	// can tell which usage policy the running server was started under.
 	UsagePolicyID string
+	// KeepDetachedFor is how long the bootstrap notebook holds the job run open for
+	// detached processes after this server exits. Zero means it does not: the notebook
+	// sweeps them as it always has. The server does not linger itself; it only needs the
+	// value to persist it for reconnects and to decide whether to warn about work it is
+	// about to destroy.
+	KeepDetachedFor time.Duration
 	// The directory to store sshd configuration
 	ConfigDir string
 	// The name of the secrets scope to use for client and server keys
@@ -73,9 +81,10 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 
 	// Save metadata including ClusterID (required for Driver Proxy connections in serverless mode)
 	metadata := &workspace.WorkspaceMetadata{
-		Port:          port,
-		ClusterID:     opts.ClusterID,
-		UsagePolicyID: opts.UsagePolicyID,
+		Port:              port,
+		ClusterID:         opts.ClusterID,
+		UsagePolicyID:     opts.UsagePolicyID,
+		KeepDetachedForMs: opts.KeepDetachedFor.Milliseconds(),
 	}
 	err = workspace.SaveWorkspaceMetadata(ctx, client, opts.Version, opts.SessionID, metadata)
 	if err != nil {
@@ -112,13 +121,59 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	http.HandleFunc("/driver-proxy-http/metadata", serveMetadata)
 	http.HandleFunc("/driver-proxy-http/logs", logBuf.serveHTTP)
 
-	go handleTimeout(ctx, connections.TimedOut, opts.ShutdownDelay)
+	listenErr := make(chan error, 1)
+	go func() {
+		listenErr <- http.ListenAndServe(listenAddr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Normalize double slashes from the driver proxy (e.g. //metadata -> /metadata)
+			r.URL.Path = path.Clean(r.URL.Path)
+			http.DefaultServeMux.ServeHTTP(w, r)
+		}))
+	}()
 
-	return http.ListenAndServe(listenAddr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Normalize double slashes from the driver proxy (e.g. //metadata -> /metadata)
-		r.URL.Path = path.Clean(r.URL.Path)
-		http.DefaultServeMux.ServeHTTP(w, r)
-	}))
+	select {
+	case err := <-listenErr:
+		return err
+	case <-connections.TimedOut:
+		// Return rather than exiting in place, so the notebook that started us gets to run
+		// its teardown and this process reports the shutdown through the CLI's normal path.
+		log.Info(ctx, fmt.Sprintf("No SSH clients for %v, shutting down...", opts.ShutdownDelay))
+		reportDetachedDescendants(ctx, opts, procRoot, os.Getpid())
+		return nil
+	}
+}
+
+// reportDetachedDescendants records what the session leaves behind when the server shuts
+// down. Only the server can see this: the client that started the session is long gone by
+// the time the idle timer fires, and the notebook's teardown runs after this process exits.
+func reportDetachedDescendants(ctx context.Context, opts ServerOptions, root string, selfPid int) {
+	pids, err := detachedDescendants(root, selfPid)
+	if err != nil {
+		log.Debugf(ctx, "Failed to look for detached processes: %v", err)
+		return
+	}
+
+	// Warning, not info: without --keep-detached-for these processes do not outlive the
+	// run, and until now they vanished with no explanation anywhere. The client reads this
+	// back through /logs. Serverless is excluded because the container teardown takes them
+	// regardless, so the flag cannot help there and is rejected for it.
+	if len(pids) > 0 && opts.KeepDetachedFor == 0 && !opts.Serverless {
+		log.Warnf(ctx, "Shutting down with %d detached process(es) still running (pids %s). "+
+			"They do not survive the end of this run. To keep them, reconnect with "+
+			"\"databricks ssh connect --keep-detached-for=<duration>\", which holds the run open for them.",
+			len(pids), formatPids(pids))
+	}
+
+	computeType := protos.SshTunnelComputeTypeDedicated
+	if opts.Serverless {
+		computeType = protos.SshTunnelComputeTypeServerless
+	}
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		SshTunnelTeardownEvent: &protos.SshTunnelTeardownEvent{
+			ComputeType:                      computeType,
+			KeepDetachedRequested:            opts.KeepDetachedFor > 0,
+			HadDetachedDescendantsAtTeardown: len(pids) > 0,
+		},
+	})
 }
 
 func serveMetadata(w http.ResponseWriter, r *http.Request) {
@@ -131,12 +186,6 @@ func serveMetadata(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Failed to write current user", http.StatusInternalServerError)
 	}
-}
-
-func handleTimeout(ctx context.Context, timedOutChannel chan bool, shutdownDelay time.Duration) {
-	<-timedOutChannel
-	log.Info(ctx, fmt.Sprintf("No SSH clients for %v, shutting down...", shutdownDelay))
-	os.Exit(0)
 }
 
 func findAvailablePort(startPort, maxAttempts int) (int, error) {

@@ -123,6 +123,11 @@ type ClientOptions struct {
 	AutoApprove bool
 	// Id of the usage policy to use for the serverless SSH server job. Serverless only.
 	UsagePolicyID string
+	// How long the bootstrap notebook holds the job run open after the SSH server shuts
+	// down, so processes detached from the session (tmux, setsid, nohup) keep running with
+	// their workspace filesystem access intact. Zero, the default, keeps today's behaviour:
+	// the run ends with the server and nothing outlives it. Dedicated clusters only.
+	KeepDetachedFor time.Duration
 }
 
 func (o *ClientOptions) Validate() error {
@@ -134,6 +139,19 @@ func (o *ClientOptions) Validate() error {
 	}
 	if o.UsagePolicyID != "" && o.ClusterID != "" {
 		return errors.New("--usage-policy-id flag can only be used with serverless compute (--name flag)")
+	}
+	if o.KeepDetachedFor < 0 {
+		return fmt.Errorf("--keep-detached-for must not be negative, got %v", o.KeepDetachedFor)
+	}
+	// On serverless the container goes away with the run, so nothing survives the server
+	// however long the notebook lingers.
+	if o.KeepDetachedFor > 0 && o.ClusterID == "" {
+		return errors.New("--keep-detached-for flag can only be used with a dedicated cluster (--cluster flag)")
+	}
+	// The run's own timeout is the hard ceiling: Jobs terminates it regardless of what the
+	// notebook is waiting for, so a larger value would promise time we cannot deliver.
+	if o.KeepDetachedFor > o.ServerTimeout {
+		return fmt.Errorf("--keep-detached-for must not exceed %v, the maximum lifetime of the SSH server job, got %v", o.ServerTimeout, o.KeepDetachedFor)
 	}
 	if o.Accelerator != "" && o.Accelerator != "GPU_1xA10" && o.Accelerator != "GPU_8xH100" {
 		return fmt.Errorf("invalid accelerator value: %q, expected %q or %q", o.Accelerator, "GPU_1xA10", "GPU_8xH100")
@@ -227,6 +245,9 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 	} else {
 		proxyCommand = fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
 			executablePath, o.ClusterID, o.AutoStartCluster, o.ShutdownDelay.String())
+		if o.KeepDetachedFor > 0 {
+			proxyCommand += " --keep-detached-for=" + o.KeepDetachedFor.String()
+		}
 	}
 
 	if o.ServerMetadata != "" {
@@ -515,6 +536,8 @@ type serverMetadata struct {
 	ClusterID string
 	// UsagePolicyID the server was started with, used to decide whether a running server can be reused.
 	UsagePolicyID string
+	// KeepDetachedForMs the server's run was submitted with, used the same way as UsagePolicyID.
+	KeepDetachedForMs int64
 }
 
 // getServerMetadata retrieves the server metadata from the workspace and validates it via Driver Proxy.
@@ -562,10 +585,11 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	}
 
 	return serverMetadata{
-		Port:          wsMetadata.Port,
-		UserName:      string(bodyBytes),
-		ClusterID:     effectiveClusterID,
-		UsagePolicyID: wsMetadata.UsagePolicyID,
+		Port:              wsMetadata.Port,
+		UserName:          string(bodyBytes),
+		ClusterID:         effectiveClusterID,
+		UsagePolicyID:     wsMetadata.UsagePolicyID,
+		KeepDetachedForMs: wsMetadata.KeepDetachedForMs,
 	}, nil
 }
 
@@ -634,6 +658,10 @@ func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvi
 		// Recorded in the server's metadata.json so reconnects can tell which usage policy
 		// the running server was started under.
 		"usagePolicyId": opts.UsagePolicyID,
+		// Seconds rather than a duration string, because the bootstrap counts in seconds.
+		// Validate caps this at ServerTimeout, the run's own timeout, so the notebook can
+		// never wait longer than Jobs keeps the run alive.
+		"keepDetachedForSeconds": strconv.Itoa(int(opts.KeepDetachedFor.Seconds())),
 	}
 
 	task := jobs.SubmitTask{
@@ -1176,6 +1204,14 @@ func usagePolicyMatches(storedPolicy, requestedPolicy string) bool {
 	return requestedPolicy == "" || storedPolicy == requestedPolicy
 }
 
+// keepDetachedMatches reports whether a running server holds its run open for exactly as
+// long as this connection asked for. The linger is fixed when the run is submitted, so a
+// different duration needs a new server; a connection that asks for nothing takes whatever
+// is already running.
+func keepDetachedMatches(storedMs, requestedMs int64) bool {
+	return requestedMs == 0 || storedMs == requestedMs
+}
+
 func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceClient, version, secretScopeName string, opts ClientOptions) (string, int, string, error) {
 	sessionID := opts.SessionIdentifier()
 	// For dedicated clusters, use clusterID; for serverless, it will be read from metadata
@@ -1190,7 +1226,10 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	// different usage policy. A job's usage policy is fixed at submission, so we can't retarget
 	// the existing server; the new server overwrites metadata.json and the old one idles out via
 	// shutdownDelay.
-	needNewServer := err != nil || !usagePolicyMatches(meta.UsagePolicyID, opts.UsagePolicyID)
+	keepDetachedMs := opts.KeepDetachedFor.Milliseconds()
+	needNewServer := err != nil ||
+		!usagePolicyMatches(meta.UsagePolicyID, opts.UsagePolicyID) ||
+		!keepDetachedMatches(meta.KeepDetachedForMs, keepDetachedMs)
 	if needNewServer {
 		cmdio.LogString(ctx, "Starting SSH server...")
 
@@ -1213,6 +1252,10 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 			// server has overwritten metadata.json.
 			if err == nil && !usagePolicyMatches(meta.UsagePolicyID, opts.UsagePolicyID) {
 				err = fmt.Errorf("found a running SSH server with usage policy %q, waiting for the one with %q", meta.UsagePolicyID, opts.UsagePolicyID)
+			}
+			if err == nil && !keepDetachedMatches(meta.KeepDetachedForMs, keepDetachedMs) {
+				err = fmt.Errorf("found a running SSH server keeping detached processes for %v, waiting for the one keeping them for %v",
+					time.Duration(meta.KeepDetachedForMs)*time.Millisecond, opts.KeepDetachedFor)
 			}
 			if err == nil {
 				cmdio.LogString(ctx, "Health check successful, starting ssh WebSocket connection...")
@@ -1299,6 +1342,9 @@ func buildSshTunnelEvent(opts ClientOptions, outcome connectOutcome) *protos.Ssh
 		IsSuccess:          outcome.isSuccess,
 		HasBaseEnvironment: opts.BaseEnvironment != "",
 		HasUsagePolicy:     opts.UsagePolicyID != "",
-		ErrorCategory:      outcome.category(),
+		// The connect side can only report that the knob was asked for. Whether any detached
+		// process was there to keep is reported by the server, at teardown.
+		KeepDetachedRequested: opts.KeepDetachedFor > 0,
+		ErrorCategory:         outcome.category(),
 	}
 }

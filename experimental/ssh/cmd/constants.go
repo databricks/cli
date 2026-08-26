@@ -13,6 +13,9 @@ const (
 	// 30 second SSH-level keepalive that was verified to prevent it.
 	defaultKeepaliveInterval  = 20 * time.Second
 	defaultEnvironmentVersion = 4
+	// Off by default: holding the run open for detached processes keeps the cluster from
+	// auto-terminating, so it is the caller who decides to spend that time.
+	defaultKeepDetachedFor = time.Duration(0)
 
 	serverTimeout         = 24 * time.Hour
 	taskStartupTimeout    = 10 * time.Minute
