@@ -31,6 +31,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history so the validator can infer each fragment's PR from the
+          # squash-merge commit that added it (see tools/validate_nextchanges.py).
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -39,8 +43,15 @@ jobs:
 
       # Fail the check on a misplaced/unexpected file under .nextchanges/ so it
       # can't slip through as a silently-skipped (unrendered) fragment.
+      #
+      # --strict fails closed: require the trailing PR link on every fragment and
+      # check it names the right PR (never fall open to best-effort detection).
+      # Both triggers are associated with a PR: on pull_request we pass the PR
+      # number (a fragment added by the PR is not yet on main, so it can't be
+      # inferred from a squash-merge commit); on push to main each fragment's PR
+      # is inferred from the commit that added it.
       - name: Validate .nextchanges placement
-        run: uv run tools/validate_nextchanges.py
+        run: uv run tools/validate_nextchanges.py --strict ${{ github.event_name == 'pull_request' && format('--pr-number {0}', github.event.pull_request.number) || '' }}
 
       - name: Render changelog preview
         run: |-
