@@ -10,20 +10,31 @@ shared changelog file.
 Create `.nextchanges/<section>/<name>.md` and write what changed:
 
 ```
-Added the `databricks quickstart` command.
+* Added the `databricks quickstart` command.
 ```
 
 You can do this straight from the GitHub UI: **Add file → Create new file**,
-type the path (e.g. `.nextchanges/cli/quickstart.md`), write a sentence, commit.
+type the path (e.g. `.nextchanges/cli/quickstart.md`), write the entry, commit.
 
 - `<name>` is arbitrary — a feature name (`quickstart.md`) or your PR number
   (`5464.md`), whatever you like, as long as it's unique.
-- The leading `* ` is optional.
-- A PR link is optional. If you want one, write `(#5464)` and run `task links`
-  (or `task checks`) to expand it into a full markdown link in place; CI fails
-  if a raw `(#5464)` is left unexpanded. The release does not expand links, so
-  the fragment must already be expanded when it lands.
-- One file is usually one entry; for several, put each on its own `* ` line.
+- One file is exactly one entry: a single line that starts with a `* ` bullet
+  marker and ends with a period. `task check-changelog` (and CI) enforces this.
+- A trailing PR link is required whenever the change is associated with a PR,
+  and the PR that introduces the entry must be among the linked ones — the
+  checker infers that PR (from the squash-merge commit that added the fragment,
+  or your open branch PR) and fails if it isn't listed. CI enforces this on
+  every PR and on `main`, and `task check-changelog` enforces it locally too
+  once your branch has an open PR (detected best-effort via `gh`; skipped before
+  the PR exists or when `gh` is unavailable). Write the full markdown link at the
+  very end, after the period:
+  `([#5464](https://github.com/databricks/cli/pull/5464))` (your PR number). For
+  an entry spanning several PRs, list them comma-separated:
+  `([#5464](…), [#5500](…))`, as long as the introducing PR is included.
+- Every `#5464` reference — inline or trailing — must be a full markdown link.
+  A bare or paren-wrapped `#5464` is rejected: GitHub would render it as an
+  unintended auto-link in `CHANGELOG.md`. Nothing rewrites links, so the
+  fragment must already be correct when it lands.
 
 ### Sections
 
