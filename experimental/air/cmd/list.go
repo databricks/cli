@@ -44,13 +44,13 @@ type listRow struct {
 	StartedAt *string `json:"started_at"`
 	IsSweep   bool    `json:"is_sweep"`
 
-	// Experiment, Duration, ETA, MLflowURL and Accelerators are table-only
+	// Experiment, Duration, Progress, MLflowURL and Accelerators are table-only
 	// columns, omitted from JSON to match `air list --json`.
 	Experiment string `json:"-"`
 	Duration   string `json:"-"`
-	// ETA is a best-effort remaining-time estimate ("~48m 20s"), set only for a
-	// running run we could estimate; empty renders as "-".
-	ETA           string `json:"-"`
+	// Progress is a best-effort estimate ("45% · ~2h 15m"), set only for a running
+	// run we could estimate; empty renders as "-".
+	Progress      string `json:"-"`
 	MLflowURL     string `json:"-"`
 	MLflowLabel   string `json:"-"`
 	RunURL        string `json:"-"`
@@ -332,7 +332,7 @@ func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, host str
 			// for running rows (the only ones that can have one).
 			if entries[i].row.Status == string(jobs.RunLifeCycleStateRunning) {
 				if eta := estimateTrainingETA(ctx, w, ids.RunID); eta != nil {
-					entries[i].row.ETA = eta.compact()
+					entries[i].row.Progress = eta.compact()
 				}
 			}
 			return nil

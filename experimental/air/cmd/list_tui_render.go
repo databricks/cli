@@ -37,7 +37,7 @@ func newListStyles(r *lipgloss.Renderer) listStyles {
 // listCols holds the computed width of each variable-width column. MLflow is
 // fixed (a short link) and the gutter is one cell.
 type listCols struct {
-	runID, experiment, status, started, duration, eta, user, accel int
+	runID, experiment, status, started, duration, progress, user, accel int
 }
 
 // columnCap bounds the widest free-text columns so one long value can't dominate
@@ -51,7 +51,7 @@ func computeListCols(rows []listRow) listCols {
 		status:     len("Status"),
 		started:    len("Started"),
 		duration:   len("Duration"),
-		eta:        len("ETA"),
+		progress:   len("Progress"),
 		user:       len("User"),
 		accel:      len("Accelerators"),
 	}
@@ -61,7 +61,7 @@ func computeListCols(rows []listRow) listCols {
 		c.status = max(c.status, lipgloss.Width("● "+r.Status))
 		c.started = max(c.started, lipgloss.Width(startedDisplay(r)))
 		c.duration = max(c.duration, lipgloss.Width(r.Duration))
-		c.eta = max(c.eta, lipgloss.Width(etaDisplay(r)))
+		c.progress = max(c.progress, lipgloss.Width(progressDisplay(r)))
 		c.user = min(columnCap, max(c.user, lipgloss.Width(r.User)))
 		c.accel = max(c.accel, lipgloss.Width(r.Accelerators))
 	}
@@ -80,7 +80,7 @@ func (s listStyles) renderHeader(cols listCols) string {
 		h("Status", cols.status, false),
 		h("Started", cols.started, false),
 		h("Duration", cols.duration, true),
-		h("ETA", cols.eta, true),
+		h("Progress", cols.progress, true),
 		h("MLflow", mlflowColWidth, false),
 		h("User", cols.user, false),
 		h("Accelerators", cols.accel, false),
@@ -126,7 +126,7 @@ func (s listStyles) renderRow(cols listCols, r listRow, selected, links bool) st
 		s.cell(base, "● "+r.Status, cols.status, fg(statusColor(r.Status)), false, false, ""),
 		s.cell(base, startedDisplay(r), cols.started, fg(colN9), false, false, ""),
 		s.cell(base, r.Duration, cols.duration, fg(colN9), true, false, ""),
-		s.cell(base, etaDisplay(r), cols.eta, fg(colAmber), true, false, ""),
+		s.cell(base, progressDisplay(r), cols.progress, fg(colAmber), true, false, ""),
 		s.mlflowCell(base, r, selected, links),
 		s.cell(base, r.User, cols.user, fg(colN9), false, false, ""),
 		s.cell(base, r.Accelerators, cols.accel, fg(colN9), false, false, ""),
@@ -195,13 +195,13 @@ func statusColor(status string) lipgloss.Color {
 	}
 }
 
-// etaDisplay is the row's remaining-time estimate, or "-" when there is none
+// progressDisplay is the row's progress estimate, or "-" when there is none
 // (a finished run, or a run we couldn't estimate).
-func etaDisplay(r listRow) string {
-	if r.ETA == "" {
+func progressDisplay(r listRow) string {
+	if r.Progress == "" {
 		return "-"
 	}
-	return r.ETA
+	return r.Progress
 }
 
 // startedDisplay trims the row's ISO start timestamp to second precision

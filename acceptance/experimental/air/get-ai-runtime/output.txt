@@ -48,6 +48,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
     "experiment_name": "my-exp",
     "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[NUMID]",
     "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/artifacts/logs/node_0",
-    "est_remaining_seconds": null
+    "est_remaining_seconds": null,
+    "est_percent_complete": null
   }
 }

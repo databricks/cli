@@ -29,9 +29,11 @@ type getData struct {
 	ExperimentName  *string `json:"experiment_name"`
 	DashboardURL    string  `json:"dashboard_url"`
 	MLflowURL       *string `json:"mlflow_url"`
-	// ESTRemainingSeconds is a best-effort estimate of the time left for a
-	// running run, or null when one can't be made (see estimateTrainingETA).
+	// ESTRemainingSeconds and ESTPercentComplete are a best-effort progress
+	// estimate for a running run, or null when one can't be made (see
+	// estimateTrainingETA).
 	ESTRemainingSeconds *int64 `json:"est_remaining_seconds"`
+	ESTPercentComplete  *int   `json:"est_percent_complete"`
 
 	// The fields below are pre-rendered text-view cells, excluded from JSON
 	// (matching `air get --json`). Each shows "N/A" when its value is
@@ -45,9 +47,9 @@ type getData struct {
 	AcceleratorsDisplay string `json:"-"`
 	EnvironmentDisplay  string `json:"-"`
 	MaxRetriesDisplay   string `json:"-"`
-	// ETADisplay is the pre-rendered "ETA" cell ("~48m 20s · step 4120/10000"),
+	// ProgressDisplay is the pre-rendered "Progress" cell ("45% · ~2h 15m left"),
 	// set only for a running run with an estimable remaining time.
-	ETADisplay string `json:"-"`
+	ProgressDisplay string `json:"-"`
 	// TrainingConfigPath is the run's config file, downloaded for the config box.
 	TrainingConfigPath string `json:"-"`
 	// Sweep replaces the single-run view for foreach runs.
@@ -166,8 +168,10 @@ func newGetCommand() *cobra.Command {
 			if isRunning(run) {
 				if eta := estimateTrainingETA(ctx, w, ids.RunID); eta != nil {
 					secs := eta.RemainingSeconds
+					pct := eta.PercentComplete
 					data.ESTRemainingSeconds = &secs
-					data.ETADisplay = eta.detailed()
+					data.ESTPercentComplete = &pct
+					data.ProgressDisplay = eta.detailed()
 				}
 			}
 		}
