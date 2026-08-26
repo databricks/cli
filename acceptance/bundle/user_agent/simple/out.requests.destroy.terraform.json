@@ -14,7 +14,11 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
+  }
 }
 {
   "headers": {
@@ -91,6 +95,18 @@
   "q": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
     "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle"
   }
 }
 {

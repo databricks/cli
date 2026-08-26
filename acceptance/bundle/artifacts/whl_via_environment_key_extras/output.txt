@@ -49,5 +49,5 @@ my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
 }
 
 === Expecting 1 wheel to be uploaded under its bare filename (no extras)
->>> jq .path
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+>>> jq -r .body.multipart_form.path | strings
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl
