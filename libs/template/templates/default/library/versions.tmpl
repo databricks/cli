@@ -5,21 +5,21 @@
   16.4.x-scala2.12
 {{- end}}
 
-{{/* A safe, conservative version of DB Connect for local development.
+{{/* The DB Connect version for local development, matched to the serverless
+   * environment version selected above.
    *
-   * We pin to the oldest DB Connect version that fully uses Python 3.12 (16.4),
-   * so the local Python version matches the serverless runtime and DBR 16+.
-   * DB Connect only offers forward compatibility, so a newer version can only
-   * connect to compute of that same version and higher; keeping this as old as
-   * possible maximizes the range of compute it can reach. If the version is
-   * deemed too old, customers can update it themselves after initializing the
-   * template.
+   * Environment version 5 ships DB Connect 18 (Python 3.12), so we pin to 18.0.x.
+   * DB Connect is forward-compatible (a client connects to compute of the same
+   * version and higher), so a client newer than the environment's version would
+   * not connect; matching the environment version keeps local development
+   * client-server compatible with the serverless runtime. Customers can change
+   * this after initializing the template.
    *
    * See https://docs.databricks.com/dev-tools/databricks-connect/python/index.html#requirements
    * for DB Connect release notes and version compatibility.
    */}}
 {{define "conservative_db_connect_version_spec" -}}
-  >=16.4,<16.5
+  >=18.0,<18.1
 {{- end}}
 
 {{/* The serverless environment version to use.
