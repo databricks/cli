@@ -16,7 +16,6 @@ on:
       - ".nextchanges/**"
       - "internal/genkit/**"
       - "tools/validate_nextchanges.py"
-      - "tools/update_github_links.py"
   push:
     branches:
       - main
