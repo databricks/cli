@@ -129,6 +129,56 @@ func TestErrorf(t *testing.T) {
 			wantMessage:     unsafeValue + ": group quality_monitors has no adapter and " + fs.ErrPermission.Error(),
 			wantSafeMessage: "%s: group quality_monitors has no adapter and %w",
 		},
+
+		// Malformed calls. go vet reports these at a real call site; the point here
+		// is that the message still matches fmt's and the safe half stays sane.
+		{
+			name:            "too few arguments",
+			format:          "%s and %s",
+			args:            []any{Safe("one")},
+			wantMessage:     "one and %!s(MISSING)",
+			wantSafeMessage: "one and %s",
+		},
+		{
+			// The extra value is dropped rather than reported, since only verbs
+			// with an argument survive into the safe format.
+			name:            "too many arguments",
+			format:          "%s",
+			args:            []any{Safe("one"), Safe("two")},
+			wantMessage:     "one%!(EXTRA string=two)",
+			wantSafeMessage: "one",
+		},
+		{
+			// A safe value renders through the wrong verb, marker and all. An
+			// unsafe one would have had its verb escaped instead.
+			name:            "wrong verb for type",
+			format:          "%d",
+			args:            []any{Safe("not a number")},
+			wantMessage:     "%!d(string=not a number)",
+			wantSafeMessage: "%!d(string=not a number)",
+		},
+		{
+			name:            "safe nil",
+			format:          "%v",
+			args:            []any{Safe(nil)},
+			wantMessage:     "<nil>",
+			wantSafeMessage: "<nil>",
+		},
+		{
+			name:            "safe struct with plus v",
+			format:          "%+v",
+			args:            []any{Safe(struct{ A int }{1})},
+			wantMessage:     "{A:1}",
+			wantSafeMessage: "{A:1}",
+		},
+		{
+			// Marked Safe, so the error's own message is what is reported.
+			name:            "safe error under an ordinary verb",
+			format:          "%s",
+			args:            []any{Safe(fs.ErrNotExist)},
+			wantMessage:     fs.ErrNotExist.Error(),
+			wantSafeMessage: fs.ErrNotExist.Error(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -153,66 +203,6 @@ func TestErrorf(t *testing.T) {
 		t.Run("MatchesFmt/"+tt.name, func(t *testing.T) {
 			//nolint:govet // tt.format is a table value, so vet cannot check the verbs
 			assert.Equal(t, tt.wantMessage, fmt.Errorf(tt.format, unpackArgs(tt.args)...).Error())
-		})
-	}
-}
-
-// TestErrorfMessageMatchesFmt is the property that makes converting a call site
-// a no-op for every existing consumer, including acceptance test goldens.
-func TestErrorfMessageMatchesFmt(t *testing.T) {
-	tests := []struct {
-		name   string
-		format string
-		safe   []any
-		raw    []any
-	}{
-		{
-			name:   "quoted safe value",
-			format: "field %q",
-			safe:   []any{Safe("tasks[0].job_id")},
-			raw:    []any{"tasks[0].job_id"},
-		},
-		{
-			name:   "safe struct with plus v",
-			format: "%+v",
-			safe:   []any{Safe(struct{ A int }{1})},
-			raw:    []any{struct{ A int }{1}},
-		},
-		{
-			name:   "safe nil",
-			format: "%v",
-			safe:   []any{Safe(nil)},
-			raw:    []any{nil},
-		},
-		{
-			name:   "safe error with s verb",
-			format: "%s",
-			safe:   []any{Safe(fs.ErrNotExist)},
-			raw:    []any{fs.ErrNotExist},
-		},
-		{
-			name:   "too few arguments",
-			format: "%s and %s",
-			safe:   []any{Safe("one")},
-			raw:    []any{"one"},
-		},
-		{
-			name:   "too many arguments",
-			format: "%s",
-			safe:   []any{Safe("one"), Safe("two")},
-			raw:    []any{"one", "two"},
-		},
-		{
-			name:   "wrong verb for type",
-			format: "%d",
-			safe:   []any{Safe("not a number")},
-			raw:    []any{"not a number"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, fmt.Errorf(tt.format, tt.raw...).Error(), Errorf(tt.format, tt.safe...).Error())
 		})
 	}
 }
