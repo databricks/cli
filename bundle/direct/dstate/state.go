@@ -316,7 +316,16 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 			StateVersion: currentStateVersion,
 			CLIVersion:   build.GetInfo().Version,
 		}
-		return appendJSONLine(db.walFile, walHead)
+		if err := appendJSONLine(db.walFile, walHead); err != nil {
+			// Remove the WAL created just above: O_EXCL means it is ours, and
+			// without a header it carries nothing to recover. Leaving it makes
+			// every later open fail, with recovery on the header parse and
+			// without it on the unexpected WAL file.
+			db.walFile.Close()
+			db.walFile = nil
+			os.Remove(walPath)
+			return fmt.Errorf("failed to write WAL header to %s: %w", walPath, err)
+		}
 	}
 
 	return nil
