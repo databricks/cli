@@ -231,16 +231,33 @@ func TestSafeErrorWithoutSafeErr(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
-	err := New("state conversion failed")
-	assert.Equal(t, "state conversion failed", err.Error())
-	assert.Equal(t, "state conversion failed", SafeError(err))
-}
+	// New takes a literal message, so it is its own safe message and any verbs in
+	// it are neither expanded nor lost.
+	tests := []struct {
+		name string
+		text string
+	}{
+		{
+			name: "plain",
+			text: "state conversion failed",
+		},
+		{
+			name: "contains verbs",
+			text: "100% of %s attempts failed",
+		},
+		{
+			name: "contains an escaped percent",
+			text: "100%% done",
+		},
+	}
 
-func TestNewDoesNotFormat(t *testing.T) {
-	// New takes a literal message, so verbs in it are neither expanded nor lost.
-	err := New("100% of %s attempts failed")
-	assert.Equal(t, "100% of %s attempts failed", err.Error())
-	assert.Equal(t, "100% of %s attempts failed", SafeError(err))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := New(tt.text)
+			assert.Equal(t, tt.text, err.Error())
+			assert.Equal(t, tt.text, SafeError(err))
+		})
+	}
 }
 
 func TestSafeErrorFallsBackToRawFormat(t *testing.T) {
