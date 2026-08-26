@@ -324,24 +324,6 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 			expectErrTarget: fileAlreadyExistsError{},
 		},
 		{
-			name: "400 INVALID_PARAMETER_VALUE 'type mismatch' (overwrite=true) maps to fileAlreadyExistsError",
-			apiErr: &apierr.APIError{
-				StatusCode: http.StatusBadRequest,
-				ErrorCode:  "INVALID_PARAMETER_VALUE",
-				Message:    "Cannot overwrite the asset at /dir/foo due to type mismatch (asked: FILE, actual: NOTEBOOK).",
-			},
-			expectErrTarget: fileAlreadyExistsError{},
-		},
-		{
-			name: "400 INVALID_PARAMETER_VALUE 'Requested node type' (overwrite=true) maps to fileAlreadyExistsError",
-			apiErr: &apierr.APIError{
-				StatusCode: http.StatusBadRequest,
-				ErrorCode:  "INVALID_PARAMETER_VALUE",
-				Message:    "Requested node type [FILE] is different from the existing node type [NOTEBOOK]",
-			},
-			expectErrTarget: fileAlreadyExistsError{},
-		},
-		{
 			name: "400 INVALID_PARAMETER_VALUE other message passes through",
 			apiErr: &apierr.APIError{
 				StatusCode: http.StatusBadRequest,
@@ -439,8 +421,8 @@ func writeWithImportError(t *testing.T, body map[string]any) error {
 // Confirms a type-mismatch collision is recognized from the structured
 // AIP-193 ErrorInfo reason, independent of the error message wording.
 func TestWorkspaceFilesClientWriteTypeMismatchReason(t *testing.T) {
-	// The message is deliberately one the fallback string match does not
-	// recognize, to prove the branch fires on the structured reason alone.
+	// The message is deliberately unrelated to any collision wording, to prove
+	// the branch fires on the structured reason alone.
 	err := writeWithImportError(t, map[string]any{
 		"error_code": "INVALID_PARAMETER_VALUE",
 		"message":    "some future wording for the same condition",

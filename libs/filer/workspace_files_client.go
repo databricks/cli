@@ -199,95 +199,27 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
-	// Path already taken. /workspace/import signals this with several
-	// status/error_code combinations, all verified against a real workspace, and
-	// each of the branches below handles one group of them:
-	//
-	//  - 400 RESOURCE_ALREADY_EXISTS — sequential conflict, no overwrite flag.
-	//    Example: "/Users/me/foo.txt already exists. Please pass overwrite=true
-	//    to overwrite it."
-	//
-	//  - 409, with ALREADY_EXISTS or with no error_code at all — concurrent
-	//    contention (observed in TestLock when five lockers race to write
-	//    deploy.lock). Example: "Node with name
-	//    /Users/me/.bundle/.../deploy.lock already exists. Please pass
-	//    overwrite=true to update it."
-	//
-	//  - 400 with no error_code — notebook conflict; detected by message marker
-	//    in the ErrBadRequest branch further below.
-	//
-	//  - 400 INVALID_PARAMETER_VALUE — overwrite=true on a path where the
-	//    existing object's node type differs from the upload. Two distinct
-	//    messages, both observed against aws-prod-ucws:
-	//
-	//    (a) "Cannot overwrite the asset at /Users/me/foo due to type mismatch
-	//        (asked: FILE, actual: NOTEBOOK)" — fires when the upload path is
-	//        the same as an existing NOTEBOOK and the new content has no
-	//        notebook header (so AUTO would store it as FILE), or the mirror
-	//        case with FILE/NOTEBOOK swapped.
-	//
-	//    (b) "Requested node type [FILE] is different from the existing node
-	//        type [NOTEBOOK]" — fires when /foo is already a NOTEBOOK (from a
-	//        prior /foo.py upload) and an overwrite-upload of regular content
-	//        targets /foo.py: AUTO would store the new content as FILE at
-	//        /foo.py, but the workspace treats /foo.py as the source view of
-	//        the existing /foo NOTEBOOK and rejects the type change.
-	//        Unlike (a), this message comes from the legacy webapp tree path
-	//        (webapp/.../tree/TreeBackendHelper.scala), not from WCS, so the
-	//        WCS-only ErrorInfo work below does not cover it.
-	//
-	//    The server refuses the overwrite even though the caller asked for
-	//    it; from the caller's perspective the path is occupied, so we
-	//    surface this as already-exists.
-	// ErrResourceConflict covers every 409 regardless of error_code, including
-	// the bare 409 the workspace returns with only a message. ErrAlreadyExists
-	// alone would miss those: it and ErrResourceConflict are siblings under the
-	// SDK's error mapping, so a 409 without an error_code unwraps to the parent
-	// only. ErrResourceAlreadyExists is listed separately because the
-	// RESOURCE_ALREADY_EXISTS case arrives as a 400, which no status mapping
-	// resolves to a conflict.
+	// Path already taken. ErrResourceConflict covers every 409 (including the
+	// bare 409 with only a message); ErrResourceAlreadyExists covers the 400
+	// RESOURCE_ALREADY_EXISTS, which no status maps to a conflict.
 	if errors.Is(err, apierr.ErrResourceConflict) || errors.Is(err, apierr.ErrResourceAlreadyExists) {
 		return fileAlreadyExistsError{absPath}
 	}
+	// Overwrite rejected because the existing object's node type differs from
+	// the upload. The collision carries an AIP-193 ErrorInfo with a stable
+	// reason, so branch on it rather than the message text.
 	if errors.Is(err, apierr.ErrInvalidParameterValue) {
 		if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
-			// WCS attaches AIP-193 ErrorInfo with a stable reason to import
-			// path collisions (universe PR #2019174, WP-6031), so prefer
-			// branching on it over parsing the message.
 			if info := aerr.ErrorDetails().ErrorInfo; info != nil && info.Reason == "WORKSPACE_OBJECT_TYPE_MISMATCH" {
-				return fileAlreadyExistsError{absPath}
-			}
-			// Fallback for collisions that reach us without ErrorInfo. WCS attaches
-			// ErrorInfo to the exception (flag enableImportCollisionErrorInfo,
-			// default-on), but it doesn't yet reach the HTTP body, and two universe
-			// fixes are needed before this can drop:
-			//
-			//  - Both messages come over WCS's /workspace/import HTTP edge
-			//    (WorkspaceContentWebBackend), which hand-rolled its error body as
-			//    {error_code, message} and dropped details (they survive only on
-			//    WCS's internal RPC responses). #2429097 (WP-7085) routes that edge
-			//    through the framework serializer, behind a default-false SAFE flag
-			//    (enableWebBackendErrorDetailsPropagation) that still has to ramp.
-			//
-			//  - Message (b) originates in webapp's TreeBackendHelper (reached from
-			//    WCS over gRPC, which preserves the detail) and was thrown bare, so
-			//    even with #2429097 there was nothing to serialize; #2437047 attaches
-			//    the ErrorInfo there. So (a) needs only #2429097; (b) needs both.
-			if strings.Contains(aerr.Message, "type mismatch") || strings.Contains(aerr.Message, "node type") {
 				return fileAlreadyExistsError{absPath}
 			}
 		}
 	}
 
-	// This API returns 400 if the file already exists when the object type is notebook.
-	// Both the historical "Path (<path>) already exists." format and the newer
-	// "RESOURCE_ALREADY_EXISTS: <path> already exists. ..." format end with the same
-	// "already exists." marker; the JSON error_code is empty in both. The new format
-	// might not have been rolled out to all workspaces yet, so we anchor on the shared
-	// marker and return absPath rather than parsing the message.
-	//
-	// An empty error_code unwraps to ErrBadRequest by status alone, so this is checked
-	// after the ErrInvalidParameterValue branch above rather than before it.
+	// A notebook that already exists returns 400 with an empty error_code, which
+	// unwraps to ErrBadRequest by status alone, so this runs after the
+	// ErrInvalidParameterValue branch. Anchor on the shared "already exists."
+	// marker rather than parsing the full message.
 	if errors.Is(err, apierr.ErrBadRequest) {
 		if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
 			if strings.Contains(aerr.Message, "already exists.") {
