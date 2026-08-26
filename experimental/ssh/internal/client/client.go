@@ -820,6 +820,7 @@ func buildSSHArgs(userName, privateKeyPath, proxyCommand, hostName, wsHome strin
 		"-o", "IdentitiesOnly=yes",
 		"-o", "StrictHostKeyChecking=accept-new",
 		"-o", "ConnectTimeout=360",
+		"-o", "ServerAliveInterval=" + strconv.Itoa(sshconfig.ServerAliveIntervalSeconds),
 		"-o", "ProxyCommand=" + proxyCommand,
 	}
 	if opts.UserKnownHostsFile != "" {
