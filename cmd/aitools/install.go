@@ -2,15 +2,19 @@ package aitools
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -55,11 +59,12 @@ func (d delivery) String() string {
 
 // agentPlanItem is the resolved plan for one agent: what we'll do and why.
 type agentPlanItem struct {
-	agent    *agents.Agent
-	delivery delivery
-	scope    string // agent-native plugin scope (deliveryPlugin only)
-	reason   string // why the agent is skipped (deliverySkip only)
-	explicit bool   // named via --agents (blocking it is an error)
+	agent     *agents.Agent
+	delivery  delivery
+	scope     string                      // agent-native plugin scope (deliveryPlugin only)
+	reason    string                      // why the agent is skipped (deliverySkip only)
+	skipError protos.AitoolsErrorCategory // error category for the skip (deliverySkip only)
+	explicit  bool                        // named via --agents (blocking it is an error)
 }
 
 // agentChoice is one row in the interactive agent picker.
@@ -99,6 +104,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			jsonMode := installOutputIsJSON(cmd)
 
 			if skillsOnly && pathFlag != "" {
 				return errors.New("cannot use --skills-only with --path; --path always writes raw skill files")
@@ -148,6 +154,9 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 					return err
 				}
 				if len(targetAgents) == 0 {
+					if jsonMode {
+						return renderInstallJSON(cmd.OutOrStdout(), installOutput{Scope: scope, Agents: []agentResultJSON{}})
+					}
 					printNoAgentsMessage(ctx)
 					return nil
 				}
@@ -168,12 +177,22 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				}
 			}
 
-			defer logInstallEvent(ctx, plan, installOpts{
-				Scope:        opts.Scope,
-				Experimental: opts.IncludeExperimental,
-			})
+			var outcomes []agentOutcome
+			var runErr error
+			defer func() {
+				logInstallEvent(ctx, plan, installOpts{
+					Scope:        opts.Scope,
+					Experimental: opts.IncludeExperimental,
+				}, classifyInstallError(runErr), outcomes)
+			}()
 
-			return executePlan(ctx, src, plan, opts)
+			outcomes, runErr = executePlan(ctx, src, plan, opts, jsonMode)
+			if jsonMode {
+				if jerr := renderInstallJSON(cmd.OutOrStdout(), buildInstallOutput(opts.Scope, outcomes)); jerr != nil {
+					return jerr
+				}
+			}
+			return runErr
 		},
 	}
 
@@ -187,6 +206,15 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Install globally (default)")
 	markScopeBoolsDeprecated(cmd)
 	return cmd
+}
+
+func installOutputIsJSON(cmd *cobra.Command) bool {
+	f := cmd.Flag("output")
+	if f == nil {
+		return false
+	}
+	out, ok := f.Value.(*flags.Output)
+	return ok && *out == flags.OutputJSON
 }
 
 // selectAgents returns the agents to act on when --agents is not given. The
@@ -335,6 +363,7 @@ func planItemFor(a *agents.Agent, scope string, skillsOnly, explicit bool) agent
 		if scope == installer.ScopeProject && !a.SupportsProjectScope {
 			item.delivery = deliverySkip
 			item.reason = "does not support project-scoped skills"
+			item.skipError = protos.AitoolsErrorCategoryUnsupportedScope
 		} else {
 			item.delivery = deliverySkills
 		}
@@ -343,6 +372,7 @@ func planItemFor(a *agents.Agent, scope string, skillsOnly, explicit bool) agent
 		if !ok {
 			item.delivery = deliverySkip
 			item.reason = reason
+			item.skipError = protos.AitoolsErrorCategoryUnsupportedScope
 		} else {
 			item.delivery = deliveryPlugin
 			item.scope = nativeScope
@@ -368,11 +398,31 @@ func printPlanSummary(ctx context.Context, plan []agentPlanItem, scope string) {
 	cmdio.LogString(ctx, "")
 }
 
-// executePlan carries out the plan. Skills installs go through the existing
-// skills path (preserving its output). Plugin installs are reported but never
-// silently fall back to skills: a blocked install is a warning (exit 0), unless
-// the agent was explicitly named via --agents, which is an error.
-func executePlan(ctx context.Context, src installer.ManifestSource, plan []agentPlanItem, opts installer.InstallOptions) error {
+// agentOutcome is one agent's result after executePlan: how the databricks
+// tools were delivered (or attempted), and, when the agent did not succeed, the
+// failure category and a human-readable message for --output json. The category
+// is what telemetry records; the message is local-only and never sent.
+type agentOutcome struct {
+	agent         *agents.Agent
+	delivery      delivery
+	status        outcomeStatus
+	errorCategory protos.AitoolsErrorCategory // Unspecified when status == outcomeInstalled
+	message       string                      // set when skipped or failed
+}
+
+type outcomeStatus string
+
+const (
+	outcomeInstalled outcomeStatus = "installed"
+	outcomeSkipped   outcomeStatus = "skipped"
+	outcomeFailed    outcomeStatus = "failed"
+)
+
+// executePlan carries out the plan and returns each agent's outcome. Skills
+// installs go through the existing skills path. Plugin installs are reported but
+// never silently fall back to skills: a blocked install is a warning (exit 0),
+// unless the agent was explicitly named via --agents, which is an error.
+func executePlan(ctx context.Context, src installer.ManifestSource, plan []agentPlanItem, opts installer.InstallOptions, quiet bool) ([]agentOutcome, error) {
 	var skillsAgents []*agents.Agent
 	var pluginItems, skipItems []agentPlanItem
 	for _, it := range plan {
@@ -386,12 +436,20 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 		}
 	}
 
+	var outcomes []agentOutcome
 	var explicitErrs []error
 
 	if len(skillsAgents) > 0 {
-		installer.PrintInstallingFor(ctx, skillsAgents)
+		if !quiet {
+			installer.PrintInstallingFor(ctx, skillsAgents)
+		}
+		// A skills install runs as a group; on failure the whole command fails and
+		// the top-level error category classifies it.
 		if err := installSkillsForAgentsFn(ctx, src, skillsAgents, opts); err != nil {
-			return err
+			return outcomes, err
+		}
+		for _, a := range skillsAgents {
+			outcomes = append(outcomes, agentOutcome{agent: a, delivery: deliverySkills, status: outcomeInstalled})
 		}
 	}
 
@@ -399,14 +457,25 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 	if len(pluginItems) > 0 {
 		ref, _, err := installer.GetSkillsRef(ctx)
 		if err != nil {
-			return err
+			return outcomes, err
 		}
 		records := map[string]installer.PluginRecord{}
 		for _, it := range pluginItems {
-			cmdio.LogString(ctx, fmt.Sprintf("Installing databricks plugin for %s...", it.agent.DisplayName))
+			if !quiet {
+				cmdio.LogString(ctx, fmt.Sprintf("Installing databricks plugin for %s...", it.agent.DisplayName))
+			}
 			rec, err := installPluginForAgentFn(ctx, it.agent, it.scope, ref)
 			if err != nil {
-				cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %v", it.agent.DisplayName, err)))
+				if !quiet {
+					cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %v", it.agent.DisplayName, err)))
+				}
+				outcomes = append(outcomes, agentOutcome{
+					agent:         it.agent,
+					delivery:      deliveryPlugin,
+					status:        outcomeFailed,
+					errorCategory: classifyInstallError(err),
+					message:       err.Error(),
+				})
 				if it.explicit {
 					explicitErrs = append(explicitErrs, err)
 				}
@@ -414,28 +483,40 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			}
 			records[it.agent.Name] = rec
 			pluginCount++
+			outcomes = append(outcomes, agentOutcome{agent: it.agent, delivery: deliveryPlugin, status: outcomeInstalled})
 			// Remove any raw skills we previously dropped on this agent so the
 			// plugin and leftover files don't surface the same skills twice.
 			if err := cleanupLegacyFn(ctx, it.agent, opts.Scope); err != nil {
 				log.Debugf(ctx, "Legacy skill cleanup for %s failed: %v", it.agent.DisplayName, err)
 			}
-			cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s", it.agent.DisplayName, versionToken(rec.Version)))
+			if !quiet {
+				cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s", it.agent.DisplayName, versionToken(rec.Version)))
+			}
 		}
 		if len(records) > 0 {
 			if err := recordPluginInstallsFn(ctx, opts.Scope, records, ref); err != nil {
-				return err
+				return outcomes, err
 			}
 		}
 	}
 
 	for _, it := range skipItems {
-		cmdio.LogString(ctx, cmdio.Yellow(ctx, "Skipped "+it.agent.DisplayName+": "+it.reason))
+		if !quiet {
+			cmdio.LogString(ctx, cmdio.Yellow(ctx, "Skipped "+it.agent.DisplayName+": "+it.reason))
+		}
+		outcomes = append(outcomes, agentOutcome{
+			agent:         it.agent,
+			delivery:      deliverySkip,
+			status:        outcomeSkipped,
+			errorCategory: it.skipError,
+			message:       it.reason,
+		})
 		if it.explicit {
 			explicitErrs = append(explicitErrs, fmt.Errorf("%s: %s", it.agent.DisplayName, it.reason))
 		}
 	}
 
-	if pluginCount > 0 {
+	if pluginCount > 0 && !quiet {
 		noun := "agent"
 		if pluginCount != 1 {
 			noun = "agents"
@@ -444,9 +525,45 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 	}
 
 	if len(explicitErrs) > 0 {
-		return errors.Join(explicitErrs...)
+		return outcomes, errors.Join(explicitErrs...)
 	}
-	return nil
+	return outcomes, nil
+}
+
+type installOutput struct {
+	Scope  string            `json:"scope"`
+	Agents []agentResultJSON `json:"agents"`
+}
+
+type agentResultJSON struct {
+	Name          string `json:"name"`
+	Delivery      string `json:"delivery"`
+	Status        string `json:"status"`
+	ErrorCategory string `json:"errorCategory,omitempty"`
+	Message       string `json:"message,omitempty"`
+}
+
+func buildInstallOutput(scope string, outcomes []agentOutcome) installOutput {
+	out := installOutput{Scope: scope, Agents: make([]agentResultJSON, 0, len(outcomes))}
+	for _, o := range outcomes {
+		entry := agentResultJSON{
+			Name:     o.agent.Name,
+			Delivery: o.delivery.String(),
+			Status:   string(o.status),
+			Message:  o.message,
+		}
+		if o.errorCategory != protos.AitoolsErrorCategoryUnspecified {
+			entry.ErrorCategory = string(o.errorCategory)
+		}
+		out.Agents = append(out.Agents, entry)
+	}
+	return out
+}
+
+func renderInstallJSON(w io.Writer, out installOutput) error {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(out)
 }
 
 // resolveAgentNames parses a comma-separated list of agent names and validates

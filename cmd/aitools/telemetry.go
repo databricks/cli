@@ -1,6 +1,7 @@
 package aitools
 
 import (
+	"cmp"
 	"context"
 	"slices"
 
@@ -30,14 +31,39 @@ type installOpts struct {
 }
 
 // logInstallEvent buffers an install event; cmd/root uploads it at exit.
-func logInstallEvent(ctx context.Context, plan []agentPlanItem, opts installOpts) {
+// errCategory is the top-level command outcome (Unspecified on success), and
+// outcomes carries the per-agent results so a skipped-with-warning failure is
+// still recorded even when the command exits 0.
+func logInstallEvent(ctx context.Context, plan []agentPlanItem, opts installOpts, errCategory protos.AitoolsErrorCategory, outcomes []agentOutcome) {
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		AitoolsInstallEvent: &protos.AitoolsInstallEvent{
-			Agents:       agentsField(plan),
-			Scope:        scopeType(opts.Scope),
-			Experimental: opts.Experimental,
+			Agents:        agentsField(plan),
+			Scope:         scopeType(opts.Scope),
+			Experimental:  opts.Experimental,
+			ErrorCategory: errCategory,
+			AgentResults:  agentResultsField(outcomes),
 		},
 	})
+}
+
+// agentResultsField returns the per-agent failure/skip categories, one entry per
+// non-successful agent, sorted by agent enum for stable output. Successful
+// agents produce no entry.
+func agentResultsField(outcomes []agentOutcome) []protos.AitoolsAgentResult {
+	var out []protos.AitoolsAgentResult
+	for _, o := range outcomes {
+		if o.agent == nil || o.errorCategory == protos.AitoolsErrorCategoryUnspecified {
+			continue
+		}
+		out = append(out, protos.AitoolsAgentResult{
+			Agent:         agentType(o.agent.Name),
+			ErrorCategory: o.errorCategory,
+		})
+	}
+	slices.SortFunc(out, func(a, b protos.AitoolsAgentResult) int {
+		return cmp.Compare(a.Agent, b.Agent)
+	})
+	return out
 }
 
 // agentsField returns the deduped agent enums from the plan, sorted so the
