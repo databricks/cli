@@ -52,6 +52,16 @@ func NewStateUpdate(resourceID string, state json.RawMessage, inProgress bool) (
 		status = StatusPending
 	}
 
+	// No state means nothing is left to describe, so the write clears it rather than recording
+	// it as empty: an empty value is a state the service refuses on a delete that succeeded,
+	// while an absent one is how the resource stops being listed at all.
+	if state == nil {
+		return OperationUpdate{
+			Fields: ClearsState,
+			Status: status,
+		}, nil
+	}
+
 	return OperationUpdate{
 		Fields:     DescribesResource,
 		State:      state,

@@ -17,6 +17,12 @@ const (
 // an update may change.
 const DescribesResource = FieldState | FieldErrorMessage | FieldResourceID | FieldStatus
 
+// ClearsState is what a write that leaves no resource claims: a delete, and the delete half of
+// a recreate. State is named so the service reads the absent value as a clear, which is what
+// drops the resource from the deployment. It cannot name resource_id either: the service counts
+// only a state it was given as recording one, so an id alongside a cleared state is refused.
+const ClearsState = FieldState | FieldErrorMessage | FieldStatus
+
 // KeepsState is what a failure claims: mark it failed and leave state alone. State means
 // the resource is as it was written; no state means a delete went through and nothing
 // replaced it, so the resource really is gone and the deployment should say so.

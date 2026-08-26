@@ -219,7 +219,9 @@ func (r *rawClient) UpdateDeployment(ctx context.Context, deploymentID string, d
 // A map, not a struct, so presence cannot drift from the mask through an omitempty tag.
 func newUpdateRequest(update OperationUpdate, sequenceID string) map[string]any {
 	body := map[string]any{"sequence_id": sequenceID}
-	if update.Fields.Has(FieldState) {
+	// A masked state with no value is how the service is told the resource is gone, so a nil
+	// state is left out rather than sent empty.
+	if update.Fields.Has(FieldState) && update.State != nil {
 		body["state"] = string(update.State)
 	}
 	if update.Fields.Has(FieldResourceID) {

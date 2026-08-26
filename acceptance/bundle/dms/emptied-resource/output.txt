@@ -110,13 +110,11 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   "method": "PATCH",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo.grants",
   "q": {
-    "update_mask": "state,error_message,resource_id,status"
+    "update_mask": "state,error_message,status"
   },
   "body": {
     "error_message": "",
-    "resource_id": "schema/main.dms_emptied_resource",
     "sequence_id": "0",
-    "state": "",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }

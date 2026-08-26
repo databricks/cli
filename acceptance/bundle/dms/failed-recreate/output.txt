@@ -48,13 +48,11 @@ Files: 3 uploaded, 0 deleted
   "method": "PATCH",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
   "q": {
-    "update_mask": "state,error_message,resource_id,status"
+    "update_mask": "state,error_message,status"
   },
   "body": {
     "error_message": "",
-    "resource_id": "main.dms_failed_recreate_schema",
     "sequence_id": "0",
-    "state": "",
     "status": "OPERATION_STATUS_PENDING"
   }
 }

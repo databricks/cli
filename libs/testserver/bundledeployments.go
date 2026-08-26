@@ -410,7 +410,9 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 		if !slices.Contains(dmsUpdatableOperationFields, path) {
 			return dmsInvalidArgument("update_mask path " + path + " is not updatable")
 		}
-		if _, sent := raw[path]; !sent {
+		// state is the exception: masked with no value is how the service is told the resource
+		// is gone, which is what stops it being listed.
+		if _, sent := raw[path]; !sent && path != "state" {
 			// An empty value is how a field is cleared, so the field has to be there to say so.
 			return dmsInvalidArgument(path + " is required when '" + path + "' is in update_mask (an empty value clears it)")
 		}
@@ -430,12 +432,17 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 		}
 	}
 
+	// The service counts only a state it was given as recording one, so these ask whether a
+	// value arrived rather than whether the mask names the field.
+	_, stateSent := raw["state"]
+	recordsState := update["state"] && stateSent
+
 	// A resource_id can be written but not cleared, and only alongside the state it belongs to.
 	if update["resource_id"] {
 		if op.ResourceId == "" {
 			return dmsInvalidArgument("resource_id is required when 'resource_id' is in update_mask")
 		}
-		if !update["state"] {
+		if !recordsState {
 			return dmsInvalidArgument("state must be in update_mask when 'resource_id' is")
 		}
 	}
