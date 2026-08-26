@@ -108,6 +108,27 @@ func TestErrorf(t *testing.T) {
 			wantMessage:     "jobs: " + unsafeValue + " for PrepareState in /home/user/bundle",
 			wantSafeMessage: "jobs: %s for PrepareState in %s",
 		},
+		{
+			name:            "wrapping a safe error contributes its safe message",
+			format:          "%s: SaveState: %w",
+			args:            []any{unsafeValue, Errorf("cannot convert %s to %s", Safe("string"), Safe("int64"))},
+			wantMessage:     unsafeValue + ": SaveState: cannot convert string to int64",
+			wantSafeMessage: "%s: SaveState: cannot convert string to int64",
+		},
+		{
+			name:            "wrapping a foreign error keeps the verb",
+			format:          "reading %s: %w",
+			args:            []any{"/home/user/state.json", fs.ErrNotExist},
+			wantMessage:     "reading /home/user/state.json: " + fs.ErrNotExist.Error(),
+			wantSafeMessage: "reading %s: %w",
+		},
+		{
+			name:            "several wrapped errors",
+			format:          "%s: %w and %w",
+			args:            []any{unsafeValue, Errorf("group %s has no adapter", Safe("quality_monitors")), fs.ErrPermission},
+			wantMessage:     unsafeValue + ": group quality_monitors has no adapter and " + fs.ErrPermission.Error(),
+			wantSafeMessage: "%s: group quality_monitors has no adapter and %w",
+		},
 	}
 
 	for _, tt := range tests {
@@ -115,6 +136,23 @@ func TestErrorf(t *testing.T) {
 			err := Errorf(tt.format, tt.args...)
 			assert.Equal(t, tt.wantMessage, err.Error())
 			assert.Equal(t, tt.wantSafeMessage, SafeError(err))
+		})
+	}
+
+	// The same table drives SafeSprintf, which is what Errorf stores and is worth
+	// exercising on its own rather than only through an error.
+	for _, tt := range tests {
+		t.Run("SafeSprintf/"+tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.wantSafeMessage, SafeSprintf(tt.format, tt.args...))
+		})
+	}
+
+	// And the message half: Errorf must render exactly what fmt.Errorf would from
+	// the same values, which is what makes converting a call site invisible.
+	for _, tt := range tests {
+		t.Run("MatchesFmt/"+tt.name, func(t *testing.T) {
+			//nolint:govet // tt.format is a table value, so vet cannot check the verbs
+			assert.Equal(t, fmt.Errorf(tt.format, unpackArgs(tt.args)...).Error(), tt.wantMessage)
 		})
 	}
 }
@@ -179,30 +217,16 @@ func TestErrorfMessageMatchesFmt(t *testing.T) {
 	}
 }
 
-func TestSafeErrorChains(t *testing.T) {
+func TestSafeErrorChainsEveryLevel(t *testing.T) {
+	// The table covers what the outermost error renders; this is the part it
+	// cannot express, that every level still reports its own safe message.
 	inner := Errorf("cannot convert %s to %s", Safe("string"), Safe("int64"))
-	middle := Errorf("%s: cannot set resolved value for field %q: %w", unsafeValue, Safe("tasks[0].job_id"), inner)
+	middle := Errorf("%s: cannot set field %q: %w", unsafeValue, Safe("tasks[0].job_id"), inner)
 	outer := Errorf("%s: SaveState: %w", unsafeValue, middle)
 
-	assert.Equal(t,
-		unsafeValue+": SaveState: "+unsafeValue+`: cannot set resolved value for field "tasks[0].job_id": cannot convert string to int64`,
-		outer.Error())
-	assert.Equal(t,
-		`%s: SaveState: %s: cannot set resolved value for field "tasks[0].job_id": cannot convert string to int64`,
-		SafeError(outer))
-
-	// Each level still reports its own template.
-	assert.Equal(t, `%s: cannot set resolved value for field "tasks[0].job_id": cannot convert string to int64`, SafeError(middle))
 	assert.Equal(t, "cannot convert string to int64", SafeError(inner))
-}
-
-func TestSafeErrorChainsThroughForeignError(t *testing.T) {
-	// A %w wrapping an error with no template keeps the bare verb.
-	err := Errorf("reading %s: %w", "/home/user/state.json", fs.ErrNotExist)
-
-	assert.Equal(t, "reading /home/user/state.json: "+fs.ErrNotExist.Error(), err.Error())
-	assert.Equal(t, "reading %s: %w", SafeError(err))
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+	assert.Equal(t, `%s: cannot set field "tasks[0].job_id": cannot convert string to int64`, SafeError(middle))
+	assert.Equal(t, `%s: SaveState: %s: cannot set field "tasks[0].job_id": cannot convert string to int64`, SafeError(outer))
 }
 
 func TestSafeErrorChainsThroughPlainWrap(t *testing.T) {
@@ -305,6 +329,12 @@ func TestErrorsIs(t *testing.T) {
 	assert.ErrorIs(t, err, sentinel)
 	assert.ErrorIs(t, Errorf("outer: %w", err), sentinel)
 	assert.NotErrorIs(t, Errorf("no wrapping: %s", sentinel), sentinel)
+
+	// Several %w in one call: each branch stays reachable.
+	first := Errorf("group %s has no adapter", Safe("quality_monitors"))
+	both := Errorf("%s: %w and %w", unsafeValue, first, fs.ErrPermission)
+	assert.ErrorIs(t, both, first)
+	assert.ErrorIs(t, both, fs.ErrPermission)
 }
 
 func TestErrorsAsType(t *testing.T) {
