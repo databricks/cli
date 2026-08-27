@@ -514,6 +514,20 @@ tasks:
           --packages ./... \
           -- -timeout=${LOCAL_TIMEOUT:-60m}
 
+  test-doctest:
+    desc: Run doctests in first-party Python scripts
+    # `python -m doctest` imports every file it is given, so all these scripts
+    # must stay import-safe (no module-level side effects — keep real work under
+    # `if __name__ == "__main__"`). Globbed so new doctests are picked up
+    # automatically. --with pyyaml: generate_resources.py imports it; extend if
+    # another script grows a third-party import. -p ">=3.12": three of these
+    # carry a PEP 723 `requires-python = ">=3.12"`.
+    sources:
+      - tools/*.py
+      - bundle/direct/tools/*.py
+    cmds:
+      - 'uv run -p ">=3.12" --no-project --with pyyaml python -m doctest tools/*.py bundle/direct/tools/*.py'
+
   test-acc:
     desc: Run acceptance tests
     # Sources mirror `build` (acceptance_test.go builds the CLI in-process via BuildCLI)
