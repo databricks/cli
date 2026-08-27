@@ -11,11 +11,10 @@ from databricks.bundles.alerts._models.alert_v2_operand_column import (
 from databricks.bundles.alerts._models.comparison_operator import ComparisonOperator
 from databricks.bundles.alerts._models.cron_schedule import CronSchedule
 from databricks.bundles.catalogs._models.catalog import Catalog
-from databricks.bundles.core import Location, Resources, Severity
-from databricks.bundles.core._bundle import Bundle
-from databricks.bundles.core._resource import Resource
-from databricks.bundles.core._resource_mutator import (
-    ResourceMutator,
+from databricks.bundles.core import (
+    Location,
+    Resources,
+    Severity,
     alert_mutator,
     catalog_mutator,
     job_mutator,
@@ -23,6 +22,9 @@ from databricks.bundles.core._resource_mutator import (
     schema_mutator,
     volume_mutator,
 )
+from databricks.bundles.core._bundle import Bundle
+from databricks.bundles.core._resource import Resource
+from databricks.bundles.core._resource_mutator import ResourceMutator
 from databricks.bundles.core._resource_type import _ResourceType
 from databricks.bundles.jobs._models.job import Job
 from databricks.bundles.pipelines._models.pipeline import Pipeline

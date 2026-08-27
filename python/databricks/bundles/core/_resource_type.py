@@ -27,46 +27,8 @@ class _ResourceType:
         """
         Returns all supported resource types.
         """
-
-        # intentionally lazily load all resource types to avoid imports from databricks.bundles.core to
-        # be imported in databricks.bundles.<resource_type>
-
-        from databricks.bundles.alerts._models.alert import Alert
-        from databricks.bundles.catalogs._models.catalog import Catalog
-        from databricks.bundles.jobs._models.job import Job
-        from databricks.bundles.pipelines._models.pipeline import Pipeline
-        from databricks.bundles.schemas._models.schema import Schema
-        from databricks.bundles.volumes._models.volume import Volume
-
-        return (
-            _ResourceType(
-                resource_type=Job,
-                singular_name="job",
-                plural_name="jobs",
-            ),
-            _ResourceType(
-                resource_type=Pipeline,
-                plural_name="pipelines",
-                singular_name="pipeline",
-            ),
-            _ResourceType(
-                resource_type=Volume,
-                plural_name="volumes",
-                singular_name="volume",
-            ),
-            _ResourceType(
-                resource_type=Schema,
-                plural_name="schemas",
-                singular_name="schema",
-            ),
-            _ResourceType(
-                resource_type=Alert,
-                plural_name="alerts",
-                singular_name="alert",
-            ),
-            _ResourceType(
-                resource_type=Catalog,
-                plural_name="catalogs",
-                singular_name="catalog",
-            ),
+        from databricks.bundles.core._generated._resource_types import (
+            _all_resource_types,
         )
+
+        return _all_resource_types()
