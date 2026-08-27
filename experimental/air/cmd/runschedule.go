@@ -56,11 +56,25 @@ func buildJobSettings(cfg *runConfig, commandPath, dlImage, usagePolicyID string
 	}
 }
 
-// findJobByName resolves an existing job to update. The CLI keeps no state, so a
-// scheduled workload is keyed on its (unique-by-convention) name: zero matches
-// means create a new job, one means update it in place, and more than one is
-// ambiguous — the caller can't tell which to overwrite.
-func findJobByName(ctx context.Context, w *databricks.WorkspaceClient, name string) (int64, error) {
+const (
+	// scheduledJobManagedTag marks a job as created by `air run` scheduling, so
+	// upsert only ever resets jobs the CLI owns — never a same-named job someone
+	// made in the UI.
+	scheduledJobManagedTag = "air_cli_scheduled"
+	// scheduledJobCreatorTag records the creator's email. Jobs names are neither
+	// unique nor namespaced and jobs.list(name=) has no creator filter, so two
+	// users sharing an experiment_name would otherwise collide (see "Limitations
+	// for Persistent Jobs in AI Runtime Task"). Matching on the creator tag scopes
+	// the upsert to the calling user's own job.
+	scheduledJobCreatorTag = "air_cli_creator"
+)
+
+// findManagedScheduledJob resolves the caller's existing scheduled job to update.
+// The CLI keeps no state, so a scheduled workload is identified by name plus the
+// CLI-managed + creator tags: zero matches means create, one means update in
+// place, and more than one is ambiguous — the caller can't tell which to
+// overwrite.
+func findManagedScheduledJob(ctx context.Context, w *databricks.WorkspaceClient, name, creator string) (int64, error) {
 	it := w.Jobs.List(ctx, jobs.ListJobsRequest{Name: name, Limit: 100})
 	var matches []int64
 	for it.HasNext(ctx) {
@@ -68,9 +82,13 @@ func findJobByName(ctx context.Context, w *databricks.WorkspaceClient, name stri
 		if err != nil {
 			return 0, err
 		}
-		// The list Name filter is a case-insensitive match; require an exact name
-		// so "run" doesn't collide with "Run".
-		if job.Settings != nil && job.Settings.Name == name {
+		s := job.Settings
+		// The list Name filter is case-insensitive, so require an exact name; then
+		// scope to this CLI's jobs for this user via the identity tags.
+		if s == nil || s.Name != name {
+			continue
+		}
+		if s.Tags[scheduledJobManagedTag] == "true" && s.Tags[scheduledJobCreatorTag] == creator {
 			matches = append(matches, job.JobId)
 		}
 	}
@@ -80,24 +98,33 @@ func findJobByName(ctx context.Context, w *databricks.WorkspaceClient, name stri
 	case 1:
 		return matches[0], nil
 	default:
-		return 0, fmt.Errorf("found %d jobs named %q; the name is not unique, so air run cannot tell which to update — rename or delete the duplicates, or use a unique experiment_name", len(matches), name)
+		return 0, fmt.Errorf("found %d scheduled jobs named %q owned by %s; air run cannot tell which to update — delete the duplicates or use a unique experiment_name", len(matches), name, creator)
 	}
 }
 
 // createScheduledJob turns a workload with a schedule into a persistent,
 // scheduled Databricks job. It uploads the same launch artifacts as an ephemeral
-// run, then upserts by name: an existing job with the same name is updated in
-// place (so re-running doesn't pile up duplicates), otherwise a new one is
-// created. It returns the job id, its URL, and whether the job was created (vs
-// updated).
+// run, then upserts by the caller's (name, creator) identity: their existing
+// scheduled job of the same name is updated in place (so re-running doesn't pile
+// up duplicates), otherwise a new one is created. It returns the job id, its URL,
+// and whether the job was created (vs updated).
 func createScheduledJob(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath string) (jobID int64, url string, created bool, err error) {
+	creator, err := currentUserEmail(ctx, w)
+	if err != nil {
+		return 0, "", false, err
+	}
+
 	prep, err := prepareWorkload(ctx, w, cfg, configPath)
 	if err != nil {
 		return 0, "", false, err
 	}
 	settings := buildJobSettings(cfg, prep.commandPath, prep.dlImage, prep.usagePolicyID, prep.snap, prep.deps)
+	settings.Tags = map[string]string{
+		scheduledJobManagedTag: "true",
+		scheduledJobCreatorTag: creator,
+	}
 
-	existingID, err := findJobByName(ctx, w, cfg.ExperimentName)
+	existingID, err := findManagedScheduledJob(ctx, w, cfg.ExperimentName, creator)
 	if err != nil {
 		return 0, "", false, err
 	}
@@ -115,6 +142,7 @@ func createScheduledJob(ctx context.Context, w *databricks.WorkspaceClient, cfg 
 			Tasks:          settings.Tasks,
 			Environments:   settings.Environments,
 			Schedule:       settings.Schedule,
+			Tags:           settings.Tags,
 		})
 		if err != nil {
 			return 0, "", false, err

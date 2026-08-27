@@ -98,16 +98,34 @@ func TestCreateScheduledJobCreatesThenUpdates(t *testing.T) {
 	assert.Equal(t, "0 0 9 * * ?", found[0].Settings.Schedule.QuartzCronExpression)
 }
 
-// When two jobs share the experiment name, the CLI can't tell which to update, so
-// it errors rather than guessing.
+// When two of the caller's own scheduled jobs share the experiment name, the CLI
+// can't tell which to update, so it errors rather than guessing.
 func TestCreateScheduledJobAmbiguousName(t *testing.T) {
 	w, cfg, cfgPath := loadScheduledConfig(t)
 
+	creator, err := currentUserEmail(t.Context(), w)
+	require.NoError(t, err)
+	tags := map[string]string{scheduledJobManagedTag: "true", scheduledJobCreatorTag: creator}
 	for range 2 {
-		_, err := w.Jobs.Create(t.Context(), jobs.CreateJob{Name: cfg.ExperimentName})
+		_, err := w.Jobs.Create(t.Context(), jobs.CreateJob{Name: cfg.ExperimentName, Tags: tags})
 		require.NoError(t, err)
 	}
 
-	_, _, _, err := createScheduledJob(t.Context(), w, cfg, cfgPath)
-	require.ErrorContains(t, err, "not unique")
+	_, _, _, err = createScheduledJob(t.Context(), w, cfg, cfgPath)
+	require.ErrorContains(t, err, "air run cannot tell which to update")
+}
+
+// A same-named job the CLI didn't create (e.g. one made in the Jobs UI, so it
+// lacks the identity tags) must not be hijacked: the scheduled run creates its
+// own job instead of resetting the untagged one.
+func TestCreateScheduledJobIgnoresUntaggedJob(t *testing.T) {
+	w, cfg, cfgPath := loadScheduledConfig(t)
+
+	foreign, err := w.Jobs.Create(t.Context(), jobs.CreateJob{Name: cfg.ExperimentName})
+	require.NoError(t, err)
+
+	id, _, created, err := createScheduledJob(t.Context(), w, cfg, cfgPath)
+	require.NoError(t, err)
+	assert.True(t, created, "an untagged same-named job must not be reused")
+	assert.NotEqual(t, foreign.JobId, id)
 }
