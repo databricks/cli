@@ -78,6 +78,22 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 			b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange["shared.txt"],
 		)
 	})
+
+	t.Run("hashes through the sync root", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "watched.txt"), []byte("native"), 0o644))
+		b := bundleWithFileTrigger(dir, "watched.txt")
+		overlay, err := vfs.Overlay(b.SyncRoot, map[string][]byte{"watched.txt": []byte("overlay")})
+		require.NoError(t, err)
+		b.SyncRoot = overlay
+
+		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
+		require.False(t, diags.HasError())
+		assert.Equal(t,
+			contentHash("watched.txt\x00"+contentHash("overlay")+"\x00"),
+			b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange["watched.txt"],
+		)
+	})
 }
 
 func bundleWithFileTrigger(syncRoot, pattern string) *bundle.Bundle {
@@ -88,7 +104,8 @@ func bundleWithFileTrigger(syncRoot, pattern string) *bundle.Bundle {
 		SyncRoot:       root,
 		WorktreeRoot:   root,
 		Config: config.Root{
-			Sync: config.Sync{Paths: []string{"."}},
+			Bundle: config.Bundle{Target: "default"},
+			Sync:   config.Sync{Paths: []string{"."}},
 			Resources: config.Resources{
 				JobRuns: map[string]*resources.JobRun{
 					"my_run": {

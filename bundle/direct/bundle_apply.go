@@ -62,6 +62,9 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		action := entry.Action
 		errorPrefix := fmt.Sprintf("cannot %s %s", action, resourceKey)
+		if action == deployplan.Skip && entry.PersistState {
+			errorPrefix = "cannot persist state for " + resourceKey
+		}
 
 		if action == deployplan.Undefined {
 			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s: unknown action %q", resourceKey, action))
@@ -123,9 +126,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return true
 		}
 
-		// We don't keep NewState around for 'skip' nodes
-
-		if action != deployplan.Skip {
+		// Skip nodes carry no new state, unless the plan asked to persist it.
+		if action != deployplan.Skip || entry.PersistState {
 			if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, false) {
 				return false
 			}
@@ -142,11 +144,22 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 
-			// TODO: redo calcDiff to downgrade planned action if possible (?)
-			//
-			// Success is recorded by the state writes inside Deploy, so a recreate reports
-			// each of its steps.
-			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
+			if action == deployplan.Skip {
+				// Persist-state skip: write the new state under the existing id
+				// without calling the resource API.
+				id := b.StateDB.GetResourceID(resourceKey)
+				if id == "" {
+					logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing entry in state", errorPrefix))
+					return false
+				}
+				err = b.StateDB.SaveState(resourceKey, id, sv.Value, entry.DependsOn)
+			} else {
+				// TODO: redo calcDiff to downgrade planned action if possible (?)
+				//
+				// Success is recorded by the state writes inside Deploy, so a recreate reports
+				// each of its steps.
+				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
+			}
 			if err != nil {
 				// Empty for a create that never got an ID, and for a recreate whose delete
 				// step already dropped it.

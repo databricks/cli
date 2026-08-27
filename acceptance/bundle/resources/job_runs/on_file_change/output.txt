@@ -170,12 +170,39 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
->>> [CLI] bundle deploy
+=== bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
-Files: 3 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //jobs/run-now
+
+=== re-adding on_file_change re-fires
+>>> print_state.py
+null
+
+>>> [CLI] bundle plan
+recreate job_runs.my_run
+
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID_5]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_5]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_5]: SUCCESS
+Recreated job_runs.my_run
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

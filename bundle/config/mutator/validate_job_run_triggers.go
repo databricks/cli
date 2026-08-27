@@ -60,12 +60,18 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 					Locations: b.Config.GetLocations(path + ".on_bundle_deploy"),
 				})
 			}
-			if t.OnFileChange != nil && strings.TrimSpace(*t.OnFileChange) == "" {
-				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers.on_file_change must be non-empty when set",
-					Locations: b.Config.GetLocations(path + ".on_file_change"),
-				})
+			if t.OnFileChange != nil {
+				if strings.TrimSpace(*t.OnFileChange) == "" {
+					diags = diags.Append(diag.Diagnostic{
+						Severity:  diag.Error,
+						Summary:   "lifecycle.triggers.on_file_change must be non-empty when set",
+						Locations: b.Config.GetLocations(path + ".on_file_change"),
+					})
+					continue
+				}
+				// Report bad patterns at validate time; hashing only runs on deploy.
+				_, patternDiags := validateFileTriggerPattern(b, path+".on_file_change", *t.OnFileChange)
+				diags = diags.Extend(patternDiags)
 			}
 		}
 	}

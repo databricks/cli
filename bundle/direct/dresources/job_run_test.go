@@ -435,6 +435,7 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 			require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath(tt.path), change, nil))
 			assert.Equal(t, tt.action, change.Action)
 			assert.Equal(t, tt.reason, change.Reason)
+			assert.Equal(t, tt.reason == "trigger removed", change.PersistState)
 		})
 	}
 }

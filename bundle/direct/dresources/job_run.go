@@ -375,14 +375,15 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // still going, so a run that may yet succeed is not recreated. A run that
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
-// Clearing a trigger skips its local-only fingerprint without re-firing the run.
-// All other trigger changes retain the resource's default recreate action.
+// Clearing a trigger skips the run but persists the cleared fingerprint, so
+// re-adding it later re-fires. All other trigger changes recreate the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
 	switch {
 	case path.Len() == jobRunLifecyclePath.Len() && path.HasPrefix(jobRunLifecyclePath):
 		if change.New == nil {
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
+			change.PersistState = true
 		} else if change.Old != nil {
 			// Trigger fields classify the change, including a removed pattern.
 			change.Reason = deployplan.ReasonDrop
@@ -391,6 +392,7 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 		if change.New == nil || change.New == "" {
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
+			change.PersistState = true
 		}
 	case path.Len() == jobRunOnFileChangePath.Len() && path.HasPrefix(jobRunOnFileChangePath):
 		if isEmptyFileTriggerMap(change.New) {
@@ -399,6 +401,7 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 			} else {
 				change.Action = deployplan.Skip
 				change.Reason = "trigger removed"
+				change.PersistState = true
 			}
 		} else if change.Old != nil {
 			// Pattern entries classify the change.
@@ -408,6 +411,7 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 		if change.New == nil {
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
+			change.PersistState = true
 		}
 	case path.Len() == jobRunResultStatePath.Len() && path.HasPrefix(jobRunResultStatePath):
 		// The planner passes no remote state when the run could not be read.
