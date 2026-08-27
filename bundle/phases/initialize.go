@@ -194,9 +194,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Resolve the on_value_change expressions snapshotted before resource interpolation.
 		mutator.ResolveJobRunValueTriggers(),
 
-		// Expand on_file_change globs and hash matched files into ResolvedFileTriggers.
-		mutator.ResolveJobRunFileTriggers(),
-
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
 		// points to a Terraform-only field with no DABs equivalent.

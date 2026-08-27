@@ -32,13 +32,16 @@ type JobRunLifecycle struct {
 
 	// Triggers that cause the run to re-fire (in addition to config changes).
 	Triggers []JobRunTrigger `json:"triggers,omitempty"`
+
+	// Resolved fingerprint for the planner; not user config.
+	TriggersState *JobRunTriggersState `json:"triggers_state,omitempty" bundle:"internal"`
 }
 
 // JobRunTrigger is one lifecycle.triggers entry.
 type JobRunTrigger struct {
 	OnBundleDeploy *bool   `json:"on_bundle_deploy,omitempty"`
 	OnFileChange   *string `json:"on_file_change,omitempty"`  // path or glob relative to the defining YAML file; must resolve under the sync root
-	OnValueChange  *string `json:"on_value_change,omitempty"` // interpolated expression; re-fire when its resolved fingerprint changes
+	OnValueChange  *string `json:"on_value_change,omitempty"` // expression whose resolved value re-fires the run when changed
 }
 
 // ArmedCount returns the number of trigger fields set on this entry.
@@ -54,4 +57,11 @@ func (t JobRunTrigger) ArmedCount() int {
 		n++
 	}
 	return n
+}
+
+// JobRunTriggersState is the resolved fingerprint of lifecycle.triggers.
+type JobRunTriggersState struct {
+	OnBundleDeploy string            `json:"on_bundle_deploy,omitempty"`
+	OnFileChange   map[string]string `json:"on_file_change,omitempty"`
+	OnValueChange  map[string]string `json:"on_value_change,omitempty"`
 }

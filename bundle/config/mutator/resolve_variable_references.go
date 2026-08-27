@@ -240,7 +240,8 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 		normalized, _ := convert.Normalize(b.Config, root, convert.IncludeMissingFields)
 
 		// If the pattern is nil, we resolve references in the entire configuration.
-		root, err := dyn.MapByPattern(root, m.pattern, func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			// Resolve variable references in all values.
 			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
 				// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
 				if path.HasPrefix(varPath) {

@@ -15,13 +15,6 @@ type FieldRule struct {
 	Reason string                  `yaml:"reason"`
 }
 
-// RemovalRule represents a field whose desired value can be removed without action.
-type RemovalRule struct {
-	Field     *structpath.PatternNode `yaml:"field"`
-	Reason    string                  `yaml:"reason"`
-	MapSubset bool                    `yaml:"map_subset,omitempty"`
-}
-
 // BackendDefaultRule represents a field that may be set by the backend as a default.
 // When old and new are nil but remote is set, and the field matches, the change is skipped.
 // If Values is non-empty, the remote value must match one of the allowed values.
@@ -59,9 +52,6 @@ type ResourceLifecycleConfig struct {
 
 	// IgnoreLocalChanges: field patterns where local changes are ignored (can't be updated via API).
 	IgnoreLocalChanges []FieldRule `yaml:"ignore_local_changes,omitempty"`
-
-	// SkipWhenRemoved: exact field patterns skipped when desired values are removed.
-	SkipWhenRemoved []RemovalRule `yaml:"skip_when_removed,omitempty"`
 
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []FieldRule `yaml:"recreate_on_changes,omitempty"`
@@ -108,7 +98,6 @@ var resourcesGeneratedYAML []byte
 var empty = ResourceLifecycleConfig{
 	IgnoreRemoteChanges: nil,
 	IgnoreLocalChanges:  nil,
-	SkipWhenRemoved:     nil,
 	RecreateOnChanges:   nil,
 	ProvidedIDFields:    nil,
 	UpdatableIDFields:   nil,

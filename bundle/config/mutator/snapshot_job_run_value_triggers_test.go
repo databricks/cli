@@ -55,7 +55,7 @@ func TestSnapshotJobRunValueTriggers(t *testing.T) {
 
 			if tt.summary == "" {
 				assert.Empty(t, diags)
-				assert.Equal(t, tt.expected, b.Config.Resources.JobRuns["run"].ResolvedValueTriggers)
+				assert.Equal(t, tt.expected, b.Config.Resources.JobRuns["run"].Lifecycle.TriggersState.OnValueChange)
 				return
 			}
 			assert.Equal(t, tt.summary, diags[0].Summary)
@@ -79,7 +79,7 @@ func TestSnapshotJobRunValueTriggersIsStableAfterInterpolation(t *testing.T) {
 	b.Config.Resources.JobRuns["run"].Lifecycle.Triggers[0].OnValueChange = &resolved
 	assert.Empty(t, bundle.Apply(t.Context(), b, mutator.SnapshotJobRunValueTriggers()))
 
-	assert.Equal(t, map[string]string{expr: expr}, b.Config.Resources.JobRuns["run"].ResolvedValueTriggers)
+	assert.Equal(t, map[string]string{expr: expr}, b.Config.Resources.JobRuns["run"].Lifecycle.TriggersState.OnValueChange)
 }
 
 func TestSnapshotJobRunValueTriggersPreservesIdentityThroughInterpolation(t *testing.T) {
@@ -105,5 +105,5 @@ func TestSnapshotJobRunValueTriggersPreservesIdentityThroughInterpolation(t *tes
 
 	jobRun = b.Config.Resources.JobRuns["run"]
 	assert.Equal(t, "resolved", *jobRun.Lifecycle.Triggers[0].OnValueChange)
-	assert.Equal(t, map[string]string{expr: "resolved"}, jobRun.ResolvedValueTriggers)
+	assert.Equal(t, map[string]string{expr: "resolved"}, jobRun.Lifecycle.TriggersState.OnValueChange)
 }

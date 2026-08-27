@@ -28,35 +28,22 @@ import (
 	"github.com/google/uuid"
 )
 
-const jobRunOnValueChangePath = "lifecycle.triggers.on_value_change"
-
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
 const jobRunValueHashPrefix = "sha256:"
 
-// JobRunTriggersState is the persisted fingerprint of lifecycle.triggers.
-type JobRunTriggersState struct {
-	// Fresh UUID each plan while armed so Old!=New forces recreate.
-	OnBundleDeploy string `json:"on_bundle_deploy,omitempty"`
-	// Content hashes from ResolveJobRunFileTriggers; any change recreates.
-	OnFileChange map[string]string `json:"on_file_change,omitempty"`
-	// Expression → fingerprint. Keyed by the config expression so removing a
-	// watch is a dropped key (skip) and a changed value under the same
-	// expression recreates. Two watches that resolve to the same value stay distinct.
-	OnValueChange map[string]string `json:"on_value_change,omitempty"`
-}
+var (
+	jobRunLifecyclePath      = structpath.MustParsePath("lifecycle")
+	jobRunOnBundleDeployPath = structpath.MustParsePath("lifecycle.triggers_state.on_bundle_deploy")
+	jobRunOnFileChangePath   = structpath.MustParsePath("lifecycle.triggers_state.on_file_change")
+	jobRunOnValueChangePath  = structpath.MustParsePath("lifecycle.triggers_state.on_value_change")
+	jobRunResultStatePath    = structpath.MustParsePath("result_state")
+)
 
-// JobRunLifecycleState is the local-only trigger fingerprint. Nested by value,
-// not by pointer: structdiff cannot descend into a nil pointer and would report
-// the whole subtree at "lifecycle" instead of the leaf that actually changed.
+// JobRunLifecycleState is the local-only trigger fingerprint.
 type JobRunLifecycleState struct {
-	Triggers JobRunTriggersState `json:"triggers"`
-}
-
-func emptyJobRunLifecycleState() JobRunLifecycleState {
-	var empty JobRunLifecycleState
-	return empty
+	TriggersState *resources.JobRunTriggersState `json:"triggers_state,omitempty"`
 }
 
 // JobRunState is the RunNow request plus the outcome required for planning.
@@ -66,9 +53,9 @@ type JobRunState struct {
 	// Always SUCCESS during planning and cleared before persistence.
 	ResultState jobs.RunResultState `json:"result_state,omitempty"`
 
-	// Local-only. Nested under lifecycle to mirror config and avoid colliding
-	// with a future Jobs API field.
-	Lifecycle JobRunLifecycleState `json:"lifecycle"`
+	// Local-only fingerprint. Nested under lifecycle to avoid colliding with a
+	// future Jobs API field; nil when no trigger is armed so the key is omitted.
+	Lifecycle *JobRunLifecycleState `json:"lifecycle,omitempty"`
 }
 
 func (s *JobRunState) UnmarshalJSON(b []byte) error {
@@ -119,44 +106,68 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	state := &JobRunState{
 		RunNow:      input.RunNow,
 		ResultState: jobs.RunResultStateSuccess,
-		Lifecycle:   emptyJobRunLifecycleState(),
+		Lifecycle:   nil,
+	}
+	var ts resources.JobRunTriggersState
+	if input.Lifecycle != nil && input.Lifecycle.TriggersState != nil {
+		ts = *input.Lifecycle.TriggersState
+		// Fingerprinting below rewrites value-trigger entries.
+		ts.OnValueChange = maps.Clone(ts.OnValueChange)
 	}
 	if input.HasOnBundleDeploy() {
-		state.Lifecycle.Triggers.OnBundleDeploy = uuid.NewString()
+		ts.OnBundleDeploy = uuid.NewString()
 	}
-	if len(input.ResolvedFileTriggers) > 0 {
-		state.Lifecycle.Triggers.OnFileChange = input.ResolvedFileTriggers
+	if ts.OnBundleDeploy == "" && len(ts.OnFileChange) == 0 && len(ts.OnValueChange) == 0 {
+		return state
 	}
-	if len(input.ResolvedValueTriggers) > 0 {
-		// Cloned because NormalizeAfterResolve rewrites entries in place.
-		state.Lifecycle.Triggers.OnValueChange = maps.Clone(input.ResolvedValueTriggers)
-	}
-	state.NormalizeAfterResolve()
+	state.Lifecycle = &JobRunLifecycleState{TriggersState: &ts}
+	state.normalizeValueTriggers()
 	return state
 }
 
-// PrepareInputConfig puts each still-unresolved watch on its own state path, so
-// the deploy graph depends on the watched value rather than the config wrapper.
+// PrepareInputConfig maps unresolved watches to state paths so the deploy graph
+// tracks their resource references.
 func (*ResourceJobRun) PrepareInputConfig(input *resources.JobRun, _ string) (*structvar.StructVar, error) {
 	refs := map[string]string{}
-	parent := structpath.MustParsePath(jobRunOnValueChangePath)
-	for expr, value := range input.ResolvedValueTriggers {
+	if input.Lifecycle == nil || input.Lifecycle.TriggersState == nil {
+		return &structvar.StructVar{Value: input, Refs: refs}, nil
+	}
+	for expr, value := range input.Lifecycle.TriggersState.OnValueChange {
 		if !dynvar.ContainsVariableReference(value) {
 			continue
 		}
-		refs[structpath.NewBracketString(parent, expr).String()] = value
+		refs[structpath.NewBracketString(jobRunOnValueChangePath, expr).String()] = value
 	}
 	return &structvar.StructVar{Value: input, Refs: refs}, nil
 }
 
-// NormalizeAfterResolve fingerprints a watch once it no longer contains a reference.
-func (s *JobRunState) NormalizeAfterResolve() {
-	for expr, value := range s.Lifecycle.Triggers.OnValueChange {
-		if dynvar.ContainsVariableReference(value) {
-			continue
-		}
-		s.Lifecycle.Triggers.OnValueChange[expr] = fingerprintJobRunValue(value)
+// NormalizeAfterResolve fingerprints a watch once its references resolve.
+func (s *JobRunState) NormalizeAfterResolve(path *structpath.PathNode) {
+	if s.Lifecycle == nil || s.Lifecycle.TriggersState == nil {
+		return
 	}
+	if path.Len() != jobRunOnValueChangePath.Len()+1 || !path.HasPrefix(jobRunOnValueChangePath) {
+		return
+	}
+	expr, ok := path.SkipPrefix(jobRunOnValueChangePath.Len()).StringKey()
+	if !ok {
+		return
+	}
+	s.normalizeValueTrigger(expr)
+}
+
+func (s *JobRunState) normalizeValueTriggers() {
+	for expr := range s.Lifecycle.TriggersState.OnValueChange {
+		s.normalizeValueTrigger(expr)
+	}
+}
+
+func (s *JobRunState) normalizeValueTrigger(expr string) {
+	value, ok := s.Lifecycle.TriggersState.OnValueChange[expr]
+	if !ok || dynvar.ContainsVariableReference(value) {
+		return
+	}
+	s.Lifecycle.TriggersState.OnValueChange[expr] = fingerprintJobRunValue(value)
 }
 
 func fingerprintJobRunValue(value string) string {
@@ -235,13 +246,12 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 }
 
 // RemapState extracts the fields used for diffing: the RunNow request and the
-// outcome the run reached. Lifecycle has no remote counterpart, so it stays empty
-// and the planner skips it as missing_in_remote.
+// outcome the run reached. Lifecycle has no remote counterpart.
 func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 	return &JobRunState{
 		RunNow:      remote.RunNow,
 		ResultState: remote.ResultState,
-		Lifecycle:   emptyJobRunLifecycleState(),
+		Lifecycle:   nil,
 	}
 }
 
@@ -426,16 +436,71 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // still going, so a run that may yet succeed is not recreated. A run that
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
+// Clearing a trigger skips the run but persists the cleared fingerprint, so
+// re-adding it later re-fires. All other trigger changes recreate the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
-	if path.String() != "result_state" {
-		return nil
+	switch {
+	case path.Len() == jobRunLifecyclePath.Len() && path.HasPrefix(jobRunLifecyclePath):
+		if change.New == nil {
+			change.Action = deployplan.Skip
+			change.Reason = "trigger removed"
+			change.PersistState = true
+		} else if change.Old != nil {
+			// Trigger fields classify the change, including a removed pattern.
+			change.Reason = deployplan.ReasonDrop
+		}
+	case path.Len() == jobRunOnBundleDeployPath.Len() && path.HasPrefix(jobRunOnBundleDeployPath):
+		if change.New == nil || change.New == "" {
+			change.Action = deployplan.Skip
+			change.Reason = "trigger removed"
+			change.PersistState = true
+		}
+	case path.Len() == jobRunOnFileChangePath.Len() && path.HasPrefix(jobRunOnFileChangePath):
+		if isEmptyTriggerMap(change.New) {
+			if isEmptyTriggerMap(change.Old) {
+				change.Reason = deployplan.ReasonDrop
+			} else {
+				change.Action = deployplan.Skip
+				change.Reason = "trigger removed"
+				change.PersistState = true
+			}
+		} else if change.Old != nil {
+			// Pattern entries classify the change.
+			change.Reason = deployplan.ReasonDrop
+		}
+	case path.Len() == jobRunOnFileChangePath.Len()+1 && path.HasPrefix(jobRunOnFileChangePath):
+		if change.New == nil {
+			change.Action = deployplan.Skip
+			change.Reason = "trigger removed"
+			change.PersistState = true
+		}
+	case path.Len() == jobRunOnValueChangePath.Len() && path.HasPrefix(jobRunOnValueChangePath):
+		if isEmptyTriggerMap(change.New) {
+			if isEmptyTriggerMap(change.Old) {
+				change.Reason = deployplan.ReasonDrop
+			} else {
+				change.Action = deployplan.Skip
+				change.Reason = "trigger removed"
+				change.PersistState = true
+			}
+		} else if change.Old != nil {
+			// Expression entries classify the change.
+			change.Reason = deployplan.ReasonDrop
+		}
+	case path.Len() == jobRunOnValueChangePath.Len()+1 && path.HasPrefix(jobRunOnValueChangePath):
+		if change.New == nil {
+			change.Action = deployplan.Skip
+			change.Reason = "trigger removed"
+			change.PersistState = true
+		}
+	case path.Len() == jobRunResultStatePath.Len() && path.HasPrefix(jobRunResultStatePath):
+		// The planner passes no remote state when the run could not be read.
+		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
+			return nil
+		}
+		change.Action = deployplan.Skip
+		change.Reason = "run in progress"
 	}
-	// The planner passes no remote state when the run could not be read.
-	if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
-		return nil
-	}
-	change.Action = deployplan.Skip
-	change.Reason = "run in progress"
 	return nil
 }
 
@@ -472,6 +537,14 @@ func (r *ResourceJobRun) cancelRun(ctx context.Context, runID int64) error {
 		return fmt.Errorf("waiting for run %d to be cancelled: %w", runID, err)
 	}
 	return nil
+}
+
+func isEmptyTriggerMap(v any) bool {
+	if v == nil {
+		return true
+	}
+	m, ok := v.(map[string]string)
+	return ok && len(m) == 0
 }
 
 func parseRunID(id string) (int64, error) {

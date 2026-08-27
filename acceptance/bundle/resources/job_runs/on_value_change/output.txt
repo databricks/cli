@@ -6,7 +6,7 @@ Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_
 Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
 Created job_runs.my_run
 Created jobs.my_job
-Files: 5 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> read_id.py my_job
@@ -25,9 +25,14 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === resolved values are stored as hashes
 >>> print_state.py
 {
-  "${var.long}": "sha256:[VALUE_HASH][0]",
-  "${var.other}": "sha256:[VALUE_HASH][1]",
-  "${var.stamp}": "sha256:[VALUE_HASH][2]"
+  "on_file_change": {
+    "watched.txt": "[VALUE_HASH][0]"
+  },
+  "on_value_change": {
+    "${var.long}": "sha256:[VALUE_HASH][1]",
+    "${var.other}": "sha256:[VALUE_HASH][2]",
+    "${var.stamp}": "sha256:[VALUE_HASH][3]"
+  }
 }
 
 === redeploy with unchanged values plans nothing
@@ -49,25 +54,11 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> changes
 {
-  "lifecycle.triggers.on_value_change": {
+  "lifecycle.triggers_state.on_value_change['${var.stamp}']": {
     "action": "recreate",
     "reason": "immutable",
-    "old": {
-      "${var.long}": "sha256:[VALUE_HASH][0]",
-      "${var.other}": "sha256:[VALUE_HASH][1]",
-      "${var.stamp}": "sha256:[VALUE_HASH][2]"
-    },
-    "new": {
-      "${var.long}": "sha256:[VALUE_HASH][0]",
-      "${var.other}": "sha256:[VALUE_HASH][1]",
-      "${var.stamp}": "sha256:[VALUE_HASH][3]"
-    }
-  },
-  "lifecycle.triggers.on_value_change['${var.stamp}']": {
-    "action": "recreate",
-    "reason": "immutable",
-    "old": "sha256:[VALUE_HASH][2]",
-    "new": "sha256:[VALUE_HASH][3]"
+    "old": "sha256:[VALUE_HASH][3]",
+    "new": "sha256:[VALUE_HASH][4]"
   },
   "result_state": {
     "action": "skip",
@@ -104,18 +95,18 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
   }
 }
 
-=== removing one on_value_change is unchanged and does not run
+=== removing one on_value_change through a saved plan does not run
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy --plan tmp.plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default/files...
-Files: 3 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //jobs/run-now
 
-=== changing a remaining watch to a removed value re-fires
+=== re-adding the same on_value_change after the saved plan re-fires
 >>> [CLI] bundle plan
 recreate job_runs.my_run
 
@@ -123,35 +114,10 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> changes
 {
-  "lifecycle.triggers.on_value_change": {
+  "lifecycle.triggers_state.on_value_change['${var.other}']": {
     "action": "recreate",
     "reason": "immutable",
-    "old": {
-      "${var.long}": "sha256:[VALUE_HASH][0]",
-      "${var.other}": "sha256:[VALUE_HASH][1]",
-      "${var.stamp}": "sha256:[VALUE_HASH][3]"
-    },
-    "new": {
-      "${var.long}": "sha256:[VALUE_HASH][0]",
-      "${var.stamp}": "sha256:[VALUE_HASH][1]"
-    }
-  },
-  "lifecycle.triggers.on_value_change['${var.other}']": {
-    "action": "skip",
-    "reason": "trigger removed",
-    "old": "sha256:[VALUE_HASH][1]"
-  },
-  "lifecycle.triggers.on_value_change['${var.stamp}']": {
-    "action": "recreate",
-    "reason": "immutable",
-    "old": "sha256:[VALUE_HASH][3]",
-    "new": "sha256:[VALUE_HASH][1]"
-  },
-  "result_state": {
-    "action": "skip",
-    "reason": "remote_already_set",
-    "new": "SUCCESS",
-    "remote": "SUCCESS"
+    "new": "sha256:[VALUE_HASH][2]"
   }
 }
 
@@ -182,6 +148,60 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
   }
 }
 
+=== removing the same on_value_change again does not run
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //jobs/run-now
+
+=== changing a remaining watch to a removed value re-fires
+>>> [CLI] bundle plan
+recreate job_runs.my_run
+
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> changes
+{
+  "lifecycle.triggers_state.on_value_change['${var.stamp}']": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": "sha256:[VALUE_HASH][4]",
+    "new": "sha256:[VALUE_HASH][2]"
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID_4]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_4]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_4]: SUCCESS
+Recreated job_runs.my_run
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+
+>>> print_requests.py --keep //jobs/runs/delete
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/delete",
+  "body": {
+    "run_id": [MY_RUN_ID_3]
+  }
+}
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
+
 === removing the last on_value_change is unchanged and does not run
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -192,6 +212,49 @@ Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //jobs/run-now
+
+=== file changes still re-fire after value triggers are removed
+>>> [CLI] bundle plan
+recreate job_runs.my_run
+
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> changes
+{
+  "lifecycle.triggers_state.on_file_change['watched.txt']": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": "[VALUE_HASH][0]",
+    "new": "[VALUE_HASH][5]"
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID_5]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_5]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_5]: SUCCESS
+Recreated job_runs.my_run
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+
+>>> print_requests.py --keep //jobs/runs/delete
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/delete",
+  "body": {
+    "run_id": [MY_RUN_ID_4]
+  }
+}
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -23,6 +23,7 @@ resources:
       job_id: ${resources.jobs.my_job.id}
       lifecycle:
         triggers:
+          - on_file_change: watched.txt
           - on_value_change: ${var.stamp}
           - on_value_change: ${var.other}
           - on_value_change: ${var.long}

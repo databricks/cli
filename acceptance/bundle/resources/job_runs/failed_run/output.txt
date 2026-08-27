@@ -27,9 +27,6 @@ Files: 7 uploaded, 0 deleted
   "new_state": {
     "value": {
       "job_id": [MY_JOB_ID],
-      "lifecycle": {
-        "triggers": {}
-      },
       "result_state": "SUCCESS"
     }
   },

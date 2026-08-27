@@ -27,16 +27,6 @@ type JobRun struct {
 	// the run URL. Keeping it separate from RunNow.JobId (a ${resources.jobs.*.id}
 	// reference) lets state loading preserve that reference and its plan dependency.
 	ResolvedJobID int64 `json:"resolved_job_id,omitempty" bundle:"internal"`
-
-	// ResolvedFileTriggers is path → content hash for on_file_change, computed
-	// under SyncRoot before plan. bundle:"internal" keeps it out of schema.
-	ResolvedFileTriggers map[string]string `json:"resolved_file_triggers,omitempty" bundle:"internal"`
-
-	// ResolvedValueTriggers is expression → resolved fingerprint for on_value_change.
-	// SnapshotJobRunValueTriggers records the keys before variable interpolation so
-	// a watch keeps its identity when only the resolved value changes.
-	// bundle:"internal" keeps it out of schema.
-	ResolvedValueTriggers map[string]string `json:"resolved_value_triggers,omitempty" bundle:"internal"`
 }
 
 // HasOnBundleDeploy reports whether any trigger re-fires on every deploy.

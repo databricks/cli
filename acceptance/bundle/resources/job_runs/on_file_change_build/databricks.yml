@@ -1,10 +1,9 @@
 bundle:
-  name: job-runs-on-file-change-sync-root
+  name: job-runs-on-file-change-build
 
-sync:
-  paths:
-    - .
-    - ../shared.txt
+experimental:
+  scripts:
+    prebuild: cp source.txt watched.txt
 
 resources:
   jobs:
@@ -20,4 +19,4 @@ resources:
       job_id: ${resources.jobs.my_job.id}
       lifecycle:
         triggers:
-          - on_file_change: ../shared.txt
+          - on_file_change: watched.txt

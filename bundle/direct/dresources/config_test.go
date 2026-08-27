@@ -41,17 +41,12 @@ func categoryRules(c ResourceLifecycleConfig) []struct {
 	for i, r := range c.BackendDefaults {
 		backendAsFieldRules[i] = FieldRule{Field: r.Field}
 	}
-	removedAsFieldRules := make([]FieldRule, len(c.SkipWhenRemoved))
-	for i, r := range c.SkipWhenRemoved {
-		removedAsFieldRules[i] = FieldRule{Field: r.Field}
-	}
 	return []struct {
 		name  string
 		rules []FieldRule
 	}{
 		{"ignore_remote_changes", c.IgnoreRemoteChanges},
 		{"ignore_local_changes", c.IgnoreLocalChanges},
-		{"skip_when_removed", removedAsFieldRules},
 		{"recreate_on_changes", c.RecreateOnChanges},
 		{"provided_id_fields", c.ProvidedIDFields},
 		{"updatable_id_fields", c.UpdatableIDFields},
@@ -132,15 +127,10 @@ func TestResourcesYMLNoRedundantMissingInRemote(t *testing.T) {
 func TestResourcesYMLActionCategoriesExclusive(t *testing.T) {
 	cfg := MustLoadConfig()
 	for resourceType, rc := range cfg.Resources {
-		removedAsFieldRules := make([]FieldRule, len(rc.SkipWhenRemoved))
-		for i, r := range rc.SkipWhenRemoved {
-			removedAsFieldRules[i] = FieldRule{Field: r.Field}
-		}
 		actionCats := []struct {
 			name  string
 			rules []FieldRule
 		}{
-			{"skip_when_removed", removedAsFieldRules},
 			{"recreate_on_changes", rc.RecreateOnChanges},
 			{"provided_id_fields", rc.ProvidedIDFields},
 			{"updatable_id_fields", rc.UpdatableIDFields},

@@ -34,16 +34,6 @@ func ValidatePath(t reflect.Type, path *structpath.PathNode) error {
 	return ValidatePattern(t, (*structpath.PatternNode)(path))
 }
 
-// ValidatePathStrict is ValidatePath without the Terraform compatibility that
-// treats [0] on a struct as a no-op. Use it for paths that are native to DABs,
-// where indexing a struct is always a mismatch.
-func ValidatePathStrict(t reflect.Type, path *structpath.PathNode) error {
-	if path.IsRoot() {
-		return nil
-	}
-	return validateNodeSlice(t, (*structpath.PatternNode)(path).AsSlice(), false)
-}
-
 // ValidatePattern reports whether the given pattern path is valid for the provided type.
 // It returns nil if the path resolves fully, or an error indicating where resolution failed.
 // Patterns may include wildcards ([*] and .*).
@@ -51,11 +41,11 @@ func ValidatePattern(t reflect.Type, path *structpath.PatternNode) error {
 	if path.IsRoot() {
 		return nil
 	}
-	return validateNodeSlice(t, path.AsSlice(), true)
+	return validateNodeSlice(t, path.AsSlice())
 }
 
-// validateNodeSlice is the implementation for ValidatePattern and ValidatePathStrict.
-func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode, allowStructIndex bool) error {
+// validateNodeSlice is the implementation for ValidatePattern.
+func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 	cur := t
 	for _, node := range nodes {
 		// Always dereference pointers at the type level.
@@ -74,7 +64,7 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode, allowStr
 			if kind != reflect.Slice && kind != reflect.Array {
 				// Terraform represents single-block fields as lists and uses [0] to access them.
 				// Treat [0] on a struct as a no-op so TF-style paths work against DABs structs.
-				if allowStructIndex && idx == 0 && kind == reflect.Struct {
+				if idx == 0 && kind == reflect.Struct {
 					continue
 				}
 				return fmt.Errorf("%s: cannot index %s", node.String(), kind)

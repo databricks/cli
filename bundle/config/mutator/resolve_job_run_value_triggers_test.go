@@ -21,7 +21,9 @@ func TestResolveJobRunValueTriggers(t *testing.T) {
 		"${var.first}-${var.second}":              "${var.first}-${var.second}",
 		"${resources.jobs.other.id}-${var.first}": "${resources.jobs.other.id}-${var.first}",
 	}
-	jobRun := &resources.JobRun{ResolvedValueTriggers: expressions}
+	jobRun := &resources.JobRun{Lifecycle: &resources.JobRunLifecycle{
+		TriggersState: &resources.JobRunTriggersState{OnValueChange: expressions},
+	}}
 	b := &bundle.Bundle{Config: config.Root{
 		Variables: map[string]*variable.Variable{
 			"number": {Default: int64(42)},
@@ -42,14 +44,18 @@ func TestResolveJobRunValueTriggers(t *testing.T) {
 		"${var.second}":                           "same",
 		"${var.first}-${var.second}":              "same-same",
 		"${resources.jobs.other.id}-${var.first}": "${resources.jobs.other.id}-same",
-	}, b.Config.Resources.JobRuns["run"].ResolvedValueTriggers)
+	}, b.Config.Resources.JobRuns["run"].Lifecycle.TriggersState.OnValueChange)
 }
 
 func TestResolveJobRunValueTriggersReportsInvalidReference(t *testing.T) {
 	expr := "${var.missing}"
 	b := &bundle.Bundle{Config: config.Root{
 		Resources: config.Resources{JobRuns: map[string]*resources.JobRun{
-			"run": {ResolvedValueTriggers: map[string]string{expr: expr}},
+			"run": {Lifecycle: &resources.JobRunLifecycle{
+				TriggersState: &resources.JobRunTriggersState{
+					OnValueChange: map[string]string{expr: expr},
+				},
+			}},
 		}},
 	}}
 

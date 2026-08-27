@@ -37,17 +37,16 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 		}
 		for i, t := range jr.Lifecycle.Triggers {
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d]", name, i)
-			switch t.ArmedCount() {
-			case 0:
+			armed := t.ArmedCount()
+			if armed == 0 {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "lifecycle.triggers entry must set on_bundle_deploy, on_file_change, or on_value_change",
 					Locations: b.Config.GetLocations(path),
 				})
 				continue
-			case 1:
-				// Exactly one key: valid.
-			default:
+			}
+			if armed > 1 {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   "lifecycle.triggers entry must set only one of on_bundle_deploy, on_file_change, or on_value_change",
@@ -62,12 +61,18 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 					Locations: b.Config.GetLocations(path + ".on_bundle_deploy"),
 				})
 			}
-			if t.OnFileChange != nil && strings.TrimSpace(*t.OnFileChange) == "" {
-				diags = diags.Append(diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers.on_file_change must be non-empty when set",
-					Locations: b.Config.GetLocations(path + ".on_file_change"),
-				})
+			if t.OnFileChange != nil {
+				if strings.TrimSpace(*t.OnFileChange) == "" {
+					diags = diags.Append(diag.Diagnostic{
+						Severity:  diag.Error,
+						Summary:   "lifecycle.triggers.on_file_change must be non-empty when set",
+						Locations: b.Config.GetLocations(path + ".on_file_change"),
+					})
+					continue
+				}
+				// Report bad patterns at validate time; hashing only runs on deploy.
+				_, patternDiags := validateFileTriggerPattern(b, path+".on_file_change", *t.OnFileChange)
+				diags = diags.Extend(patternDiags)
 			}
 		}
 	}

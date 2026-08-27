@@ -145,14 +145,18 @@ func TestValidateJobRunTriggers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
 			b := &bundle.Bundle{
+				BundleRootPath: root,
+				SyncRootPath:   root,
 				Config: config.Root{
 					Resources: config.Resources{
 						JobRuns: map[string]*resources.JobRun{
 							"my_run": {
 								Lifecycle: &resources.JobRunLifecycle{
-									Lifecycle: resources.Lifecycle{PreventDestroy: tt.preventDestroy},
-									Triggers:  tt.triggers,
+									Lifecycle:     resources.Lifecycle{PreventDestroy: tt.preventDestroy},
+									Triggers:      tt.triggers,
+									TriggersState: nil,
 								},
 							},
 						},

@@ -16,8 +16,8 @@ import (
 
 type resolveJobRunValueTriggers struct{}
 
-// ResolveJobRunValueTriggers resolves each snapshotted on_value_change expression.
-// ${resources.*} is left for the planner, which resolves it after apply.
+// ResolveJobRunValueTriggers resolves snapshotted expressions, leaving resource
+// references for the planner.
 func ResolveJobRunValueTriggers() bundle.Mutator {
 	return &resolveJobRunValueTriggers{}
 }
@@ -46,12 +46,13 @@ func (*resolveJobRunValueTriggers) Apply(_ context.Context, b *bundle.Bundle) di
 
 	var diags diag.Diagnostics
 	for name, jr := range b.Config.Resources.JobRuns {
-		if jr == nil || len(jr.ResolvedValueTriggers) == 0 {
+		if jr == nil || jr.Lifecycle == nil || jr.Lifecycle.TriggersState == nil ||
+			len(jr.Lifecycle.TriggersState.OnValueChange) == 0 {
 			continue
 		}
 
-		out := make(map[string]string, len(jr.ResolvedValueTriggers))
-		for _, expr := range slices.Sorted(maps.Keys(jr.ResolvedValueTriggers)) {
+		out := make(map[string]string, len(jr.Lifecycle.TriggersState.OnValueChange))
+		for _, expr := range slices.Sorted(maps.Keys(jr.Lifecycle.TriggersState.OnValueChange)) {
 			value, err := resolveJobRunValueTrigger(b, normalized, prefixes, varPath, expr)
 			if err != nil {
 				diags = diags.Append(diag.Diagnostic{
@@ -64,7 +65,7 @@ func (*resolveJobRunValueTriggers) Apply(_ context.Context, b *bundle.Bundle) di
 			out[expr] = value
 		}
 
-		jr.ResolvedValueTriggers = out
+		jr.Lifecycle.TriggersState.OnValueChange = out
 	}
 
 	return diags
@@ -91,8 +92,7 @@ func resolveJobRunValueTrigger(b *bundle.Bundle, normalized dyn.Value, prefixes 
 		return "", err
 	}
 
-	// A whole-string reference resolves to the referenced type, so a non-string
-	// value (e.g. a numeric variable) still needs a textual fingerprint.
+	// Convert whole-string references, which retain the referenced value's type.
 	if s, ok := resolved.AsString(); ok {
 		return s, nil
 	}

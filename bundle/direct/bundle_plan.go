@@ -294,6 +294,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		} else {
 			action = getMaxAction(entry.Changes)
 		}
+		// A skipped entry with a persist-state change (e.g. a cleared trigger)
+		// still writes its new state; propagate the flag to the entry.
+		if action == deployplan.Skip {
+			for _, change := range entry.Changes {
+				if change.PersistState {
+					entry.PersistState = true
+					break
+				}
+			}
+		}
 
 		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether
 		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
@@ -313,8 +323,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, errors.New("planning failed")
 	}
 
+	// Skipped entries drop their state, unless it must be persisted (e.g. clearing
+	// a trigger fingerprint) so re-adding it later is a real change.
 	for _, entry := range plan.Plan {
-		if entry.Action == deployplan.Skip {
+		if entry.Action == deployplan.Skip && !entry.PersistState {
 			entry.NewState = nil
 		}
 	}
@@ -430,12 +442,6 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkipNormalized(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
-		} else if reason, ok := shouldSkipWhenRemoved(cfg, path, ch); ok {
-			ch.Action = deployplan.Skip
-			ch.Reason = reason
-		} else if reason, ok := shouldSkipWhenRemoved(generatedCfg, path, ch); ok {
-			ch.Action = deployplan.Skip
-			ch.Reason = reason
 		} else if isFieldMissingInRemote(adapter, path) && structdiff.IsEqual(ch.Old, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonMissingInRemote
@@ -512,47 +518,6 @@ func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (
 		}
 	}
 	return "", false
-}
-
-func shouldSkipWhenRemoved(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
-	if cfg == nil {
-		return "", false
-	}
-	for _, rule := range cfg.SkipWhenRemoved {
-		if path.Len() == rule.Field.Len() &&
-			path.HasPatternPrefix(rule.Field) &&
-			onlyRemovesValues(ch.Old, ch.New, rule.MapSubset) {
-			return rule.Reason, true
-		}
-	}
-	return "", false
-}
-
-// onlyRemovesValues reports whether new drops values from old without changing
-// any that remain. With mapSubset it also accepts a map that only lost keys, so
-// removing one watch from a map of many still counts as a removal, not an edit.
-func onlyRemovesValues(oldValue, newValue any, mapSubset bool) bool {
-	if newValue == nil || reflect.ValueOf(newValue).IsZero() {
-		return true
-	}
-	if !mapSubset {
-		return false
-	}
-
-	oldMap := reflect.ValueOf(oldValue)
-	newMap := reflect.ValueOf(newValue)
-	if oldMap.Kind() != reflect.Map || newMap.Kind() != reflect.Map || oldMap.Type() != newMap.Type() || newMap.Len() >= oldMap.Len() {
-		return false
-	}
-
-	iter := newMap.MapRange()
-	for iter.Next() {
-		old := oldMap.MapIndex(iter.Key())
-		if !old.IsValid() || !structdiff.IsEqual(old.Interface(), iter.Value().Interface()) {
-			return false
-		}
-	}
-	return true
 }
 
 func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
@@ -1200,10 +1165,7 @@ func extractReferences(root dyn.Value, node string, stateType reflect.Type) (map
 		// bundle:"readonly" field like volumes' volume_path — is dropped before deploy, so a
 		// reference it carries cannot resolve into state and is not a dependency here. Such
 		// references are still resolved earlier during initialize.
-		// Strict: config paths are native DABs paths, so tolerating Terraform's
-		// [0]-on-struct would let a config list path resolve onto a state field of
-		// a different shape (e.g. job_runs' lifecycle.triggers).
-		if structaccess.ValidatePathStrict(stateType, fieldPath) == nil {
+		if structaccess.ValidatePath(stateType, fieldPath) == nil {
 			// Store the original string that contains references, not individual references.
 			refs[fieldPath.String()] = ref.Str
 		}

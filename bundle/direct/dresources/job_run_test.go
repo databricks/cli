@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/cli/libs/testserver"
@@ -246,13 +247,46 @@ func TestJobRunWaitAbandonedLinksTheRun(t *testing.T) {
 	require.ErrorContains(t, err, testRunPageLink)
 }
 
-// State written before lifecycle existed has no such key, and must still load.
-func TestJobRunStateUnmarshalWithoutLifecycle(t *testing.T) {
+func TestJobRunStateOmitsEmptyLifecycle(t *testing.T) {
 	var state JobRunState
 
 	require.NoError(t, json.Unmarshal([]byte(`{}`), &state))
 
-	assert.Nil(t, state.Lifecycle.Triggers.OnFileChange)
+	assert.Nil(t, state.Lifecycle)
+	serialized, err := json.Marshal(state)
+	require.NoError(t, err)
+	assert.NotContains(t, string(serialized), `"lifecycle"`)
+}
+
+func TestJobRunPrepareStateCopiesResolvedTriggers(t *testing.T) {
+	enabled := true
+	triggers := &resources.JobRunTriggersState{
+		OnFileChange: map[string]string{"*.txt": "hash"},
+		OnValueChange: map[string]string{
+			"${var.watched}": "resolved",
+		},
+	}
+	input := &resources.JobRun{
+		Lifecycle: &resources.JobRunLifecycle{
+			Triggers:      []resources.JobRunTrigger{{OnBundleDeploy: &enabled}},
+			TriggersState: triggers,
+		},
+	}
+
+	state := (&ResourceJobRun{}).PrepareState(input)
+
+	require.NotNil(t, state.Lifecycle)
+	require.NotNil(t, state.Lifecycle.TriggersState)
+	assert.NotSame(t, triggers, state.Lifecycle.TriggersState)
+	assert.Equal(t, triggers.OnFileChange, state.Lifecycle.TriggersState.OnFileChange)
+	assert.Equal(t, map[string]string{
+		"${var.watched}": fingerprintJobRunValue("resolved"),
+	}, state.Lifecycle.TriggersState.OnValueChange)
+	assert.Equal(t, map[string]string{
+		"${var.watched}": "resolved",
+	}, triggers.OnValueChange)
+	assert.NotEmpty(t, state.Lifecycle.TriggersState.OnBundleDeploy)
+	assert.Empty(t, triggers.OnBundleDeploy)
 }
 
 // The planner diffs RemapState(remote) against PrepareState(config), so a run
@@ -270,7 +304,7 @@ func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
 			state := (&ResourceJobRun{}).RemapState(remote)
 
 			assert.Equal(t, outcome, state.ResultState)
-			assert.Equal(t, emptyJobRunLifecycleState(), state.Lifecycle)
+			assert.Nil(t, state.Lifecycle)
 		})
 	}
 }
@@ -357,29 +391,46 @@ func TestFingerprintJobRunValue(t *testing.T) {
 
 func TestJobRunValueChangeStateNormalizesAfterAllReferencesResolve(t *testing.T) {
 	expr := "${resources.jobs.other.id}-${resources.jobs.extra.id}"
-	input := resources.JobRun{ResolvedValueTriggers: map[string]string{expr: expr}}
+	input := resources.JobRun{Lifecycle: &resources.JobRunLifecycle{
+		TriggersState: &resources.JobRunTriggersState{
+			OnValueChange: map[string]string{expr: expr},
+		},
+	}}
 	state := (&ResourceJobRun{}).PrepareState(&input)
-	path := structpath.NewBracketString(structpath.MustParsePath(jobRunOnValueChangePath), expr)
-	sv := structvar.NewStructVar(state, map[string]string{path.String(): expr})
+	path := structpath.NewBracketString(jobRunOnValueChangePath, expr)
+	sv := structvar.NewStructVar(state, map[string]string{
+		path.String(): expr,
+		"job_id":      "${resources.jobs.primary.id}",
+	})
 
 	require.NoError(t, sv.ResolveRef("${resources.jobs.other.id}", int64(123)))
-	assert.Equal(t, map[string]string{expr: "123-${resources.jobs.extra.id}"}, state.Lifecycle.Triggers.OnValueChange)
+	assert.Equal(t, map[string]string{expr: "123-${resources.jobs.extra.id}"}, state.Lifecycle.TriggersState.OnValueChange)
 
 	require.NoError(t, sv.ResolveRef("${resources.jobs.extra.id}", int64(456)))
 	assert.Equal(t, map[string]string{
 		expr: "sha256:83a417f0862b66106806c595a06735f885bb90dd6b0657cc2d8dcc51df5b9e63",
-	}, state.Lifecycle.Triggers.OnValueChange)
+	}, state.Lifecycle.TriggersState.OnValueChange)
+
+	require.NoError(t, sv.ResolveRef("${resources.jobs.primary.id}", int64(789)))
+	assert.Equal(t, int64(789), state.JobId)
+	assert.Equal(t, map[string]string{
+		expr: "sha256:83a417f0862b66106806c595a06735f885bb90dd6b0657cc2d8dcc51df5b9e63",
+	}, state.Lifecycle.TriggersState.OnValueChange)
 }
 
 func TestJobRunValueChangeStateNormalizesPureReference(t *testing.T) {
 	expr := "${resources.jobs.other.id}"
-	input := resources.JobRun{ResolvedValueTriggers: map[string]string{expr: expr}}
+	input := resources.JobRun{Lifecycle: &resources.JobRunLifecycle{
+		TriggersState: &resources.JobRunTriggersState{
+			OnValueChange: map[string]string{expr: expr},
+		},
+	}}
 	state := (&ResourceJobRun{}).PrepareState(&input)
-	path := structpath.NewBracketString(structpath.MustParsePath(jobRunOnValueChangePath), expr)
+	path := structpath.NewBracketString(jobRunOnValueChangePath, expr)
 	sv := structvar.NewStructVar(state, map[string]string{path.String(): expr})
 
 	require.NoError(t, sv.ResolveRef(expr, int64(123)))
-	assert.Equal(t, map[string]string{expr: fingerprintJobRunValue("123")}, state.Lifecycle.Triggers.OnValueChange)
+	assert.Equal(t, map[string]string{expr: fingerprintJobRunValue("123")}, state.Lifecycle.TriggersState.OnValueChange)
 }
 
 func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
@@ -403,4 +454,45 @@ func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
 	require.NoError(t, r.DoDelete(t.Context(), "123", &JobRunState{}))
 
 	assert.False(t, cancelled.Load(), "a run that already finished has nothing to cancel")
+}
+
+func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
+	r := &ResourceJobRun{}
+	var lifecycle JobRunLifecycleState
+	for _, tt := range []struct {
+		name   string
+		path   string
+		old    any
+		new    any
+		action deployplan.ActionType
+		reason string
+	}{
+		{"cleared lifecycle", "lifecycle", lifecycle, nil, deployplan.Skip, "trigger removed"},
+		{"added lifecycle", "lifecycle", nil, lifecycle, deployplan.Recreate, ""},
+		{"changed lifecycle", "lifecycle", lifecycle, lifecycle, deployplan.Recreate, deployplan.ReasonDrop},
+		{"cleared on_bundle_deploy string", "lifecycle.triggers_state.on_bundle_deploy", "uuid", "", deployplan.Skip, "trigger removed"},
+		{"nil on_bundle_deploy", "lifecycle.triggers_state.on_bundle_deploy", "uuid", nil, deployplan.Skip, "trigger removed"},
+		{"rotated on_bundle_deploy", "lifecycle.triggers_state.on_bundle_deploy", "old-uuid", "new-uuid", deployplan.Recreate, ""},
+		{"cleared on_file_change", "lifecycle.triggers_state.on_file_change", map[string]string{"*.txt": "hash"}, nil, deployplan.Skip, "trigger removed"},
+		{"empty on_file_change maps", "lifecycle.triggers_state.on_file_change", map[string]string{}, map[string]string{}, deployplan.Recreate, deployplan.ReasonDrop},
+		{"added on_file_change map", "lifecycle.triggers_state.on_file_change", nil, map[string]string{"*.txt": "hash"}, deployplan.Recreate, ""},
+		{"changed on_file_change map", "lifecycle.triggers_state.on_file_change", map[string]string{"*.txt": "old"}, map[string]string{"*.txt": "new"}, deployplan.Recreate, deployplan.ReasonDrop},
+		{"cleared on_file_change pattern", "lifecycle.triggers_state.on_file_change['*.txt']", "hash", nil, deployplan.Skip, "trigger removed"},
+		{"changed on_file_change pattern", "lifecycle.triggers_state.on_file_change['*.txt']", "old", "new", deployplan.Recreate, ""},
+		{"cleared on_value_change", "lifecycle.triggers_state.on_value_change", map[string]string{"${var.a}": "hash"}, nil, deployplan.Skip, "trigger removed"},
+		{"empty on_value_change maps", "lifecycle.triggers_state.on_value_change", map[string]string{}, map[string]string{}, deployplan.Recreate, deployplan.ReasonDrop},
+		{"added on_value_change map", "lifecycle.triggers_state.on_value_change", nil, map[string]string{"${var.a}": "hash"}, deployplan.Recreate, ""},
+		{"changed on_value_change map", "lifecycle.triggers_state.on_value_change", map[string]string{"${var.a}": "old"}, map[string]string{"${var.a}": "new"}, deployplan.Recreate, deployplan.ReasonDrop},
+		{"cleared on_value_change expression", "lifecycle.triggers_state.on_value_change['${var.a}']", "hash", nil, deployplan.Skip, "trigger removed"},
+		{"changed on_value_change expression", "lifecycle.triggers_state.on_value_change['${var.a}']", "old", "new", deployplan.Recreate, ""},
+		{"result_state with unreadable remote", "result_state", jobs.RunResultStateSuccess, nil, deployplan.Recreate, ""},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			change := &ChangeDesc{Action: deployplan.Recreate, Old: tt.old, New: tt.new}
+			require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath(tt.path), change, nil))
+			assert.Equal(t, tt.action, change.Action)
+			assert.Equal(t, tt.reason, change.Reason)
+			assert.Equal(t, tt.reason == "trigger removed", change.PersistState)
+		})
+	}
 }

@@ -3,20 +3,30 @@ cleanup() {
 }
 trap cleanup EXIT
 
+changes() {
+    withdir bundle $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"].changes'
+}
+
+file_triggers() {
+    withdir bundle print_state.py | jq '.state["resources.job_runs.my_run"].state.lifecycle.triggers_state.on_file_change'
+}
+
 title "first deploy"
 withdir bundle trace $CLI bundle deploy
-
-title "editing a same-named file in the bundle does not re-fire"
-update_file.py bundle/watched.txt "bundle-v1" "bundle-v2"
-withdir bundle trace $CLI bundle plan | contains.py "2 unchanged" "!recreate"
-update_file.py bundle/watched.txt "bundle-v2" "bundle-v1"
-
-title "editing a file at the sync root does not re-fire"
-update_file.py shared.txt "parent-v1" "parent-v2"
-withdir bundle trace $CLI bundle plan | contains.py "2 unchanged" "!recreate"
-update_file.py shared.txt "parent-v2" "parent-v1"
+trace file_triggers
 
 title "editing the file next to the included YAML re-fires"
-update_file.py bundle/resources/watched.txt "include-v1" "include-v2"
-withdir bundle trace $CLI bundle plan | contains.py "recreate job_runs.my_run"
-update_file.py bundle/resources/watched.txt "include-v2" "include-v1"
+# printf keeps LF on Windows, where update_file.py's text-mode rewrite uses CRLF.
+printf 'include-v2\n' > bundle/resources/watched-resources.txt
+trace changes
+printf 'include-v1\n' > bundle/resources/watched-resources.txt
+
+title "editing the file at the bundle root re-fires"
+printf 'bundle-v2\n' > bundle/watched-bundle.txt
+trace changes
+printf 'bundle-v1\n' > bundle/watched-bundle.txt
+
+title "editing the file at the sync root re-fires"
+printf 'parent-v2\n' > shared.txt
+trace changes
+printf 'parent-v1\n' > shared.txt

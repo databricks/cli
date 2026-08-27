@@ -15,7 +15,7 @@ read_id.py my_run > /dev/null
 trace print_requests.py //jobs/run-now
 
 title "resolved values are stored as hashes"
-trace print_state.py | jq '.state["resources.job_runs.my_run"].state.lifecycle.triggers.on_value_change'
+trace print_state.py | jq '.state["resources.job_runs.my_run"].state.lifecycle.triggers_state'
 
 title "redeploy with unchanged values plans nothing"
 trace $CLI bundle plan
@@ -31,7 +31,27 @@ read_id.py my_run > /dev/null
 trace print_requests.py --keep //jobs/runs/delete
 trace print_requests.py //jobs/run-now
 
-title "removing one on_value_change is unchanged and does not run"
+title "removing one on_value_change through a saved plan does not run"
+update_file.py databricks.yml '          - on_value_change: ${var.other}
+' ''
+trace $CLI bundle plan
+$CLI bundle plan -o json > tmp.plan.json
+trace $CLI bundle deploy --plan tmp.plan.json
+trace print_requests.py //jobs/run-now
+
+title "re-adding the same on_value_change after the saved plan re-fires"
+update_file.py databricks.yml '          - on_value_change: ${var.stamp}
+' '          - on_value_change: ${var.stamp}
+          - on_value_change: ${var.other}
+'
+trace $CLI bundle plan
+trace changes
+trace $CLI bundle deploy
+read_id.py my_run > /dev/null
+trace print_requests.py --keep //jobs/runs/delete
+trace print_requests.py //jobs/run-now
+
+title "removing the same on_value_change again does not run"
 update_file.py databricks.yml '          - on_value_change: ${var.other}
 ' ''
 trace $CLI bundle plan
@@ -48,11 +68,18 @@ trace print_requests.py --keep //jobs/runs/delete
 trace print_requests.py //jobs/run-now
 
 title "removing the last on_value_change is unchanged and does not run"
-update_file.py databricks.yml '      lifecycle:
-        triggers:
-          - on_value_change: ${var.stamp}
+update_file.py databricks.yml '          - on_value_change: ${var.stamp}
           - on_value_change: ${var.long}
 ' ''
 trace $CLI bundle plan
 trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now
+
+title "file changes still re-fire after value triggers are removed"
+update_file.py watched.txt "v1" "v2"
+trace $CLI bundle plan
+trace changes
+trace $CLI bundle deploy
+read_id.py my_run > /dev/null
+trace print_requests.py --keep //jobs/runs/delete
 trace print_requests.py //jobs/run-now

@@ -12,7 +12,6 @@
 #     differences are skipped the same way (only local changes act).
 #   ignore_remote_changes: fields where remote changes are ignored
 #   ignore_local_changes: fields where local changes are ignored (can't be updated via API)
-#   skip_when_removed: exact field patterns skipped when desired values are removed
 #   backend_defaults: fields where the backend may set defaults (skipped when old/new are nil but remote is set)
 #     Optional "values" list constrains which remote values are allowed (as JSON-compatible literals).
 #
@@ -140,20 +139,6 @@ resources:
       - field: job_clusters[*].new_cluster.data_security_mode
 
   job_runs:
-    # Removing a trigger disarms it without starting a new run. The wildcard is
-    # intentionally limited to on_value_change: a file disappearing from an
-    # on_file_change match is a real change and must recreate.
-    skip_when_removed:
-      - field: lifecycle.triggers.on_bundle_deploy
-        reason: trigger removed
-      - field: lifecycle.triggers.on_file_change
-        reason: trigger removed
-      - field: lifecycle.triggers.on_value_change
-        reason: trigger removed
-        map_subset: true
-      - field: lifecycle.triggers.on_value_change[*]
-        reason: trigger removed
-
     # Every jobs.RunNow field is listed, so nothing the request carries is drift.
     # TestJobRunIgnoresEveryRequestField keeps the list in step with the SDK.
     # result_state is not in the list: comparing it against the remote is what

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -23,7 +24,8 @@ func (*snapshotJobRunValueTriggers) Name() string {
 func (*snapshotJobRunValueTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 	for name, jr := range b.Config.Resources.JobRuns {
-		if jr == nil || jr.Lifecycle == nil || jr.ResolvedValueTriggers != nil {
+		if jr == nil || jr.Lifecycle == nil ||
+			(jr.Lifecycle.TriggersState != nil && jr.Lifecycle.TriggersState.OnValueChange != nil) {
 			continue
 		}
 
@@ -55,7 +57,10 @@ func (*snapshotJobRunValueTriggers) Apply(_ context.Context, b *bundle.Bundle) d
 		}
 
 		if len(out) > 0 {
-			jr.ResolvedValueTriggers = out
+			if jr.Lifecycle.TriggersState == nil {
+				jr.Lifecycle.TriggersState = &resources.JobRunTriggersState{}
+			}
+			jr.Lifecycle.TriggersState.OnValueChange = out
 		}
 	}
 	return diags
