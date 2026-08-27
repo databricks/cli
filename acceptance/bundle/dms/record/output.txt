@@ -6,7 +6,7 @@ Created jobs.foo
 Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --dms //api/2.0/bundle
+>>> print_requests.py --get --dms //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
@@ -75,7 +75,15 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record/default
 Files: 4 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py --dms //api/2.0/bundle
+>>> print_requests.py --get --dms //api/2.0/bundle
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+}
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
@@ -105,7 +113,15 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
->>> print_requests.py --dms //api/2.0/bundle
+>>> print_requests.py --get --dms //api/2.0/bundle
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+}
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
@@ -164,7 +180,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json"
 }
 
->>> print_requests.py --dms //api/2.0/bundle
+>>> print_requests.py --get --dms //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
