@@ -47,6 +47,39 @@ EXCLUDED_DIRS = [
 ALLOW_COMMENT = "//deadcode:allow"
 
 
+def should_exclude_line(line, excluded_dirs):
+    """Check if a deadcode output line refers to an excluded directory.
+
+    >>> should_exclude_line("libs/gorules/myrule.go:10:5: func", ["libs/gorules/"])
+    True
+    >>> should_exclude_line("bundle/internal/tf/schema/gen.go:10:5: func", ["bundle/internal/tf/schema/"])
+    True
+    >>> should_exclude_line("cmd/bundle/deploy.go:10:5: func", ["libs/gorules/"])
+    False
+    >>> should_exclude_line("bundle/internal/tf/schema/gen.go:10:5: func", ["libs/gorules/"])
+    False
+    """
+    return any(line.startswith(d) or ("/" + d) in line for d in excluded_dirs)
+
+
+def parse_deadcode_line(line):
+    """Parse a deadcode output line into (filepath, lineno) or return None if unparseable.
+
+    Typical deadcode format: path/to/file.go:123:45: message
+    >>> parse_deadcode_line("cmd/main.go:42:3: func Foo")
+    ('cmd/main.go', 42)
+    >>> parse_deadcode_line("libs/util/helper.go:1:0: func Helper")
+    ('libs/util/helper.go', 1)
+    >>> parse_deadcode_line("invalid line format")
+
+    >>> parse_deadcode_line("")
+    """
+    match = re.match(r"(.+?):(\d+):\d+:", line)
+    if not match:
+        return None
+    return (match.group(1), int(match.group(2)))
+
+
 def main():
     result = subprocess.run(
         ["go", "tool", "-modfile=tools/go.mod", "deadcode", "-test", "./..."],
@@ -67,16 +100,15 @@ def main():
     violations = []
 
     for line in lines:
-        if any(line.startswith(d) or ("/" + d) in line for d in EXCLUDED_DIRS):
+        if should_exclude_line(line, EXCLUDED_DIRS):
             continue
 
-        match = re.match(r"(.+?):(\d+):\d+:", line)
-        if not match:
+        parsed = parse_deadcode_line(line)
+        if not parsed:
             violations.append(line)
             continue
 
-        filepath = match.group(1)
-        lineno = int(match.group(2))
+        filepath, lineno = parsed
 
         try:
             with open(filepath) as f:

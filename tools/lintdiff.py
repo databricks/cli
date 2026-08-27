@@ -17,6 +17,36 @@ import sys
 NESTED_MODULES = ("bundle/internal/tf/codegen", "tools")
 
 
+def in_nested_module(path):
+    """Check if a path is under a nested module.
+
+    >>> in_nested_module("tools")
+    True
+
+    >>> in_nested_module("tools/task")
+    True
+
+    >>> in_nested_module("tools/task/subtask.go")
+    True
+
+    >>> in_nested_module("bundle/internal/tf/codegen")
+    True
+
+    >>> in_nested_module("bundle/internal/tf/codegen/gen.go")
+    True
+
+    >>> in_nested_module("cmd/bundle")
+    False
+
+    >>> in_nested_module("cmd")
+    False
+
+    >>> in_nested_module("toolz")
+    False
+    """
+    return any(path == m or path.startswith(m + "/") for m in NESTED_MODULES)
+
+
 def parse_lines(cmd):
     # print("+ " + " ".join(cmd), file=sys.stderr, flush=True)
     result = subprocess.run(cmd, stdout=subprocess.PIPE, encoding="utf-8")
@@ -59,10 +89,6 @@ def main():
     filter_nested = "run" in cmd
 
     if changed is not None:
-
-        def in_nested_module(path):
-            return filter_nested and any(path == m or path.startswith(m + "/") for m in NESTED_MODULES)
-
         # We need to pass packages to golangci-lint, not individual files.
         # QQQ for lint we should also pass all dependent packages
         dirs = set()
@@ -71,7 +97,7 @@ def main():
                 continue
             if filename.endswith(".go"):
                 d = os.path.dirname(filename)
-                if in_nested_module(d):
+                if filter_nested and in_nested_module(d):
                     continue
                 dirs.add(d)
 

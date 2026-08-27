@@ -91,6 +91,28 @@ class KnownFailuresRule:
             return test_name == self.test_pattern or self._matches_path_prefix(self.test_pattern, test_name)
 
     def _matches_path_prefix(self, s, pattern):
+        """
+        Check if string s matches pattern as a path prefix.
+
+        Matches if pattern is empty (wildcard), s equals pattern exactly,
+        or s starts with pattern followed by a "/".
+
+        >>> rule = KnownFailuresRule("", "", False, False, "")
+        >>> rule._matches_path_prefix("bundle", "")
+        True
+
+        >>> rule._matches_path_prefix("bundle", "bundle")
+        True
+
+        >>> rule._matches_path_prefix("libs/auth", "libs")
+        True
+
+        >>> rule._matches_path_prefix("libsother", "libs")
+        False
+
+        >>> rule._matches_path_prefix("bundle", "bundle/subtest")
+        False
+        """
         if pattern == "":
             return True
         if s == pattern:
@@ -131,6 +153,24 @@ def parse_known_failures(content):
 
 
 def _parse_pattern(pattern):
+    """
+    Parse a pattern string, extracting the base and a prefix flag.
+
+    Returns (base, is_prefix) where is_prefix indicates if the pattern
+    ended with "/" (directory prefix match) or was "*" (wildcard).
+
+    >>> _parse_pattern("bundle")
+    ('bundle', False)
+
+    >>> _parse_pattern("*")
+    ('', True)
+
+    >>> _parse_pattern("libs/")
+    ('libs', True)
+
+    >>> _parse_pattern("foo/bar/")
+    ('foo/bar', True)
+    """
     if pattern == "*":
         return "", True
     if pattern.endswith("/"):
@@ -592,6 +632,21 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
 
 
 def make_summary_message(table, summary):
+    """
+    Create a summary message from test results.
+
+    Formats as "N interesting tests: count1 info1, count2 info2, ..."
+    with results sorted by count (highest first).
+
+    >>> make_summary_message([{}, {}, {}], {"failed": 2, "flaky": 1})
+    '3 interesting tests: 2 failed, 1 flaky'
+
+    >>> make_summary_message([{}], {"panic": 5})
+    '1 interesting tests: 5 panic'
+
+    >>> make_summary_message([], {})
+    '0 interesting tests: '
+    """
     items = list(summary.items())
     items.sort(key=lambda x: x[1], reverse=True)
     items = ", ".join(f"{count} {info}" for (info, count) in items)
@@ -601,6 +656,25 @@ def make_summary_message(table, summary):
 # For test table, use shorter version of action.
 # We have full action name in env table, so that is used as agenda.
 def short_action(action):
+    """
+    Return short version of action for table display.
+
+    If the action has a zero-width space at position 1 (emoji format),
+    return first 3 characters (emoji + zero-width space + first letter).
+    Otherwise return the action unchanged.
+
+    >>> short_action("\u274c\\u200bFAIL")
+    '\u274c\\u200bF'
+
+    >>> short_action("\u2705\\u200bpass")
+    '\u2705\\u200bp'
+
+    >>> short_action("regular_text")
+    'regular_text'
+
+    >>> short_action("AB")
+    'AB'
+    """
     if len(action) >= 4 and action[1] == "\u200b":
         # include first non-emoji letter in case emoji rendering is broken
         return action[:3]
@@ -659,10 +733,45 @@ def format_table(table, columns=None, markdown=False):
 
 
 def fmt(cells, widths):
+    """
+    Format cells as a single table row with specified column widths.
+
+    Joins cells with two spaces, applying autojust to each cell.
+
+    >>> fmt(["Name", "123", "Status"], [8, 5, 6])
+    'Name       123   Status'
+
+    >>> fmt(["A", "B"], [3, 3])
+    ' A    B '
+
+    >>> fmt([], [])
+    ''
+    """
     return "  ".join(autojust(cell, w) for cell, w in zip(cells, widths, strict=False))
 
 
 def autojust(value, width):
+    """
+    Right-align numeric and short values, left-align longer text.
+
+    For terminal display: numeric strings and values with 3 or fewer
+    characters are centered. Longer strings are left-justified.
+
+    >>> autojust("123", 5)
+    ' 123 '
+
+    >>> autojust("test", 6)
+    'test  '
+
+    >>> autojust("AB", 4)
+    ' AB '
+
+    >>> autojust("", 3)
+    '   '
+
+    >>> autojust(0, 3)
+    ' 0 '
+    """
     # Note, this has no effect on how markdown is rendered, only relevant for terminal output
     value = str(value)
     if value.isdigit():
@@ -677,7 +786,30 @@ def wrap_in_details(txt, summary):
 
 
 def format_duration(seconds):
-    """Format duration from seconds to MM:SS format."""
+    """
+    Format duration from seconds to MM:SS format.
+
+    Returns empty string for None input. Handles fractional seconds
+    by truncating to integers.
+
+    >>> format_duration(65)
+    '1:05'
+
+    >>> format_duration(3661)
+    '61:01'
+
+    >>> format_duration(0)
+    '0:00'
+
+    >>> format_duration(59)
+    '0:59'
+
+    >>> format_duration(None)
+    ''
+
+    >>> format_duration(3.7)
+    '0:03'
+    """
     if seconds is None:
         return ""
     minutes = int(seconds // 60)

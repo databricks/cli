@@ -49,6 +49,26 @@ def find_tables(lines):
 
     >>> find_tables(["intro", "| a |", "| - |", "| 1 |", "", "| b |"])
     [(1, 4), (5, 6)]
+
+    Empty input returns no tables:
+    >>> find_tables([])
+    []
+
+    Single table spans entire input:
+    >>> find_tables(["| a |", "| - |", "| 1 |"])
+    [(0, 3)]
+
+    Table at start:
+    >>> find_tables(["| x |", "| - |", "text"])
+    [(0, 2)]
+
+    Table at end:
+    >>> find_tables(["text", "| y |", "| - |"])
+    [(1, 3)]
+
+    No tables returns empty:
+    >>> find_tables(["line1", "line2", "line3"])
+    []
     """
     tables = []
     start = None
@@ -86,6 +106,32 @@ def trim_tables(text, limit=MAX_MARKDOWN_SIZE):
     | row 06 |
     outro
     (14 table rows omitted to keep the report under 180 bytes)
+
+    Empty text fits any limit:
+    >>> trim_tables("", limit=10)
+    ''
+
+    Text with no tables (below limit) is unchanged:
+    >>> trim_tables("just text", limit=100)
+    'just text'
+
+    Trimming prioritizes the largest table:
+    >>> big_table = "\n".join(["| row |"] * 15)
+    >>> small_table = "\n".join(["| x |"] * 2)
+    >>> report = big_table + "\n" + small_table
+    >>> result = trim_tables(report, limit=50)
+    >>> "table rows omitted" in result
+    True
+    >>> "| row |" in result  # big table partially preserved
+    True
+
+    Header and separator rows are always kept:
+    >>> table = "| Header |\n| --- |\n| row 1 |\n| row 2 |\n| row 3 |"
+    >>> result = trim_tables(table, limit=40)
+    >>> "| --- |" in result  # separator always present
+    True
+    >>> "| Header |" in result  # header always present
+    True
     """
     size = len(text.encode())
     if size <= limit:

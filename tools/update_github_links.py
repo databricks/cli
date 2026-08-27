@@ -58,6 +58,10 @@ def find_mismatched_links(text):
     []
     >>> find_mismatched_links("([#1234](https://github.com/databricks/cli/pull/9999))")
     ['Converted link numbers differ: text #1234 vs URL #9999 — …([#1234](https://github.com/databricks/cli/pull/9999))…']
+    >>> len(find_mismatched_links("([#1](https://github.com/databricks/cli/pull/2)) and ([#3](https://github.com/databricks/cli/pull/4))")) == 2
+    True
+    >>> find_mismatched_links("")
+    []
     """
     mismatches = []
     for m in CONVERTED_LINK_RE.finditer(text):
@@ -96,6 +100,21 @@ def convert_raw_references(text):
     >>> t = "(#3456) and #7890"
     >>> convert_raw_references(convert_raw_references(t)) == convert_raw_references(t)
     True
+
+    Multiple references in one string are all converted:
+
+    >>> convert_raw_references("See #100, #200, and #300")
+    'See ([#100](https://github.com/databricks/cli/pull/100)), ([#200](https://github.com/databricks/cli/pull/200)), and ([#300](https://github.com/databricks/cli/pull/300))'
+
+    Empty string remains empty:
+
+    >>> convert_raw_references("")
+    ''
+
+    References with word boundaries are converted:
+
+    >>> convert_raw_references("Issue #999 is fixed")
+    'Issue ([#999](https://github.com/databricks/cli/pull/999)) is fixed'
     """
 
     def _make_link(num):
