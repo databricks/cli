@@ -125,8 +125,8 @@ print_telemetry_bool_values() {
 
 # Print the PII-free error descriptions the deploy event carries, one
 # "<field> <description>" line each, skipping the ones this deploy did not set.
-print_telemetry_saferrs() {
-    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental // {}) ) | to_entries | map(select((.key | endswith("_saferr")) and (.value // "") != "")) | map("\(.key) \(.value)") | .[]' out.requests.txt | sort
+print_telemetry_serrors() {
+    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental // {}) ) | to_entries | map(select((.key | endswith("_serror")) and (.value // "") != "")) | map("\(.key) \(.value)") | .[]' out.requests.txt | sort
 }
 
 sethome() {

@@ -21,7 +21,7 @@ Warn: automatic migration to direct engine failed: pushing direct state to works
 
 >>> print_migration_telemetry
 direct_migrate_commit_error true
-direct_migrate_commit_saferr pushing direct state to workspace: access denied [403 INJECTED]
+direct_migrate_commit_serror pushing direct state to workspace: access denied [403 INJECTED]
 
 === Local state was NOT rewritten (still terraform)
 

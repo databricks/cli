@@ -28,7 +28,7 @@ Warn: Direct engine was selected but the dry-run migration reported issues; auto
 
 >>> print_migration_telemetry
 direct_migrate_warnings true
-direct_migrate_warning_saferr jobs.%s field %q: method A and method B disagree
+direct_migrate_warning_serror jobs.%s field %q: method A and method B disagree
 
 === State is still terraform, so nothing was migrated
 

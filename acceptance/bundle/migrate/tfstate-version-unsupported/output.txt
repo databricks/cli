@@ -24,7 +24,7 @@ Warn: Direct engine was selected but the dry-run migration reported issues; auto
 
 >>> print_migration_telemetry
 direct_migrate_error true
-direct_migrate_saferr unsupported deployment state version: 5. Try re-deploying the bundle
+direct_migrate_serror unsupported deployment state version: 5. Try re-deploying the bundle
 
 === State is still terraform, so nothing was migrated
 

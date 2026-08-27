@@ -8,5 +8,5 @@
 # themselves, since some want it kept for a subsequent print_requests.py.
 print_migration_telemetry() {
     print_telemetry_bool_values | grep '^direct_' || true
-    print_telemetry_saferrs | grep '^direct_' || true
+    print_telemetry_serrors | grep '^direct_' || true
 }

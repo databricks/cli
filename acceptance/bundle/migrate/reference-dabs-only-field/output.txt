@@ -22,7 +22,7 @@ Please forward these warnings to dabs-feedback@databricks.com
 >>> print_migration_telemetry
 direct_drymigrate_success false
 direct_drymigrate_warnings false
-direct_migrate_saferr jobs.*: cannot resolve field %q (template %q): jobs.%s field %s: method A: %w; method B: cannot look up %q: %w
+direct_migrate_serror jobs.*: cannot resolve field %q (template %q): jobs.%s field %s: method A: %w; method B: cannot look up %q: %w
 
 >>> update_file.py databricks.yml name: test-bundle name: test-bundle
   engine: direct
@@ -49,7 +49,7 @@ Warn: Direct engine was selected but the dry-run migration reported issues; auto
 
 >>> print_migration_telemetry
 direct_migrate_error true
-direct_migrate_saferr jobs.*: cannot resolve field %q (template %q): jobs.%s field %s: method A: %w; method B: cannot look up %q: %w
+direct_migrate_serror jobs.*: cannot resolve field %q (template %q): jobs.%s field %s: method A: %w; method B: cannot look up %q: %w
 
 === State is still terraform, so nothing was migrated
 

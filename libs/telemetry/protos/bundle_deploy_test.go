@@ -23,9 +23,9 @@ func TestBundleDeployExperimentalSaferrFields(t *testing.T) {
 	var got map[string]any
 	require.NoError(t, json.Unmarshal(raw, &got))
 
-	assert.Equal(t, "a", got["direct_migrate_saferr"])
-	assert.Equal(t, "b", got["direct_migrate_commit_saferr"])
-	assert.Equal(t, "c", got["direct_migrate_warning_saferr"])
+	assert.Equal(t, "a", got["direct_migrate_serror"])
+	assert.Equal(t, "b", got["direct_migrate_commit_serror"])
+	assert.Equal(t, "c", got["direct_migrate_warning_serror"])
 }
 
 // TestBundleDeployExperimentalSaferrOmitted keeps a successful deploy from
@@ -34,5 +34,5 @@ func TestBundleDeployExperimentalSaferrOmitted(t *testing.T) {
 	raw, err := json.Marshal(BundleDeployExperimental{})
 	require.NoError(t, err)
 
-	assert.NotContains(t, string(raw), "saferr")
+	assert.NotContains(t, string(raw), "serror")
 }
