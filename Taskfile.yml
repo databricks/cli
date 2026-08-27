@@ -521,8 +521,10 @@ tasks:
     # must stay import-safe (no module-level side effects — keep real work under
     # `if __name__ == "__main__"`). Globbed so new doctests are picked up
     # automatically. --with pyyaml: generate_resources.py imports it; extend if
-    # another script grows a third-party import. -p ">=3.12": three of these
-    # carry a PEP 723 `requires-python = ">=3.12"`.
+    # another script grows a third-party import. -p ">=3.12": manual interpreter
+    # floor matching what most of these scripts target in their PEP 723 metadata;
+    # uv does not read that metadata here since the files are arguments to
+    # `python -m doctest`, not scripts uv runs.
     sources:
       - tools/*.py
       - bundle/direct/tools/*.py
