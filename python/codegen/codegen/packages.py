@@ -8,6 +8,7 @@ RESOURCE_NAMESPACE = {
     "resources.Catalog": "catalogs",
     "resources.Schema": "schemas",
     "resources.Volume": "volumes",
+    "resources.Alert": "alerts",
 }
 
 RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
@@ -21,6 +22,8 @@ LOADED_NAMESPACES = [
     "pipelines",
     "resources",
     "catalog",
+    "sql",
+    "iam",
 ]
 
 RENAMES = {

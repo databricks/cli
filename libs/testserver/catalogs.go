@@ -88,6 +88,11 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 		}
 	}
 
+	fields, errResponse := parseUCUpdate(req.Body, "UpdateCatalog")
+	if errResponse != nil {
+		return *errResponse
+	}
+
 	var updateRequest catalog.UpdateCatalog
 	if err := json.Unmarshal(req.Body, &updateRequest); err != nil {
 		return Response{
@@ -96,25 +101,7 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 		}
 	}
 
-	// Update only the fields that can be updated
-	if updateRequest.Comment != "" {
-		existing.Comment = updateRequest.Comment
-	}
-	if updateRequest.CustomMaxRetentionHours != 0 {
-		existing.CustomMaxRetentionHours = updateRequest.CustomMaxRetentionHours
-	}
-	if updateRequest.ManagedEncryptionSettings != nil {
-		existing.ManagedEncryptionSettings = updateRequest.ManagedEncryptionSettings
-	}
-	if updateRequest.Options != nil {
-		existing.Options = updateRequest.Options
-	}
-	if updateRequest.Properties != nil {
-		existing.Properties = updateRequest.Properties
-	}
-	if updateRequest.Owner != "" {
-		existing.Owner = updateRequest.Owner
-	}
+	applyUpdatedFields(&existing, updateRequest, fields)
 	if updateRequest.NewName != "" {
 		existing.Name = updateRequest.NewName
 		existing.FullName = updateRequest.NewName

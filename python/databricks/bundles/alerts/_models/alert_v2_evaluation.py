@@ -1,0 +1,98 @@
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, TypedDict
+
+from databricks.bundles.alerts._models.alert_evaluation_state import (
+    AlertEvaluationState,
+    AlertEvaluationStateParam,
+)
+from databricks.bundles.alerts._models.alert_v2_notification import (
+    AlertV2Notification,
+    AlertV2NotificationParam,
+)
+from databricks.bundles.alerts._models.alert_v2_operand import (
+    AlertV2Operand,
+    AlertV2OperandParam,
+)
+from databricks.bundles.alerts._models.alert_v2_operand_column import (
+    AlertV2OperandColumn,
+    AlertV2OperandColumnParam,
+)
+from databricks.bundles.alerts._models.comparison_operator import (
+    ComparisonOperator,
+    ComparisonOperatorParam,
+)
+from databricks.bundles.core._transform import _transform
+from databricks.bundles.core._transform_to_json import _transform_to_json_value
+from databricks.bundles.core._variable import VariableOr, VariableOrOptional
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
+
+@dataclass(kw_only=True)
+class AlertV2Evaluation:
+    """"""
+
+    comparison_operator: VariableOr[ComparisonOperator]
+    """
+    Operator used for comparison in alert evaluation.
+    """
+
+    source: VariableOr[AlertV2OperandColumn]
+    """
+    Source column from result to use to evaluate alert
+    """
+
+    empty_result_state: VariableOrOptional[AlertEvaluationState] = None
+    """
+    Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.
+    """
+
+    notification: VariableOrOptional[AlertV2Notification] = None
+    """
+    User or Notification Destination to notify when alert is triggered.
+    """
+
+    threshold: VariableOrOptional[AlertV2Operand] = None
+    """
+    Threshold to user for alert evaluation, can be a column or a value.
+    """
+
+    @classmethod
+    def from_dict(cls, value: "AlertV2EvaluationDict") -> "Self":
+        return _transform(cls, value)
+
+    def as_dict(self) -> "AlertV2EvaluationDict":
+        return _transform_to_json_value(self)  # type:ignore
+
+
+class AlertV2EvaluationDict(TypedDict, total=False):
+    """"""
+
+    comparison_operator: VariableOr[ComparisonOperatorParam]
+    """
+    Operator used for comparison in alert evaluation.
+    """
+
+    source: VariableOr[AlertV2OperandColumnParam]
+    """
+    Source column from result to use to evaluate alert
+    """
+
+    empty_result_state: VariableOrOptional[AlertEvaluationStateParam]
+    """
+    Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.
+    """
+
+    notification: VariableOrOptional[AlertV2NotificationParam]
+    """
+    User or Notification Destination to notify when alert is triggered.
+    """
+
+    threshold: VariableOrOptional[AlertV2OperandParam]
+    """
+    Threshold to user for alert evaluation, can be a column or a value.
+    """
+
+
+AlertV2EvaluationParam = AlertV2EvaluationDict | AlertV2Evaluation

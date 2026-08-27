@@ -38,7 +38,7 @@ type testClient struct {
 	Cleanup     func()
 }
 
-func createTestClient(t *testing.T, serverURL string, requestHandoverTick func() <-chan time.Time, errChan chan error) *testClient {
+func createTestClient(t *testing.T, serverURL string, requestHandoverTick func() <-chan time.Time, keepaliveInterval time.Duration, errChan chan error) *testClient {
 	ctx := cmdio.MockDiscard(t.Context())
 	clientInput, clientInputWriter := io.Pipe()
 	clientOutput := newTestBuffer(t)
@@ -49,13 +49,11 @@ func createTestClient(t *testing.T, serverURL string, requestHandoverTick func()
 		return conn, err
 	}
 	if requestHandoverTick == nil {
-		requestHandoverTick = func() <-chan time.Time {
-			return time.After(time.Hour)
-		}
+		requestHandoverTick = neverTick
 	}
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-		err := RunClientProxy(ctx, clientInput, clientOutput, requestHandoverTick, createConn)
+		err := RunClientProxy(ctx, clientInput, clientOutput, requestHandoverTick, keepaliveInterval, createConn)
 		if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, io.ErrClosedPipe) {
 			if errChan != nil {
 				errChan <- err
@@ -78,7 +76,7 @@ func createTestClient(t *testing.T, serverURL string, requestHandoverTick func()
 func TestClientServerEcho(t *testing.T) {
 	server := createTestServer(t, 2, time.Hour)
 	defer server.Close()
-	client := createTestClient(t, server.URL, nil, nil)
+	client := createTestClient(t, server.URL, nil, time.Hour, nil)
 	defer client.Cleanup()
 
 	testMsg1 := []byte("test message 1\n")
@@ -100,9 +98,9 @@ func TestClientServerEcho(t *testing.T) {
 func TestMultipleClients(t *testing.T) {
 	server := createTestServer(t, 2, time.Hour)
 	defer server.Close()
-	client1 := createTestClient(t, server.URL, nil, nil)
+	client1 := createTestClient(t, server.URL, nil, time.Hour, nil)
 	defer client1.Cleanup()
-	client2 := createTestClient(t, server.URL, nil, nil)
+	client2 := createTestClient(t, server.URL, nil, time.Hour, nil)
 	defer client2.Cleanup()
 
 	messageCount := 10
@@ -131,9 +129,9 @@ func TestMaxClients(t *testing.T) {
 	maxClients := 2
 	server := createTestServer(t, maxClients, time.Hour)
 	defer server.Close()
-	client1 := createTestClient(t, server.URL, nil, nil)
+	client1 := createTestClient(t, server.URL, nil, time.Hour, nil)
 	defer client1.Cleanup()
-	client2 := createTestClient(t, server.URL, nil, nil)
+	client2 := createTestClient(t, server.URL, nil, time.Hour, nil)
 	defer client2.Cleanup()
 
 	testMsg1 := []byte("test message 1\n")
@@ -147,7 +145,7 @@ func TestMaxClients(t *testing.T) {
 	require.NoError(t, err)
 
 	errChan := make(chan error, 1)
-	client3 := createTestClient(t, server.URL, nil, errChan)
+	client3 := createTestClient(t, server.URL, nil, time.Hour, errChan)
 	defer client3.Cleanup()
 	select {
 	case err = <-errChan:
@@ -158,6 +156,17 @@ func TestMaxClients(t *testing.T) {
 }
 
 func TestHandover(t *testing.T) {
+	t.Run("without keepalive", func(t *testing.T) {
+		runHandoverExchange(t, time.Hour)
+	})
+	// Pings and the data stream share the connection's write lock: they must not corrupt or reorder
+	// the stream, nor trip gorilla's concurrent-write panic.
+	t.Run("with keepalive", func(t *testing.T) {
+		runHandoverExchange(t, time.Millisecond)
+	})
+}
+
+func runHandoverExchange(t *testing.T, keepaliveInterval time.Duration) {
 	server := createTestServer(t, 2, time.Hour)
 	defer server.Close()
 
@@ -165,7 +174,7 @@ func TestHandover(t *testing.T) {
 	requestHandoverTick := func() <-chan time.Time {
 		return handoverChan
 	}
-	client := createTestClient(t, server.URL, requestHandoverTick, nil)
+	client := createTestClient(t, server.URL, requestHandoverTick, keepaliveInterval, nil)
 	defer client.Cleanup()
 
 	var expectedOutput []byte
@@ -204,7 +213,7 @@ func TestQuickHandover(t *testing.T) {
 	requestHandoverTick := func() <-chan time.Time {
 		return handoverChan
 	}
-	client := createTestClient(t, server.URL, requestHandoverTick, nil)
+	client := createTestClient(t, server.URL, requestHandoverTick, time.Hour, nil)
 	defer client.Cleanup()
 
 	var expectedOutput []byte
@@ -256,7 +265,7 @@ func TestClientExitsWhenServerCommandFails(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, createConn)
+		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, time.Hour, createConn)
 	}()
 
 	select {
@@ -303,7 +312,7 @@ func TestClientTimesOutWhenServerSendsNothing(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, createConn)
+		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, time.Hour, createConn)
 	}()
 
 	select {
