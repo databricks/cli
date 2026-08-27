@@ -26,6 +26,12 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
+var (
+	jobRunOnBundleDeployPath = structpath.MustParsePath("lifecycle.triggers.on_bundle_deploy")
+	jobRunOnFileChangePath   = structpath.MustParsePath("lifecycle.triggers.on_file_change")
+	jobRunResultStatePath    = structpath.MustParsePath("result_state")
+)
+
 // JobRunTriggersState is the persisted fingerprint of lifecycle.triggers.
 type JobRunTriggersState struct {
 	// Fresh UUID each plan while armed so Old!=New forces recreate.
@@ -381,18 +387,21 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // result_state either, so the lifecycle state is what tells the two apart.
 // Clearing a trigger skips its local-only fingerprint without re-firing the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
-	switch path.String() {
-	case "lifecycle.triggers.on_bundle_deploy":
+	switch {
+	case path.Len() == jobRunOnBundleDeployPath.Len() && path.HasPrefix(jobRunOnBundleDeployPath):
 		if change.New == nil || change.New == "" {
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
 		}
-	case "lifecycle.triggers.on_file_change":
+	case path.Len() == jobRunOnFileChangePath.Len() && path.HasPrefix(jobRunOnFileChangePath):
 		if change.New == nil {
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
+		} else if change.Old != nil {
+			// Per-file entries already report the change; drop the whole-map duplicate.
+			change.Reason = deployplan.ReasonDrop
 		}
-	case "result_state":
+	case path.Len() == jobRunResultStatePath.Len() && path.HasPrefix(jobRunResultStatePath):
 		// The planner passes no remote state when the run could not be read.
 		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
 			return nil
