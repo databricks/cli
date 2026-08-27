@@ -29,6 +29,11 @@ type getData struct {
 	ExperimentName  *string `json:"experiment_name"`
 	DashboardURL    string  `json:"dashboard_url"`
 	MLflowURL       *string `json:"mlflow_url"`
+	// ESTRemainingSeconds and ESTPercentComplete are a best-effort progress
+	// estimate for a running run, or null when one can't be made (see
+	// estimateTrainingETA).
+	ESTRemainingSeconds *int64 `json:"est_remaining_seconds"`
+	ESTPercentComplete  *int   `json:"est_percent_complete"`
 
 	// The fields below are pre-rendered text-view cells, excluded from JSON
 	// (matching `air get --json`). Each shows "N/A" when its value is
@@ -42,6 +47,9 @@ type getData struct {
 	AcceleratorsDisplay string `json:"-"`
 	EnvironmentDisplay  string `json:"-"`
 	MaxRetriesDisplay   string `json:"-"`
+	// ProgressDisplay is the pre-rendered "Progress" cell ("45% · ~2h 15m left"),
+	// set only for a running run with an estimable remaining time.
+	ProgressDisplay string `json:"-"`
 	// TrainingConfigPath is the run's config file, downloaded for the config box.
 	TrainingConfigPath string `json:"-"`
 	// Sweep replaces the single-run view for foreach runs.
@@ -155,6 +163,17 @@ func newGetCommand() *cobra.Command {
 		if ids != nil {
 			url := mlflowLogsURL(w.Config.Host, ids)
 			data.MLflowURL = &url
+			// A remaining-time estimate only makes sense while the run is still
+			// training; a terminal run is either done or stopped mid-progress.
+			if isRunning(run) {
+				if eta := estimateTrainingETA(ctx, w, ids.RunID); eta != nil {
+					secs := eta.RemainingSeconds
+					pct := eta.PercentComplete
+					data.ESTRemainingSeconds = &secs
+					data.ESTPercentComplete = &pct
+					data.ProgressDisplay = eta.detailed()
+				}
+			}
 		}
 		if task := findForEachTask(run); task != nil {
 			data.Sweep = buildSweepInfo(ctx, w, task)
@@ -236,7 +255,10 @@ func buildGetData(run *jobs.Run) getData {
 	}
 	data.UserDisplay = orNA(run.CreatorUserName)
 	data.AcceleratorsDisplay = orNA(accelerators(run))
-	data.EnvironmentDisplay = orNA(environment(run))
+	// EnvironmentDisplay is resolved at render time: the serverless environment
+	// version needs a raw GetRun read (the typed SDK Run drops it), so it is not
+	// filled here alongside the fields read straight off the run.
+	data.EnvironmentDisplay = na
 	data.MaxRetriesDisplay = maxRetries(run)
 	return data
 }

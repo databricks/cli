@@ -146,6 +146,7 @@
             "timeout_seconds": 0,
             "timeouts": null,
             "trigger": [],
+            "triggers": [],
             "url": "[DATABRICKS_URL]/#job/[NUMID]",
             "usage_policy_id": null,
             "webhook_notifications": [

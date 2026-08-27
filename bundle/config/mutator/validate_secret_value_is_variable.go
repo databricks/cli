@@ -28,6 +28,13 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 		p := dyn.NewPath(dyn.Key("resources"), dyn.Key("secrets"), dyn.Key(key), dyn.Key("value"))
 		val, err := dyn.GetByPath(b.Config.Value(), p)
 		if dyn.IsNoSuchKeyError(err) {
+			diags = append(diags, diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "Secret value must be a string",
+				Detail:    fmt.Sprintf(`The secret value for "%s" must be a string.`, key),
+				Locations: val.Locations(),
+				Paths:     []dyn.Path{p},
+			})
 			continue
 		}
 		if err != nil {
@@ -36,6 +43,13 @@ func (v *validateSecretValueIsVariable) Apply(ctx context.Context, b *bundle.Bun
 
 		valueStr, ok := val.AsString()
 		if !ok {
+			diags = append(diags, diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "Secret value must be a string",
+				Detail:    fmt.Sprintf(`The secret value for "%s" must be a string.`, key),
+				Locations: val.Locations(),
+				Paths:     []dyn.Path{p},
+			})
 			continue
 		}
 

@@ -21,6 +21,7 @@
   },
   "default_source_code_path": "/Workspace/Users/[USERNAME]/test-name",
   "description": "My app description.",
+  "forward_user_access_token": true,
   "id": "1000",
   "name": "test-name",
   "resources": [
@@ -62,6 +63,7 @@
   },
   "default_source_code_path": "/Workspace/Users/[USERNAME]/test-name",
   "description": "My app description.",
+  "forward_user_access_token": true,
   "id": "1001",
   "name": "test-name",
   "resources": [
@@ -94,8 +96,12 @@ Flags:
       --compute-min-instances int   Minimum number of app instances.
       --compute-size ComputeSize    Supported values: [LARGE, MEDIUM, XLARGE]
       --description string          The description of the app.
+      --forward-user-access-token   Forward the user's access token to the app.
+      --git-provider string         Git provider. Case insensitive. Supported values: gitHub, gitHubEnterprise, bitbucketCloud, bitbucketServer, azureDevOpsServices, gitLab, gitLabEnterpriseEdition, awsCodeCommit.
+      --git-url string              URL of the Git repository the app deploys from.
   -h, --help                        help for update
       --json JSON                   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --source-code-path string     
       --space string                Name of the space this app belongs to.
       --usage-policy-id string
 

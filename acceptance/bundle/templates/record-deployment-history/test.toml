@@ -1,0 +1,4 @@
+Env.DATABRICKS_BUNDLE_INIT_RECORD_DEPLOYMENT_HISTORY = "true"
+
+# What is under test is what `bundle init` writes, so one engine is enough.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

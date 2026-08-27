@@ -188,12 +188,18 @@
                         "description": "The description of the app.",
                         "$ref": "#/$defs/string"
                       },
+                      "forward_user_access_token": {
+                        "description": "[Private Preview] Forward the user's access token to the app. Requires stopping and starting app compute to take effect.",
+                        "$ref": "#/$defs/bool",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
+                      },
                       "git_repository": {
                         "description": "Git repository configuration for app deployments. When specified, deployments can\nreference code from this repository by providing only the git reference (branch, tag, or commit).",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitRepository"
                       },
                       "git_source": {
-                        "description": "Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)\nto use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.\nThe source_code_path within git_source specifies the relative path to the app code within the repository.",
+                        "description": "[Beta] Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)\nto use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.\nThe source_code_path within git_source specifies the relative path to the app code within the repository.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitSource"
                       },
                       "lifecycle": {
@@ -214,6 +220,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.AppResource"
                       },
                       "source_code_path": {
+                        "description": "[Beta]",
                         "$ref": "#/$defs/string"
                       },
                       "space": {
@@ -568,6 +575,89 @@
                       "level": {
                         "description": "The permission level to apply. The allowed levels depend on the resource type.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterPermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "description": "The name of the service principal granted the permission level.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "description": "The name of the user granted the permission level.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.ClusterPolicy": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "definition": {
+                        "description": "Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).",
+                        "$ref": "#/$defs/interface"
+                      },
+                      "description": {
+                        "description": "Additional human-readable description of the cluster policy.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "libraries": {
+                        "description": "A list of libraries to be installed on the next cluster restart that uses this policy. The maximum number of libraries is 500.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/compute.Library"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "max_clusters_per_user": {
+                        "description": "Max number of clusters per user that can be active using this policy. If not present, there is no max limit.",
+                        "$ref": "#/$defs/int64"
+                      },
+                      "name": {
+                        "description": "Cluster Policy name requested by the user. This has to be unique. Length must be between 1 and 100\ncharacters.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ClusterPolicyPermission",
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                      },
+                      "policy_family_definition_overrides": {
+                        "description": "Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).\nThe JSON document must be passed as a string and cannot be embedded in the requests.\n\nYou can use this to customize the policy definition inherited from the policy family.\nPolicy rules specified here are merged into the inherited policy definition.",
+                        "$ref": "#/$defs/interface"
+                      },
+                      "policy_family_id": {
+                        "description": "ID of the policy family. The cluster policy's policy definition inherits the policy\nfamily's policy definition.\n\nCannot be used with `definition`. Use `policy_family_definition_overrides` instead to\ncustomize the policy definition.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.ClusterPolicyPermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "description": "The name of the group granted the permission level.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "description": "The permission level to apply. Cluster policies only support `CAN_USE`.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterPolicyPermissionLevel"
                       },
                       "service_principal_name": {
                         "description": "The name of the service principal granted the permission level.",
@@ -1116,6 +1206,10 @@
                         "description": "A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings"
                       },
+                      "triggers": {
+                        "description": "[Beta] List of triggers attached to this job. A run starts when any active trigger evaluates to true. Cannot be set in\nthe same request as the legacy `schedule`, `trigger`, or `continuous` fields. Gated behind the \"Multiple Triggers\" feature preview.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.TriggerConfiguration"
+                      },
                       "usage_policy_id": {
                         "description": "[Private Preview] The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_usage_policy_id` for the usage policy used by this workload.",
                         "$ref": "#/$defs/string",
@@ -1199,8 +1293,8 @@
                         "$ref": "#/$defs/map/string"
                       },
                       "lifecycle": {
-                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
-                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed and when the run re-fires.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.JobRunLifecycle"
                       },
                       "notebook_params": {
                         "description": "[Private Preview] A map from keys to values for jobs with notebook task, for example `\"notebook_params\": {\"name\": \"john doe\", \"age\": \"35\"}`.\nThe map is passed to the notebook and is accessible through the [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html) function.\n\nIf not specified upon `run-now`, the triggered run uses the job’s base parameters.\n\nnotebook_params cannot be specified in conjunction with jar_params.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nThe JSON representation of this field (for example `{\"notebook_params\":{\"name\":\"john doe\",\"age\":\"35\"}}`) cannot exceed 10,000 bytes.",
@@ -1263,6 +1357,46 @@
                     "required": [
                       "job_id"
                     ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.JobRunLifecycle": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "prevent_destroy": {
+                        "description": "Lifecycle setting to prevent the resource from being destroyed.",
+                        "$ref": "#/$defs/bool"
+                      },
+                      "triggers": {
+                        "description": "Conditions that re-fire this job run (in addition to configuration changes).",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.JobRunTrigger"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.JobRunTrigger": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "on_bundle_deploy": {
+                        "description": "If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.",
+                        "$ref": "#/$defs/bool"
+                      }
+                    },
+                    "additionalProperties": false
                   },
                   {
                     "type": "string",
@@ -2422,15 +2556,15 @@
                     "description": "A secret stored in Unity Catalog. Secrets are three-level namespace objects\n(catalog.schema.secret) that securely store sensitive credential data such as\npasswords, tokens, and keys.",
                     "properties": {
                       "catalog_name": {
-                        "description": "[Public Preview] The name of the catalog where the schema and the secret reside.",
+                        "description": "The name of the catalog where the schema and the secret reside.",
                         "$ref": "#/$defs/string"
                       },
                       "comment": {
-                        "description": "[Public Preview] User-provided free-form text description of the secret.",
+                        "description": "User-provided free-form text description of the secret.",
                         "$ref": "#/$defs/string"
                       },
                       "expire_time": {
-                        "description": "[Public Preview] User-provided expiration time of the secret. Purely informational; does not trigger automatic actions.",
+                        "description": "User-provided expiration time of the secret. Purely informational; does not trigger automatic actions.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
                       },
                       "grants": {
@@ -2442,19 +2576,19 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "[Public Preview] The name of the secret, relative to its parent schema.",
+                        "description": "The name of the secret, relative to its parent schema.",
                         "$ref": "#/$defs/string"
                       },
                       "owner": {
-                        "description": "[Public Preview] The owner of the secret. Defaults to the creating principal on creation. Can be updated to\ntransfer ownership of the secret to another principal.",
+                        "description": "The owner of the secret. Defaults to the creating principal on creation. Can be updated to\ntransfer ownership of the secret to another principal.",
                         "$ref": "#/$defs/string"
                       },
                       "schema_name": {
-                        "description": "[Public Preview] The name of the schema where the secret resides.",
+                        "description": "The name of the schema where the secret resides.",
                         "$ref": "#/$defs/string"
                       },
                       "value": {
-                        "description": "[Public Preview] The secret value to store. Must be a variable reference (e.g. ${var.my_secret}) to prevent plain-text secrets in configuration files.",
+                        "description": "The secret value to store. Must be a variable reference (e.g. ${var.my_secret}) to prevent plain-text secrets in configuration files.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -3355,6 +3489,9 @@
                     },
                     "catalogs": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Catalog"
+                    },
+                    "cluster_policies": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ClusterPolicy"
                     },
                     "clusters": {
                       "description": "The cluster definitions for the bundle, where each key is the name of a cluster.",
@@ -4452,6 +4589,14 @@
                   "type": "object",
                   "description": "Git repository configuration specifying the location of the repository.",
                   "properties": {
+                    "auto_deploy": {
+                      "description": "[Beta] When true, automatically deploys the app on push events to the branch configured in\nthe app's deployment_source.git_source.",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "caller_credential_id": {
+                      "description": "[Beta] ID of a personal access token Git credential owned by the caller, used to\ngrant the app's service principal access to this repository.",
+                      "$ref": "#/$defs/int64"
+                    },
                     "provider": {
                       "description": "Git provider. Case insensitive. Supported values: gitHub, gitHubEnterprise, bitbucketCloud,\nbitbucketServer, azureDevOpsServices, gitLab, gitLabEnterpriseEdition, awsCodeCommit.",
                       "$ref": "#/$defs/string"
@@ -5406,6 +5551,21 @@
                 }
               ]
             },
+            "compute.ClusterPolicyPermissionLevel": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Permission level",
+                  "enum": [
+                    "CAN_USE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "compute.ClusterSpec": {
               "oneOf": [
                 {
@@ -5836,7 +5996,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "java_dependencies": {
-                      "description": "[Public Preview] List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.",
+                      "description": "List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.",
                       "$ref": "#/$defs/slice/string"
                     }
                   },
@@ -6788,9 +6948,13 @@
                   "type": "string",
                   "description": "PostgreSQL-specific target types that can override the default Delta-to-PG mapping.",
                   "enum": [
-                    "PG_SPECIFIC_TYPE_VECTOR"
+                    "PG_SPECIFIC_TYPE_VECTOR",
+                    "PG_SPECIFIC_TYPE_HALFVEC",
+                    "PG_SPECIFIC_TYPE_VARCHAR"
                   ],
                   "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]",
                     "[Private Preview]"
                   ]
                 },
@@ -6991,9 +7155,19 @@
                       "description": "[Public Preview] Deployment specs for this task. Exactly one deployment is currently\nsupported (a single entry where every node runs the same command); this\nis a current-Preview constraint. Role-split workloads (driver + worker,\nparameter server, separate eval node, etc.) with multiple entries are the\neventual intent but not yet supported.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.DeploymentSpec"
                     },
+                    "docker_image_url": {
+                      "description": "[Beta] Optional Docker image URL for a custom container image. When set,\nthe task runs on the specified container image instead of the default\nDatabricks client image. Format:\n`{organization}/{repository}:{tag}`",
+                      "$ref": "#/$defs/string"
+                    },
                     "experiment": {
                       "description": "[Public Preview] MLflow experiment name for this run. If an experiment with this name\nalready exists under the calling user, the run is appended to it;\notherwise a new experiment is created. To target a specific MLflow\nstorage location (for example, when running as a service principal), set\n`mlflow_experiment_directory`.",
                       "$ref": "#/$defs/string"
+                    },
+                    "mlflow_artifact_location": {
+                      "description": "[Private Preview] Optional root location for MLflow artifacts logged by the run.\nIf this field isn't specified the default artifact location will be in dbfs\ni.e. `dbfs:/databricks/mlflow-tracking/\u003cexperiment_id\u003e/...`\nIf dbfs access is restricted or UC is preferred this can be a custom location in UC:\n`dbfs:/Volumes/\u003ccatalog\u003e/\u003cschema\u003e/\u003cvolume\u003e/...`\nThe location should be unique for each experiment.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     },
                     "mlflow_experiment_directory": {
                       "description": "[Public Preview] Optional workspace directory under which the MLflow experiment named in\n`experiment` is created. Must start with `/Workspace`. Set this when\nrunning as a service principal that has no default user directory; for\nregular users the experiment defaults to the user's home directory.",
@@ -7313,6 +7487,25 @@
                 }
               ]
             },
+            "jobs.ContinuousTriggerConfiguration": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Continuous trigger. Stripped-down counterpart to `ContinuousSettings`: `pause_status` is owned by the enclosing\n`TriggerConfiguration` and intentionally omitted here.",
+                  "properties": {
+                    "task_retry_mode": {
+                      "description": "[Beta] Whether the continuous job applies task-level retries. Defaults to NEVER.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TaskRetryMode"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "jobs.CronSchedule": {
               "oneOf": [
                 {
@@ -7334,6 +7527,33 @@
                     },
                     "timezone_id": {
                       "description": "A Java timezone ID. The schedule for a job is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "quartz_cron_expression",
+                    "timezone_id"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.CronTriggerConfiguration": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Cron schedule trigger. Stripped-down counterpart to `CronSchedule`: `pause_status` and `sql_condition` are owned\nby the enclosing `TriggerConfiguration` and intentionally omitted here.",
+                  "properties": {
+                    "quartz_cron_expression": {
+                      "description": "[Beta] A Cron expression using Quartz syntax that describes the schedule for this trigger. See\n[Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "timezone_id": {
+                      "description": "[Beta] A Java timezone ID. The schedule is resolved with respect to this timezone. See\n[Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -7755,8 +7975,7 @@
                   },
                   "additionalProperties": false,
                   "required": [
-                    "job_cluster_key",
-                    "new_cluster"
+                    "job_cluster_key"
                   ]
                 },
                 {
@@ -9453,6 +9672,57 @@
                 }
               ]
             },
+            "jobs.TriggerConfiguration": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A single trigger attached to a job via `JobSettings.triggers`. Exactly one of the trigger-type fields\n(`periodic`, `schedule`, `continuous`, `file_arrival`, `table_update`, `model`) must be set; mutual exclusivity\nis enforced in the API handler rather than via `oneof` so that codegen, validation, and JSON serialization\nacross SDKs and Terraform behave consistently.",
+                  "properties": {
+                    "continuous": {
+                      "description": "[Beta] Continuous trigger configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ContinuousTriggerConfiguration"
+                    },
+                    "file_arrival": {
+                      "description": "[Beta] File arrival trigger configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.FileArrivalTriggerConfiguration"
+                    },
+                    "model": {
+                      "description": "[Private Preview] Model trigger configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfiguration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "pause_status": {
+                      "description": "[Beta] Whether this trigger is paused. Defaults to UNPAUSED when unset; the server always returns an explicit value on read.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PauseStatus"
+                    },
+                    "periodic": {
+                      "description": "[Beta] Trigger type: exactly one must be set; mutual exclusivity is enforced in the API handler\nPeriodic trigger configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PeriodicTriggerConfiguration"
+                    },
+                    "schedule": {
+                      "description": "[Beta] Cron schedule trigger configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.CronTriggerConfiguration"
+                    },
+                    "sql_condition": {
+                      "description": "[Private Preview] Optional SQL condition that gates whether this trigger fires.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SqlConditionConfiguration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "table_update": {
+                      "description": "[Beta] Table update trigger configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "jobs.TriggerSettings": {
               "oneOf": [
                 {
@@ -9688,6 +9958,48 @@
                 }
               ]
             },
+            "pipelines.ApiSourceConnectorConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Top-level configuration for API Source connectors with arbitrary configuration.",
+                  "properties": {
+                    "configs": {
+                      "description": "[Private Preview] Arbitrary key-value configuration values for the API Source connector.",
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.ApiSourceConnectorOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Options for API Source connectors with arbitrary configuration.",
+                  "properties": {
+                    "options": {
+                      "description": "[Private Preview] Arbitrary key-value configuration options for the API Source connector.",
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.AutoFullRefreshPolicy": {
               "oneOf": [
                 {
@@ -9759,6 +10071,12 @@
                   "type": "object",
                   "description": "Wrapper message for source-specific options to support multiple connector types",
                   "properties": {
+                    "api_source_connector_options": {
+                      "description": "[Private Preview] Connector-specific options for API Source connectors.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ApiSourceConnectorOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "confluence_options": {
                       "description": "[Public Preview] Confluence specific options for ingestion",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConfluenceConnectorOptions"
@@ -9782,6 +10100,18 @@
                     "kafka_options": {
                       "description": "[Beta]",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.KafkaOptions"
+                    },
+                    "linkedin_ads_options": {
+                      "description": "[Private Preview] LinkedIn Ads specific options for ingestion.\nsync_start_date and lookback_window_days apply to both the prebuilt analytics\ntables and custom reports. custom_report_options defines a custom (user-defined)\nadAnalytics report and is only valid on a table object.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.LinkedInAdsOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "marketo_options": {
+                      "description": "[Private Preview] Marketo specific options for ingestion",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.MarketoOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     },
                     "meta_ads_options": {
                       "description": "[Beta] Meta Marketing (Meta Ads) specific options for ingestion",
@@ -9818,10 +10148,8 @@
                       "doNotSuggest": true
                     },
                     "zendesk_support_options": {
-                      "description": "[Private Preview] Zendesk Support specific options for ingestion",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ZendeskSupportOptions",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] Zendesk Support specific options for ingestion",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ZendeskSupportOptions"
                     }
                   },
                   "additionalProperties": false
@@ -9842,8 +10170,8 @@
                     "QUERY_BASED"
                   ],
                   "enumDescriptions": [
-                    "[Beta]",
-                    "[Beta]"
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -9879,15 +10207,15 @@
                   "description": "Location of staged data storage",
                   "properties": {
                     "catalog_name": {
-                      "description": "[Beta] (Required, Immutable) The name of the catalog for the connector's staging storage location.",
+                      "description": "[Public Preview] (Required, Immutable) The name of the catalog for the connector's staging storage location.",
                       "$ref": "#/$defs/string"
                     },
                     "schema_name": {
-                      "description": "[Beta] (Required, Immutable) The name of the schema for the connector's staging storage location.",
+                      "description": "[Public Preview] (Required, Immutable) The name of the schema for the connector's staging storage location.",
                       "$ref": "#/$defs/string"
                     },
                     "volume_name": {
-                      "description": "[Beta] (Optional) The Unity Catalog-compatible name for the storage location.\nThis is the volume to use for the data that is extracted by the connector.\nSpark Declarative Pipelines system will automatically create the volume under the catalog and schema.\nFor Combined Cdc Managed Ingestion pipelines default name for the volume would be :\n__databricks_ingestion_gateway_staging_data-$pipelineId",
+                      "description": "[Public Preview] (Optional) The Unity Catalog-compatible name for the storage location.\nThis is the volume to use for the data that is extracted by the connector.\nSpark Declarative Pipelines system will automatically create the volume under the catalog and schema.\nFor Combined Cdc Managed Ingestion pipelines default name for the volume would be :\n__databricks_ingestion_gateway_staging_data-$pipelineId",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -10434,11 +10762,11 @@
                       "$ref": "#/$defs/string"
                     },
                     "connector_type": {
-                      "description": "[Beta] (Optional) Connector Type for sources. Ex: CDC, Query Based.",
+                      "description": "[Public Preview] (Optional) Connector Type for sources. Ex: CDC, Query Based.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorType"
                     },
                     "data_staging_options": {
-                      "description": "[Beta] (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline\nwith Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.\nIf not specified, the volume for staged data will be created in catalog and schema/target specified in the\ntop level pipeline definition.",
+                      "description": "[Public Preview] (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline\nwith Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.\nIf not specified, the volume for staged data will be created in catalog and schema/target specified in the\ntop level pipeline definition.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.DataStagingOptions"
                     },
                     "full_refresh_window": {
@@ -10487,16 +10815,12 @@
                   "description": "Fanout configuration for multi-table routing from streaming sources.\nRoutes each input record to a destination table based on a routing\nkey derived from the record. The key value becomes the table name\nsuffix: {destination_catalog}.{destination_schema}.{key_value}.",
                   "properties": {
                     "fanout_by": {
-                      "description": "[Private Preview] Column path or SQL expression whose value determines the destination table.\nSupports dotted paths (e.g. \"value.event_name\") and expressions\n(e.g. \"value:event_name::string\").",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Column path or SQL expression whose value determines the destination table.\nSupports dotted paths (e.g. \"value.event_name\") and expressions\n(e.g. \"value:event_name::string\").",
+                      "$ref": "#/$defs/string"
                     },
                     "transforms": {
-                      "description": "[Private Preview] Optional transforms applied to each route's DataFrame before writing\nto the destination table.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Optional transforms applied to each route's DataFrame before writing\nto the destination table.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer"
                     }
                   },
                   "additionalProperties": false
@@ -10641,7 +10965,7 @@
                     "[Beta]",
                     "[Public Preview]",
                     "[Beta]",
-                    "[Private Preview]",
+                    "[Public Preview]",
                     "[Private Preview]"
                   ]
                 },
@@ -10750,10 +11074,174 @@
                 }
               ]
             },
+            "pipelines.LinkedInAdsOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "LinkedIn Ads specific options for ingestion.\nsync_start_date and lookback_window_days apply to both the prebuilt analytics\ntables and custom reports. custom_report_options defines a custom (user-defined)\nadAnalytics report and is only valid on a table object.",
+                  "properties": {
+                    "custom_report_options": {
+                      "description": "[Private Preview] (Optional) Custom report definition. Only valid on a table object. When set,\nthe table is synthesized from /rest/adAnalytics using the finder, pivots,\ntime granularity and metrics here. When unset, the table must match one of\nthe connector's prebuilt sources.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "lookback_window_days": {
+                      "description": "[Private Preview] (Optional) Days to look back during incremental sync for late-arriving data.\nIf not specified, defaults to 30 days.",
+                      "$ref": "#/$defs/int",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sync_start_date": {
+                      "description": "[Private Preview] (Optional) Start date for the initial sync of report tables, YYYY-MM-DD.\nEarliest date from which to sync historical data; overrides the default\nwhen set. For finder attributedRevenueMetrics, this must be between 30 and\n366 days before today.\nIf not specified, defaults to 1 year of history.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "User-defined custom report for the LinkedIn Ads connector. The destination\ntable name comes from the enclosing TableSpec.destination_table, the start\ndate from the enclosing LinkedInAdsOptions.sync_start_date, and the account\nit runs against from the source schema (namespace) -- none are repeated here.",
+                  "properties": {
+                    "entity_granularity": {
+                      "description": "[Private Preview] (Required) Entity pivots to group by; count/constraints depend on finder.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "finder": {
+                      "description": "[Private Preview] (Required) adAnalytics finder. See LinkedInAdsFinder.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinder",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "metrics": {
+                      "description": "[Private Preview] (Optional) LinkedIn metric names for the report. Open vocabulary (not an\nenum): the valid set is large (~100) and evolves with the LinkedIn\nadAnalytics API, so values are passed through verbatim. If empty, a\npivot-safe default core set is ingested: impressions, clicks,\ncostInLocalCurrency, externalWebsiteConversions (valid for every pivot).\nIgnored for attributedRevenueMetrics (always returns the full\nRevenueAttributionMetrics struct).",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "time_granularity": {
+                      "description": "[Private Preview] (Optional) Time aggregation. Defaults to DAILY when unspecified. Used by\nanalytics/statistics; ignored for attributedRevenueMetrics.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularity",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "finder"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Entity pivot to group by.",
+                  "enum": [
+                    "CAMPAIGN",
+                    "CREATIVE",
+                    "CAMPAIGN_GROUP"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsFinder": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "adAnalytics finder. Determines call shape, valid pivots, and metric\nrequirements.",
+                  "enum": [
+                    "ANALYTICS",
+                    "STATISTICS",
+                    "ATTRIBUTED_REVENUE_METRICS"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsTimeGranularity": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Time aggregation. Used by analytics/statistics; ignored for\nattributedRevenueMetrics. Defaults to DAILY when unspecified.",
+                  "enum": [
+                    "ALL",
+                    "DAILY",
+                    "MONTHLY",
+                    "YEARLY"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.ManualTrigger": {
               "oneOf": [
                 {
                   "type": "object",
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.MarketoOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Marketo specific options for ingestion",
+                  "properties": {
+                    "sync_start_date": {
+                      "description": "[Private Preview] (Optional) Start date for the initial sync in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.\nIf not specified, complete history is ingested.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
                   "additionalProperties": false
                 },
                 {
@@ -11574,17 +12062,15 @@
                       "$ref": "#/$defs/string"
                     },
                     "fanout_options": {
-                      "description": "[Private Preview] Fanout options for multi-table routing from streaming sources.\nWhen set, records are routed to destination tables based on a\nper-record routing key. The key value becomes the table name:\n{destination_catalog}.{destination_schema}.{key_value}.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionFanoutOptions",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] Fanout options for multi-table routing from streaming sources.\nWhen set, records are routed to destination tables based on a\nper-record routing key. The key value becomes the table name:\n{destination_catalog}.{destination_schema}.{key_value}.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionFanoutOptions"
                     },
                     "source_catalog": {
                       "description": "[Public Preview] The source catalog name. Might be optional depending on the type of source.",
                       "$ref": "#/$defs/string"
                     },
                     "source_schema": {
-                      "description": "[Public Preview] Required. Schema name in the source database.",
+                      "description": "[Public Preview] Schema name in the source database. Currently required; this field will become optional in\nan upcoming release, since some source types (for example streaming / message-bus connectors)\ndo not use it. When that change ships, this field's type in the generated SDKs and CLI will\nchange from required to optional (nullable); clients that assume it is always present should\nhandle its absence.",
                       "$ref": "#/$defs/string"
                     },
                     "table_configuration": {
@@ -11709,6 +12195,12 @@
                 {
                   "type": "object",
                   "properties": {
+                    "api_source_connector_config": {
+                      "description": "[Private Preview] Connector-specific top-level configuration for API Source connectors.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ApiSourceConnectorConfig",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "catalog": {
                       "description": "[Public Preview] Catalog-level source configuration parameters",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SourceCatalogConfig"
@@ -11758,7 +12250,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "source_table": {
-                      "description": "[Public Preview] Required. Table name in the source database.",
+                      "description": "[Public Preview] Table name in the source database. Currently required; this field will become optional in\nan upcoming release, since some source types (for example streaming / message-bus connectors)\ndo not use it. When that change ships, this field's type in the generated SDKs and CLI will\nchange from required to optional (nullable); clients that assume it is always present should\nhandle its absence.",
                       "$ref": "#/$defs/string"
                     },
                     "table_configuration": {
@@ -11831,10 +12323,8 @@
                       "$ref": "#/$defs/slice/string"
                     },
                     "source_metadata_column": {
-                      "description": "[Private Preview] (Optional) Name of the struct column added to each ingested record to hold per row source\nmetadata.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Beta] (Optional) Name of the struct column added to each ingested record to hold per row source\nmetadata.",
+                      "$ref": "#/$defs/string"
                     },
                     "table_properties": {
                       "description": "[Beta] Table properties to set on the destination table.\nThese are key-value pairs that configure various Delta table behaviors or any user defined properties.\nExample: {\"delta.feature.variantType\": \"supported\", \"delta.enableTypeWidening\": \"true\"}\nNote: table_properties in table specific configuration will override the table_properties of the pipeline definition.",
@@ -12057,9 +12547,21 @@
                       "description": "[Beta] Required: the wire format of the data.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TransformerFormat"
                     },
+                    "input_column": {
+                      "description": "[Private Preview] Optional input column to transform. When set, the transformer reads\nfrom this column instead of the default source column.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "json_options": {
                       "description": "[Beta]",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.JsonTransformerOptions"
+                    },
+                    "output_column": {
+                      "description": "[Private Preview] Optional output column name. When set, the transformed result is\nwritten to this column instead of replacing the input column.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
@@ -12096,10 +12598,8 @@
                   "description": "Zendesk Support specific options for ingestion",
                   "properties": {
                     "start_date": {
-                      "description": "[Private Preview] (Optional) Start date in YYYY-MM-DD format for the initial sync.\nThis determines the earliest date from which to sync historical data.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
+                      "description": "[Public Preview] (Optional) Start date in YYYY-MM-DD format for the initial sync.\nThis determines the earliest date from which to sync historical data.",
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
@@ -12116,15 +12616,15 @@
                   "type": "object",
                   "properties": {
                     "enable_readable_secondaries": {
-                      "description": "[Beta] Whether to allow read-only connections to read-write endpoints. Only relevant for read-write endpoints where\nsize.max \u003e 1.",
+                      "description": "Whether to allow read-only connections to read-write endpoints. Only relevant for read-write endpoints where\nsize.max \u003e 1.",
                       "$ref": "#/$defs/bool"
                     },
                     "max": {
-                      "description": "[Beta] The maximum number of computes in the endpoint group. Currently, this must be equal to min. Set to 1 for single\ncompute endpoints, to disable HA. To manually suspend all computes in an endpoint group, set disabled to\ntrue on the EndpointSpec.",
+                      "description": "The maximum number of computes in the endpoint group. Currently, this must be equal to min. Set to 1 for single\ncompute endpoints, to disable HA. To manually suspend all computes in an endpoint group, set disabled to\ntrue on the EndpointSpec.",
                       "$ref": "#/$defs/int"
                     },
                     "min": {
-                      "description": "[Beta] The minimum number of computes in the endpoint group. Currently, this must be equal to max. This must be greater\nthan or equal to 1.",
+                      "description": "The minimum number of computes in the endpoint group. Currently, this must be equal to max. This must be greater\nthan or equal to 1.",
                       "$ref": "#/$defs/int"
                     }
                   },
@@ -12147,7 +12647,7 @@
                   "description": "A collection of settings for a compute endpoint.",
                   "properties": {
                     "pg_settings": {
-                      "description": "[Beta] A raw representation of Postgres settings.",
+                      "description": "A raw representation of Postgres settings.",
                       "$ref": "#/$defs/map/string"
                     }
                   },
@@ -12167,10 +12667,6 @@
                   "enum": [
                     "ENDPOINT_TYPE_READ_WRITE",
                     "ENDPOINT_TYPE_READ_ONLY"
-                  ],
-                  "enumDescriptions": [
-                    "[Beta]",
-                    "[Beta]"
                   ]
                 },
                 {
@@ -12185,19 +12681,45 @@
                   "type": "object",
                   "properties": {
                     "budget_policy_id": {
-                      "description": "[Beta] Budget policy to set on the newly created pipeline.",
+                      "description": "Budget policy to set on the newly created pipeline.",
                       "$ref": "#/$defs/string"
                     },
+                    "pipeline_channel": {
+                      "description": "[Private Preview] Release channel of the underlying pipeline's runtime.\nSome source table configurations (e.g., read-time CDF) require PREVIEW.\nDefaults to CURRENT if not specified.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.NewPipelineSpecPipelineChannel",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "storage_catalog": {
-                      "description": "[Beta] UC catalog for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be a standard catalog where the user has permissions to create Delta tables.",
+                      "description": "UC catalog for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be a standard catalog where the user has permissions to create Delta tables.",
                       "$ref": "#/$defs/string"
                     },
                     "storage_schema": {
-                      "description": "[Beta] UC schema for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be in the standard catalog where the user has permissions to create Delta tables.",
+                      "description": "UC schema for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be in the standard catalog where the user has permissions to create Delta tables.",
                       "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.NewPipelineSpecPipelineChannel": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Release channel of the underlying pipeline's runtime.\nPREVIEW provides early access to the latest features but may be less stable.\nSome source table configurations (e.g., read-time CDF) require PREVIEW.\nDefaults to CURRENT if not specified.",
+                  "enum": [
+                    "CURRENT",
+                    "PREVIEW"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
                 },
                 {
                   "type": "string",
@@ -12211,11 +12733,11 @@
                   "type": "object",
                   "properties": {
                     "key": {
-                      "description": "[Beta] The key of the custom tag.",
+                      "description": "The key of the custom tag.",
                       "$ref": "#/$defs/string"
                     },
                     "value": {
-                      "description": "[Beta] The value of the custom tag.",
+                      "description": "The value of the custom tag.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -12234,23 +12756,23 @@
                   "description": "A collection of settings for a compute endpoint.",
                   "properties": {
                     "autoscaling_limit_max_cu": {
-                      "description": "[Beta] The maximum number of Compute Units. Minimum value is 0.5.",
+                      "description": "The maximum number of Compute Units. Minimum value is 0.5.",
                       "$ref": "#/$defs/float64"
                     },
                     "autoscaling_limit_min_cu": {
-                      "description": "[Beta] The minimum number of Compute Units. Minimum value is 0.5.",
+                      "description": "The minimum number of Compute Units. Minimum value is 0.5.",
                       "$ref": "#/$defs/float64"
                     },
                     "no_suspension": {
-                      "description": "[Beta] When set to true, explicitly disables automatic suspension (never suspend).\nShould be set to true when provided.\nMutually exclusive with `suspend_timeout_duration`. When updating, use `spec.project_default_settings.suspension` in the update_mask.",
+                      "description": "When set to true, explicitly disables automatic suspension (never suspend).\nShould be set to true when provided.\nMutually exclusive with `suspend_timeout_duration`. When updating, use `spec.project_default_settings.suspension` in the update_mask.",
                       "$ref": "#/$defs/bool"
                     },
                     "pg_settings": {
-                      "description": "[Beta] A raw representation of Postgres settings.",
+                      "description": "A raw representation of Postgres settings.",
                       "$ref": "#/$defs/map/string"
                     },
                     "suspend_timeout_duration": {
-                      "description": "[Beta] Duration of inactivity after which the compute endpoint is automatically suspended.\nIf specified should be between 60s and 604800s (1 minute to 1 week).\nMutually exclusive with `no_suspension`. When updating, use `spec.project_default_settings.suspension` in the update_mask.",
+                      "description": "Duration of inactivity after which the compute endpoint is automatically suspended.\nIf specified should be between 60s and 604800s (1 minute to 1 week).\nMutually exclusive with `no_suspension`. When updating, use `spec.project_default_settings.suspension` in the update_mask.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                     }
                   },
@@ -12269,15 +12791,15 @@
                   "description": "Attributes that can be granted to a Postgres role. We are only implementing a subset for now, see xref:\nhttps://www.postgresql.org/docs/16/sql-createrole.html\nThe values follow Postgres keyword naming e.g. CREATEDB, BYPASSRLS, etc. which is why they don't include typical\nunderscores between words.",
                   "properties": {
                     "bypassrls": {
-                      "description": "[Beta] Grants the Postgres `BYPASSRLS` attribute, which lets the role bypass every row-level security policy.",
+                      "description": "Grants the Postgres `BYPASSRLS` attribute, which lets the role bypass every row-level security policy.",
                       "$ref": "#/$defs/bool"
                     },
                     "createdb": {
-                      "description": "[Beta] Grants the Postgres `CREATEDB` attribute, which lets the role create databases.",
+                      "description": "Grants the Postgres `CREATEDB` attribute, which lets the role create databases.",
                       "$ref": "#/$defs/bool"
                     },
                     "createrole": {
-                      "description": "[Beta] Grants the Postgres `CREATEROLE` attribute, which lets the role create, alter, and drop other roles.",
+                      "description": "Grants the Postgres `CREATEROLE` attribute, which lets the role create, alter, and drop other roles.",
                       "$ref": "#/$defs/bool"
                     }
                   },
@@ -12298,11 +12820,6 @@
                     "NO_LOGIN",
                     "PG_PASSWORD_SCRAM_SHA_256",
                     "LAKEBASE_OAUTH_V1"
-                  ],
-                  "enumDescriptions": [
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]"
                   ]
                 },
                 {
@@ -12320,11 +12837,6 @@
                     "USER",
                     "SERVICE_PRINCIPAL",
                     "GROUP"
-                  ],
-                  "enumDescriptions": [
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]"
                   ]
                 },
                 {
@@ -12340,9 +12852,6 @@
                   "description": "Roles that the DatabaseInstanceRole can be a member of.",
                   "enum": [
                     "DATABRICKS_SUPERUSER"
-                  ],
-                  "enumDescriptions": [
-                    "[Beta]"
                   ]
                 },
                 {
@@ -12418,10 +12927,9 @@
                   "type": "string",
                   "description": "PostgreSQL-specific target types that can override the default Delta-to-PG mapping.",
                   "enum": [
-                    "PG_SPECIFIC_TYPE_VECTOR"
-                  ],
-                  "enumDescriptions": [
-                    "[Beta]"
+                    "PG_SPECIFIC_TYPE_VECTOR",
+                    "PG_SPECIFIC_TYPE_HALFVEC",
+                    "PG_SPECIFIC_TYPE_VARCHAR"
                   ]
                 },
                 {
@@ -12439,11 +12947,6 @@
                     "CONTINUOUS",
                     "TRIGGERED",
                     "SNAPSHOT"
-                  ],
-                  "enumDescriptions": [
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]"
                   ]
                 },
                 {
@@ -12459,15 +12962,15 @@
                   "description": "Overrides the default Delta-to-PostgreSQL type mapping for a single column.",
                   "properties": {
                     "column_name": {
-                      "description": "[Beta] Name of the source column whose target PostgreSQL type should be overridden.",
+                      "description": "Name of the source column whose target PostgreSQL type should be overridden.",
                       "$ref": "#/$defs/string"
                     },
                     "pg_type": {
-                      "description": "[Beta] PostgreSQL-specific target type to use for the column.",
+                      "description": "PostgreSQL-specific target type to use for the column.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecPgSpecificType"
                     },
                     "size": {
-                      "description": "[Beta] Size parameter for the target type, for types that take one (e.g. vector\ndimension, varchar length). Required when the chosen pg_type needs a size.",
+                      "description": "Size parameter for the target type, for types that take one (e.g. vector\ndimension, varchar length). Required when the chosen pg_type needs a size.",
                       "$ref": "#/$defs/int"
                     }
                   },
@@ -13584,6 +14087,7 @@
                     "GPU_LARGE",
                     "MULTIGPU_MEDIUM",
                     "CPU_LARGE",
+                    "GPU_XLARGE_8",
                     "GPU_XLARGE",
                     "CPU_MEDIUM"
                   ],
@@ -13593,6 +14097,7 @@
                     "",
                     "",
                     "",
+                    "[Beta]",
                     "[Beta]",
                     "[Beta]",
                     "[Beta]"
@@ -13633,6 +14138,7 @@
                     "GPU_LARGE",
                     "MULTIGPU_MEDIUM",
                     "CPU_LARGE",
+                    "GPU_XLARGE_8",
                     "GPU_XLARGE",
                     "CPU_MEDIUM"
                   ],
@@ -13642,6 +14148,7 @@
                     "",
                     "",
                     "",
+                    "[Beta]",
                     "[Beta]",
                     "[Beta]",
                     "[Beta]"
@@ -13658,6 +14165,10 @@
                 {
                   "type": "object",
                   "properties": {
+                    "enabled_telemetry_features": {
+                      "description": "[Public Preview] The telemetry signals to enable for this endpoint. If empty or omitted, all signals are\nenabled; otherwise only the listed signals are enabled.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.TelemetryFeature"
+                    },
                     "inference_table_config": {
                       "description": "[Public Preview] Configuration for inference table payload logging, including sampling.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.TelemetryInferenceTableConfig"
@@ -13672,6 +14183,30 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.TelemetryFeature": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "A telemetry signal that a serving endpoint can export to Unity Catalog. Use these values to\nselect which signals the endpoint exports.",
+                  "enum": [
+                    "TELEMETRY_FEATURE_LOGS",
+                    "TELEMETRY_FEATURE_TRACES",
+                    "TELEMETRY_FEATURE_METRICS",
+                    "TELEMETRY_FEATURE_INFERENCE_TABLE"
+                  ],
+                  "enumDescriptions": [
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
+                  ]
                 },
                 {
                   "type": "string",
@@ -14579,6 +15114,20 @@
                     }
                   ]
                 },
+                "resources.ClusterPolicy": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ClusterPolicy"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.Dashboard": {
                   "oneOf": [
                     {
@@ -15137,6 +15686,20 @@
                     }
                   ]
                 },
+                "resources.ClusterPolicyPermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ClusterPolicyPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.InstancePoolPermission": {
                   "oneOf": [
                     {
@@ -15157,6 +15720,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.JobPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.JobRunTrigger": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.JobRunTrigger"
                       }
                     },
                     {
@@ -15646,6 +16223,20 @@
                   }
                 ]
               },
+              "jobs.TriggerConfiguration": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TriggerConfiguration"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "jobs.Webhook": {
                 "oneOf": [
                   {
@@ -15736,6 +16327,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.LinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity"
                     }
                   },
                   {
@@ -15946,6 +16551,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "serving.TelemetryFeature": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.TelemetryFeature"
                     }
                   },
                   {

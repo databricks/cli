@@ -178,7 +178,7 @@ func (c *ComputeInfo) Label() string {
 	switch {
 	case c.ServerlessVersion != "":
 		// ServerlessVersion is normalized to "v4"; drop the "v" for display.
-		return "serverless " + strings.TrimPrefix(c.ServerlessVersion, "v")
+		return "serverless " + c.ServerlessEnvironmentVersion()
 	case c.ClusterID != "":
 		return "cluster " + c.ClusterID
 	case c.SparkVersion != "":
@@ -190,6 +190,15 @@ func (c *ComputeInfo) Label() string {
 	default:
 		return c.EnvKey
 	}
+}
+
+// ServerlessEnvironmentVersion returns the bare serverless environment version
+// (e.g. "5") to write into [tool.databricks.environment].environment_version.
+// ServerlessVersion is normalized to "vN", so the leading "v" is dropped to
+// match the documented bare-number form. It is empty for a cluster target
+// (which leaves ServerlessVersion unset), where the section is not managed.
+func (c *ComputeInfo) ServerlessEnvironmentVersion() string {
+	return strings.TrimPrefix(c.ServerlessVersion, "v")
 }
 
 // ResolvedInfo is the resolved environment definition (spec §6 "resolved").
@@ -242,14 +251,21 @@ const (
 	// WarnDBConnectPinOverridden: the user's databricks-connect pin sits directly in
 	// the dev group and is replaced by the managed value.
 	WarnDBConnectPinOverridden = "W_DBCONNECT_PIN_OVERRIDDEN"
+	// WarnDBConnectConsolidated: a databricks-connect pin the user had outside the
+	// managed dev entry — in [project].dependencies, an optional-dependency extra, or
+	// another dependency group — was disjoint from the environment's version and is
+	// removed, so what remains resolves. Only conflicting pins are removed; a pin that
+	// co-resolves, carries no version, or is marker-gated is left in place. Emitted once
+	// per removed pin. Informational: the merge makes the project resolvable.
+	WarnDBConnectConsolidated = "W_DBCONNECT_CONSOLIDATED"
 	// WarnDBConnectPinDuplicated: a databricks-connect pin of the user's is one the
-	// merge does not rewrite — reached through a PEP 735 include-group, a second pin
-	// in the dev array, or a group key that normalizes to "dev" without matching the
-	// literal key the merge edits — so the managed pin lands in the dev group
-	// alongside it. Unlike an override this leaves two pins for one package and uv
-	// cannot resolve it, a distinct and worse outcome that needs a manual fix, so it
-	// carries its own code. It can accompany an override and persists across re-runs
-	// for as long as the retained pin does.
+	// merge can neither rewrite nor remove — a spelling the line-based passes do not
+	// reach (a single-quoted element, a pin under a quoted TOML key, or an inline-table
+	// or dotted sub-table form) — so the managed pin lands in the dev group alongside
+	// it. Unlike an override this leaves two pins for one package and, where their
+	// ranges are disjoint, uv cannot resolve it — a distinct and worse outcome that
+	// needs a manual fix, so it carries its own code. It can accompany an override or a
+	// consolidation and persists across re-runs for as long as the survivor does.
 	WarnDBConnectPinDuplicated = "W_DBCONNECT_PIN_DUPLICATED"
 	// WarnUserConstraintConflict: a user dependency pins a package that the env's
 	// constraint-dependencies also constrains, to a provably non-overlapping version
@@ -258,6 +274,24 @@ const (
 	// groups — since constraint-dependencies applies to the whole resolution. Emitted
 	// only when the ranges are provably disjoint; ambiguous cases are not flagged.
 	WarnUserConstraintConflict = "W_USER_CONSTRAINT_CONFLICT"
+	// WarnStaleEnvironmentVersion: the target is a cluster, which does not manage the
+	// serverless environment section, but the file carries a [tool.databricks.environment]
+	// environment_version left over from an earlier serverless run. The value is not
+	// updated (cluster targets are a no-op there), so it now describes a target the
+	// project is no longer set up for — worth surfacing because VS Code and serverless
+	// Jobs read that section as a source of truth.
+	WarnStaleEnvironmentVersion = "W_STALE_ENVIRONMENT_VERSION"
+	// WarnStandalonePysparkConflict: the user declares a standalone pyspark dependency
+	// while the environment installs databricks-connect. databricks-connect vendors its
+	// own pyspark (it ships the pyspark/ package tree rather than depending on the
+	// standalone distribution), so a separately declared pyspark resolves into the same
+	// namespace and the two overwrite each other — the environment then fails to start a
+	// session. This is a coexistence conflict, not a version one, so it is reported
+	// independent of the pyspark version pinned. Emitted whenever databricks-connect
+	// ends up in the resolved environment — whether the env manages it (default mode) or
+	// the user's own pyproject pins it (constraints-only mode) — so it agrees with the
+	// validate hard-fail, which keys on the installed venv rather than the mode.
+	WarnStandalonePysparkConflict = "W_STANDALONE_PYSPARK_CONFLICT"
 )
 
 // Result is the full outcome of a sync run and the root of the --json object

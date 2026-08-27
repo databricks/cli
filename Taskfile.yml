@@ -20,6 +20,9 @@ vars:
   EMBED_SOURCES:
     sh: 'uv run -p ">=3.11" --no-project python tools/list_embeds.py'
 
+env:
+  GOFIPS140: v1.0.0
+
 # pydabs-* tasks live in python/Taskfile.yml so `task pydabs-foo` works when
 # run from python/. Flattened so they keep their `pydabs-` names at the root.
 includes:
@@ -294,6 +297,8 @@ tasks:
 
   changelog-preview:
     desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
+    env:
+      NEXTCHANGES_DIR: .nextchanges/
     cmds:
       # Validate placement first so a misplaced fragment fails loudly instead of
       # being silently skipped by the renderer (see validate_nextchanges.py).

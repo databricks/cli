@@ -34,8 +34,15 @@ func isDirectOnly(pluralName string) bool {
 	return hasDirect && !hasTerraform
 }
 
-func (m *validateDirectOnlyResources) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *validateDirectOnlyResources) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if m.engine.IsDirect() {
+		return nil
+	}
+
+	// The state is migrated to the direct engine right after this deploy, so
+	// direct-only resources are skipped by this run instead of rejected.
+	// BundleToTerraformWithDynValue logs each resource it skips.
+	if b.MigratingToDirect {
 		return nil
 	}
 

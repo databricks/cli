@@ -84,6 +84,13 @@ var gpuDisplayNames = map[string]string{
 	"GPU_1xH100": "H100",
 }
 
+// isRunning reports whether a run is currently executing (lifecycle RUNNING), as
+// opposed to pending, terminal, or state-unknown. Only a running run has a
+// meaningful remaining-time estimate.
+func isRunning(run *jobs.Run) bool {
+	return run.State != nil && run.State.LifeCycleState == jobs.RunLifeCycleStateRunning
+}
+
 // runStatus returns the single status word to show for a run. The backend
 // reports two values: a lifecycle state (e.g. PENDING, RUNNING) and, once the
 // run has finished, a result state (e.g. SUCCESS, FAILED). The result state is
@@ -283,19 +290,6 @@ func gpuDisplayName(gpuType string) string {
 		return name
 	}
 	return gpuType
-}
-
-// environment returns the run's runtime image (the training environment), or an
-// empty string if the run has no GenAI-compute task.
-func environment(run *jobs.Run) string {
-	if len(run.Tasks) == 0 {
-		return ""
-	}
-	task := run.Tasks[0].GenAiComputeTask
-	if task == nil {
-		return ""
-	}
-	return task.DlRuntimeImage
 }
 
 // maxRetries returns the configured retry limit for the run's latest task as a

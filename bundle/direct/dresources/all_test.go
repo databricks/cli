@@ -63,6 +63,7 @@ var testConfig map[string]any = map[string]any{
 		CreateSchema: catalog.CreateSchema{
 			CatalogName: "main",
 			Name:        "myschema",
+			Comment:     "Test schema",
 		},
 	},
 
@@ -71,6 +72,7 @@ var testConfig map[string]any = map[string]any{
 			CatalogName: "main",
 			SchemaName:  "myschema",
 			Name:        "myvolume",
+			Comment:     "Test volume",
 		},
 	},
 
@@ -447,6 +449,16 @@ var testDeps = map[string]prepareWorkspace{
 			ObjectID: "/clusters/cluster-permissions",
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"cluster_policies.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &PermissionsState{
+			ObjectID: "/cluster-policies/cluster-policy-permissions",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_USE",
 				UserName: "user@example.com",
 			}},
 		}, nil

@@ -37,7 +37,11 @@ class SchemaSpec:
 
     source_schema: VariableOr[str]
     """
-    [Public Preview] Required. Schema name in the source database.
+    [Public Preview] Schema name in the source database. Currently required; this field will become optional in
+    an upcoming release, since some source types (for example streaming / message-bus connectors)
+    do not use it. When that change ships, this field's type in the generated SDKs and CLI will
+    change from required to optional (nullable); clients that assume it is always present should
+    handle its absence.
     """
 
     connector_options: VariableOrOptional[ConnectorOptions] = None
@@ -47,9 +51,7 @@ class SchemaSpec:
 
     fanout_options: VariableOrOptional[IngestionPipelineDefinitionFanoutOptions] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Fanout options for multi-table routing from streaming sources.
+    [Beta] Fanout options for multi-table routing from streaming sources.
     When set, records are routed to destination tables based on a
     per-record routing key. The key value becomes the table name:
     {destination_catalog}.{destination_schema}.{key_value}.
@@ -88,7 +90,11 @@ class SchemaSpecDict(TypedDict, total=False):
 
     source_schema: VariableOr[str]
     """
-    [Public Preview] Required. Schema name in the source database.
+    [Public Preview] Schema name in the source database. Currently required; this field will become optional in
+    an upcoming release, since some source types (for example streaming / message-bus connectors)
+    do not use it. When that change ships, this field's type in the generated SDKs and CLI will
+    change from required to optional (nullable); clients that assume it is always present should
+    handle its absence.
     """
 
     connector_options: VariableOrOptional[ConnectorOptionsParam]
@@ -98,9 +104,7 @@ class SchemaSpecDict(TypedDict, total=False):
 
     fanout_options: VariableOrOptional[IngestionPipelineDefinitionFanoutOptionsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Fanout options for multi-table routing from streaming sources.
+    [Beta] Fanout options for multi-table routing from streaming sources.
     When set, records are routed to destination tables based on a
     per-record routing key. The key value becomes the table name:
     {destination_catalog}.{destination_schema}.{key_value}.

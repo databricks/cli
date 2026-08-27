@@ -318,32 +318,6 @@ func TestConvertToDabsRejectsGitPin(t *testing.T) {
 // A requirements-FILE dependency set (environment.dependencies is a path) is folded
 // into the environments[] spec so the deploy-time aicode mutator can regenerate
 // requirements.yaml from it. Convert emits no requirements.yaml artifact of its own.
-func TestConvertToDabsFoldsRequirementsFileIntoEnvSpec(t *testing.T) {
-	dir := t.TempDir()
-	reqPath := filepath.Join(dir, "requirements.yaml")
-	require.NoError(t, os.WriteFile(reqPath, []byte("version: \"6\"\ndependencies:\n  - numpy\n  - pandas\n"), 0o600))
-
-	cfg := "experiment_name: reqfile\ncommand: python train.py\n" +
-		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
-		"environment:\n  dependencies: " + reqPath + "\n"
-	path := writeConfigFile(t, "run.yaml", cfg)
-	loaded, err := loadRunConfig(path)
-	require.NoError(t, err)
-
-	root, artifacts, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
-	require.NoError(t, err)
-
-	env := "resources.jobs." + loaded.ExperimentName + ".environments[0]"
-	assert.Equal(t, "6", get(t, root, env+".spec.environment_version").MustString())
-	deps := get(t, root, env+".spec.dependencies").MustSequence()
-	require.Len(t, deps, 2)
-	assert.Equal(t, "numpy", deps[0].MustString())
-	assert.Equal(t, "pandas", deps[1].MustString())
-
-	// No requirements.yaml artifact: the mutator regenerates it from the spec.
-	assert.NotContains(t, itemNames(artifacts), "requirements.yaml")
-}
-
 // usage_policy_id is a resolved budget policy id and maps to the job's
 // budget_policy_id (usage_policy_name, which needs resolution, is rejected).
 func TestConvertToDabsMapsUsagePolicyID(t *testing.T) {

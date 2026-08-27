@@ -1,0 +1,82 @@
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, TypedDict
+
+from databricks.bundles.core._transform import _transform
+from databricks.bundles.core._transform_to_json import _transform_to_json_value
+from databricks.bundles.core._variable import VariableOr, VariableOrOptional
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
+
+@dataclass(kw_only=True)
+class AlertStatementParameter:
+    """
+    :meta private: [EXPERIMENTAL]
+
+    Redash-owned copy of the internal StatementParameter for the external AlertV2 API.
+    The internal `ordinal` and `args` fields are intentionally omitted: the public API
+    supports only flat, named scalar parameters; complex types (ARRAY, MAP, STRUCT) are
+    not supported. This mirrors SEA's public StatementParameter schema, see:
+    cmdexec/sql-exec-api/proto/sql_exec_api_service.proto:763-779
+    """
+
+    name: VariableOr[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The name of the parameter, referenced in the query as `:name`.
+    """
+
+    type: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The SQL data type of the parameter, e.g. STRING, INT, or DATE. Defaults to STRING. This is a
+    string rather than an enum because scalar subtypes such as DECIMAL(10, 4) cannot be enumerated.
+    Complex types such as ARRAY, MAP, and STRUCT are not supported.
+    """
+
+    value: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The bound value for the parameter, given as a string. If omitted, the value is interpreted as NULL.
+    """
+
+    @classmethod
+    def from_dict(cls, value: "AlertStatementParameterDict") -> "Self":
+        return _transform(cls, value)
+
+    def as_dict(self) -> "AlertStatementParameterDict":
+        return _transform_to_json_value(self)  # type:ignore
+
+
+class AlertStatementParameterDict(TypedDict, total=False):
+    """"""
+
+    name: VariableOr[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The name of the parameter, referenced in the query as `:name`.
+    """
+
+    type: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The SQL data type of the parameter, e.g. STRING, INT, or DATE. Defaults to STRING. This is a
+    string rather than an enum because scalar subtypes such as DECIMAL(10, 4) cannot be enumerated.
+    Complex types such as ARRAY, MAP, and STRUCT are not supported.
+    """
+
+    value: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The bound value for the parameter, given as a string. If omitted, the value is interpreted as NULL.
+    """
+
+
+AlertStatementParameterParam = AlertStatementParameterDict | AlertStatementParameter

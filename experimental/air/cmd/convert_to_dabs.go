@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/spf13/cobra"
-	"go.yaml.in/yaml/v3"
 )
 
 // convert_to_dabs turns an AIR CLI run YAML into a Databricks Asset Bundle so a
@@ -271,7 +270,7 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	// through the same path `air run` uses (config, else env override, else the
 	// default channel) so a config without an explicit version still pins the version
 	// the workload would have run with — not an empty spec.
-	envVersion, deps := bundleEnvironmentDeps(ctx, cfg, configPath)
+	envVersion, deps := bundleEnvironmentDeps(ctx, cfg)
 	envSpec := map[string]dyn.Value{
 		"environment_version": nv(envVersion, 1),
 	}
@@ -340,43 +339,19 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	return rootValue
 }
 
-// bundleEnvironmentDeps resolves the runtime version and the flattened dependency
+// bundleEnvironmentDeps resolves the runtime version and the inline dependency
 // list to emit in the bundle's environments[] spec. The aicode mutator synthesizes
-// requirements.yaml from that spec at deploy, so the whole set must be here —
-// whether the user authored dependencies inline or pointed at a requirements file.
-// A requirements file is read and its non-comment, non-blank lines are inlined; the
-// version, when the file carries one, wins over the config/default version. Any read
-// error is best-effort ignored (writeBundle/buildArtifacts surface real problems);
-// convert falls back to inline deps so the spec is never silently wrong.
-func bundleEnvironmentDeps(ctx context.Context, cfg *runConfig, configPath string) (version string, deps []string) {
+// requirements.yaml from that spec at deploy, so the whole set must be here.
+// Dependencies are inline-only (a requirements-file path is rejected at config
+// load), so an unset list yields no dependencies.
+func bundleEnvironmentDeps(ctx context.Context, cfg *runConfig) (version string, deps []string) {
 	cfgVersion, _ := cfg.runtimeVersion()
 	version = dlRuntimeImage(ctx, cfgVersion)
 
 	if inline, ok := cfg.inlineDependencies(); ok {
 		return version, inline
 	}
-
-	reqPath, ok := cfg.requirementsFile()
-	if !ok {
-		return version, nil
-	}
-	if !filepath.IsAbs(reqPath) {
-		reqPath = filepath.Join(filepath.Dir(configPath), reqPath)
-	}
-	data, err := os.ReadFile(reqPath)
-	if err != nil {
-		return version, nil
-	}
-	// The requirements file is the same requirements.yaml shape the run path reads
-	// (version + dependencies), so parse it as such and inline the dependency lines.
-	var doc requirementsDoc
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return version, nil
-	}
-	if doc.Version != "" {
-		version = dlRuntimeImage(ctx, doc.Version)
-	}
-	return version, doc.Dependencies
+	return version, nil
 }
 
 // bundleResourceKey is the job resource key for an experiment name: the name

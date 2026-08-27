@@ -1,0 +1,6 @@
+# Deploy both by re-planning and from a plan saved on disk, so the fingerprint
+# minted during planning is exercised across plan serialization.
+EnvMatrix.READPLAN = ["", "1"]
+
+# The saved plan embeds a fresh fingerprint on every run.
+Ignore = ["tmp.plan.json"]

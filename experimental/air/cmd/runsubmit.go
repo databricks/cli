@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
@@ -38,37 +38,6 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 	return strings.TrimPrefix(img, "CLIENT-GPU-")
 }
 
-// environmentDependencies resolves the user's declared dependencies as a flat
-// list to carry inline on the serverless environment's spec.dependencies: the
-// inline list directly, or the dependencies read from a requirements file
-// (resolved against the config's directory). For file-form deps it also returns
-// the version declared inside that file, which selects the runtime image since
-// top-level environment.version is not allowed there. Returns nil when none are
-// declared.
-func environmentDependencies(cfg *runConfig, configPath string) (deps []string, fileVersion string, err error) {
-	if deps, ok := cfg.inlineDependencies(); ok {
-		return deps, "", nil
-	}
-	if reqPath, ok := cfg.requirementsFile(); ok {
-		if !filepath.IsAbs(reqPath) {
-			reqPath = filepath.Join(filepath.Dir(configPath), reqPath)
-		}
-		return readRequirementsDependencies(reqPath)
-	}
-	return nil, "", nil
-}
-
-// buildSubmitPayload assembles the runs/submit payload. commandPath is the
-// workspace path of the uploaded command.sh; dlImage is the runtime channel;
-// usagePolicyID is the already-resolved policy id ("" when the run has none);
-// deps is the user's declared dependencies (nil when none are declared).
-//
-// max_retries is always sent (including 0) so the user's YAML value is honored:
-// setting it to 0 explicitly disables retries rather than falling back to the
-// server default. retry_on_timeout is sent only when retries are allowed, and is
-// omitempty so the wire form matches the Python CLI (which never emits a bare
-// "false"). Jobs performs the retries — each attempt is a fresh AI Runtime
-// workload.
 // buildAiRuntimeTask assembles the ai_runtime_task shared by the ephemeral
 // (SubmitTask) and persistent (Task) payloads.
 func buildAiRuntimeTask(cfg *runConfig, commandPath string, snap snapshotResult) jobs.AiRuntimeTask {
@@ -82,11 +51,6 @@ func buildAiRuntimeTask(cfg *runConfig, commandPath string, snap snapshotResult)
 			},
 		}},
 		CodeSourcePath: snap.CodeSourcePath,
-		// NOTE: docker_image_url is intentionally not set here yet. The field was
-		// added to jobs.AiRuntimeTask in databricks-sdk-go after v0.170.0, which the
-		// CLI has not bumped to. prepareDockerImage already verifies the image is
-		// registered; passing it on the task lands in the follow-up PR once the SDK
-		// bump + codegen is in.
 	}
 	if cfg.MLflowRunName != nil {
 		task.MlflowRun = *cfg.MLflowRunName
@@ -111,6 +75,15 @@ func buildAiRuntimeEnvironments(dlImage string, deps []string) []jobs.JobEnviron
 	}}
 }
 
+// buildSubmitPayload assembles the runs/submit payload from the shared task and
+// environment builders.
+//
+// max_retries is always sent (including 0) so the user's YAML value is honored:
+// setting it to 0 explicitly disables retries rather than falling back to the
+// server default. retry_on_timeout is sent only when retries are allowed, and is
+// omitempty so the wire form matches the Python CLI (which never emits a bare
+// "false"). Jobs performs the retries — each attempt is a fresh AI Runtime
+// workload.
 func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID string, snap snapshotResult, deps []string) jobs.SubmitRun {
 	task := buildAiRuntimeTask(cfg, commandPath, snap)
 
@@ -156,6 +129,19 @@ func submitToken(flag string, cfg *runConfig) (string, error) {
 	return token, nil
 }
 
+// withSpinner runs fn, showing an stderr spinner labeled msg when show is true.
+// The spinner auto-degrades to nothing on a non-interactive terminal; show is
+// false in JSON mode so the stdout envelope stream stays clean.
+func withSpinner(ctx context.Context, show bool, msg string, fn func() error) error {
+	if !show {
+		return fn()
+	}
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update(msg)
+	defer sp.Close()
+	return fn()
+}
+
 // preparedWorkload holds everything resolved and uploaded for a workload, ready
 // to become either an ephemeral SubmitRun (submitWorkload) or a persistent,
 // scheduled CreateJob (createScheduledJob).
@@ -167,13 +153,35 @@ type preparedWorkload struct {
 	deps          []string
 }
 
-// prepareWorkload runs the shared pre-submit work: resolve the usage policy and
-// dependencies, ensure the experiment directory, prepare any docker image, and
-// upload the launch artifacts + code snapshot. Ordering fails cheap checks before
-// any upload so a bad config leaves no orphaned artifacts in the workspace.
-func prepareWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath string) (preparedWorkload, error) {
-	// Resolve the usage policy to its id first, so a bad name fails fast with a
-	// clear (caller-fixable) message before we upload any artifacts. Validation
+// prepareWorkload runs the shared pre-submit work: compute the launch dir,
+// pre-flight the config server-side, resolve the usage policy and dependencies,
+// ensure the experiment directory, prepare any docker image, and upload the
+// launch artifacts + code snapshot. Ordering fails cheap checks before any upload
+// so a bad config leaves no orphaned artifacts. showProgress enables the stderr
+// upload/packaging spinners (text mode only).
+func prepareWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath string, showProgress bool) (preparedWorkload, error) {
+	// Compute the launch dir and command_path up front — a read-only workspace
+	// lookup plus a local path build, no writes yet — so the pre-flight validates
+	// the real command_path. The same path is reused for the upload below.
+	base, err := userWorkspaceDir(ctx, w)
+	if err != nil {
+		return preparedWorkload{}, err
+	}
+	runName := ""
+	if cfg.MLflowRunName != nil {
+		runName = *cfg.MLflowRunName
+	}
+	funcDir := cliLaunchDir(base, cfg.ExperimentName, runName)
+	commandPath := path.Join(funcDir, commandScriptName)
+
+	// Pre-flight the config server-side before any upload, so a bad config fails
+	// with the backend's field-level errors and no orphaned artifacts.
+	if err := preflightValidate(ctx, w, cfg, commandPath); err != nil {
+		return preparedWorkload{}, err
+	}
+
+	// Resolve the usage policy to its id, so a bad name fails fast with a clear
+	// (caller-fixable) message before we upload any artifacts. Validation
 	// guarantees name and id are mutually exclusive: a literal id is used as-is, a
 	// name is resolved against the workspace.
 	usagePolicyID := ""
@@ -181,19 +189,13 @@ func prepareWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *ru
 		usagePolicyID = strings.TrimSpace(*cfg.UsagePolicyID)
 	}
 	if cfg.UsagePolicyName != nil {
-		var err error
 		usagePolicyID, err = resolveUsagePolicyIDByName(ctx, w, *cfg.UsagePolicyName)
 		if err != nil {
 			return preparedWorkload{}, err
 		}
 	}
 
-	// Resolve dependencies before any upload too, so a bad requirements file fails
-	// fast without leaving orphaned artifacts in the workspace.
-	deps, fileVersion, err := environmentDependencies(cfg, configPath)
-	if err != nil {
-		return preparedWorkload{}, err
-	}
+	deps, _ := cfg.inlineDependencies()
 
 	experimentDir := ""
 	if cfg.MLflowExperimentDirectory != nil {
@@ -203,24 +205,14 @@ func prepareWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *ru
 		return preparedWorkload{}, err
 	}
 
-	base, err := userWorkspaceDir(ctx, w)
-	if err != nil {
-		return preparedWorkload{}, err
-	}
-
-	// After the cheap workspace checks (a tag_policy=latest refresh can block for
-	// minutes) but before any upload, so a bad image wastes no artifact work.
+	// After the cheap validations but before any upload: verify the custom image is
+	// registered (and, under tag_policy=latest, re-resolve it — a refresh can block
+	// for minutes), so a bad or unregistered image wastes no artifact work.
 	if img := cfg.dockerImage(); img != nil {
 		if err := prepareDockerImage(ctx, w, img); err != nil {
 			return preparedWorkload{}, err
 		}
 	}
-
-	runName := ""
-	if cfg.MLflowRunName != nil {
-		runName = *cfg.MLflowRunName
-	}
-	funcDir := cliLaunchDir(base, cfg.ExperimentName, runName)
 
 	fc, err := filer.NewWorkspaceFilesClient(w, funcDir)
 	if err != nil {
@@ -230,7 +222,9 @@ func prepareWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *ru
 	if err != nil {
 		return preparedWorkload{}, err
 	}
-	if err := uploadArtifacts(ctx, fc, items); err != nil {
+	if err := withSpinner(ctx, showProgress, "Uploading yaml configuration files…", func() error {
+		return uploadArtifacts(ctx, fc, items)
+	}); err != nil {
 		return preparedWorkload{}, err
 	}
 
@@ -240,21 +234,20 @@ func prepareWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *ru
 	var snap snapshotResult
 	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
 		// Sidecars land in the run's launch dir (funcDir) via fc, next to command.sh.
-		snap, err = snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, fc, funcDir)
+		err = withSpinner(ctx, showProgress, "Packaging code snapshot…", func() error {
+			var e error
+			snap, e = snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, fc, funcDir)
+			return e
+		})
 		if err != nil {
 			return preparedWorkload{}, err
 		}
 	}
 
-	// Top-level environment.version wins; for file-form deps it is disallowed, so
-	// fall back to the version declared inside the requirements file.
-	runtimeVersion, ok := cfg.runtimeVersion()
-	if !ok {
-		runtimeVersion = fileVersion
-	}
+	runtimeVersion, _ := cfg.runtimeVersion()
 
 	return preparedWorkload{
-		commandPath:   path.Join(funcDir, commandScriptName),
+		commandPath:   commandPath,
 		dlImage:       dlRuntimeImage(ctx, runtimeVersion),
 		usagePolicyID: usagePolicyID,
 		snap:          snap,
@@ -264,15 +257,16 @@ func prepareWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *ru
 
 // submitWorkload runs the submit happy path: prepare the workload, assemble the
 // ephemeral Jobs payload, and submit it. It returns the new run_id and its
-// dashboard URL.
-func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string) (int64, string, error) {
+// dashboard URL. showProgress enables the stderr upload/packaging spinners (text
+// mode only).
+func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (int64, string, error) {
 	// Resolve the idempotency token first so a bad key fails before any upload.
 	token, err := submitToken(idempotencyKey, cfg)
 	if err != nil {
 		return 0, "", err
 	}
 
-	prep, err := prepareWorkload(ctx, w, cfg, configPath)
+	prep, err := prepareWorkload(ctx, w, cfg, configPath, showProgress)
 	if err != nil {
 		return 0, "", err
 	}

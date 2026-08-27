@@ -134,22 +134,36 @@ func (m *uvManager) PostProvision(ctx context.Context, projectDir string) error 
 	return nil
 }
 
-// Validate reads the Python minor version and databricks-connect package
-// version from the project's virtual environment. When databricks-connect is not
-// installed (constraints-only mode), the second line is empty rather than an
-// error: PackageNotFoundError is caught so the probe never fails just because the
-// package is absent. The caller decides whether an empty version is acceptable.
-func (m *uvManager) Validate(ctx context.Context, projectDir string) (string, string, error) {
-	// Each value is printed with a unique prefix so parsing greps for the prefix
-	// rather than relying on line position: any stray line uv or the interpreter
-	// writes to stdout (e.g. a warning) would otherwise shift a positional parse.
-	// A missing databricks-connect prints an empty DBC: value, not an error.
-	pyCode := `import sys, importlib.metadata
+// Validate inspects the project's virtual environment: the Python minor version, the
+// databricks-connect and standalone-pyspark distribution versions, and whether
+// databricks-connect actually imports. A missing databricks-connect or pyspark yields
+// an empty version rather than an error (PackageNotFoundError is caught), so the probe
+// never fails just because a package is absent; the caller decides what is acceptable.
+//
+// The version probes read distribution metadata, not the importable module:
+// databricks-connect vendors the pyspark package tree without registering a pyspark
+// distribution, so a resolvable pyspark version means a standalone pyspark is installed
+// on top of it. Metadata alone cannot tell a live collision from a stale dist-info that
+// no longer describes the importable module, so the probe also attempts `import
+// databricks.connect`: a live collision raises there, a harmless leftover does not.
+func (m *uvManager) Validate(ctx context.Context, projectDir string) (VenvInfo, error) {
+	// Each value is printed with a unique prefix so parsing greps for the prefix rather
+	// than relying on line position: any stray line uv or the interpreter writes to
+	// stdout (e.g. a warning) would otherwise shift a positional parse.
+	pyCode := `import sys, importlib, importlib.metadata
+def _ver(name):
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return ""
 print(f"` + validatePyPrefix + `{sys.version_info.major}.{sys.version_info.minor}")
+print("` + validateDBCPrefix + `" + _ver("databricks-connect"))
+print("` + validatePysparkPrefix + `" + _ver("pyspark"))
 try:
-    print("` + validateDBCPrefix + `" + importlib.metadata.version("databricks-connect"))
-except importlib.metadata.PackageNotFoundError:
-    print("` + validateDBCPrefix + `")`
+    importlib.import_module("databricks.connect")
+    print("` + validateDBCImportPrefix + `")
+except BaseException as e:
+    print("` + validateDBCImportPrefix + `" + type(e).__name__)`
 	// Invoke the venv interpreter directly rather than `uv run`: `uv run` resolves
 	// the interpreter from an active VIRTUAL_ENV / CONDA_PREFIX when one is set
 	// (even with --no-project), which would validate whatever env the caller has
@@ -161,22 +175,32 @@ except importlib.metadata.PackageNotFoundError:
 		process.WithProcessGroup(),
 	)
 	if err != nil {
-		return "", "", uvFailure(ErrValidate, err, "venv python validation")
+		return VenvInfo{}, uvFailure(ErrValidate, err, "venv python validation")
 	}
 	pyVer, ok := lineWithPrefix(out, validatePyPrefix)
 	if !ok || pyVer == "" {
-		return "", "", NewError(ErrValidate, nil, "unexpected output from uv run: %q", out)
+		return VenvInfo{}, NewError(ErrValidate, nil, "unexpected output from uv run: %q", out)
 	}
-	// The databricks-connect value is empty when the package is not installed.
+	// databricks-connect / pyspark versions are empty when the package is not installed
+	// as a distribution of its own; the import-error line is empty when the import worked.
 	dbcVer, _ := lineWithPrefix(out, validateDBCPrefix)
-	return pyVer, dbcVer, nil
+	pysparkVer, _ := lineWithPrefix(out, validatePysparkPrefix)
+	dbcImportErr, _ := lineWithPrefix(out, validateDBCImportPrefix)
+	return VenvInfo{
+		PythonMinor:        pyVer,
+		DBConnect:          dbcVer,
+		Pyspark:            pysparkVer,
+		DBConnectImportErr: dbcImportErr,
+	}, nil
 }
 
 // Validation output prefixes: uv run's stdout is grepped for these rather than
 // parsed positionally, so extra lines from uv or the interpreter don't break it.
 const (
-	validatePyPrefix  = "PYVER:"
-	validateDBCPrefix = "DBCVER:"
+	validatePyPrefix        = "PYVER:"
+	validateDBCPrefix       = "DBCVER:"
+	validatePysparkPrefix   = "PYSPARKVER:"
+	validateDBCImportPrefix = "DBCIMPORT:"
 )
 
 // lineWithPrefix returns the trimmed remainder of the first line in out that

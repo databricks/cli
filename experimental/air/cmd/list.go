@@ -44,12 +44,18 @@ type listRow struct {
 	StartedAt *string `json:"started_at"`
 	IsSweep   bool    `json:"is_sweep"`
 
-	// Experiment, Duration, MLflowURL and Accelerators are table-only columns,
-	// omitted from JSON to match `air list --json`.
-	Experiment   string `json:"-"`
-	Duration     string `json:"-"`
-	MLflowURL    string `json:"-"`
-	Accelerators string `json:"-"`
+	// Experiment, Duration, Progress, MLflowURL and Accelerators are table-only
+	// columns, omitted from JSON to match `air list --json`.
+	Experiment string `json:"-"`
+	Duration   string `json:"-"`
+	// Progress is a best-effort estimate ("45% · ~2h 15m"), set only for a running
+	// run we could estimate; empty renders as "-".
+	Progress      string `json:"-"`
+	MLflowURL     string `json:"-"`
+	MLflowLabel   string `json:"-"`
+	RunURL        string `json:"-"`
+	ExperimentURL string `json:"-"`
+	Accelerators  string `json:"-"`
 }
 
 // listedRun pairs a row with its task run id, so the MLflow link can be fetched
@@ -68,6 +74,7 @@ type listQuery struct {
 	filters     listFilters
 	fetchMLflow bool
 	limit       int
+	workspaceID int64
 }
 
 func newListCommand() *cobra.Command {
@@ -118,6 +125,15 @@ func newListCommand() *cobra.Command {
 			userFilter = currentUser
 		}
 
+		// Fetch workspace ID once for dashboard links; proceed with 0 on error.
+		var workspaceID int64
+		wsID, err := w.CurrentWorkspaceID(ctx)
+		if err != nil {
+			log.Debugf(ctx, "air list: could not fetch workspace ID for dashboard links: %v", err)
+		} else {
+			workspaceID = wsID
+		}
+
 		fetcher := newRunFetcher(ctx, w, listQuery{
 			activeOnly:  !allStatus,
 			allUsers:    allUsers,
@@ -126,6 +142,7 @@ func newListCommand() *cobra.Command {
 			filters:     f,
 			fetchMLflow: root.OutputType(cmd) == flags.OutputText,
 			limit:       limit,
+			workspaceID: workspaceID,
 		})
 
 		// JSON prints the newest `limit` runs once. Text renders the table:
@@ -165,6 +182,7 @@ type runFetcher struct {
 	w           *databricks.WorkspaceClient
 	fetchMLflow bool
 	strategy    listStrategy
+	workspaceID int64
 
 	exhausted bool
 }
@@ -175,6 +193,7 @@ func newRunFetcher(ctx context.Context, w *databricks.WorkspaceClient, q listQue
 		w:           w,
 		fetchMLflow: q.fetchMLflow,
 		strategy:    newListStrategy(ctx, w, q),
+		workspaceID: q.workspaceID,
 	}
 }
 
@@ -209,7 +228,7 @@ func (f *runFetcher) next(want int) ([]listRow, error) {
 	// MLflow links appear only in the text table, so the per-run get-output
 	// lookups are skipped for JSON output (which omits the column anyway).
 	if f.fetchMLflow {
-		setMLflowLinks(f.ctx, f.w, entries)
+		setMLflowLinks(f.ctx, f.w, f.w.Config.Host, entries)
 	}
 
 	rows := make([]listRow, len(entries))
@@ -223,11 +242,13 @@ func (f *runFetcher) next(want int) ([]listRow, error) {
 // and filters. It buffers a page's leftover runs so successive next() calls
 // resume where the last stopped.
 type jobsScanStrategy struct {
-	ctx        context.Context
-	w          *databricks.WorkspaceClient
-	iter       listing.Iterator[jobs.BaseRun]
-	userFilter string
-	filters    listFilters
+	ctx         context.Context
+	w           *databricks.WorkspaceClient
+	iter        listing.Iterator[jobs.BaseRun]
+	userFilter  string
+	filters     listFilters
+	host        string
+	workspaceID int64
 
 	scanned int
 }
@@ -240,11 +261,13 @@ func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q l
 		ActiveOnly:  q.activeOnly,
 	}
 	return &jobsScanStrategy{
-		ctx:        ctx,
-		w:          w,
-		iter:       w.Jobs.ListRuns(ctx, req),
-		userFilter: q.userFilter,
-		filters:    q.filters,
+		ctx:         ctx,
+		w:           w,
+		iter:        w.Jobs.ListRuns(ctx, req),
+		userFilter:  q.userFilter,
+		filters:     q.filters,
+		host:        w.Config.Host,
+		workspaceID: q.workspaceID,
 	}
 }
 
@@ -267,7 +290,7 @@ func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 		if !s.filters.matches(run) {
 			continue
 		}
-		entries = append(entries, listedRun{row: buildListRow(run), taskRunID: taskRunID(run)})
+		entries = append(entries, listedRun{row: buildListRow(run, s.host, s.workspaceID), taskRunID: taskRunID(run)})
 	}
 	return entries, nil
 }
@@ -288,15 +311,29 @@ func warnIfTruncated(ctx context.Context, f *runFetcher) {
 	}
 }
 
-// setMLflowLinks fills in each row's MLflow link in parallel, best-effort: a row
-// whose IDs can't be resolved keeps its "-" placeholder.
-func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, entries []listedRun) {
+// setMLflowLinks fills in each row's MLflow link, label, and experiment URL -
+// and, for a running run, its ETA - in parallel, best-effort: a row whose IDs
+// can't be resolved keeps its "-" placeholder, and a run we can't estimate has
+// no ETA.
+func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, host string, entries []listedRun) {
 	var g errgroup.Group
 	g.SetLimit(enrichConcurrency)
 	for i := range entries {
 		g.Go(func() error {
-			if ids := mlflowIDsForTask(ctx, w, entries[i].taskRunID); ids != nil {
-				entries[i].row.MLflowURL = mlflowLogsURL(w.Config.Host, ids)
+			ids := mlflowIDsForTask(ctx, w, entries[i].taskRunID)
+			if ids == nil {
+				return nil
+			}
+			entries[i].row.MLflowURL = mlflowLogsURL(host, ids)
+			name := fetchMLflowRunName(ctx, w, ids.RunID)
+			entries[i].row.MLflowLabel = mlflowRunLabel(name, ids.RunID)
+			entries[i].row.ExperimentURL = mlflowExperimentURL(host, ids)
+			// The ETA needs a progress-metric history fetch, so it's computed only
+			// for running rows (the only ones that can have one).
+			if entries[i].row.Status == string(jobs.RunLifeCycleStateRunning) {
+				if eta := estimateTrainingETA(ctx, w, ids.RunID); eta != nil {
+					entries[i].row.Progress = eta.compact()
+				}
 			}
 			return nil
 		})

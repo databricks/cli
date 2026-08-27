@@ -3,7 +3,7 @@
 Print id of the resource from the state. Update ACC_REPLS for a given ID.
 
  Example: read_id.py foo
- Output job_id, e.g. "5555" and update ACC_REPLS with record "5555:FOO_ID"
+ Output job_id, e.g. "5555" and update ACC_REPLS to replace "5555" with [FOO_ID]
 
 Usage: <group> <name> [attr...]
 """

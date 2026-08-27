@@ -108,13 +108,13 @@ func findManagedScheduledJob(ctx context.Context, w *databricks.WorkspaceClient,
 // scheduled job of the same name is updated in place (so re-running doesn't pile
 // up duplicates), otherwise a new one is created. It returns the job id, its URL,
 // and whether the job was created (vs updated).
-func createScheduledJob(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath string) (jobID int64, url string, created bool, err error) {
+func createScheduledJob(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath string, showProgress bool) (jobID int64, url string, created bool, err error) {
 	creator, err := currentUserEmail(ctx, w)
 	if err != nil {
 		return 0, "", false, err
 	}
 
-	prep, err := prepareWorkload(ctx, w, cfg, configPath)
+	prep, err := prepareWorkload(ctx, w, cfg, configPath, showProgress)
 	if err != nil {
 		return 0, "", false, err
 	}

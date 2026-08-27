@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/patchwheel"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -643,19 +644,24 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 	// matching cloud behavior where same library path is not reinstalled.
 	var newWhlPaths []string
 	for _, whlPath := range whlPaths {
-		if env.installedLibs[whlPath] {
+		// A dependency may carry a pip extras suffix (e.g. "foo.whl[train]").
+		// The uploaded file is stored under the bare name, so strip the suffix to
+		// locate it. We install the bare wheel; extras only affect which transitive
+		// deps cloud pulls, which this offline install does not model.
+		filePath, _ := patchwheel.SplitWheelExtras(whlPath)
+		if env.installedLibs[filePath] {
 			continue
 		}
-		data := s.files[whlPath].Data
+		data := s.files[filePath].Data
 		if len(data) == 0 {
-			return "", fmt.Errorf("%w: wheel file not found in workspace: %s", errNoCodeInWorkspace, whlPath)
+			return "", fmt.Errorf("%w: wheel file not found in workspace: %s", errNoCodeInWorkspace, filePath)
 		}
-		localPath := filepath.Join(env.dir, filepath.Base(whlPath))
+		localPath := filepath.Join(env.dir, filepath.Base(filePath))
 		if err := os.WriteFile(localPath, data, 0o644); err != nil {
 			return "", fmt.Errorf("failed to write wheel file: %w", err)
 		}
 		newWhlPaths = append(newWhlPaths, localPath)
-		env.installedLibs[whlPath] = true
+		env.installedLibs[filePath] = true
 	}
 
 	if len(newWhlPaths) > 0 {

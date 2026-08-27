@@ -56,6 +56,7 @@ func loadScheduledConfig(t *testing.T) (*databricks.WorkspaceClient, *runConfig,
 	t.Helper()
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
+	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
@@ -72,13 +73,13 @@ func loadScheduledConfig(t *testing.T) (*databricks.WorkspaceClient, *runConfig,
 func TestCreateScheduledJobCreatesThenUpdates(t *testing.T) {
 	w, cfg, cfgPath := loadScheduledConfig(t)
 
-	id1, url1, created, err := createScheduledJob(t.Context(), w, cfg, cfgPath)
+	id1, url1, created, err := createScheduledJob(t.Context(), w, cfg, cfgPath, false)
 	require.NoError(t, err)
 	assert.True(t, created)
 	assert.NotZero(t, id1)
 	assert.Contains(t, url1, "/jobs/"+strconv.FormatInt(id1, 10))
 
-	id2, _, created2, err := createScheduledJob(t.Context(), w, cfg, cfgPath)
+	id2, _, created2, err := createScheduledJob(t.Context(), w, cfg, cfgPath, false)
 	require.NoError(t, err)
 	assert.False(t, created2, "a re-run with the same name updates in place")
 	assert.Equal(t, id1, id2)
@@ -111,7 +112,7 @@ func TestCreateScheduledJobAmbiguousName(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	_, _, _, err = createScheduledJob(t.Context(), w, cfg, cfgPath)
+	_, _, _, err = createScheduledJob(t.Context(), w, cfg, cfgPath, false)
 	require.ErrorContains(t, err, "air run cannot tell which to update")
 }
 
@@ -124,7 +125,7 @@ func TestCreateScheduledJobIgnoresUntaggedJob(t *testing.T) {
 	foreign, err := w.Jobs.Create(t.Context(), jobs.CreateJob{Name: cfg.ExperimentName})
 	require.NoError(t, err)
 
-	id, _, created, err := createScheduledJob(t.Context(), w, cfg, cfgPath)
+	id, _, created, err := createScheduledJob(t.Context(), w, cfg, cfgPath, false)
 	require.NoError(t, err)
 	assert.True(t, created, "an untagged same-named job must not be reused")
 	assert.NotEqual(t, foreign.JobId, id)
