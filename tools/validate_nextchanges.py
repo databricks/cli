@@ -46,14 +46,21 @@ NEXTVERSION_GO = "nextversion.go"
 # link: a bare or paren-wrapped "#N" would render as an unintended auto-link in
 # CHANGELOG.md, and nothing expands links anymore.
 BULLET_PREFIX = "* "
-_PR_LINK = r"\[#\d+\]\(https://github\.com/databricks/cli/pull/\d+\)"
-TRAILING_PR_LINKS_RE = re.compile(rf" \((?P<links>{_PR_LINK}(?:, {_PR_LINK})*)\)$")
-_PR_LINK_NUM_RE = re.compile(r"\[#(\d+)\]")
+
+# The trailing PR link group: a parenthesized, comma-separated list of markdown
+# links at the very end of the entry, e.g. "([#12](…), [#34](…))". Matched
+# loosely (any "[..](..)" link) so a malformed link inside still makes the group
+# recognizable — it is then reported as a link error, rather than misfiring as
+# "must end with a period" because a strict pattern failed to match.
+_LINK = r"\[[^\]]*\]\([^)]*\)"
+TRAILING_GROUP_RE = re.compile(rf" \((?P<links>{_LINK}(?:, {_LINK})*)\)$")
+LINK_RE = re.compile(_LINK)
 
 # A "#N" not preceded by "[" is a raw, unexpanded reference (bare, or wrapped in
 # parens); the "[#N]" of a markdown link is preceded by "[" and so is excluded.
 RAW_REF_RE = re.compile(r"(?<!\[)#\d+")
-# A PR markdown link, capturing the text and URL numbers so they can be compared.
+# A well-formed PR link "[#N](…/pull/N)", capturing both numbers so they can be
+# compared and, via fullmatch, to tell a valid PR link from a malformed one.
 PR_LINK_RE = re.compile(r"\[#(\d+)\]\(https://github\.com/databricks/cli/pull/(\d+)\)")
 
 
@@ -83,25 +90,12 @@ def fragment_format_problem(text):
     if not stripped.startswith(BULLET_PREFIX):
         return 'must start with a "* " bullet marker'
     # The trailing PR link group follows the period; ignore it when checking
-    # that the entry text itself ends with a period.
-    if not TRAILING_PR_LINKS_RE.sub("", stripped).endswith("."):
+    # that the entry text itself ends with a period. Matched loosely so a
+    # malformed link inside doesn't hide the group and misfire here — pr_link
+    # _problem validates the links.
+    if not TRAILING_GROUP_RE.sub("", stripped).endswith("."):
         return "must end with a period"
     return None
-
-
-def trailing_pr_numbers(text):
-    r"""Return the PR numbers in ``text``'s trailing PR link group (possibly
-    several), or an empty list if there is none.
-
-    >>> trailing_pr_numbers("* A change. ([#6208](https://github.com/databricks/cli/pull/6208))")
-    ['6208']
-    >>> trailing_pr_numbers("* A change. ([#12](https://github.com/databricks/cli/pull/12), [#34](https://github.com/databricks/cli/pull/34))")
-    ['12', '34']
-    >>> trailing_pr_numbers("* A change.")
-    []
-    """
-    m = TRAILING_PR_LINKS_RE.search(text.strip())
-    return _PR_LINK_NUM_RE.findall(m.group("links")) if m else []
 
 
 def link_problem(text):
@@ -132,28 +126,38 @@ def link_problem(text):
 def pr_link_problem(text, require_pr_link, expected_pr):
     r"""Return a problem with ``text``'s trailing PR link group, or ``None``.
 
-    ``expected_pr`` is the PR that introduced the fragment (see
-    ``infer_expected_pr``); it must appear among the linked PRs, so an entry may
-    also list follow-up PRs. ``require_pr_link`` makes the link mandatory — set
-    whenever the change is associated with a PR (see ``main``).
+    The group is recognized loosely, then each link must be a well-formed PR link
+    (a malformed URL is reported as such). ``expected_pr`` is the PR that
+    introduced the fragment (see ``infer_expected_pr``); it must appear among the
+    linked PRs, so an entry may also list follow-up PRs. ``require_pr_link`` makes
+    the group mandatory — set whenever the change is associated with a PR (see
+    ``main``). Text/URL number agreement is checked by ``link_problem``.
 
     >>> pr_link_problem("* A change.", False, None)
     >>> pr_link_problem("* A change.", True, "5")
     'missing trailing PR link: end with ([#5](https://github.com/databricks/cli/pull/5))'
     >>> pr_link_problem("* A change.", True, None)
     'missing trailing PR link: end with ([#<PR>](https://github.com/databricks/cli/pull/<PR>))'
+    >>> pr_link_problem("* A change. ([#6177](https://github.com/databricks/cli/6177))", True, "6177")
+    'malformed trailing PR link "[#6177](https://github.com/databricks/cli/6177)": expected [#N](https://github.com/databricks/cli/pull/N)'
     >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5))", True, "5")
     >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5), [#9](https://github.com/databricks/cli/pull/9))", True, "9")
     >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5))", True, "9")
     'trailing PR link #5 must include the PR that added this fragment (#9)'
     >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5))", False, None)
     """
-    numbers = trailing_pr_numbers(text)
-    if not numbers:
+    m = TRAILING_GROUP_RE.search(text.strip())
+    if m is None:
         if not require_pr_link:
             return None
         pr = expected_pr or "<PR>"
         return f"missing trailing PR link: end with ([#{pr}](https://github.com/databricks/cli/pull/{pr}))"
+    numbers = []
+    for link in LINK_RE.findall(m.group("links")):
+        lm = PR_LINK_RE.fullmatch(link)
+        if lm is None:
+            return f'malformed trailing PR link "{link}": expected [#N](https://github.com/databricks/cli/pull/N)'
+        numbers.append(lm.group(1))
     if expected_pr is not None and expected_pr not in numbers:
         shown = ", ".join("#" + n for n in numbers)
         return f"trailing PR link {shown} must include the PR that added this fragment (#{expected_pr})"
