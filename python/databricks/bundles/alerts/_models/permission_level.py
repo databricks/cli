@@ -1,0 +1,56 @@
+from enum import Enum
+from typing import Literal
+
+
+class PermissionLevel(Enum):
+    """
+    Permission level
+    """
+
+    CAN_MANAGE = "CAN_MANAGE"
+    CAN_RESTART = "CAN_RESTART"
+    CAN_ATTACH_TO = "CAN_ATTACH_TO"
+    IS_OWNER = "IS_OWNER"
+    CAN_MANAGE_RUN = "CAN_MANAGE_RUN"
+    CAN_VIEW = "CAN_VIEW"
+    CAN_READ = "CAN_READ"
+    CAN_RUN = "CAN_RUN"
+    CAN_EDIT = "CAN_EDIT"
+    CAN_USE = "CAN_USE"
+    CAN_MANAGE_STAGING_VERSIONS = "CAN_MANAGE_STAGING_VERSIONS"
+    CAN_MANAGE_PRODUCTION_VERSIONS = "CAN_MANAGE_PRODUCTION_VERSIONS"
+    CAN_EDIT_METADATA = "CAN_EDIT_METADATA"
+    CAN_VIEW_METADATA = "CAN_VIEW_METADATA"
+    CAN_BIND = "CAN_BIND"
+    CAN_QUERY = "CAN_QUERY"
+    CAN_MONITOR = "CAN_MONITOR"
+    CAN_CREATE = "CAN_CREATE"
+    CAN_MONITOR_ONLY = "CAN_MONITOR_ONLY"
+    CAN_CREATE_APP = "CAN_CREATE_APP"
+
+
+PermissionLevelParam = (
+    Literal[
+        "CAN_MANAGE",
+        "CAN_RESTART",
+        "CAN_ATTACH_TO",
+        "IS_OWNER",
+        "CAN_MANAGE_RUN",
+        "CAN_VIEW",
+        "CAN_READ",
+        "CAN_RUN",
+        "CAN_EDIT",
+        "CAN_USE",
+        "CAN_MANAGE_STAGING_VERSIONS",
+        "CAN_MANAGE_PRODUCTION_VERSIONS",
+        "CAN_EDIT_METADATA",
+        "CAN_VIEW_METADATA",
+        "CAN_BIND",
+        "CAN_QUERY",
+        "CAN_MONITOR",
+        "CAN_CREATE",
+        "CAN_MONITOR_ONLY",
+        "CAN_CREATE_APP",
+    ]
+    | PermissionLevel
+)
