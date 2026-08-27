@@ -184,13 +184,23 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
-	bundle.ApplySeqContext(ctx, b,
-		scripts.Execute(config.ScriptPreDeploy),
-		lock.Acquire(lock.GoalDeploy),
-	)
+	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPreDeploy))
 
 	if logdiag.HasError(ctx) {
-		// lock is not acquired here
+		return
+	}
+
+	// Fingerprint after predeploy so build and script outputs are seen. A loaded
+	// plan already carries its fingerprints, so only recompute when planning here.
+	if plan == nil {
+		bundle.ApplyContext(ctx, b, mutator.ResolveJobRunFileTriggers())
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
+	bundle.ApplyContext(ctx, b, lock.Acquire(lock.GoalDeploy))
+	if logdiag.HasError(ctx) {
 		return
 	}
 

@@ -294,6 +294,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		} else {
 			action = getMaxAction(entry.Changes)
 		}
+		// A skipped entry with a persist-state change (e.g. a cleared trigger)
+		// still writes its new state; propagate the flag to the entry.
+		if action == deployplan.Skip {
+			for _, change := range entry.Changes {
+				if change.PersistState {
+					entry.PersistState = true
+					break
+				}
+			}
+		}
 
 		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether
 		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
@@ -313,8 +323,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, errors.New("planning failed")
 	}
 
+	// Skipped entries drop their state, unless it must be persisted (e.g. clearing
+	// a trigger fingerprint) so re-adding it later is a real change.
 	for _, entry := range plan.Plan {
-		if entry.Action == deployplan.Skip {
+		if entry.Action == deployplan.Skip && !entry.PersistState {
 			entry.NewState = nil
 		}
 	}
