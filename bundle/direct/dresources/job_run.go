@@ -35,7 +35,7 @@ var (
 
 // JobRunLifecycleState is the local-only trigger fingerprint.
 type JobRunLifecycleState struct {
-	TriggersState resources.JobRunTriggersState `json:"triggers_state"`
+	TriggersState *resources.JobRunTriggersState `json:"triggers_state,omitempty"`
 }
 
 // JobRunState is the RunNow request plus the outcome required for planning.
@@ -114,7 +114,7 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	if len(fileTriggers) > 0 {
 		ts.OnFileChange = fileTriggers
 	}
-	state.Lifecycle = &JobRunLifecycleState{TriggersState: ts}
+	state.Lifecycle = &JobRunLifecycleState{TriggersState: &ts}
 	return state
 }
 
