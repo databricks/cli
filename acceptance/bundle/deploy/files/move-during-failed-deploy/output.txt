@@ -1,0 +1,46 @@
+
+=== Deploy 1: the job references src/main.py, which is uploaded to the workspace
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files...
+Created jobs.foo
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/main.py
+{
+  "object_type": "FILE",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/main.py"
+}
+
+=== Move the referenced file and point the job at the new location
+>>> mv src/main.py src/renamed.py
+
+>>> update_file.py databricks.yml src/main.py src/renamed.py
+
+=== Fail the job update. Files are still synced first, so main.py is deleted and
+renamed.py uploaded before the failing jobs/reset.
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files...
+Error: cannot update resources.jobs.foo: updating id=[FOO_ID]: Fault injected by test. (403 INJECTED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/reset
+HTTP Status: 403 Forbidden
+API error_code: INJECTED
+API message: Fault injected by test.
+
+Files: 3 uploaded, 1 deleted
+
+=== Broken state: the failed deploy already deleted the old file from the workspace
+>>> MSYS_NO_PATHCONV=1 musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/main.py
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/main.py) doesn't exist.
+
+=== The new file was uploaded
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/renamed.py
+{
+  "object_type": "FILE",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/renamed.py"
+}
+
+=== But the deployed job still points at the deleted file, so a run fails file-not-found
+>>> [CLI] jobs get [FOO_ID]
+"/Workspace/Users/[USERNAME]/.bundle/move-during-failed-deploy/default/files/src/main.py"
