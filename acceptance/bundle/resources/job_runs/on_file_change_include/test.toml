@@ -1,3 +1,0 @@
-# Path resolution only; the HTTP traffic is the same as on_file_change.
-RecordRequests = false
-Ignore = [".databricks"]
