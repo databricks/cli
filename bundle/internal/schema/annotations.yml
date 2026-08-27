@@ -1172,6 +1172,69 @@ resources:
             "table_update":
               "description": |-
                 PLACEHOLDER
+    "mcp_services":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "comment":
+          "description": |-
+            PLACEHOLDER
+        "config":
+          "description": |-
+            PLACEHOLDER
+          "$fields":
+            "source_connection":
+              "$fields":
+                "is_deleted":
+                  "description": |-
+                    PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "mcp_service_id":
+          "description": |-
+            PLACEHOLDER
+        "parent":
+          "description": |-
+            PLACEHOLDER
+    "model_provider_services":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "comment":
+          "description": |-
+            PLACEHOLDER
+        "config":
+          "description": |-
+            PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "model_provider_service_id":
+          "description": |-
+            PLACEHOLDER
+        "parent":
+          "description": |-
+            PLACEHOLDER
+    "model_services":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "comment":
+          "description": |-
+            PLACEHOLDER
+        "config":
+          "description": |-
+            PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "model_service_id":
+          "description": |-
+            PLACEHOLDER
+        "parent":
+          "description": |-
+            PLACEHOLDER
     "model_serving_endpoints":
       "description": |-
         The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.

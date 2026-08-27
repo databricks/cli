@@ -125,6 +125,11 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 	// Resources that intentionally have no workspace URL.
 	noURL := map[string]bool{
 		"external_locations": true,
+		// AI Gateway securables are addressed by a server-derived resource name
+		// and have no single-ID Catalog Explorer URL wired up yet.
+		"model_services":          true,
+		"mcp_services":            true,
+		"model_provider_services": true,
 		// A job run does have a workspace URL, but it's addressed by two IDs
 		// (job + run) so it can't be expressed as a single-ID pattern here; it's
 		// built in JobRun.InitializeURL via workspaceurls.JobRunURL instead.
@@ -236,6 +241,21 @@ func TestResourcesBindSupport(t *testing.T) {
 		ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 			"my_model_serving_endpoint": {
 				CreateServingEndpoint: serving.CreateServingEndpoint{},
+			},
+		},
+		ModelServices: map[string]*resources.ModelService{
+			"my_model_service": {
+				ModelServiceConfig: resources.ModelServiceConfig{},
+			},
+		},
+		McpServices: map[string]*resources.McpService{
+			"my_mcp_service": {
+				McpServiceConfig: resources.McpServiceConfig{},
+			},
+		},
+		ModelProviderServices: map[string]*resources.ModelProviderService{
+			"my_model_provider_service": {
+				ModelProviderServiceConfig: resources.ModelProviderServiceConfig{},
 			},
 		},
 		SecretScopes: map[string]*resources.SecretScope{
@@ -377,6 +397,9 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockAlertsV2API().EXPECT().GetAlertById(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockQualityMonitorsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockServingEndpointsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockAiGatewayAPI().EXPECT().GetModelService(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockAiGatewayAPI().EXPECT().GetMcpService(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockAiGatewayAPI().EXPECT().GetModelProviderService(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockSecretsAPI().EXPECT().ListScopesAll(mock.Anything).Return([]workspace.SecretScope{
 		{Name: "0"},
 	}, nil)

@@ -95,6 +95,30 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"model_services": &resources.ModelService{
+		ModelServiceConfig: resources.ModelServiceConfig{
+			Parent:         "schemas/main.default",
+			ModelServiceId: "my_model_service",
+			Comment:        "Test model service",
+		},
+	},
+
+	"mcp_services": &resources.McpService{
+		McpServiceConfig: resources.McpServiceConfig{
+			Parent:       "schemas/main.default",
+			McpServiceId: "my_mcp_service",
+			Comment:      "Test mcp service",
+		},
+	},
+
+	"model_provider_services": &resources.ModelProviderService{
+		ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
+			Parent:                 "schemas/main.default",
+			ModelProviderServiceId: "my_model_provider_service",
+			Comment:                "Test model provider service",
+		},
+	},
+
 	"registered_models": &resources.RegisteredModel{
 		CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 			Name:            "my_registered_model",
