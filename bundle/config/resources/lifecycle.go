@@ -45,6 +45,6 @@ type JobRunTrigger struct {
 
 // JobRunTriggersState is the resolved fingerprint of lifecycle.triggers.
 type JobRunTriggersState struct {
-	OnBundleDeploy string            `json:"on_bundle_deploy,omitempty"`
-	OnFileChange   map[string]string `json:"on_file_change,omitempty"`
+	OnBundleDeploy string                       `json:"on_bundle_deploy,omitempty"`
+	OnFileChange   map[string]map[string]string `json:"on_file_change,omitempty"`
 }

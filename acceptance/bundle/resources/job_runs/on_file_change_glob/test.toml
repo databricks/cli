@@ -2,7 +2,7 @@
 # computed during planning survive plan serialization.
 EnvMatrix.READPLAN = ["", "1"]
 
-Ignore = ["tmp.plan.json", "tmp.002.txt", ".gitignore"]
+Ignore = ["tmp.plan.json", "tmp.002.txt", "tmp.databricks.yml", ".gitignore"]
 
 # See on_file_change/test.toml: mask content hashes before the parent's
 # `\d{8,}` rule can mangle them, keeping distinct hashes distinguishable.
