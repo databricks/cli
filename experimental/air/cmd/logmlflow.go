@@ -3,6 +3,7 @@ package aircmd
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -12,15 +13,46 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
+
+var mlflowArtifactRoots sync.Map
+
+func mlflowArtifactRoot(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string) (string, error) {
+	key := strings.TrimRight(w.Config.Host, "/") + "\x00" + mlflowRunID
+	if cached, ok := mlflowArtifactRoots.Load(key); ok {
+		return cached.(string), nil
+	}
+	response, err := w.Experiments.GetRun(ctx, ml.GetRunRequest{RunId: mlflowRunID})
+	if err != nil {
+		log.Debugf(ctx, "air logs: could not resolve MLflow artifact URI for %s: %v", mlflowRunID, err)
+		return "", nil
+	}
+	if response.Run == nil || response.Run.Info == nil {
+		return "", nil
+	}
+	root := strings.TrimRight(response.Run.Info.ArtifactUri, "/")
+	mlflowArtifactRoots.Store(key, root)
+	return root, nil
+}
+
+func volumeArtifactRoot(root string) (string, bool) {
+	if strings.HasPrefix(root, "dbfs:/Volumes/") {
+		return strings.TrimPrefix(root, "dbfs:"), true
+	}
+	return "", false
+}
 
 // chunkFilePattern matches a log chunk file (logs-<index>.chunk.txt); group 1 is
 // the chunk index. The sidecar splits stdout into 4MB chunks, index ascending.
@@ -53,6 +85,13 @@ func mlflowLogFallback(ctx context.Context, w *databricks.WorkspaceClient, out i
 		log.Debugf(ctx, "air logs: --minutes is not supported on the MLflow fallback path; showing the default tail")
 	}
 
+	if !status.terminal() && !req.staticView {
+		return streamMLflowLogs(ctx, w, out, req, status)
+	}
+	return fetchMLflowLogTail(ctx, w, out, req, status)
+}
+
+func fetchMLflowLogTail(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
 	mlflowRunID, logDir, err := resolveMLflowLogPath(ctx, w, req)
 	if err != nil {
 		return false, err
@@ -94,19 +133,113 @@ func mlflowLogFallback(ctx context.Context, w *databricks.WorkspaceClient, out i
 	return status.downloadOutcome(), nil
 }
 
+func mlflowLogsExist(ctx context.Context, w *databricks.WorkspaceClient, req logRequest) bool {
+	mlflowRunID, logDir, err := resolveMLflowLogPath(ctx, w, req)
+	if err != nil || mlflowRunID == "" || logDir == "" {
+		if err != nil {
+			log.Debugf(ctx, "air logs: MLflow log-existence probe failed for run %d: %v", req.runID, err)
+		}
+		return false
+	}
+	chunks, err := listLogChunks(ctx, w, mlflowRunID, logDir)
+	if err != nil {
+		log.Debugf(ctx, "air logs: MLflow log-existence probe failed for run %d: %v", req.runID, err)
+		return false
+	}
+	return len(chunks) > 0
+}
+
+func streamMLflowLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+	lineOffsets := make(map[string]int)
+	currentRunID := ""
+	printed := false
+	previousState := ""
+
+	for {
+		if req.onStatusChange != nil {
+			current := status.displayState()
+			if current != previousState {
+				req.onStatusChange(current, previousState)
+				previousState = current
+			}
+		}
+
+		mlflowRunID, logDir, err := resolveMLflowLogPath(ctx, w, req)
+		if err != nil {
+			if status.terminal() {
+				return false, err
+			}
+			log.Debugf(ctx, "air logs: failed to resolve MLflow log path: %v", err)
+		} else if mlflowRunID != "" && logDir != "" {
+			if currentRunID != mlflowRunID {
+				currentRunID = mlflowRunID
+				lineOffsets = make(map[string]int)
+			}
+			chunks, listErr := listLogChunks(ctx, w, mlflowRunID, logDir)
+			if listErr != nil {
+				if status.terminal() {
+					return false, listErr
+				}
+				log.Debugf(ctx, "air logs: failed to list MLflow log chunks: %v", listErr)
+			} else {
+				for _, chunk := range chunks {
+					lines, downloadErr := downloadChunkLines(ctx, w, mlflowRunID, chunk.path)
+					if downloadErr != nil {
+						if status.terminal() {
+							return false, downloadErr
+						}
+						log.Debugf(ctx, "air logs: failed to read MLflow log chunk %s: %v", chunk.path, downloadErr)
+						continue
+					}
+					offset := lineOffsets[chunk.path]
+					if offset > len(lines) {
+						offset = 0
+					}
+					for _, line := range lines[offset:] {
+						emitLogLine(out, req, line)
+						printed = true
+					}
+					lineOffsets[chunk.path] = len(lines)
+				}
+			}
+		}
+
+		if status.terminal() {
+			if !printed {
+				emitNoLogs(out, req, status)
+			}
+			return status.succeeded(), nil
+		}
+		if err := sleepOrCancel(ctx, retryCheckInterval); err != nil {
+			return false, err
+		}
+		refreshed, err := resolveRunStatus(ctx, w, req.runID)
+		if err != nil {
+			if errors.Is(err, apierr.ErrResourceDoesNotExist) || ctx.Err() != nil {
+				return false, err
+			}
+			log.Debugf(ctx, "air logs: failed to refresh run status on MLflow fallback: %v", err)
+			continue
+		}
+		status = refreshed
+	}
+}
+
 // resolveMLflowLogPath returns the run's MLflow run id and per-node log directory.
 func resolveMLflowLogPath(ctx context.Context, w *databricks.WorkspaceClient, req logRequest) (string, string, error) {
 	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: req.runID})
 	if err != nil {
 		return "", "", err
 	}
-	ids := mlflowIDs(ctx, w, run)
+	attempt, taskRunID, err := resolveLogAttempt(run, req.attempt)
+	if err != nil {
+		return "", "", err
+	}
+	ids := mlflowIDsForTask(ctx, w, taskRunID)
 	if ids == nil || ids.RunID == "" {
 		return "", "", nil
 	}
 
-	// -1 (latest) maps to attempt 0's directory.
-	attempt := max(req.attempt, 0)
 	withAttempt, err := discoverAttemptPrefix(ctx, w, ids.RunID, attempt)
 	if err != nil {
 		return "", "", err
@@ -224,8 +357,35 @@ func downloadChunkLines(ctx context.Context, w *databricks.WorkspaceClient, mlfl
 }
 
 // listArtifacts lists a run's artifacts under a path.
-func listArtifacts(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, path string) ([]ml.FileInfo, error) {
-	it := w.Experiments.ListArtifacts(ctx, ml.ListArtifactsRequest{RunId: mlflowRunID, Path: path})
+func listArtifacts(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, artifactPath string) ([]ml.FileInfo, error) {
+	root, err := mlflowArtifactRoot(ctx, w, mlflowRunID)
+	if err != nil {
+		return nil, err
+	}
+	if volumeRoot, ok := volumeArtifactRoot(root); ok {
+		fc, err := filer.NewWorkspaceFilesClient(w, volumeRoot)
+		if err != nil {
+			return nil, err
+		}
+		entries, err := fc.ReadDir(ctx, artifactPath)
+		if err != nil {
+			return nil, err
+		}
+		files := make([]ml.FileInfo, 0, len(entries))
+		for _, entry := range entries {
+			info := ml.FileInfo{Path: path.Join(artifactPath, entry.Name()), IsDir: entry.IsDir()}
+			if !entry.IsDir() {
+				stat, err := entry.Info()
+				if err != nil {
+					return nil, err
+				}
+				info.FileSize = stat.Size()
+			}
+			files = append(files, info)
+		}
+		return files, nil
+	}
+	it := w.Experiments.ListArtifacts(ctx, ml.ListArtifactsRequest{RunId: mlflowRunID, Path: artifactPath})
 	return listing.ToSlice(ctx, it)
 }
 
@@ -247,6 +407,35 @@ type credentialsForReadResponse struct {
 // path. credentials-for-read returns a pre-signed URL, which we stream to disk;
 // that endpoint is not modeled by the SDK, so it is called via a raw client.Do.
 func downloadArtifact(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, artifactPath string) (string, error) {
+	root, err := mlflowArtifactRoot(ctx, w, mlflowRunID)
+	if err != nil {
+		return "", err
+	}
+	if volumeRoot, ok := volumeArtifactRoot(root); ok {
+		fc, err := filer.NewWorkspaceFilesClient(w, volumeRoot)
+		if err != nil {
+			return "", err
+		}
+		reader, err := fc.Read(ctx, artifactPath)
+		if err != nil {
+			return "", err
+		}
+		defer reader.Close()
+		tmp, err := os.CreateTemp("", "air-log-chunk-*")
+		if err != nil {
+			return "", err
+		}
+		if _, err := io.Copy(tmp, reader); err != nil {
+			tmp.Close()
+			os.Remove(tmp.Name())
+			return "", err
+		}
+		if err := tmp.Close(); err != nil {
+			os.Remove(tmp.Name())
+			return "", err
+		}
+		return tmp.Name(), nil
+	}
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return "", fmt.Errorf("failed to create API client: %w", err)

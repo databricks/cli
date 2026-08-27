@@ -74,6 +74,25 @@ func TestBuildArtifacts_ParametersButNoRequirements(t *testing.T) {
 	assert.Equal(t, []string{trainingConfigName, commandScriptName, hyperparametersName}, itemNames(items))
 }
 
+func TestBuildArtifacts_FileRequirements(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "run.yaml")
+	requirementsPath := filepath.Join(dir, "deps.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte("x: y\n"), 0o600))
+	require.NoError(t, os.WriteFile(requirementsPath, []byte("version: 5\ndependencies:\n  - torch\n"), 0o600))
+	cfg := &runConfig{
+		Command: new("echo hi"),
+		Environment: &environmentConfig{Dependencies: dependencies{
+			set: true, resolvedPath: requirementsPath,
+		}},
+	}
+
+	items, err := buildArtifacts(cfg, configPath)
+	require.NoError(t, err)
+	assert.Equal(t, []string{trainingConfigName, commandScriptName, requirementsName}, itemNames(items))
+	assert.Equal(t, "version: 5\ndependencies:\n  - torch\n", string(items[2].data))
+}
+
 func TestBuildArtifacts_EnvVarsAndSecrets(t *testing.T) {
 	path := writeConfigFile(t, "run.yaml", "x: y\n")
 	cfg := &runConfig{

@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -31,6 +32,13 @@ func currentUserEmail(ctx context.Context, w *databricks.WorkspaceClient) (strin
 // userWorkspaceDir returns the user's workspace home, honoring the env override.
 func userWorkspaceDir(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	if override := env.Get(ctx, userWorkspaceDirEnv); override != "" {
+		return override, nil
+	}
+	override, err := databrickscfg.ProfileValue(w.Config, "databricks_internal_user_workspace_dir")
+	if err != nil {
+		return "", fmt.Errorf("failed to read selected profile: %w", err)
+	}
+	if override != "" {
 		return override, nil
 	}
 	email, err := currentUserEmail(ctx, w)
