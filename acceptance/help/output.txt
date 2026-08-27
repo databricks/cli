@@ -183,6 +183,7 @@ Additional Commands:
   help                                   Help about any command
   labs                                   Manage Databricks Labs installations
   quickstart                             Print an introduction to the Databricks CLI
+  ssh                                    Connect to your Databricks compute and workspace via SSH
   version                                Retrieve information about the current version of this CLI
 
 Flags:

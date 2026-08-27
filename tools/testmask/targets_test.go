@@ -59,14 +59,14 @@ func TestGetTargets(t *testing.T) {
 			files: []string{
 				"go.mod",
 			},
-			targets: []string{"test", "test-exp-aitools", "test-ssh", "test-pipelines", "test-sandbox"},
+			targets: []string{"test", "test-exp-aitools", "test-pipelines", "test-sandbox", "test-ssh"},
 		},
 		{
 			name: "go_sum_triggers_all",
 			files: []string{
 				"go.sum",
 			},
-			targets: []string{"test", "test-exp-aitools", "test-ssh", "test-pipelines", "test-sandbox"},
+			targets: []string{"test", "test-exp-aitools", "test-pipelines", "test-sandbox", "test-ssh"},
 		},
 		{
 			name: "go_mod_with_other_files_triggers_all",
@@ -74,14 +74,14 @@ func TestGetTargets(t *testing.T) {
 				"cmd/ssh/main.go",
 				"go.mod",
 			},
-			targets: []string{"test", "test-exp-aitools", "test-ssh", "test-pipelines", "test-sandbox"},
+			targets: []string{"test", "test-exp-aitools", "test-pipelines", "test-sandbox", "test-ssh"},
 		},
 		{
 			name: "setup_build_environment_triggers_all",
 			files: []string{
 				".github/actions/setup-build-environment/action.yml",
 			},
-			targets: []string{"test", "test-exp-aitools", "test-ssh", "test-pipelines", "test-sandbox"},
+			targets: []string{"test", "test-exp-aitools", "test-pipelines", "test-sandbox", "test-ssh"},
 		},
 		{
 			name:    "empty_files",
