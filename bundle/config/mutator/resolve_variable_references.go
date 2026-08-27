@@ -240,13 +240,8 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 		normalized, _ := convert.Normalize(b.Config, root, convert.IncludeMissingFields)
 
 		// If the pattern is nil, we resolve references in the entire configuration.
-		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			v, held, err := holdJobRunOnValueChange(v)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-
-			resolved, err := dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
+		root, err := dyn.MapByPattern(root, m.pattern, func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
 				// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
 				if path.HasPrefix(varPath) {
 					newPath := dyn.NewPath(
@@ -282,11 +277,6 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 
 				return dyn.InvalidValue, dynvar.ErrSkipResolution
 			})
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-
-			return restoreJobRunOnValueChange(resolved, held)
 		})
 		if err != nil {
 			return dyn.InvalidValue, err
@@ -392,44 +382,4 @@ func isVolumePathReferencePath(path dyn.Path) bool {
 	return path[0].Key() == "resources" &&
 		path[1].Key() == "volumes" &&
 		path[3].Key() == "volume_path"
-}
-
-// jobRunOnValueChangePattern is relative to the "resources" subtree that the
-// resource-scoped variants resolve; it matches nothing for the other variants.
-var jobRunOnValueChangePattern = dyn.NewPattern(
-	dyn.Key("job_runs"),
-	dyn.AnyKey(),
-	dyn.Key("lifecycle"),
-	dyn.Key("triggers"),
-	dyn.AnyIndex(),
-	dyn.Key("on_value_change"),
-)
-
-type heldValue struct {
-	path  dyn.Path
-	value dyn.Value
-}
-
-// holdJobRunOnValueChange sets on_value_change expressions aside so that
-// interpolation does not rewrite them: the expression is the state key that
-// identifies a watch across deploys. ResolveJobRunValueTriggers resolves them.
-func holdJobRunOnValueChange(v dyn.Value) (dyn.Value, []heldValue, error) {
-	var held []heldValue
-	stripped, err := dyn.MapByPattern(v, jobRunOnValueChangePattern, func(p dyn.Path, val dyn.Value) (dyn.Value, error) {
-		held = append(held, heldValue{path: slices.Clone(p), value: val})
-		return dyn.V(""), nil
-	})
-	return stripped, held, err
-}
-
-// restoreJobRunOnValueChange puts the held expressions back after resolution.
-func restoreJobRunOnValueChange(v dyn.Value, held []heldValue) (dyn.Value, error) {
-	for _, h := range held {
-		var err error
-		v, err = dyn.SetByPath(v, h.path, h.value)
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
-	}
-	return v, nil
 }

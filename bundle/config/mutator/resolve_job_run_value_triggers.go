@@ -3,8 +3,8 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -16,8 +16,7 @@ import (
 
 type resolveJobRunValueTriggers struct{}
 
-// ResolveJobRunValueTriggers resolves the bundle/workspace/variable references in
-// each on_value_change expression and records expression → value on the job_run.
+// ResolveJobRunValueTriggers resolves each snapshotted on_value_change expression.
 // ${resources.*} is left for the planner, which resolves it after apply.
 func ResolveJobRunValueTriggers() bundle.Mutator {
 	return &resolveJobRunValueTriggers{}
@@ -47,34 +46,25 @@ func (*resolveJobRunValueTriggers) Apply(_ context.Context, b *bundle.Bundle) di
 
 	var diags diag.Diagnostics
 	for name, jr := range b.Config.Resources.JobRuns {
-		if jr == nil || jr.Lifecycle == nil {
+		if jr == nil || len(jr.ResolvedValueTriggers) == 0 {
 			continue
 		}
 
-		// Expressions are unique: ValidateJobRunTriggers rejects duplicates.
-		out := make(map[string]string)
-		for i, t := range jr.Lifecycle.Triggers {
-			if t.OnValueChange == nil {
-				continue
-			}
-
-			expr := strings.TrimSpace(*t.OnValueChange)
+		out := make(map[string]string, len(jr.ResolvedValueTriggers))
+		for _, expr := range slices.Sorted(maps.Keys(jr.ResolvedValueTriggers)) {
 			value, err := resolveJobRunValueTrigger(b, normalized, prefixes, varPath, expr)
 			if err != nil {
-				path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d].on_value_change", name, i)
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("lifecycle.triggers.on_value_change: %s", err),
-					Locations: b.Config.GetLocations(path),
+					Locations: b.Config.GetLocations(fmt.Sprintf("resources.job_runs.%s.lifecycle", name)),
 				})
 				continue
 			}
 			out[expr] = value
 		}
 
-		if len(out) > 0 {
-			jr.ResolvedValueTriggers = out
-		}
+		jr.ResolvedValueTriggers = out
 	}
 
 	return diags

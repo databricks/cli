@@ -33,10 +33,7 @@ const jobRunOnValueChangePath = "lifecycle.triggers.on_value_change"
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
-const (
-	jobRunValueHashPrefix = "sha256:"
-	jobRunValueHashLength = len(jobRunValueHashPrefix) + sha256.Size*2
-)
+const jobRunValueHashPrefix = "sha256:"
 
 // JobRunTriggersState is the persisted fingerprint of lifecycle.triggers.
 type JobRunTriggersState struct {
@@ -152,21 +149,17 @@ func (*ResourceJobRun) PrepareInputConfig(input *resources.JobRun, _ string) (*s
 	return &structvar.StructVar{Value: input, Refs: refs}, nil
 }
 
-// NormalizeAfterResolve hashes a watch once it no longer contains a reference.
+// NormalizeAfterResolve fingerprints a watch once it no longer contains a reference.
 func (s *JobRunState) NormalizeAfterResolve() {
 	for expr, value := range s.Lifecycle.Triggers.OnValueChange {
 		if dynvar.ContainsVariableReference(value) {
 			continue
 		}
-		s.Lifecycle.Triggers.OnValueChange[expr] = compactJobRunValue(value)
+		s.Lifecycle.Triggers.OnValueChange[expr] = fingerprintJobRunValue(value)
 	}
 }
 
-// compactJobRunValue hashes a value only when the digest is shorter than it.
-func compactJobRunValue(value string) string {
-	if len(value) <= jobRunValueHashLength {
-		return value
-	}
+func fingerprintJobRunValue(value string) string {
 	sum := sha256.Sum256([]byte(value))
 	return jobRunValueHashPrefix + hex.EncodeToString(sum[:])
 }
@@ -433,65 +426,17 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // still going, so a run that may yet succeed is not recreated. A run that
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
-// Clearing a trigger skips its local-only fingerprint without re-firing the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
-	switch path.String() {
-	case "lifecycle.triggers.on_bundle_deploy":
-		if change.New == nil || change.New == "" {
-			change.Action = deployplan.Skip
-			change.Reason = "trigger removed"
-		}
-	case "lifecycle.triggers.on_file_change":
-		// Only a cleared trigger skips: a file dropping out of the map means the
-		// match disappeared, which is a real change.
-		if change.New == nil {
-			change.Action = deployplan.Skip
-			change.Reason = "trigger removed"
-		}
-	case jobRunOnValueChangePath:
-		if valueTriggersOnlyRemoved(change.Old, change.New) {
-			change.Action = deployplan.Skip
-			change.Reason = "trigger removed"
-		}
-	case "result_state":
-		// The planner passes no remote state when the run could not be read.
-		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
-			return nil
-		}
-		change.Action = deployplan.Skip
-		change.Reason = "run in progress"
-	default:
-		// structdiff reports the same removal again under each dropped key. A
-		// changed fingerprint under a key that stayed keeps its recreate.
-		parent := path.Parent()
-		if parent != nil && parent.String() == jobRunOnValueChangePath && change.New == nil {
-			change.Action = deployplan.Skip
-			change.Reason = "trigger removed"
-		}
+	if path.String() != "result_state" {
+		return nil
 	}
+	// The planner passes no remote state when the run could not be read.
+	if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
+		return nil
+	}
+	change.Action = deployplan.Skip
+	change.Reason = "run in progress"
 	return nil
-}
-
-// valueTriggersOnlyRemoved reports whether new is old minus one or more watches,
-// with every remaining fingerprint unchanged. Keying state by the config
-// expression is what makes this exact: dropping a watch is a dropped key, and
-// changing what a watch resolves to is a new value under the same key, even when
-// that value is the one a just-removed watch used to hold.
-func valueTriggersOnlyRemoved(oldValue, newValue any) bool {
-	if newValue == nil {
-		return true
-	}
-	oldMap, okOld := oldValue.(map[string]string)
-	newMap, okNew := newValue.(map[string]string)
-	if !okOld || !okNew {
-		return false
-	}
-	for expr, value := range newMap {
-		if old, ok := oldMap[expr]; !ok || old != value {
-			return false
-		}
-	}
-	return len(newMap) < len(oldMap)
 }
 
 // DoDelete deletes the run via jobs/runs/delete, on both destroy and the

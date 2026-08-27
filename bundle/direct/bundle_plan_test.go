@@ -296,6 +296,58 @@ func TestRemoteAlreadySetGuards(t *testing.T) {
 	}
 }
 
+func TestShouldSkipWhenRemoved(t *testing.T) {
+	cfg := dresources.GetResourceConfig("job_runs")
+	for _, tt := range []struct {
+		name     string
+		path     string
+		newValue any
+		expected bool
+	}{
+		{"on_bundle_deploy removed", "lifecycle.triggers.on_bundle_deploy", "", true},
+		{"on_bundle_deploy changed", "lifecycle.triggers.on_bundle_deploy", "new-uuid", false},
+		{"on_file_change removed", "lifecycle.triggers.on_file_change", nil, true},
+		{
+			"on_file_change map entry removed",
+			"lifecycle.triggers.on_file_change",
+			map[string]string{"a.txt": "hash"},
+			false,
+		},
+		{"on_file_change entry removed", "lifecycle.triggers.on_file_change['a.txt']", nil, false},
+		{"on_value_change removed", "lifecycle.triggers.on_value_change", nil, true},
+		{
+			"on_value_change map entry removed",
+			"lifecycle.triggers.on_value_change",
+			map[string]string{"${var.a}": "a"},
+			true,
+		},
+		{
+			"on_value_change remaining entry changed",
+			"lifecycle.triggers.on_value_change",
+			map[string]string{"${var.a}": "b"},
+			false,
+		},
+		{"on_value_change entry removed", "lifecycle.triggers.on_value_change['${var.a}']", nil, true},
+		{"on_value_change entry changed", "lifecycle.triggers.on_value_change['${var.a}']", "new", false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			path := structpath.MustParsePath(tt.path)
+			oldValue := any("old")
+			if path.String() == "lifecycle.triggers.on_file_change" && tt.newValue != nil {
+				oldValue = map[string]string{"a.txt": "hash", "b.txt": "hash"}
+			}
+			if path.String() == "lifecycle.triggers.on_value_change" && tt.newValue != nil {
+				oldValue = map[string]string{"${var.a}": "a", "${var.b}": "b"}
+			}
+			reason, ok := shouldSkipWhenRemoved(cfg, path, &deployplan.ChangeDesc{Old: oldValue, New: tt.newValue})
+			assert.Equal(t, tt.expected, ok)
+			if tt.expected {
+				assert.Equal(t, "trigger removed", reason)
+			}
+		})
+	}
+}
+
 // Map drift handling synthesizes child paths to match against rules. structdiff
 // always emits map keys in bracket notation, so synthetic child paths must too;
 // otherwise rules wouldn't match for identifier-like keys.

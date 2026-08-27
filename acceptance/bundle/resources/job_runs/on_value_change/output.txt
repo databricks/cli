@@ -22,12 +22,12 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== long values are stored as hashes
+=== resolved values are stored as hashes
 >>> print_state.py
 {
   "${var.long}": "sha256:[VALUE_HASH][0]",
-  "${var.other}": "a1",
-  "${var.stamp}": "v1"
+  "${var.other}": "sha256:[VALUE_HASH][1]",
+  "${var.stamp}": "sha256:[VALUE_HASH][2]"
 }
 
 === redeploy with unchanged values plans nothing
@@ -54,20 +54,20 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
     "reason": "immutable",
     "old": {
       "${var.long}": "sha256:[VALUE_HASH][0]",
-      "${var.other}": "a1",
-      "${var.stamp}": "v1"
+      "${var.other}": "sha256:[VALUE_HASH][1]",
+      "${var.stamp}": "sha256:[VALUE_HASH][2]"
     },
     "new": {
       "${var.long}": "sha256:[VALUE_HASH][0]",
-      "${var.other}": "a1",
-      "${var.stamp}": "v2"
+      "${var.other}": "sha256:[VALUE_HASH][1]",
+      "${var.stamp}": "sha256:[VALUE_HASH][3]"
     }
   },
   "lifecycle.triggers.on_value_change['${var.stamp}']": {
     "action": "recreate",
     "reason": "immutable",
-    "old": "v1",
-    "new": "v2"
+    "old": "sha256:[VALUE_HASH][2]",
+    "new": "sha256:[VALUE_HASH][3]"
   },
   "result_state": {
     "action": "skip",
@@ -128,24 +128,24 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
     "reason": "immutable",
     "old": {
       "${var.long}": "sha256:[VALUE_HASH][0]",
-      "${var.other}": "a1",
-      "${var.stamp}": "v2"
+      "${var.other}": "sha256:[VALUE_HASH][1]",
+      "${var.stamp}": "sha256:[VALUE_HASH][3]"
     },
     "new": {
       "${var.long}": "sha256:[VALUE_HASH][0]",
-      "${var.stamp}": "a1"
+      "${var.stamp}": "sha256:[VALUE_HASH][1]"
     }
   },
   "lifecycle.triggers.on_value_change['${var.other}']": {
     "action": "skip",
     "reason": "trigger removed",
-    "old": "a1"
+    "old": "sha256:[VALUE_HASH][1]"
   },
   "lifecycle.triggers.on_value_change['${var.stamp}']": {
     "action": "recreate",
     "reason": "immutable",
-    "old": "v2",
-    "new": "a1"
+    "old": "sha256:[VALUE_HASH][3]",
+    "new": "sha256:[VALUE_HASH][1]"
   },
   "result_state": {
     "action": "skip",

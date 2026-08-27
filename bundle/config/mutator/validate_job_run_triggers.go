@@ -35,7 +35,6 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 				})
 			}
 		}
-		seenValueChange := map[string]struct{}{}
 		for i, t := range jr.Lifecycle.Triggers {
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d]", name, i)
 			switch t.ArmedCount() {
@@ -69,26 +68,6 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 					Summary:   "lifecycle.triggers.on_file_change must be non-empty when set",
 					Locations: b.Config.GetLocations(path + ".on_file_change"),
 				})
-			}
-			if t.OnValueChange != nil {
-				expr := strings.TrimSpace(*t.OnValueChange)
-				if expr == "" {
-					diags = diags.Append(diag.Diagnostic{
-						Severity:  diag.Error,
-						Summary:   "lifecycle.triggers.on_value_change must be non-empty when set",
-						Locations: b.Config.GetLocations(path + ".on_value_change"),
-					})
-					continue
-				}
-				if _, dup := seenValueChange[expr]; dup {
-					diags = diags.Append(diag.Diagnostic{
-						Severity:  diag.Error,
-						Summary:   "lifecycle.triggers.on_value_change expressions must be unique",
-						Locations: b.Config.GetLocations(path + ".on_value_change"),
-					})
-					continue
-				}
-				seenValueChange[expr] = struct{}{}
 			}
 		}
 	}

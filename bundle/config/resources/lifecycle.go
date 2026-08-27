@@ -38,7 +38,7 @@ type JobRunLifecycle struct {
 type JobRunTrigger struct {
 	OnBundleDeploy *bool   `json:"on_bundle_deploy,omitempty"`
 	OnFileChange   *string `json:"on_file_change,omitempty"`  // path or glob relative to the defining YAML file; must resolve under the sync root
-	OnValueChange  *string `json:"on_value_change,omitempty"` // interpolated expr; re-fire when the resolved value changes
+	OnValueChange  *string `json:"on_value_change,omitempty"` // interpolated expression; re-fire when its resolved fingerprint changes
 }
 
 // ArmedCount returns the number of trigger fields set on this entry.

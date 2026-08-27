@@ -19,8 +19,6 @@ func TestValidateJobRunTriggers(t *testing.T) {
 	whitespaceFile := "  \t"
 
 	valueChange := "${resources.jobs.foo.id}"
-	emptyValue := ""
-	whitespaceValue := "  \t"
 
 	tests := []struct {
 		name           string
@@ -129,20 +127,6 @@ func TestValidateJobRunTriggers(t *testing.T) {
 			},
 		},
 		{
-			name: "on_value_change empty",
-			triggers: []resources.JobRunTrigger{
-				{OnValueChange: &emptyValue},
-			},
-			summary: "lifecycle.triggers.on_value_change must be non-empty when set",
-		},
-		{
-			name: "on_value_change whitespace",
-			triggers: []resources.JobRunTrigger{
-				{OnValueChange: &whitespaceValue},
-			},
-			summary: "lifecycle.triggers.on_value_change must be non-empty when set",
-		},
-		{
 			name: "on_value_change with prevent_destroy",
 			triggers: []resources.JobRunTrigger{
 				{OnValueChange: &valueChange},
@@ -156,14 +140,6 @@ func TestValidateJobRunTriggers(t *testing.T) {
 				{OnFileChange: &fileChange, OnValueChange: &valueChange},
 			},
 			summary: "lifecycle.triggers entry must set only one of on_bundle_deploy, on_file_change, or on_value_change",
-		},
-		{
-			name: "duplicate on_value_change",
-			triggers: []resources.JobRunTrigger{
-				{OnValueChange: &valueChange},
-				{OnValueChange: &valueChange},
-			},
-			summary: "lifecycle.triggers.on_value_change expressions must be unique",
 		},
 	}
 

@@ -1400,7 +1400,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "on_value_change": {
-                        "description": "Interpolated expression. Re-fire the run when the resolved value changes. Resource references in the expression become deployment dependencies. Long resolved values are recorded as a SHA-256 hash instead of the value itself. Incompatible with lifecycle.prevent_destroy.",
+                        "description": "Interpolated expression. Re-fire the run when the resolved value changes or when a watch is added. Resource references in the expression become deployment dependencies. Resolved values are recorded as SHA-256 hashes. Removing a watch disarms it without re-firing the run. Incompatible with lifecycle.prevent_destroy.",
                         "$ref": "#/$defs/string"
                       }
                     },

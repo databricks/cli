@@ -23,6 +23,7 @@ Each field with special plan/deploy behavior must be declared in `resources.yml`
    - `input_only` — accepted on create/update but not returned by GET (e.g., write-only tokens, flags)
    - `managed` — managed by the cloud provider or platform, not by the user config
  - **`ignore_local_changes`**: Ignore changes the user makes to this field. Use for fields that cannot be updated via API — either they are immutable after creation or require a separate API that is not yet implemented. Must have a comment in resources.yml explaining why.
+ - **`skip_when_removed`**: Skip a change when the desired value is nil or zero. Patterns match exact paths rather than descendants; add an explicit wildcard entry when removing map elements should also skip. Set `map_subset: true` when a map that only drops entries while retaining every remaining value unchanged should also skip. Use for local-only state that is disarmed by removing its configuration.
  - **`recreate_on_changes`**: Changing this field requires delete + create. Use for truly immutable fields (name, type, location). The reason should reference API docs or TF provider.
  - **`updatable_id_fields`**: Changing this field changes the resource's ID. Requires `DoUpdateWithID` to be implemented.
 
