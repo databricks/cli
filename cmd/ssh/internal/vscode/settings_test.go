@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/databricks/cli/experimental/ssh/internal/fileutil"
+	"github.com/databricks/cli/cmd/ssh/internal/fileutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"

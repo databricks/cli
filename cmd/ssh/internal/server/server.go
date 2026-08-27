@@ -17,8 +17,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/databricks/cli/experimental/ssh/internal/proxy"
-	"github.com/databricks/cli/experimental/ssh/internal/workspace"
+	"github.com/databricks/cli/cmd/ssh/internal/proxy"
+	"github.com/databricks/cli/cmd/ssh/internal/workspace"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"

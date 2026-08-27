@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/ssh/internal/setup"
+	"github.com/databricks/cli/cmd/ssh/internal/setup"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )

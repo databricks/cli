@@ -12,7 +12,7 @@ Ignore = [
 ]
 
 # Linux-only: the local run drives a real sshd, reliable only there (and where
-# task test-exp-ssh provisions it). Absent GOOS keys default to enabled, so the
+# task test-ssh provisions it). Absent GOOS keys default to enabled, so the
 # other OSes must be disabled explicitly.
 GOOS.linux = true
 GOOS.darwin = false

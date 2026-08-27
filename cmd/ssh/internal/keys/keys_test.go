@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/experimental/ssh/internal/keys"
+	"github.com/databricks/cli/cmd/ssh/internal/keys"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

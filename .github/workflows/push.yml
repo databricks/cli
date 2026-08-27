@@ -245,14 +245,14 @@ jobs:
         run: |
           go tool -modfile=tools/task/go.mod task test-exp-aitools
 
-  test-exp-ssh:
+  test-ssh:
     needs:
       - cleanups
       - testmask
 
     # Only run if the target is in the list of targets from testmask
-    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
-    name: "task test-exp-ssh (${{matrix.os.name}})"
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-ssh') }}
+    name: "task test-ssh (${{matrix.os.name}})"
     runs-on: ${{ matrix.os.runner }}
 
     defaults:
@@ -291,7 +291,7 @@ jobs:
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
-          cache-key: test-exp-ssh
+          cache-key: test-ssh
 
       # The ssh acceptance test drives a real sshd behind the tunnel; the runner
       # ships only the client. Install it on Linux (the OS the test is gated to);
@@ -302,7 +302,7 @@ jobs:
 
       - name: Run tests
         run: |
-          go tool -modfile=tools/task/go.mod task test-exp-ssh
+          go tool -modfile=tools/task/go.mod task test-ssh
 
   test-pipelines:
     needs:
@@ -421,7 +421,7 @@ jobs:
     needs:
       - test
       - test-exp-aitools
-      - test-exp-ssh
+      - test-ssh
       - test-pipelines
       - test-sandbox
 
@@ -504,7 +504,7 @@ jobs:
       - name: Generate GitHub App Token (check runs)
         if: >-
           (github.event_name == 'merge_group') ||
-          (github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh'))
+          (github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-ssh'))
         id: generate-check-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
@@ -517,7 +517,7 @@ jobs:
       # Skip integration tests if the primary "test" target is not triggered by this change.
       # Use Checks API (not Statuses API) to match the required "Integration Tests" check.
       - name: Skip integration tests (pull request)
-        if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
+        if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-ssh') }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ steps.generate-check-token.outputs.token }}
@@ -563,7 +563,7 @@ jobs:
       - testmask
 
     if: >-
-      (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]' && (contains(fromJSON(needs.testmask.outputs.targets), 'test') || contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh'))) ||
+      (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]' && (contains(fromJSON(needs.testmask.outputs.targets), 'test') || contains(fromJSON(needs.testmask.outputs.targets), 'test-ssh'))) ||
       (github.event_name == 'push')
 
     runs-on:

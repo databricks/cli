@@ -29,7 +29,7 @@ func sshTunnelRemoteUser() string {
 }
 
 // sshClientPublicKeySecretKey is the secret the CLI stores its authorized public key
-// under (mirrors clientPublicKeyName in experimental/ssh); sshd authorizes it below.
+// under (mirrors clientPublicKeyName in cmd/ssh); sshd authorizes it below.
 const sshClientPublicKeySecretKey = "client-public-key"
 
 var sshTunnelUpgrader = websocket.Upgrader{}

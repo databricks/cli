@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
+	"github.com/databricks/cli/cmd/ssh/internal/sshconfig"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"

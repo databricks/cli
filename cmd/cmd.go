@@ -6,7 +6,7 @@ import (
 
 	aitoolscmd "github.com/databricks/cli/cmd/aitools"
 	"github.com/databricks/cli/cmd/psql"
-	ssh "github.com/databricks/cli/experimental/ssh/cmd"
+	"github.com/databricks/cli/cmd/ssh"
 
 	"github.com/databricks/cli/cmd/account"
 	"github.com/databricks/cli/cmd/api"

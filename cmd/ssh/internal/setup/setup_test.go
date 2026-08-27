@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/experimental/ssh/internal/client"
+	"github.com/databricks/cli/cmd/ssh/internal/client"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"

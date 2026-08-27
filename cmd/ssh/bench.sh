@@ -3,7 +3,7 @@
 # SSH Tunnel Performance Test Script
 # Usage:
 # 1. Setup ssh config: ./cli ssh setup --cluster --name
-# 2. Run: ./experimental/ssh/bench.sh <cluster-id> <ssh-config-hostname> [ssh-tunnel-binary-path] [profile]
+# 2. Run: ./cmd/ssh/bench.sh <cluster-id> <ssh-config-hostname> [ssh-tunnel-binary-path] [profile]
 
 set -e
 

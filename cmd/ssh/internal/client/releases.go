@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/databricks/cli/experimental/ssh/internal/workspace"
+	"github.com/databricks/cli/cmd/ssh/internal/workspace"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"

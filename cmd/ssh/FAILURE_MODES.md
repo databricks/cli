@@ -154,5 +154,5 @@ The proxy-layer behaviors have unit tests that don't need a cluster:
   (state message, error trace, run-page URL) using SDK mocks.
 
 ```shell
-go test ./experimental/ssh/...
+go test ./cmd/ssh/...
 ```

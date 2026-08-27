@@ -1,4 +1,4 @@
-# Working on `experimental/ssh`
+# Working on `cmd/ssh`
 
 This file provides guidance to AI assistants working on the SSH tunnel. See the
 repository root `CLAUDE.md` for project-wide rules.

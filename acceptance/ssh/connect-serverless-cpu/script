@@ -9,7 +9,7 @@ if [ -n "${CLOUD_ENV:-}" ]; then
 else
   # Local: the test server backs the /ssh websocket with a real sshd, so this
   # asserts the bootstrap job plus a full handshake over the tunnel. Skip when
-  # sshd is absent (only task test-exp-ssh provisions it).
+  # sshd is absent (only task test-ssh provisions it).
   if [ -z "$(command -v sshd || ls /usr/sbin/sshd /usr/local/sbin/sshd /sbin/sshd 2>/dev/null)" ]; then
     echo "SKIP_TEST sshd (openssh-server) not installed"
     exit 0
