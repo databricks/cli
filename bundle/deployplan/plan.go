@@ -116,10 +116,12 @@ type PlanEntry struct {
 	// Gone is set on Delete entries when planning confirmed the resource no longer
 	// exists remotely. Applying such an entry only removes it from the state, without
 	// calling the delete API, and approval prompts do not list it as a deletion.
-	Gone        bool                     `json:"gone,omitempty"`
-	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
-	RemoteState any                      `json:"remote_state,omitempty"`
-	Changes     Changes                  `json:"changes,omitempty"`
+	Gone bool `json:"gone,omitempty"`
+	// PersistState applies NewState without invoking the resource when Action is Skip.
+	PersistState bool                     `json:"persist_state,omitempty"`
+	NewState     *structvar.StructVarJSON `json:"new_state,omitempty"`
+	RemoteState  any                      `json:"remote_state,omitempty"`
+	Changes      Changes                  `json:"changes,omitempty"`
 }
 
 type DependsOnEntry struct {
@@ -135,6 +137,9 @@ type ChangeDesc struct {
 	Old    any        `json:"old,omitempty"`
 	New    any        `json:"new,omitempty"`
 	Remote any        `json:"remote,omitempty"`
+
+	// PersistState keeps the desired state when this change is skipped.
+	PersistState bool `json:"-"`
 }
 
 // Possible values for Reason field

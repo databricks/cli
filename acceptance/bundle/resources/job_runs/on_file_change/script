@@ -60,5 +60,21 @@ update_file.py databricks.yml "      lifecycle:
           - on_file_change: seed.txt
 " ""
 trace $CLI bundle plan
+# Save the removal too, so READPLAN=1 verifies state-only updates survive serialization.
+$CLI bundle plan -o json > tmp.plan.json
+title "bundle deploy\n"
+$CLI bundle deploy $(readplanarg tmp.plan.json)
+trace print_requests.py //jobs/run-now
+
+title "re-adding on_file_change re-fires"
+trace print_state.py | jq '.state["resources.job_runs.my_run"].state.lifecycle'
+update_file.py databricks.yml '      job_id: ${resources.jobs.my_job.id}
+' '      job_id: ${resources.jobs.my_job.id}
+      lifecycle:
+        triggers:
+          - on_file_change: seed.txt
+'
+trace $CLI bundle plan
 trace $CLI bundle deploy
+read_id.py my_run > /dev/null
 trace print_requests.py //jobs/run-now

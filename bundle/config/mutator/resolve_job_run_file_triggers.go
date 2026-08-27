@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"os"
+	"io/fs"
 	pathlib "path"
 	"path/filepath"
 	"slices"
@@ -80,7 +80,13 @@ func syncableRelPaths(ctx context.Context, b *bundle.Bundle) ([]string, diag.Dia
 }
 
 func listSyncableRelPaths(ctx context.Context, b *bundle.Bundle) ([]string, error) {
-	fl, err := libsync.NewFileList(ctx, b.WorktreeRoot, b.SyncRoot, b.Config.Sync.Paths, b.Config.Sync.Include, b.Config.Sync.Exclude)
+	// Match sync's effective include set, not just Sync.Include, so a pattern can
+	// hash the internal and AI-snapshot dirs sync force-includes.
+	includes, err := b.GetSyncIncludePatterns(ctx)
+	if err != nil {
+		return nil, err
+	}
+	fl, err := libsync.NewFileList(ctx, b.WorktreeRoot, b.SyncRoot, b.Config.Sync.Paths, includes, b.Config.Sync.Exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -106,28 +112,11 @@ func fileTriggerDiag(b *bundle.Bundle, loc string, severity diag.Severity, forma
 }
 
 func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable []string) (string, string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	// A double star looks recursive but path.Match treats it as two ordinary stars.
-	if strings.Contains(pattern, "**") {
-		return "", "", diags.Append(fileTriggerDiag(b, loc, diag.Error, "** in %q is not supported; use * for a single directory level", pattern))
+	relPattern, diags := validateFileTriggerPattern(b, loc, pattern)
+	if diags.HasError() {
+		return "", "", diags
 	}
-	// A POSIX path is absolute on Windows too, so check both flavours like NormalizePaths does.
-	if filepath.IsAbs(pattern) || pathlib.IsAbs(pattern) {
-		return "", "", diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q must be relative to the defining YAML file", pattern))
-	}
-	// NormalizePaths has already rewritten YAML-relative globs to be bundle-root
-	// relative. Join that onto the bundle root, then require the result stay
-	// under the sync root (an ancestor of the bundle when sync.paths uses ..).
-	joined := filepath.Join(b.BundleRootPath, filepath.FromSlash(pattern))
-	relPattern, err := filepath.Rel(b.SyncRootPath, joined)
-	if err != nil || !filepath.IsLocal(relPattern) {
-		return "", "", diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q is not under the sync root", pattern))
-	}
-	relPattern = filepath.ToSlash(relPattern)
-	_, err = pathlib.Match(relPattern, "")
-	if err != nil {
-		return "", "", diags.Append(fileTriggerDiag(b, loc, diag.Error, "invalid pattern %q: %s", pattern, err))
-	}
+
 	h := sha256.New()
 	matches := 0
 	for _, rel := range syncable {
@@ -139,10 +128,9 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable []string
 		if !matched {
 			continue
 		}
-		match := filepath.Join(b.SyncRootPath, filepath.FromSlash(rel))
-		hash, err := hashFile(match)
+		hash, err := hashFile(b.SyncRoot, rel)
 		if err != nil {
-			diags = diags.Append(fileTriggerDiag(b, loc, diag.Error, "hash %q: %s", match, err))
+			diags = diags.Append(fileTriggerDiag(b, loc, diag.Error, "hash %q: %s", rel, err))
 			continue
 		}
 		h.Write([]byte(rel))
@@ -157,8 +145,34 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable []string
 	return relPattern, hex.EncodeToString(h.Sum(nil)), diags
 }
 
-func hashFile(path string) (string, error) {
-	f, err := os.Open(path)
+func validateFileTriggerPattern(b *bundle.Bundle, loc, pattern string) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	// A double star looks recursive but path.Match treats it as two ordinary stars.
+	if strings.Contains(pattern, "**") {
+		return "", diags.Append(fileTriggerDiag(b, loc, diag.Error, "** in %q is not supported; use * for a single directory level", pattern))
+	}
+	// A POSIX path is absolute on Windows too, so check both flavours like NormalizePaths does.
+	if filepath.IsAbs(pattern) || pathlib.IsAbs(pattern) {
+		return "", diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q must be relative to the defining YAML file", pattern))
+	}
+	// NormalizePaths has already rewritten YAML-relative globs to be bundle-root
+	// relative. Join that onto the bundle root, then require the result stay
+	// under the sync root (an ancestor of the bundle when sync.paths uses ..).
+	joined := filepath.Join(b.BundleRootPath, filepath.FromSlash(pattern))
+	relPattern, err := filepath.Rel(b.SyncRootPath, joined)
+	if err != nil || !filepath.IsLocal(relPattern) {
+		return "", diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q is not under the sync root", pattern))
+	}
+	relPattern = filepath.ToSlash(relPattern)
+	_, err = pathlib.Match(relPattern, "")
+	if err != nil {
+		return "", diags.Append(fileTriggerDiag(b, loc, diag.Error, "invalid pattern %q: %s", pattern, err))
+	}
+	return relPattern, diags
+}
+
+func hashFile(root fs.FS, path string) (string, error) {
+	f, err := root.Open(path)
 	if err != nil {
 		return "", err
 	}

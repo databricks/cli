@@ -346,6 +346,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
+	// Resolve file-trigger fingerprints after build scripts and generated overlays
+	// have produced the exact files that a plan would deploy. Deploy resolves them
+	// after predeploy instead; a loaded plan already contains its fingerprints.
+	if !opts.SkipInitialize && !opts.Deploy {
+		bundle.ApplyContext(ctx, b, mutator.ResolveJobRunFileTriggers())
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+	}
+
 	if opts.PreDeployChecks {
 		downgradeWarningToError := !opts.Deploy
 		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
