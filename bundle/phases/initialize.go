@@ -191,7 +191,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
 		mutator.ValidateJobRunTriggers(),
 
-		// Expand on_file_change globs and hash matched files into ResolvedFileTriggers.
+		// Expand on_file_change globs and hash matched files into triggers_state.
 		mutator.ResolveJobRunFileTriggers(),
 
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)

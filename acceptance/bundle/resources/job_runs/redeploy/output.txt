@@ -59,9 +59,6 @@ Resources:
       "job_parameters": {
         "env": "prod"
       },
-      "lifecycle": {
-        "triggers": {}
-      },
       "result_state": "SUCCESS"
     }
   },
