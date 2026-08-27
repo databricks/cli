@@ -438,12 +438,12 @@ func (c *BufferedClient) RecordOperation(ctx context.Context, resourceKey string
 
 // RecordFailure records that a resource did not apply, so the history says why rather
 // than leaving the resource out.
-func (c *BufferedClient) RecordFailure(resourceKey, resourceID string, cause error) {
+func (c *BufferedClient) RecordFailure(resourceKey, resourceID string, state json.RawMessage, cause error) {
 	if c == nil {
 		return
 	}
 
-	c.record(resourceKey, NewFailureUpdate(resourceID, cause))
+	c.record(resourceKey, NewFailureUpdate(resourceID, state, cause))
 }
 
 // record makes update the one waiting for resourceKey, waiting itself while the queue is

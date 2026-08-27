@@ -484,6 +484,13 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED")
 	}
 
+	// A failure may leave no state only where nothing is left to describe: a create that never
+	// landed, or a recreate whose delete already went through.
+	if failed && after.State == "" && leavesLiveResource(after.ActionType) {
+		return dmsInvalidArgument("state is required for a " + string(after.ActionType) +
+			" operation, because it acts on a resource that already exists and cannot destroy it, even when it fails")
+	}
+
 	// An operation with state must identify its resource via resource_id,
 	// even for failed operations reporting prior state.
 	if after.State != "" && after.ResourceId == "" {
@@ -558,6 +565,18 @@ func (s *FakeWorkspace) ListResources(deploymentID string) Response {
 		resources = append(resources, d.Resources[key])
 	}
 	return Response{Body: bundledeployments.ListResourcesResponse{Resources: resources}}
+}
+
+// leavesLiveResource reports whether a failed operation of this type leaves a resource behind
+// that it still has to describe. A create leaves nothing, and a recreate already deleted.
+func leavesLiveResource(action bundledeployments.OperationActionType) bool {
+	switch action {
+	case bundledeployments.OperationActionTypeOperationActionTypeCreate,
+		bundledeployments.OperationActionTypeOperationActionTypeRecreate:
+		return false
+	default:
+		return true
+	}
 }
 
 // dmsNotFound returns the RESOURCE_DOES_NOT_EXIST error shape the DMS API uses,

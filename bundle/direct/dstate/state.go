@@ -132,9 +132,25 @@ func (db *DeploymentState) RegisterDmsBufferedClient(client *dms.BufferedClient)
 // RecordFailure records that a resource did not apply, so the history says why rather than
 // leaving the resource out. resourceID is the id it had before the failure.
 func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause error) {
-	if r := db.recorder(); r != nil {
-		r.RecordFailure(resourceKey, resourceID, cause)
+	r := db.recorder()
+	if r == nil {
+		return
 	}
+
+	// The service refuses a failure that leaves a live resource described by nothing, so re-state
+	// what it still has. An empty resourceID means there is nothing left: a create that never
+	// landed, or a recreate whose delete already went through.
+	var recorded json.RawMessage
+	if entry, ok := db.GetResourceEntry(resourceKey); resourceID != "" && ok && len(entry.State) > 0 {
+		var err error
+		recorded, err = json.Marshal(RecordedState{State: entry.State, DependsOn: entry.DependsOn})
+		if err != nil {
+			// Nothing the caller can act on, so record the failure without the state.
+			recorded = nil
+		}
+	}
+
+	r.RecordFailure(resourceKey, resourceID, recorded, cause)
 }
 
 // recorder reads the client under db.mu, which guards it, and returns nil when the bundle does

@@ -139,7 +139,7 @@ func TestUpdateRequestSendsExactlyTheMaskedFields(t *testing.T) {
 		"error_message": "boom",
 		"status":        bundledeployments.OperationStatusOperationStatusFailed,
 		"sequence_id":   "3",
-	}, newUpdateRequest(NewFailureUpdate("job-1", errors.New("boom")), "3"))
+	}, newUpdateRequest(NewFailureUpdate("job-1", nil, errors.New("boom")), "3"))
 
 	// The deployment's own fields follow the same rule. Clearing deployment_mode - a target that
 	// stops setting mode - sends it empty, which the SDK struct's omitempty would have dropped.

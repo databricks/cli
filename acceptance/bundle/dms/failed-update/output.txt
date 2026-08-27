@@ -45,11 +45,13 @@ Files: 3 uploaded, 0 deleted
   "method": "PATCH",
   "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
   "q": {
-    "update_mask": "error_message,status"
+    "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
     "error_message": "updating id=main.dms_failed_update_schema: Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
+    "resource_id": "main.dms_failed_update_schema",
     "sequence_id": "0",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_failed_update_schema\"}}",
     "status": "OPERATION_STATUS_FAILED"
   }
 }
@@ -66,8 +68,8 @@ Files: 3 uploaded, 0 deleted
 {
   "resources": [
     {
-      "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
-      "last_version_id": "1",
+      "last_action_type": "OPERATION_ACTION_TYPE_UPDATE",
+      "last_version_id": "2",
       "name": "deployments/[NUMID]/resources/schemas.foo",
       "resource_id": "main.dms_failed_update_schema",
       "resource_key": "schemas.foo",

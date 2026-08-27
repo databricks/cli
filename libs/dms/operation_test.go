@@ -19,7 +19,7 @@ import (
 func TestNewFailureUpdateTruncatesLongError(t *testing.T) {
 	// Truncated rather than rejected: a message over the limit would make recording
 	// fail and hide the error it is reporting.
-	update := NewFailureUpdate("job-123", errors.New(strings.Repeat("x", maxErrorMessageSize+100)))
+	update := NewFailureUpdate("job-123", nil, errors.New(strings.Repeat("x", maxErrorMessageSize+100)))
 
 	assert.Len(t, update.ErrorMessage, maxErrorMessageSize)
 }
@@ -29,7 +29,7 @@ func TestNewFailureUpdatePreservesUTF8OnTruncation(t *testing.T) {
 	// rune behind and the service stores state and messages as strings.
 	msg := strings.Repeat("a", maxErrorMessageSize-1) + "❌" + "x"
 
-	update := NewFailureUpdate("job-123", errors.New(msg))
+	update := NewFailureUpdate("job-123", nil, errors.New(msg))
 
 	assert.True(t, utf8.ValidString(update.ErrorMessage))
 	// The whole emoji went, so the message is shorter than the limit rather than exactly it.
@@ -40,7 +40,7 @@ func TestMergeLetsAWriteSupersedeAFailure(t *testing.T) {
 	// A failure is not the last word. A retry that writes state wins whole - state, id and
 	// mask - and the mask names error_message so the recorded failure is cleared. The service
 	// rejects a succeeded operation that still carries an error.
-	failed := NewFailureUpdate("id-old", errors.New("boom"))
+	failed := NewFailureUpdate("id-old", nil, errors.New("boom"))
 	retried, err := NewStateUpdate("id-new", json.RawMessage(`{"state":{"name":"after"}}`), false)
 	require.NoError(t, err)
 
@@ -58,7 +58,7 @@ func TestMergeKeepsTheWritesStateAndMask(t *testing.T) {
 	// survive: the resource stays listed as it was written, now marked failed.
 	write, err := NewStateUpdate("id-new", json.RawMessage(`{"state":{"name":"before"}}`), false)
 	require.NoError(t, err)
-	failed := NewFailureUpdate("id-old", errors.New("boom"))
+	failed := NewFailureUpdate("id-old", nil, errors.New("boom"))
 
 	merged := write.Merge(failed)
 

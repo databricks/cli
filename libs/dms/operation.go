@@ -70,10 +70,10 @@ func NewStateUpdate(resourceID string, state json.RawMessage, inProgress bool) (
 	}, nil
 }
 
-// NewFailureUpdate records that an operation did not apply, so the history says why a
-// resource failed rather than leaving it pending. It claims no state, so whatever an
-// earlier write recorded stands.
-func NewFailureUpdate(resourceID string, cause error) OperationUpdate {
+// NewFailureUpdate records that an operation did not apply, so the history says why a resource
+// failed rather than leaving it pending. state is what the resource still has, which the service
+// requires of a failure on a live one; nil when nothing is left to describe.
+func NewFailureUpdate(resourceID string, state json.RawMessage, cause error) OperationUpdate {
 	// Summarized, not cause.Error(): for an API failure that adds the status and error
 	// code, which is often the most actionable part of the history.
 	message := diag.FormatAPIErrorSummary(cause)
@@ -90,8 +90,15 @@ func NewFailureUpdate(resourceID string, cause error) OperationUpdate {
 		}
 	}
 
+	fields := KeepsState
+	if state != nil {
+		// The id travels with the state, which the service requires of any mask naming one.
+		fields = DescribesResource
+	}
+
 	return OperationUpdate{
-		Fields:       KeepsState,
+		Fields:       fields,
+		State:        state,
 		ResourceID:   resourceID,
 		Status:       bundledeployments.OperationStatusOperationStatusFailed,
 		ErrorMessage: message,
