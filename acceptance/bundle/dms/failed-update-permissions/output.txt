@@ -1,0 +1,29 @@
+
+=== Deploy the job and its permissions
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-failed-update-permissions/default/files...
+Created jobs.foo
+Created jobs.foo.permissions
+Files: 4 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A permissions update that fails records the failure with the permissions it still has. The resource ID here is a path rather than a number, and the state is the embedded permission list, so this covers a shape the resource tests do not
+>>> update_file.py databricks.yml CAN_VIEW CAN_MANAGE
+
+>>> fault.py PUT /api/2.0/permissions/jobs/* 403 0 1 PERMISSION_DENIED
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-failed-update-permissions/default/files...
+Error: cannot update resources.jobs.foo.permissions: updating id=/jobs/[NUMID]: Fault injected by test. (403 PERMISSION_DENIED)
+
+Endpoint: PUT [DATABRICKS_URL]/api/2.0/permissions/jobs/[NUMID]
+HTTP Status: 403 Forbidden
+API error_code: PERMISSION_DENIED
+API message: Fault injected by test.
+
+Files: 3 uploaded, 0 deleted
+
+>>> print_requests.py --dms //api/2.0/bundle --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "2"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY", "previous_version_id": "1", "operations": [{"resource_key": "jobs.foo.permissions", "action_type": "OPERATION_ACTION_TYPE_UPDATE"}]}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.foo.permissions", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "updating id=/jobs/[NUMID]: Fault injected by test. (403 PERMISSION_DENIED)", "resource_id": "/jobs/[NUMID]", "sequence_id": "0", "state": "{\"state\":{\"object_id\":\"/jobs/[NUMID]\",\"__embed__\":[{\"level\":\"CAN_VIEW\",\"user_name\":\"viewer@example.com\"},{\"level\":\"IS_OWNER\",\"user_name\":\"[USERNAME]\"}]},\"depends_on\":[{\"node\":\"resources.jobs.foo\",\"label\":\"${resources.jobs.foo.id}\"}]}", "status": "OPERATION_STATUS_FAILED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
