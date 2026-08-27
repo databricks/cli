@@ -104,25 +104,32 @@ def detached_descendants(server_pgid):
     PR_SET_CHILD_SUBREAPER makes every orphan in the session reparent to this process, so
     work that detached itself - tmux, setsid, disown, a plain background command - resurfaces
     here as a direct child. The server's own sshd children stay in its group and are excluded.
+
+    Reads /proc directly, mirroring detachedDescendants in internal/server/descendants.go.
+    Asking ps for this process's children cannot work: ps is one of them, and subprocess.run
+    leaves it in this process's group, so it matches its own query on every poll and the
+    survivor list is never empty.
     """
-    result = subprocess.run(
-        ["ps", "-o", "pid=,pgid=,stat=", "--ppid", str(os.getpid())],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    self_pid = os.getpid()
     survivors = []
-    for line in result.stdout.splitlines():
-        fields = line.split()
-        if len(fields) < 3:
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit():
             continue
-        pid, pgid, stat = fields
+        try:
+            with open(f"/proc/{entry}/stat") as stat_file:
+                # Split on the last ')' rather than from the left: the comm field before it
+                # can contain both spaces and parentheses. state, ppid and pgrp follow it.
+                state, ppid, pgrp = stat_file.read().rsplit(")", 1)[1].split()[:3]
+        except OSError:
+            # The process exited while we were walking /proc.
+            continue
+        if ppid != str(self_pid) or pgrp == str(server_pgid):
+            continue
         # Zombies are already dead; the SIGCHLD handler collects them.
-        if stat.startswith("Z"):
+        if state.startswith("Z"):
             continue
-        if pgid != str(server_pgid):
-            survivors.append(pid)
-    return survivors
+        survivors.append(entry)
+    return sorted(survivors, key=int)
 
 
 def wait_for_detached_descendants(server_pgid, timeout_seconds):
@@ -285,7 +292,13 @@ def run_ssh_server():
         # The SIGCHLD subreaper handler may have collected the server first; Popen reports that as 0.
         if proc.pid in reaped_statuses:
             returncode = os.waitstatus_to_exitcode(reaped_statuses[proc.pid])
-        if returncode != 0:
+        if returncode == -signal.SIGTERM:
+            # A newer session's bootstrap terminates a server already running on this cluster
+            # (see cleanup), which a reconnect asking for a different --keep-detached-for now
+            # reaches on a normal path. That is a handover, not a failure of this run, so it
+            # must not mark the run FAILED - the linger below still runs.
+            print("SSH server was terminated, most likely by a newer session on this cluster", flush=True)
+        elif returncode != 0:
             # The tail size matches maxRunFailureTraceBytes, the cap the client prints to the terminal.
             raise RuntimeError(f"SSH server exited with code {returncode}. Last server logs:\n" + "".join(tail)[-2000:])
     finally:

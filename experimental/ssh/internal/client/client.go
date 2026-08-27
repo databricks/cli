@@ -1222,10 +1222,11 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 		return "", 0, "", err
 	}
 
-	// Start a new server when none is running, or when the running one was started under a
-	// different usage policy. A job's usage policy is fixed at submission, so we can't retarget
-	// the existing server; the new server overwrites metadata.json and the old one idles out via
-	// shutdownDelay.
+	// Start a new server when none is running, or when the running one was started with a
+	// different usage policy or linger duration. Both are fixed at submission, so we can't
+	// retarget the existing server; the new server overwrites metadata.json, and its bootstrap
+	// terminates the running server on the cluster before starting (see cleanup() in
+	// ssh-server-bootstrap.py), which ends the previous run.
 	keepDetachedMs := opts.KeepDetachedFor.Milliseconds()
 	needNewServer := err != nil ||
 		!usagePolicyMatches(meta.UsagePolicyID, opts.UsagePolicyID) ||
