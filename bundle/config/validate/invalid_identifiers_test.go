@@ -143,27 +143,29 @@ func TestRequiredIdentifierValidationScope(t *testing.T) {
 	}, diagSummaries(diags))
 }
 
-func TestRequiredDoesNotPanicOnMetacharacterResourceKey(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Volumes: map[string]*resources.Volume{
-					"weird[0]key": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							Name:        "",
-							CatalogName: "main",
-							SchemaName:  "default",
-							VolumeType:  catalog.VolumeTypeManaged,
-						},
-					},
-				},
-			},
-		},
-	}
+func TestRequiredPreservesLocationForMetacharacterResourceKey(t *testing.T) {
+	location := dyn.Location{File: "databricks.yml", Line: 6, Column: 13}
+	b := &bundle.Bundle{}
+	require.NoError(t, b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		return dyn.V(map[string]dyn.Value{
+			"resources": dyn.V(map[string]dyn.Value{
+				"volumes": dyn.V(map[string]dyn.Value{
+					"weird[0]key": dyn.V(map[string]dyn.Value{
+						"name":         dyn.NewValue("", []dyn.Location{location}),
+						"catalog_name": dyn.V("main"),
+						"schema_name":  dyn.V("default"),
+						"volume_type":  dyn.V("MANAGED"),
+					}),
+				}),
+			}),
+		}), nil
+	}))
 
 	diags := bundle.Apply(t.Context(), b, validate.Required())
 	require.True(t, diags.HasError())
-	assert.Contains(t, diagSummaries(diags), "volume name is required")
+	require.Len(t, diags, 1)
+	assert.Equal(t, "volume name is required", diags[0].Summary)
+	assert.Equal(t, []dyn.Location{location}, diags[0].Locations)
 }
 
 func TestRequiredAcceptsValidIdentifiers(t *testing.T) {

@@ -143,7 +143,7 @@ func validateResourceIdentifier(b *bundle.Bundle, resourceType, key, field, valu
 
 func validateIdentifier(b *bundle.Bundle, resourcePath dyn.Path, field, value string, required bool) diag.Diagnostics {
 	fieldPath := resourcePath.Append(dyn.Key(field))
-	locations := b.Config.GetLocations(fieldPath.String())
+	locations := locationsAtPath(b, fieldPath)
 	if value == "" && !required && !pathExists(b, fieldPath) {
 		return nil
 	}
@@ -153,7 +153,7 @@ func validateIdentifier(b *bundle.Bundle, resourcePath dyn.Path, field, value st
 		return nil
 	}
 	if len(locations) == 0 {
-		locations = b.Config.GetLocations(resourcePath.String())
+		locations = locationsAtPath(b, resourcePath)
 	}
 	return diag.Diagnostics{{
 		Severity:  diag.Error,
@@ -162,6 +162,15 @@ func validateIdentifier(b *bundle.Bundle, resourcePath dyn.Path, field, value st
 		Locations: locations,
 		Paths:     []dyn.Path{fieldPath},
 	}}
+}
+
+// locationsAtPath avoids GetLocations: string paths do not round-trip keys with '[' or '.'.
+func locationsAtPath(b *bundle.Bundle, path dyn.Path) []dyn.Location {
+	value, err := dyn.GetByPath(b.Config.Value(), path)
+	if err != nil {
+		return nil
+	}
+	return value.Locations()
 }
 
 func pathExists(b *bundle.Bundle, path dyn.Path) bool {
