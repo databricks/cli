@@ -269,7 +269,11 @@ func TestApplySecretScopeFixupsReportsLowestKey(t *testing.T) {
 	}}}
 	b.Config.Workspace.CurrentUser = &config.User{User: &iam.User{UserName: "u"}}
 
-	for range 20 {
+	// Repeated because the assertion is only as strong as the odds of catching a
+	// regression: the keys are sorted now, so one call suffices for current
+	// behaviour, but if the sort were dropped a single call would pick "apple"
+	// half the time and pass. Ten rounds leaves a one-in-a-thousand miss.
+	for range 10 {
 		key, err := ApplySecretScopeFixups(b, engine.EngineDirect)
 		require.Error(t, err)
 		assert.Equal(t, "apple", key)
