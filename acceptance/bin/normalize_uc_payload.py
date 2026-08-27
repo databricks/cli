@@ -14,6 +14,12 @@ Managed properties surface in three shapes, all handled by pruning matching keys
     an emptied `properties` object is then dropped so {} vs absent doesn't diverge.
   - a `changes` entry keyed `properties` or `properties['unity.catalog.managed...']`;
     an emptied `changes` object is likewise dropped.
+  - a whole plan change entry marked `reason: backend_default`, which `jq '.plan[].changes'`
+    extracts without its enclosing `changes` key; the entry is dropped outright.
+
+A backend default is a field the CLI never acts on but the backend populated, so it appears
+only on some clouds — exactly the managed-defaults problem, generalized to any such field.
+Dropping the entry (not just its managed keys) keeps goldens identical across clouds.
 
 Any field names passed as arguments are additionally deleted wherever they appear. These
 are the volatile server-set fields (created_at, metastore_id, schema_id, ...) each test
@@ -28,6 +34,24 @@ import sys
 # Matches a managed-default property key, whether bare (as a map key) or wrapped in a
 # plan change key like properties['unity.catalog.managed.delta.defaults.delta....'].
 managed_re = re.compile(r"unity\.catalog\.managed\..*\.defaults\..*")
+
+
+def is_backend_default(value):
+    """Report whether a plan change entry is one the CLI skipped as a backend default.
+
+    These are output-only (the CLI never acts on them) and only appear on clouds whose
+    backend populated the field, so the whole entry is dropped — this also catches the
+    managed-property change once `jq '.plan[].changes'` has stripped the `changes` key
+    that would otherwise route it through is_managed_change.
+
+    >>> is_backend_default({"action": "skip", "reason": "backend_default", "remote": {"x": "1"}})
+    True
+    >>> is_backend_default({"action": "update"})
+    False
+    >>> is_backend_default("backend_default")
+    False
+    """
+    return isinstance(value, dict) and value.get("reason") == "backend_default"
 
 
 def is_managed_change(key, value):
@@ -66,6 +90,8 @@ def prune(node, drop_fields):
     {'properties': {'k': 'v'}}
     >>> prune({"changes": {"properties": {"action": "skip", "remote": {"unity.catalog.managed.a.defaults.b": "1"}}, "name": {"action": "update"}}}, set())
     {'changes': {'name': {'action': 'update'}}}
+    >>> prune({"properties": {"action": "skip", "reason": "backend_default", "remote": {"k": "v"}}}, set())
+    {}
     >>> prune([{"metastore_id": "m", "full_name": "c.s"}], {"metastore_id"})
     [{'full_name': 'c.s'}]
     """
@@ -77,6 +103,8 @@ def prune(node, drop_fields):
     result = {}
     for key, value in node.items():
         if key in drop_fields or managed_re.search(key):
+            continue
+        if is_backend_default(value):
             continue
         if key == "changes" and isinstance(value, dict):
             value = {k: v for k, v in value.items() if not is_managed_change(k, v)}
