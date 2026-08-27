@@ -321,7 +321,7 @@ tasks:
       - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
   checks:
-    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, lockfiles)
+    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, lockfiles, doctests)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
     # touching more paths should not race with whitespace/link scanners.
     cmds:
@@ -331,6 +331,7 @@ tasks:
       - task: deadcode
       - task: check-changelog
       - task: check-lockfiles
+      - task: test-doctest
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
