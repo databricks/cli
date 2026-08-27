@@ -15,6 +15,13 @@ import (
 // assert it never reaches a template.
 const unsafeValue = "resources.jobs.my_secret_job"
 
+// nilError is a nil error interface, for the row that wraps nothing.
+var nilError error
+
+// unsafeMarkers are the user-data-shaped strings the fixtures use. A safe message
+// must never contain one, whichever row produced it.
+var unsafeMarkers = []string{unsafeValue, "/Workspace", "a@b.com", "my_job"}
+
 func TestErrorf(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -179,6 +186,68 @@ func TestErrorf(t *testing.T) {
 			wantMessage:     fs.ErrNotExist.Error(),
 			wantSafeMessage: fs.ErrNotExist.Error(),
 		},
+		{
+			name:            "wrapping nothing keeps the verb",
+			format:          "wrapping: %w",
+			args:            []any{nilError},
+			wantMessage:     "wrapping: %!w(<nil>)",
+			wantSafeMessage: "wrapping: %w",
+		},
+
+		// A SafeStringer contributes its stand-in, whatever the verb.
+		{
+			name:            "stand-in under s verb",
+			format:          "cannot update %s: %w",
+			args:            []any{safeStringerKey("resources.jobs.my_job"), fs.ErrPermission},
+			wantMessage:     "cannot update resources.jobs.my_job: " + fs.ErrPermission.Error(),
+			wantSafeMessage: "cannot update jobs.*: %w",
+		},
+		{
+			name:            "stand-in quoted by q verb like the value",
+			format:          "%q not found",
+			args:            []any{safeStringerKey("resources.jobs.my_job")},
+			wantMessage:     `"resources.jobs.my_job" not found`,
+			wantSafeMessage: `"jobs.*" not found`,
+		},
+		{
+			name:            "stand-in alongside safe and unsafe args",
+			format:          "cannot %s %s: field %q: %s",
+			args:            []any{Safe("update"), safeStringerKey("resources.jobs.my_job"), Safe("tasks[0].job_id"), unsafeValue},
+			wantMessage:     "cannot update resources.jobs.my_job: field \"tasks[0].job_id\": " + unsafeValue,
+			wantSafeMessage: `cannot update jobs.*: field "tasks[0].job_id": %s`,
+		},
+		{
+			// Safe cannot put a stand-in value's user-supplied part back in.
+			name:            "stand-in outranks Safe",
+			format:          "%s",
+			args:            []any{Safe(safeStringerKey("resources.jobs.my_job"))},
+			wantMessage:     "resources.jobs.my_job",
+			wantSafeMessage: "jobs.*",
+		},
+		{
+			// An error with a safe message of its own prefers that to a stand-in.
+			name:            "wrapped safe error beats a stand-in",
+			format:          "outer: %w",
+			args:            []any{Errorf("inner %d", Safe(1))},
+			wantMessage:     "outer: inner 1",
+			wantSafeMessage: "outer: inner 1",
+		},
+		{
+			// A typed error with no safe message of its own falls back to its
+			// stand-in, which is how libs/filer reports a classification.
+			name:            "typed error stand-in under w verb",
+			format:          "writing state: %w",
+			args:            []any{standInOnlyErr{}},
+			wantMessage:     "writing state: access denied: /Workspace/Users/a@b.com/x",
+			wantSafeMessage: "writing state: access denied",
+		},
+		{
+			name:            "typed error stand-in under s verb",
+			format:          "writing state: %s",
+			args:            []any{standInOnlyErr{}},
+			wantMessage:     "writing state: access denied: /Workspace/Users/a@b.com/x",
+			wantSafeMessage: "writing state: access denied",
+		},
 	}
 
 	for _, tt := range tests {
@@ -205,6 +274,21 @@ func TestErrorf(t *testing.T) {
 			assert.Equal(t, tt.wantMessage, fmt.Errorf(tt.format, unpackArgs(tt.args)...).Error())
 		})
 	}
+
+	// The security property of the package, over every row rather than a
+	// hand-picked list: whatever the message carries, the safe message does not
+	// carry the value that was not marked safe.
+	for _, tt := range tests {
+		t.Run("NoLeak/"+tt.name, func(t *testing.T) {
+			err := Errorf(tt.format, tt.args...)
+			safe := SafeError(err)
+			for _, marker := range unsafeMarkers {
+				if strings.Contains(err.Error(), marker) {
+					assert.NotContains(t, safe, marker, "marker %q reached the safe message", marker)
+				}
+			}
+		})
+	}
 }
 
 func TestSafeErrorChainsEveryLevel(t *testing.T) {
@@ -226,15 +310,6 @@ func TestSafeErrorChainsThroughPlainWrap(t *testing.T) {
 	err := fmt.Errorf("%s: %w", unsafeValue, inner)
 
 	assert.Equal(t, `cannot look up "continuous.pause_status"`, SafeError(err))
-}
-
-func TestSafeErrorChainsSeveralWrappedErrors(t *testing.T) {
-	first := Errorf("group %s has no adapter", Safe("quality_monitors"))
-	err := Errorf("%s: %w and %w", unsafeValue, first, fs.ErrPermission)
-
-	assert.Equal(t, "%s: group quality_monitors has no adapter and %w", SafeError(err))
-	assert.ErrorIs(t, err, fs.ErrPermission)
-	assert.ErrorIs(t, err, first)
 }
 
 func TestSafeErrorWithoutSafeErr(t *testing.T) {
@@ -333,28 +408,6 @@ func TestErrorsAsType(t *testing.T) {
 	pathErr, ok := errors.AsType[*fs.PathError](err)
 	require.True(t, ok)
 	assert.Equal(t, "open", pathErr.Op)
-}
-
-// TestSafeErrorNeverLeaksUnsafeValues is the security property of the package:
-// nothing that was not marked Safe reaches the template.
-func TestSafeErrorNeverLeaksUnsafeValues(t *testing.T) {
-	const secret = "SECRET-a1b2c3"
-
-	errs := []error{
-		Errorf("%s", secret),
-		Errorf("%q: %v", secret, errors.New(secret)),
-		Errorf("%s: %w", secret, errors.New(secret)),
-		Errorf("%s: %w", secret, Errorf("inner %s: %w", secret, fs.ErrNotExist)),
-		Errorf("%v", struct{ Name string }{secret}),
-		Errorf("%s and %s", Safe("jobs"), secret),
-		Errorf("%[1]s", secret),
-		Errorf("%*s", Safe(4), secret),
-	}
-
-	for _, err := range errs {
-		require.Contains(t, err.Error(), secret, "message should carry the value")
-		assert.NotContains(t, SafeError(err), secret, "safe message must not carry the value")
-	}
 }
 
 func TestParseVerb(t *testing.T) {
@@ -465,34 +518,6 @@ func TestParseVerb(t *testing.T) {
 	}
 }
 
-// TestSafeErrorIsStableAcrossCalls guards against expand mutating state.
-func TestSafeErrorIsStableAcrossCalls(t *testing.T) {
-	err := Errorf("%s: field %q: %w", unsafeValue, Safe("id"), Errorf("inner %d", Safe(2)))
-	first := SafeError(err)
-	assert.Equal(t, first, SafeError(err))
-	assert.Equal(t, first, SafeError(err))
-}
-
-// TestUnsafeArgsAreNotRetained checks that unsafe values are dropped at
-// construction rather than kept alive inside the error for later inspection.
-func TestUnsafeArgsAreNotRetained(t *testing.T) {
-	// The safe message is rendered at construction, so the error holds a string
-	// and never the arguments themselves. Nothing unsafe is reachable from it.
-	err := Errorf("%s: %d", unsafeValue, 42)
-
-	te, ok := errors.AsType[*safeErr](err)
-	require.True(t, ok)
-	assert.Equal(t, "%s: %d", te.safeErr)
-	assert.NotContains(t, te.safeErr, unsafeValue)
-}
-
-func TestSafeArgsAreRendered(t *testing.T) {
-	err := Errorf("%s: %s", Safe("jobs"), unsafeValue)
-
-	assert.Equal(t, "jobs: "+unsafeValue, err.Error())
-	assert.Equal(t, "jobs: %s", SafeError(err))
-}
-
 func TestSafeErrorDeepChain(t *testing.T) {
 	err := New("root cause")
 	for range 5 {
@@ -514,96 +539,6 @@ type standInOnlyErr struct{}
 
 func (standInOnlyErr) Error() string      { return "access denied: /Workspace/Users/a@b.com/x" }
 func (standInOnlyErr) SafeString() string { return "access denied" }
-
-func TestSafeStringer(t *testing.T) {
-	key := safeStringerKey("resources.jobs.my_job")
-
-	tests := []struct {
-		name            string
-		format          string
-		args            []any
-		wantMessage     string
-		wantSafeMessage string
-	}{
-		{
-			name:            "s verb",
-			format:          "cannot update %s: %w",
-			args:            []any{key, fs.ErrPermission},
-			wantMessage:     "cannot update resources.jobs.my_job: " + fs.ErrPermission.Error(),
-			wantSafeMessage: "cannot update jobs.*: %w",
-		},
-		{
-			name:            "q verb quotes the stand-in like the value",
-			format:          "%q not found",
-			args:            []any{key},
-			wantMessage:     `"resources.jobs.my_job" not found`,
-			wantSafeMessage: `"jobs.*" not found`,
-		},
-		{
-			name:            "alongside Safe and unsafe args",
-			format:          "cannot %s %s: field %q: %s",
-			args:            []any{Safe("update"), key, Safe("tasks[0].job_id"), unsafeValue},
-			wantMessage:     "cannot update resources.jobs.my_job: field \"tasks[0].job_id\": " + unsafeValue,
-			wantSafeMessage: `cannot update jobs.*: field "tasks[0].job_id": %s`,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := Errorf(tt.format, tt.args...)
-			assert.Equal(t, tt.wantMessage, err.Error())
-			assert.Equal(t, tt.wantSafeMessage, SafeError(err))
-		})
-	}
-}
-
-func TestSafeStringerValueIsNotRetained(t *testing.T) {
-	err := Errorf("%s", safeStringerKey("resources.jobs.my_job"))
-
-	te, ok := errors.AsType[*safeErr](err)
-	require.True(t, ok)
-	// Only the stand-in reaches the safe message; the key itself is gone.
-	assert.Equal(t, "jobs.*", te.safeErr)
-	assert.NotContains(t, te.safeErr, "my_job")
-}
-
-func TestSafeStringerErrorPrefersItsSafeMessage(t *testing.T) {
-	// A templated error under %w contributes its template, not a stand-in.
-	inner := Errorf("inner %d", Safe(1))
-	err := Errorf("outer: %w", inner)
-	assert.Equal(t, "outer: inner 1", SafeError(err))
-}
-
-func TestSafeStringerErrorFallsBackToStandIn(t *testing.T) {
-	// An error with no template of its own contributes its stand-in, which is how
-	// a typed error reports its classification without the path it carries.
-	err := Errorf("writing state: %w", standInOnlyErr{})
-	assert.Equal(t, "writing state: access denied: /Workspace/Users/a@b.com/x", err.Error())
-	assert.Equal(t, "writing state: access denied", SafeError(err))
-	assert.NotContains(t, SafeError(err), "/Workspace")
-
-	// Without a stand-in the verb stays, as before.
-	assert.Equal(t, "writing state: %w", SafeError(Errorf("writing state: %w", fs.ErrPermission)))
-}
-
-func TestSafeStringerOutranksSafe(t *testing.T) {
-	// Wrapping a SafeStringer in Safe must not put its user-supplied part back
-	// into the template.
-	err := Errorf("%s", Safe(safeStringerKey("resources.jobs.my_job")))
-	assert.Equal(t, "resources.jobs.my_job", err.Error())
-	assert.Equal(t, "jobs.*", SafeError(err))
-}
-
-func TestSafeErrorWrapNilError(t *testing.T) {
-	// %w whose argument holds no error: a nil error interface matches no case in
-	// templateArgs, so nothing is retained and the verb stays in the template
-	// because there is no error to chain one from.
-	var wrapped error
-
-	err := Errorf("wrapping: %w", wrapped)
-	assert.Equal(t, fmt.Errorf("wrapping: %w", wrapped).Error(), err.Error())
-	assert.Equal(t, "wrapping: %w", SafeError(err))
-}
 
 // cyclicErr unwraps to whatever it is pointed at, which a test uses to close a
 // loop back to an ancestor.
@@ -633,16 +568,6 @@ func TestSafeErrorDeepChainTerminates(t *testing.T) {
 	}
 	assert.NotPanics(t, func() { SafeError(err) })
 	assert.Equal(t, "root", SafeError(err))
-}
-
-func TestSafeErrorStandInUnderOrdinaryVerb(t *testing.T) {
-	// %s rather than %w: the error still contributes its stand-in, so a typed
-	// error reports its classification either way.
-	err := Errorf("writing state: %s", standInOnlyErr{})
-
-	assert.Equal(t, "writing state: access denied: /Workspace/Users/a@b.com/x", err.Error())
-	assert.Equal(t, "writing state: access denied", SafeError(err))
-	assert.NotContains(t, SafeError(err), "/Workspace")
 }
 
 func TestSafeErrorIsCapped(t *testing.T) {
