@@ -17,7 +17,7 @@ import (
 )
 
 func TestResolveJobRunFileTriggers(t *testing.T) {
-	t.Run("hashes file contents with sha256", func(t *testing.T) {
+	t.Run("fingerprints the matched file set", func(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "a.txt"), []byte("hello"), 0o644))
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "b.txt"), []byte("world"), 0o644))
@@ -28,12 +28,12 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 		require.False(t, diags.HasError())
 
-		hashes := b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange
-		require.Len(t, hashes, 1)
-		assert.Equal(t, map[string]string{
-			"a.txt": contentHash("hello"),
-			"b.txt": contentHash("world"),
-		}, hashes["*.txt"])
+		fingerprints := b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange
+		require.Len(t, fingerprints, 1)
+		assert.Equal(t, contentHash(
+			"a.txt\x00"+contentHash("hello")+"\x00"+
+				"b.txt\x00"+contentHash("world")+"\x00",
+		), fingerprints["*.txt"])
 	})
 
 	t.Run("rejects an absolute pattern", func(t *testing.T) {
@@ -58,7 +58,7 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 
 		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 		require.False(t, diags.HasError())
-		assert.Equal(t, map[string]map[string]string{"missing.txt": {}}, b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange)
+		assert.Equal(t, map[string]string{"missing.txt": contentHash("")}, b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange)
 	})
 
 	t.Run("globs from the bundle root when the sync root is an ancestor", func(t *testing.T) {
@@ -73,7 +73,10 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 
 		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 		require.False(t, diags.HasError())
-		assert.Equal(t, contentHash("from-sync-root"), b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange["shared.txt"]["shared.txt"])
+		assert.Equal(t,
+			contentHash("shared.txt\x00"+contentHash("from-sync-root")+"\x00"),
+			b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange["shared.txt"],
+		)
 	})
 }
 

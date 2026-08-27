@@ -26,7 +26,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers_state.on_file_change['migrations/*']['migrations/001.txt']": {
+  "lifecycle.triggers_state.on_file_change['migrations/*']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][0]",
@@ -71,7 +71,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers_state.on_file_change['mysubdir/*.txt']['mysubdir/a.txt']": {
+  "lifecycle.triggers_state.on_file_change['mysubdir/*.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][2]",
@@ -89,9 +89,10 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers_state.on_file_change['migrations/*']['migrations/003.txt']": {
+  "lifecycle.triggers_state.on_file_change['migrations/*']": {
     "action": "recreate",
     "reason": "immutable",
+    "old": "[FILE_HASH][1]",
     "new": "[FILE_HASH][4]"
   },
   "result_state": {
@@ -106,10 +107,11 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers_state.on_file_change['migrations/*']['migrations/002.txt']": {
+  "lifecycle.triggers_state.on_file_change['migrations/*']": {
     "action": "recreate",
     "reason": "immutable",
-    "old": "[FILE_HASH][5]"
+    "old": "[FILE_HASH][1]",
+    "new": "[FILE_HASH][5]"
   },
   "result_state": {
     "action": "skip",

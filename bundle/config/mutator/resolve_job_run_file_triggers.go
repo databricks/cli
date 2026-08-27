@@ -38,16 +38,16 @@ func (*resolveJobRunFileTriggers) Apply(ctx context.Context, b *bundle.Bundle) d
 		if jr == nil || !jr.HasOnFileChange() {
 			continue
 		}
-		out := make(map[string]map[string]string)
+		out := make(map[string]string)
 		for i, t := range jr.Lifecycle.Triggers {
 			if t.OnFileChange == nil {
 				continue
 			}
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d].on_file_change", name, i)
-			pattern, hashes, d := resolveFileTrigger(b, path, *t.OnFileChange, syncable)
+			pattern, fingerprint, d := resolveFileTrigger(b, path, *t.OnFileChange, syncable)
 			diags = diags.Extend(d)
 			if !d.HasError() {
-				out[pattern] = hashes
+				out[pattern] = fingerprint
 			}
 		}
 		jr.Lifecycle.TriggersState = &resources.JobRunTriggersState{OnFileChange: out}
@@ -105,16 +105,15 @@ func fileTriggerDiag(b *bundle.Bundle, loc string, severity diag.Severity, forma
 	}
 }
 
-func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable []string) (string, map[string]string, diag.Diagnostics) {
+func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable []string) (string, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	out := make(map[string]string)
 	// A double star looks recursive but path.Match treats it as two ordinary stars.
 	if strings.Contains(pattern, "**") {
-		return "", out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "** in %q is not supported; use * for a single directory level", pattern))
+		return "", "", diags.Append(fileTriggerDiag(b, loc, diag.Error, "** in %q is not supported; use * for a single directory level", pattern))
 	}
 	// A POSIX path is absolute on Windows too, so check both flavours like NormalizePaths does.
 	if filepath.IsAbs(pattern) || pathlib.IsAbs(pattern) {
-		return "", out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q must be relative to the defining YAML file", pattern))
+		return "", "", diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q must be relative to the defining YAML file", pattern))
 	}
 	// NormalizePaths has already rewritten YAML-relative globs to be bundle-root
 	// relative. Join that onto the bundle root, then require the result stay
@@ -122,13 +121,15 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable []string
 	joined := filepath.Join(b.BundleRootPath, filepath.FromSlash(pattern))
 	relPattern, err := filepath.Rel(b.SyncRootPath, joined)
 	if err != nil || !filepath.IsLocal(relPattern) {
-		return "", out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q is not under the sync root", pattern))
+		return "", "", diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q is not under the sync root", pattern))
 	}
 	relPattern = filepath.ToSlash(relPattern)
 	_, err = pathlib.Match(relPattern, "")
 	if err != nil {
-		return "", out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "invalid pattern %q: %s", pattern, err))
+		return "", "", diags.Append(fileTriggerDiag(b, loc, diag.Error, "invalid pattern %q: %s", pattern, err))
 	}
+	h := sha256.New()
+	matches := 0
 	for _, rel := range syncable {
 		matched, err := pathlib.Match(relPattern, rel)
 		if err != nil {
@@ -144,13 +145,16 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable []string
 			diags = diags.Append(fileTriggerDiag(b, loc, diag.Error, "hash %q: %s", match, err))
 			continue
 		}
-		out[rel] = hash
+		h.Write([]byte(rel))
+		h.Write([]byte{0})
+		h.Write([]byte(hash))
+		h.Write([]byte{0})
+		matches++
 	}
-	// The empty map is still stored under the pattern, so a later match re-arms it.
-	if len(out) == 0 && !diags.HasError() {
+	if matches == 0 && !diags.HasError() {
 		diags = diags.Append(fileTriggerDiag(b, loc, diag.Warning, "no synced files match %q", pattern))
 	}
-	return relPattern, out, diags
+	return relPattern, hex.EncodeToString(h.Sum(nil)), diags
 }
 
 func hashFile(path string) (string, error) {
