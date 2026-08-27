@@ -1059,6 +1059,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	var (
 		destDir string
 		inPlace bool
+		// gitOverride, when set by the interactive Git onboarding, replaces the
+		// passively detected git-backed source. pendingRepoCreate, when set,
+		// creates the GitHub repo from the scaffolded files after copy.
+		gitOverride       *gitScaffoldSource
+		pendingRepoCreate *githubRepoCreate
 	)
 	switch {
 	case opts.name == prompt.InPlaceName:
@@ -1089,12 +1094,26 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		// may follow, and so the resolved template ref is visible before
 		// the user commits to either path.
 		prompt.PrintHeader(ctx, refLabel)
+		// When the user has no Git repo set up, offer git-backed deployment
+		// first: create a new GitHub repo or clone an existing one. When it
+		// resolves the destination, skip the name/location prompts below.
+		onboard, err := runGitOnboarding(ctx, opts.outputDir)
+		if err != nil {
+			return err
+		}
+		if onboard.resolved {
+			opts.name = onboard.appName
+			destDir = onboard.destDir
+			inPlace = onboard.inPlace
+			gitOverride = onboard.source
+			pendingRepoCreate = onboard.createRepo
+		}
 		// Offer in-place scaffolding when the current directory is empty
 		// (modulo .git) and its basename is a valid app name. Skipped when
 		// --output-dir was set, since in-place targets cwd and would silently
 		// drop the flag — same reasoning as the --name . / --output-dir mutex
 		// above.
-		if opts.outputDir == "" {
+		if !onboard.resolved && opts.outputDir == "" {
 			if basename, ok := prompt.ShouldOfferInPlace("."); ok {
 				useCurrent, err := prompt.PromptScaffoldLocation(ctx, basename)
 				if err != nil {
@@ -1112,7 +1131,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 				}
 			}
 		}
-		if !inPlace {
+		if !onboard.resolved && !inPlace {
 			name, err := prompt.PromptForProjectName(ctx, opts.outputDir)
 			if err != nil {
 				return err
@@ -1410,6 +1429,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// the bundle deploys from the repo/ref instead of uploading local files.
 	// Falls back to a plain source_code_path when there is no repo to point at.
 	gitSource := detectGitScaffoldSource(ctx, destDir, cmdctx.WorkspaceClient(ctx))
+	// Interactive onboarding (e.g. a repo it is about to create) takes
+	// precedence over passive detection.
+	if gitOverride != nil {
+		gitSource = *gitOverride
+	}
 	if gitSource.active() {
 		log.Debugf(ctx, "Scaffolding git-backed deploy: %s (%s) @ %s, path %s",
 			gitSource.URL, gitSource.Provider, gitSource.Branch, gitSource.SourceCodePath)
@@ -1498,6 +1522,24 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	if runMode == prompt.RunModeDevRemote {
 		if projectInitializer == nil || !projectInitializer.SupportsDevRemote() {
 			return errors.New("--run=dev-remote is only supported for Node.js projects with @databricks/appkit")
+		}
+	}
+
+	// Create and push the GitHub repo from the scaffolded files, if the user
+	// chose to during onboarding. Deferred to here — after the project is fully
+	// initialized and all fatal setup has passed — so a successful create/push
+	// is never left orphaned by a later failure. A create failure is itself not
+	// fatal: the git-backed databricks.yml is already written, so the user can
+	// create and push the repo manually.
+	if pendingRepoCreate != nil {
+		pendingRepoCreate.sourceDir = absOutputDir
+		if err := prompt.RunWithSpinnerCtx(ctx, "Creating GitHub repository...", func() error {
+			return pendingRepoCreate.run(ctx)
+		}); err != nil {
+			cmdio.LogString(ctx, fmt.Sprintf("⚠ Could not create the GitHub repository: %v", err))
+			cmdio.LogString(ctx, "  The git-backed databricks.yml is written; create the repo and push before deploying.")
+		} else {
+			prompt.PrintDone(ctx, "GitHub repository created and pushed")
 		}
 	}
 

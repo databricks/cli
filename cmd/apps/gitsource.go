@@ -93,6 +93,14 @@ func detectGitScaffoldSource(ctx context.Context, destDir string, w *databricks.
 	}
 }
 
+// isInGitRepo reports whether dir is inside a Git worktree. It is used to gate
+// the interactive Git onboarding prompt, which only runs when the user has no
+// Git repository set up at all.
+func isInGitRepo(ctx context.Context, dir string, w *databricks.WorkspaceClient) bool {
+	info, err := git.FetchRepositoryInfo(ctx, dir, w)
+	return err == nil && info.WorktreeRoot != ""
+}
+
 // normalizeGitOrigin converts a raw git remote URL into an https clone URL and
 // the matching Databricks git provider. It handles https/ssh URLs and scp-style
 // remotes (git@host:owner/repo.git). It returns empty strings when the host maps

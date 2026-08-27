@@ -1,0 +1,1 @@
+`databricks apps init` now offers interactive Git onboarding when run outside a Git repository: create a new GitHub repository (via the `gh` CLI) or clone an existing one, and scaffold a git-backed app into it.
