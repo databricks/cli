@@ -353,6 +353,9 @@ type templateVars struct {
 	Bundle         tmplBundle
 	DotEnv         dotEnvVars
 	AppEnv         string
+	// Git carries git-backed deployment fields when `apps init` runs inside a
+	// Git repository. Zero value means the scaffold uses a plain source_code_path.
+	Git gitScaffoldSource
 	// Plugins maps plugin name to its metadata
 	// Missing keys return nil, enabling {{if .plugins.analytics}} conditionals.
 	Plugins map[string]*pluginVar
@@ -1403,12 +1406,22 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		plugins[name] = pv
 	}
 
+	// Detect a Git-backed source when scaffolding inside a Git repository, so
+	// the bundle deploys from the repo/ref instead of uploading local files.
+	// Falls back to a plain source_code_path when there is no repo to point at.
+	gitSource := detectGitScaffoldSource(ctx, destDir, cmdctx.WorkspaceClient(ctx))
+	if gitSource.active() {
+		log.Debugf(ctx, "Scaffolding git-backed deploy: %s (%s) @ %s, path %s",
+			gitSource.URL, gitSource.Provider, gitSource.Branch, gitSource.SourceCodePath)
+	}
+
 	// Template variables with generated content
 	vars := templateVars{
 		ProjectName:    opts.name,
 		AppDescription: opts.description,
 		Profile:        profile,
 		WorkspaceHost:  workspaceHost,
+		Git:            gitSource,
 		Bundle: tmplBundle{
 			Variables:       bundleVars,
 			Resources:       bundleRes,
@@ -1877,6 +1890,15 @@ func templateData(vars templateVars) map[string]any {
 		"dotEnv": map[string]any{
 			"content": vars.DotEnv.Content,
 			"example": vars.DotEnv.Example,
+		},
+		// git is always present so {{.git.url}} is a defined (possibly empty)
+		// value under missingkey=zero; an empty url selects the source_code_path
+		// branch in the template.
+		"git": map[string]any{
+			"url":            vars.Git.URL,
+			"provider":       vars.Git.Provider,
+			"branch":         vars.Git.Branch,
+			"sourceCodePath": vars.Git.SourceCodePath,
 		},
 		"appEnv": vars.AppEnv,
 
