@@ -100,19 +100,15 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 		ResultState: jobs.RunResultStateSuccess,
 		Lifecycle:   nil,
 	}
-	var fileTriggers map[string]string
-	if input.Lifecycle != nil && input.Lifecycle.TriggersState != nil {
-		fileTriggers = input.Lifecycle.TriggersState.OnFileChange
-	}
-	if !input.HasOnBundleDeploy() && len(fileTriggers) == 0 {
-		return state
-	}
 	var ts resources.JobRunTriggersState
+	if input.Lifecycle != nil && input.Lifecycle.TriggersState != nil {
+		ts = *input.Lifecycle.TriggersState
+	}
 	if input.HasOnBundleDeploy() {
 		ts.OnBundleDeploy = uuid.NewString()
 	}
-	if len(fileTriggers) > 0 {
-		ts.OnFileChange = fileTriggers
+	if ts.OnBundleDeploy == "" && len(ts.OnFileChange) == 0 {
+		return state
 	}
 	state.Lifecycle = &JobRunLifecycleState{TriggersState: &ts}
 	return state
@@ -380,6 +376,7 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
 // Clearing a trigger skips its local-only fingerprint without re-firing the run.
+// All other trigger changes retain the resource's default recreate action.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
 	switch {
 	case path.Len() == jobRunLifecyclePath.Len() && path.HasPrefix(jobRunLifecyclePath):
@@ -387,7 +384,7 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
 		} else if change.Old != nil {
-			// Trigger fields already report the change.
+			// Trigger fields classify the change, including a removed pattern.
 			change.Reason = deployplan.ReasonDrop
 		}
 	case path.Len() == jobRunOnBundleDeployPath.Len() && path.HasPrefix(jobRunOnBundleDeployPath):
@@ -396,17 +393,16 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 			change.Reason = "trigger removed"
 		}
 	case path.Len() == jobRunOnFileChangePath.Len() && path.HasPrefix(jobRunOnFileChangePath):
-		if isEmptyFileTriggerMap(change.New) {
-			if isEmptyFileTriggerMap(change.Old) {
-				// Dyn may materialize a missing map as {}; omit the phantom skip.
-				change.Reason = deployplan.ReasonDrop
-			} else {
-				change.Action = deployplan.Skip
-				change.Reason = "trigger removed"
-			}
-		} else if change.Old != nil {
-			// Per-file entries already report the change; drop the whole-map duplicate.
-			change.Reason = deployplan.ReasonDrop
+		if isEmptyFileTriggerMap(change.New) && !isEmptyFileTriggerMap(change.Old) {
+			change.Action = deployplan.Skip
+			change.Reason = "trigger removed"
+		}
+	case path.Len() == jobRunOnFileChangePath.Len()+1 && path.HasPrefix(jobRunOnFileChangePath):
+		// A whole pattern dropping out means the user removed that trigger; a file
+		// dropping out of a pattern is a real change and keeps the default recreate.
+		if change.New == nil {
+			change.Action = deployplan.Skip
+			change.Reason = "trigger removed"
 		}
 	case path.Len() == jobRunResultStatePath.Len() && path.HasPrefix(jobRunResultStatePath):
 		// The planner passes no remote state when the run could not be read.
@@ -458,7 +454,7 @@ func isEmptyFileTriggerMap(v any) bool {
 	if v == nil {
 		return true
 	}
-	m, ok := v.(map[string]string)
+	m, ok := v.(map[string]map[string]string)
 	return ok && len(m) == 0
 }
 

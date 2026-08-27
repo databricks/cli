@@ -11,15 +11,21 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> file_triggers
 {
-  "bundle/resources/watched-resources.txt": "[FILE_HASH][0]",
-  "bundle/watched-bundle.txt": "[FILE_HASH][1]",
-  "shared.txt": "[FILE_HASH][2]"
+  "bundle/resources/watched-resources.txt": {
+    "bundle/resources/watched-resources.txt": "[FILE_HASH][0]"
+  },
+  "bundle/watched-bundle.txt": {
+    "bundle/watched-bundle.txt": "[FILE_HASH][1]"
+  },
+  "shared.txt": {
+    "shared.txt": "[FILE_HASH][2]"
+  }
 }
 
 === editing the file next to the included YAML re-fires
 >>> changes
 {
-  "lifecycle.triggers_state.on_file_change['bundle/resources/watched-resources.txt']": {
+  "lifecycle.triggers_state.on_file_change['bundle/resources/watched-resources.txt']['bundle/resources/watched-resources.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][0]",
@@ -36,7 +42,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === editing the file at the bundle root re-fires
 >>> changes
 {
-  "lifecycle.triggers_state.on_file_change['bundle/watched-bundle.txt']": {
+  "lifecycle.triggers_state.on_file_change['bundle/watched-bundle.txt']['bundle/watched-bundle.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][1]",
@@ -53,7 +59,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === editing the file at the sync root re-fires
 >>> changes
 {
-  "lifecycle.triggers_state.on_file_change['shared.txt']": {
+  "lifecycle.triggers_state.on_file_change['shared.txt']['shared.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][2]",

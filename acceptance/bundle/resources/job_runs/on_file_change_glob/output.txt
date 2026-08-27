@@ -26,7 +26,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers_state.on_file_change['migrations/001.txt']": {
+  "lifecycle.triggers_state.on_file_change['migrations/*']['migrations/001.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][0]",
@@ -71,7 +71,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers_state.on_file_change['mysubdir/a.txt']": {
+  "lifecycle.triggers_state.on_file_change['mysubdir/*.txt']['mysubdir/a.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][2]",
@@ -89,7 +89,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers_state.on_file_change['migrations/003.txt']": {
+  "lifecycle.triggers_state.on_file_change['migrations/*']['migrations/003.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "new": "[FILE_HASH][4]"
@@ -106,7 +106,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers_state.on_file_change['migrations/002.txt']": {
+  "lifecycle.triggers_state.on_file_change['migrations/*']['migrations/002.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][5]"
@@ -134,6 +134,17 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 === editing a gitignored file does not re-fire
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== removing one pattern does not re-fire
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-glob/default/files...
+Files: 7 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //jobs/run-now
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
