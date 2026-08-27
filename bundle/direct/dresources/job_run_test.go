@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
@@ -267,6 +268,28 @@ func TestJobRunStateOmitsEmptyLifecycle(t *testing.T) {
 	assert.NotContains(t, string(serialized), `"lifecycle"`)
 }
 
+func TestJobRunPrepareStateCopiesResolvedTriggers(t *testing.T) {
+	enabled := true
+	triggers := &resources.JobRunTriggersState{
+		OnFileChange: map[string]map[string]string{"*.txt": {"a.txt": "hash"}},
+	}
+	input := &resources.JobRun{
+		Lifecycle: &resources.JobRunLifecycle{
+			Triggers:      []resources.JobRunTrigger{{OnBundleDeploy: &enabled}},
+			TriggersState: triggers,
+		},
+	}
+
+	state := (&ResourceJobRun{}).PrepareState(input)
+
+	require.NotNil(t, state.Lifecycle)
+	require.NotNil(t, state.Lifecycle.TriggersState)
+	assert.NotSame(t, triggers, state.Lifecycle.TriggersState)
+	assert.Equal(t, triggers.OnFileChange, state.Lifecycle.TriggersState.OnFileChange)
+	assert.NotEmpty(t, state.Lifecycle.TriggersState.OnBundleDeploy)
+	assert.Empty(t, triggers.OnBundleDeploy)
+}
+
 // The planner diffs RemapState(remote) against PrepareState(config), so a run
 // that did not end in SUCCESS has to surface as a difference on result_state.
 func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
@@ -399,13 +422,14 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 		{"cleared on_bundle_deploy string", "lifecycle.triggers_state.on_bundle_deploy", "uuid", "", deployplan.Skip, "trigger removed"},
 		{"nil on_bundle_deploy", "lifecycle.triggers_state.on_bundle_deploy", "uuid", nil, deployplan.Skip, "trigger removed"},
 		{"rotated on_bundle_deploy", "lifecycle.triggers_state.on_bundle_deploy", "old-uuid", "new-uuid", deployplan.Recreate, ""},
-		{"cleared on_file_change", "lifecycle.triggers_state.on_file_change", map[string]string{"a.txt": "h"}, nil, deployplan.Skip, "trigger removed"},
-		{"empty on_file_change maps", "lifecycle.triggers_state.on_file_change", map[string]string{}, map[string]string{}, deployplan.Recreate, deployplan.ReasonDrop},
-		{"added on_file_change map", "lifecycle.triggers_state.on_file_change", nil, map[string]string{"a.txt": "h"}, deployplan.Recreate, ""},
-		{"changed on_file_change map", "lifecycle.triggers_state.on_file_change", map[string]string{"a.txt": "old"}, map[string]string{"a.txt": "new"}, deployplan.Recreate, deployplan.ReasonDrop},
-		// A file dropping out of the map is a real change, so the skip must not
-		// extend to paths below on_file_change.
-		{"cleared on_file_change child", "lifecycle.triggers_state.on_file_change['a.txt']", "h", nil, deployplan.Recreate, ""},
+		{"cleared on_file_change", "lifecycle.triggers_state.on_file_change", map[string]map[string]string{"*.txt": {"a.txt": "h"}}, nil, deployplan.Skip, "trigger removed"},
+		{"empty on_file_change maps", "lifecycle.triggers_state.on_file_change", map[string]map[string]string{}, map[string]map[string]string{}, deployplan.Recreate, ""},
+		{"added on_file_change map", "lifecycle.triggers_state.on_file_change", nil, map[string]map[string]string{"*.txt": {"a.txt": "h"}}, deployplan.Recreate, ""},
+		{"changed on_file_change map", "lifecycle.triggers_state.on_file_change", map[string]map[string]string{"*.txt": {"a.txt": "old"}}, map[string]map[string]string{"*.txt": {"a.txt": "new"}}, deployplan.Recreate, ""},
+		{"cleared on_file_change pattern", "lifecycle.triggers_state.on_file_change['*.txt']", map[string]string{"a.txt": "h"}, nil, deployplan.Skip, "trigger removed"},
+		// A file dropping out of a pattern is a real change, so the skip must not
+		// extend to paths below the pattern.
+		{"cleared on_file_change file", "lifecycle.triggers_state.on_file_change['*.txt']['a.txt']", "h", nil, deployplan.Recreate, ""},
 		{"result_state with unreadable remote", "result_state", jobs.RunResultStateSuccess, nil, deployplan.Recreate, ""},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
