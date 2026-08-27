@@ -39,10 +39,14 @@ func errorForIncompletePipelineLibraries(ctx context.Context, b *bundle.Bundle) 
 // libraryPathDiag reports a missing path on one pipeline library variant.
 func libraryPathDiag(b *bundle.Bundle, base dyn.Path, field, summary string) diag.Diagnostic {
 	fieldPath := base.Append(dyn.Key(field))
+	locations := b.Config.GetLocations(fieldPath.String())
+	if len(locations) == 0 {
+		locations = b.Config.GetLocations(base.String())
+	}
 	return diag.Diagnostic{
 		Severity:  diag.Error,
 		Summary:   summary,
-		Locations: locationsFor(b, fieldPath, base),
+		Locations: locations,
 		Paths:     []dyn.Path{fieldPath},
 	}
 }

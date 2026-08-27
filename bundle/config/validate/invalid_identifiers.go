@@ -4,145 +4,169 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
-type compiledIdentifierRules struct {
-	trie   *dyn.TrieNode
-	fields map[string][]string
-}
-
-// identifierFields explicitly defines identifier semantics instead of assuming every
-// field ending in "_name" is an identifier. True means omission is also an error.
-var identifierFields = map[string]bool{
-	"catalog_name":           false,
-	"credential_name":        false,
-	"database_instance_name": false,
-	"database_name":          false,
-	"display_name":           true,
-	"endpoint_name":          false,
-	"instance_pool_name":     true,
-	"name":                   true,
-	"output_schema_name":     false,
-	"schema_name":            false,
-	"table_name":             false,
-}
-
-// supplementalIdentifierFields covers backend requirements absent from OpenAPI.
-var supplementalIdentifierFields = map[string][]string{
-	"resources.dashboards.*":        {"display_name"},
-	"resources.registered_models.*": {"catalog_name", "name", "schema_name"},
-	"resources.sql_warehouses.*":    {"name"},
-}
-
-var identifierRules = sync.OnceValues(compileIdentifierRules)
-
-func compileIdentifierRules() (compiledIdentifierRules, error) {
-	fields := make(map[string][]string)
-	for pattern, required := range generated.RequiredFields {
-		if !isIdentifierObjectPattern(pattern) {
-			continue
-		}
-		for _, field := range required {
-			if _, ok := identifierFields[field]; ok {
-				fields[pattern] = append(fields[pattern], field)
-			}
-		}
-	}
-	for pattern, supplemental := range supplementalIdentifierFields {
-		fields[pattern] = append(fields[pattern], supplemental...)
-	}
-
-	trie := &dyn.TrieNode{}
-	for value := range fields {
-		pattern, err := dyn.NewPatternFromString(value)
-		if err != nil {
-			return compiledIdentifierRules{}, fmt.Errorf("invalid pattern %q for identifier validation: %w", value, err)
-		}
-		if err := trie.Insert(pattern); err != nil {
-			return compiledIdentifierRules{}, fmt.Errorf("failed to insert pattern %q into trie: %w", value, err)
-		}
-	}
-	return compiledIdentifierRules{trie: trie, fields: fields}, nil
-}
-
 // validateIdentifiers rejects values that the backend cannot use as identifiers.
-func validateIdentifiers(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	rules, err := identifierRules()
-	if err != nil {
-		return diag.FromErr(err)
+func validateIdentifiers(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	bundlePath := dyn.NewPath(dyn.Key("bundle"))
+	if pathExists(b, bundlePath) {
+		diags = diags.Extend(validateIdentifier(b, bundlePath, "name", b.Config.Bundle.Name, true))
 	}
 
-	var diags diag.Diagnostics
-	err = dyn.WalkReadOnly(b.Config.Value(), func(path dyn.Path, value dyn.Value) error {
-		pattern, ok := rules.trie.SearchPath(path)
-		if !ok {
-			return nil
-		}
-		for _, name := range rules.fields[pattern.String()] {
-			field := value.Get(name)
-			if field.Kind() == dyn.KindInvalid || field.Kind() == dyn.KindNil {
-				if identifierFields[name] {
-					diags = diags.Append(identifierDiag(b, path, name, "is required", ""))
-				}
-				continue
-			}
-			if field.Kind() != dyn.KindString {
-				continue
-			}
-			reason, detail := invalidIdentifierReason(field.MustString())
-			if reason != "" {
-				diags = diags.Append(identifierDiag(b, path, name, reason, detail))
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return diag.FromErr(err)
+	for key, resource := range b.Config.Resources.Alerts {
+		diags = diags.Extend(validateResourceIdentifier(b, "alerts", key, "display_name", resource.DisplayName, true))
 	}
+	for key, resource := range b.Config.Resources.Apps {
+		diags = diags.Extend(validateResourceIdentifier(b, "apps", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.Catalogs {
+		diags = diags.Extend(validateResourceIdentifier(b, "catalogs", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.Dashboards {
+		diags = diags.Extend(validateResourceIdentifier(b, "dashboards", key, "display_name", resource.DisplayName, true))
+	}
+	for key, resource := range b.Config.Resources.DatabaseCatalogs {
+		diags = diags.Extend(validateResourceIdentifier(b, "database_catalogs", key, "database_instance_name", resource.DatabaseInstanceName, false))
+		diags = diags.Extend(validateResourceIdentifier(b, "database_catalogs", key, "database_name", resource.DatabaseName, false))
+		diags = diags.Extend(validateResourceIdentifier(b, "database_catalogs", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.DatabaseInstances {
+		diags = diags.Extend(validateResourceIdentifier(b, "database_instances", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.Experiments {
+		diags = diags.Extend(validateResourceIdentifier(b, "experiments", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.ExternalLocations {
+		diags = diags.Extend(validateResourceIdentifier(b, "external_locations", key, "credential_name", resource.CredentialName, false))
+		diags = diags.Extend(validateResourceIdentifier(b, "external_locations", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.InstancePools {
+		diags = diags.Extend(validateResourceIdentifier(b, "instance_pools", key, "instance_pool_name", resource.InstancePoolName, true))
+	}
+	for key, resource := range b.Config.Resources.ModelServingEndpoints {
+		diags = diags.Extend(validateResourceIdentifier(b, "model_serving_endpoints", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.Models {
+		diags = diags.Extend(validateResourceIdentifier(b, "models", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.QualityMonitors {
+		diags = diags.Extend(validateResourceIdentifier(b, "quality_monitors", key, "output_schema_name", resource.OutputSchemaName, false))
+		diags = diags.Extend(validateResourceIdentifier(b, "quality_monitors", key, "table_name", resource.TableName, false))
+	}
+	for key, resource := range b.Config.Resources.RegisteredModels {
+		diags = diags.Extend(validateResourceIdentifier(b, "registered_models", key, "catalog_name", resource.CatalogName, false))
+		diags = diags.Extend(validateResourceIdentifier(b, "registered_models", key, "name", resource.Name, true))
+		diags = diags.Extend(validateResourceIdentifier(b, "registered_models", key, "schema_name", resource.SchemaName, false))
+	}
+	for key, resource := range b.Config.Resources.Schemas {
+		diags = diags.Extend(validateResourceIdentifier(b, "schemas", key, "catalog_name", resource.CatalogName, false))
+		diags = diags.Extend(validateResourceIdentifier(b, "schemas", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.Secrets {
+		diags = diags.Extend(validateResourceIdentifier(b, "secrets", key, "catalog_name", resource.CatalogName, false))
+		diags = diags.Extend(validateResourceIdentifier(b, "secrets", key, "name", resource.Name, true))
+		diags = diags.Extend(validateResourceIdentifier(b, "secrets", key, "schema_name", resource.SchemaName, false))
+	}
+	for key, resource := range b.Config.Resources.SecretScopes {
+		diags = diags.Extend(validateResourceIdentifier(b, "secret_scopes", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.SqlWarehouses {
+		diags = diags.Extend(validateResourceIdentifier(b, "sql_warehouses", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.SyncedDatabaseTables {
+		diags = diags.Extend(validateResourceIdentifier(b, "synced_database_tables", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.VectorSearchEndpoints {
+		diags = diags.Extend(validateResourceIdentifier(b, "vector_search_endpoints", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.VectorSearchIndexes {
+		diags = diags.Extend(validateResourceIdentifier(b, "vector_search_indexes", key, "endpoint_name", resource.EndpointName, false))
+		diags = diags.Extend(validateResourceIdentifier(b, "vector_search_indexes", key, "name", resource.Name, true))
+	}
+	for key, resource := range b.Config.Resources.Volumes {
+		diags = diags.Extend(validateResourceIdentifier(b, "volumes", key, "catalog_name", resource.CatalogName, false))
+		diags = diags.Extend(validateResourceIdentifier(b, "volumes", key, "name", resource.Name, true))
+		diags = diags.Extend(validateResourceIdentifier(b, "volumes", key, "schema_name", resource.SchemaName, false))
+	}
+
 	return diags
 }
 
 func missingIdentifierIsError(pattern, field string) bool {
-	return isIdentifierObjectPattern(pattern) && identifierFields[field]
-}
-
-func isIdentifierObjectPattern(pattern string) bool {
-	if pattern == "bundle" {
-		return true
+	switch pattern {
+	case "bundle":
+		return field == "name"
+	case "resources.alerts.*", "resources.dashboards.*":
+		return field == "display_name"
+	case "resources.instance_pools.*":
+		return field == "instance_pool_name"
+	case "resources.apps.*",
+		"resources.catalogs.*",
+		"resources.database_catalogs.*",
+		"resources.database_instances.*",
+		"resources.experiments.*",
+		"resources.external_locations.*",
+		"resources.model_serving_endpoints.*",
+		"resources.models.*",
+		"resources.registered_models.*",
+		"resources.schemas.*",
+		"resources.secret_scopes.*",
+		"resources.secrets.*",
+		"resources.sql_warehouses.*",
+		"resources.synced_database_tables.*",
+		"resources.vector_search_endpoints.*",
+		"resources.vector_search_indexes.*",
+		"resources.volumes.*":
+		return field == "name"
+	default:
+		return false
 	}
-	parts := strings.Split(pattern, ".")
-	return len(parts) == 3 && parts[0] == "resources" && parts[2] == "*"
 }
 
-func identifierDiag(b *bundle.Bundle, resourcePath dyn.Path, field, reason, detail string) diag.Diagnostic {
+func validateResourceIdentifier(b *bundle.Bundle, resourceType, key, field, value string, required bool) diag.Diagnostics {
+	resourcePath := dyn.NewPath(
+		dyn.Key("resources"),
+		dyn.Key(resourceType),
+		dyn.Key(key),
+	)
+	return validateIdentifier(b, resourcePath, field, value, required)
+}
+
+func validateIdentifier(b *bundle.Bundle, resourcePath dyn.Path, field, value string, required bool) diag.Diagnostics {
 	fieldPath := resourcePath.Append(dyn.Key(field))
-	return diag.Diagnostic{
+	locations := b.Config.GetLocations(fieldPath.String())
+	if value == "" && !required && !pathExists(b, fieldPath) {
+		return nil
+	}
+
+	reason, detail := invalidIdentifierReason(value)
+	if reason == "" {
+		return nil
+	}
+	if len(locations) == 0 {
+		locations = b.Config.GetLocations(resourcePath.String())
+	}
+	return diag.Diagnostics{{
 		Severity:  diag.Error,
 		Summary:   fmt.Sprintf("%s %s %s", requiredObjectName(resourcePath), field, reason),
 		Detail:    detail,
-		Locations: locationsFor(b, fieldPath, resourcePath),
+		Locations: locations,
 		Paths:     []dyn.Path{fieldPath},
-	}
+	}}
 }
 
-func locationsFor(b *bundle.Bundle, path, fallback dyn.Path) []dyn.Location {
-	if v, err := dyn.GetByPath(b.Config.Value(), path); err == nil && len(v.Locations()) > 0 {
-		return v.Locations()
-	}
-	v, err := dyn.GetByPath(b.Config.Value(), fallback)
-	if err != nil {
-		return nil
-	}
-	return v.Locations()
+func pathExists(b *bundle.Bundle, path dyn.Path) bool {
+	_, err := dyn.GetByPath(b.Config.Value(), path)
+	return err == nil
 }
 
 func invalidIdentifierReason(value string) (reason, detail string) {

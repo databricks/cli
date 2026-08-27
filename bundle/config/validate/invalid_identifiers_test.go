@@ -219,6 +219,55 @@ func TestRequiredRejectsBlankOptionalUCParent(t *testing.T) {
 	assert.Contains(t, diagSummaries(diags), "registered_model catalog_name must not be blank")
 }
 
+func TestRequiredRejectsMissingResourceIdentifiers(t *testing.T) {
+	tests := []struct {
+		resourceType string
+		summary      string
+	}{
+		{"alerts", "alert display_name is required"},
+		{"apps", "app name is required"},
+		{"catalogs", "catalog name is required"},
+		{"dashboards", "dashboard display_name is required"},
+		{"database_catalogs", "database_catalog name is required"},
+		{"database_instances", "database_instance name is required"},
+		{"experiments", "experiment name is required"},
+		{"external_locations", "external_location name is required"},
+		{"instance_pools", "instance_pool instance_pool_name is required"},
+		{"model_serving_endpoints", "model_serving_endpoint name is required"},
+		{"models", "model name is required"},
+		{"registered_models", "registered_model name is required"},
+		{"schemas", "schema name is required"},
+		{"secret_scopes", "secret_scope name is required"},
+		{"secrets", "secret name is required"},
+		{"sql_warehouses", "sql_warehouse name is required"},
+		{"synced_database_tables", "synced_database_table name is required"},
+		{"vector_search_endpoints", "vector_search_endpoint name is required"},
+		{"vector_search_indexes", "vector_search_index name is required"},
+		{"volumes", "volume name is required"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.resourceType, func(t *testing.T) {
+			b := &bundle.Bundle{}
+			require.NoError(t, b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+				return dyn.V(map[string]dyn.Value{
+					"bundle": dyn.V(map[string]dyn.Value{
+						"name": dyn.V("bundle"),
+					}),
+					"resources": dyn.V(map[string]dyn.Value{
+						tt.resourceType: dyn.V(map[string]dyn.Value{
+							"weird[0]key": dyn.V(map[string]dyn.Value{}),
+						}),
+					}),
+				}), nil
+			}))
+
+			diags := bundle.Apply(t.Context(), b, validate.Required())
+			assert.Contains(t, diagSummaries(diags), tt.summary)
+		})
+	}
+}
+
 func diagSummaries(diags diag.Diagnostics) []string {
 	out := make([]string, 0, len(diags))
 	for _, d := range diags {

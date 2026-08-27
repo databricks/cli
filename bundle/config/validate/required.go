@@ -77,10 +77,14 @@ func errorForMissingDashboardWarehouseID(ctx context.Context, b *bundle.Bundle) 
 			dyn.Key(key),
 		)
 		fieldPath := resourcePath.Append(dyn.Key("warehouse_id"))
+		locations := b.Config.GetLocations(fieldPath.String())
+		if len(locations) == 0 {
+			locations = b.Config.GetLocations(resourcePath.String())
+		}
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "dashboard warehouse_id is required",
-			Locations: locationsFor(b, fieldPath, resourcePath),
+			Locations: locations,
 			Paths:     []dyn.Path{fieldPath},
 		})
 	}
