@@ -7,6 +7,7 @@ from databricks.bundles.core._resource import Resource
 
 if TYPE_CHECKING:
     from databricks.bundles.alerts._models.alert import Alert
+    from databricks.bundles.catalogs._models.catalog import Catalog
     from databricks.bundles.jobs._models.job import Job
     from databricks.bundles.pipelines._models.pipeline import Pipeline
     from databricks.bundles.schemas._models.schema import Schema
@@ -100,6 +101,38 @@ def alert_mutator(function: Callable) -> ResourceMutator["Alert"]:
     from databricks.bundles.alerts._models.alert import Alert
 
     return ResourceMutator(resource_type=Alert, function=function)
+
+
+@overload
+def catalog_mutator(
+    function: Callable[[Bundle, "Catalog"], "Catalog"],
+) -> ResourceMutator["Catalog"]: ...
+
+
+@overload
+def catalog_mutator(
+    function: Callable[["Catalog"], "Catalog"],
+) -> ResourceMutator["Catalog"]: ...
+
+
+def catalog_mutator(function: Callable) -> ResourceMutator["Catalog"]:
+    """
+    Decorator for defining a catalog mutator. Function should return a new instance of the catalog with the desired changes,
+    instead of mutating the input catalog.
+
+    Example:
+
+    .. code-block:: python
+
+        @catalog_mutator
+        def my_catalog_mutator(bundle: Bundle, catalog: Catalog) -> Catalog:
+            return replace(catalog, name="my_catalog")
+
+    :param function: Function that mutates a catalog.
+    """
+    from databricks.bundles.catalogs._models.catalog import Catalog
+
+    return ResourceMutator(resource_type=Catalog, function=function)
 
 
 @overload
