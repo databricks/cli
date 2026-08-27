@@ -6,6 +6,8 @@ variables:
     default: v1
   other:
     default: a1
+  number:
+    default: 42
   long:
     default: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
@@ -24,6 +26,8 @@ resources:
       lifecycle:
         triggers:
           - on_file_change: watched.txt
-          - on_value_change: ${var.stamp}
+          - on_value_change: "  ${var.stamp}  "
           - on_value_change: ${var.other}
+          - on_value_change: ${var.number}
+          - on_value_change: ${workspace.root_path}
           - on_value_change: ${var.long}

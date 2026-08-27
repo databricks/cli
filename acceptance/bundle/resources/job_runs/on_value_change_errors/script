@@ -1,0 +1,35 @@
+title "an empty expression is rejected"
+trace musterr $CLI bundle validate
+
+title "duplicate expressions are rejected after trimming"
+update_file.py databricks.yml '          - on_value_change: "  "
+' '          - on_value_change: ${var.value}
+          - on_value_change: "  ${var.value}  "
+'
+trace musterr $CLI bundle validate
+
+title "multiple trigger fields in one entry are rejected"
+update_file.py databricks.yml '          - on_value_change: ${var.value}
+          - on_value_change: "  ${var.value}  "
+' '          - on_file_change: watched.txt
+            on_value_change: ${var.value}
+'
+trace musterr $CLI bundle validate
+
+title "on_value_change with prevent_destroy is rejected"
+update_file.py databricks.yml '      lifecycle:
+        triggers:
+          - on_file_change: watched.txt
+            on_value_change: ${var.value}
+' '      lifecycle:
+        prevent_destroy: true
+        triggers:
+          - on_value_change: ${var.value}
+'
+trace musterr $CLI bundle validate
+
+title "an undefined variable is rejected"
+update_file.py databricks.yml '        prevent_destroy: true
+' ''
+update_file.py databricks.yml '${var.value}' '${var.missing}'
+trace musterr $CLI bundle validate

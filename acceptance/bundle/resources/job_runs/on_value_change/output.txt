@@ -30,8 +30,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   },
   "on_value_change": {
     "${var.long}": "sha256:[VALUE_HASH][1]",
-    "${var.other}": "sha256:[VALUE_HASH][2]",
-    "${var.stamp}": "sha256:[VALUE_HASH][3]"
+    "${var.number}": "sha256:[VALUE_HASH][2]",
+    "${var.other}": "sha256:[VALUE_HASH][3]",
+    "${var.stamp}": "sha256:[VALUE_HASH][4]",
+    "${workspace.root_path}": "sha256:[VALUE_HASH][5]"
   }
 }
 
@@ -57,8 +59,8 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
   "lifecycle.triggers_state.on_value_change['${var.stamp}']": {
     "action": "recreate",
     "reason": "immutable",
-    "old": "sha256:[VALUE_HASH][3]",
-    "new": "sha256:[VALUE_HASH][4]"
+    "old": "sha256:[VALUE_HASH][4]",
+    "new": "sha256:[VALUE_HASH][6]"
   },
   "result_state": {
     "action": "skip",
@@ -117,7 +119,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
   "lifecycle.triggers_state.on_value_change['${var.other}']": {
     "action": "recreate",
     "reason": "immutable",
-    "new": "sha256:[VALUE_HASH][2]"
+    "new": "sha256:[VALUE_HASH][3]"
   }
 }
 
@@ -170,8 +172,8 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
   "lifecycle.triggers_state.on_value_change['${var.stamp}']": {
     "action": "recreate",
     "reason": "immutable",
-    "old": "sha256:[VALUE_HASH][4]",
-    "new": "sha256:[VALUE_HASH][2]"
+    "old": "sha256:[VALUE_HASH][6]",
+    "new": "sha256:[VALUE_HASH][3]"
   }
 }
 
@@ -202,7 +204,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
   }
 }
 
-=== removing the last on_value_change is unchanged and does not run
+=== removing the remaining on_value_change entries is unchanged and does not run
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
@@ -225,7 +227,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
     "action": "recreate",
     "reason": "immutable",
     "old": "[VALUE_HASH][0]",
-    "new": "[VALUE_HASH][5]"
+    "new": "[VALUE_HASH][7]"
   }
 }
 

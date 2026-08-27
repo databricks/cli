@@ -24,10 +24,6 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 
 		pattern := "*.txt"
 		b := bundleWithFileTrigger(dir, pattern)
-		valueTriggers := map[string]string{"${var.watched}": "resolved"}
-		b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState = &resources.JobRunTriggersState{
-			OnValueChange: valueTriggers,
-		}
 
 		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 		require.False(t, diags.HasError())
@@ -38,7 +34,6 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 			"a.txt\x00"+contentHash("hello")+"\x00"+
 				"b.txt\x00"+contentHash("world")+"\x00",
 		), fingerprints["*.txt"])
-		assert.Equal(t, valueTriggers, b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnValueChange)
 	})
 
 	t.Run("rejects an absolute pattern", func(t *testing.T) {

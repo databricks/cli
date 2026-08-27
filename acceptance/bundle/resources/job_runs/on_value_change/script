@@ -40,8 +40,8 @@ trace $CLI bundle deploy --plan tmp.plan.json
 trace print_requests.py //jobs/run-now
 
 title "re-adding the same on_value_change after the saved plan re-fires"
-update_file.py databricks.yml '          - on_value_change: ${var.stamp}
-' '          - on_value_change: ${var.stamp}
+update_file.py databricks.yml '          - on_value_change: "  ${var.stamp}  "
+' '          - on_value_change: "  ${var.stamp}  "
           - on_value_change: ${var.other}
 '
 trace $CLI bundle plan
@@ -67,8 +67,10 @@ read_id.py my_run > /dev/null
 trace print_requests.py --keep //jobs/runs/delete
 trace print_requests.py //jobs/run-now
 
-title "removing the last on_value_change is unchanged and does not run"
-update_file.py databricks.yml '          - on_value_change: ${var.stamp}
+title "removing the remaining on_value_change entries is unchanged and does not run"
+update_file.py databricks.yml '          - on_value_change: "  ${var.stamp}  "
+          - on_value_change: ${var.number}
+          - on_value_change: ${workspace.root_path}
           - on_value_change: ${var.long}
 ' ''
 trace $CLI bundle plan

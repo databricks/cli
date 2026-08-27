@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -389,50 +388,6 @@ func TestFingerprintJobRunValue(t *testing.T) {
 	)
 }
 
-func TestJobRunValueChangeStateNormalizesAfterAllReferencesResolve(t *testing.T) {
-	expr := "${resources.jobs.other.id}-${resources.jobs.extra.id}"
-	input := resources.JobRun{Lifecycle: &resources.JobRunLifecycle{
-		TriggersState: &resources.JobRunTriggersState{
-			OnValueChange: map[string]string{expr: expr},
-		},
-	}}
-	state := (&ResourceJobRun{}).PrepareState(&input)
-	path := structpath.NewBracketString(jobRunOnValueChangePath, expr)
-	sv := structvar.NewStructVar(state, map[string]string{
-		path.String(): expr,
-		"job_id":      "${resources.jobs.primary.id}",
-	})
-
-	require.NoError(t, sv.ResolveRef("${resources.jobs.other.id}", int64(123)))
-	assert.Equal(t, map[string]string{expr: "123-${resources.jobs.extra.id}"}, state.Lifecycle.TriggersState.OnValueChange)
-
-	require.NoError(t, sv.ResolveRef("${resources.jobs.extra.id}", int64(456)))
-	assert.Equal(t, map[string]string{
-		expr: "sha256:83a417f0862b66106806c595a06735f885bb90dd6b0657cc2d8dcc51df5b9e63",
-	}, state.Lifecycle.TriggersState.OnValueChange)
-
-	require.NoError(t, sv.ResolveRef("${resources.jobs.primary.id}", int64(789)))
-	assert.Equal(t, int64(789), state.JobId)
-	assert.Equal(t, map[string]string{
-		expr: "sha256:83a417f0862b66106806c595a06735f885bb90dd6b0657cc2d8dcc51df5b9e63",
-	}, state.Lifecycle.TriggersState.OnValueChange)
-}
-
-func TestJobRunValueChangeStateNormalizesPureReference(t *testing.T) {
-	expr := "${resources.jobs.other.id}"
-	input := resources.JobRun{Lifecycle: &resources.JobRunLifecycle{
-		TriggersState: &resources.JobRunTriggersState{
-			OnValueChange: map[string]string{expr: expr},
-		},
-	}}
-	state := (&ResourceJobRun{}).PrepareState(&input)
-	path := structpath.NewBracketString(jobRunOnValueChangePath, expr)
-	sv := structvar.NewStructVar(state, map[string]string{path.String(): expr})
-
-	require.NoError(t, sv.ResolveRef(expr, int64(123)))
-	assert.Equal(t, map[string]string{expr: fingerprintJobRunValue("123")}, state.Lifecycle.TriggersState.OnValueChange)
-}
-
 func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
 	var cancelled atomic.Bool
 	server := testserver.New(t)
@@ -479,12 +434,6 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 		{"changed on_file_change map", "lifecycle.triggers_state.on_file_change", map[string]string{"*.txt": "old"}, map[string]string{"*.txt": "new"}, deployplan.Recreate, deployplan.ReasonDrop},
 		{"cleared on_file_change pattern", "lifecycle.triggers_state.on_file_change['*.txt']", "hash", nil, deployplan.Skip, "trigger removed"},
 		{"changed on_file_change pattern", "lifecycle.triggers_state.on_file_change['*.txt']", "old", "new", deployplan.Recreate, ""},
-		{"cleared on_value_change", "lifecycle.triggers_state.on_value_change", map[string]string{"${var.a}": "hash"}, nil, deployplan.Skip, "trigger removed"},
-		{"empty on_value_change maps", "lifecycle.triggers_state.on_value_change", map[string]string{}, map[string]string{}, deployplan.Recreate, deployplan.ReasonDrop},
-		{"added on_value_change map", "lifecycle.triggers_state.on_value_change", nil, map[string]string{"${var.a}": "hash"}, deployplan.Recreate, ""},
-		{"changed on_value_change map", "lifecycle.triggers_state.on_value_change", map[string]string{"${var.a}": "old"}, map[string]string{"${var.a}": "new"}, deployplan.Recreate, deployplan.ReasonDrop},
-		{"cleared on_value_change expression", "lifecycle.triggers_state.on_value_change['${var.a}']", "hash", nil, deployplan.Skip, "trigger removed"},
-		{"changed on_value_change expression", "lifecycle.triggers_state.on_value_change['${var.a}']", "old", "new", deployplan.Recreate, ""},
 		{"result_state with unreadable remote", "result_state", jobs.RunResultStateSuccess, nil, deployplan.Recreate, ""},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

@@ -1,5 +1,5 @@
 
-=== plan depends on both jobs in the expression
+=== plan depends on both jobs in the expressions
 >>> jq .plan["resources.job_runs.my_run"].depends_on tmp.plan.json
 [
   {
@@ -47,10 +47,11 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== state records the concatenated resolved ids
+=== state records hashes for pure and mixed references
 >>> print_state.py
 {
-  "${resources.jobs.other.id}-${resources.jobs.extra.id}": "sha256:[VALUE_HASH]"
+  "${resources.jobs.other.id}": "sha256:[VALUE_HASH][0]",
+  "${resources.jobs.other.id}-${var.suffix}-${resources.jobs.extra.id}": "sha256:[VALUE_HASH][1]"
 }
 
 === redeploy with unchanged ids plans nothing
