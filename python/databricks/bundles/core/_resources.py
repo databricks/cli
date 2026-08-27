@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Optional
 from databricks.bundles.core._diagnostics import Diagnostics
 from databricks.bundles.core._location import Location
 from databricks.bundles.core._resource import Resource
+from databricks.bundles.core._resource_type import _ResourceType
 from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
@@ -114,30 +115,15 @@ class Resources:
         :param location: optional location of the resource in the source code
         """
 
-        from databricks.bundles.alerts import Alert
-        from databricks.bundles.catalogs import Catalog
-        from databricks.bundles.jobs import Job
-        from databricks.bundles.pipelines import Pipeline
-        from databricks.bundles.schemas import Schema
-        from databricks.bundles.volumes import Volume
-
         location = location or Location.from_stack_frame(depth=1)
 
-        match resource:
-            case Job():
-                self.add_job(resource_name, resource, location=location)
-            case Pipeline():
-                self.add_pipeline(resource_name, resource, location=location)
-            case Schema():
-                self.add_schema(resource_name, resource, location=location)
-            case Volume():
-                self.add_volume(resource_name, resource, location=location)
-            case Alert():
-                self.add_alert(resource_name, resource, location=location)
-            case Catalog():
-                self.add_catalog(resource_name, resource, location=location)
-            case _:
-                raise ValueError(f"Unsupported resource type: {type(resource)}")
+        for resource_type in _ResourceType.all():
+            if isinstance(resource, resource_type.resource_type):
+                add_method = getattr(self, f"add_{resource_type.singular_name}")
+                add_method(resource_name, resource, location=location)
+                return
+
+        raise ValueError(f"Unsupported resource type: {type(resource)}")
 
     def add_job(
         self,
@@ -397,23 +383,10 @@ class Resources:
 
         Adds error to diagnostics if there are duplicate resource names.
         """
-        for name, job in other.jobs.items():
-            self.add_job(name, job)
-
-        for name, pipeline in other.pipelines.items():
-            self.add_pipeline(name, pipeline)
-
-        for name, schema in other.schemas.items():
-            self.add_schema(name, schema)
-
-        for name, volume in other.volumes.items():
-            self.add_volume(name, volume)
-
-        for name, alert in other.alerts.items():
-            self.add_alert(name, alert)
-
-        for name, catalog in other.catalogs.items():
-            self.add_catalog(name, catalog)
+        for resource_type in _ResourceType.all():
+            add_method = getattr(self, f"add_{resource_type.singular_name}")
+            for name, resource in getattr(other, resource_type.plural_name).items():
+                add_method(name, resource)
 
         for path, location in other._locations.items():
             self.add_location(path, location)
