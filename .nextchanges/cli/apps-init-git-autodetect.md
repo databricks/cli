@@ -1,0 +1,1 @@
+`databricks apps init` now scaffolds a git-backed `databricks.yml` (`git_repository` + `git_source`) when run inside a Git repository with an origin remote, so the app deploys from the repo instead of uploading local files.
