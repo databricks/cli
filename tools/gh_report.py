@@ -27,11 +27,6 @@ KNOWN_FAILURES_URL = "https://raw.githubusercontent.com/databricks/cli/ciconfig/
 DIRECTORY = Path(__file__).parent
 PARSE_SCRIPT = DIRECTORY / "gh_parse.py"
 
-try:
-    PARSE_SCRIPT = PARSE_SCRIPT.relative_to(os.getcwd())
-except Exception:
-    pass  # keep absolute
-
 
 def run(cmd, shell=False):
     sys.stderr.write("+ " + " ".join(cmd) + "\n")
@@ -279,7 +274,13 @@ def main():
 
     target_dir = download_run_id(args.run, repo, rm=args.rm)
     print(flush=True)
-    cmd = [sys.executable, str(PARSE_SCRIPT)]
+    # Prefer a cwd-relative path so the logged command line stays readable.
+    parse_script = PARSE_SCRIPT
+    try:
+        parse_script = parse_script.relative_to(os.getcwd())
+    except Exception:
+        pass  # keep absolute
+    cmd = [sys.executable, str(parse_script)]
     if args.filter:
         cmd.extend(["--filter", args.filter])
     if args.filter_env:
