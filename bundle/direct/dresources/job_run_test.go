@@ -260,7 +260,7 @@ func TestJobRunStateOmitsEmptyLifecycle(t *testing.T) {
 func TestJobRunPrepareStateCopiesResolvedTriggers(t *testing.T) {
 	enabled := true
 	triggers := &resources.JobRunTriggersState{
-		OnFileChange: map[string]map[string]string{"*.txt": {"a.txt": "hash"}},
+		OnFileChange: map[string]string{"*.txt": "hash"},
 	}
 	input := &resources.JobRun{
 		Lifecycle: &resources.JobRunLifecycle{
@@ -411,14 +411,12 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 		{"cleared on_bundle_deploy string", "lifecycle.triggers_state.on_bundle_deploy", "uuid", "", deployplan.Skip, "trigger removed"},
 		{"nil on_bundle_deploy", "lifecycle.triggers_state.on_bundle_deploy", "uuid", nil, deployplan.Skip, "trigger removed"},
 		{"rotated on_bundle_deploy", "lifecycle.triggers_state.on_bundle_deploy", "old-uuid", "new-uuid", deployplan.Recreate, ""},
-		{"cleared on_file_change", "lifecycle.triggers_state.on_file_change", map[string]map[string]string{"*.txt": {"a.txt": "h"}}, nil, deployplan.Skip, "trigger removed"},
-		{"empty on_file_change maps", "lifecycle.triggers_state.on_file_change", map[string]map[string]string{}, map[string]map[string]string{}, deployplan.Recreate, ""},
-		{"added on_file_change map", "lifecycle.triggers_state.on_file_change", nil, map[string]map[string]string{"*.txt": {"a.txt": "h"}}, deployplan.Recreate, ""},
-		{"changed on_file_change map", "lifecycle.triggers_state.on_file_change", map[string]map[string]string{"*.txt": {"a.txt": "old"}}, map[string]map[string]string{"*.txt": {"a.txt": "new"}}, deployplan.Recreate, ""},
-		{"cleared on_file_change pattern", "lifecycle.triggers_state.on_file_change['*.txt']", map[string]string{"a.txt": "h"}, nil, deployplan.Skip, "trigger removed"},
-		// A file dropping out of a pattern is a real change, so the skip must not
-		// extend to paths below the pattern.
-		{"cleared on_file_change file", "lifecycle.triggers_state.on_file_change['*.txt']['a.txt']", "h", nil, deployplan.Recreate, ""},
+		{"cleared on_file_change", "lifecycle.triggers_state.on_file_change", map[string]string{"*.txt": "hash"}, nil, deployplan.Skip, "trigger removed"},
+		{"empty on_file_change maps", "lifecycle.triggers_state.on_file_change", map[string]string{}, map[string]string{}, deployplan.Recreate, deployplan.ReasonDrop},
+		{"added on_file_change map", "lifecycle.triggers_state.on_file_change", nil, map[string]string{"*.txt": "hash"}, deployplan.Recreate, ""},
+		{"changed on_file_change map", "lifecycle.triggers_state.on_file_change", map[string]string{"*.txt": "old"}, map[string]string{"*.txt": "new"}, deployplan.Recreate, deployplan.ReasonDrop},
+		{"cleared on_file_change pattern", "lifecycle.triggers_state.on_file_change['*.txt']", "hash", nil, deployplan.Skip, "trigger removed"},
+		{"changed on_file_change pattern", "lifecycle.triggers_state.on_file_change['*.txt']", "old", "new", deployplan.Recreate, ""},
 		{"result_state with unreadable remote", "result_state", jobs.RunResultStateSuccess, nil, deployplan.Recreate, ""},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
