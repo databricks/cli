@@ -144,7 +144,7 @@ class Resources:
 
         if self._resources["jobs"].get(resource_name):
             self.add_diagnostic_error(
-                msg=f"Duplicate resource name '{resource_name}' for a job. Resource names must be unique.",
+                msg=f"Duplicate resource name '{resource_name}' for resource 'job'. Resource names must be unique.",
                 location=location,
                 path=path,
             )
@@ -176,7 +176,7 @@ class Resources:
 
         if self._resources["pipelines"].get(resource_name):
             self.add_diagnostic_error(
-                msg=f"Duplicate resource name '{resource_name}' for a pipeline. Resource names must be unique.",
+                msg=f"Duplicate resource name '{resource_name}' for resource 'pipeline'. Resource names must be unique.",
                 location=location,
                 path=path,
             )
@@ -208,7 +208,7 @@ class Resources:
 
         if self._resources["schemas"].get(resource_name):
             self.add_diagnostic_error(
-                msg=f"Duplicate resource name '{resource_name}' for a schema. Resource names must be unique.",
+                msg=f"Duplicate resource name '{resource_name}' for resource 'schema'. Resource names must be unique.",
                 location=location,
                 path=path,
             )
@@ -240,7 +240,7 @@ class Resources:
 
         if self._resources["volumes"].get(resource_name):
             self.add_diagnostic_error(
-                msg=f"Duplicate resource name '{resource_name}' for a volume. Resource names must be unique.",
+                msg=f"Duplicate resource name '{resource_name}' for resource 'volume'. Resource names must be unique.",
                 location=location,
                 path=path,
             )
@@ -268,7 +268,7 @@ class Resources:
 
         if self._resources["alerts"].get(resource_name):
             self.add_diagnostic_error(
-                msg=f"Duplicate resource name '{resource_name}' for an alert. Resource names must be unique.",
+                msg=f"Duplicate resource name '{resource_name}' for resource 'alert'. Resource names must be unique.",
                 location=location,
                 path=path,
             )
@@ -300,7 +300,7 @@ class Resources:
 
         if self._resources["catalogs"].get(resource_name):
             self.add_diagnostic_error(
-                msg=f"Duplicate resource name '{resource_name}' for a catalog. Resource names must be unique.",
+                msg=f"Duplicate resource name '{resource_name}' for resource 'catalog'. Resource names must be unique.",
                 location=location,
                 path=path,
             )

@@ -36,7 +36,6 @@ class TestCase:
     dict_example: dict
     dataclass_example: Resource
     mutator: Callable
-    article: str = "a"  # grammatical article in the duplicate-resource error message
 
 
 resource_types = {tpe.resource_type: tpe for tpe in _ResourceType.all()}
@@ -115,7 +114,6 @@ test_cases = [
                 ),
             ),
             mutator=alert_mutator,
-            article="an",
         ),
         resource_types[Alert],
     ),
@@ -324,7 +322,7 @@ def test_add_duplicate_resource(tc: TestCase, tpe: _ResourceType):
     assert item.severity == Severity.ERROR
     assert (
         item.summary
-        == f"Duplicate resource name 'my_resource' for {tc.article} {tpe.singular_name}. Resource names must be unique."
+        == f"Duplicate resource name 'my_resource' for resource '{tpe.singular_name}'. Resource names must be unique."
     )
 
 
