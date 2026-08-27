@@ -112,6 +112,7 @@ func TestLogRunStatusTerminal(t *testing.T) {
 		{"terminated lifecycle", "TERMINATED", "", true},
 		{"internal error lifecycle", "INTERNAL_ERROR", "", true},
 		{"failed result", "TERMINATING", "FAILED", true},
+		{"timed out result", "RUNNING", "TIMEDOUT", true},
 		{"canceled result", "RUNNING", "CANCELED", true},
 	}
 	for _, tt := range tests {
