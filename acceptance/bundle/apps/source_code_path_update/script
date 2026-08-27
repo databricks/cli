@@ -1,0 +1,24 @@
+#!/bin/bash
+# Regression test for https://github.com/databricks/cli/issues/6401
+#
+# bundle deploy must not send source_code_path in the UpdateApp request body when
+# redeploying an app that already has an active deployment. The bug only manifests
+# when using a saved plan (bundle deploy --plan), because that path goes through
+# InitForApply which JSON-round-trips the AppState, causing the SDK's marshal to
+# add "SourceCodePath" to apps.App.ForceSendFields, which then forces
+# "source_code_path": "" into the update body (rejected by the API with 400).
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Initial deploy — creates app with active deployment"
+trace $CLI bundle deploy
+
+title "Redeploy from saved plan after description change"
+sed -i.bak 's/description: "first description"/description: "second description"/' databricks.yml
+$CLI bundle plan -o json > plan.json
+trace $CLI bundle deploy --plan plan.json

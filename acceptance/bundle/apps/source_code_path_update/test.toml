@@ -1,0 +1,11 @@
+Cloud = true
+RecordRequests = false
+
+# This regression is in the direct engine only (the bug is in InitForApply
+# which is only called for saved-plan deploys on the direct engine).
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [".databricks", "databricks.yml", "databricks.yml.bak", "plan.json"]
+
+# Apps can take longer to deploy on cloud.
+TimeoutCloud = "5m"
