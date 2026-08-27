@@ -52,16 +52,6 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_file_change": {
-    "action": "recreate",
-    "reason": "immutable",
-    "old": {
-      "seed.txt": "[FILE_HASH][0]"
-    },
-    "new": {
-      "seed.txt": "[FILE_HASH][1]"
-    }
-  },
   "lifecycle.triggers.on_file_change['seed.txt']": {
     "action": "recreate",
     "reason": "immutable",
@@ -105,7 +95,7 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 === deleting the file warns and re-fires
 >>> [CLI] bundle plan
-Warning: lifecycle.triggers.on_file_change: no files match "seed.txt"
+Warning: lifecycle.triggers.on_file_change: no synced files match "seed.txt"
   in databricks.yml:18:29
 
 recreate job_runs.my_run
@@ -113,20 +103,10 @@ recreate job_runs.my_run
 Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> changes
-Warning: lifecycle.triggers.on_file_change: no files match "seed.txt"
+Warning: lifecycle.triggers.on_file_change: no synced files match "seed.txt"
   in databricks.yml:18:29
 
 {
-  "lifecycle.triggers.on_file_change": {
-    "action": "recreate",
-    "reason": "immutable",
-    "old": {
-      "seed.txt": "[FILE_HASH][1]"
-    },
-    "new": {
-      "seed.txt": ""
-    }
-  },
   "lifecycle.triggers.on_file_change['seed.txt']": {
     "action": "recreate",
     "reason": "immutable",
@@ -142,7 +122,7 @@ Warning: lifecycle.triggers.on_file_change: no files match "seed.txt"
 }
 
 >>> [CLI] bundle deploy
-Warning: lifecycle.triggers.on_file_change: no files match "seed.txt"
+Warning: lifecycle.triggers.on_file_change: no synced files match "seed.txt"
   in databricks.yml:18:29
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
