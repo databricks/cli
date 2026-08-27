@@ -171,7 +171,7 @@ def _add_method_code(r: _WiredResource) -> str:
         location: Optional[Location] = None,
     ) -> None:
         """
-        Adds {_article(r.singular_name)} {r.singular_name} to the collection of resources. Resource name must be unique across all {r.plural_name}.
+        Adds the resource {r.singular_name} to the collection of resources. Resource name must be unique across all {r.plural_name}.
 
         :param resource_name: unique identifier for the {r.singular_name}
         :param {r.singular_name}: the {r.singular_name} to add, can be {r.class_name} or dict
@@ -238,7 +238,7 @@ def {name}(
 
 def {name}(function: Callable) -> ResourceMutator["{r.class_name}"]:
     """
-    Decorator for defining {_article(r.singular_name)} {r.singular_name} mutator. Function should return a new instance of the {r.singular_name}
+    Decorator for defining mutator for {r.plural_name}. Function should return a new instance of the {r.singular_name}
     with the desired changes, instead of mutating the input {r.singular_name}.
 
     Example:
@@ -249,7 +249,7 @@ def {name}(function: Callable) -> ResourceMutator["{r.class_name}"]:
         def my_{name}(bundle: Bundle, {r.singular_name}: {r.class_name}) -> {r.class_name}:
             return replace({r.singular_name}, ...)
 
-    :param function: Function that mutates {_article(r.singular_name)} {r.singular_name}.
+    :param function: Function that mutates {r.plural_name}.
     """
     from {r.model_module} import {r.class_name}
 

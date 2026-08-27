@@ -70,7 +70,7 @@ class _GeneratedResources:
         location: Optional[Location] = None,
     ) -> None:
         """
-        Adds an alert to the collection of resources. Resource name must be unique across all alerts.
+        Adds the resource alert to the collection of resources. Resource name must be unique across all alerts.
 
         :param resource_name: unique identifier for the alert
         :param alert: the alert to add, can be Alert or dict
@@ -102,7 +102,7 @@ class _GeneratedResources:
         location: Optional[Location] = None,
     ) -> None:
         """
-        Adds a catalog to the collection of resources. Resource name must be unique across all catalogs.
+        Adds the resource catalog to the collection of resources. Resource name must be unique across all catalogs.
 
         :param resource_name: unique identifier for the catalog
         :param catalog: the catalog to add, can be Catalog or dict
@@ -134,7 +134,7 @@ class _GeneratedResources:
         location: Optional[Location] = None,
     ) -> None:
         """
-        Adds a job to the collection of resources. Resource name must be unique across all jobs.
+        Adds the resource job to the collection of resources. Resource name must be unique across all jobs.
 
         :param resource_name: unique identifier for the job
         :param job: the job to add, can be Job or dict
@@ -166,7 +166,7 @@ class _GeneratedResources:
         location: Optional[Location] = None,
     ) -> None:
         """
-        Adds a pipeline to the collection of resources. Resource name must be unique across all pipelines.
+        Adds the resource pipeline to the collection of resources. Resource name must be unique across all pipelines.
 
         :param resource_name: unique identifier for the pipeline
         :param pipeline: the pipeline to add, can be Pipeline or dict
@@ -198,7 +198,7 @@ class _GeneratedResources:
         location: Optional[Location] = None,
     ) -> None:
         """
-        Adds a schema to the collection of resources. Resource name must be unique across all schemas.
+        Adds the resource schema to the collection of resources. Resource name must be unique across all schemas.
 
         :param resource_name: unique identifier for the schema
         :param schema: the schema to add, can be Schema or dict
@@ -230,7 +230,7 @@ class _GeneratedResources:
         location: Optional[Location] = None,
     ) -> None:
         """
-        Adds a volume to the collection of resources. Resource name must be unique across all volumes.
+        Adds the resource volume to the collection of resources. Resource name must be unique across all volumes.
 
         :param resource_name: unique identifier for the volume
         :param volume: the volume to add, can be Volume or dict

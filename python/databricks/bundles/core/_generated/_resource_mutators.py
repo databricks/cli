@@ -38,7 +38,7 @@ def alert_mutator(
 
 def alert_mutator(function: Callable) -> ResourceMutator["Alert"]:
     """
-    Decorator for defining an alert mutator. Function should return a new instance of the alert
+    Decorator for defining mutator for alerts. Function should return a new instance of the alert
     with the desired changes, instead of mutating the input alert.
 
     Example:
@@ -49,7 +49,7 @@ def alert_mutator(function: Callable) -> ResourceMutator["Alert"]:
         def my_alert_mutator(bundle: Bundle, alert: Alert) -> Alert:
             return replace(alert, ...)
 
-    :param function: Function that mutates an alert.
+    :param function: Function that mutates alerts.
     """
     from databricks.bundles.alerts._models.alert import Alert
 
@@ -70,7 +70,7 @@ def catalog_mutator(
 
 def catalog_mutator(function: Callable) -> ResourceMutator["Catalog"]:
     """
-    Decorator for defining a catalog mutator. Function should return a new instance of the catalog
+    Decorator for defining mutator for catalogs. Function should return a new instance of the catalog
     with the desired changes, instead of mutating the input catalog.
 
     Example:
@@ -81,7 +81,7 @@ def catalog_mutator(function: Callable) -> ResourceMutator["Catalog"]:
         def my_catalog_mutator(bundle: Bundle, catalog: Catalog) -> Catalog:
             return replace(catalog, ...)
 
-    :param function: Function that mutates a catalog.
+    :param function: Function that mutates catalogs.
     """
     from databricks.bundles.catalogs._models.catalog import Catalog
 
@@ -102,7 +102,7 @@ def job_mutator(
 
 def job_mutator(function: Callable) -> ResourceMutator["Job"]:
     """
-    Decorator for defining a job mutator. Function should return a new instance of the job
+    Decorator for defining mutator for jobs. Function should return a new instance of the job
     with the desired changes, instead of mutating the input job.
 
     Example:
@@ -113,7 +113,7 @@ def job_mutator(function: Callable) -> ResourceMutator["Job"]:
         def my_job_mutator(bundle: Bundle, job: Job) -> Job:
             return replace(job, ...)
 
-    :param function: Function that mutates a job.
+    :param function: Function that mutates jobs.
     """
     from databricks.bundles.jobs._models.job import Job
 
@@ -134,7 +134,7 @@ def pipeline_mutator(
 
 def pipeline_mutator(function: Callable) -> ResourceMutator["Pipeline"]:
     """
-    Decorator for defining a pipeline mutator. Function should return a new instance of the pipeline
+    Decorator for defining mutator for pipelines. Function should return a new instance of the pipeline
     with the desired changes, instead of mutating the input pipeline.
 
     Example:
@@ -145,7 +145,7 @@ def pipeline_mutator(function: Callable) -> ResourceMutator["Pipeline"]:
         def my_pipeline_mutator(bundle: Bundle, pipeline: Pipeline) -> Pipeline:
             return replace(pipeline, ...)
 
-    :param function: Function that mutates a pipeline.
+    :param function: Function that mutates pipelines.
     """
     from databricks.bundles.pipelines._models.pipeline import Pipeline
 
@@ -166,7 +166,7 @@ def schema_mutator(
 
 def schema_mutator(function: Callable) -> ResourceMutator["Schema"]:
     """
-    Decorator for defining a schema mutator. Function should return a new instance of the schema
+    Decorator for defining mutator for schemas. Function should return a new instance of the schema
     with the desired changes, instead of mutating the input schema.
 
     Example:
@@ -177,7 +177,7 @@ def schema_mutator(function: Callable) -> ResourceMutator["Schema"]:
         def my_schema_mutator(bundle: Bundle, schema: Schema) -> Schema:
             return replace(schema, ...)
 
-    :param function: Function that mutates a schema.
+    :param function: Function that mutates schemas.
     """
     from databricks.bundles.schemas._models.schema import Schema
 
@@ -198,7 +198,7 @@ def volume_mutator(
 
 def volume_mutator(function: Callable) -> ResourceMutator["Volume"]:
     """
-    Decorator for defining a volume mutator. Function should return a new instance of the volume
+    Decorator for defining mutator for volumes. Function should return a new instance of the volume
     with the desired changes, instead of mutating the input volume.
 
     Example:
@@ -209,7 +209,7 @@ def volume_mutator(function: Callable) -> ResourceMutator["Volume"]:
         def my_volume_mutator(bundle: Bundle, volume: Volume) -> Volume:
             return replace(volume, ...)
 
-    :param function: Function that mutates a volume.
+    :param function: Function that mutates volumes.
     """
     from databricks.bundles.volumes._models.volume import Volume
 
