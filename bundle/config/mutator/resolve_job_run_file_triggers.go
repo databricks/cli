@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"maps"
 	"os"
 	pathlib "path"
 	"path/filepath"
@@ -18,9 +17,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	libsync "github.com/databricks/cli/libs/sync"
 )
-
-// missingFileHash marks a pattern with no matching file so appear/disappear recreates.
-const missingFileHash = ""
 
 type resolveJobRunFileTriggers struct{}
 
@@ -42,15 +38,17 @@ func (*resolveJobRunFileTriggers) Apply(ctx context.Context, b *bundle.Bundle) d
 		if jr == nil || !jr.HasOnFileChange() {
 			continue
 		}
-		out := make(map[string]string)
+		out := make(map[string]map[string]string)
 		for i, t := range jr.Lifecycle.Triggers {
 			if t.OnFileChange == nil {
 				continue
 			}
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d].on_file_change", name, i)
-			hashes, d := resolveFileTrigger(b, path, *t.OnFileChange, syncable)
+			pattern, hashes, d := resolveFileTrigger(b, path, *t.OnFileChange, syncable)
 			diags = diags.Extend(d)
-			maps.Copy(out, hashes)
+			if !d.HasError() {
+				out[pattern] = hashes
+			}
 		}
 		jr.Lifecycle.TriggersState = &resources.JobRunTriggersState{OnFileChange: out}
 	}
@@ -107,16 +105,16 @@ func fileTriggerDiag(b *bundle.Bundle, loc string, severity diag.Severity, forma
 	}
 }
 
-func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable []string) (map[string]string, diag.Diagnostics) {
+func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable []string) (string, map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := make(map[string]string)
 	// A double star looks recursive but path.Match treats it as two ordinary stars.
 	if strings.Contains(pattern, "**") {
-		return out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "** in %q is not supported; use * for a single directory level", pattern))
+		return "", out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "** in %q is not supported; use * for a single directory level", pattern))
 	}
 	// A POSIX path is absolute on Windows too, so check both flavours like NormalizePaths does.
 	if filepath.IsAbs(pattern) || pathlib.IsAbs(pattern) {
-		return out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q must be relative to the defining YAML file", pattern))
+		return "", out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q must be relative to the defining YAML file", pattern))
 	}
 	// NormalizePaths has already rewritten YAML-relative globs to be bundle-root
 	// relative. Join that onto the bundle root, then require the result stay
@@ -124,12 +122,12 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable []string
 	joined := filepath.Join(b.BundleRootPath, filepath.FromSlash(pattern))
 	relPattern, err := filepath.Rel(b.SyncRootPath, joined)
 	if err != nil || !filepath.IsLocal(relPattern) {
-		return out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q is not under the sync root", pattern))
+		return "", out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q is not under the sync root", pattern))
 	}
 	relPattern = filepath.ToSlash(relPattern)
 	_, err = pathlib.Match(relPattern, "")
 	if err != nil {
-		return out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "invalid pattern %q: %s", pattern, err))
+		return "", out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "invalid pattern %q: %s", pattern, err))
 	}
 	for _, rel := range syncable {
 		matched, err := pathlib.Match(relPattern, rel)
@@ -148,13 +146,11 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable []string
 		}
 		out[rel] = hash
 	}
-	// Record the pattern with an empty hash so a later match re-arms the trigger.
-	// A read error already reports an incomplete fingerprint, so skip it then.
+	// The empty map is still stored under the pattern, so a later match re-arms it.
 	if len(out) == 0 && !diags.HasError() {
-		out[relPattern] = missingFileHash
 		diags = diags.Append(fileTriggerDiag(b, loc, diag.Warning, "no synced files match %q", pattern))
 	}
-	return out, diags
+	return relPattern, out, diags
 }
 
 func hashFile(path string) (string, error) {

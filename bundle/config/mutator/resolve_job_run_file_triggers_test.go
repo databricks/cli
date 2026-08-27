@@ -29,9 +29,11 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 		require.False(t, diags.HasError())
 
 		hashes := b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange
-		require.Len(t, hashes, 2)
-		assert.Equal(t, contentHash("hello"), hashes["a.txt"])
-		assert.Equal(t, contentHash("world"), hashes["b.txt"])
+		require.Len(t, hashes, 1)
+		assert.Equal(t, map[string]string{
+			"a.txt": contentHash("hello"),
+			"b.txt": contentHash("world"),
+		}, hashes["*.txt"])
 	})
 
 	t.Run("rejects an absolute pattern", func(t *testing.T) {
@@ -56,7 +58,7 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 
 		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 		require.False(t, diags.HasError())
-		assert.Equal(t, map[string]string{"missing.txt": ""}, b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange)
+		assert.Equal(t, map[string]map[string]string{"missing.txt": {}}, b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange)
 	})
 
 	t.Run("globs from the bundle root when the sync root is an ancestor", func(t *testing.T) {
@@ -71,7 +73,7 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 
 		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 		require.False(t, diags.HasError())
-		assert.Equal(t, contentHash("from-sync-root"), b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange["shared.txt"])
+		assert.Equal(t, contentHash("from-sync-root"), b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange["shared.txt"]["shared.txt"])
 	})
 }
 
