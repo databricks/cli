@@ -26,25 +26,11 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_file_change": {
-    "action": "recreate",
-    "reason": "immutable",
-    "old": {
-      "migrations/001.txt": "[FILE_HASH][0]",
-      "migrations/002.txt": "[FILE_HASH][1]",
-      "mysubdir/a.txt": "[FILE_HASH][2]"
-    },
-    "new": {
-      "migrations/001.txt": "[FILE_HASH][3]",
-      "migrations/002.txt": "[FILE_HASH][1]",
-      "mysubdir/a.txt": "[FILE_HASH][2]"
-    }
-  },
   "lifecycle.triggers.on_file_change['migrations/001.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][0]",
-    "new": "[FILE_HASH][3]"
+    "new": "[FILE_HASH][1]"
   },
   "result_state": {
     "action": "skip",
@@ -85,25 +71,11 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_file_change": {
-    "action": "recreate",
-    "reason": "immutable",
-    "old": {
-      "migrations/001.txt": "[FILE_HASH][3]",
-      "migrations/002.txt": "[FILE_HASH][1]",
-      "mysubdir/a.txt": "[FILE_HASH][2]"
-    },
-    "new": {
-      "migrations/001.txt": "[FILE_HASH][3]",
-      "migrations/002.txt": "[FILE_HASH][1]",
-      "mysubdir/a.txt": "[FILE_HASH][4]"
-    }
-  },
   "lifecycle.triggers.on_file_change['mysubdir/a.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][2]",
-    "new": "[FILE_HASH][4]"
+    "new": "[FILE_HASH][3]"
   },
   "result_state": {
     "action": "skip",
@@ -117,25 +89,10 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_file_change": {
-    "action": "recreate",
-    "reason": "immutable",
-    "old": {
-      "migrations/001.txt": "[FILE_HASH][3]",
-      "migrations/002.txt": "[FILE_HASH][1]",
-      "mysubdir/a.txt": "[FILE_HASH][2]"
-    },
-    "new": {
-      "migrations/001.txt": "[FILE_HASH][3]",
-      "migrations/002.txt": "[FILE_HASH][1]",
-      "migrations/003.txt": "[FILE_HASH][5]",
-      "mysubdir/a.txt": "[FILE_HASH][2]"
-    }
-  },
   "lifecycle.triggers.on_file_change['migrations/003.txt']": {
     "action": "recreate",
     "reason": "immutable",
-    "new": "[FILE_HASH][5]"
+    "new": "[FILE_HASH][4]"
   },
   "result_state": {
     "action": "skip",
@@ -149,23 +106,10 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_file_change": {
-    "action": "recreate",
-    "reason": "immutable",
-    "old": {
-      "migrations/001.txt": "[FILE_HASH][3]",
-      "migrations/002.txt": "[FILE_HASH][1]",
-      "mysubdir/a.txt": "[FILE_HASH][2]"
-    },
-    "new": {
-      "migrations/001.txt": "[FILE_HASH][3]",
-      "mysubdir/a.txt": "[FILE_HASH][2]"
-    }
-  },
   "lifecycle.triggers.on_file_change['migrations/002.txt']": {
     "action": "recreate",
     "reason": "immutable",
-    "old": "[FILE_HASH][1]"
+    "old": "[FILE_HASH][5]"
   },
   "result_state": {
     "action": "skip",
@@ -179,20 +123,6 @@ Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_file_change": {
-    "action": "skip",
-    "reason": "missing_in_remote",
-    "old": {
-      "migrations/001.txt": "[FILE_HASH][3]",
-      "migrations/002.txt": "[FILE_HASH][1]",
-      "mysubdir/a.txt": "[FILE_HASH][2]"
-    },
-    "new": {
-      "migrations/001.txt": "[FILE_HASH][3]",
-      "migrations/002.txt": "[FILE_HASH][1]",
-      "mysubdir/a.txt": "[FILE_HASH][2]"
-    }
-  },
   "result_state": {
     "action": "skip",
     "reason": "remote_already_set",
