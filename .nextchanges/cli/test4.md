@@ -1,0 +1,1 @@
+* Happy path, reverts [#123](https://github.com/databricks/cli/123). Splits over two PRs. ([#6177](https://github.com/databricks/cli/6177), [#6395](https://github.com/databricks/cli/pull/6395))
