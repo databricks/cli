@@ -9,17 +9,16 @@ pruned. UC auto-populates these on every catalog/schema, but only on some clouds
 yes, Azure no), so a committed golden cannot show them. The CLI already classifies them as
 backend defaults, so they never affect the plan; dropping them here is output-only.
 
-Managed properties surface in three shapes, all handled by pruning matching keys:
+Managed properties surface in these shapes, all handled by pruning matching keys:
   - a `properties` map (remote_state.properties, new_state.value.properties, ...);
     an emptied `properties` object is then dropped so {} vs absent doesn't diverge.
-  - a `changes` entry keyed `properties` or `properties['unity.catalog.managed...']`;
-    an emptied `changes` object is likewise dropped.
-  - a whole plan change entry marked `reason: backend_default`, which `jq '.plan[].changes'`
-    extracts without its enclosing `changes` key; the entry is dropped outright.
+  - a plan change entry that is purely a managed-default change (keyed `properties` with a
+    managed-only `remote`, or `properties['unity.catalog.managed...']`). It is dropped
+    wherever it appears — including at the top level, where `jq '.plan[].changes'` extracts
+    it without its enclosing `changes` key. An emptied `changes` object is likewise dropped.
 
-A backend default is a field the CLI never acts on but the backend populated, so it appears
-only on some clouds — exactly the managed-defaults problem, generalized to any such field.
-Dropping the entry (not just its managed keys) keeps goldens identical across clouds.
+Only the managed-default change is dropped, not every `backend_default` skip: a plain
+backend default like a volume's `storage_location` is deterministic and stays in the golden.
 
 Any field names passed as arguments are additionally deleted wherever they appear. These
 are the volatile server-set fields (created_at, metastore_id, schema_id, ...) each test
@@ -34,24 +33,6 @@ import sys
 # Matches a managed-default property key, whether bare (as a map key) or wrapped in a
 # plan change key like properties['unity.catalog.managed.delta.defaults.delta....'].
 managed_re = re.compile(r"unity\.catalog\.managed\..*\.defaults\..*")
-
-
-def is_backend_default(value):
-    """Report whether a plan change entry is one the CLI skipped as a backend default.
-
-    These are output-only (the CLI never acts on them) and only appear on clouds whose
-    backend populated the field, so the whole entry is dropped — this also catches the
-    managed-property change once `jq '.plan[].changes'` has stripped the `changes` key
-    that would otherwise route it through is_managed_change.
-
-    >>> is_backend_default({"action": "skip", "reason": "backend_default", "remote": {"x": "1"}})
-    True
-    >>> is_backend_default({"action": "update"})
-    False
-    >>> is_backend_default("backend_default")
-    False
-    """
-    return isinstance(value, dict) and value.get("reason") == "backend_default"
 
 
 def is_managed_change(key, value):
@@ -90,8 +71,10 @@ def prune(node, drop_fields):
     {'properties': {'k': 'v'}}
     >>> prune({"changes": {"properties": {"action": "skip", "remote": {"unity.catalog.managed.a.defaults.b": "1"}}, "name": {"action": "update"}}}, set())
     {'changes': {'name': {'action': 'update'}}}
-    >>> prune({"properties": {"action": "skip", "reason": "backend_default", "remote": {"k": "v"}}}, set())
-    {}
+    >>> prune({"comment": {"action": "update"}, "properties": {"action": "skip", "reason": "backend_default", "remote": {"unity.catalog.managed.a.defaults.b": "1"}}}, set())
+    {'comment': {'action': 'update'}}
+    >>> prune({"storage_location": {"action": "skip", "reason": "backend_default"}}, set())
+    {'storage_location': {'action': 'skip', 'reason': 'backend_default'}}
     >>> prune([{"metastore_id": "m", "full_name": "c.s"}], {"metastore_id"})
     [{'full_name': 'c.s'}]
     """
@@ -104,10 +87,10 @@ def prune(node, drop_fields):
     for key, value in node.items():
         if key in drop_fields or managed_re.search(key):
             continue
-        if is_backend_default(value):
+        # Drop a managed-default change wherever it sits: nested under `changes`, or at the
+        # top level after `jq '.plan[].changes'` has stripped the enclosing `changes` key.
+        if is_managed_change(key, value):
             continue
-        if key == "changes" and isinstance(value, dict):
-            value = {k: v for k, v in value.items() if not is_managed_change(k, v)}
         pruned = prune(value, drop_fields)
         # Drop a properties/changes object emptied by managed-key removal so goldens
         # don't diverge on {} (cloud that injects) vs absent (cloud that doesn't).
