@@ -393,13 +393,18 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 			change.Reason = "trigger removed"
 		}
 	case path.Len() == jobRunOnFileChangePath.Len() && path.HasPrefix(jobRunOnFileChangePath):
-		if isEmptyFileTriggerMap(change.New) && !isEmptyFileTriggerMap(change.Old) {
-			change.Action = deployplan.Skip
-			change.Reason = "trigger removed"
+		if isEmptyFileTriggerMap(change.New) {
+			if isEmptyFileTriggerMap(change.Old) {
+				change.Reason = deployplan.ReasonDrop
+			} else {
+				change.Action = deployplan.Skip
+				change.Reason = "trigger removed"
+			}
+		} else if change.Old != nil {
+			// Pattern entries classify the change.
+			change.Reason = deployplan.ReasonDrop
 		}
 	case path.Len() == jobRunOnFileChangePath.Len()+1 && path.HasPrefix(jobRunOnFileChangePath):
-		// A whole pattern dropping out means the user removed that trigger; a file
-		// dropping out of a pattern is a real change and keeps the default recreate.
 		if change.New == nil {
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
@@ -454,7 +459,7 @@ func isEmptyFileTriggerMap(v any) bool {
 	if v == nil {
 		return true
 	}
-	m, ok := v.(map[string]map[string]string)
+	m, ok := v.(map[string]string)
 	return ok && len(m) == 0
 }
 
