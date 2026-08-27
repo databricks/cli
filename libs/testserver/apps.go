@@ -130,13 +130,6 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 		return Response{StatusCode: 500, Body: fmt.Sprintf("internal error: %s", err)}
 	}
 
-	// A config-only deployment omits source_code_path/git_source; the backend
-	// deploys from the app's configured source, so resolve them from the app.
-	if deployment.SourceCodePath == "" && deployment.GitSource == nil {
-		deployment.SourceCodePath = app.SourceCodePath
-		deployment.GitSource = app.GitSource
-	}
-
 	deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
 	deployment.Status = &apps.AppDeploymentStatus{
 		State:   apps.AppDeploymentStateSucceeded,

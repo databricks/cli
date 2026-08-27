@@ -214,10 +214,10 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 				return err
 			}
 		}
-		// source_code_path and git_source are set on the app via Create/Update, so the
-		// deployment carries only the inline config (command/env); the backend deploys
-		// from the app's configured source.
-		deployment := appdeploy.BuildDeployment("", config.Config, nil)
+		// source_code_path and git_source are also sent on Create/Update (so they are
+		// recorded on the app and drift-detected), but the Deploy API requires a
+		// deployment source, so the deployment carries them too.
+		deployment := appdeploy.BuildDeployment(config.SourceCodePath, config.Config, config.GitSource)
 		if err := appdeploy.Deploy(ctx, r.client, id, deployment); err != nil {
 			return err
 		}

@@ -40,7 +40,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 {
   "body": {
-    "mode": "SNAPSHOT"
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-toggle-[UNIQUE_NAME]/default/files/app"
   },
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments"

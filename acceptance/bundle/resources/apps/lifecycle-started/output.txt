@@ -20,7 +20,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
   "body": {
-    "mode": "SNAPSHOT"
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
   }
 }
 
@@ -41,7 +42,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
   "body": {
-    "mode": "SNAPSHOT"
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
   }
 }
 
@@ -130,7 +132,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
   "body": {
-    "mode": "SNAPSHOT"
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
   }
 }
 
