@@ -498,6 +498,41 @@ func TestStreamBricklensTerminalWithRecordsDoesNotFallBack(t *testing.T) {
 	assert.Contains(t, buf.String(), `"line":"hello"`)
 }
 
+func TestStreamBricklensActiveEmptyProbesMLflow(t *testing.T) {
+	oldInterval := retryCheckInterval
+	retryCheckInterval = time.Millisecond
+	t.Cleanup(func() { retryCheckInterval = oldInterval })
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			_, _ = w.Write([]byte(`{"log_records":[]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(`{"run_id":123,"state":{"life_cycle_state":"RUNNING"},"tasks":[{"run_id":456,"attempt_number":0}]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"mlflow_experiment_id":"E1","mlflow_run_id":"R1"}}`))
+		case r.URL.Path == "/api/2.0/mlflow/runs/get":
+			_, _ = w.Write([]byte(`{}`))
+		case r.URL.Path == "/api/2.0/mlflow/artifacts/list":
+			if r.URL.Query().Get("path") == "logs" {
+				_, _ = w.Write([]byte(`{"files":[{"path":"logs/node_0","is_dir":true}]}`))
+			} else {
+				_, _ = w.Write([]byte(`{"files":[{"path":"logs/node_0/logs-0.chunk.txt"}]}`))
+			}
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	var out bytes.Buffer
+	_, err := streamBricklensLogs(t.Context(), newTestWorkspaceClient(t, srv.URL), &out,
+		logRequest{runID: 123, attempt: -1, tailLines: -1, jsonOutput: true},
+		logRunStatus{lifeCycleState: "RUNNING"})
+	require.ErrorIs(t, err, errBricklensFeatureDisabled)
+	assert.Empty(t, out.String())
+}
+
 func TestFetchLogsFallsBackToMLflowWhenBricklensEmpty(t *testing.T) {
 	// End-to-end repro: a terminal SUCCESS run whose Bricklens stream is empty but
 	// whose logs are in MLflow. The print path must fall back to MLflow and print
