@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	libsync "github.com/databricks/cli/libs/sync"
 )
@@ -23,8 +24,7 @@ const missingFileHash = ""
 
 type resolveJobRunFileTriggers struct{}
 
-// ResolveJobRunFileTriggers expands on_file_change globs and stores per-file
-// content hashes on each job_run for PrepareState to copy into local state.
+// ResolveJobRunFileTriggers expands on_file_change globs into trigger state.
 func ResolveJobRunFileTriggers() bundle.Mutator {
 	return &resolveJobRunFileTriggers{}
 }
@@ -39,7 +39,7 @@ func (*resolveJobRunFileTriggers) Apply(ctx context.Context, b *bundle.Bundle) d
 		return diags
 	}
 	for name, jr := range b.Config.Resources.JobRuns {
-		if jr == nil || jr.Lifecycle == nil {
+		if jr == nil || !jr.HasOnFileChange() {
 			continue
 		}
 		out := make(map[string]string)
@@ -52,7 +52,7 @@ func (*resolveJobRunFileTriggers) Apply(ctx context.Context, b *bundle.Bundle) d
 			diags = diags.Extend(d)
 			maps.Copy(out, hashes)
 		}
-		jr.ResolvedFileTriggers = out
+		jr.Lifecycle.TriggersState = &resources.JobRunTriggersState{OnFileChange: out}
 	}
 	return diags
 }
