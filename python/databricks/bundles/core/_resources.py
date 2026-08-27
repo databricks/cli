@@ -59,30 +59,27 @@ class Resources:
     """
 
     def __init__(self):
-        self._jobs = dict[str, "Job"]()
-        self._pipelines = dict[str, "Pipeline"]()
-        self._schemas = dict[str, "Schema"]()
-        self._volumes = dict[str, "Volume"]()
-        self._alerts = dict[str, "Alert"]()
-        self._catalogs = dict[str, "Catalog"]()
+        self._resources: dict[str, dict] = {
+            resource_type.plural_name: {} for resource_type in _ResourceType.all()
+        }
         self._locations = dict[tuple[str, ...], Location]()
         self._diagnostics = Diagnostics()
 
     @property
     def jobs(self) -> dict[str, "Job"]:
-        return self._jobs
+        return self._resources["jobs"]
 
     @property
     def pipelines(self) -> dict[str, "Pipeline"]:
-        return self._pipelines
+        return self._resources["pipelines"]
 
     @property
     def schemas(self) -> dict[str, "Schema"]:
-        return self._schemas
+        return self._resources["schemas"]
 
     @property
     def volumes(self) -> dict[str, "Volume"]:
-        return self._volumes
+        return self._resources["volumes"]
 
     @property
     def diagnostics(self) -> Diagnostics:
@@ -93,11 +90,11 @@ class Resources:
 
     @property
     def alerts(self) -> dict[str, "Alert"]:
-        return self._alerts
+        return self._resources["alerts"]
 
     @property
     def catalogs(self) -> dict[str, "Catalog"]:
-        return self._catalogs
+        return self._resources["catalogs"]
 
     def add_resource(
         self,
@@ -145,7 +142,7 @@ class Resources:
         path = ("resources", "jobs", resource_name)
         location = location or Location.from_stack_frame(depth=1)
 
-        if self._jobs.get(resource_name):
+        if self._resources["jobs"].get(resource_name):
             self.add_diagnostic_error(
                 msg=f"Duplicate resource name '{resource_name}' for a job. Resource names must be unique.",
                 location=location,
@@ -155,7 +152,7 @@ class Resources:
             if location:
                 self.add_location(path, location)
 
-            self._jobs[resource_name] = job
+            self._resources["jobs"][resource_name] = job
 
     def add_pipeline(
         self,
@@ -177,7 +174,7 @@ class Resources:
         path = ("resources", "pipelines", resource_name)
         location = location or Location.from_stack_frame(depth=1)
 
-        if self._pipelines.get(resource_name):
+        if self._resources["pipelines"].get(resource_name):
             self.add_diagnostic_error(
                 msg=f"Duplicate resource name '{resource_name}' for a pipeline. Resource names must be unique.",
                 location=location,
@@ -187,7 +184,7 @@ class Resources:
             if location:
                 self.add_location(path, location)
 
-            self._pipelines[resource_name] = pipeline
+            self._resources["pipelines"][resource_name] = pipeline
 
     def add_schema(
         self,
@@ -209,7 +206,7 @@ class Resources:
         path = ("resources", "schemas", resource_name)
         location = location or Location.from_stack_frame(depth=1)
 
-        if self._schemas.get(resource_name):
+        if self._resources["schemas"].get(resource_name):
             self.add_diagnostic_error(
                 msg=f"Duplicate resource name '{resource_name}' for a schema. Resource names must be unique.",
                 location=location,
@@ -219,7 +216,7 @@ class Resources:
             if location:
                 self.add_location(path, location)
 
-            self._schemas[resource_name] = schema
+            self._resources["schemas"][resource_name] = schema
 
     def add_volume(
         self,
@@ -241,7 +238,7 @@ class Resources:
         path = ("resources", "volumes", resource_name)
         location = location or Location.from_stack_frame(depth=1)
 
-        if self._volumes.get(resource_name):
+        if self._resources["volumes"].get(resource_name):
             self.add_diagnostic_error(
                 msg=f"Duplicate resource name '{resource_name}' for a volume. Resource names must be unique.",
                 location=location,
@@ -251,7 +248,7 @@ class Resources:
             if location:
                 self.add_location(path, location)
 
-            self._volumes[resource_name] = volume
+            self._resources["volumes"][resource_name] = volume
 
     def add_alert(
         self,
@@ -269,7 +266,7 @@ class Resources:
         path = ("resources", "alerts", resource_name)
         location = location or Location.from_stack_frame(depth=1)
 
-        if self._alerts.get(resource_name):
+        if self._resources["alerts"].get(resource_name):
             self.add_diagnostic_error(
                 msg=f"Duplicate resource name '{resource_name}' for an alert. Resource names must be unique.",
                 location=location,
@@ -279,7 +276,7 @@ class Resources:
             if location:
                 self.add_location(path, location)
 
-            self._alerts[resource_name] = alert
+            self._resources["alerts"][resource_name] = alert
 
     def add_catalog(
         self,
@@ -301,7 +298,7 @@ class Resources:
         path = ("resources", "catalogs", resource_name)
         location = location or Location.from_stack_frame(depth=1)
 
-        if self._catalogs.get(resource_name):
+        if self._resources["catalogs"].get(resource_name):
             self.add_diagnostic_error(
                 msg=f"Duplicate resource name '{resource_name}' for a catalog. Resource names must be unique.",
                 location=location,
@@ -311,7 +308,7 @@ class Resources:
             if location:
                 self.add_location(path, location)
 
-            self._catalogs[resource_name] = catalog
+            self._resources["catalogs"][resource_name] = catalog
 
     def add_location(self, path: tuple[str, ...], location: Location) -> None:
         """
