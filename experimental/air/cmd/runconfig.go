@@ -56,6 +56,7 @@ type runConfig struct {
 	Parameters                map[string]any `yaml:"parameters" help:"Free-form values passed through to the workload. Any nested structure is allowed."`
 	MLflowRunName             *string        `yaml:"mlflow_run_name" help:"Name for the MLflow run. Max 100 characters, alphanumerics, hyphens, and underscores only."`
 	MLflowExperimentDirectory *string        `yaml:"mlflow_experiment_directory" help:"Workspace directory holding the MLflow experiment. Must start with /Workspace."`
+	MLflowArtifactLocation    *string        `yaml:"mlflow_artifact_location" help:"DBFS location where MLflow artifacts are written. A /Volumes path is normalized to dbfs:/Volumes/... ."`
 	Permissions               []permission   `yaml:"permissions" help:"Who may view or manage the run, as a list of principal plus level grants."`
 	UsagePolicyName           *string        `yaml:"usage_policy_name" help:"Usage policy to bill the run to, by name. Max 127 characters. Mutually exclusive with usage_policy_id."`
 	UsagePolicyID             *string        `yaml:"usage_policy_id" help:"Usage policy to bill the run to, by id. Mutually exclusive with usage_policy_name."`
@@ -150,6 +151,20 @@ func (c *runConfig) validate() error {
 		}
 	}
 
+	if c.MLflowArtifactLocation != nil {
+		v := strings.TrimSpace(*c.MLflowArtifactLocation)
+		if v == "" {
+			return errors.New("mlflow_artifact_location cannot be empty")
+		}
+		if strings.HasPrefix(v, "/Volumes/") {
+			v = "dbfs:" + v
+		}
+		if !strings.HasPrefix(v, "dbfs:/") {
+			return fmt.Errorf("mlflow_artifact_location must be a dbfs: URI, got: %s", v)
+		}
+		*c.MLflowArtifactLocation = v
+	}
+
 	for i := range c.Permissions {
 		if err := c.Permissions[i].validate(); err != nil {
 			return err
@@ -229,7 +244,7 @@ func validateSecretRefs(secrets map[string]string) error {
 // environmentConfig is the `environment` block: dependencies and/or a custom
 // docker image.
 type environmentConfig struct {
-	Dependencies dependencies       `yaml:"dependencies" help:"Inline list of packages to install. Not allowed alongside docker_image."`
+	Dependencies dependencies       `yaml:"dependencies" help:"Inline package list or path to a requirements YAML file. Not allowed alongside docker_image."`
 	Version      stringOrInt        `yaml:"version" help:"Client image version to pin. Only valid alongside inline dependencies."`
 	DockerImage  *dockerImageConfig `yaml:"docker_image" help:"Custom image supplying the whole runtime. Not allowed alongside dependencies or version."`
 }
@@ -256,24 +271,43 @@ func (e *environmentConfig) validate() error {
 	if e.Version.set && !e.Dependencies.set {
 		return errors.New("'environment.version' requires inline 'dependencies' (a list of packages)")
 	}
+	if e.Version.set {
+		version, err := validateRuntimeVersion(e.Version.raw, "environment.version")
+		if err != nil {
+			return err
+		}
+		e.Version.raw = version
+	}
 
 	return nil
 }
 
-// dependencies is environment.dependencies: an inline list of packages. A scalar
-// (e.g. a path to a requirements file) is rejected — the list may itself reference
-// a requirements.txt, but dependencies must be given as a list.
+// dependencies is environment.dependencies: either an inline list of packages or
+// a path to a requirements YAML file resolved relative to the run config.
 type dependencies struct {
-	set  bool
-	list []string
+	set          bool
+	list         []string
+	path         string
+	resolvedPath string
+	version      string
 }
 
 func (d *dependencies) UnmarshalYAML(node *yaml.Node) error {
-	if node.Kind != yaml.SequenceNode {
-		return errors.New("environment.dependencies must be a list of packages or reference a requirements.txt (see https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference). A direct file reference is not supported")
-	}
 	d.set = true
-	return node.Decode(&d.list)
+	switch node.Kind {
+	case yaml.SequenceNode:
+		return node.Decode(&d.list)
+	case yaml.ScalarNode:
+		if err := node.Decode(&d.path); err != nil {
+			return err
+		}
+		if strings.TrimSpace(d.path) == "" {
+			return errors.New("environment.dependencies requirements YAML path cannot be empty")
+		}
+		return nil
+	default:
+		return errors.New("environment.dependencies must be a list of packages or a requirements YAML path")
+	}
 }
 
 // stringOrInt holds a scalar that may be a string or an integer in YAML

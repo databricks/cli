@@ -7,6 +7,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -55,6 +59,9 @@ func loadRunConfig(path string) (*runConfig, error) {
 		return nil, err
 	}
 	if err := validateRunConfig(cfg); err != nil {
+		return nil, err
+	}
+	if err := resolveRequirementsFile(cfg, path); err != nil {
 		return nil, err
 	}
 	return cfg, nil
@@ -107,5 +114,94 @@ func loadRunConfigWithOverrides(ctx context.Context, path string, overrides []st
 	if err := validateRunConfig(cfg); err != nil {
 		return nil, err
 	}
+	if err := resolveRequirementsFile(cfg, path); err != nil {
+		return nil, err
+	}
 	return cfg, nil
+}
+
+var runtimeVersionRe = regexp.MustCompile(`^[0-9]+$`)
+
+const databricksAIPrefix = "databricks_ai_v"
+
+func validateRuntimeVersion(version, source string) (string, error) {
+	normalized := strings.ToLower(version)
+	numeric := normalized
+	usesDatabricksAI := strings.HasPrefix(normalized, databricksAIPrefix)
+	if usesDatabricksAI {
+		numeric = strings.TrimPrefix(normalized, databricksAIPrefix)
+	}
+	if !runtimeVersionRe.MatchString(numeric) {
+		return "", fmt.Errorf("unsupported client image version %q in %s: version must be an integer, optionally prefixed with databricks_ai_v", version, source)
+	}
+	if !usesDatabricksAI {
+		return numeric, nil
+	}
+	major, err := strconv.Atoi(numeric)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse client image version %q in %s: %w", version, source, err)
+	}
+	if major < 5 {
+		return "", fmt.Errorf("databricks_ai_v in %s requires AI Runtime version 5 or higher, got %q", source, version)
+	}
+	return databricksAIPrefix + numeric, nil
+}
+
+type requirementsConfig struct {
+	Version      stringOrInt `yaml:"version"`
+	Dependencies []string    `yaml:"dependencies"`
+}
+
+func resolveRequirementsFile(cfg *runConfig, configPath string) error {
+	if cfg.Environment == nil || cfg.Environment.Dependencies.path == "" {
+		return nil
+	}
+	if cfg.Environment.Version.set {
+		return errors.New("'environment.version' is only supported with inline 'dependencies'")
+	}
+
+	dep := &cfg.Environment.Dependencies
+	resolved := dep.path
+	if !filepath.IsAbs(resolved) {
+		resolved = filepath.Join(filepath.Dir(configPath), resolved)
+	}
+	info, err := os.Stat(resolved)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("environment.dependencies: requirements YAML not found at %q", resolved)
+		}
+		return fmt.Errorf("failed to inspect requirements YAML %q: %w", resolved, err)
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("environment.dependencies: requirements YAML %q is not a file", resolved)
+	}
+
+	f, err := os.Open(resolved)
+	if err != nil {
+		return fmt.Errorf("failed to open requirements YAML %q: %w", resolved, err)
+	}
+	defer f.Close()
+	dec := yaml.NewDecoder(f)
+	var req requirementsConfig
+	if err := dec.Decode(&req); err != nil {
+		return fmt.Errorf("failed to parse requirements YAML %q: %w", resolved, err)
+	}
+	version := "4"
+	if req.Version.set {
+		version = req.Version.raw
+	}
+	version, err = validateRuntimeVersion(version, fmt.Sprintf("requirements YAML %q", resolved))
+	if err != nil {
+		return err
+	}
+	for _, item := range req.Dependencies {
+		fields := strings.Fields(item)
+		if len(fields) > 0 && (fields[0] == "-r" || fields[0] == "--requirement") {
+			return fmt.Errorf("requirements YAML dependency %q uses unsupported -r/--requirement include", item)
+		}
+	}
+	dep.resolvedPath = resolved
+	dep.version = version
+	dep.list = req.Dependencies
+	return nil
 }
