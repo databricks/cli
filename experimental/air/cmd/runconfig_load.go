@@ -182,7 +182,6 @@ func resolveRequirementsFile(cfg *runConfig, configPath string) error {
 	}
 	defer f.Close()
 	dec := yaml.NewDecoder(f)
-	dec.KnownFields(true)
 	var req requirementsConfig
 	if err := dec.Decode(&req); err != nil {
 		return fmt.Errorf("failed to parse requirements YAML %q: %w", resolved, err)

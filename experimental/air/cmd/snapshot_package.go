@@ -3,6 +3,7 @@ package aircmd
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -116,6 +117,13 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string) 
 		base := filepath.Base(name)
 		if name == ".git" || strings.HasPrefix(name, ".git/") || strings.HasPrefix(base, "._") {
 			continue
+		}
+		_, err := os.Lstat(filepath.Join(repoPath, filepath.FromSlash(name)))
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to inspect snapshot path %q: %w", name, err)
 		}
 		files = append(files, filepath.FromSlash(name))
 	}

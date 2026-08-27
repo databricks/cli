@@ -153,3 +153,19 @@ func TestCreatePlainTarball_HonorsNestedGitignoreAndNegation(t *testing.T) {
 	assert.NotContains(t, entries, dirName+"/nested/drop.tmp")
 	assert.Contains(t, entries, dirName+"/nested/keep.tmp")
 }
+
+func TestCreatePlainTarball_SkipsDeletedTrackedFiles(t *testing.T) {
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "keep.txt", "keep")
+	writeRepoFile(t, repo, "deleted.txt", "deleted")
+	commitAll(t, repo, "init")
+	require.NoError(t, os.Remove(filepath.Join(repo, "deleted.txt")))
+
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	require.NoError(t, createPlainTarball(t.Context(), repo, out, nil))
+
+	dirName := filepath.Base(repo)
+	entries := tarballEntries(t, out)
+	assert.Contains(t, entries, dirName+"/keep.txt")
+	assert.NotContains(t, entries, dirName+"/deleted.txt")
+}

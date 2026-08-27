@@ -126,6 +126,16 @@ environment:
 		assert.Equal(t, "databricks_ai_v5", version)
 	})
 
+	t.Run("requirements permits worker-side fields", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "requirements.yaml"), []byte("version: 5\ndependencies:\n  - torch\npip_options:\n  index_url: https://packages.example/simple\n"), 0o600))
+		configPath := filepath.Join(dir, "run.yaml")
+		require.NoError(t, os.WriteFile(configPath, []byte(minimalConfig+"environment:\n  dependencies: requirements.yaml\n"), 0o600))
+		cfg, err := loadRunConfig(configPath)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"torch"}, cfg.Environment.Dependencies.list)
+	})
+
 	t.Run("requirements rejects old databricks ai version", func(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "requirements.yaml"), []byte("version: databricks_ai_v4\n"), 0o600))

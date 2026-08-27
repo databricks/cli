@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -127,7 +128,9 @@ func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.
 		return 0, fmt.Errorf("failed to marshal AIR submit payload: %w", err)
 	}
 	var body map[string]any
-	if err := json.Unmarshal(raw, &body); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if err := decoder.Decode(&body); err != nil {
 		return 0, fmt.Errorf("failed to decode AIR submit payload: %w", err)
 	}
 	if err := injectProvisionedCapacityID(body, provisionedCapacityID); err != nil {
