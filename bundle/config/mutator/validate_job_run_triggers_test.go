@@ -117,8 +117,9 @@ func TestValidateJobRunTriggers(t *testing.T) {
 						JobRuns: map[string]*resources.JobRun{
 							"my_run": {
 								Lifecycle: &resources.JobRunLifecycle{
-									Lifecycle: resources.Lifecycle{PreventDestroy: tt.preventDestroy},
-									Triggers:  tt.triggers,
+									Lifecycle:     resources.Lifecycle{PreventDestroy: tt.preventDestroy},
+									Triggers:      tt.triggers,
+									TriggersState: nil,
 								},
 							},
 						},

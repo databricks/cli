@@ -19,6 +19,7 @@ func TestVisitJobRunPaths(t *testing.T) {
 						Triggers: []resources.JobRunTrigger{
 							{OnFileChange: &watched},
 						},
+						TriggersState: nil,
 					},
 				},
 			},

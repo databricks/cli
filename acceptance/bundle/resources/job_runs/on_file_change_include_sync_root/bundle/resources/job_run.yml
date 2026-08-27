@@ -4,4 +4,6 @@ resources:
       job_id: ${resources.jobs.my_job.id}
       lifecycle:
         triggers:
-          - on_file_change: watched.txt
+          - on_file_change: watched-resources.txt
+          - on_file_change: ../watched-bundle.txt
+          - on_file_change: ../../shared.txt

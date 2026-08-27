@@ -28,7 +28,7 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 		require.False(t, diags.HasError())
 
-		hashes := b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers
+		hashes := b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange
 		require.Len(t, hashes, 2)
 		assert.Equal(t, contentHash("hello"), hashes["a.txt"])
 		assert.Equal(t, contentHash("world"), hashes["b.txt"])
@@ -42,7 +42,7 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 		require.True(t, diags.HasError())
 		require.Equal(t, `lifecycle.triggers.on_file_change: pattern "/etc/passwd" must be relative to the defining YAML file`, diags[0].Summary)
-		assert.Empty(t, b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers)
+		assert.Empty(t, b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange)
 	})
 
 	t.Run("missing pattern is keyed relative to the sync root", func(t *testing.T) {
@@ -56,7 +56,7 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 
 		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 		require.False(t, diags.HasError())
-		assert.Equal(t, map[string]string{"missing.txt": ""}, b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers)
+		assert.Equal(t, map[string]string{"missing.txt": ""}, b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange)
 	})
 
 	t.Run("globs from the bundle root when the sync root is an ancestor", func(t *testing.T) {
@@ -71,7 +71,7 @@ func TestResolveJobRunFileTriggers(t *testing.T) {
 
 		diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 		require.False(t, diags.HasError())
-		assert.Equal(t, contentHash("from-sync-root"), b.Config.Resources.JobRuns["my_run"].ResolvedFileTriggers["shared.txt"])
+		assert.Equal(t, contentHash("from-sync-root"), b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange["shared.txt"])
 	})
 }
 
@@ -91,6 +91,7 @@ func bundleWithFileTrigger(syncRoot, pattern string) *bundle.Bundle {
 							Triggers: []resources.JobRunTrigger{
 								{OnFileChange: &pattern},
 							},
+							TriggersState: nil,
 						},
 					},
 				},

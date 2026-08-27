@@ -30,7 +30,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_bundle_deploy": {
+  "lifecycle.triggers_state.on_bundle_deploy": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[UUID]",
@@ -94,10 +94,14 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_bundle_deploy": {
+  "lifecycle": {
     "action": "skip",
     "reason": "trigger removed",
-    "old": "[UUID]"
+    "old": {
+      "triggers_state": {
+        "on_bundle_deploy": "[UUID]"
+      }
+    }
   },
   "result_state": {
     "action": "skip",

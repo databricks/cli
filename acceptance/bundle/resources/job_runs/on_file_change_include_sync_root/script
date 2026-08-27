@@ -3,20 +3,29 @@ cleanup() {
 }
 trap cleanup EXIT
 
+changes() {
+    withdir bundle $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"].changes'
+}
+
+file_triggers() {
+    withdir bundle print_state.py | jq '.state["resources.job_runs.my_run"].state.lifecycle.triggers_state.on_file_change'
+}
+
 title "first deploy"
 withdir bundle trace $CLI bundle deploy
-
-title "editing a same-named file in the bundle does not re-fire"
-update_file.py bundle/watched.txt "bundle-v1" "bundle-v2"
-withdir bundle trace $CLI bundle plan | contains.py "2 unchanged" "!recreate"
-update_file.py bundle/watched.txt "bundle-v2" "bundle-v1"
-
-title "editing a file at the sync root does not re-fire"
-update_file.py shared.txt "parent-v1" "parent-v2"
-withdir bundle trace $CLI bundle plan | contains.py "2 unchanged" "!recreate"
-update_file.py shared.txt "parent-v2" "parent-v1"
+trace file_triggers
 
 title "editing the file next to the included YAML re-fires"
-update_file.py bundle/resources/watched.txt "include-v1" "include-v2"
-withdir bundle trace $CLI bundle plan | contains.py "recreate job_runs.my_run"
-update_file.py bundle/resources/watched.txt "include-v2" "include-v1"
+update_file.py bundle/resources/watched-resources.txt "include-v1" "include-v2"
+trace changes
+update_file.py bundle/resources/watched-resources.txt "include-v2" "include-v1"
+
+title "editing the file at the bundle root re-fires"
+update_file.py bundle/watched-bundle.txt "bundle-v1" "bundle-v2"
+trace changes
+update_file.py bundle/watched-bundle.txt "bundle-v2" "bundle-v1"
+
+title "editing the file at the sync root re-fires"
+update_file.py shared.txt "parent-v1" "parent-v2"
+trace changes
+update_file.py shared.txt "parent-v2" "parent-v1"

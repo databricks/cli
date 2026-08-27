@@ -52,7 +52,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers.on_file_change['seed.txt']": {
+  "lifecycle.triggers_state.on_file_change['seed.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][0]",
@@ -107,7 +107,7 @@ Warning: lifecycle.triggers.on_file_change: no synced files match "seed.txt"
   in databricks.yml:18:29
 
 {
-  "lifecycle.triggers.on_file_change['seed.txt']": {
+  "lifecycle.triggers_state.on_file_change['seed.txt']": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[FILE_HASH][1]",

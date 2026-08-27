@@ -66,6 +66,7 @@ func TestNormalizePaths_jobRunOnFileChange(t *testing.T) {
 							Triggers: []resources.JobRunTrigger{
 								{OnFileChange: &pattern},
 							},
+							TriggersState: nil,
 						},
 					},
 				},
