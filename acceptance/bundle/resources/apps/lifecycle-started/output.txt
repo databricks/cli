@@ -12,15 +12,15 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/apps",
   "body": {
     "description": "my_app_description",
-    "name": "[UNIQUE_NAME]"
+    "name": "[UNIQUE_NAME]",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
   }
 }
 {
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
   "body": {
-    "mode": "SNAPSHOT",
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
+    "mode": "SNAPSHOT"
   }
 }
 
@@ -41,8 +41,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
   "body": {
-    "mode": "SNAPSHOT",
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
+    "mode": "SNAPSHOT"
   }
 }
 
@@ -88,9 +87,10 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "body": {
     "app": {
       "description": "MY_APP_DESCRIPTION_2",
-      "name": "[UNIQUE_NAME]"
+      "name": "[UNIQUE_NAME]",
+      "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
     },
-    "update_mask": "description,budget_policy_id,usage_policy_id,resources,user_api_scopes,forward_user_access_token,compute_size,compute_min_instances,compute_max_instances,git_repository,telemetry_export_destinations"
+    "update_mask": "description,budget_policy_id,usage_policy_id,resources,user_api_scopes,forward_user_access_token,compute_size,compute_min_instances,compute_max_instances,git_repository,git_source,source_code_path,telemetry_export_destinations"
   }
 }
 
@@ -115,9 +115,10 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "body": {
     "app": {
       "description": "MY_APP_DESCRIPTION_3",
-      "name": "[UNIQUE_NAME]"
+      "name": "[UNIQUE_NAME]",
+      "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
     },
-    "update_mask": "description,budget_policy_id,usage_policy_id,resources,user_api_scopes,forward_user_access_token,compute_size,compute_min_instances,compute_max_instances,git_repository,telemetry_export_destinations"
+    "update_mask": "description,budget_policy_id,usage_policy_id,resources,user_api_scopes,forward_user_access_token,compute_size,compute_min_instances,compute_max_instances,git_repository,git_source,source_code_path,telemetry_export_destinations"
   }
 }
 {
@@ -129,8 +130,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
   "body": {
-    "mode": "SNAPSHOT",
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
+    "mode": "SNAPSHOT"
   }
 }
 

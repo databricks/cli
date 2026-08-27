@@ -1,0 +1,12 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  },
+  "body": {
+    "description": "",
+    "name": "myappname",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+  }
+}

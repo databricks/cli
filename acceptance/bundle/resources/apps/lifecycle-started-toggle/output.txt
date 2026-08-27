@@ -10,7 +10,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "body": {
     "description": "my_app_description",
-    "name": "[UNIQUE_NAME]"
+    "name": "[UNIQUE_NAME]",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-toggle-[UNIQUE_NAME]/default/files/app"
   },
   "method": "POST",
   "path": "/api/2.0/apps",
@@ -39,8 +40,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 {
   "body": {
-    "mode": "SNAPSHOT",
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-toggle-[UNIQUE_NAME]/default/files/app"
+    "mode": "SNAPSHOT"
   },
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments"

@@ -1,0 +1,1 @@
+For apps deployed with the direct engine, `source_code_path` and `git_source` are now sent as part of the Create/Update App request instead of only through the app Deploy API, so they are managed at deploy time. The Terraform engine is unchanged (its `databricks_app` resource cannot manage these input-only fields).

@@ -19,6 +19,8 @@ func logProgress(ctx context.Context, msg string) {
 }
 
 // BuildDeployment constructs an AppDeployment from the app's source code path, inline config and git source.
+// The direct engine passes an empty sourcePath and nil gitSource because it sends those on Create/Update;
+// bundle run and the Terraform path still deploy them here.
 func BuildDeployment(sourcePath string, config *resources.AppConfig, gitSource *sdkapps.GitSource) sdkapps.AppDeployment {
 	// GitRepository is not supported in the Deploy API, only as part of Create, so we need to remove it.
 	if gitSource != nil {

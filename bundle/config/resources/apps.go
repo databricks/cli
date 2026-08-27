@@ -41,10 +41,11 @@ type App struct {
 	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.
 	Lifecycle *LifecycleWithStarted `json:"lifecycle,omitempty"`
 
-	// SourceCodePath and GitSource come from the embedded apps.App. DABs treats them as
-	// deploy-only: source_code_path points at app source on local disk and is translated to
-	// its workspace path, and both are passed to the Deploy API rather than sent as resource
-	// attributes. Declaring them here too would duplicate their json tags and break diffing.
+	// SourceCodePath and GitSource come from the embedded apps.App and are sent as part of
+	// the Create/Update App request. source_code_path points at app source on local disk and
+	// is translated to its workspace path. The API accepts both on write but does not echo
+	// them on read (input_only), so drift for them is suppressed via ignore_remote_changes.
+	// Declaring them here too would duplicate their json tags and break diffing.
 
 	// Config represents inline app.yaml configuration for the app.
 	// When specified, this configuration is written to an app.yaml file in the source code path during deployment.

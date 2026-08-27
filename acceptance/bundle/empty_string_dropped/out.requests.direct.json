@@ -6,7 +6,8 @@
   },
   "body": {
     "description": "",
-    "name": "test-app-direct"
+    "name": "test-app-direct",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/direct/files/app"
   }
 }
 {
