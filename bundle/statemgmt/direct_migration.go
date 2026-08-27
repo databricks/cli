@@ -35,21 +35,21 @@ const feedbackNotice = `The warnings above are from a dry-run migration to the d
 Your deployment is not affected and works normally, but you may experience these issues when migrating to the direct deployment engine.
 Please forward these warnings to dabs-feedback@databricks.com`
 
-// autoMigrateStoppedNotice is emitted when the user opted in to the direct
-// engine but the dry-run migration surfaced errors or warnings, so the
-// automatic post-deploy migration is skipped.
-const autoMigrateStoppedNotice = `Direct engine was requested but the dry-run migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.`
+// autoMigrateStoppedNotice is emitted when the direct engine is selected but the
+// dry-run migration surfaced errors or warnings, so the automatic post-deploy
+// migration is skipped.
+const autoMigrateStoppedNotice = `Direct engine was selected but the dry-run migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.`
 
 // MigrateToDirect performs a dry-run migration of the just-deployed terraform
 // state to the direct engine and records the outcome in deploy telemetry.
 //
 // The converted state is written to a temporary file. If the dry-run is clean
-// and requestedEngine resolves to "direct" (via bundle.engine or the
-// DATABRICKS_BUNDLE_ENGINE env var), the temp state is committed (renamed to
-// resources.json, terraform.tfstate is backed up, and the new state is pushed
-// to the workspace). Otherwise the temp state is deleted and only telemetry
-// is recorded. Any failure is surfaced as a warning so it never fails a
-// deploy that already succeeded.
+// and requestedEngine resolves to "direct" (which is the default, and can also
+// be set explicitly via bundle.engine or the DATABRICKS_BUNDLE_ENGINE env var),
+// the temp state is committed (renamed to resources.json, terraform.tfstate is
+// backed up, and the new state is pushed to the workspace). Otherwise the temp
+// state is deleted and only telemetry is recorded. Any failure is surfaced as a
+// warning so it never fails a deploy that already succeeded.
 func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
@@ -81,7 +81,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 			recordDryRunNoop(b, requestedEngine)
 			return
 		}
-		cmdio.LogString(ctx, "Removing empty terraform state; direct engine will be used on the next deploy (opted in via "+requestedEngine.Source+")...")
+		cmdio.LogString(ctx, "Removing empty terraform state; direct engine will be used on the next deploy (selected via "+requestedEngine.Source+")...")
 		if err := backupTerraformState(ctx, b); err != nil {
 			b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
 			log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
@@ -111,15 +111,16 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		log.Warnf(ctx, "%s", feedbackNotice)
 	}
 
-	// The user did not opt in to the direct engine — the conversion was only
-	// a dry run for fleet-wide telemetry, so record dry-run outcome only.
+	// The direct engine was not selected (the user opted out with
+	// engine: terraform) — the conversion was only a dry run for fleet-wide
+	// telemetry, so record dry-run outcome only.
 	if requestedEngine.Type != engine.EngineDirect {
 		b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, err == nil)
 		b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, hasWarnings)
 		return
 	}
 
-	// From here on, the user opted in: use the migrate_* telemetry keys.
+	// From here on, direct is the engine to migrate to: use the migrate_* telemetry keys.
 	if err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
 	}
@@ -132,7 +133,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		return
 	}
 
-	cmdio.LogString(ctx, "Migrating state to direct deployment engine (opted in via "+requestedEngine.Source+")...")
+	cmdio.LogString(ctx, "Migrating state to direct deployment engine (selected via "+requestedEngine.Source+")...")
 
 	if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
@@ -144,8 +145,8 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 }
 
 // recordDryRunNoop records dry-run telemetry for a no-op case (no state, or
-// state with no managed resources) when the user did NOT opt in. On opt-in
-// paths the caller uses direct_migrate_* keys instead.
+// state with no managed resources) when direct was NOT selected. On the
+// migrating paths the caller uses direct_migrate_* keys instead.
 func recordDryRunNoop(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 	if requestedEngine.Type == engine.EngineDirect {
 		return
@@ -155,15 +156,18 @@ func recordDryRunNoop(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 }
 
 // recordAutoMigrateSource sets exactly one of the migrated-via-* telemetry
-// keys. requestedEngine.Type may resolve to direct from either the config or
-// the env var (config wins in ResolveEngineSetting). ConfigType is set only
-// when the config populated the setting, so it's the correct signal for
+// keys. requestedEngine.Type may resolve to direct from the config, the env var,
+// or the default (config wins over env in ResolveEngineSetting). ConfigType is
+// set only when the config populated the setting, so it's the correct signal for
 // "was this a durable opt-in?" — env-only opt-ins are the ones with
-// ConfigType == EngineNotSet.
+// ConfigType == EngineNotSet and IsDefault false.
 func recordAutoMigrateSource(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
-	if requestedEngine.ConfigType == engine.EngineDirect {
+	switch {
+	case requestedEngine.IsDefault:
+		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaDefault, true)
+	case requestedEngine.ConfigType == engine.EngineDirect:
 		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaConfig, true)
-	} else {
+	default:
 		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaEnv, true)
 	}
 }
