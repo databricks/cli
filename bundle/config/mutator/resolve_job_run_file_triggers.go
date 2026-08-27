@@ -10,6 +10,7 @@ import (
 	"os"
 	pathlib "path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -56,8 +57,8 @@ func (*resolveJobRunFileTriggers) Apply(ctx context.Context, b *bundle.Bundle) d
 	return diags
 }
 
-// syncableRelPaths is the set of relative paths sync would upload.
-func syncableRelPaths(ctx context.Context, b *bundle.Bundle) (map[string]struct{}, diag.Diagnostics) {
+// syncableRelPaths lists the relative paths sync would upload.
+func syncableRelPaths(ctx context.Context, b *bundle.Bundle) ([]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	needs := false
 	for _, jr := range b.Config.Resources.JobRuns {
@@ -80,7 +81,7 @@ func syncableRelPaths(ctx context.Context, b *bundle.Bundle) (map[string]struct{
 	return out, diags
 }
 
-func listSyncableRelPaths(ctx context.Context, b *bundle.Bundle) (map[string]struct{}, error) {
+func listSyncableRelPaths(ctx context.Context, b *bundle.Bundle) ([]string, error) {
 	fl, err := libsync.NewFileList(ctx, b.WorktreeRoot, b.SyncRoot, b.Config.Sync.Paths, b.Config.Sync.Include, b.Config.Sync.Exclude)
 	if err != nil {
 		return nil, err
@@ -89,10 +90,11 @@ func listSyncableRelPaths(ctx context.Context, b *bundle.Bundle) (map[string]str
 	if err != nil {
 		return nil, err
 	}
-	out := make(map[string]struct{}, len(files))
+	out := make([]string, 0, len(files))
 	for _, f := range files {
-		out[filepath.ToSlash(f.Relative)] = struct{}{}
+		out = append(out, filepath.ToSlash(f.Relative))
 	}
+	slices.Sort(out)
 	return out, nil
 }
 
@@ -105,16 +107,14 @@ func fileTriggerDiag(b *bundle.Bundle, loc string, severity diag.Severity, forma
 	}
 }
 
-func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[string]struct{}) (map[string]string, diag.Diagnostics) {
+func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable []string) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := make(map[string]string)
-	// filepath.Glob treats ** as two *, so doublestar-style patterns match less than expected.
+	// A double star looks recursive but path.Match treats it as two ordinary stars.
 	if strings.Contains(pattern, "**") {
 		return out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "** in %q is not supported; use * for a single directory level", pattern))
 	}
-	// filepath.Join would otherwise rebase an absolute pattern under the bundle
-	// root (Join("/bundle", "/etc/passwd") is "/bundle/etc/passwd"). A POSIX path
-	// is absolute on Windows too, so check both flavours like NormalizePaths does.
+	// A POSIX path is absolute on Windows too, so check both flavours like NormalizePaths does.
 	if filepath.IsAbs(pattern) || pathlib.IsAbs(pattern) {
 		return out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q must be relative to the defining YAML file", pattern))
 	}
@@ -126,49 +126,33 @@ func resolveFileTrigger(b *bundle.Bundle, loc, pattern string, syncable map[stri
 	if err != nil || !filepath.IsLocal(relPattern) {
 		return out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "pattern %q is not under the sync root", pattern))
 	}
-	matches, err := filepath.Glob(joined)
+	relPattern = filepath.ToSlash(relPattern)
+	_, err = pathlib.Match(relPattern, "")
 	if err != nil {
 		return out, diags.Append(fileTriggerDiag(b, loc, diag.Error, "invalid pattern %q: %s", pattern, err))
 	}
-	for _, match := range matches {
-		info, err := os.Stat(match)
+	for _, rel := range syncable {
+		matched, err := pathlib.Match(relPattern, rel)
 		if err != nil {
-			diags = diags.Append(fileTriggerDiag(b, loc, diag.Error, "stat %q: %s", match, err))
+			diags = diags.Append(fileTriggerDiag(b, loc, diag.Error, "invalid pattern %q: %s", pattern, err))
 			continue
 		}
-		// A glob like migrations/* routinely matches subdirectories; there is
-		// nothing to hash and nothing for the user to fix, so skip them quietly.
-		if !info.Mode().IsRegular() {
+		if !matched {
 			continue
 		}
-		rel, err := filepath.Rel(b.SyncRootPath, match)
-		if err != nil || !filepath.IsLocal(rel) {
-			diags = diags.Append(fileTriggerDiag(b, loc, diag.Error, "matched path %q is not under the sync root", match))
-			continue
-		}
-		// Honor .gitignore and sync.exclude the same way sync does.
-		if _, ok := syncable[filepath.ToSlash(rel)]; !ok {
-			continue
-		}
+		match := filepath.Join(b.SyncRootPath, filepath.FromSlash(rel))
 		hash, err := hashFile(match)
 		if err != nil {
 			diags = diags.Append(fileTriggerDiag(b, loc, diag.Error, "hash %q: %s", match, err))
 			continue
 		}
-		out[filepath.ToSlash(rel)] = hash
+		out[rel] = hash
 	}
-	// A pattern that hashes nothing is a warning, not an error: every such case
-	// re-arms once a matching file appears. Record the placeholder under the
-	// pattern's own sync-root-relative key so that appearance is a hash change
-	// rather than a key swap. Skip it when a match failed to be read, since the
-	// error already says the fingerprint is incomplete.
+	// Record the pattern with an empty hash so a later match re-arms the trigger.
+	// A read error already reports an incomplete fingerprint, so skip it then.
 	if len(out) == 0 && !diags.HasError() {
-		out[filepath.ToSlash(relPattern)] = missingFileHash
-		if len(matches) == 0 {
-			diags = diags.Append(fileTriggerDiag(b, loc, diag.Warning, "no files match %q", pattern))
-		} else {
-			diags = diags.Append(fileTriggerDiag(b, loc, diag.Warning, "pattern %q matches only directories or files excluded from sync, so nothing is hashed", pattern))
-		}
+		out[relPattern] = missingFileHash
+		diags = diags.Append(fileTriggerDiag(b, loc, diag.Warning, "no synced files match %q", pattern))
 	}
 	return out, diags
 }

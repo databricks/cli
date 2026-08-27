@@ -374,23 +374,27 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 	for _, tt := range []struct {
 		name   string
 		path   string
+		old    any
 		new    any
 		action deployplan.ActionType
+		reason string
 	}{
-		{"cleared on_bundle_deploy string", "lifecycle.triggers.on_bundle_deploy", "", deployplan.Skip},
-		{"nil on_bundle_deploy", "lifecycle.triggers.on_bundle_deploy", nil, deployplan.Skip},
-		{"rotated on_bundle_deploy", "lifecycle.triggers.on_bundle_deploy", "uuid", deployplan.Recreate},
-		{"cleared on_file_change", "lifecycle.triggers.on_file_change", nil, deployplan.Skip},
-		{"changed on_file_change map", "lifecycle.triggers.on_file_change", map[string]string{"a.txt": "h"}, deployplan.Recreate},
+		{"cleared on_bundle_deploy string", "lifecycle.triggers.on_bundle_deploy", "uuid", "", deployplan.Skip, "trigger removed"},
+		{"nil on_bundle_deploy", "lifecycle.triggers.on_bundle_deploy", "uuid", nil, deployplan.Skip, "trigger removed"},
+		{"rotated on_bundle_deploy", "lifecycle.triggers.on_bundle_deploy", "old-uuid", "new-uuid", deployplan.Recreate, ""},
+		{"cleared on_file_change", "lifecycle.triggers.on_file_change", map[string]string{"a.txt": "h"}, nil, deployplan.Skip, "trigger removed"},
+		{"added on_file_change map", "lifecycle.triggers.on_file_change", nil, map[string]string{"a.txt": "h"}, deployplan.Recreate, ""},
+		{"changed on_file_change map", "lifecycle.triggers.on_file_change", map[string]string{"a.txt": "old"}, map[string]string{"a.txt": "new"}, deployplan.Recreate, deployplan.ReasonDrop},
 		// A file dropping out of the map is a real change, so the skip must not
 		// extend to paths below on_file_change.
-		{"cleared on_file_change child", "lifecycle.triggers.on_file_change['a.txt']", nil, deployplan.Recreate},
-		{"result_state with unreadable remote", "result_state", nil, deployplan.Recreate},
+		{"cleared on_file_change child", "lifecycle.triggers.on_file_change['a.txt']", "h", nil, deployplan.Recreate, ""},
+		{"result_state with unreadable remote", "result_state", jobs.RunResultStateSuccess, nil, deployplan.Recreate, ""},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			change := &ChangeDesc{Action: deployplan.Recreate, New: tt.new}
+			change := &ChangeDesc{Action: deployplan.Recreate, Old: tt.old, New: tt.new}
 			require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath(tt.path), change, nil))
 			assert.Equal(t, tt.action, change.Action)
+			assert.Equal(t, tt.reason, change.Reason)
 		})
 	}
 }
