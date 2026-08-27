@@ -16,16 +16,17 @@ withdir bundle trace $CLI bundle deploy
 trace file_triggers
 
 title "editing the file next to the included YAML re-fires"
-update_file.py bundle/resources/watched-resources.txt "include-v1" "include-v2"
+# printf keeps LF on Windows, where update_file.py's text-mode rewrite uses CRLF.
+printf 'include-v2\n' > bundle/resources/watched-resources.txt
 trace changes
-update_file.py bundle/resources/watched-resources.txt "include-v2" "include-v1"
+printf 'include-v1\n' > bundle/resources/watched-resources.txt
 
 title "editing the file at the bundle root re-fires"
-update_file.py bundle/watched-bundle.txt "bundle-v1" "bundle-v2"
+printf 'bundle-v2\n' > bundle/watched-bundle.txt
 trace changes
-update_file.py bundle/watched-bundle.txt "bundle-v2" "bundle-v1"
+printf 'bundle-v1\n' > bundle/watched-bundle.txt
 
 title "editing the file at the sync root re-fires"
-update_file.py shared.txt "parent-v1" "parent-v2"
+printf 'parent-v2\n' > shared.txt
 trace changes
-update_file.py shared.txt "parent-v2" "parent-v1"
+printf 'parent-v1\n' > shared.txt
