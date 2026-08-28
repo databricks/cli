@@ -1,3 +1,1 @@
 trace $CLI bundle deploy
-title "Names of the created jobs, with references resolved to ids\n"
-print_requests.py --method POST '/api/2.2/jobs/create' | jq -r .body.name | sort
