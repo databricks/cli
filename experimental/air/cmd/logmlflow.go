@@ -363,7 +363,7 @@ func listArtifacts(ctx context.Context, w *databricks.WorkspaceClient, mlflowRun
 		return nil, err
 	}
 	if volumeRoot, ok := volumeArtifactRoot(root); ok {
-		fc, err := filer.NewWorkspaceFilesClient(w, volumeRoot)
+		fc, err := filer.NewFilesClient(ctx, w, volumeRoot)
 		if err != nil {
 			return nil, err
 		}
@@ -412,7 +412,7 @@ func downloadArtifact(ctx context.Context, w *databricks.WorkspaceClient, mlflow
 		return "", err
 	}
 	if volumeRoot, ok := volumeArtifactRoot(root); ok {
-		fc, err := filer.NewWorkspaceFilesClient(w, volumeRoot)
+		fc, err := filer.NewFilesClient(ctx, w, volumeRoot)
 		if err != nil {
 			return "", err
 		}

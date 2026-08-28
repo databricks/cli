@@ -207,9 +207,10 @@ func TestVolumeArtifactListAndDownload(t *testing.T) {
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
-	fc, err := filer.NewWorkspaceFilesClient(w, "/Volumes/main/default/logs/root")
+	fc, err := filer.NewFilesClient(t.Context(), w, "/Volumes/main/default/logs/root")
 	require.NoError(t, err)
-	require.NoError(t, fc.Write(t.Context(), "logs/node_0/logs-0.chunk.txt", strings.NewReader("volume line\n"), filer.CreateParentDirectories))
+	require.NoError(t, fc.Mkdir(t.Context(), "logs/node_0"))
+	require.NoError(t, fc.Write(t.Context(), "logs/node_0/logs-0.chunk.txt", strings.NewReader("volume line\n")))
 
 	chunks, err := listLogChunks(t.Context(), w, "volume-run", "logs/node_0")
 	require.NoError(t, err)
