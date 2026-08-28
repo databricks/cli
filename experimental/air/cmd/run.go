@@ -194,10 +194,10 @@ func airLogsCommand(profile, runID string) string {
 
 func printPostSubmitGuidance(out io.Writer, profile, runID string) {
 	fmt.Fprintln(out)
-	fmt.Fprintln(out, "Stream logs in real time using:")
+	fmt.Fprintln(out, "Stream real-time logs using:")
 	fmt.Fprintln(out, "  "+airLogsCommand(profile, runID))
 	fmt.Fprintln(out)
-	fmt.Fprintln(out, "Tip: use --watch when submitting a run to monitor the job and stream logs in real time.")
+	fmt.Fprintln(out, "Tip: use --watch when submitting a run to stream logs in real time.")
 }
 
 func handleWatchResult(out io.Writer, profile, runID string, err error) error {
@@ -207,7 +207,7 @@ func handleWatchResult(out io.Writer, profile, runID string, err error) error {
 
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "Stopped streaming logs. The workload was not canceled.")
-	fmt.Fprintln(out, "Resume streaming logs using:")
+	fmt.Fprintln(out, "Resume real-time logs using:")
 	fmt.Fprintln(out, "  "+airLogsCommand(profile, runID))
 	return root.ErrAlreadyPrinted
 }

@@ -79,9 +79,9 @@ func TestRunSubmitTextOutput(t *testing.T) {
 	assert.Contains(t, out, "Submitted workload with Job Run ID: 555")
 	assert.Contains(t, out, "View job run at: ")
 	assert.Contains(t, out, "/jobs/runs/555")
-	assert.Contains(t, out, "Stream logs in real time using:")
+	assert.Contains(t, out, "Stream real-time logs using:")
 	assert.Contains(t, out, "databricks experimental air logs 555")
-	assert.Contains(t, out, "Tip: use --watch when submitting a run")
+	assert.Contains(t, out, "Tip: use --watch when submitting a run to stream logs in real time.")
 	assert.NotContains(t, out, "View MLflow run at:")
 }
 
