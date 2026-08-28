@@ -99,12 +99,14 @@ go test ./acceptance -run '^TestAccept$' -update -timeout=60m
 go test ./acceptance -run '^TestAccept$' -timeout=60m       # MUST pass on its own
 ```
 
-The verify (non-update) pass is not optional. Bundle tests run under an
-`EnvMatrix` of both engines (`terraform`, `direct`); with `-update` each variant
-overwrites the other's `output.txt`, so a run can report `ok` on a golden that is
-actually wrong. Only the non-update run catches this. (Ignore
-`rejecting_proxy.go: blocking proxy` log lines — they are normal. A test that
-times out under full parallel load but passes when run alone is a flake.)
+The verify (non-update) pass is not optional. On `-update`, acceptance auto-enables
+`-subset`, regenerating each output file from just one covering `EnvMatrix` variant
+(`terraform` / `direct`); the plain non-update run then exercises *every* variant
+against those goldens, so it is what catches a variant whose output diverges — the
+update subset alone would not. It must pass on its own. (Ignore the normal
+`rejecting_proxy.go: blocking proxy` log lines. If a test times out only under full
+parallel load, re-run it in isolation to tell a load flake from a real regression —
+don't wave off a test that fails deterministically.)
 
 **5. Changelog fragment.**
 Add a `bundles` fragment at `.nextchanges/bundles/serverless-environment-version-v{N}.md`,
