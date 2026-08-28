@@ -12,8 +12,8 @@ live in the `library/versions.tmpl` files under `libs/template/templates/`. The
 serverless environment version lives in two forms — a `versions.tmpl` macro *and*
 hardcoded literals in a few templates that don't reference the macro (Step 2).
 `serverless_environment_version`, the Python pins, and the DB Connect pin form
-one mutually compatible set; everything under `acceptance/` is rendered output
-you regenerate, not hand-edit.
+one mutually compatible set; the golden output under `acceptance/` is regenerated
+from these sources, not hand-edited.
 
 **Read `.agents/rules/template-versions.md` first** — it holds the three RULES this
 skill must obey (keep DB Connect at the lowest working pin, keep the version set
@@ -82,7 +82,7 @@ below are what they match today, for orientation — trust the grep if they've m
   environment version at all.
 
 **3. Update the version comments.**
-Each macro in `default/versions.tmpl` carries a comment block explaining the
+Each macro in `default/library/versions.tmpl` carries a comment block explaining the
 compatibility reasoning (which Python the environment version uses, why DB
 Connect is pinned where it is). Update those so the "why" matches the new pins.
 
