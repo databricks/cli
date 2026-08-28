@@ -22,6 +22,11 @@ type StructVar struct {
 	Refs map[string]string `json:"vars,omitempty"`
 }
 
+// ReferenceNormalizer updates a field after ResolveRef changes it.
+type ReferenceNormalizer interface {
+	NormalizeAfterResolve(path *structpath.PathNode)
+}
+
 // StructVarJSON is the serialized form of StructVar for persisting in plan files.
 type StructVarJSON struct {
 	Value json.RawMessage   `json:"value"`
@@ -116,6 +121,10 @@ func (sv *StructVar) ResolveRef(reference string, value any) error {
 			} else {
 				sv.Refs[pathKey] = newValue
 			}
+		}
+
+		if normalizer, ok := sv.Value.(ReferenceNormalizer); ok {
+			normalizer.NormalizeAfterResolve(pathNode)
 		}
 	}
 

@@ -55,6 +55,31 @@ func (r *JobRun) HasOnFileChange() bool {
 	return false
 }
 
+// ArmedTriggerNames returns the names of the trigger fields any entry arms, in
+// schema order so that diagnostics naming them are stable.
+func (r *JobRun) ArmedTriggerNames() []string {
+	if r.Lifecycle == nil {
+		return nil
+	}
+	var onBundleDeploy, onFileChange, onValueChange bool
+	for _, t := range r.Lifecycle.Triggers {
+		onBundleDeploy = onBundleDeploy || (t.OnBundleDeploy != nil && *t.OnBundleDeploy)
+		onFileChange = onFileChange || t.OnFileChange != nil
+		onValueChange = onValueChange || t.OnValueChange != nil
+	}
+	var names []string
+	if onBundleDeploy {
+		names = append(names, "on_bundle_deploy")
+	}
+	if onFileChange {
+		names = append(names, "on_file_change")
+	}
+	if onValueChange {
+		names = append(names, "on_value_change")
+	}
+	return names
+}
+
 func (r *JobRun) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, r)
 }

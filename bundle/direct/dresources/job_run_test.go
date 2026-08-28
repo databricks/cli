@@ -261,6 +261,9 @@ func TestJobRunPrepareStateCopiesResolvedTriggers(t *testing.T) {
 	enabled := true
 	triggers := &resources.JobRunTriggersState{
 		OnFileChange: map[string]string{"*.txt": "hash"},
+		OnValueChange: map[string]string{
+			"${var.watched}": "resolved",
+		},
 	}
 	input := &resources.JobRun{
 		Lifecycle: &resources.JobRunLifecycle{
@@ -275,6 +278,12 @@ func TestJobRunPrepareStateCopiesResolvedTriggers(t *testing.T) {
 	require.NotNil(t, state.Lifecycle.TriggersState)
 	assert.NotSame(t, triggers, state.Lifecycle.TriggersState)
 	assert.Equal(t, triggers.OnFileChange, state.Lifecycle.TriggersState.OnFileChange)
+	assert.Equal(t, map[string]string{
+		"${var.watched}": fingerprintJobRunValue("resolved"),
+	}, state.Lifecycle.TriggersState.OnValueChange)
+	assert.Equal(t, map[string]string{
+		"${var.watched}": "resolved",
+	}, triggers.OnValueChange)
 	assert.NotEmpty(t, state.Lifecycle.TriggersState.OnBundleDeploy)
 	assert.Empty(t, triggers.OnBundleDeploy)
 }
@@ -369,6 +378,14 @@ func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
 	assert.NotEqual(t, tokens[0], tokens[1])
 	// Token must not leak into persisted state.
 	assert.Empty(t, config.IdempotencyToken)
+}
+
+func TestFingerprintJobRunValue(t *testing.T) {
+	assert.Equal(
+		t,
+		"sha256:ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+		fingerprintJobRunValue("a"),
+	)
 }
 
 func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {

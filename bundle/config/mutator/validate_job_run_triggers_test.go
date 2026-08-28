@@ -48,14 +48,14 @@ func TestValidateJobRunTriggers(t *testing.T) {
 			triggers: []resources.JobRunTrigger{
 				{},
 			},
-			summary: "lifecycle.triggers entry must set on_bundle_deploy or on_file_change",
+			summary: "lifecycle.triggers entry must set on_bundle_deploy, on_file_change, or on_value_change",
 		},
 		{
 			name: "both keys on one entry",
 			triggers: []resources.JobRunTrigger{
 				{OnBundleDeploy: &trueVal, OnFileChange: &fileChange},
 			},
-			summary: "lifecycle.triggers entry must set only one of on_bundle_deploy or on_file_change",
+			summary: "lifecycle.triggers entry must set only one of on_bundle_deploy, on_file_change, or on_value_change",
 		},
 		{
 			name: "on_bundle_deploy false",

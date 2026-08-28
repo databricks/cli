@@ -1,0 +1,9 @@
+# SHA-256 fingerprints contain digit runs that the parent `\d{8,}` rule would
+# mangle. Order=1 runs before it; Distinct keeps different hashes distinguishable.
+Ignore = ["tmp.plan.json"]
+
+[[Repls]]
+Old = '[0-9a-f]{64}'
+New = '[VALUE_HASH]'
+Order = 1
+Distinct = true

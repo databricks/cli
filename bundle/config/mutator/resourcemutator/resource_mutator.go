@@ -159,6 +159,9 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 
 		validate.SingleNodeCluster(),
 
+		// Preserve on_value_change expressions as stable state keys before interpolation.
+		mutator.SnapshotJobRunValueTriggers(),
+
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
 		// Updates (dynamic): resources.* (strings) (resolves variable references to their actual values)
 		// Resolves variable references in 'resources' using bundle, workspace, and variables prefixes

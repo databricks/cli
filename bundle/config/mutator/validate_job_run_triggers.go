@@ -27,7 +27,7 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 			continue
 		}
 		if jr.Lifecycle.PreventDestroy {
-			if summary := preventDestroyError(jr.HasOnBundleDeploy(), jr.HasOnFileChange()); summary != "" {
+			if summary := preventDestroyError(jr.ArmedTriggerNames()); summary != "" {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   summary,
@@ -37,18 +37,19 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 		}
 		for i, t := range jr.Lifecycle.Triggers {
 			path := fmt.Sprintf("resources.job_runs.%s.lifecycle.triggers[%d]", name, i)
-			if t.OnBundleDeploy == nil && t.OnFileChange == nil {
+			armed := t.ArmedCount()
+			if armed == 0 {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers entry must set on_bundle_deploy or on_file_change",
+					Summary:   "lifecycle.triggers entry must set on_bundle_deploy, on_file_change, or on_value_change",
 					Locations: b.Config.GetLocations(path),
 				})
 				continue
 			}
-			if t.OnBundleDeploy != nil && t.OnFileChange != nil {
+			if armed > 1 {
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   "lifecycle.triggers entry must set only one of on_bundle_deploy or on_file_change",
+					Summary:   "lifecycle.triggers entry must set only one of on_bundle_deploy, on_file_change, or on_value_change",
 					Locations: b.Config.GetLocations(path),
 				})
 				continue
@@ -78,15 +79,16 @@ func (*validateJobRunTriggers) Apply(_ context.Context, b *bundle.Bundle) diag.D
 	return diags
 }
 
-func preventDestroyError(onBundleDeploy, onFileChange bool) string {
-	switch {
-	case onBundleDeploy && onFileChange:
-		return "lifecycle.triggers.on_bundle_deploy and on_file_change are incompatible with lifecycle.prevent_destroy"
-	case onBundleDeploy:
-		return "lifecycle.triggers.on_bundle_deploy is incompatible with lifecycle.prevent_destroy"
-	case onFileChange:
-		return "lifecycle.triggers.on_file_change is incompatible with lifecycle.prevent_destroy"
-	default:
+// preventDestroyError names the armed triggers that conflict with prevent_destroy,
+// or returns an empty string when none are armed.
+func preventDestroyError(names []string) string {
+	switch len(names) {
+	case 0:
 		return ""
+	case 1:
+		return fmt.Sprintf("lifecycle.triggers.%s is incompatible with lifecycle.prevent_destroy", names[0])
+	default:
+		last := len(names) - 1
+		return fmt.Sprintf("lifecycle.triggers.%s and %s are incompatible with lifecycle.prevent_destroy", strings.Join(names[:last], ", "), names[last])
 	}
 }

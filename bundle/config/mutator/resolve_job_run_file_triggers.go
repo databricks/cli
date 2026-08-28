@@ -50,7 +50,10 @@ func (*resolveJobRunFileTriggers) Apply(ctx context.Context, b *bundle.Bundle) d
 				out[pattern] = fingerprint
 			}
 		}
-		jr.Lifecycle.TriggersState = &resources.JobRunTriggersState{OnFileChange: out}
+		if jr.Lifecycle.TriggersState == nil {
+			jr.Lifecycle.TriggersState = &resources.JobRunTriggersState{}
+		}
+		jr.Lifecycle.TriggersState.OnFileChange = out
 	}
 	return diags
 }

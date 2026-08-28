@@ -3,8 +3,11 @@ package dresources
 import (
 	"cmp"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -13,8 +16,10 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -26,10 +31,13 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
+const jobRunValueHashPrefix = "sha256:"
+
 var (
 	jobRunLifecyclePath      = structpath.MustParsePath("lifecycle")
 	jobRunOnBundleDeployPath = structpath.MustParsePath("lifecycle.triggers_state.on_bundle_deploy")
 	jobRunOnFileChangePath   = structpath.MustParsePath("lifecycle.triggers_state.on_file_change")
+	jobRunOnValueChangePath  = structpath.MustParsePath("lifecycle.triggers_state.on_value_change")
 	jobRunResultStatePath    = structpath.MustParsePath("result_state")
 )
 
@@ -103,15 +111,68 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	var ts resources.JobRunTriggersState
 	if input.Lifecycle != nil && input.Lifecycle.TriggersState != nil {
 		ts = *input.Lifecycle.TriggersState
+		// Fingerprinting below rewrites value-trigger entries.
+		ts.OnValueChange = maps.Clone(ts.OnValueChange)
 	}
 	if input.HasOnBundleDeploy() {
 		ts.OnBundleDeploy = uuid.NewString()
 	}
-	if ts.OnBundleDeploy == "" && len(ts.OnFileChange) == 0 {
+	if ts.OnBundleDeploy == "" && len(ts.OnFileChange) == 0 && len(ts.OnValueChange) == 0 {
 		return state
 	}
 	state.Lifecycle = &JobRunLifecycleState{TriggersState: &ts}
+	state.normalizeValueTriggers()
 	return state
+}
+
+// PrepareInputConfig maps unresolved watches to state paths so the deploy graph
+// tracks their resource references.
+func (*ResourceJobRun) PrepareInputConfig(input *resources.JobRun, _ string) (*structvar.StructVar, error) {
+	refs := map[string]string{}
+	if input.Lifecycle == nil || input.Lifecycle.TriggersState == nil {
+		return &structvar.StructVar{Value: input, Refs: refs}, nil
+	}
+	for expr, value := range input.Lifecycle.TriggersState.OnValueChange {
+		if !dynvar.ContainsVariableReference(value) {
+			continue
+		}
+		refs[structpath.NewBracketString(jobRunOnValueChangePath, expr).String()] = value
+	}
+	return &structvar.StructVar{Value: input, Refs: refs}, nil
+}
+
+// NormalizeAfterResolve fingerprints a watch once its references resolve.
+func (s *JobRunState) NormalizeAfterResolve(path *structpath.PathNode) {
+	if s.Lifecycle == nil || s.Lifecycle.TriggersState == nil {
+		return
+	}
+	if path.Len() != jobRunOnValueChangePath.Len()+1 || !path.HasPrefix(jobRunOnValueChangePath) {
+		return
+	}
+	expr, ok := path.SkipPrefix(jobRunOnValueChangePath.Len()).StringKey()
+	if !ok {
+		return
+	}
+	s.normalizeValueTrigger(expr)
+}
+
+func (s *JobRunState) normalizeValueTriggers() {
+	for expr := range s.Lifecycle.TriggersState.OnValueChange {
+		s.normalizeValueTrigger(expr)
+	}
+}
+
+func (s *JobRunState) normalizeValueTrigger(expr string) {
+	value, ok := s.Lifecycle.TriggersState.OnValueChange[expr]
+	if !ok || dynvar.ContainsVariableReference(value) {
+		return
+	}
+	s.Lifecycle.TriggersState.OnValueChange[expr] = fingerprintJobRunValue(value)
+}
+
+func fingerprintJobRunValue(value string) string {
+	sum := sha256.Sum256([]byte(value))
+	return jobRunValueHashPrefix + hex.EncodeToString(sum[:])
 }
 
 // makeJobRunRemote maps the GetRun response into the RunNow-shaped remote: GET
@@ -395,8 +456,8 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 			change.PersistState = true
 		}
 	case path.Len() == jobRunOnFileChangePath.Len() && path.HasPrefix(jobRunOnFileChangePath):
-		if isEmptyFileTriggerMap(change.New) {
-			if isEmptyFileTriggerMap(change.Old) {
+		if isEmptyTriggerMap(change.New) {
+			if isEmptyTriggerMap(change.Old) {
 				change.Reason = deployplan.ReasonDrop
 			} else {
 				change.Action = deployplan.Skip
@@ -408,6 +469,25 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 			change.Reason = deployplan.ReasonDrop
 		}
 	case path.Len() == jobRunOnFileChangePath.Len()+1 && path.HasPrefix(jobRunOnFileChangePath):
+		if change.New == nil {
+			change.Action = deployplan.Skip
+			change.Reason = "trigger removed"
+			change.PersistState = true
+		}
+	case path.Len() == jobRunOnValueChangePath.Len() && path.HasPrefix(jobRunOnValueChangePath):
+		if isEmptyTriggerMap(change.New) {
+			if isEmptyTriggerMap(change.Old) {
+				change.Reason = deployplan.ReasonDrop
+			} else {
+				change.Action = deployplan.Skip
+				change.Reason = "trigger removed"
+				change.PersistState = true
+			}
+		} else if change.Old != nil {
+			// Expression entries classify the change.
+			change.Reason = deployplan.ReasonDrop
+		}
+	case path.Len() == jobRunOnValueChangePath.Len()+1 && path.HasPrefix(jobRunOnValueChangePath):
 		if change.New == nil {
 			change.Action = deployplan.Skip
 			change.Reason = "trigger removed"
@@ -459,7 +539,7 @@ func (r *ResourceJobRun) cancelRun(ctx context.Context, runID int64) error {
 	return nil
 }
 
-func isEmptyFileTriggerMap(v any) bool {
+func isEmptyTriggerMap(v any) bool {
 	if v == nil {
 		return true
 	}

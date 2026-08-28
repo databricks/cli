@@ -1,0 +1,64 @@
+
+=== an empty expression is rejected
+>>> musterr [CLI] bundle validate
+Error: lifecycle.triggers.on_value_change must be non-empty when set
+  in databricks.yml:22:30
+
+Name: job-runs-on-value-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-errors/default
+
+Found 1 error
+
+=== duplicate expressions are rejected after trimming
+>>> musterr [CLI] bundle validate
+Error: lifecycle.triggers.on_value_change expressions must be unique
+  in databricks.yml:23:30
+
+Name: job-runs-on-value-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-errors/default
+
+Found 1 error
+
+=== multiple trigger fields in one entry are rejected
+>>> musterr [CLI] bundle validate
+Error: lifecycle.triggers entry must set only one of on_bundle_deploy, on_file_change, or on_value_change
+  in databricks.yml:22:13
+
+Name: job-runs-on-value-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-errors/default
+
+Found 1 error
+
+=== on_value_change with prevent_destroy is rejected
+>>> musterr [CLI] bundle validate
+Error: lifecycle.triggers.on_value_change is incompatible with lifecycle.prevent_destroy
+  in databricks.yml:21:9
+
+Name: job-runs-on-value-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-errors/default
+
+Found 1 error
+
+=== an undefined variable is rejected
+>>> musterr [CLI] bundle validate
+Error: reference does not exist: ${var.missing}
+
+Name: job-runs-on-value-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-errors/default
+
+Found 1 error

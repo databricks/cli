@@ -191,6 +191,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
 		mutator.ValidateJobRunTriggers(),
 
+		// Resolve the on_value_change expressions snapshotted before resource interpolation.
+		mutator.ResolveJobRunValueTriggers(),
+
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
 		// points to a Terraform-only field with no DABs equivalent.

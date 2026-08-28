@@ -1,0 +1,108 @@
+
+=== plan depends on both jobs in the expressions
+>>> jq .plan["resources.job_runs.my_run"].depends_on tmp.plan.json
+[
+  {
+    "node": "resources.jobs.extra",
+    "label": "${resources.jobs.extra.id}"
+  },
+  {
+    "node": "resources.jobs.my_job",
+    "label": "${resources.jobs.my_job.id}"
+  },
+  {
+    "node": "resources.jobs.other",
+    "label": "${resources.jobs.other.id}"
+  }
+]
+
+=== first deploy triggers a run
+=== bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-ref/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
+Created job_runs.my_run
+Created jobs.extra
+Created jobs.my_job
+Created jobs.other
+Files: 6 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> read_id.py my_job
+[MY_JOB_ID]
+
+>>> read_id.py other
+[OTHER_ID]
+
+>>> read_id.py extra
+[EXTRA_ID]
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+=== state records hashes for pure and mixed references
+>>> print_state.py
+{
+  "${resources.jobs.other.id}": "sha256:[VALUE_HASH][0]",
+  "${resources.jobs.other.id}-${var.suffix}-${resources.jobs.extra.id}": "sha256:[VALUE_HASH][1]"
+}
+
+=== redeploy with unchanged ids plans nothing
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-ref/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 4 unchanged
+
+>>> print_requests.py //jobs/run-now
+
+=== replacing a referenced job re-fires the run
+>>> [CLI] jobs delete [OTHER_ID]
+
+>>> [CLI] bundle plan
+recreate job_runs.my_run
+create jobs.other
+
+Plan: 2 to add, 0 to change, 1 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-ref/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
+Recreated job_runs.my_run
+Created jobs.other
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 1 deleted, 2 unchanged
+
+>>> read_id.py other
+[OTHER_ID_3]
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.extra
+  delete resources.jobs.my_job
+  delete resources.jobs.other
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-ref/default
+
+Destroy: 4 deleted
