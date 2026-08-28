@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/internal/validation/generated"
@@ -95,32 +94,23 @@ func sortDiagnostics(diags diag.Diagnostics) {
 
 // Bespoke code to error for fields that are not marked as required in the Go SDK / OpenAPI spec.
 func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Dashboards should always have a name and warehouse_id.
-	var nameLocations []dyn.Location
-	var namePaths []dyn.Path
+	// Dashboards should always have a warehouse_id.
 	var warehouseIdLocations []dyn.Location
 	var warehouseIdPaths []dyn.Path
 
 	diags := diag.Diagnostics{}
 	for key, dashboard := range b.Config.Resources.Dashboards {
-		if dashboard.DisplayName == "" {
-			nameLocations = append(nameLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			namePaths = append(namePaths, dyn.MustPathFromString("resources.dashboards."+key))
-		}
 		if dashboard.WarehouseId == "" {
-			warehouseIdLocations = append(warehouseIdLocations, b.Config.GetLocations("resources.dashboards."+key)...)
-			warehouseIdPaths = append(warehouseIdPaths, dyn.MustPathFromString("resources.dashboards."+key))
+			resourcePath := dyn.NewPath(
+				dyn.Key("resources"),
+				dyn.Key("dashboards"),
+				dyn.Key(key),
+			)
+			warehouseIdLocations = append(warehouseIdLocations, locationsAtPath(b, resourcePath)...)
+			warehouseIdPaths = append(warehouseIdPaths, resourcePath)
 		}
 	}
 
-	if len(nameLocations) > 0 {
-		diags = diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   "dashboard display_name is required",
-			Locations: nameLocations,
-			Paths:     namePaths,
-		})
-	}
 	if len(warehouseIdLocations) > 0 {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
@@ -128,20 +118,6 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 			Locations: warehouseIdLocations,
 			Paths:     warehouseIdPaths,
 		})
-	}
-
-	// sql_warehouses.name is optional in the SDK (json:"name,omitempty") but required
-	// by the backend, which rejects whitespace-only names (name.trim.nonEmpty).
-	for key, warehouse := range b.Config.Resources.SqlWarehouses {
-		if strings.TrimSpace(warehouse.Name) == "" {
-			path := "resources.sql_warehouses." + key
-			diags = diags.Append(diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   "sql_warehouse name is required",
-				Locations: b.Config.GetLocations(path),
-				Paths:     []dyn.Path{dyn.MustPathFromString(path)},
-			})
-		}
 	}
 
 	sortDiagnostics(diags)
@@ -242,9 +218,11 @@ func isMissingOrEmptySequence(v dyn.Value) bool {
 }
 
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := errorForMissingFields(ctx, b)
+	diags := validateIdentifiers(ctx, b)
+	diags = diags.Extend(errorForMissingFields(ctx, b))
 	diags = diags.Extend(errorForInvalidGrants(ctx, b))
 	diags = diags.Extend(errorForInvalidSecretScopePermissions(ctx, b))
+	diags = diags.Extend(errorForIncompletePipelineLibraries(ctx, b))
 	if diags.HasError() {
 		return diags
 	}

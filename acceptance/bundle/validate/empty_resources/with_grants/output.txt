@@ -45,8 +45,8 @@ Warning: unknown field: grants
   at resources.models.rname
   in databricks.yml:7:7
 
-Warning: required field "name" is not set
-  at resources.models.rname
+Error: model name is required
+  at resources.models.rname.name
   in databricks.yml:7:7
 
 {
@@ -69,6 +69,10 @@ Warning: unknown field: grants
 }
 
 === resources.registered_models.rname ===
+Error: registered_model name is required
+  at resources.registered_models.rname.name
+  in databricks.yml:7:7
+
 {
   "registered_models": {
     "rname": {
@@ -101,12 +105,8 @@ Warning: required field "table_name" is not set
 }
 
 === resources.schemas.rname ===
-Warning: required field "catalog_name" is not set
-  at resources.schemas.rname
-  in databricks.yml:7:7
-
-Warning: required field "name" is not set
-  at resources.schemas.rname
+Error: schema name is required
+  at resources.schemas.rname.name
   in databricks.yml:7:7
 
 {
@@ -118,16 +118,8 @@ Warning: required field "name" is not set
 }
 
 === resources.volumes.rname ===
-Warning: required field "catalog_name" is not set
-  at resources.volumes.rname
-  in databricks.yml:7:7
-
-Warning: required field "name" is not set
-  at resources.volumes.rname
-  in databricks.yml:7:7
-
-Warning: required field "schema_name" is not set
-  at resources.volumes.rname
+Error: volume name is required
+  at resources.volumes.rname.name
   in databricks.yml:7:7
 
 {
@@ -159,7 +151,7 @@ Warning: unknown field: grants
   in databricks.yml:7:7
 
 Error: dashboard display_name is required
-  at resources.dashboards.rname
+  at resources.dashboards.rname.display_name
   in databricks.yml:7:7
 
 Error: dashboard warehouse_id is required
@@ -180,14 +172,9 @@ Warning: unknown field: grants
   at resources.apps.rname
   in databricks.yml:7:7
 
-Warning: required field "name" is not set
-  at resources.apps.rname
+Error: app name is required
+  at resources.apps.rname.name
   in databricks.yml:7:7
-
-Error: Missing app source code path or git source
-  in databricks.yml:7:7
-
-app resource 'rname' should have either source_code_path or git_source field
 
 {
   "apps": {
@@ -203,7 +190,7 @@ Warning: unknown field: grants
   in databricks.yml:7:7
 
 Error: sql_warehouse name is required
-  at resources.sql_warehouses.rname
+  at resources.sql_warehouses.rname.name
   in databricks.yml:7:7
 
 {
@@ -222,8 +209,8 @@ Warning: unknown field: grants
   at resources.secret_scopes.rname
   in databricks.yml:7:7
 
-Warning: required field "name" is not set
-  at resources.secret_scopes.rname
+Error: secret_scope name is required
+  at resources.secret_scopes.rname.name
   in databricks.yml:7:7
 
 {
@@ -237,24 +224,8 @@ Warning: unknown field: grants
   at resources.alerts.rname
   in databricks.yml:7:7
 
-Warning: required field "display_name" is not set
-  at resources.alerts.rname
-  in databricks.yml:7:7
-
-Warning: required field "evaluation" is not set
-  at resources.alerts.rname
-  in databricks.yml:7:7
-
-Warning: required field "query_text" is not set
-  at resources.alerts.rname
-  in databricks.yml:7:7
-
-Warning: required field "schedule" is not set
-  at resources.alerts.rname
-  in databricks.yml:7:7
-
-Warning: required field "warehouse_id" is not set
-  at resources.alerts.rname
+Error: alert display_name is required
+  at resources.alerts.rname.display_name
   in databricks.yml:7:7
 
 {

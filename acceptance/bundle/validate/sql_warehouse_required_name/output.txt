@@ -1,12 +1,12 @@
 
 >>> [CLI] bundle validate
 Error: sql_warehouse name is required
-  at resources.sql_warehouses.blank_warehouse
-  in databricks.yml:11:7
-
-Error: sql_warehouse name is required
-  at resources.sql_warehouses.my_warehouse
+  at resources.sql_warehouses.my_warehouse.name
   in databricks.yml:8:7
+
+Error: sql_warehouse name must not be blank
+  at resources.sql_warehouses.blank_warehouse.name
+  in databricks.yml:11:13
 
 Name: test-bundle
 Target: default

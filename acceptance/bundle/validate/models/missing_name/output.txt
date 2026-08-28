@@ -1,5 +1,5 @@
-Warning: required field "name" is not set
-  at resources.models.mymodel
+Error: model name is required
+  at resources.models.mymodel.name
   in databricks.yml:6:14
 
 Name: test-bundle
@@ -8,4 +8,6 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 1 warning
+Found 1 error
+
+Exit code: 1
