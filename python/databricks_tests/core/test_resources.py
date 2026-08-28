@@ -10,12 +10,14 @@ from databricks.bundles.alerts._models.alert_v2_operand_column import (
 )
 from databricks.bundles.alerts._models.comparison_operator import ComparisonOperator
 from databricks.bundles.alerts._models.cron_schedule import CronSchedule
+from databricks.bundles.catalogs._models.catalog import Catalog
 from databricks.bundles.core import Location, Resources, Severity
 from databricks.bundles.core._bundle import Bundle
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._resource_mutator import (
     ResourceMutator,
     alert_mutator,
+    catalog_mutator,
     job_mutator,
     pipeline_mutator,
     schema_mutator,
@@ -116,6 +118,15 @@ test_cases = [
             article="an",
         ),
         resource_types[Alert],
+    ),
+    (
+        TestCase(
+            add_resource=Resources.add_catalog,
+            dict_example={"name": "my_catalog"},
+            dataclass_example=Catalog(name="my_catalog"),
+            mutator=catalog_mutator,
+        ),
+        resource_types[Catalog],
     ),
 ]
 test_case_ids = [tpe.plural_name for _, tpe in test_cases]
