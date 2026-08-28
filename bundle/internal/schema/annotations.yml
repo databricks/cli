@@ -53,14 +53,27 @@ artifacts:
         "source":
           "description": |-
             Required. The artifact source file.
+    "git":
+      "description": |-
+        For a `tgz` artifact, snapshot this git ref instead of the working tree. Mutually exclusive with `build`.
+      "$fields":
+        "branch":
+          "description": |-
+            The git branch to snapshot.
+        "commit":
+          "description": |-
+            The git commit to snapshot. Takes precedence over `branch` when both are set.
+    "include":
+      "description": |-
+        For a `tgz` artifact, the paths (relative to the bundle root) to pack into the tarball, filtered like bundle file sync (`.gitignore`-honored). Mutually exclusive with `build`.
     "path":
       "description": |-
         The local path of the directory for the artifact.
     "type":
       "description": |-
-        Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
+        The type of the artifact. Valid values are `whl`, `jar`, and `tgz`. Required if the artifact is a Python wheel.
       "markdown_description": |-
-        Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
+        The type of the artifact. Valid values are `whl`, `jar`, and `tgz`. Required if the artifact is a Python wheel.
 bundle:
   "description": |-
     The bundle attributes when deploying to this target.
