@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -145,7 +148,20 @@ func TestMLflowFallbackNoLogsReflectsRunOutcome(t *testing.T) {
 	assert.False(t, success)
 }
 
-func TestStreamMLflowLogsFollowsWithoutDuplicates(t *testing.T) {
+func TestMLflowFallbackWarnsWhenMinutesIgnored(t *testing.T) {
+	srv := noMLflowServer(t)
+	w := newTestWorkspaceClient(t, srv.URL)
+	var stdout, stderr bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &stdout, &stderr, "", ""))
+
+	_, err := mlflowLogFallback(ctx, w, &stdout,
+		logRequest{runID: 5, windowMinutes: 10},
+		logRunStatus{lifeCycleState: "TERMINATED", resultState: "SUCCESS"})
+	require.NoError(t, err)
+	assert.Contains(t, stderr.String(), "Warning: --minutes is ignored when logs are served from MLflow artifacts.")
+}
+
+func TestStreamMLflowLogsFollowsGrowingPartialLineWithoutDuplicates(t *testing.T) {
 	oldInterval := retryCheckInterval
 	retryCheckInterval = time.Millisecond
 	t.Cleanup(func() { retryCheckInterval = oldInterval })
@@ -175,9 +191,9 @@ func TestStreamMLflowLogsFollowsWithoutDuplicates(t *testing.T) {
 			_, _ = fmt.Fprintf(w, `{"credential_infos":[{"signed_uri":%q}]}`, base+"/artifact")
 		case "/artifact":
 			if artifactReads.Add(1) == 1 {
-				_, _ = w.Write([]byte("one\n"))
+				_, _ = w.Write([]byte("one\npart"))
 			} else {
-				_, _ = w.Write([]byte("one\ntwo\n"))
+				_, _ = w.Write([]byte("one\npartial\ntwo\n"))
 			}
 		default:
 			_, _ = w.Write([]byte(`{}`))
@@ -191,8 +207,65 @@ func TestStreamMLflowLogsFollowsWithoutDuplicates(t *testing.T) {
 		logRequest{runID: 5, attempt: -1, tailLines: -1}, logRunStatus{lifeCycleState: "RUNNING", latestAttempt: 1})
 	require.NoError(t, err)
 	assert.True(t, success)
-	assert.Equal(t, 1, strings.Count(out.String(), "one"))
-	assert.Equal(t, 1, strings.Count(out.String(), "two"))
+	assert.Equal(t, "one\npartial\ntwo\n", out.String())
+}
+
+func TestStreamMLflowLogsRetriesEarlierChunkBeforePrintingLaterChunk(t *testing.T) {
+	oldInterval := retryCheckInterval
+	retryCheckInterval = time.Millisecond
+	t.Cleanup(func() { retryCheckInterval = oldInterval })
+
+	var getRunCalls atomic.Int32
+	var firstChunkReads atomic.Int32
+	var secondChunkReads atomic.Int32
+	var base string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.2/jobs/runs/get":
+			state := `{"life_cycle_state":"RUNNING"}`
+			if getRunCalls.Add(1) >= 2 {
+				state = `{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"}`
+			}
+			_, _ = fmt.Fprintf(w, `{"run_id":5,"state":%s,"tasks":[{"run_id":101,"attempt_number":1}]}`, state)
+		case "/api/2.2/jobs/runs/get-output":
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"mlflow_experiment_id":"exp","mlflow_run_id":"mlrun"}}`))
+		case "/api/2.0/mlflow/runs/get":
+			_, _ = w.Write([]byte(`{}`))
+		case "/api/2.0/mlflow/artifacts/list":
+			if r.URL.Query().Get("path") == "logs" {
+				_, _ = w.Write([]byte(`{"files":[{"path":"logs/attempt_1","is_dir":true}]}`))
+			} else {
+				_, _ = w.Write([]byte(`{"files":[{"path":"logs/attempt_1/node_0/logs-0.chunk.txt"},{"path":"logs/attempt_1/node_0/logs-1.chunk.txt"}]}`))
+			}
+		case "/api/2.0/mlflow/artifacts/credentials-for-read":
+			signedURI := base + "/artifact?path=" + url.QueryEscape(r.URL.Query().Get("path"))
+			_, _ = fmt.Fprintf(w, `{"credential_infos":[{"signed_uri":%q}]}`, signedURI)
+		case "/artifact":
+			if strings.HasSuffix(r.URL.Query().Get("path"), "logs-0.chunk.txt") {
+				if firstChunkReads.Add(1) == 1 {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				_, _ = w.Write([]byte("zero\n"))
+				return
+			}
+			secondChunkReads.Add(1)
+			_, _ = w.Write([]byte("one\n"))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	base = srv.URL
+	t.Cleanup(srv.Close)
+
+	var out bytes.Buffer
+	success, err := streamMLflowLogs(t.Context(), newTestWorkspaceClient(t, srv.URL), &out,
+		logRequest{runID: 5, attempt: -1, tailLines: -1}, logRunStatus{lifeCycleState: "RUNNING", latestAttempt: 1})
+	require.NoError(t, err)
+	assert.True(t, success)
+	assert.Equal(t, "zero\none\n", out.String())
+	assert.Equal(t, int32(2), firstChunkReads.Load())
+	assert.Equal(t, int32(1), secondChunkReads.Load())
 }
 
 func TestVolumeArtifactListAndDownload(t *testing.T) {

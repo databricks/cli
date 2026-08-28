@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -82,7 +83,7 @@ var artifactDownloadClient = &http.Client{
 // time-indexed, so --minutes cannot restrict the window here.
 func mlflowLogFallback(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
 	if req.windowMinutes > 0 {
-		log.Debugf(ctx, "air logs: --minutes is not supported on the MLflow fallback path; showing the default tail")
+		cmdio.LogString(ctx, "Warning: --minutes is ignored when logs are served from MLflow artifacts.")
 	}
 
 	if !status.terminal() && !req.staticView {
@@ -183,13 +184,17 @@ func streamMLflowLogs(ctx context.Context, w *databricks.WorkspaceClient, out io
 				log.Debugf(ctx, "air logs: failed to list MLflow log chunks: %v", listErr)
 			} else {
 				for _, chunk := range chunks {
-					lines, downloadErr := downloadChunkLines(ctx, w, mlflowRunID, chunk.path)
+					content, downloadErr := downloadChunk(ctx, w, mlflowRunID, chunk.path)
 					if downloadErr != nil {
 						if status.terminal() {
 							return false, downloadErr
 						}
 						log.Debugf(ctx, "air logs: failed to read MLflow log chunk %s: %v", chunk.path, downloadErr)
-						continue
+						break
+					}
+					lines := content.lines
+					if !status.terminal() && content.hasTrailingPartial {
+						lines = lines[:len(lines)-1]
 					}
 					offset := lineOffsets[chunk.path]
 					if offset > len(lines) {
@@ -333,27 +338,42 @@ func tailChunks(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID 
 	return accumulated, nil
 }
 
+type downloadedChunk struct {
+	lines              []string
+	hasTrailingPartial bool
+}
+
 // downloadChunkLines fetches one chunk artifact and returns its lines.
 func downloadChunkLines(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, artifactPath string) ([]string, error) {
+	content, err := downloadChunk(ctx, w, mlflowRunID, artifactPath)
+	return content.lines, err
+}
+
+func downloadChunk(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID, artifactPath string) (downloadedChunk, error) {
 	f, err := downloadArtifact(ctx, w, mlflowRunID, artifactPath)
 	if err != nil {
-		return nil, err
+		return downloadedChunk{}, err
 	}
 	defer os.Remove(f)
 
-	file, err := os.Open(f)
+	data, err := os.ReadFile(f)
 	if err != nil {
-		return nil, err
+		return downloadedChunk{}, err
 	}
-	defer file.Close()
 
 	var lines []string
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(strings.NewReader(string(data)))
 	scanner.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	return lines, scanner.Err()
+	if err := scanner.Err(); err != nil {
+		return downloadedChunk{}, err
+	}
+	return downloadedChunk{
+		lines:              lines,
+		hasTrailingPartial: len(data) > 0 && data[len(data)-1] != '\n',
+	}, nil
 }
 
 // listArtifacts lists a run's artifacts under a path.
