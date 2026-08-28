@@ -48,13 +48,19 @@ func submitServer(t *testing.T, getOutput string) *httptest.Server {
 }
 
 func runSubmitCmd(t *testing.T, out flags.Output, buf *bytes.Buffer, srvURL string) error {
+	return runSubmitCmdWithProfile(t, out, buf, srvURL, "")
+}
+
+func runSubmitCmdWithProfile(t *testing.T, out flags.Output, buf *bytes.Buffer, srvURL, profile string) error {
 	t.Helper()
 	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
 	cmd := withOutput(newRunCommand(), out)
 	require.NoError(t, cmd.Flags().Set("file", cfgPath))
 
 	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), out, nil, buf, buf, "", ""))
-	ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srvURL))
+	w := newTestWorkspaceClient(t, srvURL)
+	w.Config.Profile = profile
+	ctx = cmdctx.SetWorkspaceClient(ctx, w)
 	cmd.SetContext(ctx)
 	cmd.SetOut(buf)
 	return cmd.RunE(cmd, nil)
@@ -73,8 +79,25 @@ func TestRunSubmitTextOutput(t *testing.T) {
 	assert.Contains(t, out, "Submitted workload with Job Run ID: 555")
 	assert.Contains(t, out, "View job run at: ")
 	assert.Contains(t, out, "/jobs/runs/555")
-	assert.Contains(t, out, "Tip: use --watch")
+	assert.Contains(t, out, "Stream logs in real time using:")
+	assert.Contains(t, out, "databricks experimental air logs 555")
+	assert.Contains(t, out, "Tip: use --watch when submitting a run")
 	assert.NotContains(t, out, "View MLflow run at:")
+}
+
+func TestRunSubmitTextOutputIncludesProfileInLogsCommand(t *testing.T) {
+	fastMLflowPoll(t)
+	var buf bytes.Buffer
+	err := runSubmitCmdWithProfile(t, flags.OutputText, &buf, submitServer(t, `{}`).URL, "team profile")
+	require.NoError(t, err)
+
+	assert.Contains(t, buf.String(), "databricks experimental air logs -p 'team profile' 555")
+}
+
+func TestAirLogsCommand(t *testing.T) {
+	assert.Equal(t, "databricks experimental air logs 123", airLogsCommand("", "123"))
+	assert.Equal(t, "databricks experimental air logs -p profile-name 123", airLogsCommand("profile-name", "123"))
+	assert.Equal(t, "databricks experimental air logs -p 'team profile' 123", airLogsCommand("team profile", "123"))
 }
 
 func TestRunSubmitTextOutputWithMLflowLinks(t *testing.T) {

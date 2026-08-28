@@ -2,8 +2,11 @@ package aircmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -12,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
@@ -126,7 +130,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 				if ids := resolveMLflowIDsForRun(ctx, w, runID); ids != nil {
 					printMLflowLinks(ctx, out, w.Config.Host, ids)
 				}
-				cmdio.LogString(ctx, "\nTip: use --watch to stream logs until the run completes.")
+				printPostSubmitGuidance(out, w.Config.Profile, runIDStr)
 				return nil
 			}
 			// PENDING is the submit status, distinct from the --watch JSONL
@@ -144,6 +148,9 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			jsonOutput: jsonOut,
 		}
 
+		watchCtx, stop := signal.NotifyContext(ctx, os.Interrupt)
+		defer stop()
+
 		if !jsonOut {
 			out := cmd.OutOrStdout()
 			// The MLflow links stream in via the logs below, so don't poll here.
@@ -152,7 +159,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			fmt.Fprintln(out)
 			fmt.Fprintln(out, "Monitoring run and streaming logs...")
 			printLogsDivider(ctx, out)
-			return runLogs(ctx, cmd, req)
+			return handleWatchResult(out, w.Config.Profile, runIDStr, runLogs(watchCtx, cmd, req))
 		}
 
 		// --json: emit SUBMITTED first (so a consumer sees the run id immediately),
@@ -163,7 +170,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		req.onStatusChange = func(current, previous string) {
 			printStatusEvent(out, current, previous)
 		}
-		err = runLogs(ctx, cmd, req)
+		err = runLogs(watchCtx, cmd, req)
 
 		// Re-resolve the run for the closing envelope. STATUS events only fire on
 		// the Bricklens path, so the terminal status must come from the run's
@@ -174,6 +181,35 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 	}
 
 	return cmd
+}
+
+func airLogsCommand(profile, runID string) string {
+	args := []string{"databricks", "experimental", "air", "logs"}
+	if profile != "" {
+		args = append(args, "-p", shellquote.BashArg(profile))
+	}
+	args = append(args, shellquote.BashArg(runID))
+	return strings.Join(args, " ")
+}
+
+func printPostSubmitGuidance(out io.Writer, profile, runID string) {
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Stream logs in real time using:")
+	fmt.Fprintln(out, "  "+airLogsCommand(profile, runID))
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Tip: use --watch when submitting a run to monitor the job and stream logs in real time.")
+}
+
+func handleWatchResult(out io.Writer, profile, runID string, err error) error {
+	if !errors.Is(err, context.Canceled) {
+		return err
+	}
+
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Stopped streaming logs. The workload was not canceled.")
+	fmt.Fprintln(out, "Resume streaming logs using:")
+	fmt.Fprintln(out, "  "+airLogsCommand(profile, runID))
+	return root.ErrAlreadyPrinted
 }
 
 // printSubmitResult writes the green success line and Job Run link. These don't

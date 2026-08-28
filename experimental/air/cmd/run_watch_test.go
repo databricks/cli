@@ -2,6 +2,9 @@ package aircmd
 
 import (
 	"bytes"
+	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -156,6 +159,25 @@ func TestRunWatchFailedRunExitsNonZero(t *testing.T) {
 	err := runWatchCmd(t, flags.OutputText, &buf, watchServer(t, "FAILED").URL)
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Contains(t, buf.String(), "step 1\nstep 2")
+}
+
+func TestHandleWatchResultPrintsProfileAwareResumeCommand(t *testing.T) {
+	var buf bytes.Buffer
+	err := handleWatchResult(&buf, "team profile", "777", fmt.Errorf("stream logs: %w", context.Canceled))
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	out := buf.String()
+	assert.Contains(t, out, "Stopped streaming logs. The workload was not canceled.")
+	assert.Contains(t, out, "Resume streaming logs using:")
+	assert.Contains(t, out, "databricks experimental air logs -p 'team profile' 777")
+}
+
+func TestHandleWatchResultPassesThroughOtherErrors(t *testing.T) {
+	want := errors.New("stream failed")
+	var buf bytes.Buffer
+
+	assert.ErrorIs(t, handleWatchResult(&buf, "profile", "777", want), want)
+	assert.Empty(t, buf.String())
 }
 
 func TestRunWatchDryRunSkipsSubmit(t *testing.T) {
