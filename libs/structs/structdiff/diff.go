@@ -132,6 +132,17 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 		return nil
 	}
 
+	if IsOpaqueStruct(v1Type) {
+		equal, err := equalJSON(v1, v2)
+		if err != nil {
+			return err
+		}
+		if !equal {
+			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
+		}
+		return nil
+	}
+
 	kind := v1.Kind()
 
 	// Perform nil checks for nilable types.
