@@ -20,10 +20,17 @@ skill must obey (keep DB Connect at the lowest working pin, keep the version set
 mutually compatible, sync `serverless_environment_version` across templates but
 nothing else). This skill is the procedure; that doc is the policy.
 
-**Scope:** template pins only. The SSH serverless default (`environment_version: "4"`
-in `acceptance/ssh/connect-serverless-*/output.txt`) is a separate hardcoded Go
-default in `cmd/environments` / `libs/.../localenv`, not driven by templates —
-leave it alone.
+**Scope:** bundle template pins. Two related version pins live outside the
+templates — check them, don't assume:
+- `defaultServerlessVersion` in `libs/localenv/envkey.go` is a separate Go pin: the
+  fallback serverless version for `databricks environments setup-local`, documented
+  as a "stand-in for the latest LTS". It currently tracks the template version. If
+  the version you're moving to is the latest LTS, bump this constant in the same PR
+  and regenerate its tests (`libs/localenv`, `cmd/environments`); if it is not yet
+  LTS, leave it and say why. Do not silently ignore it.
+- The SSH acceptance goldens (`acceptance/ssh/connect-serverless-*/output.txt`) pin
+  an explicit older version on purpose — a deliberate test fixture, not the
+  template default. Leave them alone.
 
 ## Steps
 
@@ -42,27 +49,25 @@ must support that Python, so resolve all three together:
   release has fallen out of support — not merely to match the new environment
   version.
 
-**2. Apply the edits.** The environment version lives in two forms, so find every
-occurrence first — bumping the macro alone silently misses the hardcoded ones:
+**2. Apply the edits.** The environment version lives in two forms — a macro and
+hardcoded literals — so this grep, not any file list, is the source of truth for
+what to change. Bumping the macro alone silently misses the literals:
 
 ```bash
 grep -rn 'environment_version\|environment-version' libs/template/templates/
 ```
 
+Bring **every** hit to the target version, then re-run the grep and confirm each
+one shows the new value. The hits fall into two kinds (paths below are what they
+match today, for orientation — trust the grep if they've moved):
 - **Macro** (`serverless_environment_version`): defined in
-  `default/library/versions.tmpl` and `dbt-sql/library/versions.tmpl`, referenced
-  by those templates' job/notebook files. Bump it in **both** files to the same
-  value.
-- **Hardcoded literals**: these templates pin the version directly rather than
-  referencing the macro, so the macro bump does *not* reach them. Edit each to the
-  same target version:
-  - `default-scala/.../resources/{{.project_name}}.job.yml.tmpl`
-  - `lakeflow-integrations/.../databricks.yml.tmpl` (the `--environment-version` arg)
-  - `lakeflow-integrations/.../resources/send_slack_message.job.yml.tmpl`
-  - `lakeflow-integrations/.../resources/wait_for_run_sensor.job.yml.tmpl`
-
-  (These literals not being wired to the macro is a known wart — the grep is your
-  safety net. Re-run it after editing and confirm every hit shows the new value.)
+  `default/library/versions.tmpl` and `dbt-sql/library/versions.tmpl` and
+  referenced by those templates' job/notebook files. Editing the two `define`s
+  updates every reference.
+- **Hardcoded literals**: templates that pin the version directly, so the macro
+  edit does *not* reach them — currently `default-scala`'s job template and three
+  `lakeflow-integrations` files (including a `--environment-version` CLI arg). Edit
+  each literal by hand.
 - In `default/` also bump `python_version_spec` / `default_python_version` if the
   new environment version's Python changed, and
   `conservative_db_connect_version_spec` only per the rule above.
