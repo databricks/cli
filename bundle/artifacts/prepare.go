@@ -3,6 +3,7 @@ package artifacts
 import (
 	"context"
 	"errors"
+	"fmt"
 	"maps"
 	"os"
 	"path/filepath"
@@ -50,6 +51,17 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		b.Metrics.AddBoolValue(metrics.ArtifactBuildCommandIsSet, artifact.BuildCommand != "")
 		b.Metrics.AddBoolValue(metrics.ArtifactFilesIsSet, len(artifact.Files) != 0)
 
+		// A `tgz` artifact with `include`/`git` is built by DABs itself in the build
+		// phase (see artifacts.Build). `build` and `git`/`include` are mutually
+		// exclusive: either the user's command produces the tarball, or DABs does.
+		native := artifact.Type == config.ArtifactTarball && (len(artifact.Include) > 0 || artifact.Git != nil)
+		if native && artifact.BuildCommand != "" {
+			logdiag.LogError(ctx, fmt.Errorf("artifact %q: `build` cannot be combined with `git`/`include`", artifactName))
+		}
+		if native && len(artifact.Files) == 0 {
+			logdiag.LogError(ctx, fmt.Errorf("artifact %q: a tgz artifact needs a `files` entry naming the output path", artifactName))
+		}
+
 		l := b.Config.GetLocation("artifacts." + artifactName)
 		dirPath := filepath.Dir(l.File)
 
@@ -88,7 +100,9 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 			logdiag.LogError(ctx, errors.New("misconfigured artifact: please specify 'build' or 'files' property"))
 		}
 
-		if len(artifact.Files) > 0 && artifact.BuildCommand == "" {
+		// Skip glob expansion for a DABs-built tgz: its output file does not exist yet
+		// (it is produced in the build phase, which expands globs afterward).
+		if len(artifact.Files) > 0 && artifact.BuildCommand == "" && !native {
 			bundle.ApplyContext(ctx, b, expandGlobs{name: artifactName})
 		}
 
