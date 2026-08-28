@@ -24,13 +24,12 @@ func ProfileValue(cfg *config.Config, key string) (string, error) {
 	if profile == "" {
 		return "", nil
 	}
-	section, err := file.GetSection(profile)
-	if err != nil {
+	if !file.HasSection(profile) {
 		return "", nil
 	}
-	value, err := section.GetKey(key)
-	if err != nil {
+	section := file.Section(profile)
+	if !section.HasKey(key) {
 		return "", nil
 	}
-	return value.Value(), nil
+	return section.Key(key).Value(), nil
 }

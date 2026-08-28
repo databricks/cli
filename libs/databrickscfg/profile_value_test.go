@@ -36,6 +36,10 @@ databricks_internal_user_workspace_dir = /Workspace/second
 	value, err = ProfileValue(&config.Config{ConfigFile: path, Profile: "missing"}, "databricks_internal_user_workspace_dir")
 	require.NoError(t, err)
 	assert.Empty(t, value)
+
+	value, err = ProfileValue(&config.Config{ConfigFile: path, Profile: "first"}, "missing")
+	require.NoError(t, err)
+	assert.Empty(t, value)
 }
 
 func TestProfileValueSingleProfileDefault(t *testing.T) {
