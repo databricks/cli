@@ -110,6 +110,13 @@ var serverSideDefaults = map[string]any{
 	// Terraform defaults
 	"resources.jobs.*.run_as": alwaysSkip,
 
+	// deployment.* is CLI-managed: metadata.AnnotateJobs / AnnotatePipelines write
+	// kind + metadata_file_path on every deploy, and the Deployment Metadata Service
+	// sets deployment_id + version_id. None is user-authored (validate.ValidateDeploymentFields
+	// even rejects deployment_id / version_id in config), so no subfield is synced back.
+	"resources.jobs.*.deployment.*":      alwaysSkip,
+	"resources.pipelines.*.deployment.*": alwaysSkip,
+
 	// Pipeline fields
 	"resources.pipelines.*.storage":    alwaysSkip,
 	"resources.pipelines.*.continuous": false,
@@ -125,29 +132,12 @@ var serverSideDefaults = map[string]any{
 	"resources.dashboards.*.published": alwaysSkip,
 }
 
-// alwaysSkipSubtrees lists field patterns whose entire subtree is skipped in
-// change detection, regardless of value or whether it is present in config.
-// deployment is CLI-managed: metadata.AnnotateJobs / AnnotatePipelines write
-// kind + metadata_file_path on every deploy, and the Deployment Metadata Service
-// sets deployment_id + version_id. None is user-authored, and
-// validate.ValidateDeploymentFields rejects deployment_id / version_id in config,
-// so the whole subtree is skipped rather than the annotator-written leaves alone.
-var alwaysSkipSubtrees = []string{
-	"resources.jobs.*.deployment",
-	"resources.pipelines.*.deployment",
-}
-
 // shouldSkipField checks if a field should be skipped in change detection.
 // When hasConfigValue is true (field is set in config or saved state), only
 // "always skip" fields are skipped. Backend defaults are only skipped when the
 // field is not in config/state, matching the behavior of shouldSkipBackendDefault
 // in the direct deployment engine.
 func shouldSkipField(path string, value any, hasConfigValue bool) bool {
-	for _, prefix := range alwaysSkipSubtrees {
-		if matchPatternPrefix(prefix, path) {
-			return true
-		}
-	}
 	for pattern, expected := range serverSideDefaults {
 		if matchPattern(pattern, path) {
 			if _, ok := expected.(skipAlways); ok {
@@ -182,19 +172,6 @@ func matchPattern(pattern, path string) bool {
 	patternParts := strings.Split(pattern, ".")
 	pathParts := strings.Split(path, ".")
 	return matchParts(patternParts, pathParts)
-}
-
-// matchPatternPrefix reports whether path equals pattern or is nested under it,
-// i.e. pattern matches a leading run of path's segments. Unlike matchPattern it
-// tolerates extra trailing segments, so a pattern skips a field and everything
-// below it.
-func matchPatternPrefix(pattern, path string) bool {
-	patternParts := strings.Split(pattern, ".")
-	pathParts := strings.Split(path, ".")
-	if len(pathParts) < len(patternParts) {
-		return false
-	}
-	return matchParts(patternParts, pathParts[:len(patternParts)])
 }
 
 func matchParts(patternParts, pathParts []string) bool {
