@@ -6,10 +6,9 @@ Uploading [SNAPSHOT_TARBALL]...
 Submitted workload with Job Run ID: 555
 View job run at: [DATABRICKS_URL]/jobs/runs/555
 
-Stream real-time logs using:
+Tip: use --watch when submitting a run to stream logs to your terminal.
+Stream logs after submission using:
   databricks experimental air logs 555
-
-Tip: use --watch when submitting a run to stream logs in real time.
 
 === the ai_runtime_task carries the code_source_path
 >>> print_requests.py //api/2.2/jobs/runs/submit

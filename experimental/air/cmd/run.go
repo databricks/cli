@@ -184,20 +184,18 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 }
 
 func airLogsCommand(profile, runID string) string {
-	args := []string{"databricks", "experimental", "air", "logs"}
+	args := []string{"databricks", "experimental", "air", "logs", shellquote.BashArg(runID)}
 	if profile != "" {
 		args = append(args, "-p", shellquote.BashArg(profile))
 	}
-	args = append(args, shellquote.BashArg(runID))
 	return strings.Join(args, " ")
 }
 
 func printPostSubmitGuidance(out io.Writer, profile, runID string) {
 	fmt.Fprintln(out)
-	fmt.Fprintln(out, "Stream real-time logs using:")
+	fmt.Fprintln(out, "Tip: use --watch when submitting a run to stream logs to your terminal.")
+	fmt.Fprintln(out, "Stream logs after submission using:")
 	fmt.Fprintln(out, "  "+airLogsCommand(profile, runID))
-	fmt.Fprintln(out)
-	fmt.Fprintln(out, "Tip: use --watch when submitting a run to stream logs in real time.")
 }
 
 func handleWatchResult(out io.Writer, profile, runID string, err error) error {
