@@ -37,6 +37,27 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 		}
 	}
 
+	// The real API rejects source_code_path in the UpdateApp body at any value.
+	if updateReq.App != nil {
+		var rawBody struct {
+			App json.RawMessage `json:"app"`
+		}
+		if err := json.Unmarshal(req.Body, &rawBody); err == nil {
+			var appFields map[string]json.RawMessage
+			if err := json.Unmarshal(rawBody.App, &appFields); err == nil {
+				if _, ok := appFields["source_code_path"]; ok {
+					return Response{
+						StatusCode: http.StatusBadRequest,
+						Body: map[string]string{
+							"error_code": "INVALID_PARAMETER_VALUE",
+							"message":    "deployment_source.source_code_path cannot be set on UpdateApp.",
+						},
+					}
+				}
+			}
+		}
+	}
+
 	defer s.LockUnlock()()
 
 	existing, ok := s.Apps[name]
