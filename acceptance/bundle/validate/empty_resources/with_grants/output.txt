@@ -109,10 +109,6 @@ Error: schema name is required
   at resources.schemas.rname.name
   in databricks.yml:7:7
 
-Warning: required field "catalog_name" is not set
-  at resources.schemas.rname
-  in databricks.yml:7:7
-
 {
   "schemas": {
     "rname": {
@@ -124,14 +120,6 @@ Warning: required field "catalog_name" is not set
 === resources.volumes.rname ===
 Error: volume name is required
   at resources.volumes.rname.name
-  in databricks.yml:7:7
-
-Warning: required field "catalog_name" is not set
-  at resources.volumes.rname
-  in databricks.yml:7:7
-
-Warning: required field "schema_name" is not set
-  at resources.volumes.rname
   in databricks.yml:7:7
 
 {
@@ -167,7 +155,7 @@ Error: dashboard display_name is required
   in databricks.yml:7:7
 
 Error: dashboard warehouse_id is required
-  at resources.dashboards.rname.warehouse_id
+  at resources.dashboards.rname
   in databricks.yml:7:7
 
 {
@@ -238,22 +226,6 @@ Warning: unknown field: grants
 
 Error: alert display_name is required
   at resources.alerts.rname.display_name
-  in databricks.yml:7:7
-
-Warning: required field "evaluation" is not set
-  at resources.alerts.rname
-  in databricks.yml:7:7
-
-Warning: required field "query_text" is not set
-  at resources.alerts.rname
-  in databricks.yml:7:7
-
-Warning: required field "schedule" is not set
-  at resources.alerts.rname
-  in databricks.yml:7:7
-
-Warning: required field "warehouse_id" is not set
-  at resources.alerts.rname
   in databricks.yml:7:7
 
 {

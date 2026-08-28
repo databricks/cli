@@ -98,38 +98,8 @@ func validateIdentifiers(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 		diags = diags.Extend(validateResourceIdentifier(b, "volumes", key, "schema_name", resource.SchemaName, false))
 	}
 
+	sortDiagnostics(diags)
 	return diags
-}
-
-func missingIdentifierIsError(pattern, field string) bool {
-	switch pattern {
-	case "bundle":
-		return field == "name"
-	case "resources.alerts.*", "resources.dashboards.*":
-		return field == "display_name"
-	case "resources.instance_pools.*":
-		return field == "instance_pool_name"
-	case "resources.apps.*",
-		"resources.catalogs.*",
-		"resources.database_catalogs.*",
-		"resources.database_instances.*",
-		"resources.experiments.*",
-		"resources.external_locations.*",
-		"resources.model_serving_endpoints.*",
-		"resources.models.*",
-		"resources.registered_models.*",
-		"resources.schemas.*",
-		"resources.secret_scopes.*",
-		"resources.secrets.*",
-		"resources.sql_warehouses.*",
-		"resources.synced_database_tables.*",
-		"resources.vector_search_endpoints.*",
-		"resources.vector_search_indexes.*",
-		"resources.volumes.*":
-		return field == "name"
-	default:
-		return false
-	}
 }
 
 func validateResourceIdentifier(b *bundle.Bundle, resourceType, key, field, value string, required bool) diag.Diagnostics {

@@ -77,8 +77,6 @@ func TestRequiredRejectsEmptyAndControlCharIdentifiers(t *testing.T) {
 		"model_serving_endpoint name must not contain control characters",
 		"vector_search_endpoint name must not contain control characters",
 		"experiment name is required",
-		// empty catalog_name is omitted by FromTyped(omitempty) in tests; warning only.
-		"required field \"catalog_name\" is not set",
 	}, diagSummaries(diags))
 }
 
@@ -138,7 +136,6 @@ func TestRequiredIdentifierValidationScope(t *testing.T) {
 	assert.ElementsMatch(t, []string{
 		"bundle name must not contain control characters",
 		"dashboard display_name must not contain control characters",
-		"required field \"name\" is not set",
 		"sql_warehouse name must not be blank",
 	}, diagSummaries(diags))
 }

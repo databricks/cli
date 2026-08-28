@@ -22,72 +22,54 @@ func (f *required) Name() string {
 	return "validate:required"
 }
 
-// warnForMissingFields reports fields marked as required by the OpenAPI spec.
+// Warn for missing fields, based on annotations in the Go SDK / OpenAPI spec.
 func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+
+	// Generate prefix tree for all required fields.
 	trie := &dyn.TrieNode{}
-	for value := range generated.RequiredFields {
-		pattern, err := dyn.NewPatternFromString(value)
+	for k := range generated.RequiredFields {
+		pattern, err := dyn.NewPatternFromString(k)
 		if err != nil {
-			return diag.FromErr(fmt.Errorf("invalid pattern %q for required field validation: %w", value, err))
+			return diag.FromErr(fmt.Errorf("invalid pattern %q for required field validation: %w", k, err))
 		}
-		if err := trie.Insert(pattern); err != nil {
-			return diag.FromErr(fmt.Errorf("failed to insert pattern %q into trie: %w", value, err))
+
+		err = trie.Insert(pattern)
+		if err != nil {
+			return diag.FromErr(fmt.Errorf("failed to insert pattern %q into trie: %w", k, err))
 		}
 	}
 
-	var diags diag.Diagnostics
-	err := dyn.WalkReadOnly(b.Config.Value(), func(path dyn.Path, value dyn.Value) error {
-		pattern, ok := trie.SearchPath(path)
+	err := dyn.WalkReadOnly(b.Config.Value(), func(p dyn.Path, v dyn.Value) error {
+		// If the path is not found in the prefix tree, we do not need to validate any required
+		// fields in it.
+		pattern, ok := trie.SearchPath(p)
 		if !ok {
 			return nil
 		}
-		for _, field := range generated.RequiredFields[pattern.String()] {
-			if missingIdentifierIsError(pattern.String(), field) {
-				continue
+
+		cloneP := slices.Clone(p)
+
+		fields := generated.RequiredFields[pattern.String()]
+		for _, field := range fields {
+			vv := v.Get(field)
+			if vv.Kind() == dyn.KindInvalid || vv.Kind() == dyn.KindNil {
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Warning,
+					Summary:   fmt.Sprintf("required field %q is not set", field),
+					Locations: v.Locations(),
+					Paths:     []dyn.Path{cloneP},
+				})
 			}
-			v := value.Get(field)
-			if v.Kind() != dyn.KindInvalid && v.Kind() != dyn.KindNil {
-				continue
-			}
-			diags = diags.Append(diag.Diagnostic{
-				Severity:  diag.Warning,
-				Summary:   fmt.Sprintf("required field %q is not set", field),
-				Locations: value.Locations(),
-				Paths:     []dyn.Path{slices.Clone(path)},
-			})
 		}
 		return nil
 	})
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	return diags
-}
 
-// errorForMissingDashboardWarehouseID covers a backend requirement absent from OpenAPI.
-func errorForMissingDashboardWarehouseID(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
-	for key, dashboard := range b.Config.Resources.Dashboards {
-		if dashboard.WarehouseId != "" {
-			continue
-		}
-		resourcePath := dyn.NewPath(
-			dyn.Key("resources"),
-			dyn.Key("dashboards"),
-			dyn.Key(key),
-		)
-		fieldPath := resourcePath.Append(dyn.Key("warehouse_id"))
-		locations := locationsAtPath(b, fieldPath)
-		if len(locations) == 0 {
-			locations = locationsAtPath(b, resourcePath)
-		}
-		diags = diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   "dashboard warehouse_id is required",
-			Locations: locations,
-			Paths:     []dyn.Path{fieldPath},
-		})
-	}
+	sortDiagnostics(diags)
+
 	return diags
 }
 
@@ -95,10 +77,7 @@ func errorForMissingDashboardWarehouseID(ctx context.Context, b *bundle.Bundle) 
 // by walking maps with random iteration order.
 func sortDiagnostics(diags diag.Diagnostics) {
 	slices.SortFunc(diags, func(a, b diag.Diagnostic) int {
-		// Keep errors ahead of warnings, then sort each group by summary.
-		if n := cmp.Compare(a.Severity, b.Severity); n != 0 {
-			return n
-		}
+		// First sort by summary
 		if n := cmp.Compare(a.Summary, b.Summary); n != 0 {
 			return n
 		}
@@ -111,6 +90,39 @@ func sortDiagnostics(diags diag.Diagnostics) {
 		// Sibling entries can share a location; fall back to path for a stable order.
 		return cmp.Compare(fmt.Sprintf("%v", a.Paths), fmt.Sprintf("%v", b.Paths))
 	})
+}
+
+// Bespoke code to error for fields that are not marked as required in the Go SDK / OpenAPI spec.
+func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// Dashboards should always have a warehouse_id.
+	var warehouseIdLocations []dyn.Location
+	var warehouseIdPaths []dyn.Path
+
+	diags := diag.Diagnostics{}
+	for key, dashboard := range b.Config.Resources.Dashboards {
+		if dashboard.WarehouseId == "" {
+			resourcePath := dyn.NewPath(
+				dyn.Key("resources"),
+				dyn.Key("dashboards"),
+				dyn.Key(key),
+			)
+			warehouseIdLocations = append(warehouseIdLocations, locationsAtPath(b, resourcePath)...)
+			warehouseIdPaths = append(warehouseIdPaths, resourcePath)
+		}
+	}
+
+	if len(warehouseIdLocations) > 0 {
+		diags = diags.Append(diag.Diagnostic{
+			Severity:  diag.Error,
+			Summary:   "dashboard warehouse_id is required",
+			Locations: warehouseIdLocations,
+			Paths:     warehouseIdPaths,
+		})
+	}
+
+	sortDiagnostics(diags)
+
+	return diags
 }
 
 // errorForInvalidGrants errors for grants the backend rejects or that never converge:
@@ -207,11 +219,13 @@ func isMissingOrEmptySequence(v dyn.Value) bool {
 
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := validateIdentifiers(ctx, b)
-	diags = diags.Extend(errorForMissingDashboardWarehouseID(ctx, b))
+	diags = diags.Extend(errorForMissingFields(ctx, b))
 	diags = diags.Extend(errorForInvalidGrants(ctx, b))
 	diags = diags.Extend(errorForInvalidSecretScopePermissions(ctx, b))
 	diags = diags.Extend(errorForIncompletePipelineLibraries(ctx, b))
+	if diags.HasError() {
+		return diags
+	}
 	diags = diags.Extend(warnForMissingFields(ctx, b))
-	sortDiagnostics(diags)
 	return diags
 }

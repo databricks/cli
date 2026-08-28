@@ -18,10 +18,6 @@ Error: model_serving_endpoint name must not contain control characters
 
 The value contains U+000A at byte offset 5
 
-Error: pipeline library file path is required
-  at resources.pipelines.incomplete_file.libraries[0].file
-  in databricks.yml:49:17
-
 Error: vector_search_endpoint name must not contain control characters
   at resources.vector_search_endpoints.tab_endpoint.name
   in databricks.yml:38:13
@@ -43,6 +39,10 @@ Error: volume name must not contain control characters
   in databricks.yml:15:13
 
 The value contains U+0009 at byte offset 3
+
+Error: pipeline library file path is required
+  at resources.pipelines.incomplete_file.libraries[0].file
+  in databricks.yml:49:17
 
 Name: invalid-identifiers
 Target: default
