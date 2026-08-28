@@ -47,6 +47,10 @@ func TestBuildSubmitPayload(t *testing.T) {
 		TimeoutMinutes:            new(30),
 		MLflowRunName:             new("run-v2"),
 		MLflowExperimentDirectory: new("/Workspace/Users/me/exp"),
+		MLflowArtifactLocation:    new("dbfs:/Volumes/main/default/artifacts"),
+		Environment: &environmentConfig{DockerImage: &dockerImageConfig{
+			URL: "registry.example.com/team/image:tag",
+		}},
 	}
 
 	p := buildSubmitPayload(cfg, "/d/command.sh", "5", "", snapshotResult{}, nil)
@@ -73,9 +77,41 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, "exp", at.Experiment)
 	assert.Equal(t, "run-v2", at.MlflowRun)
 	assert.Equal(t, "/Workspace/Users/me/exp", at.MlflowExperimentDirectory)
+	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", at.MlflowArtifactLocation)
+	assert.Equal(t, "registry.example.com/team/image:tag", at.DockerImageUrl)
 	require.Len(t, at.Deployments, 1)
 	assert.Equal(t, "/d/command.sh", at.Deployments[0].CommandPath)
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu8xH100, AcceleratorCount: 16}, at.Deployments[0].Compute)
+}
+
+func TestSubmitRunInjectsProvisionedCapacityID(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		assert.Equal(t, "123", req.Headers.Get("X-Databricks-Workspace-Id"))
+		var body map[string]any
+		require.NoError(t, json.Unmarshal(req.Body, &body))
+		tasks := body["tasks"].([]any)
+		task := tasks[0].(map[string]any)
+		airTask := task["ai_runtime_task"].(map[string]any)
+		deployments := airTask["deployments"].([]any)
+		deployment := deployments[0].(map[string]any)
+		compute := deployment["compute"].(map[string]any)
+		assert.Equal(t, "capacity-1", compute["provisioned_capacity_id"])
+		return jobs.SubmitRunResponse{RunId: 42}
+	})
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", WorkspaceID: "123"})
+	require.NoError(t, err)
+	payload := buildSubmitPayload(&runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
+	}, "/command.sh", "4", "", snapshotResult{}, nil)
+
+	runID, err := submitRun(t.Context(), w, payload, "capacity-1")
+	require.NoError(t, err)
+	assert.Equal(t, int64(42), runID)
 }
 
 func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
