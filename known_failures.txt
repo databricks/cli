@@ -21,7 +21,3 @@ acceptance TestAccept/ssh/connection
 * TestSparkJarTaskDeployAndRunOnVolumes
 * TestSparkJarTaskDeployAndRunOnWorkspace
 * TestGenerateFromExistingJobAndDeploy
-
-# Still fails/flaky on azure: https://github.com/databricks/cli/pull/5724#issuecomment-4801459663
-integration/libs/git TestFetchRepositoryInfoAPI_FromRepo
-integration/libs/git TestFetchRepositoryInfoAPI_FromRepo/
