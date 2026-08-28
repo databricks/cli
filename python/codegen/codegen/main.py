@@ -8,6 +8,7 @@ import codegen.generated_dataclass as generated_dataclass
 import codegen.generated_dataclass_patch as generated_dataclass_patch
 import codegen.generated_enum as generated_enum
 import codegen.generated_imports as generated_imports
+import codegen.generated_test_cases as generated_test_cases
 import codegen.generated_wiring as generated_wiring
 import codegen.jsonschema as openapi
 import codegen.jsonschema_patch as openapi_patch
@@ -51,6 +52,9 @@ def main(output: str):
     # _ResourceType registry, Resources add_*/property methods, *_mutator
     # decorators, and the core package __init__).
     generated_wiring.write_wiring(output)
+
+    # Generate the per-resource TestCase data driving test_resources.py.
+    generated_test_cases.write_test_cases(output, schemas)
 
 
 def _transitively_mark_deprecated_and_private(

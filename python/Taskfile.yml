@@ -78,6 +78,8 @@ tasks:
           -exec rm -rf {} \;
       # core/ is hand-written except for the generated wiring under _generated/.
       - rm -rf databricks/bundles/core/_generated
+      # test_resources.py is hand-written except for the generated TestCase data.
+      - rm -rf databricks_tests/core/_generated
       - cd codegen && uv run -m pytest codegen_tests
       - cd codegen && uv run -m codegen.main --output ..
       # Generated code is fixed and formatted by the global ruff (see ../ruff.toml).
