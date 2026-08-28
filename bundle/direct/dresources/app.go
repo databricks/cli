@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -109,10 +110,16 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 // appRequestBody returns config.App with the deploy-only fields cleared. source_code_path
 // and git_source became part of apps.App in SDK v0.175, but DABs applies them through the
 // Deploy API (see manageLifecycle), so they must not ride along in create/update bodies.
+// ForceSendFields is cloned and stripped of SourceCodePath because the SDK's JSON
+// unmarshal (used when loading the plan) adds every present basic-type field to
+// ForceSendFields, which would otherwise force "source_code_path": "" into the body.
 func appRequestBody(config *AppState) apps.App {
 	app := config.App
 	app.SourceCodePath = ""
 	app.GitSource = nil
+	app.ForceSendFields = slices.DeleteFunc(slices.Clone(app.ForceSendFields), func(s string) bool {
+		return s == "SourceCodePath"
+	})
 	return app
 }
 
