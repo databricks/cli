@@ -235,3 +235,48 @@ func TestStatusWord(t *testing.T) {
 	assert.Equal(t, "RUNNING", statusWord("RUNNING", ""))           // falls back to lifecycle
 	assert.Equal(t, "UNKNOWN", statusWord("", ""))
 }
+
+func TestDisplayRunStatus(t *testing.T) {
+	pendingStates := []jobs.RunLifeCycleState{
+		jobs.RunLifeCycleStatePending,
+		jobs.RunLifeCycleStateQueued,
+		jobs.RunLifeCycleStateWaitingForRetry,
+		jobs.RunLifeCycleStateBlocked,
+	}
+	for _, state := range pendingStates {
+		run := &jobs.Run{
+			State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+			Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: state}}},
+		}
+		assert.Equal(t, "PENDING", displayRunStatus(run))
+	}
+
+	assert.Equal(t, "RUNNING", displayRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}},
+	}))
+	assert.Equal(t, "RUNNING", displayRunStatus(&jobs.Run{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}))
+	assert.Equal(t, "FAILED", displayRunStatus(&jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed},
+		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending}}},
+	}))
+}
+
+func TestTerminationReason(t *testing.T) {
+	reason := terminationReason(&jobs.Run{
+		State:  &jobs.RunState{ResultState: jobs.RunResultStateFailed, StateMessage: "parent reason"},
+		Status: &jobs.RunStatus{TerminationDetails: &jobs.TerminationDetails{Message: " detailed reason "}},
+	})
+	require.NotNil(t, reason)
+	assert.Equal(t, "detailed reason", *reason)
+
+	reason = terminationReason(&jobs.Run{
+		State: &jobs.RunState{ResultState: jobs.RunResultStateTimedout},
+		Tasks: []jobs.RunTask{{State: &jobs.RunState{StateMessage: "task timed out"}}},
+	})
+	require.NotNil(t, reason)
+	assert.Equal(t, "task timed out", *reason)
+
+	assert.Nil(t, terminationReason(&jobs.Run{State: &jobs.RunState{ResultState: jobs.RunResultStateSuccess, StateMessage: "done"}}))
+	assert.Nil(t, terminationReason(&jobs.Run{State: &jobs.RunState{ResultState: jobs.RunResultStateCanceled, StateMessage: "cancelled"}}))
+}

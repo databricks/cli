@@ -114,7 +114,7 @@ type logRunStatus struct {
 // set (result states only appear on terminal runs).
 var (
 	terminalLifeCycleStates = map[string]bool{"TERMINATED": true, "SKIPPED": true, "INTERNAL_ERROR": true}
-	terminalResultStates    = map[string]bool{"SUCCESS": true, "FAILED": true, "CANCELED": true}
+	terminalResultStates    = map[string]bool{"SUCCESS": true, "FAILED": true, "TIMEDOUT": true, "CANCELED": true}
 )
 
 func (s logRunStatus) terminal() bool {
