@@ -1,134 +1,15 @@
-from dataclasses import dataclass, replace
-from typing import Callable
+from dataclasses import replace
 
 import pytest
 
-from databricks.bundles.alerts._models.alert import Alert
-from databricks.bundles.alerts._models.alert_v2_evaluation import AlertV2Evaluation
-from databricks.bundles.alerts._models.alert_v2_operand_column import (
-    AlertV2OperandColumn,
-)
-from databricks.bundles.alerts._models.comparison_operator import ComparisonOperator
-from databricks.bundles.alerts._models.cron_schedule import CronSchedule
-from databricks.bundles.catalogs._models.catalog import Catalog
-from databricks.bundles.core import (
-    Location,
-    Resources,
-    Severity,
-    alert_mutator,
-    catalog_mutator,
-    job_mutator,
-    pipeline_mutator,
-    schema_mutator,
-    volume_mutator,
-)
+from databricks.bundles.core import Location, Resources, Severity
 from databricks.bundles.core._bundle import Bundle
-from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._resource_mutator import ResourceMutator
 from databricks.bundles.core._resource_type import _ResourceType
 from databricks.bundles.jobs._models.job import Job
-from databricks.bundles.pipelines._models.pipeline import Pipeline
-from databricks.bundles.schemas._models.schema import Schema
-from databricks.bundles.volumes._models.volume import Volume
+from databricks_tests.core._generated import test_cases
+from databricks_tests.core._resource_test_case import TestCase
 
-
-@dataclass(kw_only=True)
-class TestCase:
-    add_resource: Callable
-    dict_example: dict
-    dataclass_example: Resource
-    mutator: Callable
-
-
-resource_types = {tpe.resource_type: tpe for tpe in _ResourceType.all()}
-test_cases = [
-    (
-        TestCase(
-            add_resource=Resources.add_job,
-            dict_example={"name": "My job"},
-            dataclass_example=Job(name="My job"),
-            mutator=job_mutator,
-        ),
-        resource_types[Job],
-    ),
-    (
-        TestCase(
-            add_resource=Resources.add_pipeline,
-            dict_example={"name": "My pipeline"},
-            dataclass_example=Pipeline(name="My pipeline"),
-            mutator=pipeline_mutator,
-        ),
-        resource_types[Pipeline],
-    ),
-    (
-        TestCase(
-            add_resource=Resources.add_volume,
-            dict_example={
-                "name": "My Volume",
-                "catalog_name": "my_catalog",
-                "schema_name": "my_schema",
-            },
-            dataclass_example=Volume(
-                catalog_name="my_catalog",
-                name="My Volume",
-                schema_name="my_schema",
-            ),
-            mutator=volume_mutator,
-        ),
-        resource_types[Volume],
-    ),
-    (
-        TestCase(
-            add_resource=Resources.add_schema,
-            dict_example={"catalog_name": "my_catalog", "name": "my_schema"},
-            dataclass_example=Schema(catalog_name="my_catalog", name="my_schema"),
-            mutator=schema_mutator,
-        ),
-        resource_types[Schema],
-    ),
-    (
-        TestCase(
-            add_resource=Resources.add_alert,
-            dict_example={
-                "display_name": "My Alert",
-                "query_text": "SELECT 1",
-                "warehouse_id": "my_warehouse",
-                "evaluation": {
-                    "comparison_operator": "GREATER_THAN",
-                    "source": {"name": "column_1"},
-                },
-                "schedule": {
-                    "quartz_cron_schedule": "0 0 0 * * ?",
-                    "timezone_id": "UTC",
-                },
-            },
-            dataclass_example=Alert(
-                display_name="My Alert",
-                query_text="SELECT 1",
-                warehouse_id="my_warehouse",
-                evaluation=AlertV2Evaluation(
-                    comparison_operator=ComparisonOperator.GREATER_THAN,
-                    source=AlertV2OperandColumn(name="column_1"),
-                ),
-                schedule=CronSchedule(
-                    quartz_cron_schedule="0 0 0 * * ?",
-                    timezone_id="UTC",
-                ),
-            ),
-            mutator=alert_mutator,
-        ),
-        resource_types[Alert],
-    ),
-    (
-        TestCase(
-            add_resource=Resources.add_catalog,
-            dict_example={"name": "my_catalog"},
-            dataclass_example=Catalog(name="my_catalog"),
-            mutator=catalog_mutator,
-        ),
-        resource_types[Catalog],
-    ),
-]
 test_case_ids = [tpe.plural_name for _, tpe in test_cases]
 
 
