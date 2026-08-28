@@ -82,9 +82,10 @@ below are what they match today, for orientation — trust the grep if they've m
   environment version at all.
 
 **3. Update the version comments.**
-Each macro in `default/library/versions.tmpl` carries a comment block explaining the
-compatibility reasoning (which Python the environment version uses, why DB
-Connect is pinned where it is). Update those so the "why" matches the new pins.
+The `conservative_db_connect_version_spec` and `python_version_spec` comment blocks
+in `default/library/versions.tmpl` carry the compatibility reasoning — which Python
+the environment version uses, why DB Connect is pinned where it is. Update whichever
+you touch so the "why" matches the new pins.
 
 **4. Regenerate goldens across BOTH template trees, then VERIFY.**
 Template output is rendered into two acceptance trees, and a bump changes both:
