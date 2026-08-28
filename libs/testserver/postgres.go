@@ -715,6 +715,7 @@ var projectUpdateMaskPaths = []string{
 	"spec.budget_policy_id",
 	"spec.custom_tags",
 	"spec.default_branch",
+	"spec.default_endpoint_settings",
 	"spec.default_endpoint_settings.autoscaling_limit_max_cu",
 	"spec.default_endpoint_settings.autoscaling_limit_min_cu",
 	"spec.default_endpoint_settings.pg_settings",
@@ -725,6 +726,55 @@ var projectUpdateMaskPaths = []string{
 	// default_endpoint_settings.no_suspension and .suspend_timeout_duration are
 	// two sides of one oneof.
 	"spec.default_endpoint_settings.suspension",
+}
+
+// missingMaskedField returns the first update_mask path the API would reject
+// because the mask names it but the request body carries no value for it, which is
+// how a removal from bundle config reaches the API. Verified against a real
+// workspace: "Field 'spec.history_retention_duration' is in update_mask but not
+// provided in request".
+func missingMaskedField(req Request) string {
+	mask := req.URL.Query().Get("update_mask")
+	if mask == "" || len(req.Body) == 0 {
+		return ""
+	}
+	var body map[string]any
+	if err := json.Unmarshal(req.Body, &body); err != nil {
+		return ""
+	}
+	for path := range strings.SplitSeq(mask, ",") {
+		path = strings.TrimSpace(path)
+		parts := strings.Split(path, ".")
+		if path == "" || path == "*" || len(parts) < 2 {
+			// A whole message the request omits is tolerated: the Terraform provider
+			// masks initial_branch_spec and initial_endpoint_spec without sending
+			// either, and the API accepts that.
+			continue
+		}
+		// Only a field whose parent the request does carry must itself be present.
+		if bodyHasPath(body, parts[:len(parts)-1]) && !bodyHasPath(body, parts) {
+			return path
+		}
+	}
+	return ""
+}
+
+func bodyHasPath(node any, parts []string) bool {
+	for _, part := range parts {
+		m, ok := node.(map[string]any)
+		if !ok {
+			return false
+		}
+		node, ok = m[part]
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func missingMaskedFieldResponse(path string) Response {
+	return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", fmt.Sprintf("Field '%s' is in update_mask but not provided in request", path))
 }
 
 // validateUpdateMask mirrors the API's rejection of unknown update_mask paths.
@@ -740,6 +790,11 @@ func validateUpdateMask(req Request, allowed []string) *Response {
 			continue
 		}
 		resp := postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", fmt.Sprintf("Unknown field path in update_mask: '%s'", path))
+		return &resp
+	}
+	// An unknown path is reported ahead of a missing one, matching the API.
+	if path := missingMaskedField(req); path != "" {
+		resp := missingMaskedFieldResponse(path)
 		return &resp
 	}
 	return nil

@@ -1,9 +1,7 @@
-# Removing history_retention_duration does not take effect, and nothing ever says
-# so. The engine sends update_mask=spec.history_retention_duration with no value in
-# the body; the API keeps the previous value rather than clearing it (verified
-# against a real workspace on 2026-08-25, see out.project.*.txt), yet deploy reports
-# the resource as changed and saves the removal to state. The drift plan afterwards
-# is clean because the project GET does not echo spec, so remote comparison for this
-# field is suppressed as spec:input_only. Config and backend stay silently out of
-# step.
-Badness = "Removing history_retention_duration is reported as changed but the API keeps the old value, and the difference is then invisible: state records the removal and spec:input_only hides the remote value, so no later plan reports drift"
+# Removing history_retention_duration is rejected. The engine names the field in
+# update_mask and omits it from the body, and the API requires every masked field to
+# carry a value: 400 "Field 'spec.history_retention_duration' is in update_mask but
+# not provided in request" (verified against a real workspace on 2026-08-28). The old
+# value therefore stays in state, so out.plan.drift.direct.json shows the same
+# removal pending again, and every later deploy fails the same way.
+Badness = "Removing history_retention_duration fails: the field is named in update_mask but omitted from the body, which the API rejects, so the removal can never be applied and every later deploy retries and fails"
