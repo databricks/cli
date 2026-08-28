@@ -42,7 +42,7 @@ jobs:
       # than main; every other synced repo (SDK go/py/java, …) stays pinned
       # to main, preserving the pre-existing hardcoded-main behaviour and
       # blocking branch releases even via a manual non-main dispatch.
-      RELEASE_REF: ${{ github.repository == 'databricks/terraform-provider-databricks' && github.ref_name || 'main' }}
+      RELEASE_REF: ${{ (github.repository == 'databricks/terraform-provider-databricks' || github.repository == 'databricks/cli') && github.ref_name || 'main' }}
       # Changelog source. databricks/cli builds the release changelog from
       # per-PR ``.nextchanges/<section>/*.md`` fragments and a
       # ``.nextchanges/version`` file rather than a single hand-maintained
