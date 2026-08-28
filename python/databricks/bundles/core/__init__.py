@@ -33,7 +33,7 @@ from databricks.bundles.core._diagnostics import (
     Diagnostics,
     Severity,
 )
-from databricks.bundles.core._generated._resource_mutators import (
+from databricks.bundles.core._generated import (
     alert_mutator,
     catalog_mutator,
     job_mutator,

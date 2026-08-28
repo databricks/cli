@@ -27,8 +27,6 @@ class _ResourceType:
         """
         Returns all supported resource types.
         """
-        from databricks.bundles.core._generated._resource_types import (
-            _all_resource_types,
-        )
+        from databricks.bundles.core._generated import _all_resource_types
 
         return _all_resource_types()

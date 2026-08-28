@@ -1,7 +1,7 @@
 from typing import Optional
 
 from databricks.bundles.core._diagnostics import Diagnostics
-from databricks.bundles.core._generated._resources import _GeneratedResources
+from databricks.bundles.core._generated import _GeneratedResources
 from databricks.bundles.core._location import Location
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._resource_type import _ResourceType
