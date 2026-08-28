@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -273,15 +274,28 @@ func TestMustWorkspaceClientRewritesInvalidRefreshTokenForPickedProfile(t *testi
 
 	// Expired cached token (keyed by profile name) so the command triggers a
 	// refresh, which the server rejects.
+	fingerprint, err := profilehash.FromFile(configFile, "only-workspace")
+	require.NoError(t, err)
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".databricks"), 0o700))
-	require.NoError(t, os.WriteFile(filepath.Join(home, ".databricks", "token-cache.json"),
-		[]byte(`{"version":1,"tokens":{"only-workspace":{"access_token":"x","token_type":"Bearer","refresh_token":"rt","expiry":"2020-01-01T00:00:00Z"}}}`), 0o600))
+	tokenCache := fmt.Sprintf(`{
+  "version": 1,
+  "tokens": {
+    "only-workspace": {
+      "access_token": "x",
+      "token_type": "Bearer",
+      "refresh_token": "rt",
+      "expiry": "2020-01-01T00:00:00Z",
+      "profile_fingerprint": %q
+    }
+  }
+}`, fingerprint)
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".databricks", "token-cache.json"), []byte(tokenCache), 0o600))
 
 	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
 	cmd := New(ctx)
 
-	err := MustWorkspaceClient(cmd, []string{})
+	err = MustWorkspaceClient(cmd, []string{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "A new access token could not be retrieved because the refresh token is invalid")
 	assert.Contains(t, err.Error(), "databricks auth login --profile only-workspace")

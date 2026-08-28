@@ -18,9 +18,12 @@ func setup(t *testing.T) string {
 func TestStoreAndLookup(t *testing.T) {
 	c, err := NewFileStore(t.Context(), WithFileLocation(setup(t)))
 	require.NoError(t, err)
-	err = c.Put("x", Entry{Token: &oauth2.Token{
-		AccessToken: "abc",
-	}})
+	err = c.Put("x", Entry{
+		Token: &oauth2.Token{
+			AccessToken: "abc",
+		},
+		ProfileFingerprint: "fingerprint-x",
+	})
 	require.NoError(t, err)
 
 	err = c.Put("y", Entry{Token: &oauth2.Token{
@@ -31,6 +34,7 @@ func TestStoreAndLookup(t *testing.T) {
 	got, err := c.Lookup("x")
 	require.NoError(t, err)
 	assert.Equal(t, "abc", got.Token.AccessToken)
+	assert.Equal(t, "fingerprint-x", got.ProfileFingerprint)
 
 	_, err = c.Lookup("z")
 	assert.Equal(t, ErrNotFound, err)

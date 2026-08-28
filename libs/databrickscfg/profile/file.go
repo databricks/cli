@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -88,6 +89,7 @@ func (f FileProfilerImpl) LoadProfiles(ctx context.Context, fn ProfileMatchFunct
 			HasClientCredentials: all["client_id"] != "" && all["client_secret"] != "",
 			Scopes:               all["scopes"],
 			AuthType:             all["auth_type"],
+			fingerprint:          profilehash.Compute(all),
 		}
 		if fn(profile) {
 			profiles = append(profiles, profile)
