@@ -191,6 +191,14 @@ func airLogsCommand(profile, runID string) string {
 	return strings.Join(args, " ")
 }
 
+func airGetCommand(profile, runID string) string {
+	args := []string{"databricks", "experimental", "air", "get", shellquote.BashArg(runID)}
+	if profile != "" {
+		args = append(args, "-p", shellquote.BashArg(profile))
+	}
+	return strings.Join(args, " ")
+}
+
 func printPostSubmitGuidance(out io.Writer, profile, runID string) {
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "Tip: use --watch when submitting a run to stream logs to your terminal.")
@@ -204,9 +212,9 @@ func handleWatchResult(out io.Writer, profile, runID string, err error) error {
 	}
 
 	fmt.Fprintln(out)
-	fmt.Fprintln(out, "Stopped streaming logs. The workload was not canceled.")
-	fmt.Fprintln(out, "Resume real-time logs using:")
-	fmt.Fprintln(out, "  "+airLogsCommand(profile, runID))
+	fmt.Fprintln(out, "Streaming logs interrupted.")
+	fmt.Fprintf(out, "Use %q to check status.\n", airGetCommand(profile, runID))
+	fmt.Fprintf(out, "Use %q to resume streaming logs.\n", airLogsCommand(profile, runID))
 	return root.ErrAlreadyPrinted
 }
 

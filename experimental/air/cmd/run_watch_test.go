@@ -167,9 +167,10 @@ func TestHandleWatchResultPrintsProfileAwareResumeCommand(t *testing.T) {
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 
 	out := buf.String()
-	assert.Contains(t, out, "Stopped streaming logs. The workload was not canceled.")
-	assert.Contains(t, out, "Resume real-time logs using:")
-	assert.Contains(t, out, "databricks experimental air logs 777 -p 'team profile'")
+	assert.Contains(t, out, "Streaming logs interrupted.")
+	assert.Contains(t, out, `Use "databricks experimental air get 777 -p 'team profile'" to check status.`)
+	assert.Contains(t, out, `Use "databricks experimental air logs 777 -p 'team profile'" to resume streaming logs.`)
+	assert.NotContains(t, out, "The workload was not canceled")
 }
 
 func TestHandleWatchResultPassesThroughOtherErrors(t *testing.T) {

@@ -100,6 +100,12 @@ func TestAirLogsCommand(t *testing.T) {
 	assert.Equal(t, "databricks experimental air logs 123 -p 'team profile'", airLogsCommand("team profile", "123"))
 }
 
+func TestAirGetCommand(t *testing.T) {
+	assert.Equal(t, "databricks experimental air get 123", airGetCommand("", "123"))
+	assert.Equal(t, "databricks experimental air get 123 -p profile-name", airGetCommand("profile-name", "123"))
+	assert.Equal(t, "databricks experimental air get 123 -p 'team profile'", airGetCommand("team profile", "123"))
+}
+
 func TestRunSubmitTextOutputWithMLflowLinks(t *testing.T) {
 	var buf bytes.Buffer
 	srvURL := submitServer(t, `{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}`).URL

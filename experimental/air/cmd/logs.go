@@ -105,7 +105,7 @@ func newLogsCommand() *cobra.Command {
 			tailLines = lines
 		}
 
-		return runLogs(ctx, cmd, logRequest{
+		err = runLogs(ctx, cmd, logRequest{
 			runID:         runID,
 			node:          node,
 			nodeSet:       cmd.Flags().Changed("node"),
@@ -115,6 +115,10 @@ func newLogsCommand() *cobra.Command {
 			downloadTo:    downloadTo,
 			jsonOutput:    root.OutputType(cmd) == flags.OutputJSON,
 		})
+		if downloadTo != "" || root.OutputType(cmd) == flags.OutputJSON {
+			return err
+		}
+		return handleWatchResult(cmd.OutOrStdout(), cmdctx.WorkspaceClient(ctx).Config.Profile, args[0], err)
 	}
 
 	return cmd
