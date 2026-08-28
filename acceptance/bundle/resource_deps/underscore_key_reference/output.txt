@@ -1,0 +1,14 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs._asset-bundle-deploymentjob
+Created jobs._job
+Created jobs._job.permissions
+Created jobs.ref
+Files: 5 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Names of the created jobs, with references resolved to ids
+a=[NUMID] b=[NUMID]
+leading underscore
+leading underscore with hyphens

@@ -5,7 +5,9 @@
       "id": "ascii-simple",
       "input": "${hello_world.world_world}",
       "match": true,
-      "references": ["hello_world.world_world"],
+      "references": [
+        "hello_world.world_world"
+      ],
       "pure": true,
       "path": "hello_world.world_world"
     },
@@ -13,7 +15,9 @@
       "id": "ascii-hyphen-separators",
       "input": "${helloworld.world-world}",
       "match": true,
-      "references": ["helloworld.world-world"],
+      "references": [
+        "helloworld.world-world"
+      ],
       "pure": true,
       "path": "helloworld.world-world"
     },
@@ -21,7 +25,9 @@
       "id": "ascii-hyphen-in-segment",
       "input": "${hello-world.world-world}",
       "match": true,
-      "references": ["hello-world.world-world"],
+      "references": [
+        "hello-world.world-world"
+      ],
       "pure": true,
       "path": "hello-world.world-world"
     },
@@ -29,7 +35,9 @@
       "id": "ascii-underscore-separators",
       "input": "${hello_world.world__world}",
       "match": true,
-      "references": ["hello_world.world__world"],
+      "references": [
+        "hello_world.world__world"
+      ],
       "pure": true,
       "path": "hello_world.world__world"
     },
@@ -37,7 +45,9 @@
       "id": "ascii-double-hyphen",
       "input": "${hello_world.world--world}",
       "match": true,
-      "references": ["hello_world.world--world"],
+      "references": [
+        "hello_world.world--world"
+      ],
       "pure": true,
       "path": "hello_world.world--world"
     },
@@ -45,7 +55,9 @@
       "id": "ascii-mixed-separators-1",
       "input": "${hello_world.world-_world}",
       "match": true,
-      "references": ["hello_world.world-_world"],
+      "references": [
+        "hello_world.world-_world"
+      ],
       "pure": true,
       "path": "hello_world.world-_world"
     },
@@ -53,7 +65,9 @@
       "id": "ascii-mixed-separators-2",
       "input": "${hello_world.world_-world}",
       "match": true,
-      "references": ["hello_world.world_-world"],
+      "references": [
+        "hello_world.world_-world"
+      ],
       "pure": true,
       "path": "hello_world.world_-world"
     },
@@ -61,7 +75,9 @@
       "id": "unicode-accent-segment",
       "input": "${café.bar}",
       "match": true,
-      "references": ["café.bar"],
+      "references": [
+        "café.bar"
+      ],
       "pure": true,
       "path": "café.bar"
     },
@@ -69,7 +85,9 @@
       "id": "unicode-accent-trailing-segment",
       "input": "${hello.café}",
       "match": true,
-      "references": ["hello.café"],
+      "references": [
+        "hello.café"
+      ],
       "pure": true,
       "path": "hello.café"
     },
@@ -77,7 +95,9 @@
       "id": "unicode-cjk",
       "input": "${变量.世界}",
       "match": true,
-      "references": ["变量.世界"],
+      "references": [
+        "变量.世界"
+      ],
       "pure": true,
       "path": "变量.世界"
     },
@@ -85,7 +105,9 @@
       "id": "unicode-cjk-numeral-letter",
       "input": "${变量.九世界}",
       "match": true,
-      "references": ["变量.九世界"],
+      "references": [
+        "变量.九世界"
+      ],
       "pure": true,
       "path": "变量.九世界"
     },
@@ -93,7 +115,9 @@
       "id": "unicode-arabic",
       "input": "${العربية.key}",
       "match": true,
-      "references": ["العربية.key"],
+      "references": [
+        "العربية.key"
+      ],
       "pure": true,
       "path": "العربية.key"
     },
@@ -101,14 +125,19 @@
       "id": "unicode-multi-ref",
       "input": "${变量.世界} ${café.bar}",
       "match": true,
-      "references": ["变量.世界", "café.bar"],
+      "references": [
+        "变量.世界",
+        "café.bar"
+      ],
       "pure": false
     },
     {
       "id": "unicode-var-reference",
       "input": "${var.变量}",
       "match": true,
-      "references": ["var.变量"],
+      "references": [
+        "var.变量"
+      ],
       "pure": true,
       "path": "var.变量"
     },
@@ -116,7 +145,9 @@
       "id": "unicode-resource-reference",
       "input": "${resources.jobs.工作.name}",
       "match": true,
-      "references": ["resources.jobs.工作.name"],
+      "references": [
+        "resources.jobs.工作.name"
+      ],
       "pure": true,
       "path": "resources.jobs.工作.name"
     },
@@ -124,7 +155,9 @@
       "id": "indexed-path",
       "input": "${foo.bar.baz[0]}",
       "match": true,
-      "references": ["foo.bar.baz[0]"],
+      "references": [
+        "foo.bar.baz[0]"
+      ],
       "pure": true,
       "path": "foo.bar.baz[0]"
     },
@@ -132,7 +165,9 @@
       "id": "nested-indexed-path",
       "input": "${foo.bar.baz[0][1].qux}",
       "match": true,
-      "references": ["foo.bar.baz[0][1].qux"],
+      "references": [
+        "foo.bar.baz[0][1].qux"
+      ],
       "pure": true,
       "path": "foo.bar.baz[0][1].qux"
     },
@@ -140,7 +175,9 @@
       "id": "indexed-unicode-path",
       "input": "${变量.世界[0]}",
       "match": true,
-      "references": ["变量.世界[0]"],
+      "references": [
+        "变量.世界[0]"
+      ],
       "pure": true,
       "path": "变量.世界[0]"
     },
@@ -148,7 +185,9 @@
       "id": "python-simple-variable",
       "input": "${var.my_var}",
       "match": true,
-      "references": ["var.my_var"],
+      "references": [
+        "var.my_var"
+      ],
       "pure": true,
       "path": "var.my_var"
     },
@@ -156,9 +195,41 @@
       "id": "python-indexed-variable",
       "input": "${var.my_var[0].foo}",
       "match": true,
-      "references": ["var.my_var[0].foo"],
+      "references": [
+        "var.my_var[0].foo"
+      ],
       "pure": true,
       "path": "var.my_var[0].foo"
+    },
+    {
+      "id": "leading-underscore",
+      "input": "${_hello_world.world_world}",
+      "match": true,
+      "references": [
+        "_hello_world.world_world"
+      ],
+      "pure": true,
+      "path": "_hello_world.world_world"
+    },
+    {
+      "id": "resource-key-leading-underscore",
+      "input": "${resources.jobs._job.id}",
+      "match": true,
+      "references": [
+        "resources.jobs._job.id"
+      ],
+      "pure": true,
+      "path": "resources.jobs._job.id"
+    },
+    {
+      "id": "resource-key-leading-underscore-and-hyphens",
+      "input": "${resources.jobs._asset-bundle-deploymentjob.id}",
+      "match": true,
+      "references": [
+        "resources.jobs._asset-bundle-deploymentjob.id"
+      ],
+      "pure": true,
+      "path": "resources.jobs._asset-bundle-deploymentjob.id"
     },
     {
       "id": "segment-trailing-hyphen",
@@ -228,7 +299,7 @@
     {
       "id": "nfd-decomposed-accent",
       "comment": "NFD e + combining acute; not equivalent to NFC café",
-      "input": "${cafe\u0301.bar}",
+      "input": "${café.bar}",
       "match": false
     },
     {
@@ -248,7 +319,7 @@
     },
     {
       "id": "zero-width-space",
-      "input": "${foo.bar\u200b}",
+      "input": "${foo.bar​}",
       "match": false
     },
     {
@@ -266,7 +337,9 @@
       "id": "suffix-after-reference",
       "input": "${foo.bar} suffix",
       "match": true,
-      "references": ["foo.bar"],
+      "references": [
+        "foo.bar"
+      ],
       "pure": false,
       "path_ok": false
     },
@@ -274,7 +347,9 @@
       "id": "prefix-before-reference",
       "input": "prefix ${foo.bar}",
       "match": true,
-      "references": ["foo.bar"],
+      "references": [
+        "foo.bar"
+      ],
       "pure": false,
       "path_ok": false
     },
@@ -282,7 +357,10 @@
       "id": "adjacent-references",
       "input": "${foo.one}${foo.two}",
       "match": true,
-      "references": ["foo.one", "foo.two"],
+      "references": [
+        "foo.one",
+        "foo.two"
+      ],
       "pure": false,
       "path_ok": false
     },
@@ -290,7 +368,10 @@
       "id": "multiple-variables-not-pure",
       "input": "${var.my_var} ${var.my_var}",
       "match": true,
-      "references": ["var.my_var", "var.my_var"],
+      "references": [
+        "var.my_var",
+        "var.my_var"
+      ],
       "pure": false,
       "path_ok": false
     },
