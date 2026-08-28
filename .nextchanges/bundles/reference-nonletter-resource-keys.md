@@ -1,1 +1,0 @@
-Fixed `${resources...}` references to resource keys starting with an underscore (e.g. `_my_job`). On the direct engine, deploying such a resource with `permissions` or `grants` failed with `cannot parse "/jobs/${resources.jobs._my_job.id}"`, and user-written references to it were silently left unresolved.

@@ -1,1 +1,0 @@
-Fix `bundle deploy` failing with `deployment_source.source_code_path cannot be set on UpdateApp` (400) when updating an app that has an active deployment ([#6401](https://github.com/databricks/cli/issues/6401)).
