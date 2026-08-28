@@ -1,15 +1,16 @@
-package databrickscfg
+package aircmd
 
 import (
 	"errors"
 	"io/fs"
 
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
-// ProfileValue returns a property from the selected configuration profile. An
+// profileValue returns a property from the selected configuration profile. An
 // empty profile name uses the configured default-profile resolution order.
-func ProfileValue(cfg *config.Config, key string) (string, error) {
+func profileValue(cfg *config.Config, key string) (string, error) {
 	file, err := config.LoadFile(cfg.ConfigFile)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -19,7 +20,7 @@ func ProfileValue(cfg *config.Config, key string) (string, error) {
 	}
 	profile := cfg.Profile
 	if profile == "" {
-		profile = GetDefaultProfileFrom(file)
+		profile = databrickscfg.GetDefaultProfileFrom(file)
 	}
 	if profile == "" {
 		return "", nil

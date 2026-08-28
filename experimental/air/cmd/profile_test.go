@@ -1,4 +1,4 @@
-package databrickscfg
+package aircmd
 
 import (
 	"os"
@@ -25,19 +25,19 @@ host = https://second.test
 databricks_internal_user_workspace_dir = /Workspace/second
 `), 0o600))
 
-	value, err := ProfileValue(&config.Config{ConfigFile: path, Profile: "first"}, "databricks_internal_user_workspace_dir")
+	value, err := profileValue(&config.Config{ConfigFile: path, Profile: "first"}, "databricks_internal_user_workspace_dir")
 	require.NoError(t, err)
 	assert.Equal(t, "/Workspace/first", value)
 
-	value, err = ProfileValue(&config.Config{ConfigFile: path}, "databricks_internal_user_workspace_dir")
+	value, err = profileValue(&config.Config{ConfigFile: path}, "databricks_internal_user_workspace_dir")
 	require.NoError(t, err)
 	assert.Equal(t, "/Workspace/second", value)
 
-	value, err = ProfileValue(&config.Config{ConfigFile: path, Profile: "missing"}, "databricks_internal_user_workspace_dir")
+	value, err = profileValue(&config.Config{ConfigFile: path, Profile: "missing"}, "databricks_internal_user_workspace_dir")
 	require.NoError(t, err)
 	assert.Empty(t, value)
 
-	value, err = ProfileValue(&config.Config{ConfigFile: path, Profile: "first"}, "missing")
+	value, err = profileValue(&config.Config{ConfigFile: path, Profile: "first"}, "missing")
 	require.NoError(t, err)
 	assert.Empty(t, value)
 }
@@ -50,7 +50,7 @@ host = https://only.test
 databricks_internal_user_workspace_dir = /Workspace/only
 `), 0o600))
 
-	value, err := ProfileValue(&config.Config{ConfigFile: path}, "databricks_internal_user_workspace_dir")
+	value, err := profileValue(&config.Config{ConfigFile: path}, "databricks_internal_user_workspace_dir")
 	require.NoError(t, err)
 	assert.Equal(t, "/Workspace/only", value)
 }
