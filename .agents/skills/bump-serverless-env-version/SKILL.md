@@ -25,8 +25,10 @@ templates — check them, don't assume:
 - `defaultServerlessVersion` in `libs/localenv/envkey.go` is a separate Go pin: the
   fallback serverless version for `databricks environments setup-local`, documented
   as a "stand-in for the latest LTS". It currently tracks the template version. If
-  the version you're moving to is the latest LTS, bump this constant in the same PR
-  and regenerate its tests (`libs/localenv`, `cmd/environments`); if it is not yet
+  the version you're moving to is the latest LTS, bump this constant in the same PR,
+  refresh the version shown in its help/example and error strings (grep `libs/localenv`
+  and `cmd/environments` for the old number — e.g. `cmd/environments/sync.go`,
+  `libs/localenv/constraints.go`), and regenerate the affected tests; if it is not yet
   LTS, leave it and say why. Do not silently ignore it.
 - The SSH acceptance goldens (`acceptance/ssh/connect-serverless-*/output.txt`) pin
   an explicit older version on purpose — a deliberate test fixture, not the
@@ -106,14 +108,16 @@ times out under full parallel load but passes when run alone is a flake.)
 
 **5. Changelog fragment.**
 Add a `bundles` fragment at `.nextchanges/bundles/serverless-environment-version-v{N}.md`,
-modeled on the prior bump:
+modeled on the prior bump — but adapt the wording to the target version rather than
+copying it: state the benefit its release notes actually call out (don't assert
+"better performance" unless they do), and link its real release-notes URL:
 
 ```
-Bundle templates now use serverless [environment version {N}](https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/{N-spelled-out}), which offers better performance, and `databricks-connect` {X.Y}.
+Bundle templates now use serverless [environment version {N}]({release-notes-url}), which <benefit from the release notes>, and `databricks-connect` {X.Y}.
 ```
 
-The release-notes URL ends in the version spelled out (`.../environment-version/five`
-for 5, `six` for 6), matching the v5 fragment. See the `pr-checklist` skill's
+The URL historically ends in the version spelled out (`.../environment-version/five`
+for 5, `six` for 6), but confirm the actual link. See the `pr-checklist` skill's
 "Changelog entry" section for conventions.
 
 **6. Commit, push, PR.**
