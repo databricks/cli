@@ -281,7 +281,7 @@ def _unwrap_variable(tpe: type) -> Optional[type]:
 #   - "${a.b}"
 #   - "${a.b.c}"
 #   - "${a.b[0].c}"
-_base_var_def = r"[^\W\d_]+([-_]*[^\W_]+)*"
+_base_var_def = r"_*[^\W\d_]+([-_]*[^\W_]+)*"
 _variable_regex = re.compile(
     r"\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}" % (_base_var_def, _base_var_def)
 )
