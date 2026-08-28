@@ -8,8 +8,10 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/auth/storage"
+	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
@@ -250,6 +252,52 @@ func TestCLICredentialsConfigure_PropagatesStorageResolutionError(t *testing.T) 
 	_, err := c.Configure(t.Context(), &config.Config{Host: "https://x.cloud.databricks.com"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "DATABRICKS_AUTH_STORAGE")
+}
+
+// TestCLICredentialsRejectsChangedProfile verifies that ordinary SDK authentication
+// rejects a cached CLI token after its profile changes.
+func TestCLICredentialsRejectsChangedProfile(t *testing.T) {
+	home := t.TempDir()
+	configPath := filepath.Join(home, ".databrickscfg")
+	t.Setenv("HOME", home)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+	t.Setenv(storage.EnvVar, "plaintext")
+	require.NoError(t, os.WriteFile(configPath, []byte(`[TEST]
+host = https://workspace.example.com
+auth_type = databricks-cli
+scopes = jobs
+`), 0o600))
+	fingerprint, err := profilehash.FromFile(configPath, "TEST")
+	require.NoError(t, err)
+	tokenStore, err := storage.NewFileStore(t.Context())
+	require.NoError(t, err)
+	require.NoError(t, tokenStore.Put("TEST", storage.Entry{
+		Token: &oauth2.Token{
+			AccessToken: "jobs-token",
+			Expiry:      time.Now().Add(time.Hour),
+		},
+		ProfileFingerprint: fingerprint,
+	}))
+
+	cfg := &config.Config{
+		Host:       "https://workspace.example.com",
+		Profile:    "TEST",
+		ConfigFile: configPath,
+	}
+
+	require.NoError(t, os.WriteFile(configPath, []byte(`[TEST]
+host = https://workspace.example.com
+auth_type = databricks-cli
+scopes = all-apis
+`), 0o600))
+
+	provider, err := (CLICredentials{}).Configure(t.Context(), cfg)
+	require.NoError(t, err)
+	req, err := http.NewRequest(http.MethodGet, cfg.Host, nil)
+	require.NoError(t, err)
+
+	err = provider.SetHeaders(req)
+	assert.ErrorIs(t, err, storage.ErrProfileChanged)
 }
 
 // Writing a throwaway config file is verbose enough that future tests may

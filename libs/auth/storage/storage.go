@@ -20,6 +20,10 @@ import (
 // ToU2MTokenCache translates between the two.
 var ErrNotFound = errors.New("token not found")
 
+// ErrProfileChanged identifies cached credentials that no longer correspond
+// to the profile that selected them.
+var ErrProfileChanged = errors.New("profile configuration changed")
+
 // Entry is the value held in the CLI token store. It wraps the credential so
 // the schema can grow additive metadata (e.g. a config fingerprint, scopes)
 // without changing the Store interface. Backends persist it verbatim and never
@@ -27,6 +31,10 @@ var ErrNotFound = errors.New("token not found")
 type Entry struct {
 	// Token is the cached OAuth token. Always set for stored entries.
 	Token *oauth2.Token
+
+	// ProfileFingerprint binds the OAuth grant to the complete profile that
+	// was present when the token was minted.
+	ProfileFingerprint string
 }
 
 // Store is the CLI's token-storage abstraction: a key/value store with no

@@ -89,6 +89,24 @@ func (d *defaultDiscoveryClient) IntrospectToken(ctx context.Context, host, acce
 	return auth.IntrospectToken(ctx, host, accessToken, nil)
 }
 
+// setTokenProfileFingerprint runs after profile saving because OAuth-dependent
+// workspace and compute selection can change the final profile contents.
+func setTokenProfileFingerprint(ctx context.Context, profiler profile.Profiler, tokenStore storage.Store, profileName string) error {
+	savedProfile, err := loadProfileByName(ctx, profileName, profiler)
+	if err != nil {
+		return fmt.Errorf("load saved profile %q: %w", profileName, err)
+	}
+	if savedProfile == nil {
+		return fmt.Errorf("saved profile %q not found", profileName)
+	}
+
+	if err := storage.SetProfileFingerprint(tokenStore, profileName, savedProfile.Fingerprint()); err != nil {
+		return fmt.Errorf("save profile fingerprint: %w", err)
+	}
+
+	return nil
+}
+
 func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	defaultConfigPath := "~/.databrickscfg"
 	if runtime.GOOS == "windows" {
@@ -384,7 +402,7 @@ a new profile is created.
 			// experimental_is_unified_host is no longer written to new profiles.
 			// Routing now comes from .well-known discovery; stale keys on existing
 			// profiles are cleaned up via clearKeys above.
-			err := databrickscfg.SaveToProfile(ctx, &config.Config{
+			profileConfig := &config.Config{
 				Profile:             profileName,
 				Host:                authArguments.Host,
 				AuthType:            authTypeDatabricksCLI,
@@ -394,8 +412,13 @@ a new profile is created.
 				ConfigFile:          env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 				ServerlessComputeID: serverlessComputeID,
 				Scopes:              scopesList,
-			}, clearKeys...)
+			}
+			err := databrickscfg.SaveToProfile(ctx, profileConfig, clearKeys...)
 			if err != nil {
+				return err
+			}
+
+			if err := setTokenProfileFingerprint(ctx, profile.DefaultProfiler, tokenStore, profileName); err != nil {
 				return err
 			}
 
@@ -742,7 +765,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		"cluster_id",
 		"serverless_compute_id",
 	)
-	err = databrickscfg.SaveToProfile(ctx, &config.Config{
+	profileConfig := &config.Config{
 		Profile:     in.profileName,
 		Host:        discoveredHost,
 		AuthType:    authTypeDatabricksCLI,
@@ -750,12 +773,18 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		WorkspaceID: workspaceID,
 		Scopes:      scopesList,
 		ConfigFile:  configFile,
-	}, clearKeys...)
+	}
+
+	err = databrickscfg.SaveToProfile(ctx, profileConfig, clearKeys...)
 	if err != nil {
 		if configFile != "" {
 			return fmt.Errorf("saving profile %q to %s: %w", in.profileName, configFile, err)
 		}
 		return fmt.Errorf("saving profile %q: %w", in.profileName, err)
+	}
+
+	if err := setTokenProfileFingerprint(ctx, profile.DefaultProfiler, in.tokenStore, in.profileName); err != nil {
+		return err
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", in.profileName))

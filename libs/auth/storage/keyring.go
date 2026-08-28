@@ -47,7 +47,8 @@ type keyringBackend interface {
 // checksum, store time, ...) without breaking older CLI versions that read
 // the same entry.
 type keyringEntry struct {
-	Token *oauth2.Token `json:"token"`
+	Token              *oauth2.Token `json:"token"`
+	ProfileFingerprint string        `json:"profile_fingerprint,omitempty"`
 }
 
 // zalandoBackend delegates to the process-wide zalando/go-keyring provider.

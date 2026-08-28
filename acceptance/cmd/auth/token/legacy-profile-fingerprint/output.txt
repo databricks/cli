@@ -1,0 +1,3 @@
+
+>>> musterr [CLI] auth token --profile test-profile
+Error: cache: cached credentials for profile "test-profile" predate profile change detection; run `databricks auth login --profile "test-profile"` to sign in again

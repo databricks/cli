@@ -264,13 +264,22 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	allArgs := append([]u2m.PersistentAuthOption{u2m.WithTokenCache(storage.OAuthTokenCache(ctx, args.tokenStore, args.mode))}, args.persistentAuthOpts...)
+
+	tokenStore := args.tokenStore
+	if existingProfile != nil {
+		if fingerprint := existingProfile.Fingerprint(); fingerprint != "" {
+			tokenStore = storage.NewProfileFingerprintStore(tokenStore, existingProfile.Name, fingerprint)
+		}
+	}
+
+	allArgs := append([]u2m.PersistentAuthOption{u2m.WithTokenCache(storage.OAuthTokenCache(ctx, tokenStore, args.mode))}, args.persistentAuthOpts...)
 	allArgs = append(allArgs, u2m.WithOAuthArgument(oauthArgument))
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, allArgs...)
 	if err != nil {
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
 		return nil, fmt.Errorf("%w. %s", err, helpMsg)
 	}
+
 	var t *oauth2.Token
 	if args.forceRefresh {
 		t, err = persistentAuth.ForceRefreshToken()
@@ -278,6 +287,11 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		t, err = persistentAuth.Token()
 	}
 	if err != nil {
+		// Fingerprint errors already include the exact login command needed to
+		// replace the stale grant, so the generic recovery suffix would duplicate it.
+		if errors.Is(err, storage.ErrProfileChanged) {
+			return nil, err
+		}
 		if errors.Is(err, cache.ErrNotFound) {
 			// The error returned by the SDK when the token cache doesn't exist or doesn't contain a token
 			// for the given host changed in SDK v0.77.0: https://github.com/databricks/databricks-sdk-go/pull/1250.
@@ -450,7 +464,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 	clearKeys := oauthLoginClearKeys()
 	clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
 
-	err = databrickscfg.SaveToProfile(ctx, &config.Config{
+	profileConfig := &config.Config{
 		Profile:     profileName,
 		Host:        loginArgs.Host,
 		AuthType:    authTypeDatabricksCLI,
@@ -458,8 +472,13 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		WorkspaceID: loginArgs.WorkspaceID,
 		ConfigFile:  env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 		Scopes:      scopesList,
-	}, clearKeys...)
+	}
+	err = databrickscfg.SaveToProfile(ctx, profileConfig, clearKeys...)
 	if err != nil {
+		return "", nil, err
+	}
+
+	if err := setTokenProfileFingerprint(ctx, profiler, tokenStore, profileName); err != nil {
 		return "", nil, err
 	}
 

@@ -19,6 +19,12 @@ type Profile struct {
 	HasClientCredentials bool
 	Scopes               string
 	AuthType             string
+	fingerprint          string
+}
+
+// Fingerprint returns the hash captured when the profile was loaded.
+func (p Profile) Fingerprint() string {
+	return p.fingerprint
 }
 
 func (p Profile) Cloud() string {

@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -13,10 +15,12 @@ import (
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -34,6 +38,105 @@ func (upgradeHintStore) Lookup(string) (storage.Entry, error) {
 	return storage.Entry{}, storage.NewNotFoundHint(
 		"stored credentials from older CLI versions are no longer used; run `databricks auth login` to sign in again, or set DATABRICKS_AUTH_STORAGE=plaintext to keep using the file cache",
 	)
+}
+
+type profileFingerprintTokenTest struct {
+	configPath  string
+	tokenStore  *inMemoryStore
+	args        loadTokenArgs
+	fingerprint string
+}
+
+func setupProfileFingerprintTokenTest(t *testing.T) profileFingerprintTokenTest {
+	t.Helper()
+
+	configPath := filepath.Join(t.TempDir(), ".databrickscfg")
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+	require.NoError(t, os.WriteFile(configPath, []byte(`[TEST]
+host = https://workspace.example.com
+auth_type = databricks-cli
+scopes = jobs
+`), 0o600))
+	fingerprint, err := profilehash.FromFile(configPath, "TEST")
+	require.NoError(t, err)
+
+	tokenStore := &inMemoryStore{
+		Tokens: map[string]*oauth2.Token{
+			"TEST": {
+				AccessToken:  "jobs-token",
+				RefreshToken: "jobs-refresh-token",
+				Expiry:       time.Now().Add(time.Hour),
+			},
+		},
+		Fingerprints: map[string]string{"TEST": fingerprint},
+	}
+	args := loadTokenArgs{
+		authArguments: &auth.AuthArguments{},
+		profileName:   "TEST",
+		tokenTimeout:  time.Minute,
+		profiler:      profile.FileProfilerImpl{},
+		tokenStore:    tokenStore,
+	}
+
+	return profileFingerprintTokenTest{
+		configPath:  configPath,
+		tokenStore:  tokenStore,
+		args:        args,
+		fingerprint: fingerprint,
+	}
+}
+
+// TestLoadTokenValidatesProfileFingerprint verifies that token loading accepts an
+// unchanged profile and rejects a changed profile before reuse or forced refresh.
+func TestLoadTokenValidatesProfileFingerprint(t *testing.T) {
+	tests := []struct {
+		name          string
+		changeProfile bool
+		forceRefresh  bool
+		wantErr       bool
+	}{
+		{
+			name: "matching fingerprint succeeds",
+		},
+		{
+			name:          "changed fingerprint rejects reuse",
+			changeProfile: true,
+			wantErr:       true,
+		},
+		{
+			name:          "changed fingerprint rejects force refresh",
+			changeProfile: true,
+			forceRefresh:  true,
+			wantErr:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			test := setupProfileFingerprintTokenTest(t)
+			test.args.forceRefresh = tt.forceRefresh
+
+			if tt.changeProfile {
+				require.NoError(t, os.WriteFile(test.configPath, []byte(`[TEST]
+host = https://workspace.example.com
+auth_type = databricks-cli
+scopes = all-apis,sql
+`), 0o600))
+			}
+
+			got, err := loadToken(cmdio.MockDiscard(t.Context()), test.args)
+			if !tt.wantErr {
+				require.NoError(t, err)
+				assert.Equal(t, "jobs-token", got.AccessToken)
+				return
+			}
+
+			assert.ErrorIs(t, err, storage.ErrProfileChanged)
+			assert.ErrorContains(t, err, `profile "TEST" has changed since the last login`)
+			assert.Equal(t, "jobs-refresh-token", test.tokenStore.Tokens["TEST"].RefreshToken)
+			assert.Equal(t, test.fingerprint, test.tokenStore.Fingerprints["TEST"])
+		})
+	}
 }
 
 var _ storage.Store = upgradeHintStore{}
