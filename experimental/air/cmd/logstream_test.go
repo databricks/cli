@@ -82,7 +82,7 @@ func TestProjectRunStatus(t *testing.T) {
 			StateMessage:   "done",
 		},
 		Tasks: []jobs.RunTask{
-			{AttemptNumber: 0},
+			{AttemptNumber: 0, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateQueued}},
 			{AttemptNumber: 2},
 			{AttemptNumber: 1},
 		},
@@ -92,6 +92,7 @@ func TestProjectRunStatus(t *testing.T) {
 	assert.Equal(t, "TERMINATED", s.lifeCycleState)
 	assert.Equal(t, "SUCCESS", s.resultState)
 	assert.Equal(t, "done", s.stateMessage)
+	assert.Equal(t, "QUEUED", s.firstTaskLifeCycleState)
 	assert.Equal(t, int64(1000), s.startTimeMs)
 	assert.Equal(t, int64(2000), s.endTimeMs)
 	assert.Equal(t, 2, s.latestAttempt)
@@ -228,7 +229,7 @@ func TestNormalizeStatusMessage(t *testing.T) {
 
 func TestWaitingSpinnerText(t *testing.T) {
 	// A server that returns the run (with a task) and a STATUS-typed status_message.
-	newStreamer := func(t *testing.T, statusMessage, lifeCycle string) *bricklensStreamer {
+	newStreamer := func(t *testing.T, statusMessage, lifeCycle, firstTaskLifeCycle string) *bricklensStreamer {
 		t.Helper()
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.Path {
@@ -245,21 +246,30 @@ func TestWaitingSpinnerText(t *testing.T) {
 			ctx:    t.Context(),
 			w:      newTestWorkspaceClient(t, srv.URL),
 			req:    logRequest{runID: 1, node: 0},
-			status: logRunStatus{lifeCycleState: lifeCycle},
+			status: logRunStatus{lifeCycleState: lifeCycle, firstTaskLifeCycleState: firstTaskLifeCycle},
 		}
 	}
 
 	// Server STATUS message wins.
 	assert.Equal(t, "Waiting for GPU capacity...",
-		newStreamer(t, "STATUS: Waiting for GPU capacity", "PENDING").waitingSpinnerText())
+		newStreamer(t, "STATUS: Waiting for GPU capacity", "PENDING", "").waitingSpinnerText())
 
 	// No status message + PENDING -> compute-capacity fallback.
 	assert.Equal(t, waitingForComputeStatus,
-		newStreamer(t, "", "PENDING").waitingSpinnerText())
+		newStreamer(t, "", "PENDING", "").waitingSpinnerText())
+
+	for _, state := range []string{"PENDING", "QUEUED", "WAITING_FOR_RETRY", "BLOCKED"} {
+		assert.Equal(t, waitingForComputeStatus,
+			newStreamer(t, "", "RUNNING", state).waitingSpinnerText(), state)
+	}
 
 	// No status message + non-PENDING -> default "waiting for run to start".
 	assert.Equal(t, "Waiting for run to start (node 0)...",
-		newStreamer(t, "", "RUNNING").waitingSpinnerText())
+		newStreamer(t, "", "RUNNING", "RUNNING").waitingSpinnerText())
+	assert.Equal(t, "Waiting for run to start (node 0)...",
+		newStreamer(t, "", "RUNNING", "").waitingSpinnerText())
+	assert.Equal(t, "Waiting for run to start (node 0)...",
+		newStreamer(t, "", "TERMINATED", "PENDING").waitingSpinnerText())
 }
 
 func TestEmitLogLineJSON(t *testing.T) {

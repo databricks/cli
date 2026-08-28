@@ -104,11 +104,12 @@ type logRequest struct {
 // logRunStatus is the subset of a run's state the log path needs, resolved once
 // and reused.
 type logRunStatus struct {
-	lifeCycleState string
-	resultState    string
-	stateMessage   string
-	startTimeMs    int64
-	endTimeMs      int64
+	lifeCycleState          string
+	firstTaskLifeCycleState string
+	resultState             string
+	stateMessage            string
+	startTimeMs             int64
+	endTimeMs               int64
 	// latestAttempt is the highest attempt_number across the run's tasks.
 	latestAttempt int
 }
@@ -126,6 +127,25 @@ func (s logRunStatus) terminal() bool {
 
 func (s logRunStatus) succeeded() bool {
 	return s.resultState == "SUCCESS"
+}
+
+func (s logRunStatus) waitingForCompute() bool {
+	if s.resultState != "" {
+		return false
+	}
+	if s.lifeCycleState == string(jobs.RunLifeCycleStatePending) {
+		return true
+	}
+	if s.lifeCycleState != string(jobs.RunLifeCycleStateRunning) {
+		return false
+	}
+	switch jobs.RunLifeCycleState(s.firstTaskLifeCycleState) {
+	case jobs.RunLifeCycleStatePending, jobs.RunLifeCycleStateQueued,
+		jobs.RunLifeCycleStateWaitingForRetry, jobs.RunLifeCycleStateBlocked:
+		return true
+	default:
+		return false
+	}
 }
 
 // downloadOutcome is the exit status for a one-shot fetch, which unlike streaming
@@ -156,6 +176,9 @@ func projectRunStatus(run *jobs.Run) logRunStatus {
 		s.lifeCycleState = string(run.State.LifeCycleState)
 		s.resultState = string(run.State.ResultState)
 		s.stateMessage = run.State.StateMessage
+	}
+	if len(run.Tasks) > 0 && run.Tasks[0].State != nil {
+		s.firstTaskLifeCycleState = string(run.Tasks[0].State.LifeCycleState)
 	}
 	for i := range run.Tasks {
 		s.latestAttempt = max(s.latestAttempt, run.Tasks[i].AttemptNumber)
@@ -260,7 +283,7 @@ func (st *bricklensStreamer) waitingSpinnerText() string {
 	if msg := st.serverStatusMessage(); msg != "" {
 		return msg
 	}
-	if st.status.lifeCycleState == "PENDING" {
+	if st.status.waitingForCompute() {
 		return waitingForComputeStatus
 	}
 	return fmt.Sprintf("Waiting for run to start (node %d)...", st.req.node)
