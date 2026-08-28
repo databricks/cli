@@ -6,7 +6,7 @@ title "Expecting 1 wheel in libraries section in /jobs/create"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt
 
 title "Expecting 1 wheel to be uploaded"
-trace jq .path out.requests.txt | grep import | sort
+trace jq -r '.body.multipart_form.path | strings' out.requests.txt | sort
 
 rm out.requests.txt
 
@@ -20,7 +20,7 @@ title "Expecting 1 wheel in libraries section in /jobs/reset"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks' out.requests.txt | gron.py | grep -w libraries
 
 title "Expecting 1 wheel to be uploaded"
-trace jq .path out.requests.txt | grep import | sort
+trace jq -r '.body.multipart_form.path | strings' out.requests.txt | sort
 
 rm out.requests.txt
 
@@ -34,6 +34,6 @@ title "Expecting 1 wheel in libraries section in /jobs/reset"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks' out.requests.txt | gron.py | grep -w libraries
 
 title "Expecting 1 wheel to be uploaded"
-trace jq .path out.requests.txt | grep import | sort
+trace jq -r '.body.multipart_form.path | strings' out.requests.txt | sort
 
 rm out.requests.txt

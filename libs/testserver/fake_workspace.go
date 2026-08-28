@@ -836,6 +836,35 @@ func (s *FakeWorkspace) hasChildren(dirPath string) bool {
 	return false
 }
 
+// detectNotebookLanguage mirrors the real /workspace/import format=AUTO logic:
+// a file whose extension is .py / .sql / .scala / .r and whose content starts
+// with the language-appropriate "Databricks notebook source" line-comment is
+// stored as a NOTEBOOK with the corresponding language; otherwise it's a FILE.
+//
+// The extension is lowercased because the real endpoint matches it
+// case-insensitively, and ".R" is the conventional spelling for R sources.
+func detectNotebookLanguage(extension string, body []byte) (workspace.Language, bool) {
+	switch strings.ToLower(extension) {
+	case ".py":
+		if bytes.HasPrefix(body, []byte("# Databricks notebook source")) {
+			return workspace.LanguagePython, true
+		}
+	case ".sql":
+		if bytes.HasPrefix(body, []byte("-- Databricks notebook source")) {
+			return workspace.LanguageSql, true
+		}
+	case ".scala":
+		if bytes.HasPrefix(body, []byte("// Databricks notebook source")) {
+			return workspace.LanguageScala, true
+		}
+	case ".r":
+		if bytes.HasPrefix(body, []byte("# Databricks notebook source")) {
+			return workspace.LanguageR, true
+		}
+	}
+	return "", false
+}
+
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
@@ -858,18 +887,19 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 		}
 	}
 
-	// Note: Files with .py, .scala, .r or .sql extension can
-	// be notebooks if they contain a magical "Databricks notebook source"
-	// header comment. We omit support non-python extensions for now for simplicity.
+	// Files with .py / .sql / .scala / .r extension can be notebooks if they
+	// carry the "Databricks notebook source" header comment in the language's
+	// line-comment syntax. Mirror the real workspace's auto-detection here so
+	// acceptance tests can assert the resulting object_type via /workspace/list.
 	extension := filepath.Ext(filePath)
-	if extension == ".py" && strings.HasPrefix(string(body), "# Databricks notebook source") {
+	if lang, isNotebook := detectNotebookLanguage(extension, body); isNotebook {
 		// Notebooks are stripped of their extension by the workspace import API.
 		workspacePath = strings.TrimSuffix(filePath, extension)
 		s.files[workspacePath] = FileEntry{
 			Info: workspace.ObjectInfo{
 				ObjectType: "NOTEBOOK",
 				Path:       workspacePath,
-				Language:   "PYTHON",
+				Language:   lang,
 				ObjectId:   nextID(),
 			},
 			Data: body,

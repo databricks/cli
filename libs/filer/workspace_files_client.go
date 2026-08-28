@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
-	"net/url"
 	"path"
 	"slices"
 	"strings"
@@ -135,6 +134,12 @@ func (w *WorkspaceFilesClient) workspaceIDHeaders() map[string]string {
 }
 
 func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
+	// Workspace.Upload/Download forward cfg.WorkspaceID behind a bare != "" check,
+	// so normalize the "none" sentinel to "" to keep the SDK from routing on it.
+	if w.Config.WorkspaceID == auth.WorkspaceIDNone {
+		w.Config.WorkspaceID = ""
+	}
+
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, err
@@ -154,35 +159,29 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	// Remove leading "/" so we can use it in the URL.
-	overwrite := slices.Contains(mode, OverwriteIfExists)
-	urlPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/import-file/%s?overwrite=%t",
-		url.PathEscape(strings.TrimLeft(absPath, "/")),
-		overwrite,
-	)
-
 	// Buffer the file contents because we may need to retry below and we cannot read twice.
 	body, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
 
-	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.workspaceIDHeaders(), nil, body, nil)
+	// Upload with the SDK's multipart Workspace.Upload; format=AUTO lets the server
+	// classify each payload as file or notebook. The JSON-body workspace.Import caps
+	// content at 10 MB, the multipart form at the 500 MB workspace file limit.
+	opts := []workspace.UploadOption{workspace.UploadFormat(workspace.ImportFormatAuto)}
+	if slices.Contains(mode, OverwriteIfExists) {
+		opts = append(opts, workspace.UploadOverwrite())
+	}
+
+	err = w.workspaceClient.Workspace.Upload(ctx, absPath, bytes.NewReader(body), opts...)
 
 	// Return early on success.
 	if err == nil {
 		return nil
 	}
 
-	// Special handling of this error only if it is an API error.
-	aerr, ok := errors.AsType[*apierr.APIError](err)
-	if !ok {
-		return err
-	}
-
-	// This API returns a 404 if the parent directory does not exist.
-	if aerr.StatusCode == http.StatusNotFound {
+	// Parent directory does not exist.
+	if errors.Is(err, apierr.ErrNotFound) {
 		if !slices.Contains(mode, CreateParentDirectories) {
 			return noSuchDirectoryError{path.Dir(absPath)}
 		}
@@ -190,8 +189,8 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		// Create parent directory.
 		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
 		if err != nil {
-			if mkdirErr, ok := errors.AsType[*apierr.APIError](err); ok && mkdirErr.StatusCode == http.StatusForbidden {
-				return permissionError{absPath, mkdirErr}
+			if errors.Is(err, apierr.ErrPermissionDenied) {
+				return permissionError{absPath, err}
 			}
 			return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
 		}
@@ -200,27 +199,44 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
-	// This API returns 409 if the file already exists, when the object type is file
-	if aerr.StatusCode == http.StatusConflict {
+	// Path already taken. ErrResourceConflict covers every 409 (including the
+	// bare 409 with only a message); ErrResourceAlreadyExists covers the 400
+	// RESOURCE_ALREADY_EXISTS, which no status maps to a conflict.
+	if errors.Is(err, apierr.ErrResourceConflict) || errors.Is(err, apierr.ErrResourceAlreadyExists) {
 		return fileAlreadyExistsError{absPath}
 	}
-
-	// This API returns 400 if the file already exists when the object type is notebook.
-	// Both the historical "Path (<path>) already exists." format and the newer
-	// "RESOURCE_ALREADY_EXISTS: <path> already exists. ..." format end with the same
-	// "already exists." marker; the JSON error_code is empty in both. The new format
-	// might not have been rolled out to all workspaces yet, so we anchor on the shared
-	// marker and return absPath rather than parsing the message.
-	if aerr.StatusCode == http.StatusBadRequest && strings.Contains(aerr.Message, "already exists.") {
-		return fileAlreadyExistsError{absPath}
+	// Overwrite rejected because the existing object's node type differs from
+	// the upload. The collision carries an AIP-193 ErrorInfo with a stable
+	// reason, so branch on it rather than the message text.
+	if errors.Is(err, apierr.ErrInvalidParameterValue) {
+		if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
+			if info := aerr.ErrorDetails().ErrorInfo; info != nil && info.Reason == "WORKSPACE_OBJECT_TYPE_MISMATCH" {
+				return fileAlreadyExistsError{absPath}
+			}
+		}
 	}
 
-	// This API returns StatusForbidden when you have read access but don't have write access to a file
-	if aerr.StatusCode == http.StatusForbidden {
-		return permissionError{absPath, aerr}
+	// A notebook that already exists returns 400 with an empty error_code, which
+	// unwraps to ErrBadRequest by status alone, so this runs after the
+	// ErrInvalidParameterValue branch. Anchor on the shared "already exists."
+	// marker rather than parsing the full message.
+	if errors.Is(err, apierr.ErrBadRequest) {
+		if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
+			if strings.Contains(aerr.Message, "already exists.") {
+				return fileAlreadyExistsError{absPath}
+			}
+		}
 	}
 
-	return err
+	// Caller has read access but no write access.
+	if errors.Is(err, apierr.ErrPermissionDenied) {
+		return permissionError{absPath, err}
+	}
+
+	// Any other failure (e.g. a server-side error with an empty message) is
+	// surfaced with the target path so the user can tell which upload failed;
+	// %w keeps the original error inspectable by callers.
+	return fmt.Errorf("failed to upload %s: %w", absPath, err)
 }
 
 func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {

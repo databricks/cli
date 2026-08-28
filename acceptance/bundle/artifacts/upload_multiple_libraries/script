@@ -11,7 +11,7 @@ title "Expecting 5 wheels in libraries section in /jobs/create"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt
 
 title "Expecting 4 wheels to be uploaded"
-trace jq .path < out.requests.txt | grep import | grep whl | sort
+trace jq -r '.body.multipart_form.path | strings' < out.requests.txt | grep whl | sort
 
 title "Expecting environment dependencies to be updated"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' out.requests.txt
