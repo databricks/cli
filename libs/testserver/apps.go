@@ -28,6 +28,16 @@ func setUcSecurableKinds(app *apps.App) {
 	}
 }
 
+// maskInputOnly clears the fields the Apps API accepts on write but never echoes
+// on read (source_code_path, git_source are input_only per the API spec; the read
+// side exposes default_source_code_path / default_git_source instead). The stored
+// app keeps the real values so deployments can resolve the configured source.
+func maskInputOnly(app apps.App) apps.App {
+	app.SourceCodePath = ""
+	app.GitSource = nil
+	return app
+}
+
 func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 	var updateReq apps.AsyncUpdateAppRequest
 	if err := json.Unmarshal(req.Body, &updateReq); err != nil {
@@ -128,6 +138,7 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 
 	app.ActiveDeployment = &deployment
 	app.DefaultSourceCodePath = deployment.SourceCodePath
+	app.DefaultGitSource = deployment.GitSource
 	s.Apps[name] = app
 
 	return Response{Body: deployment}
@@ -179,7 +190,7 @@ func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
 	}
 	s.Apps[name] = app
 
-	return Response{Body: app}
+	return Response{Body: maskInputOnly(app)}
 }
 
 func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
@@ -205,7 +216,7 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 	app.PendingDeployment = nil
 	s.Apps[name] = app
 
-	return Response{Body: app}
+	return Response{Body: maskInputOnly(app)}
 }
 
 // AppsGet returns the app, keeping DELETING resources visible so callers can
@@ -221,7 +232,7 @@ func (s *FakeWorkspace) AppsGet(name string) Response {
 		}
 	}
 
-	return Response{Body: app}
+	return Response{Body: maskInputOnly(app)}
 }
 
 // AppsDelete simulates the real Apps DELETE lifecycle: the first DELETE flips
@@ -320,9 +331,17 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 			Message: "App compute is active.",
 		}
 
-		// Simulate the apps platform side effect: when an app is created, it is deployed with the default source code path.
+		// Simulate the apps platform side effect: when an app with running compute
+		// is created, it is deployed from its configured source. source_code_path and
+		// git_source now arrive on the Create request; fall back to the default path
+		// for apps that configure neither.
+		sourceCodePath := app.SourceCodePath
+		if sourceCodePath == "" && app.GitSource == nil {
+			sourceCodePath = "/Workspace/Users/tester@databricks.com/" + name
+		}
 		deployment := apps.AppDeployment{
-			SourceCodePath: "/Workspace/Users/tester@databricks.com/" + name,
+			SourceCodePath: sourceCodePath,
+			GitSource:      app.GitSource,
 		}
 
 		deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
@@ -333,6 +352,7 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 
 		app.ActiveDeployment = &deployment
 		app.DefaultSourceCodePath = deployment.SourceCodePath
+		app.DefaultGitSource = app.GitSource
 	}
 
 	app.Url = name + "-123.cloud.databricksapps.com"
@@ -373,6 +393,6 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 
 	s.Apps[name] = app
 	return Response{
-		Body: app,
+		Body: maskInputOnly(app),
 	}
 }

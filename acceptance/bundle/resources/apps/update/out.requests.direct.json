@@ -6,7 +6,8 @@
   },
   "body": {
     "description": "my_app_description",
-    "name": "myappname"
+    "name": "myappname",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app"
   }
 }
 {
@@ -15,9 +16,10 @@
   "body": {
     "app": {
       "description": "MY_APP_DESCRIPTION",
-      "name": "myappname"
+      "name": "myappname",
+      "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app"
     },
-    "update_mask": "description,budget_policy_id,usage_policy_id,resources,user_api_scopes,forward_user_access_token,compute_size,compute_min_instances,compute_max_instances,git_repository,telemetry_export_destinations"
+    "update_mask": "description,budget_policy_id,usage_policy_id,resources,user_api_scopes,forward_user_access_token,compute_size,compute_min_instances,compute_max_instances,git_repository,git_source,source_code_path,telemetry_export_destinations"
   }
 }
 {
@@ -32,7 +34,8 @@
   },
   "body": {
     "description": "MY_APP_DESCRIPTION",
-    "name": "mynewappname"
+    "name": "mynewappname",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app"
   }
 }
 {

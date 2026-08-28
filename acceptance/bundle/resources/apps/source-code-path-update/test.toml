@@ -1,0 +1,7 @@
+Cloud = false
+
+Ignore = [".databricks"]
+
+# source_code_path is managed via Create/Update App, which only the direct engine
+# supports (the Terraform databricks_app resource cannot manage this input_only field).
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

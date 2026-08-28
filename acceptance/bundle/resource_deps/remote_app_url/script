@@ -3,7 +3,9 @@ trace $CLI bundle plan
 trace print_requests.py '^//import-file/'
 
 trace $CLI bundle deploy
-trace print_requests.py '^//import-file/'
+# The app create body diverges by engine (the direct engine sends source_code_path,
+# the Terraform provider cannot manage it), so record these requests per engine.
+trace print_requests.py '^//import-file/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py --sort '^//import-file/'

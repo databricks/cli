@@ -24,7 +24,8 @@ You can access the app at my-immutable-app-123.cloud.databricksapps.com
   },
   "body": {
     "description": "",
-    "name": "my-immutable-app"
+    "name": "my-immutable-app",
+    "source_code_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/app"
   }
 }
 {
