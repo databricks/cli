@@ -163,7 +163,7 @@ def test_add_resource_type(tc: TestCase, tpe: _ResourceType):
         resources,
         **{
             "resource_name": "my_resource",
-            tpe.singular_name: tc.dict_example,
+            tpe.singular_name: tc.dataclass_example,
         },
     )
 
