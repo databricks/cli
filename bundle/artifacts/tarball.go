@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -96,7 +97,7 @@ func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w
 		ref = a.Git.Branch
 	}
 	if ref == "" {
-		return fmt.Errorf("git artifact: specify git.commit or git.branch")
+		return errors.New("git artifact: specify git.commit or git.branch")
 	}
 	args := []string{"-C", b.SyncRootPath, "archive", "--format=tar.gz", ref}
 	if len(a.Include) > 0 {
