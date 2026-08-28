@@ -3,7 +3,5 @@ command: python train.py
 compute:
   accelerator_type: GPU_1xH100
   num_accelerators: 1
-  provisioned_capacity_id: capacity-123
 environment:
   dependencies: ./reqs.yaml
-mlflow_artifact_location: /Volumes/main/default/air-artifacts

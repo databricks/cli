@@ -86,7 +86,7 @@ config.compute.provisioned_capacity_id
 
 >>> [CLI] experimental air run -h config.environment.dependencies
 config.environment.dependencies
-  Inline package list or path to a requirements YAML file. Not allowed alongside docker_image.
+  Inline list of packages to install. Not allowed alongside docker_image.
 
   Type:     list of strings
   Required: no

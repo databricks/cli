@@ -329,8 +329,8 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 // bundleEnvironmentDeps resolves the runtime version and the inline dependency
 // list to emit in the bundle's environments[] spec. The aicode mutator synthesizes
 // requirements.yaml from that spec at deploy, so the whole set must be here.
-// File-backed dependencies are resolved during config load, so an unset list
-// yields no dependencies here.
+// Dependencies are inline-only (a requirements-file path is rejected at config
+// load), so an unset list yields no dependencies.
 func bundleEnvironmentDeps(ctx context.Context, cfg *runConfig) (version string, deps []string) {
 	cfgVersion, _ := cfg.runtimeVersion()
 	version = dlRuntimeImage(ctx, cfgVersion)

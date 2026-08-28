@@ -24,7 +24,6 @@ const (
 	hyperparametersName = "hyperparameters.yaml"
 	envVarsName         = "env_vars.json"
 	secretEnvVarsName   = "secret_env_vars.json"
-	requirementsName    = "requirements.yaml"
 )
 
 // maxConfigYAMLBytes caps training_config.yaml. It is referenced by the Jobs
@@ -73,14 +72,6 @@ func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 			return nil, fmt.Errorf("failed to serialize parameters: %w", err)
 		}
 		items = append(items, uploadItem{hyperparametersName, data})
-	}
-
-	if requirementsPath := cfg.requirementsPath(); requirementsPath != "" {
-		data, err := os.ReadFile(requirementsPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read requirements YAML %s: %w", requirementsPath, err)
-		}
-		items = append(items, uploadItem{requirementsName, data})
 	}
 
 	// The ai_runtime_task proto carries no inline env vars or secrets; stage them

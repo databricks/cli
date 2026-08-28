@@ -95,65 +95,8 @@ permissions:
 }
 
 // TestLoadRunConfig_PolymorphicFields exercises the str|int and bool|str unions
-// decoded by custom UnmarshalYAML, including file-backed dependencies.
+// decoded by custom UnmarshalYAML.
 func TestLoadRunConfig_PolymorphicFields(t *testing.T) {
-	t.Run("dependencies as string path is resolved", func(t *testing.T) {
-		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, "requirements.yaml"), []byte("version: 5\ndependencies:\n  - torch\n"), 0o600))
-		configPath := filepath.Join(dir, "run.yaml")
-		require.NoError(t, os.WriteFile(configPath, []byte(minimalConfig+`
-environment:
-  dependencies: requirements.yaml
-`), 0o600))
-		cfg, err := loadRunConfig(configPath)
-		require.NoError(t, err)
-		assert.Equal(t, filepath.Join(dir, "requirements.yaml"), cfg.requirementsPath())
-		assert.Equal(t, []string{"torch"}, cfg.Environment.Dependencies.list)
-		version, ok := cfg.runtimeVersion()
-		assert.True(t, ok)
-		assert.Equal(t, "5", version)
-	})
-
-	t.Run("requirements defaults version and normalizes prefix", func(t *testing.T) {
-		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, "requirements.yaml"), []byte("version: DATABRICKS_AI_V5\ndependencies:\n  - torch\n"), 0o600))
-		configPath := filepath.Join(dir, "run.yaml")
-		require.NoError(t, os.WriteFile(configPath, []byte(minimalConfig+"environment:\n  dependencies: requirements.yaml\n"), 0o600))
-		cfg, err := loadRunConfig(configPath)
-		require.NoError(t, err)
-		version, ok := cfg.runtimeVersion()
-		assert.True(t, ok)
-		assert.Equal(t, "databricks_ai_v5", version)
-	})
-
-	t.Run("requirements permits worker-side fields", func(t *testing.T) {
-		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, "requirements.yaml"), []byte("version: 5\ndependencies:\n  - torch\npip_options:\n  index_url: https://packages.example/simple\n"), 0o600))
-		configPath := filepath.Join(dir, "run.yaml")
-		require.NoError(t, os.WriteFile(configPath, []byte(minimalConfig+"environment:\n  dependencies: requirements.yaml\n"), 0o600))
-		cfg, err := loadRunConfig(configPath)
-		require.NoError(t, err)
-		assert.Equal(t, []string{"torch"}, cfg.Environment.Dependencies.list)
-	})
-
-	t.Run("requirements rejects old databricks ai version", func(t *testing.T) {
-		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, "requirements.yaml"), []byte("version: databricks_ai_v4\n"), 0o600))
-		configPath := filepath.Join(dir, "run.yaml")
-		require.NoError(t, os.WriteFile(configPath, []byte(minimalConfig+"environment:\n  dependencies: requirements.yaml\n"), 0o600))
-		_, err := loadRunConfig(configPath)
-		require.ErrorContains(t, err, "requires AI Runtime version 5 or higher")
-	})
-
-	t.Run("requirements rejects includes", func(t *testing.T) {
-		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, "requirements.yaml"), []byte("dependencies:\n  - -r other.txt\n"), 0o600))
-		configPath := filepath.Join(dir, "run.yaml")
-		require.NoError(t, os.WriteFile(configPath, []byte(minimalConfig+"environment:\n  dependencies: requirements.yaml\n"), 0o600))
-		_, err := loadRunConfig(configPath)
-		require.ErrorContains(t, err, "unsupported -r/--requirement include")
-	})
-
 	t.Run("git remote as bool true is rejected", func(t *testing.T) {
 		_, err := loadRunConfig(writeConfig(t, minimalConfig+`
 code_source:

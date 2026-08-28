@@ -244,7 +244,7 @@ func validateSecretRefs(secrets map[string]string) error {
 // environmentConfig is the `environment` block: dependencies and/or a custom
 // docker image.
 type environmentConfig struct {
-	Dependencies dependencies       `yaml:"dependencies" help:"Inline package list or path to a requirements YAML file. Not allowed alongside docker_image."`
+	Dependencies dependencies       `yaml:"dependencies" help:"Inline list of packages to install. Not allowed alongside docker_image."`
 	Version      stringOrInt        `yaml:"version" help:"Client image version to pin. Only valid alongside inline dependencies."`
 	DockerImage  *dockerImageConfig `yaml:"docker_image" help:"Custom image supplying the whole runtime. Not allowed alongside dependencies or version."`
 }
@@ -282,32 +282,20 @@ func (e *environmentConfig) validate() error {
 	return nil
 }
 
-// dependencies is environment.dependencies: either an inline list of packages or
-// a path to a requirements YAML file resolved relative to the run config.
+// dependencies is environment.dependencies: an inline list of packages. A scalar
+// (e.g. a path to a requirements file) is rejected — the list may itself reference
+// a requirements.txt, but dependencies must be given as a list.
 type dependencies struct {
-	set          bool
-	list         []string
-	path         string
-	resolvedPath string
-	version      string
+	set  bool
+	list []string
 }
 
 func (d *dependencies) UnmarshalYAML(node *yaml.Node) error {
-	d.set = true
-	switch node.Kind {
-	case yaml.SequenceNode:
-		return node.Decode(&d.list)
-	case yaml.ScalarNode:
-		if err := node.Decode(&d.path); err != nil {
-			return err
-		}
-		if strings.TrimSpace(d.path) == "" {
-			return errors.New("environment.dependencies requirements YAML path cannot be empty")
-		}
-		return nil
-	default:
-		return errors.New("environment.dependencies must be a list of packages or a requirements YAML path")
+	if node.Kind != yaml.SequenceNode {
+		return errors.New("environment.dependencies must be a list of packages or reference a requirements.txt (see https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference). A direct file reference is not supported")
 	}
+	d.set = true
+	return node.Decode(&d.list)
 }
 
 // stringOrInt holds a scalar that may be a string or an integer in YAML

@@ -50,21 +50,11 @@ func (c *runConfig) inlineDependencies() ([]string, bool) {
 	return c.Environment.Dependencies.list, true
 }
 
-func (c *runConfig) requirementsPath() string {
-	if c.Environment == nil {
-		return ""
-	}
-	return c.Environment.Dependencies.resolvedPath
-}
-
 // runtimeVersion returns the client image version from environment.version when
 // set.
 func (c *runConfig) runtimeVersion() (string, bool) {
 	if c.Environment == nil {
 		return "", false
-	}
-	if c.Environment.Dependencies.version != "" {
-		return c.Environment.Dependencies.version, true
 	}
 	if !c.Environment.Version.set {
 		return "", false
