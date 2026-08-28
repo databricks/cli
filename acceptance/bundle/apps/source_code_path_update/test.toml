@@ -1,11 +1,21 @@
 Cloud = true
+CloudSlow = true
 RecordRequests = false
 
 # This regression is in the direct engine only (the bug is in InitForApply
-# which is only called for saved-plan deploys on the direct engine).
+# which is only called for bundle deploy --plan on the direct engine).
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-Ignore = [".databricks", "databricks.yml", "databricks.yml.bak", "plan.json"]
+Ignore = [".databricks", "databricks.yml", "databricks.yml.bak", "plan.json", "LOG.*"]
 
-# Apps can take longer to deploy on cloud.
-TimeoutCloud = "5m"
+# Apps can take longer to start up and deploy on cloud.
+TimeoutCloud = "10m"
+
+# logProgress ("✓ <message>") emits deployment progress lines whose count and
+# content vary between the local test server (single "Deployment succeeded") and
+# a real workspace (multiple intermediate states: "Shutting down app...",
+# "App started successfully", etc.). Remove all of them from the output so that
+# the golden is stable across both environments.
+[[Repls]]
+Old = '✓ [^\n]+\n'
+New = ''
