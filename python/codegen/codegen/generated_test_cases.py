@@ -75,10 +75,18 @@ _Value = Union[_Scalar, _Enum, _Object, _List, _Map]
 
 
 def _ref_name(ref: str) -> str:
+    """Last path segment of a JSON-schema ref -- the schema name.
+
+    :param ref: a JSON-schema reference, e.g. "#/$defs/.../jobs.Task" or "#/$defs/string".
+    """
     return ref.split("/")[-1]
 
 
 def _is_composite(ref: str) -> bool:
+    """Whether a ref is a composite type (list, map, object, or enum) rather than a scalar.
+
+    :param ref: the JSON-schema reference of a field's type.
+    """
     if ref.startswith(("#/$defs/slice/", "#/$defs/map/")):
         return True
 
@@ -86,6 +94,11 @@ def _is_composite(ref: str) -> bool:
 
 
 def _synth_scalar(name: str, hint: str) -> _Scalar:
+    """Placeholder value for a primitive (str -> hint, int -> 0, float -> 0.0, bool -> True).
+
+    :param name: the primitive's schema name, e.g. "string", "int", "boolean".
+    :param hint: enclosing field name, used as the string placeholder so examples read meaningfully.
+    """
     if name == "string":
         return _Scalar(f'"{hint}"', f'"{hint}"')
     if name in ("integer", "int", "int64"):
@@ -105,6 +118,14 @@ def _synth_ref(
     schemas: dict[str, openapi.Schema],
     visiting: set[str],
 ) -> _Value:
+    """Synthesize a value node for whatever type a ref points at: list, map, scalar, enum, or nested object.
+
+    :param namespace: the resource's namespace (e.g. "jobs"); selects the module a referenced type is generated into.
+    :param ref: the JSON-schema reference of the type to synthesize.
+    :param hint: enclosing field name, passed through as the string placeholder.
+    :param schemas: all post-patch schemas keyed by schema name, for looking up nested/enum types.
+    :param visiting: ancestor object names on the current path, used to detect required cycles.
+    """
     if ref.startswith("#/$defs/slice/"):
         element_ref = ref.replace("#/$defs/slice/", "#/$defs/")
 
@@ -147,6 +168,15 @@ def _synth_object(
     visiting: set[str],
     top_level: bool,
 ) -> _Object:
+    """Synthesize an object value, choosing fields by policy: all required fields, plus (only at the resource top level) stable optional composite fields.
+
+    :param namespace: the resource's namespace, threaded through to resolve nested types' modules.
+    :param schema_name: this object's schema name (e.g. "resources.Alert").
+    :param schema: the Schema for this object -- its properties and required list.
+    :param schemas: all post-patch schemas, for recursing into nested types.
+    :param visiting: ancestor object names on the current path (cycle guard).
+    :param top_level: True only for the resource itself; when False, all optional fields are dropped.
+    """
     visiting = visiting | {schema_name}
     fields: list[tuple[str, _Value]] = []
 
@@ -172,6 +202,11 @@ def _synth_object(
 
 
 def _module_of(namespace: str, schema_name: str) -> str:
+    """Python module a (non-primitive) schema's generated class lives in; asserts it exists.
+
+    :param namespace: the resource's namespace; the type is generated under databricks.bundles.<namespace>._models.
+    :param schema_name: the object/enum schema name to resolve.
+    """
     module = packages.get_package(namespace, schema_name)
     assert module
 
@@ -179,6 +214,10 @@ def _module_of(namespace: str, schema_name: str) -> str:
 
 
 def _render_dict(value: _Value) -> str:
+    """Render a synthesized value as a dict-literal source string (the dict_example form).
+
+    :param value: the synthesized value node to render.
+    """
     if isinstance(value, _Scalar):
         return value.dict_src
     if isinstance(value, _Enum):
@@ -196,6 +235,10 @@ def _render_dict(value: _Value) -> str:
 
 
 def _render_dataclass(value: _Value) -> str:
+    """Render a synthesized value as a constructor-expression source string (the dataclass_example form).
+
+    :param value: the synthesized value node to render.
+    """
     if isinstance(value, _Scalar):
         return value.dataclass_src
     if isinstance(value, _Enum):
@@ -213,6 +256,11 @@ def _render_dataclass(value: _Value) -> str:
 
 
 def _collect_imports(value: _Value, out: set[tuple[str, str]]) -> None:
+    """Collect (module, class_name) pairs the dataclass_example needs, walking nested objects/enums.
+
+    :param value: the synthesized value node to walk.
+    :param out: set accumulating the (module, class_name) import pairs; mutated in place.
+    """
     if isinstance(value, _Enum):
         out.add((value.module, value.class_name))
     elif isinstance(value, _Object):
@@ -226,6 +274,11 @@ def _collect_imports(value: _Value, out: set[tuple[str, str]]) -> None:
 
 
 def write_test_cases(output: str, schemas: dict[str, openapi.Schema]):
+    """Write one _generated/<resource_plural>.py per wired resource plus the collector __init__.py.
+
+    :param output: codegen output root (the python/ directory); files land under databricks_tests/core/_generated.
+    :param schemas: all post-patch schemas, used to synthesize each resource's dict/dataclass examples.
+    """
     resources = _wired_resources()
 
     generated_path = Path(output) / "databricks_tests" / "core" / "_generated"
@@ -263,6 +316,10 @@ def write_test_cases(output: str, schemas: dict[str, openapi.Schema]):
 
 
 def _collector_code(resources: list[_WiredResource]) -> str:
+    """Source for _generated/__init__.py: imports the per-resource modules and assembles `test_cases`.
+
+    :param resources: the wired resources, in the order their test cases are collected.
+    """
     module_imports = "\n".join(f"    {r.plural_name}," for r in resources)
     entries = "\n".join(f"    {r.plural_name}._test_case()," for r in resources)
 
