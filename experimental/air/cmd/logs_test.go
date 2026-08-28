@@ -223,8 +223,8 @@ func TestLogsCommandPrintsGuidanceWhenStreamingIsInterrupted(t *testing.T) {
 	err := cmd.RunE(cmd, []string{"5"})
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Contains(t, buf.String(), "Streaming logs interrupted.")
-	assert.Contains(t, buf.String(), `Use "databricks experimental air get 5 -p 'team profile'" to check status.`)
-	assert.Contains(t, buf.String(), `Use "databricks experimental air logs 5 -p 'team profile'" to resume streaming logs.`)
+	assert.Contains(t, buf.String(), "To check status:\ndatabricks experimental air get 5 -p 'team profile'")
+	assert.Contains(t, buf.String(), "To resume streaming logs:\ndatabricks experimental air logs 5 -p 'team profile'")
 }
 
 // activeRunPastRetryServer serves a still-RUNNING run with two attempts and a

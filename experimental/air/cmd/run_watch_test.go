@@ -168,8 +168,8 @@ func TestHandleWatchResultPrintsProfileAwareResumeCommand(t *testing.T) {
 
 	out := buf.String()
 	assert.Contains(t, out, "Streaming logs interrupted.")
-	assert.Contains(t, out, `Use "databricks experimental air get 777 -p 'team profile'" to check status.`)
-	assert.Contains(t, out, `Use "databricks experimental air logs 777 -p 'team profile'" to resume streaming logs.`)
+	assert.Contains(t, out, "To check status:\ndatabricks experimental air get 777 -p 'team profile'")
+	assert.Contains(t, out, "To resume streaming logs:\ndatabricks experimental air logs 777 -p 'team profile'")
 	assert.NotContains(t, out, "The workload was not canceled")
 }
 

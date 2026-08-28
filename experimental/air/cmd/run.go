@@ -213,8 +213,12 @@ func handleWatchResult(out io.Writer, profile, runID string, err error) error {
 
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "Streaming logs interrupted.")
-	fmt.Fprintf(out, "Use %q to check status.\n", airGetCommand(profile, runID))
-	fmt.Fprintf(out, "Use %q to resume streaming logs.\n", airLogsCommand(profile, runID))
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "To check status:")
+	fmt.Fprintln(out, airGetCommand(profile, runID))
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "To resume streaming logs:")
+	fmt.Fprintln(out, airLogsCommand(profile, runID))
 	return root.ErrAlreadyPrinted
 }
 

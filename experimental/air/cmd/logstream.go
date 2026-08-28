@@ -58,6 +58,9 @@ func normalizeStatusMessage(raw string) string {
 	if payload == "" {
 		return ""
 	}
+	if strings.EqualFold(payload, "Waiting for GPU compute capacity to become available") {
+		return waitingForComputeStatus
+	}
 	return payload + "..."
 }
 

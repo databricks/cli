@@ -214,6 +214,7 @@ func TestNormalizeStatusMessage(t *testing.T) {
 	}{
 		{"STATUS: Waiting for GPU capacity.", "Waiting for GPU capacity..."},
 		{"STATUS:Waiting for GPU capacity", "Waiting for GPU capacity..."},
+		{"STATUS: Waiting for GPU compute capacity to become available", waitingForComputeStatus},
 		{"status: provisioning", "provisioning..."}, // type match is case-insensitive
 		{"STATUS: done...", "done..."},              // trailing dots collapse to one "..."
 		{"INFO: not a status", ""},                  // other type ignored
