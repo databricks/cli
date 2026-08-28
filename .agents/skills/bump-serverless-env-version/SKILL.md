@@ -57,9 +57,11 @@ what to change. Bumping the macro alone silently misses the literals:
 grep -rn 'environment_version\|environment-version' libs/template/templates/
 ```
 
-Bring **every** hit to the target version, then re-run the grep and confirm each
-one shows the new value. The hits fall into two kinds (paths below are what they
-match today, for orientation — trust the grep if they've moved):
+Inspect every hit and update each one that pins a version — the value in a macro
+`define` or a hardcoded literal (many hits are the macro *name* or a `{{template
+...}}` reference and carry no version to change). Then re-run the grep and confirm
+every version-bearing hit shows the new value. The hits fall into two kinds (paths
+below are what they match today, for orientation — trust the grep if they've moved):
 - **Macro** (`serverless_environment_version`): defined in
   `default/library/versions.tmpl` and `dbt-sql/library/versions.tmpl` and
   referenced by those templates' job/notebook files. Editing the two `define`s
@@ -91,8 +93,8 @@ Template output is rendered into two acceptance trees, and a bump changes both:
 `pipelines`, so use the full update + verify pass instead:
 
 ```bash
-GOTOOLCHAIN=local go test ./acceptance -run '^TestAccept$' -update -timeout=60m
-GOTOOLCHAIN=local go test ./acceptance -run '^TestAccept$' -timeout=60m   # MUST pass on its own
+go test ./acceptance -run '^TestAccept$' -update -timeout=60m
+go test ./acceptance -run '^TestAccept$' -timeout=60m       # MUST pass on its own
 ```
 
 The verify (non-update) pass is not optional. Bundle tests run under an
@@ -107,29 +109,29 @@ Add a `bundles` fragment at `.nextchanges/bundles/serverless-environment-version
 modeled on the prior bump:
 
 ```
-Bundle templates now use serverless [environment version {N}](https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/{word}), which offers better performance, and `databricks-connect` {X.Y}.
+Bundle templates now use serverless [environment version {N}](https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/{N-spelled-out}), which offers better performance, and `databricks-connect` {X.Y}.
 ```
 
-See the `pr-checklist` skill's "Changelog entry" section for conventions.
+The release-notes URL ends in the version spelled out (`.../environment-version/five`
+for 5, `six` for 6), matching the v5 fragment. See the `pr-checklist` skill's
+"Changelog entry" section for conventions.
 
 **6. Commit, push, PR.**
-Run `./task fmt` and `./task lint-q` (if either touches `acceptance/`, a fixture
-is wrong — fix the source, not the output). Commit and push; if the push 403s,
-the active gh account lacks write access to `databricks/cli` (`gh auth switch`).
-Then follow the `pr-checklist` skill for the commit body and PR description.
+Run the pre-PR checks from the `pr-checklist` skill — `./task fmt`, `./task checks`,
+`./task lint`, `./task test` (the diff-only `-q` wrappers are not what CI runs). If
+any check touches `acceptance/`, a fixture is wrong — fix the source, not the
+output. Commit and push; if the push 403s, the active gh account lacks write access
+to `databricks/cli` (`gh auth switch`).
+
+For the commit body and PR description, follow the `pr-checklist` skill and the PR
+template exactly — fill all of `## Changes`, `## Why`, `## Tests` (in that order)
+plus the agent-authorship disclosure line; do not drop a section. The bump-specific
+content for those sections:
+- **Changes**: `Bump the default serverless environment version in bundle templates
+  from {old} to {N}.`, then one bullet per coupled pin you moved — Python to
+  `{python_spec}`; DB Connect to `{db_connect_spec}` only if changed, stating why
+  per the DBR-support rule; and `defaultServerlessVersion` if you bumped it.
+- **Tests**: acceptance goldens regenerated across `bundle/templates` and
+  `pipelines`, re-verified with the non-update pass.
+
 **Do not run `gh pr create` without the user's explicit permission.**
-
-Commit body and PR description:
-
-```
-## Changes
-
-Bump the default serverless environment version in bundle templates from {old} to {N}.
-
-- Python pinned to {python_spec} to match environment version {N}
-- DB Connect pinned to {db_connect_spec} <only if changed; state why per the DBR-support rule>
-
-## Tests
-
-Acceptance goldens regenerated across bundle/templates and pipelines.
-```
