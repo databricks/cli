@@ -1,0 +1,149 @@
+
+=== Initial summary before deploy
+>>> [CLI] bundle summary -o json
+{
+  "comment": "COMMENT1",
+  "config": {
+    "custom": {
+      "direct": {
+        "api_key": {
+          "plaintext": "dummy-api-key"
+        },
+        "base_url": "https://api.example.com/v1"
+      }
+    },
+    "provider_type": "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM",
+    "targets": [
+      {
+        "model": "gpt-4o",
+        "native_api_types": [
+          "openai/v1/chat/completions"
+        ]
+      }
+    ]
+  },
+  "model_provider_service_id": "myservice",
+  "modified_status": "created",
+  "parent": "schemas/main.myschema"
+}
+
+=== Verify it does not exist yet
+>>> musterr [CLI] ai-gateway get-model-provider-service model-provider-services/main.myschema.myservice
+Error: Resource catalog.ModelProviderService not found: main.myschema.myservice
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created model_provider_services.mps1
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //unity
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/model-provider-services",
+  "q": {
+    "model_provider_service_id": "myservice",
+    "parent": "schemas/main.myschema"
+  },
+  "body": {
+    "comment": "COMMENT1",
+    "config": {
+      "custom": {
+        "direct": {
+          "api_key": {
+            "plaintext": "dummy-api-key"
+          },
+          "base_url": "https://api.example.com/v1"
+        }
+      },
+      "provider_type": "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM",
+      "targets": [
+        {
+          "model": "gpt-4o",
+          "native_api_types": [
+            "openai/v1/chat/completions"
+          ]
+        }
+      ]
+    }
+  }
+}
+
+=== Summary should show the id (url is not wired for these resources)
+>>> [CLI] bundle summary -o json
+{
+  "id": "main.myschema.myservice",
+  "url": null
+}
+
+=== Verify deployment
+>>> [CLI] ai-gateway get-model-provider-service model-provider-services/main.myschema.myservice
+{
+  "name": "model-provider-services/main.myschema.myservice",
+  "comment": "COMMENT1"
+}
+
+=== Update comment (should update in place, not recreate)
+>>> update_file.py databricks.yml COMMENT1 COMMENT2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated model_provider_services.mps1
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //unity
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/model-provider-services/main.myschema.myservice",
+  "q": {
+    "update_mask": "comment,config"
+  },
+  "body": {
+    "comment": "COMMENT2",
+    "config": {
+      "custom": {
+        "direct": {
+          "api_key": {
+            "plaintext": "dummy-api-key"
+          },
+          "base_url": "https://api.example.com/v1"
+        }
+      },
+      "provider_type": "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM",
+      "targets": [
+        {
+          "model": "gpt-4o",
+          "native_api_types": [
+            "openai/v1/chat/completions"
+          ]
+        }
+      ]
+    }
+  }
+}
+
+>>> [CLI] ai-gateway get-model-provider-service model-provider-services/main.myschema.myservice
+"COMMENT2"
+
+=== Change an immutable field (should plan a recreate)
+>>> update_file.py databricks.yml EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC
+
+>>> [CLI] bundle plan
+recreate model_provider_services.mps1
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.model_provider_services.mps1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py //unity
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/model-provider-services/main.myschema.myservice"
+}

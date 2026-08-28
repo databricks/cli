@@ -1,0 +1,9 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  mcp_services:
+    foo:
+      parent: schemas/main.default
+      mcp_service_id: test-mcp-service-$UNIQUE_NAME
+      comment: test mcp service

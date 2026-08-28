@@ -76,6 +76,9 @@ EnvMatrix.INPUT_CONFIG = [
     "volume_external.yml.tmpl",
     "volume_path_job_ref.yml.tmpl",
     "volume_uppercase_name.yml.tmpl",
+    "model_service.yml.tmpl",
+    "mcp_service.yml.tmpl",
+    "model_provider_service.yml.tmpl",
 ]
 
 EnvMatrixExclude.no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
@@ -106,6 +109,12 @@ EnvMatrixExclude.no_external_location_on_cloud = ["CONFIG_Cloud=true", "INPUT_CO
 EnvMatrixExclude.no_external_volume_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=volume_external.yml.tmpl"]
 # Telemetry requires a real model, which cloud invariant tests do not provision.
 EnvMatrixExclude.no_model_serving_endpoint_telemetry_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=model_serving_endpoint_telemetry.yml.tmpl"]
+# AI Gateway securables (direct-only) need a real routing target / provider config /
+# UC connection to create on cloud, which the invariant tests don't provision; the
+# local mock server accepts them, so these run locally only.
+EnvMatrixExclude.no_model_service_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=model_service.yml.tmpl"]
+EnvMatrixExclude.no_mcp_service_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=mcp_service.yml.tmpl"]
+EnvMatrixExclude.no_model_provider_service_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=model_provider_service.yml.tmpl"]
 # Fake SQL endpoint for local tests
 
 [[Server]]

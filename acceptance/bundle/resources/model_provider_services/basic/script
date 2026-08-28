@@ -1,0 +1,29 @@
+title "Initial summary before deploy"
+trace $CLI bundle summary -o json | jq .resources.model_provider_services.mps1
+
+title "Verify it does not exist yet"
+trace musterr $CLI ai-gateway get-model-provider-service model-provider-services/main.myschema.myservice
+
+trace $CLI bundle deploy
+trace print_requests.py //unity
+
+title "Summary should show the id (url is not wired for these resources)"
+trace $CLI bundle summary -o json | jq ".resources.model_provider_services.mps1 | {id, url}"
+
+title "Verify deployment"
+trace $CLI ai-gateway get-model-provider-service model-provider-services/main.myschema.myservice | jq '{name, comment}'
+
+title "Update comment (should update in place, not recreate)"
+trace update_file.py databricks.yml COMMENT1 COMMENT2
+trace $CLI bundle deploy
+trace print_requests.py //unity
+trace $CLI ai-gateway get-model-provider-service model-provider-services/main.myschema.myservice | jq .comment
+
+title "Change an immutable field (should plan a recreate)"
+trace update_file.py databricks.yml EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //unity
+
+rm -f out.requests.txt
