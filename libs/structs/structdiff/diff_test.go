@@ -3,7 +3,11 @@ package structdiff
 import (
 	"reflect"
 	"testing"
+	"time"
 
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,6 +46,15 @@ type E struct {
 	Name      string `json:"name,omitempty"`
 }
 
+// O holds opaque struct fields: Duration and Timestamp keep their payload in an
+// unexported protobuf pointer, while Empty is a proto message that really is
+// empty.
+type O struct {
+	Duration  *duration.Duration         `json:"duration,omitempty"`
+	Timestamp *sdktime.Time              `json:"timestamp,omitempty"`
+	Empty     *jobs.ScheduleTriggerState `json:"empty,omitempty"`
+}
+
 // ResolvedChange represents a change with the field path as a string (like the old Change struct)
 type ResolvedChange struct {
 	Field string
@@ -68,6 +81,11 @@ func resolveChanges(changes []Change) []ResolvedChange {
 func TestGetStructDiff(t *testing.T) {
 	b1 := &B{S: "one"}
 	b2 := &B{S: "two"}
+
+	dur300 := duration.New(300 * time.Second)
+	dur600 := duration.New(600 * time.Second)
+	ts1 := sdktime.New(time.Unix(1000, 0))
+	ts2 := sdktime.New(time.Unix(2000, 0))
 
 	// An *invalid* reflect.Value (IsValid() == false)
 	var invalidRV reflect.Value
@@ -393,6 +411,30 @@ func TestGetStructDiff(t *testing.T) {
 			a:    E{Embedded: &Embedded{EmbeddedInt: 42}, Name: "test"},
 			b:    E{Name: "test"},
 			want: []ResolvedChange{{Field: "", Old: &Embedded{EmbeddedInt: 42}, New: (*Embedded)(nil)}},
+		},
+		{
+			name: "opaque duration changed",
+			a:    O{Duration: dur300},
+			b:    O{Duration: dur600},
+			want: []ResolvedChange{{Field: "duration", Old: *dur300, New: *dur600}},
+		},
+		{
+			name: "opaque duration unset to set",
+			a:    O{},
+			b:    O{Duration: dur600},
+			want: []ResolvedChange{{Field: "duration", Old: nil, New: *dur600}},
+		},
+		{
+			name: "opaque timestamp changed",
+			a:    O{Timestamp: ts1},
+			b:    O{Timestamp: ts2},
+			want: []ResolvedChange{{Field: "timestamp", Old: *ts1, New: *ts2}},
+		},
+		{
+			name: "empty proto message is not opaque",
+			a:    O{Empty: &jobs.ScheduleTriggerState{}},
+			b:    O{Empty: &jobs.ScheduleTriggerState{}},
+			want: nil,
 		},
 	}
 

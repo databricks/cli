@@ -161,6 +161,30 @@
       "path": "var.my_var[0].foo"
     },
     {
+      "id": "leading-underscore",
+      "input": "${_hello_world.world_world}",
+      "match": true,
+      "references": ["_hello_world.world_world"],
+      "pure": true,
+      "path": "_hello_world.world_world"
+    },
+    {
+      "id": "resource-key-leading-underscore",
+      "input": "${resources.jobs._job.id}",
+      "match": true,
+      "references": ["resources.jobs._job.id"],
+      "pure": true,
+      "path": "resources.jobs._job.id"
+    },
+    {
+      "id": "resource-key-leading-underscore-and-hyphens",
+      "input": "${resources.jobs._asset-bundle-deploymentjob.id}",
+      "match": true,
+      "references": ["resources.jobs._asset-bundle-deploymentjob.id"],
+      "pure": true,
+      "path": "resources.jobs._asset-bundle-deploymentjob.id"
+    },
+    {
       "id": "segment-trailing-hyphen",
       "input": "${hello_world-.world_world}",
       "match": false
