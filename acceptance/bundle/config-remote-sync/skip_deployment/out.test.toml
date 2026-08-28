@@ -1,0 +1,3 @@
+Cloud = true
+GOOS.windows = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]

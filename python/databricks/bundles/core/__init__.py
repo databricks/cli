@@ -13,6 +13,7 @@ __all__ = [
     "VariableOrList",
     "VariableOrOptional",
     "alert_mutator",
+    "catalog_mutator",
     "job_mutator",
     "load_resources_from_current_package_module",
     "load_resources_from_module",
@@ -41,6 +42,7 @@ from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._resource_mutator import (
     ResourceMutator,
     alert_mutator,
+    catalog_mutator,
     job_mutator,
     pipeline_mutator,
     schema_mutator,
