@@ -1,10 +1,13 @@
 # Shared setup for the invariant targets; each script keeps only the invariant it asserts.
 
+# Root of configs/ and data/. Callers outside this subtree set it before sourcing.
+INVARIANT_DIR="${INVARIANT_DIR:-$TESTDIR/..}"
+
 invariant_cleanup() {
     trace $CLI bundle destroy --auto-approve &> LOG.destroy
     cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
 
-    CLEANUP_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-cleanup.sh"
+    CLEANUP_SCRIPT="$INVARIANT_DIR/configs/$INPUT_CONFIG-cleanup.sh"
     if [ -f "$CLEANUP_SCRIPT" ]; then
         source "$CLEANUP_SCRIPT" &> LOG.cleanup
     fi
@@ -13,14 +16,14 @@ invariant_cleanup() {
 # Separate from invariant_setup so a caller that generates its own config can override the
 # render alone; child script.prepare files are concatenated after this one.
 invariant_render() {
-    cp -r "$TESTDIR/../data/." . &> LOG.cp
+    cp -r "$INVARIANT_DIR/data/." . &> LOG.cp
 
-    INIT_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-init.sh"
+    INIT_SCRIPT="$INVARIANT_DIR/configs/$INPUT_CONFIG-init.sh"
     if [ -f "$INIT_SCRIPT" ]; then
         source "$INIT_SCRIPT" &> LOG.init
     fi
 
-    envsubst < "$TESTDIR/../configs/$INPUT_CONFIG" > databricks.yml
+    envsubst < "$INVARIANT_DIR/configs/$INPUT_CONFIG" > databricks.yml
 
     cp databricks.yml LOG.config
 }
@@ -34,11 +37,18 @@ invariant_setup() {
 }
 
 # Goes through trace, so callers can prefix the command with VAR=val.
+# set -e is off so a failed deploy is still scanned for panics; the exit code is re-raised after.
 invariant_deploy() {
     local logfile="$1"
     shift
+    set +e
     trace "$@" &> "$logfile"
+    local rc=$?
+    set -e
     cat "$logfile" | contains.py '!panic:' '!internal error' > /dev/null
+    if [ "$rc" -ne 0 ]; then
+        exit "$rc"
+    fi
 
     # Tells the fuzzer the generated config was valid; failures after this count as bugs.
     echo INPUT_CONFIG_OK

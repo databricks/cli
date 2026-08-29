@@ -408,6 +408,77 @@ jobs:
         run: |
           go tool -modfile=tools/task/go.mod task test-sandbox
 
+  test-fuzz:
+    needs:
+      - cleanups
+
+    # Nightly drift-on exploration; PRs rely on the committed acceptance/bundle/fuzz test.
+    if: ${{ github.event_name == 'schedule' }}
+    name: "task test-fuzz"
+    runs-on:
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-fuzz
+
+      - name: Run tests
+        run: |
+          go tool -modfile=tools/task/go.mod task test-fuzz
+
+      - name: Summarize failure for triage
+        if: ${{ failure() }}
+        run: |
+          # Resolve once and hand it to the upload step: -keeptmp writes under os.TempDir().
+          fuzz_tmp_dir="${TMPDIR:-/tmp}/acceptance"
+          echo "FUZZ_TMP_DIR=$fuzz_tmp_dir" >> "$GITHUB_ENV"
+          {
+            echo "## Fuzz nightly failed"
+            echo
+            echo "Exact drift is on (\`FUZZ_CHECK_DRIFT=1\`); a red nightly is a finding to triage."
+            echo "Use the failing variant's \`LOG.repro\`, or:"
+            echo
+            echo '```'
+            echo 'ENVFILTER=FUZZ_TARGET=<target> FUZZ_SEED_START=<seed> FUZZ_SEED_COUNT=1 FUZZ_CHECK_DRIFT=1 ./task test-fuzz'
+            echo '```'
+            echo
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            # Paste each failing variant's LOG.repro from the kept workdirs.
+            echo
+            while IFS= read -r repro; do
+              echo
+              echo "### \`${repro}\`"
+              echo
+              echo '```'
+              cat "$repro"
+              echo '```'
+            done < <(find "$fuzz_tmp_dir" -name LOG.repro 2>/dev/null | sort)
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload fuzz triage logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-triage-logs
+          # Same workdir root the summary step listed; path is not shell-expanded.
+          path: ${{ env.FUZZ_TMP_DIR }}/**/LOG.*
+          if-no-files-found: warn
+          retention-days: 14
+
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.
   #
@@ -417,6 +488,8 @@ jobs:
   #
   # The step checks `contains(needs.*.result, 'failure')` to fail if any dependency failed.
   # Reference: https://github.com/orgs/community/discussions/25970
+  #
+  # test-fuzz is schedule-only (skipped on PRs); listed so nightlies gate test-result.
   test-result:
     needs:
       - test
@@ -424,6 +497,7 @@ jobs:
       - test-exp-ssh
       - test-pipelines
       - test-sandbox
+      - test-fuzz
 
     if: ${{ always() }}
     name: test-result

@@ -735,6 +735,20 @@ tasks:
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/cmd/sandbox"
 
+  test-fuzz:
+    desc: Run invariant fuzz tests (mutated configs, direct engine)
+    # No sources fingerprint: the window depends on FUZZ_* env vars Task can't see.
+    cmds:
+      - |
+        # Ceiling; run_fuzz.py stops at FUZZ_TIME_BUDGET.
+        export FUZZ_SEED_COUNT="${FUZZ_SEED_COUNT:-10000}"
+        # Day-of-epoch start keeps consecutive nightly windows disjoint.
+        export FUZZ_SEED_START="${FUZZ_SEED_START:-$(( $(date -u +%s) / 86400 * FUZZ_SEED_COUNT ))}"
+        export FUZZ_CHECK_DRIFT="${FUZZ_CHECK_DRIFT:-1}"
+        export FUZZ_TIME_BUDGET="${FUZZ_TIME_BUDGET:-900}"
+        # go test (not gotestsum): -keeptmp must follow the package list.
+        go test ./acceptance -count=1 -keeptmp -timeout=${LOCAL_TIMEOUT:-90m} -run "TestAccept/bundle/fuzz"
+
   # --- Integration tests ---
 
   integration:
