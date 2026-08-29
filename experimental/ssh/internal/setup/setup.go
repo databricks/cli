@@ -10,8 +10,8 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
 type SetupOptions struct {
@@ -47,20 +47,13 @@ func generateHostConfig(ctx context.Context, opts SetupOptions, proxyCommand str
 var clusterSelectionPrompt = defaultClusterSelectionPrompt
 
 func defaultClusterSelectionPrompt(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
-	sp := cmdio.NewSpinner(ctx)
-	sp.Update("Loading clusters.")
-	clusters, err := client.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{
-		FilterBy: &compute.ListClustersFilterBy{
-			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
-		},
-	})
-	sp.Close()
+	// AskForCluster keys the picker by list position instead of by display name,
+	// so workspaces that have several clusters sharing a name still work. It
+	// lists with the same API/UI cluster-source filter this prompt needs, and
+	// shows the cluster ID alongside the name to disambiguate duplicates.
+	id, err := cfgpickers.AskForCluster(ctx, client)
 	if err != nil {
-		return "", fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify cluster argument. Original error: %w", err)
-	}
-	id, err := cmdio.Select(ctx, clusters, "The cluster to connect to")
-	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to select a cluster. Please manually specify cluster argument. Original error: %w", err)
 	}
 	return id, nil
 }
