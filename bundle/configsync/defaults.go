@@ -110,6 +110,13 @@ var serverSideDefaults = map[string]any{
 	// Terraform defaults
 	"resources.jobs.*.run_as": alwaysSkip,
 
+	// deployment.* is CLI-managed: metadata.AnnotateJobs / AnnotatePipelines write
+	// kind + metadata_file_path on every deploy, and the Deployment Metadata Service
+	// sets deployment_id + version_id. None is user-authored (validate.ValidateDeploymentFields
+	// even rejects deployment_id / version_id in config), so no subfield is synced back.
+	"resources.jobs.*.deployment.*":      alwaysSkip,
+	"resources.pipelines.*.deployment.*": alwaysSkip,
+
 	// Pipeline fields
 	"resources.pipelines.*.storage":    alwaysSkip,
 	"resources.pipelines.*.continuous": false,

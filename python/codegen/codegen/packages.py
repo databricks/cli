@@ -13,19 +13,6 @@ RESOURCE_NAMESPACE = {
 
 RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
 
-# Namespaces to load from OpenAPI spec.
-#
-# We can't load all types because of errors while loading some of them.
-LOADED_NAMESPACES = [
-    "compute",
-    "jobs",
-    "pipelines",
-    "resources",
-    "catalog",
-    "sql",
-    "iam",
-]
-
 RENAMES = {
     "string": "str",
     "boolean": "bool",
@@ -56,16 +43,6 @@ def get_class_name(ref: str) -> str:
 
 def is_resource(ref: str) -> bool:
     return ref in RESOURCE_TYPES
-
-
-def should_load_ref(ref: str) -> bool:
-    name = ref.split("/")[-1]
-
-    for namespace in LOADED_NAMESPACES:
-        if name.startswith(f"{namespace}."):
-            return True
-
-    return name in PRIMITIVES
 
 
 def get_root_package(namespace: str) -> str:

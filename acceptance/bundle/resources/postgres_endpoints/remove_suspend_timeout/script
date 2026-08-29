@@ -1,0 +1,33 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+endpoint_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/main/endpoints/my-endpoint"
+
+title "Initial deployment with suspend_timeout_duration: 300s"
+trace $CLI bundle deploy
+rm -f out.requests.txt
+trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
+
+title "Remove suspend_timeout_duration: both engines plan it, only terraform applies it"
+trace update_file.py databricks.yml "      suspend_timeout_duration: 300s" ""
+
+# Both engines plan the removal, so the plan stays in output.txt. They diverge from
+# the deploy on: the direct engine masks the field under its own name, which the API
+# rejects because it is a member of the suspension oneof. See test.toml.
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+# Read the endpoint back to see whether the removal reached it, then plan again to
+# record the drift it leaves behind: direct still has the removal pending and will
+# fail again on every deploy, terraform applied it and is clean.
+trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields > out.endpoint.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle plan &> out.plan.drift.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.drift.$DATABRICKS_BUNDLE_ENGINE.json
