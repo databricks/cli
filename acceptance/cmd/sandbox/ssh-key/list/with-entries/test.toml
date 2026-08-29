@@ -1,0 +1,33 @@
+[[Server]]
+Pattern = "GET /api/2.0/lakebox/ssh-keys"
+Response.Body = '''
+{
+  "sshKeys": [
+    {
+      "keyHash": "98b3b2bce82049769b4ba03990460d09",
+      "name": "laptop",
+      "createTime": "2026-05-29T17:18:00Z",
+      "lastUseTime": "2026-05-29T17:19:00Z",
+      "gatewayHost": "uw2.dbrx.dev"
+    },
+    {
+      "keyHash": "9e0fc7c899aeee6a462e3153aeae8f30",
+      "createTime": "2026-05-12T21:31:00Z",
+      "lastUseTime": "2026-05-29T17:13:00Z",
+      "gatewayHost": "uw2.dbrx.dev"
+    }
+  ]
+}
+'''
+
+# Pin our test hashes to stable placeholders so the framework's
+# generic 3+-digit-run → [NUMID] regex doesn't mangle them.
+[[Repls]]
+Old = '98b3b2bce82049769b4ba03990460d09'
+New = '[KEY_HASH_1]'
+Order = 5
+
+[[Repls]]
+Old = '9e0fc7c899aeee6a462e3153aeae8f30'
+New = '[KEY_HASH_2]'
+Order = 5

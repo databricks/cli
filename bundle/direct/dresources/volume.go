@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -48,14 +49,17 @@ func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVol
 	return response.FullName, response, nil
 }
 
-func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ Changes) (*catalog.VolumeInfo, error) {
+// See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
+var volumeForceSend = []string{"Comment"}
+
+func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ *PlanEntry) (*catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,
 		NewName: "", // Not supported by Update(). Needs DoUpdateWithID()
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "NewName", "Owner"),
+		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](append(slices.Clone(volumeForceSend), config.ForceSendFields...), "NewName", "Owner"),
 	}
 
 	nameFromID, err := getNameFromID(id)
@@ -79,7 +83,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 	return response, err
 }
 
-func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ *PlanEntry) (string, *catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,
@@ -87,7 +91,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		NewName: "", // Initialized below if needed
 		Owner:   "", // Not supported by DABs
 
-		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](config.ForceSendFields, "Owner"),
+		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](append(slices.Clone(volumeForceSend), config.ForceSendFields...), "Owner"),
 	}
 
 	items := strings.Split(id, ".")
@@ -108,7 +112,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 	return response.FullName, response, nil
 }
 
-func (r *ResourceVolume) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceVolume) DoDelete(ctx context.Context, id string, _ *catalog.CreateVolumeRequestContent) error {
 	return r.client.Volumes.DeleteByName(ctx, id)
 }
 

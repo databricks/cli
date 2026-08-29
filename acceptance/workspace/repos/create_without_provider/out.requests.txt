@@ -1,4 +1,8 @@
 {
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
   "method": "POST",
   "path": "/api/2.0/repos",
   "body": {

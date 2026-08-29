@@ -9,15 +9,21 @@ import (
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/fileset"
-	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/set"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 type OutputHandler func(context.Context, <-chan Event)
+
+// FileCounts reports how many files a sync run uploaded and deleted. A file
+// whose remote name changed (e.g. a script converted to a notebook) is counted
+// as both an upload and a delete, because that is what the sync performs.
+type FileCounts struct {
+	Uploaded int
+	Deleted  int
+}
 
 type SyncOptions struct {
 	WorktreeRoot vfs.Path
@@ -48,9 +54,7 @@ type SyncOptions struct {
 type Sync struct {
 	*SyncOptions
 
-	fileSet        *git.FileSet
-	includeFileSet *fileset.FileSet
-	excludeFileSet *fileset.FileSet
+	fileList *FileList
 
 	snapshot *Snapshot
 	filer    filer.Filer
@@ -59,6 +63,11 @@ type Sync struct {
 	notifier EventNotifier
 	seq      int
 
+	// fileCounts holds the counts from the most recent run. Kept here rather than
+	// derived from the event stream because the notifier is a no-op unless the
+	// caller supplies an OutputHandler.
+	fileCounts FileCounts
+
 	// WaitGroup is automatically created when an output handler is provided in the SyncOptions.
 	// Close call is required to ensure the output handler goroutine handles all events in time.
 	outputWaitGroup *stdsync.WaitGroup
@@ -66,25 +75,15 @@ type Sync struct {
 
 // New initializes and returns a new [Sync] instance.
 func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
-	fileSet, err := git.NewFileSet(opts.WorktreeRoot, opts.LocalRoot, opts.Paths)
+	fileList, err := NewFileList(ctx, opts.WorktreeRoot, opts.LocalRoot, opts.Paths, opts.Include, opts.Exclude)
 	if err != nil {
 		return nil, err
 	}
 
 	WriteGitIgnore(ctx, opts.LocalRoot.Native())
 
-	includeFileSet, err := fileset.NewGlobSet(opts.LocalRoot, opts.Include)
-	if err != nil {
-		return nil, err
-	}
-
-	excludeFileSet, err := fileset.NewGlobSet(opts.LocalRoot, opts.Exclude)
-	if err != nil {
-		return nil, err
-	}
-
 	// Verify that the remote path we're about to synchronize to is valid and allowed.
-	err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath, opts.CurrentUser)
+	err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath, opts.CurrentUser, opts.DryRun)
 	if err != nil {
 		return nil, err
 	}
@@ -121,11 +120,9 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	if opts.OutputHandler != nil {
 		ch := make(chan Event, MaxRequestsInFlight)
 		notifier = &ChannelNotifier{ch}
-		outputWaitGroup.Add(1)
-		go func() {
-			defer outputWaitGroup.Done()
+		outputWaitGroup.Go(func() {
 			opts.OutputHandler(ctx, ch)
-		}()
+		})
 	} else {
 		notifier = &NopNotifier{}
 	}
@@ -133,9 +130,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	return &Sync{
 		SyncOptions: &opts,
 
-		fileSet:         fileSet,
-		includeFileSet:  includeFileSet,
-		excludeFileSet:  excludeFileSet,
+		fileList:        fileList,
 		snapshot:        snapshot,
 		filer:           filer,
 		notifier:        notifier,
@@ -189,6 +184,7 @@ func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 	if err != nil {
 		return files, err
 	}
+	s.fileCounts = FileCounts{Uploaded: len(change.put), Deleted: len(change.delete)}
 
 	s.notifyStart(ctx, change)
 	if change.IsEmpty() {
@@ -213,38 +209,14 @@ func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 	return files, nil
 }
 
+// FileCounts returns the upload and delete counts from the most recent run.
+func (s *Sync) FileCounts() FileCounts {
+	return s.fileCounts
+}
+
+// GetFileList returns the local files selected for sync, without syncing them.
 func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
-	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
-	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
-	all := set.NewSetF(func(f fileset.File) string {
-		return f.Relative
-	})
-	gitFiles, err := s.fileSet.Files()
-	if err != nil {
-		log.Errorf(ctx, "cannot list files: %s", err)
-		return nil, err
-	}
-	all.Add(gitFiles...)
-
-	include, err := s.includeFileSet.Files()
-	if err != nil {
-		log.Errorf(ctx, "cannot list include files: %s", err)
-		return nil, err
-	}
-
-	all.Add(include...)
-
-	exclude, err := s.excludeFileSet.Files()
-	if err != nil {
-		log.Errorf(ctx, "cannot list exclude files: %s", err)
-		return nil, err
-	}
-
-	for _, f := range exclude {
-		all.Remove(f)
-	}
-
-	return all.Iter(), nil
+	return s.fileList.Files(ctx)
 }
 
 func (s *Sync) RunContinuous(ctx context.Context) error {

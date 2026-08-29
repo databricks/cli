@@ -6,7 +6,7 @@ config-version: 2
 profile: 'my_dbt_sql'
 
 # These configurations specify where dbt should look for different types of files.
-# For Databricks asset bundles, we put everything in src, as you may have
+# For Declarative Automation Bundles, we put everything in src, as you may have
 # non-dbt resources in your project.
 model-paths: ["src/models"]
 analysis-paths: ["src/analyses"]

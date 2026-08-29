@@ -1,0 +1,10 @@
+export DATABRICKS_AUTH_STORAGE=plaintext
+
+# home/.databrickscfg and home/.databricks/token-cache.json are checked-in inputs.
+title "Token cache keys before logout\n"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
+
+trace $CLI auth logout --profile dev --auto-approve
+
+title "Token cache keys after logout (should be empty)\n"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"

@@ -1,0 +1,70 @@
+Welcome to the default Python template for Declarative Automation Bundles!
+
+Answer the following questions to customize your project.
+You can always change your configuration in the databricks.yml file later.
+
+Note that [DATABRICKS_URL] is used for initialization.
+(For information on how to change your profile, see https://docs.databricks.com/dev-tools/cli/profiles.html.)
+
+✨ Your new project has been created in the 'my_default_python' directory!
+
+To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> grep -A1 ^experimental: output/default-python/my_default_python/databricks.yml
+experimental:
+  record_deployment_history: true
+
+Welcome to the default SQL template for Declarative Automation Bundles!
+
+A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
+workspace_host: [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'my_default_sql' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> grep -A1 ^experimental: output/default-sql/my_default_sql/databricks.yml
+experimental:
+  record_deployment_history: true
+
+Welcome to the default-scala template for Declarative Automation Bundles!
+
+A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
+workspace_host: [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'my_default_scala' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> grep -A1 ^experimental: output/default-scala/my_default_scala/databricks.yml
+experimental:
+  record_deployment_history: true
+
+Welcome to the dbt template for Declarative Automation Bundles!
+
+A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
+workspace_host: [DATABRICKS_URL]
+
+📊 Your new project has been created in the 'my_dbt_sql' directory!
+If you already have dbt installed, just type 'cd my_dbt_sql; dbt init' to get started.
+Refer to the README.md file for full "getting started" guide and production setup instructions.
+
+
+>>> grep -A1 ^experimental: output/dbt-sql/my_dbt_sql/databricks.yml
+experimental:
+  record_deployment_history: true
+Welcome to the Lakeflow integrations template!
+
+
+✨ Your new project has been created in the 'my_lakeflow_integrations' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+
+>>> grep -A1 ^experimental: output/lakeflow-integrations/my_lakeflow_integrations/databricks.yml
+experimental:
+  record_deployment_history: true
+
+>>> [CLI] bundle validate -o json
+json.experimental.record_deployment_history = true;

@@ -1,11 +1,12 @@
 {{$with_classic := (ne .serverless "yes") -}}
 {{$with_python := (eq .include_python "yes") -}}
 {{$with_pydabs := (eq .enable_pydabs "yes") -}}
-# This is a Databricks asset bundle definition for {{.project_name}}.
+# This is a Declarative Automation Bundle definition for {{.project_name}}.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: {{.project_name}}
   uuid: {{bundle_uuid}}
+{{- template "experimental_record_deployment_history" record_deployment_history}}
 {{- if $with_pydabs }}
 
 python:
@@ -17,7 +18,6 @@ python:
 
 include:
   - resources/*.yml
-  - resources/*/*.yml
 
 {{- if $with_python}}
 

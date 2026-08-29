@@ -1,9 +1,9 @@
 databricks-bundles
 --------------------------------
 
-`databricks-bundles` package implements Python support for Databricks Asset Bundles.
+`databricks-bundles` package implements Python support for Declarative Automation Bundles.
 
-See `What is Python support for Databricks Asset Bundles? (TBD) <#>`_.
+See `What is Python support for Declarative Automation Bundles? (TBD) <#>`_.
 
 
 .. toctree::

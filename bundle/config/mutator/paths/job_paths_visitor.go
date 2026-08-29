@@ -37,7 +37,20 @@ func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 			noSkipRewrite,
 		},
 		{
+			base.Append(dyn.Key("alert_task"), dyn.Key("workspace_path")),
+			TranslateModeFile,
+			noSkipRewrite,
+		},
+		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("requirements")),
+			TranslateModeFile,
+			noSkipRewrite,
+		},
+		{
+			// The AI Runtime task runs this bash script on each node; the backend
+			// reads it as a workspace file, so translate the local path to its
+			// remote (or immutable-snapshot) location like any other file.
+			base.Append(dyn.Key("ai_runtime_task"), dyn.Key("deployments"), dyn.AnyIndex(), dyn.Key("command_path")),
 			TranslateModeFile,
 			noSkipRewrite,
 		},

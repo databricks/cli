@@ -3,7 +3,7 @@
 package csp_enablement_account
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -20,8 +20,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "csp-enablement-account",
-		Short: `The compliance security profile settings at the account level control whether to enable it for new workspaces.`,
-		Long: `The compliance security profile settings at the account level control whether
+		Short: `*Public Preview* The compliance security profile settings at the account level control whether to enable it for new workspaces.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+The compliance security profile settings at the account level control whether
   to enable it for new workspaces. By default, this account-level setting is
   disabled for new workspaces. After workspace creation, account admins can
   enable the compliance security profile individually for each workspace.
@@ -30,6 +32,10 @@ func New() *cobra.Command {
   security profile enabled by default.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -60,12 +66,16 @@ func newGet() *cobra.Command {
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Get the compliance security profile setting for new workspaces.`
-	cmd.Long = `Get the compliance security profile setting for new workspaces.
+	cmd.Short = `*Public Preview* Get the compliance security profile setting for new workspaces.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the compliance security profile setting for new workspaces.
 
   Gets the compliance security profile setting for new workspaces.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -81,6 +91,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -114,13 +125,17 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"
-	cmd.Short = `Update the compliance security profile setting for new workspaces.`
-	cmd.Long = `Update the compliance security profile setting for new workspaces.
+	cmd.Short = `*Public Preview* Update the compliance security profile setting for new workspaces.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the compliance security profile setting for new workspaces.
 
   Updates the value of the compliance security profile setting for new
   workspaces.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -133,19 +148,20 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := a.Settings.CspEnablementAccount().Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

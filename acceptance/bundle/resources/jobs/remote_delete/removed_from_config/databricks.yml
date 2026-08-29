@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      name: foo
+
+  pipelines:
+    bar:
+      name: bar
+      libraries:
+        - file:
+            path: ./bar.py

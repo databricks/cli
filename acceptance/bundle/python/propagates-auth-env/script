@@ -1,0 +1,18 @@
+
+# Two workspace profiles share the same host so picking one is meaningful.
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+unset DATABRICKS_CONFIG_PROFILE
+
+trace uv run $UV_ARGS -q $CLI bundle summary -o json | jq '{profile: .workspace.profile}'
+
+# The python mutator captures DATABRICKS_CONFIG_PROFILE from its subprocess env.
+# Without the fix, the CLI does not propagate the bundle's resolved profile,
+# so the SDK inside python re-invokes the CLI without a profile and fails on
+# multi-profile ambiguity.
+trace cat captured_env.txt
+echo ""
+
+rm -fr .databricks __pycache__ captured_env.txt

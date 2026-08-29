@@ -3,11 +3,12 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-deleted-remotely/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.job_with_permissions
+Created jobs.job_with_permissions.permissions
+Files: 7 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests
+>>> print_requests.py //jobs/
 
 >>> [CLI] permissions get jobs [JOB_WITH_PERMISSIONS_ID]
 {
@@ -15,47 +16,47 @@ Deployment complete!
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_VIEW"
+          "inherited": false,
+          "permission_level": "CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
-      "user_name":"viewer@example.com"
+      "display_name": "viewer@example.com",
+      "user_name": "viewer@example.com"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_MANAGE"
+          "inherited": false,
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"data-team"
+      "group_name": "data-team"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     },
     {
       "all_permissions": [
         {
-          "inherited":true,
+          "inherited": true,
           "inherited_from_object": [
             "/jobs/"
           ],
-          "permission_level":"CAN_MANAGE"
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admins"
+      "group_name": "admins"
     }
   ],
-  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
-  "object_type":"job"
+  "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+  "object_type": "job"
 }
 
 === Delete permissions remotely
@@ -65,31 +66,31 @@ Deployment complete!
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     },
     {
       "all_permissions": [
         {
-          "inherited":true,
+          "inherited": true,
           "inherited_from_object": [
             "/jobs/"
           ],
-          "permission_level":"CAN_MANAGE"
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admins"
+      "group_name": "admins"
     }
   ],
-  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
-  "object_type":"job"
+  "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+  "object_type": "job"
 }
 
->>> print_requests
+>>> print_requests.py //jobs/
 {
   "method": "PUT",
   "path": "/api/2.0/permissions/jobs/[JOB_WITH_PERMISSIONS_ID]",
@@ -107,11 +108,11 @@ Deployment complete!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-deleted-remotely/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated jobs.job_with_permissions.permissions
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests
+>>> print_requests.py //jobs/
 
 >>> [CLI] permissions get jobs [JOB_WITH_PERMISSIONS_ID]
 {
@@ -119,45 +120,45 @@ Deployment complete!
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_VIEW"
+          "inherited": false,
+          "permission_level": "CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
-      "user_name":"viewer@example.com"
+      "display_name": "viewer@example.com",
+      "user_name": "viewer@example.com"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_MANAGE"
+          "inherited": false,
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"data-team"
+      "group_name": "data-team"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     },
     {
       "all_permissions": [
         {
-          "inherited":true,
+          "inherited": true,
           "inherited_from_object": [
             "/jobs/"
           ],
-          "permission_level":"CAN_MANAGE"
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admins"
+      "group_name": "admins"
     }
   ],
-  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
-  "object_type":"job"
+  "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+  "object_type": "job"
 }

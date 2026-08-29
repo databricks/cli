@@ -5,6 +5,8 @@ package pipelines
 import (
 	"context"
 	"errors"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 
@@ -12,12 +14,10 @@ import (
 
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
-
-	"github.com/pkg/browser"
 )
 
 // When no arguments are specified, auto-selects a pipeline if there's exactly one,
@@ -77,8 +77,12 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 			return errors.New("pipeline does not have a URL associated with it (has it been deployed?)")
 		}
 
+		if browser.IsDisabled(ctx) {
+			cmdio.LogString(ctx, "Open this URL in your browser:\n"+url)
+			return nil
+		}
 		cmdio.LogString(ctx, "Opening browser at "+url)
-		return browser.OpenURL(url)
+		return browser.Open(ctx, url)
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -98,7 +102,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 
 		if len(args) == 0 {
 			completions := resources.Completions(b)
-			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
+			return slices.Collect(maps.Keys(completions)), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}

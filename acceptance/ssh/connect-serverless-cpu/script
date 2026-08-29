@@ -1,0 +1,27 @@
+if [ -n "${CLOUD_ENV:-}" ]; then
+  # Cloud: real serverless CPU runs the command; dump the run on failure.
+  title "CLI ssh connect (serverless CPU)\n"
+  errcode $CLI ssh connect --releases-dir=$CLI_RELEASES_DIR -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
+  if ! grep -q "Connection successful" out.stdout.txt; then
+    run_id=$(cat LOG.stderr | grep -o "Job submitted successfully with run ID: [0-9]*" | grep -o "[0-9]*$")
+    trace $CLI jobs get-run "$run_id" > LOG.job
+  fi
+else
+  # Local: the test server backs the /ssh websocket with a real sshd, so this
+  # asserts the bootstrap job plus a full handshake over the tunnel. Skip when
+  # sshd is absent (only task test-exp-ssh provisions it).
+  if [ -z "$(command -v sshd || ls /usr/sbin/sshd /usr/local/sbin/sshd /sbin/sshd 2>/dev/null)" ]; then
+    echo "SKIP_TEST sshd (openssh-server) not installed"
+    exit 0
+  fi
+
+  # No release artifacts locally and they're never executed; stand in empty archives.
+  mkdir -p releases
+  touch releases/databricks_cli_linux_amd64.zip
+  touch releases/databricks_cli_linux_arm64.zip
+  CLI_RELEASES_DIR="$PWD/releases"
+
+  title "CLI ssh connect (local sshd)\n"
+  errcode $CLI ssh connect --releases-dir=$CLI_RELEASES_DIR --user-known-hosts-file=known_hosts -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
+  trace print_requests.py //api/2.2/jobs/runs/submit
+fi

@@ -1,7 +1,6 @@
 package bundle_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -11,12 +10,13 @@ import (
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/iamutil"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBundleInitErrorOnUnknownFields(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tmpDir := t.TempDir()
 	_, _, err := testcli.RequireErrorRun(t, ctx, "bundle", "init", "./testdata/init/field-does-not-exist", "--output-dir", tmpDir)
 	assert.EqualError(t, err, "failed to compute file content for bar.tmpl. variable \"does_not_exist\" not defined")
@@ -26,7 +26,7 @@ func TestBundleInitHelpers(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
-	me, err := w.CurrentUser.Me(ctx)
+	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 
 	var smallestNode string

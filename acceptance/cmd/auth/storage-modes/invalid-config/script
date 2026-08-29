@@ -1,0 +1,3 @@
+# auth token is the smallest reproducer that resolves the storage mode
+# without performing any network I/O.
+trace $CLI auth token --profile nonexistent

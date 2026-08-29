@@ -1,10 +1,10 @@
 package resourcemutator
 
 import (
+	"cmp"
 	"context"
 	"path"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -186,6 +186,9 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// Quality monitors presets: Schedule
 	if t.TriggerPauseStatus == config.Paused {
 		for _, q := range r.QualityMonitors {
+			if q == nil {
+				continue
+			}
 			// Remove all schedules from monitors, since they don't support pausing/unpausing.
 			// Quality monitors might support the "pause" property in the future, so at the
 			// CLI level we do respect that property if it is set to "unpaused."
@@ -229,12 +232,40 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Instance Pools: Prefix, Tags
+	for _, pool := range r.InstancePools {
+		if pool == nil {
+			continue
+		}
+		pool.InstancePoolName = prefix + pool.InstancePoolName
+		if len(tags) > 0 {
+			if pool.CustomTags == nil {
+				pool.CustomTags = make(map[string]string, len(tags))
+			}
+			for _, tag := range tags {
+				k := b.Tagging.NormalizeKey(tag.Key)
+				v := b.Tagging.NormalizeValue(tag.Value)
+				if _, ok := pool.CustomTags[k]; !ok {
+					pool.CustomTags[k] = v
+				}
+			}
+		}
+	}
+
 	// Dashboards: Prefix
 	for _, dashboard := range r.Dashboards {
 		if dashboard == nil {
 			continue
 		}
 		dashboard.DisplayName = prefix + dashboard.DisplayName
+	}
+
+	// Genie Spaces: Prefix
+	for _, genieSpace := range r.GenieSpaces {
+		if genieSpace == nil {
+			continue
+		}
+		genieSpace.Title = prefix + genieSpace.Title
 	}
 
 	// Apps: No presets
@@ -290,6 +321,25 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Cluster Policies: Prefix. The policy name is a user-facing display name
+	// (unique, 1-100 chars), not the API id (policy_id), so prefixing it in dev
+	// mode avoids collisions between developers without changing identity.
+	for _, cp := range r.ClusterPolicies {
+		if cp == nil {
+			continue
+		}
+		cp.Name = prefix + cp.Name
+	}
+
+	// Vector Search Endpoints: no prefix. The endpoint name is the primary key
+	// (it's what GET/UPDATE/DELETE address by), so prefixing it would change
+	// the resource's identity rather than just its display name.
+
+	// Vector Search Indexes: no prefix. The 3-part UC name (catalog.schema.index)
+	// is the API primary key (CreateIndex addresses by name and DoCreate returns
+	// it as the deployment id), so prefixing would change the resource's
+	// identity rather than just its display name.
+
 	return diags
 }
 
@@ -315,8 +365,8 @@ func toTagArray(tags map[string]string) []Tag {
 	for key, value := range tags {
 		tagArray = append(tagArray, Tag{Key: key, Value: value})
 	}
-	sort.Slice(tagArray, func(i, j int) bool {
-		return tagArray[i].Key < tagArray[j].Key
+	slices.SortFunc(tagArray, func(a, b Tag) int {
+		return cmp.Compare(a.Key, b.Key)
 	})
 	return tagArray
 }

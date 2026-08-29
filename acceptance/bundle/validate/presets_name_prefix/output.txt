@@ -30,11 +30,26 @@
       "name": "prefixschema1"
     }
   },
+  "vector_search_endpoints": {
+    "vs_endpoint": {
+      "endpoint_type": "STANDARD",
+      "name": "vs_endpoint"
+    }
+  },
+  "vector_search_indexes": {
+    "vs_index": {
+      "endpoint_name": "vs_endpoint",
+      "index_type": "DELTA_SYNC",
+      "name": "my_catalog.my_schema.my_index",
+      "primary_key": "id"
+    }
+  },
   "volumes": {
     "volume1": {
       "catalog_name": "catalog1",
       "name": "volume1",
       "schema_name": "schema1",
+      "volume_path": "/Volumes/catalog1/schema1/volume1",
       "volume_type": "MANAGED"
     }
   }
@@ -71,11 +86,26 @@
       "name": "prefix_schema1"
     }
   },
+  "vector_search_endpoints": {
+    "vs_endpoint": {
+      "endpoint_type": "STANDARD",
+      "name": "vs_endpoint"
+    }
+  },
+  "vector_search_indexes": {
+    "vs_index": {
+      "endpoint_name": "vs_endpoint",
+      "index_type": "DELTA_SYNC",
+      "name": "my_catalog.my_schema.my_index",
+      "primary_key": "id"
+    }
+  },
   "volumes": {
     "volume1": {
       "catalog_name": "catalog1",
       "name": "volume1",
       "schema_name": "schema1",
+      "volume_path": "/Volumes/catalog1/schema1/volume1",
       "volume_type": "MANAGED"
     }
   }
@@ -112,11 +142,26 @@
       "name": "schema1"
     }
   },
+  "vector_search_endpoints": {
+    "vs_endpoint": {
+      "endpoint_type": "STANDARD",
+      "name": "vs_endpoint"
+    }
+  },
+  "vector_search_indexes": {
+    "vs_index": {
+      "endpoint_name": "vs_endpoint",
+      "index_type": "DELTA_SYNC",
+      "name": "my_catalog.my_schema.my_index",
+      "primary_key": "id"
+    }
+  },
   "volumes": {
     "volume1": {
       "catalog_name": "catalog1",
       "name": "volume1",
       "schema_name": "schema1",
+      "volume_path": "/Volumes/catalog1/schema1/volume1",
       "volume_type": "MANAGED"
     }
   }

@@ -3,10 +3,12 @@ package python
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -14,12 +16,12 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/stretchr/testify/require"
 
-	"golang.org/x/exp/maps"
-
 	"github.com/databricks/cli/libs/dyn"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
 )
@@ -103,7 +105,7 @@ workspace: { current_user: { userName: test }}`)
 
 	assert.NoError(t, diags.Error())
 
-	assert.ElementsMatch(t, []string{"job0", "job1"}, maps.Keys(b.Config.Resources.Jobs))
+	assert.ElementsMatch(t, []string{"job0", "job1"}, slices.Collect(maps.Keys(b.Config.Resources.Jobs)))
 
 	if job0, ok := b.Config.Resources.Jobs["job0"]; ok {
 		assert.Equal(t, "job_0", job0.Name)
@@ -157,7 +159,7 @@ workspace: { current_user: { userName: test }}`)
 	assert.Equal(t, int64(2), b.Metrics.PythonAddedResourcesCount)
 	assert.Equal(t, int64(0), b.Metrics.PythonUpdatedResourcesCount)
 
-	assert.Equal(t, 1, len(diags))
+	assert.Len(t, diags, 1)
 	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
 	assert.Equal(t, []dyn.Location{
 		{
@@ -212,7 +214,7 @@ resources:
 
 	assert.NoError(t, diag.Error())
 
-	assert.ElementsMatch(t, []string{"job0"}, maps.Keys(b.Config.Resources.Jobs))
+	assert.ElementsMatch(t, []string{"job0"}, slices.Collect(maps.Keys(b.Config.Resources.Jobs)))
 	assert.Equal(t, "job_0", b.Config.Resources.Jobs["job0"].Name)
 	assert.Equal(t, "my job", b.Config.Resources.Jobs["job0"].Description)
 
@@ -280,7 +282,7 @@ resources:
 func TestPythonMutator_disabled(t *testing.T) {
 	b := loadYaml("databricks.yml", ``)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
 	diag := bundle.Apply(ctx, b, mutator)
 
@@ -298,7 +300,7 @@ experimental:
       - "resources:load_resources"`)
 
 	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
-	diag := bundle.Apply(context.Background(), b, mutator)
+	diag := bundle.Apply(t.Context(), b, mutator)
 
 	assert.EqualError(t, diag.Error(), expectedError)
 }
@@ -470,6 +472,34 @@ func TestStrictNormalize(t *testing.T) {
 	assert.True(t, strictDiags.HasError())
 }
 
+func TestCreateCacheDir(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	t.Run("DATABRICKS_BUNDLE_TMP is set", func(t *testing.T) {
+		tempDir := t.TempDir()
+		t.Setenv(env.TempDirVariable, tempDir)
+
+		cacheDir, cleanup, err := createCacheDir(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, filepath.Join(tempDir, "default", "python"), cacheDir)
+
+		cleanup()
+
+		// user-specified directories are kept for inspection
+		assert.DirExists(t, cacheDir)
+	})
+
+	t.Run("DATABRICKS_BUNDLE_TMP is not set", func(t *testing.T) {
+		cacheDir, cleanup, err := createCacheDir(t.Context())
+		require.NoError(t, err)
+		require.DirExists(t, cacheDir)
+
+		cleanup()
+
+		assert.NoDirExists(t, cacheDir)
+	})
+}
+
 func TestExplainProcessErr(t *testing.T) {
 	stderr := "/home/test/.venv/bin/python3: Error while finding module specification for 'databricks.bundles.build' (ModuleNotFoundError: No module named 'databricks')\n"
 	expected := `/home/test/.venv/bin/python3: Error while finding module specification for 'databricks.bundles.build' (ModuleNotFoundError: No module named 'databricks')
@@ -488,19 +518,19 @@ or activate the environment before running CLI commands:
       venv_path: .venv
 `
 
-	out := explainProcessErr(stderr)
+	out := explainProcessErr(cmdio.MockDiscard(t.Context()), stderr)
 
 	assert.Equal(t, expected, out)
 }
 
 func withProcessStub(t *testing.T, args []string, output, diagnostics, locations string) context.Context {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, stub := process.WithStub(ctx)
 
 	t.Setenv(env.TempDirVariable, t.TempDir())
 
 	// after we override env variable, we always get the same cache dir as mutator
-	cacheDir, err := createCacheDir(ctx)
+	cacheDir, _, err := createCacheDir(ctx)
 	require.NoError(t, err)
 
 	inputPath := filepath.Join(cacheDir, "input.json")
@@ -563,18 +593,11 @@ func loadYaml(name, content string) *bundle.Bundle {
 }
 
 func withFakeVEnv(t *testing.T, venvPath string) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	if err := os.Chdir(t.TempDir()); err != nil {
-		panic(err)
-	}
+	t.Chdir(t.TempDir())
 
 	interpreterPath := interpreterPath(venvPath)
 
-	err = os.MkdirAll(filepath.Dir(interpreterPath), 0o755)
+	err := os.MkdirAll(filepath.Dir(interpreterPath), 0o755)
 	if err != nil {
 		panic(err)
 	}
@@ -588,12 +611,6 @@ func withFakeVEnv(t *testing.T, venvPath string) {
 	if err != nil {
 		panic(err)
 	}
-
-	t.Cleanup(func() {
-		if err := os.Chdir(cwd); err != nil {
-			panic(err)
-		}
-	})
 }
 
 func interpreterPath(venvPath string) string {

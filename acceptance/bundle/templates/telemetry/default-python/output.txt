@@ -1,4 +1,4 @@
-Welcome to the default Python template for Databricks Asset Bundles!
+Welcome to the default Python template for Declarative Automation Bundles!
 
 Answer the following questions to customize your project.
 You can always change your configuration in the databricks.yml file later.
@@ -17,7 +17,7 @@ To get started, refer to the project README.md file and the documentation at htt
     "databricks_cli_log": {
       "execution_context": {
         "cmd_exec_id": "[CMD-EXEC-ID]",
-        "version": "[DEV_VERSION]",
+        "version": "[CLI_VERSION]",
         "command": "bundle_init",
         "operating_system": "[OS]",
         "execution_time_ms": SMALL_INT,

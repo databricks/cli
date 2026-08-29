@@ -2,50 +2,27 @@ package resources
 
 import (
 	"context"
+	"fmt"
 	"net/url"
-	"strings"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
-type VolumeGrantPrivilege string
-
-const (
-	VolumeGrantPrivilegeAllPrivileges VolumeGrantPrivilege = "ALL_PRIVILEGES"
-	VolumeGrantPrivilegeApplyTag      VolumeGrantPrivilege = "APPLY_TAG"
-	VolumeGrantPrivilegeManage        VolumeGrantPrivilege = "MANAGE"
-	VolumeGrantPrivilegeReadVolume    VolumeGrantPrivilege = "READ_VOLUME"
-	VolumeGrantPrivilegeWriteVolume   VolumeGrantPrivilege = "WRITE_VOLUME"
-)
-
-// Values returns all valid VolumeGrantPrivilege values
-func (VolumeGrantPrivilege) Values() []VolumeGrantPrivilege {
-	return []VolumeGrantPrivilege{
-		VolumeGrantPrivilegeAllPrivileges,
-		VolumeGrantPrivilegeApplyTag,
-		VolumeGrantPrivilegeManage,
-		VolumeGrantPrivilegeReadVolume,
-		VolumeGrantPrivilegeWriteVolume,
-	}
-}
-
-type VolumeGrant struct {
-	Privileges []VolumeGrantPrivilege `json:"privileges"`
-
-	Principal string `json:"principal"`
-}
-
 type Volume struct {
 	BaseResource
 	catalog.CreateVolumeRequestContent
 
+	// VolumePath is /Volumes/{catalog}/{schema}/{name}. Populated during initialize; not user-configurable.
+	VolumePath string `json:"volume_path,omitempty" bundle:"readonly"`
+
 	// List of grants to apply on this volume.
-	Grants []VolumeGrant `json:"grants,omitempty"`
+	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 func (v *Volume) UnmarshalJSON(b []byte) error {
@@ -86,8 +63,7 @@ func (v *Volume) InitializeURL(baseURL url.URL) {
 	if v.ID == "" {
 		return
 	}
-	baseURL.Path = "explore/data/volumes/" + strings.ReplaceAll(v.ID, ".", "/")
-	v.URL = baseURL.String()
+	v.URL = workspaceurls.ResourceURL(baseURL, "volumes", v.ID)
 }
 
 func (v *Volume) GetURL() string {
@@ -96,4 +72,13 @@ func (v *Volume) GetURL() string {
 
 func (v *Volume) GetName() string {
 	return v.Name
+}
+
+// ComputeVolumePath returns the Unity Catalog volume path /Volumes/{catalog}/{schema}/{name}.
+//
+// Components are used as-is: a ${...} reference is embedded verbatim and resolved later during plan
+// or deploy. Missing required fields and malformed references are reported by validation and the
+// plan/deploy backends, so this function does not guard against them.
+func (v *Volume) ComputeVolumePath() string {
+	return fmt.Sprintf("/Volumes/%s/%s/%s", v.CatalogName, v.SchemaName, v.Name)
 }

@@ -1,7 +1,6 @@
 package permissions_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func TestTryExtendTerraformPermissionError1(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := mockBundle([]resources.Permission{
 		{Level: "CAN_MANAGE", UserName: "alice@databricks.com"},
 	})
@@ -33,7 +32,7 @@ func TestTryExtendTerraformPermissionError1(t *testing.T) {
 }
 
 func TestTryExtendTerraformPermissionError2(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := mockBundle([]resources.Permission{
 		{Level: "CAN_MANAGE", UserName: "alice@databricks.com"},
 		{Level: "CAN_MANAGE", UserName: "bob@databricks.com"},
@@ -54,7 +53,7 @@ func TestTryExtendTerraformPermissionError2(t *testing.T) {
 }
 
 func TestTryExtendTerraformPermissionError3(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := mockBundle([]resources.Permission{
 		{Level: "CAN_MANAGE", UserName: "testuser@databricks.com"},
 	})
@@ -74,7 +73,7 @@ func TestTryExtendTerraformPermissionError3(t *testing.T) {
 }
 
 func TestTryExtendTerraformPermissionErrorNotOwner(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := mockBundle([]resources.Permission{
 		{Level: "CAN_MANAGE", GroupName: "data_team@databricks.com"},
 	})

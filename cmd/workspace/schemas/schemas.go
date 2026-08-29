@@ -3,6 +3,7 @@
 package schemas
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -22,13 +23,17 @@ func New() *cobra.Command {
 		Use:   "schemas",
 		Short: `A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.`,
 		Long: `A schema (also called a database) is the second layer of Unity Catalog’s
-  three-level namespace. A schema organizes tables, views and functions. To
+  three-level namespace. A schema organizes tables, views, and functions. To
   access (or list) a table or view in a schema, users must have the USE_SCHEMA
   data permission on the schema and its parent catalog, and they must have the
   SELECT permission on the table or view.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -63,6 +68,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().Int64Var(&createReq.CustomMaxRetentionHours, "custom-max-retention-hours", createReq.CustomMaxRetentionHours, `Custom maximum retention period in hours for the schema.`)
 	// TODO: map via StringToStringVar: properties
 	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for managed tables within schema.`)
 
@@ -79,12 +85,14 @@ func newCreate() *cobra.Command {
     CATALOG_NAME: Name of parent catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'catalog_name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'catalog_name' in your JSON input")
 			}
 			return nil
 		}
@@ -103,7 +111,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -120,6 +128,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -162,6 +171,8 @@ func newDelete() *cobra.Command {
     FULL_NAME: Full name of the schema.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -222,6 +233,8 @@ func newGet() *cobra.Command {
     FULL_NAME: Full name of the schema.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -239,6 +252,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -267,10 +281,21 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq catalog.ListSchemasRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include schemas in the response for which the principal can only access selective metadata for.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of schemas to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list CATALOG_NAME"
 	cmd.Short = `List schemas.`
@@ -294,6 +319,8 @@ func newList() *cobra.Command {
     CATALOG_NAME: Parent catalog for schemas of interest.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -308,6 +335,13 @@ func newList() *cobra.Command {
 		listReq.CatalogName = args[0]
 
 		response := w.Schemas.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -341,6 +375,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().Int64Var(&updateReq.CustomMaxRetentionHours, "custom-max-retention-hours", updateReq.CustomMaxRetentionHours, `Custom maximum retention period in hours for the schema.`)
 	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the schema.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of schema.`)
@@ -360,6 +395,8 @@ func newUpdate() *cobra.Command {
     FULL_NAME: Full name of the schema.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -377,7 +414,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -389,6 +426,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -1,0 +1,8 @@
+# Profile with workspace_id = none overrides the host-metadata back-fill.
+# The CLI must strip the sentinel before the header decision; the recorded
+# request should not carry the routing identifier.
+sethome "./home"
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
+
+MSYS_NO_PATHCONV=1 $CLI api get /api/2.0/clusters/list --profile spog-account
+trace print_requests.py --get //api/2.0/clusters/list | contains.py "!X-Databricks-Workspace-Id"

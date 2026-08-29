@@ -1,22 +1,35 @@
 
 >>> [CLI] apps create test-app-already-exists
 {
+  "active_deployment": {
+    "deployment_id": "deploy-[NUMID]",
+    "source_code_path": "/Workspace/Users/[USERNAME]/test-app-already-exists",
+    "status": {
+      "message": "Deployment succeeded",
+      "state": "SUCCEEDED"
+    }
+  },
   "app_status": {
-    "message":"Application is running.",
-    "state":"RUNNING"
+    "message": "Application is running.",
+    "state": "RUNNING"
   },
+  "compute_size": "MEDIUM",
   "compute_status": {
-    "message":"App compute is active.",
-    "state":"ACTIVE"
+    "message": "App compute is active.",
+    "state": "ACTIVE"
   },
-  "id":"1000",
-  "name":"test-app-already-exists",
-  "url":"test-app-already-exists-123.cloud.databricksapps.com"
+  "default_source_code_path": "/Workspace/Users/[USERNAME]/test-app-already-exists",
+  "forward_user_access_token": true,
+  "id": "1000",
+  "name": "test-app-already-exists",
+  "service_principal_client_id": "[UUID]",
+  "service_principal_id": [NUMID],
+  "service_principal_name": "app-test-app-already-exists",
+  "url": "test-app-already-exists-123.cloud.databricksapps.com"
 }
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-app-already-exists/default/files...
-Deploying resources...
 Error: cannot create resources.apps.myapp: An app with the same name already exists: test-app-already-exists (409 RESOURCE_ALREADY_EXISTS)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/apps?no_compute=true
@@ -24,9 +37,9 @@ HTTP Status: 409 Conflict
 API error_code: RESOURCE_ALREADY_EXISTS
 API message: An app with the same name already exists: test-app-already-exists
 
-Updating deployment state...
+Files: 5 uploaded, 0 deleted
 
 >>> [CLI] apps delete test-app-already-exists
 {
-  "name":""
+  "name": ""
 }

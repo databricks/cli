@@ -1,0 +1,19 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-hard-[UNIQUE_NAME]",
+  "q": {
+    "purge": "true"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-soft-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-hard-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-soft-[UNIQUE_NAME]"
+}

@@ -73,6 +73,24 @@ func (v Value) AppendLocationsFromValue(w Value) Value {
 	}
 }
 
+// IsSensitive reports whether this value holds a sensitive string.
+// Sensitivity is encoded in the type of v.v (secretString vs plain string),
+// so it is preserved automatically whenever v.v is copied.
+func (v Value) IsSensitive() bool {
+	_, ok := v.v.(secretString)
+	return ok
+}
+
+// MarkSensitive returns a copy of this value marked as sensitive.
+// If the value is already a KindString, its content is re-wrapped as a
+// secretString; otherwise the value is returned unchanged.
+func (v Value) MarkSensitive() Value {
+	if s, ok := v.v.(string); ok {
+		v.v = secretString{s}
+	}
+	return v
+}
+
 func (v Value) Kind() Kind {
 	return v.k
 }
@@ -120,6 +138,10 @@ func (v Value) AsAny() any {
 	case KindNil:
 		return v.v
 	case KindString:
+		// secretString holds a sensitive value; return the redaction placeholder.
+		if _, ok := v.v.(secretString); ok {
+			return SensitiveValueRedacted
+		}
 		return v.v
 	case KindBool:
 		return v.v
@@ -206,9 +228,20 @@ func (v Value) eq(w Value) bool {
 
 	switch v.k {
 	case KindMap:
-		// Compare pointers to the underlying map.
+		// Comparing &v.v to &w.v is always false (value receivers), so compare the Mapping's backing storage.
+		vm := v.v.(Mapping)
+		wm := w.v.(Mapping)
+		lv := vm.Len()
+		lw := wm.Len()
+		if lv == 0 && lw == 0 {
+			return true
+		}
+		if lv != lw {
+			return false
+		}
+		// Compare pointers to the underlying pairs slice.
 		// This is safe because we don't allow maps to be mutated.
-		return &v.v == &w.v
+		return &vm.pairs[0] == &wm.pairs[0]
 	case KindSequence:
 		vs := v.v.([]Value)
 		ws := w.v.([]Value)

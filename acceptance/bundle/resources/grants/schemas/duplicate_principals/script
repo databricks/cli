@@ -1,0 +1,14 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Same principal listed twice with the same privilege.
+trace $CLI bundle deploy
+print_requests.py --get //permissions --keep > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt
+# effective_predictive_optimization_flag is inherited from the metastore and backend-controlled; drop it so the test does not depend on metastore settings.
+# updated_at/updated_by reflect UC's post-create system write that populates managed defaults, so on managed-defaults clouds they show a system principal rather than the creator; drop them.
+trace $CLI bundle plan -o json | normalize_uc_payload.py effective_predictive_optimization_flag updated_at updated_by > out.plan.$DATABRICKS_BUNDLE_ENGINE.json

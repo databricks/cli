@@ -1,0 +1,3 @@
+trace $CLI bundle deploy
+trace $CLI bundle run data_app
+trace print_requests.py //apps

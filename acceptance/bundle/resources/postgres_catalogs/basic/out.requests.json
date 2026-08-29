@@ -1,0 +1,31 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj-[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Project for Catalog",
+      "pg_version": 16
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/catalogs",
+  "q": {
+    "catalog_id": "lakebase_test_[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
+      "branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+      "create_database_if_missing": true,
+      "postgres_database": "appdb"
+    }
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/catalogs/lakebase_test_[UNIQUE_NAME]"
+}

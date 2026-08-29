@@ -21,8 +21,10 @@
             "dbt_task": [],
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json",
+                "version_id": ""
               }
             ],
             "description": null,
@@ -63,7 +65,8 @@
                     "cluster_mount_info": [],
                     "cluster_name": "",
                     "custom_tags": null,
-                    "data_security_mode": "SINGLE_USER",
+                    "data_security_mode": "DATA_SECURITY_MODE_AUTO",
+                    "dependency_mode": "",
                     "docker_image": [],
                     "driver_instance_pool_id": "",
                     "driver_node_type_flexibility": [],
@@ -93,7 +96,8 @@
                     "worker_node_type_flexibility": [],
                     "workload_type": []
                   }
-                ]
+                ],
+                "serverless_compute_id": ""
               }
             ],
             "library": [],
@@ -114,9 +118,14 @@
                 "name": "schema"
               }
             ],
+            "parent_path": null,
             "performance_target": null,
             "pipeline_task": [],
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "python_wheel_task": [],
             "queue": [
               {
@@ -141,7 +150,10 @@
             },
             "task": [
               {
+                "ai_runtime_task": [],
+                "alert_task": [],
                 "clean_rooms_notebook_task": [],
+                "compute": [],
                 "condition_task": [],
                 "dashboard_task": [],
                 "dbt_cloud_task": [],
@@ -151,7 +163,16 @@
                 "description": "",
                 "disable_auto_optimization": false,
                 "disabled": false,
-                "email_notifications": [],
+                "email_notifications": [
+                  {
+                    "no_alert_for_skipped_runs": false,
+                    "on_duration_warning_threshold_exceeded": [],
+                    "on_failure": [],
+                    "on_start": [],
+                    "on_streaming_backlog_exceeded": [],
+                    "on_success": []
+                  }
+                ],
                 "environment_key": "",
                 "existing_cluster_id": "",
                 "for_each_task": [],
@@ -184,9 +205,10 @@
                 "notification_settings": [],
                 "pipeline_task": [],
                 "power_bi_task": [],
+                "python_operator_task": [],
                 "python_wheel_task": [],
                 "retry_on_timeout": false,
-                "run_if": "",
+                "run_if": "ALL_SUCCESS",
                 "run_job_task": [],
                 "spark_jar_task": [],
                 "spark_python_task": [],
@@ -197,7 +219,10 @@
                 "webhook_notifications": []
               },
               {
+                "ai_runtime_task": [],
+                "alert_task": [],
                 "clean_rooms_notebook_task": [],
+                "compute": [],
                 "condition_task": [],
                 "dashboard_task": [],
                 "dbt_cloud_task": [],
@@ -212,7 +237,16 @@
                 "description": "",
                 "disable_auto_optimization": false,
                 "disabled": false,
-                "email_notifications": [],
+                "email_notifications": [
+                  {
+                    "no_alert_for_skipped_runs": false,
+                    "on_duration_warning_threshold_exceeded": [],
+                    "on_failure": [],
+                    "on_start": [],
+                    "on_streaming_backlog_exceeded": [],
+                    "on_success": []
+                  }
+                ],
                 "environment_key": "",
                 "existing_cluster_id": "",
                 "for_each_task": [],
@@ -238,6 +272,7 @@
                 "notification_settings": [],
                 "pipeline_task": [],
                 "power_bi_task": [],
+                "python_operator_task": [],
                 "python_wheel_task": [
                   {
                     "entry_point": "main",
@@ -252,7 +287,7 @@
                   }
                 ],
                 "retry_on_timeout": false,
-                "run_if": "",
+                "run_if": "ALL_SUCCESS",
                 "run_job_task": [],
                 "spark_jar_task": [],
                 "spark_python_task": [],
@@ -263,7 +298,10 @@
                 "webhook_notifications": []
               },
               {
+                "ai_runtime_task": [],
+                "alert_task": [],
                 "clean_rooms_notebook_task": [],
+                "compute": [],
                 "condition_task": [],
                 "dashboard_task": [],
                 "dbt_cloud_task": [],
@@ -278,7 +316,16 @@
                 "description": "",
                 "disable_auto_optimization": false,
                 "disabled": false,
-                "email_notifications": [],
+                "email_notifications": [
+                  {
+                    "no_alert_for_skipped_runs": false,
+                    "on_duration_warning_threshold_exceeded": [],
+                    "on_failure": [],
+                    "on_start": [],
+                    "on_streaming_backlog_exceeded": [],
+                    "on_success": []
+                  }
+                ],
                 "environment_key": "",
                 "existing_cluster_id": "",
                 "for_each_task": [],
@@ -294,13 +341,19 @@
                 "pipeline_task": [
                   {
                     "full_refresh": false,
-                    "pipeline_id": "[UUID]"
+                    "full_refresh_selection": null,
+                    "parameters": null,
+                    "pipeline_id": "[UUID]",
+                    "refresh_flow_selection": null,
+                    "refresh_selection": null,
+                    "reset_checkpoint_selection": null
                   }
                 ],
                 "power_bi_task": [],
+                "python_operator_task": [],
                 "python_wheel_task": [],
                 "retry_on_timeout": false,
-                "run_if": "",
+                "run_if": "ALL_SUCCESS",
                 "run_job_task": [],
                 "spark_jar_task": [],
                 "spark_python_task": [],
@@ -324,9 +377,11 @@
                     "unit": "DAYS"
                   }
                 ],
+                "sql_condition": [],
                 "table_update": []
               }
             ],
+            "triggers": [],
             "url": "[DATABRICKS_URL]/#job/[NUMID]",
             "usage_policy_id": null,
             "webhook_notifications": [
@@ -368,8 +423,10 @@
             "creator_user_name": "[USERNAME]",
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json",
+                "version_id": ""
               }
             ],
             "development": true,
@@ -378,7 +435,8 @@
               {
                 "dependencies": [
                   "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files"
-                ]
+                ],
+                "environment_version": ""
               }
             ],
             "event_log": [],
@@ -407,12 +465,18 @@
             "name": "[dev [USERNAME]] my_default_python_etl",
             "notification": [],
             "photon": false,
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "restart_window": [],
             "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl",
             "run_as": [],
             "run_as_user_name": "[USERNAME]",
             "schema": "[USERNAME]",
             "serverless": false,
+            "serverless_compute_id": null,
             "state": "IDLE",
             "storage": "dbfs:/pipelines/[UUID]",
             "tags": {

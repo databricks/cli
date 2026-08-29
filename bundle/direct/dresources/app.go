@@ -4,15 +4,54 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
+	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
+
+// AppState is the state type for App resources. source_code_path and git_source come from
+// apps.App; config and lifecycle are DABs-only additions persisted in state.
+type AppState struct {
+	apps.App
+	Config    *resources.AppConfig `json:"config,omitempty"`
+	Lifecycle *StateLifecycle      `json:"lifecycle,omitempty"`
+}
+
+// AppRemote extends apps.App with the same DABs-only fields as AppState so they
+// appear in RemoteType and can be used for $resource resolution and drift detection.
+type AppRemote struct {
+	apps.App
+	Config    *resources.AppConfig `json:"config,omitempty"`
+	Lifecycle *StateLifecycle      `json:"lifecycle,omitempty"`
+}
+
+// Custom marshalers needed because embedded apps.App has its own MarshalJSON
+// which would otherwise take over and ignore the additional fields.
+func (s *AppState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s AppState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
+func (r *AppRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, r)
+}
+
+func (r AppRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(r)
+}
 
 type ResourceApp struct {
 	client *databricks.WorkspaceClient
@@ -22,18 +61,75 @@ func (*ResourceApp) New(client *databricks.WorkspaceClient) *ResourceApp {
 	return &ResourceApp{client: client}
 }
 
-func (*ResourceApp) PrepareState(input *resources.App) *apps.App {
-	return &input.App
+func (*ResourceApp) PrepareState(input *resources.App) *AppState {
+	s := &AppState{
+		App:       input.App,
+		Config:    input.Config,
+		Lifecycle: nil,
+	}
+	if input.Lifecycle != nil && input.Lifecycle.Started != nil {
+		s.Lifecycle = &StateLifecycle{Started: input.Lifecycle.Started}
+	}
+	return s
 }
 
-func (r *ResourceApp) DoRead(ctx context.Context, id string) (*apps.App, error) {
-	return r.client.Apps.GetByName(ctx, id)
+// RemapState maps the remote AppRemote to AppState for diff comparison.
+// DoRead populates config, git_source, and source_code_path from the active
+// deployment when one exists, enabling drift detection for out-of-band redeploys.
+// Started is derived from compute status so the planner can detect start/stop changes.
+func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
+	started := !isComputeStopped(&remote.App)
+	return &AppState{
+		App:       remote.App,
+		Config:    remote.Config,
+		Lifecycle: &StateLifecycle{Started: &started},
+	}
 }
 
-func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *apps.App, error) {
+func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error) {
+	app, err := r.client.Apps.GetByName(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	started := !isComputeStopped(app)
+	remote := &AppRemote{
+		App:       *app,
+		Config:    nil,
+		Lifecycle: &StateLifecycle{Started: &started},
+	}
+	if app.ActiveDeployment != nil {
+		// The source code path in active deployment is snapshotted version of the source code path in the app.
+		// We need to use the default source code path to get the correct source code path for drift detection.
+		remote.SourceCodePath = app.DefaultSourceCodePath
+		remote.GitSource = app.ActiveDeployment.GitSource
+		remote.Config = deploymentToAppConfig(app.ActiveDeployment)
+	}
+	return remote, nil
+}
+
+// appRequestBody returns config.App with the deploy-only fields cleared. source_code_path
+// and git_source became part of apps.App in SDK v0.175, but DABs applies them through the
+// Deploy API (see manageLifecycle), so they must not ride along in create/update bodies.
+// ForceSendFields is cloned and stripped of SourceCodePath because the SDK's JSON
+// unmarshal (used when loading the plan) adds every present basic-type field to
+// ForceSendFields, which would otherwise force "source_code_path": "" into the body.
+func appRequestBody(config *AppState) apps.App {
+	app := config.App
+	app.SourceCodePath = ""
+	app.GitSource = nil
+	app.ForceSendFields = slices.DeleteFunc(slices.Clone(app.ForceSendFields), func(s string) bool {
+		return s == "SourceCodePath"
+	})
+	return app
+}
+
+func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *AppRemote, error) {
+	// Start app compute only when lifecycle.started=true is explicit.
+	// For nil (omitted) or false, use no_compute=true (do not start compute).
+	noCompute := config.Lifecycle == nil || config.Lifecycle.Started == nil || !*config.Lifecycle.Started
 	request := apps.CreateAppRequest{
-		App:             *config,
-		NoCompute:       true,
+		App:             appRequestBody(config),
+		NoCompute:       noCompute,
 		ForceSendFields: nil,
 	}
 
@@ -68,30 +164,184 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *
 	return app.Name, nil, nil
 }
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App, _ Changes) (*apps.App, error) {
-	request := apps.UpdateAppRequest{
-		App:  *config,
-		Name: id,
-	}
-	response, err := r.client.Apps.Update(ctx, request)
-	if err != nil {
-		return nil, err
-	}
-
-	if response.Name != id {
-		log.Warnf(ctx, "apps: response contains unexpected name=%#v (expected %#v)", response.Name, id)
-	}
-
-	return nil, nil
+var UpdateMaskFields = []string{
+	"description",
+	"budget_policy_id",
+	"usage_policy_id",
+	"resources",
+	"user_api_scopes",
+	"forward_user_access_token",
+	"compute_size",
+	"compute_min_instances",
+	"compute_max_instances",
+	"git_repository",
+	"telemetry_export_destinations",
 }
 
-func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
+var updateMask = strings.Join(UpdateMaskFields, ",")
+
+func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
+	// Deploy-only fields (source_code_path, config, git_source, lifecycle) are excluded
+	// from the request body; see appRequestBody.
+	if hasAppChanges(entry) {
+		app := appRequestBody(config)
+		request := apps.AsyncUpdateAppRequest{
+			App:        &app,
+			AppName:    id,
+			UpdateMask: updateMask,
+		}
+		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
+		if err != nil {
+			return nil, err
+		}
+
+		response, err := updateWaiter.Get()
+		if err != nil {
+			return nil, err
+		}
+
+		if response.Status.State != apps.AppUpdateUpdateStatusUpdateStateSucceeded {
+			return nil, fmt.Errorf("update status: %s: %s", response.Status.State, response.Status.Message)
+		}
+	}
+
+	return nil, r.manageLifecycle(ctx, id, config, remoteIsStarted(entry))
+}
+
+func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *AppState, alreadyStarted bool) error {
+	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
+		return nil
+	}
+
+	desiredStarted := *config.Lifecycle.Started
+	if desiredStarted {
+		// lifecycle.started=true: ensure the app compute is running and deploy the latest code.
+		if !alreadyStarted {
+			startWaiter, err := r.client.Apps.Start(ctx, apps.StartAppRequest{Name: id})
+			if err != nil {
+				return err
+			}
+			startedApp, err := startWaiter.Get()
+			if err != nil {
+				return err
+			}
+			if err := appdeploy.WaitForDeploymentToComplete(ctx, r.client, startedApp); err != nil {
+				return err
+			}
+		}
+		deployment := appdeploy.BuildDeployment(config.SourceCodePath, config.Config, config.GitSource)
+		if err := appdeploy.Deploy(ctx, r.client, id, deployment); err != nil {
+			return err
+		}
+	} else {
+		// lifecycle.started=false: ensure the app compute is stopped.
+		if alreadyStarted {
+			stopWaiter, err := r.client.Apps.Stop(ctx, apps.StopAppRequest{Name: id})
+			if err != nil {
+				return err
+			}
+			if _, err = stopWaiter.Get(); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// hasAppChanges reports whether the plan entry contains any Update changes
+// to fields that belong to the App Update API (i.e., not deploy-only fields).
+func hasAppChanges(entry *PlanEntry) bool {
+	return entry.Changes.HasChangeExcept("source_code_path", "config", "git_source", "lifecycle", "lifecycle.started")
+}
+
+// OverrideChangeDesc skips drift on the deploy-only fields (source_code_path, config,
+// git_source) while the app has no active deployment. DoRead reads them only from the
+// active deployment, so before the first deploy (or once a stop clears it) the remote
+// side is empty and the diff is spurious; it applies on the next start (manageLifecycle).
+func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *AppRemote) error {
+	// Prefix(1) so a nested diff (e.g. config.command) matches its top-level field.
+	switch path.Prefix(1).String() {
+	case "source_code_path", "config", "git_source":
+		if remote.ActiveDeployment == nil {
+			change.Action = deployplan.Skip
+			change.Reason = "no active deployment"
+		}
+	}
+	return nil
+}
+
+func isComputeStopped(app *apps.App) bool {
+	return app.ComputeStatus == nil ||
+		app.ComputeStatus.State == apps.ComputeStateStopped ||
+		app.ComputeStatus.State == apps.ComputeStateError
+}
+
+// remoteIsStarted reads the compute started state from the plan entry's remote state.
+func remoteIsStarted(entry *PlanEntry) bool {
+	if entry.RemoteState == nil {
+		return false
+	}
+	remote, ok := entry.RemoteState.(*AppRemote)
+	if !ok || remote.Lifecycle == nil || remote.Lifecycle.Started == nil {
+		return false
+	}
+	return *remote.Lifecycle.Started
+}
+
+// deploymentToAppConfig extracts an AppConfig from an active deployment.
+// Returns nil if the deployment has no command or env vars.
+func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
+	if len(d.Command) == 0 && len(d.EnvVars) == 0 {
+		return nil
+	}
+	config := &resources.AppConfig{
+		Command: d.Command,
+		Env:     nil,
+	}
+	if len(d.EnvVars) > 0 {
+		config.Env = make([]resources.AppEnvVar, len(d.EnvVars))
+		for i, ev := range d.EnvVars {
+			config.Env[i] = resources.AppEnvVar{
+				Name:      ev.Name,
+				Value:     ev.Value,
+				ValueFrom: ev.ValueFrom,
+			}
+		}
+	}
+	return config
+}
+
+func (r *ResourceApp) DoDelete(ctx context.Context, id string, _ *AppState) error {
 	_, err := r.client.Apps.DeleteByName(ctx, id)
 	return err
 }
 
-func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) (*apps.App, error) {
-	return r.waitForApp(ctx, r.client, config.Name)
+// IsGone treats a DELETING app as already-deleted. The Apps DELETE is
+// fire-and-forget: it returns success while the app sits in
+// ComputeState=DELETING for up to ~20 minutes, and a GET during that window
+// returns the app (not 404), so callers cannot rely on IsMissing. A second
+// DELETE while DELETING is rejected with 400, so without this the delete/destroy
+// path is not idempotent (acceptance/bundle/invariant/{delete,destroy}_idempotent).
+// Consulted both at plan time (bundle_plan.go) and after a failed apply-time
+// delete (apply.go deleteConfirmedGone), which covers saved-plan deploys where
+// the app enters DELETING only after the plan was computed.
+// Still uncovered: a DELETING app hit during a normal deploy/update (not a
+// delete) produces a spurious update/skip because plan/apply do not special-case it there.
+func (*ResourceApp) IsGone(remote *AppRemote) bool {
+	return remote.ComputeStatus != nil && remote.ComputeStatus.State == apps.ComputeStateDeleting
+}
+
+func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *AppState) (*AppRemote, error) {
+	remote, err := r.waitForApp(ctx, r.client, config.Name)
+	if err != nil {
+		return nil, err
+	}
+	alreadyStarted := remote.Lifecycle != nil && remote.Lifecycle.Started != nil && *remote.Lifecycle.Started
+	if err := r.manageLifecycle(ctx, config.Name, config, alreadyStarted); err != nil {
+		return nil, err
+	}
+	return remote, nil
 }
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.
@@ -99,9 +349,9 @@ func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) (*a
 // We can't use the default waiter from SDK because it only waits on ACTIVE state but we need also STOPPED state.
 // Ideally this should be done in Go SDK but currently only ACTIVE is marked as terminal state
 // so this would need to be addressed by Apps service team first in their proto.
-func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceClient, name string) (*apps.App, error) {
+func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceClient, name string) (*AppRemote, error) {
 	retrier := retries.New[apps.App](retries.WithTimeout(-1), retries.WithRetryFunc(shouldRetry))
-	return retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
+	app, err := retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
 		app, err := w.Apps.GetByName(ctx, name)
 		if err != nil {
 			return nil, retries.Halt(err)
@@ -119,4 +369,19 @@ func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceCli
 			return nil, retries.Continues(statusMessage)
 		}
 	})
+	if err != nil {
+		return nil, err
+	}
+	started := !isComputeStopped(app)
+	remote := &AppRemote{
+		App:       *app,
+		Config:    nil,
+		Lifecycle: &StateLifecycle{Started: &started},
+	}
+	if app.ActiveDeployment != nil {
+		remote.SourceCodePath = app.DefaultSourceCodePath
+		remote.GitSource = app.ActiveDeployment.GitSource
+		remote.Config = deploymentToAppConfig(app.ActiveDeployment)
+	}
+	return remote, nil
 }

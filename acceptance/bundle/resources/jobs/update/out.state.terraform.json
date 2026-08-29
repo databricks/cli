@@ -21,8 +21,10 @@
             "dbt_task": [],
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json",
+                "version_id": ""
               }
             ],
             "description": null,
@@ -59,6 +61,7 @@
                     "cluster_name": "",
                     "custom_tags": null,
                     "data_security_mode": "",
+                    "dependency_mode": "",
                     "docker_image": [],
                     "driver_instance_pool_id": "",
                     "driver_node_type_flexibility": [],
@@ -88,7 +91,8 @@
                     "worker_node_type_flexibility": [],
                     "workload_type": []
                   }
-                ]
+                ],
+                "serverless_compute_id": ""
               }
             ],
             "library": [],
@@ -100,9 +104,14 @@
             "notebook_task": [],
             "notification_settings": [],
             "parameter": [],
+            "parent_path": null,
             "performance_target": null,
             "pipeline_task": [],
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "python_wheel_task": [],
             "queue": [
               {
@@ -137,9 +146,11 @@
                     "unit": "DAYS"
                   }
                 ],
+                "sql_condition": [],
                 "table_update": []
               }
             ],
+            "triggers": [],
             "url": "[DATABRICKS_URL]/#job/[FOO_ID]",
             "usage_policy_id": null,
             "webhook_notifications": [

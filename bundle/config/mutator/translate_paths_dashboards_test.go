@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -42,7 +41,7 @@ func TestTranslatePathsDashboards_FilePathRelativeSubDirectory(t *testing.T) {
 		File: filepath.Join(dir, "resources/dashboard.yml"),
 	}})
 
-	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
 	// Assert that the file path for the dashboard has been converted to its local absolute path.

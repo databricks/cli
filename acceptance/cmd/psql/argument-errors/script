@@ -1,0 +1,51 @@
+mv echo-arguments.sh psql
+
+export PATH="$(pwd):$PATH"
+
+title "Provisioned instance with --project flag should error:"
+trace musterr $CLI psql my-instance --project foo
+
+title "Provisioned instance with --branch flag should error:"
+trace musterr $CLI psql my-instance --branch main
+
+title "Provisioned instance with --endpoint flag should error:"
+trace musterr $CLI psql my-instance --endpoint primary
+
+title "Full path with conflicting --project flag should error:"
+trace musterr $CLI psql projects/my-project/branches/main/endpoints/primary --project other
+
+title "Full path with conflicting --branch flag should error:"
+trace musterr $CLI psql projects/my-project/branches/main/endpoints/primary --branch other
+
+title "Full path with conflicting --endpoint flag should error:"
+trace musterr $CLI psql projects/my-project/branches/main/endpoints/primary --endpoint other
+
+title "Partial path (project+branch) with conflicting --branch flag should error:"
+trace musterr $CLI psql projects/my-project/branches/main --branch other
+
+title "Partial path (project only) with --branch flag should supplement:"
+trace $CLI psql projects/my-project --branch main --max-retries 0
+
+title "Partial path (project+branch) with --endpoint flag should supplement:"
+trace $CLI psql projects/my-project/branches/dev --endpoint custom --max-retries 0
+
+title "Invalid path with just 'projects/' should error:"
+trace musterr $CLI psql projects/
+
+title "Invalid path with missing branch ID should error:"
+trace musterr $CLI psql projects/my-project/branches/
+
+title "Invalid path with missing endpoint ID should error:"
+trace musterr $CLI psql projects/my-project/branches/main/endpoints/
+
+title "Provisioned flag with --project should error:"
+trace musterr $CLI psql --provisioned --project foo
+
+title "Provisioned flag with autoscaling path should error:"
+trace musterr $CLI psql --provisioned projects/my-project/branches/main/endpoints/primary
+
+title "Autoscaling flag with provisioned instance should error:"
+trace musterr $CLI psql --autoscaling my-instance
+
+title "Provisioned and autoscaling flags are mutually exclusive:"
+trace musterr $CLI psql --provisioned --autoscaling

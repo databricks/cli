@@ -3,6 +3,7 @@
 package rfa
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,8 +21,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "rfa",
-		Short: `Request for Access enables users to request access for Unity Catalog securables.`,
-		Long: `Request for Access enables users to request access for Unity Catalog
+		Short: `*Public Preview* Request for Access enables users to request access for Unity Catalog securables.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Request for Access enables users to request access for Unity Catalog
   securables.
 
   These APIs provide a standardized way for securable owners (or users with
@@ -29,6 +32,10 @@ func New() *cobra.Command {
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newBatchCreateAccessRequests())
@@ -63,8 +70,10 @@ func newBatchCreateAccessRequests() *cobra.Command {
 	// TODO: array: requests
 
 	cmd.Use = "batch-create-access-requests"
-	cmd.Short = `Create Access Requests.`
-	cmd.Long = `Create Access Requests.
+	cmd.Short = `*Public Preview* Create Access Requests.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create Access Requests.
 
   Creates access requests for Unity Catalog permissions for a specified
   principal on a securable object. This Batch API can take in multiple
@@ -77,6 +86,8 @@ func newBatchCreateAccessRequests() *cobra.Command {
   "registered_model", and "volume".`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -94,7 +105,7 @@ func newBatchCreateAccessRequests() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -105,6 +116,7 @@ func newBatchCreateAccessRequests() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -135,8 +147,10 @@ func newGetAccessRequestDestinations() *cobra.Command {
 	var getAccessRequestDestinationsReq catalog.GetAccessRequestDestinationsRequest
 
 	cmd.Use = "get-access-request-destinations SECURABLE_TYPE FULL_NAME"
-	cmd.Short = `Get Access Request Destinations.`
-	cmd.Long = `Get Access Request Destinations.
+	cmd.Short = `*Public Preview* Get Access Request Destinations.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get Access Request Destinations.
 
   Gets an array of access request destinations for the specified securable. Any
   caller can see URL destinations or the destinations on the metastore.
@@ -152,6 +166,8 @@ func newGetAccessRequestDestinations() *cobra.Command {
     FULL_NAME: The full name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -170,6 +186,7 @@ func newGetAccessRequestDestinations() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -207,18 +224,17 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 	// TODO: array: destinations
 
 	cmd.Use = "update-access-request-destinations UPDATE_MASK SECURABLE"
-	cmd.Short = `Update Access Request Destinations.`
-	cmd.Long = `Update Access Request Destinations.
+	cmd.Short = `*Public Preview* Update Access Request Destinations.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update Access Request Destinations.
 
   Updates the access request destinations for the given securable. The caller
   must be a metastore admin, the owner of the securable, or a user that has the
-  **MANAGE** privilege on the securable in order to assign destinations.
-  Destinations cannot be updated for securables underneath schemas (tables,
-  volumes, functions, and models). For these securable types, destinations are
-  inherited from the parent securable. A maximum of 5 emails and 5 external
-  notification destinations (Slack, Microsoft Teams, and Generic Webhook
-  destinations) can be assigned to a securable. If a URL destination is
-  assigned, no other destinations can be set.
+  **MANAGE** privilege on the securable in order to assign destinations. A
+  maximum of 5 emails and 5 external notification destinations (Slack, Microsoft
+  Teams, and Generic Webhook destinations) can be assigned to a securable. If a
+  URL destination is assigned, no other destinations can be set.
 
   The supported securable types are: "metastore", "catalog", "schema", "table",
   "external_location", "connection", "credential", "function",
@@ -240,12 +256,14 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
       or read.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only UPDATE_MASK as positional arguments. Provide 'securable' in your JSON input")
+				return errors.New("when --json flag is specified, provide only UPDATE_MASK as positional arguments. Provide 'securable' in your JSON input")
 			}
 			return nil
 		}
@@ -264,7 +282,7 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -283,6 +301,7 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

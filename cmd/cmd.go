@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	aitoolscmd "github.com/databricks/cli/cmd/aitools"
 	"github.com/databricks/cli/cmd/psql"
 	ssh "github.com/databricks/cli/experimental/ssh/cmd"
 
@@ -12,12 +13,15 @@ import (
 	"github.com/databricks/cli/cmd/auth"
 	"github.com/databricks/cli/cmd/bundle"
 	"github.com/databricks/cli/cmd/cache"
+	"github.com/databricks/cli/cmd/completion"
 	"github.com/databricks/cli/cmd/configure"
 	"github.com/databricks/cli/cmd/experimental"
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
 	"github.com/databricks/cli/cmd/pipelines"
+	"github.com/databricks/cli/cmd/quickstart"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/cmd/sandbox"
 	"github.com/databricks/cli/cmd/selftest"
 	"github.com/databricks/cli/cmd/sync"
 	"github.com/databricks/cli/cmd/version"
@@ -32,9 +36,18 @@ const (
 )
 
 // configureGroups adds groups to the command, only if a group
-// has at least one available command.
+// has at least one available command. When only one group survives
+// filtering, the grouping is dropped so Cobra's default "Available
+// Commands" heading is used — matching commands that don't define
+// groups at all.
 func configureGroups(cmd *cobra.Command, groups []cobra.Group) {
 	filteredGroups := cmdgroup.FilterGroups(groups, cmd.Commands())
+	if len(filteredGroups) <= 1 {
+		for _, sub := range cmd.Commands() {
+			sub.GroupID = ""
+		}
+		return
+	}
 	for i := range filteredGroups {
 		cmd.AddGroup(&filteredGroups[i])
 	}
@@ -76,7 +89,7 @@ func New(ctx context.Context) *cobra.Command {
 		groups := []cobra.Group{
 			{
 				ID:    mainGroup,
-				Title: "Available Commands",
+				Title: "Main Commands",
 			},
 			{
 				ID:    pipelines.ManagementGroupID,
@@ -92,8 +105,10 @@ func New(ctx context.Context) *cobra.Command {
 	}
 
 	// Add other subcommands.
+	cli.AddCommand(aitoolscmd.NewAitoolsCmd())
 	cli.AddCommand(api.New())
 	cli.AddCommand(auth.New())
+	cli.AddCommand(completion.New())
 	cli.AddCommand(bundle.New())
 	cli.AddCommand(cache.New())
 	cli.AddCommand(experimental.New())
@@ -101,8 +116,10 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(configure.New())
 	cli.AddCommand(fs.New())
 	cli.AddCommand(labs.New(ctx))
+	cli.AddCommand(sandbox.New())
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
+	cli.AddCommand(quickstart.New())
 	cli.AddCommand(selftest.New())
 	cli.AddCommand(ssh.New())
 

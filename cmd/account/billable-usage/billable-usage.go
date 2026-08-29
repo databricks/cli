@@ -24,6 +24,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newDownload())
 
@@ -77,6 +81,8 @@ func newDownload() *cobra.Command {
       field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -95,6 +101,7 @@ func newDownload() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		defer response.Contents.Close()
 		return cmdio.Render(ctx, response.Contents)
 	}

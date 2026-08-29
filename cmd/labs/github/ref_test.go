@@ -1,7 +1,6 @@
 package github
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,7 +22,7 @@ func TestFileFromRef(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithUserContentOverride(ctx, server.URL)
 
 	raw, err := ReadFileFromRef(ctx, "databrickslabs", "ucx", "main", "README.md")
@@ -45,7 +44,7 @@ func TestDownloadZipball(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithApiOverride(ctx, server.URL)
 
 	raw, err := DownloadZipball(ctx, "databrickslabs", "ucx", "main")

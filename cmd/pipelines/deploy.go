@@ -4,6 +4,8 @@ package pipelines
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
@@ -11,7 +13,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
-	libsutils "github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -27,18 +28,21 @@ func deployCommand() *cobra.Command {
 	var failOnActiveRuns bool
 	var autoApprove bool
 	var verbose bool
+	var quiet int
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 	cmd.Flags().BoolVar(&failOnActiveRuns, "fail-on-active-runs", false, "Fail if there are running pipelines in the deployment.")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
+	cmd.Flags().CountVarP(&quiet, "quiet", "q", "Reduce output: -q prints only the summary, -qq prints only warnings and errors.")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
 	cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			InitFunc: func(b *bundle.Bundle) {
-				b.Config.Bundle.Deployment.Lock.Force = forceLock
+				utils.SetForceLock(cmd, b, forceLock)
 				b.AutoApprove = autoApprove
+				b.Quiet = bundle.QuietLevel(quiet)
 
 				if cmd.Flag("fail-on-active-runs").Changed {
 					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
@@ -57,13 +61,18 @@ func deployCommand() *cobra.Command {
 		}
 		ctx := cmd.Context()
 
+		// --quiet suppresses the per-resource lines, matching bundle deploy.
+		if b.Quiet >= bundle.QuietSummary {
+			return nil
+		}
+
 		bundle.ApplyContext(ctx, b, mutator.InitializeURLs())
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
 
 		for _, group := range b.Config.Resources.AllResources() {
-			for _, resourceKey := range libsutils.SortedKeys(group.Resources) {
+			for _, resourceKey := range slices.Sorted(maps.Keys(group.Resources)) {
 				resource := group.Resources[resourceKey]
 				cmdio.LogString(ctx, fmt.Sprintf("View your %s %s here: %s", resource.ResourceDescription().SingularName, resourceKey, resource.GetURL()))
 			}

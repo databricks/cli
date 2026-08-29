@@ -1,7 +1,6 @@
 package resourcemutator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
@@ -59,7 +58,7 @@ func TestMergeJobTasks(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, resourcemutator.MergeJobTasks())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.MergeJobTasks())
 	assert.NoError(t, diags.Error())
 
 	j := b.Config.Resources.Jobs["foo"]
@@ -112,7 +111,7 @@ func TestMergeJobTasksWithNilKey(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, resourcemutator.MergeJobTasks())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.MergeJobTasks())
 	assert.NoError(t, diags.Error())
 	assert.Len(t, b.Config.Resources.Jobs["foo"].Tasks, 1)
 }

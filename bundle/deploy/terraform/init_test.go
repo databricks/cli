@@ -3,22 +3,24 @@ package terraform
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/maps"
 )
 
 func unsetEnv(t *testing.T, name string) {
@@ -46,7 +48,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirSet(t *testing.T) {
 
 	// compute env
 	env := make(map[string]string, 0)
-	err := setTempDirEnvVars(context.Background(), env, b)
+	err := setTempDirEnvVars(t.Context(), env, b)
 	require.NoError(t, err)
 
 	// Assert that we pass through TMPDIR.
@@ -74,7 +76,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirNotSet(t *testing.T) {
 
 	// compute env
 	env := make(map[string]string, 0)
-	err := setTempDirEnvVars(context.Background(), env, b)
+	err := setTempDirEnvVars(t.Context(), env, b)
 	require.NoError(t, err)
 
 	// Assert that we don't pass through TMPDIR.
@@ -102,7 +104,7 @@ func TestSetTempDirEnvVarsForWindowWithAllTmpDirEnvVarsSet(t *testing.T) {
 
 	// compute env
 	env := make(map[string]string, 0)
-	err := setTempDirEnvVars(context.Background(), env, b)
+	err := setTempDirEnvVars(t.Context(), env, b)
 	require.NoError(t, err)
 
 	// assert that we pass through the highest priority env var value
@@ -132,7 +134,7 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileAndTempSet(t *testing.T) {
 
 	// compute env
 	env := make(map[string]string, 0)
-	err := setTempDirEnvVars(context.Background(), env, b)
+	err := setTempDirEnvVars(t.Context(), env, b)
 	require.NoError(t, err)
 
 	// assert that we pass through the highest priority env var value
@@ -162,11 +164,11 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 
 	// compute env
 	env := make(map[string]string, 0)
-	err := setTempDirEnvVars(context.Background(), env, b)
+	err := setTempDirEnvVars(t.Context(), env, b)
 	require.NoError(t, err)
 
 	// assert TMP is set to b.LocalStateDir("tmp")
-	tmpDir, err := b.LocalStateDir(context.Background(), "tmp")
+	tmpDir, err := b.LocalStateDir(t.Context(), "tmp")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
 		"TMP": tmpDir,
@@ -196,7 +198,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 	// No proxy env vars set.
 	clearEnv()
 	env := make(map[string]string, 0)
-	err := setProxyEnvVars(context.Background(), env, b)
+	err := setProxyEnvVars(t.Context(), env, b)
 	require.NoError(t, err)
 	assert.Empty(t, env)
 
@@ -206,9 +208,9 @@ func TestSetProxyEnvVars(t *testing.T) {
 	t.Setenv("https_proxy", "foo")
 	t.Setenv("no_proxy", "foo")
 	env = make(map[string]string, 0)
-	err = setProxyEnvVars(context.Background(), env, b)
+	err = setProxyEnvVars(t.Context(), env, b)
 	require.NoError(t, err)
-	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
+	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, slices.Collect(maps.Keys(env)))
 
 	// Upper case set.
 	clearEnv()
@@ -216,9 +218,9 @@ func TestSetProxyEnvVars(t *testing.T) {
 	t.Setenv("HTTPS_PROXY", "foo")
 	t.Setenv("NO_PROXY", "foo")
 	env = make(map[string]string, 0)
-	err = setProxyEnvVars(context.Background(), env, b)
+	err = setProxyEnvVars(t.Context(), env, b)
 	require.NoError(t, err)
-	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
+	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, slices.Collect(maps.Keys(env)))
 }
 
 func TestSetUserAgentExtra_Python(t *testing.T) {
@@ -236,8 +238,9 @@ func TestSetUserAgentExtra_Python(t *testing.T) {
 	env := make(map[string]string, 0)
 	err := setUserAgentExtraEnvVar(env, b)
 	require.NoError(t, err)
+	// The CLI version is the test binary's own, which is the not-injected default.
 	assert.Equal(t, map[string]string{
-		"DATABRICKS_USER_AGENT_EXTRA": "cli/0.0.0-dev databricks-pydabs/0.7.0",
+		"DATABRICKS_USER_AGENT_EXTRA": "cli/" + build.DefaultSemver + " databricks-pydabs/0.7.0",
 	}, env)
 }
 
@@ -247,7 +250,7 @@ func TestInheritEnvVars(t *testing.T) {
 	t.Setenv("TF_CLI_CONFIG_FILE", "/tmp/config.tfrc")
 	t.Setenv("AZURE_CONFIG_DIR", "/tmp/foo/bar")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	env := map[string]string{}
 	err := inheritEnvVars(ctx, env)
 	if assert.NoError(t, err) {
@@ -262,7 +265,7 @@ func TestInheritOIDCTokenEnvCustom(t *testing.T) {
 	t.Setenv("DATABRICKS_OIDC_TOKEN_ENV", "custom_DATABRICKS_OIDC_TOKEN")
 	t.Setenv("custom_DATABRICKS_OIDC_TOKEN", "foobar")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	env := map[string]string{}
 	err := inheritEnvVars(ctx, env)
 	require.NoError(t, err)
@@ -273,12 +276,12 @@ func TestInheritOIDCTokenEnvCustom(t *testing.T) {
 func TestInheritOIDCTokenEnv(t *testing.T) {
 	t.Setenv("DATABRICKS_OIDC_TOKEN", "foobar")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	env := map[string]string{}
 	err := inheritEnvVars(ctx, env)
 	require.NoError(t, err)
 	assert.Equal(t, "foobar", env["DATABRICKS_OIDC_TOKEN"])
-	assert.Equal(t, "", env["DATABRICKS_OIDC_TOKEN_ENV"])
+	assert.Empty(t, env["DATABRICKS_OIDC_TOKEN_ENV"])
 }
 
 func TestInheritAzureDevOpsSystemVariablesIndividual(t *testing.T) {
@@ -303,7 +306,7 @@ func TestInheritAzureDevOpsSystemVariablesIndividual(t *testing.T) {
 		t.Run(tc.envVar, func(t *testing.T) {
 			t.Setenv(tc.envVar, tc.envValue)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			env := map[string]string{}
 			err := inheritEnvVars(ctx, env)
 			require.NoError(t, err)
@@ -332,7 +335,7 @@ func TestInheritAzureDevOpsSystemVariables(t *testing.T) {
 		t.Setenv(k, v)
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	env := map[string]string{}
 	err := inheritEnvVars(ctx, env)
 	require.NoError(t, err)
@@ -346,7 +349,7 @@ func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
 	t.Setenv("USERPROFILE", "c:\\foo\\c")
 
 	env := make(map[string]string, 0)
-	err := inheritEnvVars(context.Background(), env)
+	err := inheritEnvVars(t.Context(), env)
 	require.NoError(t, err)
 
 	assert.Contains(t, env, "USERPROFILE")
@@ -354,7 +357,7 @@ func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
 }
 
 func TestInheritEnvVarsWithAbsentTFConfigFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	envMap := map[string]string{}
 	ctx = env.Set(ctx, "DATABRICKS_TF_PROVIDER_VERSION", schema.ProviderVersion)
 	ctx = env.Set(ctx, "DATABRICKS_TF_CLI_CONFIG_FILE", "/tmp/config.tfrc")
@@ -364,7 +367,7 @@ func TestInheritEnvVarsWithAbsentTFConfigFile(t *testing.T) {
 }
 
 func TestInheritEnvVarsWithWrongTFProviderVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	envMap := map[string]string{}
 	configFile := createTempFile(t, t.TempDir(), "config.tfrc", false)
 	ctx = env.Set(ctx, "DATABRICKS_TF_PROVIDER_VERSION", "wrong")
@@ -375,7 +378,7 @@ func TestInheritEnvVarsWithWrongTFProviderVersion(t *testing.T) {
 }
 
 func TestInheritEnvVarsWithCorrectTFCLIConfigFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	envMap := map[string]string{}
 	configFile := createTempFile(t, t.TempDir(), "config.tfrc", false)
 	ctx = env.Set(ctx, "DATABRICKS_TF_PROVIDER_VERSION", schema.ProviderVersion)
@@ -456,7 +459,7 @@ func (i testInstaller) Install(ctx context.Context, dir string, version *version
 }
 
 func TestFindExecPath_NoBinary(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
 		Config: config.Root{
@@ -474,7 +477,7 @@ func TestFindExecPath_NoBinary(t *testing.T) {
 }
 
 func TestFindExecPath_UseExistingBinary(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
 		Config: config.Root{
@@ -496,7 +499,7 @@ func TestFindExecPath_UseExistingBinary(t *testing.T) {
 }
 
 func TestFindExecPath_ExecPathWrongVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
 		Config: config.Root{
@@ -522,7 +525,7 @@ func TestFindExecPath_ExecPathWrongVersion(t *testing.T) {
 }
 
 func TestFindExecPath_ExecPathMatchingVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
 		Config: config.Root{
@@ -544,7 +547,7 @@ func TestFindExecPath_ExecPathMatchingVersion(t *testing.T) {
 }
 
 func TestFindExecPath_Version_NoExecPath(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
 		Config: config.Root{
@@ -566,7 +569,7 @@ func TestFindExecPath_Version_NoExecPath(t *testing.T) {
 }
 
 func TestFindExecPath_Version_ExecPathBadFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
 		Config: config.Root{
@@ -590,7 +593,7 @@ func TestFindExecPath_Version_ExecPathBadFile(t *testing.T) {
 }
 
 func TestFindExecPath_Version_ExecPathWrongVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
 		Config: config.Root{
@@ -619,7 +622,7 @@ func TestFindExecPath_Version_ExecPathWrongVersion(t *testing.T) {
 }
 
 func TestFindExecPath_Version_ExecPathMatchingVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
 		Config: config.Root{
@@ -709,7 +712,7 @@ func TestGetEnvVarWithMatchingVersion(t *testing.T) {
 			t.Setenv(envVarName, c.envValue)
 			t.Setenv(versionVarName, c.versionValue)
 
-			actual, err := getEnvVarWithMatchingVersion(context.Background(), envVarName, versionVarName, c.currentVersion)
+			actual, err := getEnvVarWithMatchingVersion(t.Context(), envVarName, versionVarName, c.currentVersion)
 			require.NoError(t, err)
 			assert.Equal(t, c.expected, actual)
 		})

@@ -3,11 +3,12 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created pipelines.foo
+Created pipelines.foo.permissions
+Files: 7 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests
+>>> print_requests.py //pipeline
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -18,35 +19,35 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_VIEW"
+          "inherited": false,
+          "permission_level": "CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
-      "user_name":"viewer@example.com"
+      "display_name": "viewer@example.com",
+      "user_name": "viewer@example.com"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_MANAGE"
+          "inherited": false,
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"data-team"
+      "group_name": "data-team"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     }
   ],
-  "object_id":"/pipelines/[FOO_ID]",
-  "object_type":"pipelines"
+  "object_id": "/pipelines/[FOO_ID]",
+  "object_type": "pipelines"
 }
 
 === Update one permission and deploy again
@@ -55,11 +56,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated pipelines.foo.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests
+>>> print_requests.py //pipeline
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -70,11 +71,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated pipelines.foo.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests
+>>> print_requests.py //pipeline
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -94,11 +95,11 @@ resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deleted pipelines.foo.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
 
->>> print_sorted_requests
+>>> print_requests.py //pipeline --sort
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
@@ -109,11 +110,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created pipelines.foo.permissions
+Files: 4 uploaded, 1 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
->>> print_requests
+>>> print_requests.py //pipeline
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -123,10 +124,9 @@ The following resources will be deleted:
   delete resources.pipelines.foo
 
 This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
   delete resources.pipelines.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/permissions-test/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

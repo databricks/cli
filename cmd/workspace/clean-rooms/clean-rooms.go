@@ -29,6 +29,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newCreateOutputCatalog())
@@ -70,6 +74,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.CleanRoom.Comment, "comment", createReq.CleanRoom.Comment, ``)
+	cmd.Flags().BoolVar(&createReq.CleanRoom.EnableSharedOutput, "enable-shared-output", createReq.CleanRoom.EnableSharedOutput, `Whether allow task to write to shared output schema.`)
 	cmd.Flags().StringVar(&createReq.CleanRoom.Name, "name", createReq.CleanRoom.Name, `The name of the clean room.`)
 	// TODO: complex arg: output_catalog
 	cmd.Flags().StringVar(&createReq.CleanRoom.Owner, "owner", createReq.CleanRoom.Owner, `This is the Databricks username of the owner of the local clean room securable for permission management.`)
@@ -81,15 +86,19 @@ func newCreate() *cobra.Command {
 
   Create a new clean room with the specified collaborators. This method is
   asynchronous; the returned name field inside the clean_room field can be used
-  to poll the clean room status, using the :method:cleanrooms/get method. When
-  this method returns, the clean room will be in a PROVISIONING state, with only
+  to poll the clean room status, using the [cleanrooms/get] method. When this
+  method returns, the clean room will be in a PROVISIONING state, with only
   name, owner, comment, created_at and status populated. The clean room will be
   usable once it enters an ACTIVE state.
 
   The caller must be a metastore admin or have the **CREATE_CLEAN_ROOM**
-  privilege on the metastore.`
+  privilege on the metastore.
+
+  [cleanrooms/get]: https://docs.databricks.com/api/workspace/cleanrooms/get`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -107,7 +116,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -121,13 +130,13 @@ func newCreate() *cobra.Command {
 		if createSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *cleanrooms.CleanRoom) {
 			status := i.Status
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(createTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -176,6 +185,8 @@ func newCreateOutputCatalog() *cobra.Command {
     CLEAN_ROOM_NAME: Name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -193,7 +204,7 @@ func newCreateOutputCatalog() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -205,6 +216,7 @@ func newCreateOutputCatalog() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -247,6 +259,8 @@ func newDelete() *cobra.Command {
     NAME: Name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -300,6 +314,8 @@ func newGet() *cobra.Command {
   Get the details of a clean room given its name.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -317,6 +333,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -345,9 +362,19 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq cleanrooms.ListCleanRoomsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of clean rooms to return (i.e., the page length).`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
 	cmd.Short = `List clean rooms.`
@@ -357,6 +384,8 @@ func newList() *cobra.Command {
   has access to are returned.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -369,6 +398,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.CleanRooms.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -416,6 +452,8 @@ func newUpdate() *cobra.Command {
     NAME: Name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -433,7 +471,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -445,6 +483,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

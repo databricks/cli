@@ -1,0 +1,5 @@
+Ignore = [
+    "home",
+    "cache",
+]
+RecordRequests = true

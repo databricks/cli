@@ -1,0 +1,6 @@
+# project_fields is the allow-list of project fields the acceptance tests assert
+# on. Anything the backend returns outside this list is dropped, so a new field
+# in the API response does not break the golden.
+project_fields() {
+    jq '{name, project_id, status: (.status | {branch_logical_size_limit_bytes, default_branch, default_endpoint_settings, display_name, enable_pg_native_login, history_retention_duration, owner, pg_version, project_id, synthetic_storage_size_bytes}), uid}'
+}

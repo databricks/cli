@@ -1,3 +1,11 @@
 Loading app 'my_app' configuration
 File successfully saved to out/sub/folder/1.py
 App configuration successfully saved to out.app.yml
+Warning: Generated configuration is not included in the bundle
+
+The file out.app.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - *.yml
+

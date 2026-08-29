@@ -1,4 +1,0 @@
-targets:
-  default:
-    mode: development
-    default: true

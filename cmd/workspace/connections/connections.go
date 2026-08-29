@@ -3,6 +3,7 @@
 package connections
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,21 +21,23 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "connections",
-		Short: `Connections allow for creating a connection to an external data source.`,
-		Long: `Connections allow for creating a connection to an external data source.
+		Short: `A connection represents an external data source for use within Databricks.`,
+		Long: `A connection represents an external data source for use within Databricks.
 
-  A connection is an abstraction of an external data source that can be
-  connected from Databricks Compute. Creating a connection object is the first
-  step to managing external data sources within Unity Catalog, with the second
-  step being creating a data object (catalog, schema, or table) using the
-  connection. Data objects derived from a connection can be written to or read
-  from similar to other Unity Catalog data objects based on cloud storage. Users
-  may create different types of connections with each connection having a unique
-  set of configuration options to support credential management and other
-  settings.`,
+  Creating a connection object is the first step to managing external data
+  sources within Unity Catalog. The second step is creating a data object
+  (catalog, schema, or table) using the connection. Data objects derived from a
+  connection can be written to or read from similar to other Unity Catalog data
+  objects based on cloud storage. You can create different types of connections,
+  and each connection has a unique set of configuration options to support
+  credential management and other settings.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -69,6 +72,8 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	// TODO: complex arg: environment_settings
+	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `Parent schema for schema-level connections, in format "schemas/{catalog}.{schema}".`)
 	// TODO: map via StringToStringVar: properties
 	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `If the connection is read only.`)
 
@@ -83,6 +88,8 @@ func newCreate() *cobra.Command {
   external server.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -95,19 +102,20 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Connections.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -147,6 +155,8 @@ func newDelete() *cobra.Command {
     NAME: The name of the connection to be deleted.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -154,10 +164,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Connections drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No NAME argument specified. Loading names for Connections drop-down.")
 			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx, catalog.ListConnectionsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -168,7 +178,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the name of the connection to be deleted")
+			return errors.New("expected to have the name of the connection to be deleted")
 		}
 		deleteReq.Name = args[0]
 
@@ -215,6 +225,8 @@ func newGet() *cobra.Command {
     NAME: Name of the connection.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -222,10 +234,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Connections drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No NAME argument specified. Loading names for Connections drop-down.")
 			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx, catalog.ListConnectionsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -236,7 +248,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the connection")
+			return errors.New("expected to have name of the connection")
 		}
 		getReq.Name = args[0]
 
@@ -244,6 +256,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -272,9 +285,21 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq catalog.ListConnectionsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
+	cmd.Flags().StringVar(&listReq.Parent, "parent", listReq.Parent, `Optional.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of connections to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list"
 	cmd.Short = `List connections.`
@@ -291,6 +316,8 @@ func newList() *cobra.Command {
   indication that the end of results has been reached.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -303,6 +330,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Connections.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -335,6 +369,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: environment_settings
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the connection.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the connection.`)
 
@@ -348,6 +383,8 @@ func newUpdate() *cobra.Command {
     NAME: Name of the connection.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -365,13 +402,13 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.Name = args[0]
 
@@ -379,6 +416,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

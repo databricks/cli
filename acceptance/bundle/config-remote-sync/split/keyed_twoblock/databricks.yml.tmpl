@@ -1,0 +1,39 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# "shared" is defined in BOTH blocks: the top-level one carries max_retries and
+# the targets.dev one carries timeout_seconds. Loading merges them into a single
+# element whose fields come from two different physical places, so each field
+# edit has to be routed to the block that actually defines that field.
+#
+# max_retries is set in BOTH blocks, so the target's value is the one that was
+# deployed and the one an edit has to overwrite.
+#
+# "omega" sits after "shared" in the target block. Because "shared" contributes
+# to both blocks its position is easy to miscount, which is what makes editing
+# the plain single-block sibling "omega" the subtle case.
+resources:
+  jobs:
+    twoblock_job:
+      tasks:
+        - task_key: shared
+          max_retries: 1
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/shared
+        - task_key: nu
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nu
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        twoblock_job:
+          tasks:
+            - task_key: shared
+              max_retries: 2
+              timeout_seconds: 60
+            - task_key: omega
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/omega

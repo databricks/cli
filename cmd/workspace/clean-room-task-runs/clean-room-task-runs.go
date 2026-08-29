@@ -3,6 +3,8 @@
 package clean_room_task_runs
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -16,15 +18,21 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "clean-room-task-runs",
-		Short:   `Clean room task runs are the executions of notebooks in a clean room.`,
-		Long:    `Clean room task runs are the executions of notebooks in a clean room.`,
+		Use:   "clean-room-task-runs",
+		Short: `Clean room task runs are the executions of notebooks and JAR analyses in a clean room.`,
+		Long: `Clean room task runs are the executions of notebooks and JAR analyses in a
+  clean room.`,
 		GroupID: "cleanrooms",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newList())
+	cmd.AddCommand(newListCleanRoomTaskRunsHandler())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -47,10 +55,20 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq cleanrooms.ListCleanRoomNotebookTaskRunsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().StringVar(&listReq.NotebookName, "notebook-name", listReq.NotebookName, `Notebook name.`)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The maximum number of task runs to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list CLEAN_ROOM_NAME"
 	cmd.Short = `List notebook task runs.`
@@ -62,6 +80,8 @@ func newList() *cobra.Command {
     CLEAN_ROOM_NAME: Name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -76,6 +96,13 @@ func newList() *cobra.Command {
 		listReq.CleanRoomName = args[0]
 
 		response := w.CleanRoomTaskRuns.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -86,6 +113,83 @@ func newList() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listOverrides {
 		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+// start list-clean-room-task-runs-handler command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listCleanRoomTaskRunsHandlerOverrides []func(
+	*cobra.Command,
+	*cleanrooms.ListCleanRoomTaskRunsRequest,
+)
+
+func newListCleanRoomTaskRunsHandler() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listCleanRoomTaskRunsHandlerReq cleanrooms.ListCleanRoomTaskRunsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listCleanRoomTaskRunsHandlerLimit int
+
+	cmd.Flags().StringVar(&listCleanRoomTaskRunsHandlerReq.Name, "name", listCleanRoomTaskRunsHandlerReq.Name, `Executable name.`)
+	cmd.Flags().IntVar(&listCleanRoomTaskRunsHandlerReq.PageSize, "page-size", listCleanRoomTaskRunsHandlerReq.PageSize, `The maximum number of task runs to return.`)
+	cmd.Flags().Var(&listCleanRoomTaskRunsHandlerReq.TaskType, "task-type", `Filter by the type of Clean Room task. Supported values: [JAR, NOTEBOOK]`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listCleanRoomTaskRunsHandlerLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listCleanRoomTaskRunsHandlerReq.PageToken, "page-token", listCleanRoomTaskRunsHandlerReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-clean-room-task-runs-handler CLEAN_ROOM_NAME"
+	cmd.Short = `List task runs.`
+	cmd.Long = `List task runs.
+
+  List all the historical task runs in a clean room.
+
+  Arguments:
+    CLEAN_ROOM_NAME: Name of the clean room.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listCleanRoomTaskRunsHandlerReq.CleanRoomName = args[0]
+
+		response := w.CleanRoomTaskRuns.ListCleanRoomTaskRunsHandler(ctx, listCleanRoomTaskRunsHandlerReq)
+		if listCleanRoomTaskRunsHandlerLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listCleanRoomTaskRunsHandlerLimit)
+		}
+		if listCleanRoomTaskRunsHandlerLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listCleanRoomTaskRunsHandlerLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listCleanRoomTaskRunsHandlerOverrides {
+		fn(cmd, &listCleanRoomTaskRunsHandlerReq)
 	}
 
 	return cmd

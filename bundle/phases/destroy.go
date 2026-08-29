@@ -3,7 +3,9 @@ package phases
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -12,19 +14,18 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	_, err := w.Workspace.GetStatusByPath(ctx, b.Config.Workspace.RootPath)
 
-	var aerr *apierr.APIError
-	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound {
+	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.StatusCode == http.StatusNotFound {
 		log.Infof(ctx, "Root path does not exist: %s", b.Config.Workspace.RootPath)
 		return false, nil
 	}
@@ -32,15 +33,77 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return true, err
 }
 
-func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
+var destroyApprovalGroups = []approvalGroup{
+	{group: "schemas", message: deleteSchemaMessage},
+	// Pipelines are handled separately in approvalForDestroy so the message reflects each
+	// pipeline's cascade_on_destroy setting; see logPipelineDeleteApproval.
+	{group: "volumes", message: deleteVolumeMessage},
+	{group: "database_instances", message: deleteDatabaseInstanceMessage},
+	{group: "synced_database_tables", message: deleteSyncedDatabaseTableMessage},
+	{group: "postgres_projects", message: deletePostgresProjectMessage},
+	{group: "postgres_branches", message: deletePostgresBranchMessage},
+	{group: "postgres_databases", message: deletePostgresDatabaseMessage},
+	{group: "vector_search_indexes", message: deleteVectorSearchIndexMessage},
+	{group: "genie_spaces", message: deleteGenieSpaceMessage},
+}
+
+// logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
+// a note that datasets will be deleted as well.
+func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action, engine engine.EngineType, quiet bool) error {
+	pipelineDeletes := filterGroup(actions, "pipelines", deployplan.Delete)
+
+	var cascading, retaining []deployplan.Action
+	for _, a := range pipelineDeletes {
+		cascade, err := pipelineDeletionCascades(b, a, engine)
+		if err != nil {
+			return err
+		}
+		if cascade {
+			cascading = append(cascading, a)
+		} else {
+			retaining = append(retaining, a)
+		}
+	}
+
+	for _, grp := range []struct {
+		message string
+		actions []deployplan.Action
+	}{
+		{deletePipelineWithCascadeMessage, cascading},
+		{deletePipelineNoCascadeMessage, retaining},
+	} {
+		if len(grp.actions) == 0 || quiet {
+			continue
+		}
+		cmdio.LogString(ctx, grp.message)
+		for _, a := range grp.actions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+	return nil
+}
+
+func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (bool, error) {
 	deleteActions := plan.GetActions()
+
+	// Deletes of resources that are already gone remotely only clean up the state,
+	// so they don't count as destructive actions and are not listed as deletions.
+	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.Gone })
 
 	err := checkForPreventDestroy(b, deleteActions)
 	if err != nil {
 		return false, err
 	}
 
-	if len(deleteActions) > 0 {
+	// With --auto-approve there is no prompt, so this listing is informational and -qq
+	// suppresses it. Without --auto-approve we are about to ask for consent and the user
+	// must see what they are consenting to, so it prints at any -q level. The approval
+	// helpers below still run either way: they also validate (e.g. pipeline cascade
+	// lookups can fail), so skipping them would skip that.
+	quiet := b.AutoApprove && b.Quiet >= bundle.QuietAll
+
+	if len(deleteActions) > 0 && !quiet {
 		cmdio.LogString(ctx, "The following resources will be deleted:")
 		for _, a := range deleteActions {
 			if a.IsChildResource() {
@@ -51,55 +114,44 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 		cmdio.LogString(ctx, "")
 	}
 
-	schemaActions := filterGroup(deleteActions, "schemas", deployplan.Delete)
-	dltActions := filterGroup(deleteActions, "pipelines", deployplan.Delete)
-	volumeActions := filterGroup(deleteActions, "volumes", deployplan.Delete)
-
-	if len(schemaActions) > 0 {
-		cmdio.LogString(ctx, deleteSchemaMessage)
-		for _, a := range schemaActions {
-			cmdio.Log(ctx, a)
-		}
-		cmdio.LogString(ctx, "")
+	if !quiet {
+		logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
+	}
+	// Called even when quiet: the cascade lookup can fail, and that error must surface.
+	if err := logPipelineDeleteApproval(ctx, b, deleteActions, engine, quiet); err != nil {
+		return false, err
 	}
 
-	if len(dltActions) > 0 {
-		cmdio.LogString(ctx, deletePipelineMessage)
-		for _, a := range dltActions {
-			cmdio.Log(ctx, a)
-		}
+	if !quiet {
+		cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
 		cmdio.LogString(ctx, "")
 	}
-
-	if len(volumeActions) > 0 {
-		cmdio.LogString(ctx, deleteVolumeMessage)
-		for _, a := range volumeActions {
-			cmdio.Log(ctx, a)
-		}
-		cmdio.LogString(ctx, "")
-	}
-
-	cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
-	cmdio.LogString(ctx, "")
 
 	if b.AutoApprove {
 		return true, nil
 	}
 
-	approved, err := cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
-	if err != nil {
-		return false, err
-	}
-
-	return approved, nil
+	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan, direct.MigrateMode(false))
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())
+	}
+
+	// Flush WAL to local state file before deleting remote files.
+	// Warn instead of hard-error: resources are already deleted, so proceed
+	// with file cleanup regardless of whether state flush succeeds.
+	if engine.IsDirect() {
+		if _, err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
+			diags := diag.WarningFromErr(err)
+			if len(diags) > 0 {
+				logdiag.LogDiag(ctx, diags[0])
+			}
+		}
 	}
 
 	if logdiag.HasError(ctx) {
@@ -108,8 +160,19 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 
 	bundle.ApplyContext(ctx, b, files.Delete())
 
-	if !logdiag.HasError(ctx) {
-		cmdio.LogString(ctx, "Destroy complete!")
+	if !logdiag.HasError(ctx) && b.Quiet < bundle.QuietAll {
+		// Count top-level resources only, matching the approval list above (which
+		// skips children); this also keeps the count stable across engines. Gone
+		// resources are excluded to match that list: they were already deleted
+		// remotely, so applying their Delete only cleans up stale state and is not
+		// a destruction to report.
+		deleted := 0
+		for _, a := range plan.GetActions() {
+			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.Gone {
+				deleted++
+			}
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("Destroy: %d deleted", deleted))
 	}
 }
 
@@ -124,11 +187,11 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	}
 
 	if !ok {
-		cmdio.LogString(ctx, "No active deployment found to destroy!")
+		cmdio.LogProgress(ctx, "No active deployment found to destroy!")
 		return
 	}
 
-	bundle.ApplyContext(ctx, b, lock.Acquire())
+	bundle.ApplyContext(ctx, b, lock.Acquire(lock.GoalDestroy))
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -157,8 +220,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	var plan *deployplan.Plan
 	if engine.IsDirect() {
-		_, localPath := b.StateFilenameDirect(ctx)
-		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil, localPath)
+		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -177,13 +239,20 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		}
 	}
 
-	hasApproval, err := approvalForDestroy(ctx, b, plan)
+	hasApproval, err := approvalForDestroy(ctx, b, plan, engine)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 
 	if hasApproval {
+		if engine.IsDirect() {
+			// Upgrade from read (opened by process.go) to write mode
+			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+		}
 		destroyCore(ctx, b, plan, engine)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")

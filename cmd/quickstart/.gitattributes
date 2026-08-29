@@ -1,0 +1,6 @@
+# These markdown files are embedded into the binary with go:embed and their
+# newlines are semantically important: stripFrontmatter matches an LF fence
+# ("---\n"), so an extra \r on Windows would leave the frontmatter unstripped.
+# Always check them out with \n so the embedded content is identical on every
+# platform.
+*.md text eol=lf

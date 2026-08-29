@@ -2,6 +2,11 @@
 
 envsubst < databricks.yml.tmpl > databricks.yml
 
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
 touch dummy.whl
 $CLI bundle deploy
 
@@ -15,5 +20,5 @@ $CLI bundle config-remote-sync | contains.py "No changes detected"
 
 title "JSON output"
 echo
-$CLI bundle config-remote-sync -o json > out.json
-cat out.json
+$CLI bundle config-remote-sync -o json > tmp.json
+cat tmp.json

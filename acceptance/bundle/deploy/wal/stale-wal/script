@@ -1,0 +1,19 @@
+mkdir -p .databricks/bundle/default
+cp resources.json .databricks/bundle/default/
+cp resources.json.wal .databricks/bundle/default/
+
+echo "=== WAL content before deploy ==="
+cat .databricks/bundle/default/resources.json.wal
+
+echo "=== Deploy (should ignore stale WAL) ==="
+trace $CLI bundle deploy
+
+echo "=== Checking WAL file after deploy ==="
+if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
+    echo "WAL file exists (unexpected)"
+else
+    echo "Stale WAL deleted (expected)"
+fi
+
+echo "=== State file should NOT contain stale_job ==="
+cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys)}'

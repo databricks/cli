@@ -1,6 +1,6 @@
 {
   "plan_version": 2,
-  "cli_version": "[DEV_VERSION]",
+  "cli_version": "[CLI_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "create",
@@ -18,7 +18,7 @@
 }
 {
   "plan_version": 2,
-  "cli_version": "[DEV_VERSION]",
+  "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
   "plan": {
@@ -38,11 +38,21 @@
       },
       "remote_state": {
         "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
+        "lifecycle": {
+          "started": false
+        },
         "node_type_id": "[NODE_TYPE_ID]",
         "num_workers": 2,
-        "spark_version": "13.3.x-snapshot-scala2.12"
+        "spark_version": "13.3.x-snapshot-scala2.12",
+        "state": "TERMINATED"
       },
       "changes": {
         "autoscale": {
@@ -50,6 +60,31 @@
           "new": {
             "max_workers": 4,
             "min_workers": 2
+          }
+        },
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
+        "lifecycle": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "started": false
           }
         },
         "num_workers": {
@@ -63,7 +98,7 @@
 }
 {
   "plan_version": 2,
-  "cli_version": "[DEV_VERSION]",
+  "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 2,
   "plan": {
@@ -87,10 +122,20 @@
           "min_workers": 2
         },
         "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
+        "lifecycle": {
+          "started": false
+        },
         "node_type_id": "[NODE_TYPE_ID]",
-        "spark_version": "13.3.x-snapshot-scala2.12"
+        "spark_version": "13.3.x-snapshot-scala2.12",
+        "state": "TERMINATED"
       },
       "changes": {
         "autoscale.max_workers": {
@@ -104,6 +149,31 @@
           "old": 2,
           "new": 3,
           "remote": 2
+        },
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
+        "lifecycle": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "started": false
+          }
         }
       }
     }
@@ -111,7 +181,7 @@
 }
 {
   "plan_version": 2,
-  "cli_version": "[DEV_VERSION]",
+  "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 3,
   "plan": {
@@ -135,8 +205,17 @@
           "min_workers": 3
         },
         "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
+        "lifecycle": {
+          "started": true
+        },
         "node_type_id": "[NODE_TYPE_ID]",
         "spark_version": "13.3.x-snapshot-scala2.12",
         "state": "RUNNING"
@@ -155,6 +234,31 @@
           "old": 3,
           "new": 4,
           "remote": 3
+        },
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
+        "lifecycle": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "started": true
+          }
         }
       }
     }
@@ -162,7 +266,7 @@
 }
 {
   "plan_version": 2,
-  "cli_version": "[DEV_VERSION]",
+  "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 4,
   "plan": {
@@ -183,8 +287,17 @@
           "min_workers": 4
         },
         "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
+        "lifecycle": {
+          "started": true
+        },
         "node_type_id": "[NODE_TYPE_ID]",
         "spark_version": "13.3.x-snapshot-scala2.12",
         "state": "RUNNING"
@@ -200,6 +313,31 @@
           "remote": {
             "max_workers": 6,
             "min_workers": 4
+          }
+        },
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
+        "lifecycle": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "started": true
           }
         },
         "num_workers": {

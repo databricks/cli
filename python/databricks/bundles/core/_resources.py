@@ -6,6 +6,8 @@ from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
+    from databricks.bundles.alerts._models.alert import Alert, AlertParam
+    from databricks.bundles.catalogs._models.catalog import Catalog, CatalogParam
     from databricks.bundles.jobs._models.job import Job, JobParam
     from databricks.bundles.pipelines._models.pipeline import Pipeline, PipelineParam
     from databricks.bundles.schemas._models.schema import Schema, SchemaParam
@@ -60,6 +62,8 @@ class Resources:
         self._pipelines = dict[str, "Pipeline"]()
         self._schemas = dict[str, "Schema"]()
         self._volumes = dict[str, "Volume"]()
+        self._alerts = dict[str, "Alert"]()
+        self._catalogs = dict[str, "Catalog"]()
         self._locations = dict[tuple[str, ...], Location]()
         self._diagnostics = Diagnostics()
 
@@ -86,6 +90,14 @@ class Resources:
         """
         return self._diagnostics
 
+    @property
+    def alerts(self) -> dict[str, "Alert"]:
+        return self._alerts
+
+    @property
+    def catalogs(self) -> dict[str, "Catalog"]:
+        return self._catalogs
+
     def add_resource(
         self,
         resource_name: str,
@@ -102,6 +114,8 @@ class Resources:
         :param location: optional location of the resource in the source code
         """
 
+        from databricks.bundles.alerts import Alert
+        from databricks.bundles.catalogs import Catalog
         from databricks.bundles.jobs import Job
         from databricks.bundles.pipelines import Pipeline
         from databricks.bundles.schemas import Schema
@@ -118,6 +132,10 @@ class Resources:
                 self.add_schema(resource_name, resource, location=location)
             case Volume():
                 self.add_volume(resource_name, resource, location=location)
+            case Alert():
+                self.add_alert(resource_name, resource, location=location)
+            case Catalog():
+                self.add_catalog(resource_name, resource, location=location)
             case _:
                 raise ValueError(f"Unsupported resource type: {type(resource)}")
 
@@ -249,6 +267,66 @@ class Resources:
 
             self._volumes[resource_name] = volume
 
+    def add_alert(
+        self,
+        resource_name: str,
+        alert: "AlertParam",
+        *,
+        location: Optional[Location] = None,
+    ) -> None:
+        """
+        Adds an alert to the collection of resources. Resource name must be unique across all alerts.
+        """
+        from databricks.bundles.alerts import Alert
+
+        alert = _transform(Alert, alert)
+        path = ("resources", "alerts", resource_name)
+        location = location or Location.from_stack_frame(depth=1)
+
+        if self._alerts.get(resource_name):
+            self.add_diagnostic_error(
+                msg=f"Duplicate resource name '{resource_name}' for an alert. Resource names must be unique.",
+                location=location,
+                path=path,
+            )
+        else:
+            if location:
+                self.add_location(path, location)
+
+            self._alerts[resource_name] = alert
+
+    def add_catalog(
+        self,
+        resource_name: str,
+        catalog: "CatalogParam",
+        *,
+        location: Optional[Location] = None,
+    ) -> None:
+        """
+        Adds a catalog to the collection of resources. Resource name must be unique across all catalogs.
+
+        :param resource_name: unique identifier for the catalog
+        :param catalog: the catalog to add, can be Catalog or dict
+        :param location: optional location of the catalog in the source code
+        """
+        from databricks.bundles.catalogs import Catalog
+
+        catalog = _transform(Catalog, catalog)
+        path = ("resources", "catalogs", resource_name)
+        location = location or Location.from_stack_frame(depth=1)
+
+        if self._catalogs.get(resource_name):
+            self.add_diagnostic_error(
+                msg=f"Duplicate resource name '{resource_name}' for a catalog. Resource names must be unique.",
+                location=location,
+                path=path,
+            )
+        else:
+            if location:
+                self.add_location(path, location)
+
+            self._catalogs[resource_name] = catalog
+
     def add_location(self, path: tuple[str, ...], location: Location) -> None:
         """
         Associate source code location with a path in the bundle configuration.
@@ -330,6 +408,12 @@ class Resources:
 
         for name, volume in other.volumes.items():
             self.add_volume(name, volume)
+
+        for name, alert in other.alerts.items():
+            self.add_alert(name, alert)
+
+        for name, catalog in other.catalogs.items():
+            self.add_catalog(name, catalog)
 
         for path, location in other._locations.items():
             self.add_location(path, location)

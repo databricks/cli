@@ -160,7 +160,7 @@ func (t *pythonTrampoline) GetTemplateData(task *jobs.Task) (map[string]any, err
 
 func (t *pythonTrampoline) generateParameters(task *jobs.PythonWheelTask) (string, error) {
 	if task.Parameters != nil && task.NamedParameters != nil {
-		return "", errors.New("not allowed to pass both paramaters and named_parameters")
+		return "", errors.New("not allowed to pass both parameters and named_parameters")
 	}
 	params := append([]string{task.PackageName}, task.Parameters...)
 	for k, v := range task.NamedParameters {

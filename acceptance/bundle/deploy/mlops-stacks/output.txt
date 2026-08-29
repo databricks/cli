@@ -3,8 +3,12 @@
 {
   "input_project_name": "project_name_[UNIQUE_NAME]",
   "input_root_dir": "test_repo_mlops_stacks",
-  "input_include_models_in_unity_catalog": "no",
   "input_cloud": "[CLOUD_ENV_BASE]"
+}
+
+>>> [CLI] schemas create project_name_[UNIQUE_NAME] main
+{
+  "full_name": "main.project_name_[UNIQUE_NAME]"
 }
 
 >>> [CLI] bundle init mlops-stacks --config-file config.json
@@ -20,14 +24,14 @@ Please refer to the README.md for further instructions on getting started.
 This directory contains an ML project based on the default
 [Databricks MLOps Stacks](https://github.com/databricks/mlops-stacks),
 
->>> [CLI] bundle summary
+>>> [CLI] bundle summary --var catalog_name=main
 Warning: expected a string value, found null
   at targets.dev.workspace.host
-  in databricks.yml:34:12
+  in databricks.yml:37:12
 
 Warning: unknown field: description
   at resources.experiments.experiment
-  in resources/ml-artifacts-resource.yml:21:7
+  in resources/ml-artifacts-resource.yml:28:7
 
 Name: project_name_[UNIQUE_NAME]
 Target: dev
@@ -46,19 +50,19 @@ Resources:
     model_training_job:
       Name: [dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model-training-job
       URL:  (not deployed)
-  Models:
+  Registered Models:
     model:
-      Name: [dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model
+      Name: dev_[USERNAME]_project_name_[UNIQUE_NAME]-model
       URL:  (not deployed)
 
->>> [CLI] bundle validate
+>>> [CLI] bundle validate --var catalog_name=main
 Warning: expected a string value, found null
   at targets.dev.workspace.host
-  in databricks.yml:34:12
+  in databricks.yml:37:12
 
 Warning: unknown field: description
   at resources.experiments.experiment
-  in resources/ml-artifacts-resource.yml:21:7
+  in resources/ml-artifacts-resource.yml:28:7
 
 Name: project_name_[UNIQUE_NAME]
 Target: dev
@@ -68,32 +72,39 @@ Workspace:
 
 Found 2 warnings
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy --var catalog_name=main
 Warning: expected a string value, found null
   at targets.dev.workspace.host
-  in databricks.yml:34:12
+  in databricks.yml:37:12
 
 Warning: unknown field: description
   at resources.experiments.experiment
-  in resources/ml-artifacts-resource.yml:21:7
+  in resources/ml-artifacts-resource.yml:28:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created experiments.experiment
+Created experiments.experiment.permissions
+Created jobs.batch_inference_job
+Created jobs.batch_inference_job.permissions
+Created jobs.model_training_job
+Created jobs.model_training_job.permissions
+Created registered_models.model
+Created registered_models.model.grants
+Files: 26 uploaded, 0 deleted
+Resources: 8 created, 0 changed, 0 deleted, 0 unchanged
 
->>> [CLI] bundle summary -o json
+>>> [CLI] bundle summary --var catalog_name=main -o json
 Warning: expected a string value, found null
   at targets.dev.workspace.host
-  in databricks.yml:34:12
+  in databricks.yml:37:12
 
 Warning: unknown field: description
   at resources.experiments.experiment
-  in resources/ml-artifacts-resource.yml:21:7
+  in resources/ml-artifacts-resource.yml:28:7
 
 {
   "experiment_id": "[NUMID]",
-  "model_id": "[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model",
+  "model_id": "main.project_name_[UNIQUE_NAME].dev_[USERNAME]_project_name_[UNIQUE_NAME]-model",
   "inference_job_id": "[NUMID]",
   "training_job_id": "[NUMID]"
 }
@@ -101,40 +112,49 @@ Warning: unknown field: description
 === Assert the batch inference job actually exists
 Warning: expected a string value, found null
   at targets.dev.workspace.host
-  in databricks.yml:34:12
+  in databricks.yml:37:12
 
 Warning: unknown field: description
   at resources.experiments.experiment
-  in resources/ml-artifacts-resource.yml:21:7
+  in resources/ml-artifacts-resource.yml:28:7
 
 Warning: expected a string value, found null
   at targets.dev.workspace.host
-  in databricks.yml:34:12
+  in databricks.yml:37:12
 
 Warning: unknown field: description
   at resources.experiments.experiment
-  in resources/ml-artifacts-resource.yml:21:7
+  in resources/ml-artifacts-resource.yml:28:7
 
 {
   "name": "[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-batch-inference-job"
 }
 
->>> [CLI] bundle destroy --auto-approve
+>>> [CLI] bundle destroy --var catalog_name=main --auto-approve
 Warning: expected a string value, found null
   at targets.dev.workspace.host
-  in databricks.yml:34:12
+  in databricks.yml:37:12
 
 Warning: unknown field: description
   at resources.experiments.experiment
-  in resources/ml-artifacts-resource.yml:21:7
+  in resources/ml-artifacts-resource.yml:28:7
 
 The following resources will be deleted:
   delete resources.experiments.experiment
   delete resources.jobs.batch_inference_job
   delete resources.jobs.model_training_job
-  delete resources.models.model
+  delete resources.registered_models.model
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
 
-Deleting files...
-Destroy complete!
+Destroy: 4 deleted
+
+>>> [CLI] schemas delete main.project_name_[UNIQUE_NAME]
+Warning: expected a string value, found null
+  at targets.dev.workspace.host
+  in databricks.yml:37:12
+
+Warning: unknown field: description
+  at resources.experiments.experiment
+  in resources/ml-artifacts-resource.yml:28:7
+

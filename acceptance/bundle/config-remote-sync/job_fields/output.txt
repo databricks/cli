@@ -1,8 +1,8 @@
 Uploading dummy.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.my_job
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify job fields remotely
 
@@ -12,9 +12,16 @@ Detected changes in 1 resource(s):
 Resource: resources.jobs.my_job
   email_notifications.no_alert_for_skipped_runs: add
   email_notifications.on_failure: add
-  parameters: replace
+  job_clusters[job_cluster_key='test_cluster']: remove
+  job_clusters[job_cluster_key='test_cluster_renamed']: add
+  name: replace
+  parameters[name='region']: add
   tags['team']: add
-  trigger.periodic.interval: replace
+  tasks[task_key='inline_cluster_task'].new_cluster.num_workers: replace
+  tasks[task_key='main'].job_cluster_key: replace
+  trigger.pause_status: add
+  trigger.periodic: remove
+  trigger.table_update: add
 
 
 
@@ -23,40 +30,93 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -1,5 +1,4 @@
- bundle:
-   name: test-bundle-[UNIQUE_NAME]
--
- resources:
+@@ -5,8 +5,11 @@
    jobs:
-@@ -8,12 +7,17 @@
+     my_job:
+-      name: test-job-[UNIQUE_NAME]
++      name: renamed-job-[UNIQUE_NAME]
+       email_notifications:
          on_success:
            - success@example.com
 +        no_alert_for_skipped_runs: true
 +        on_failure:
 +          - failure@example.com
        parameters:
--        - name: catalog
--          default: main
--        - name: env
--          default: dev
-+        - default: main
-+          name: catalog
-+        - default: dev
-+          name: env
+         - name: catalog
+@@ -14,8 +17,11 @@
+         - name: env
+           default: dev
 +        - default: us-east-1
 +          name: region
        trigger:
-         periodic:
+-        periodic:
 -          interval: 1
-+          interval: 2
-           unit: DAYS
+-          unit: DAYS
++        pause_status: UNPAUSED
++        table_update:
++          table_names:
++            - samples.nyctaxi.trips
        environments:
-@@ -31,5 +35,6 @@
+         - environment_key: default
+@@ -25,5 +31,5 @@
+               - ./*.whl
+       job_clusters:
+-        - job_cluster_key: test_cluster
++        - job_cluster_key: test_cluster_renamed
+           new_cluster:
+             spark_version: [DEFAULT_SPARK_VERSION]
+@@ -34,5 +40,5 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/notebook
+-          job_cluster_key: test_cluster
++          job_cluster_key: test_cluster_renamed
+         - task_key: inline_cluster_task
+           notebook_task:
+@@ -41,5 +47,7 @@
+             spark_version: [DEFAULT_SPARK_VERSION]
              node_type_id: [NODE_TYPE_ID]
-             num_workers: 1
--
+-            num_workers: 1
++            num_workers: 2
 +      tags:
 +        team: data
+
  targets:
-   default:
+
+=== Telemetry
+
+>>> cat out.requests.txt
+{
+  "save": true,
+  "changes_total": 12,
+  "add_count": 6,
+  "replace_count": 4,
+  "remove_count": 2,
+  "resource_changes": [
+    {
+      "resource_type": "jobs",
+      "changes_count": 12,
+      "add_count": 6,
+      "replace_count": 4,
+      "remove_count": 2
+    }
+  ],
+  "files_changed_count": 1,
+  "files_written_count": 1,
+  "state_serial": 1,
+  "state_lineage": "[UUID]",
+  "state_source": "local",
+  "states_available_count": 2,
+  "state_resource_ids": {
+    "resource_job_ids": [
+      "[MY_JOB_ID]"
+    ]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

@@ -1,7 +1,6 @@
 package resourcemutator_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -114,7 +113,7 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 	bundletest.SetLocation(b, "resources.pipelines.pipeline.libraries[3]", []dyn.Location{{File: filepath.Join(dir, "relative", "resource.yml")}})
 
-	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), resourcemutator.ExpandPipelineGlobPaths())
+	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), resourcemutator.ExpandPipelineGlobPaths())
 	require.NoError(t, diags.Error())
 
 	libraries := b.Config.Resources.Pipelines["pipeline"].Libraries

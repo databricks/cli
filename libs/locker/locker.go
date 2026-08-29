@@ -42,7 +42,7 @@ const LockFileName = "deploy.lock"
 //     we allow clients to forcefully acquire a lock on TargetDir. However forcefully acquired
 //     locks come with the following caveats:
 //
-//     a.  a forcefully acquired lock does not guarentee exclusive access to
+//     a.  a forcefully acquired lock does not guarantee exclusive access to
 //     TargetDir's scope
 //     b.  forcefully acquiring a lock(s) on TargetDir can break the assumption
 //     of exclusive access that other clients with non forcefully acquired
@@ -105,10 +105,16 @@ func (locker *Locker) assertLockHeld(ctx context.Context) error {
 		return err
 	}
 	if activeLockState.ID != locker.State.ID && !activeLockState.IsForced {
-		return fmt.Errorf("deploy lock acquired by %s at %v. Use --force-lock to override", activeLockState.User, activeLockState.AcquisitionTime)
+		return fmt.Errorf("deploy lock acquired by %s at %v.\n"+
+			"Another deployment may be in progress. Use --force-lock to override, but this may\n"+
+			"conflict with the other deployment if it is still active",
+			activeLockState.User, activeLockState.AcquisitionTime)
 	}
 	if activeLockState.ID != locker.State.ID && activeLockState.IsForced {
-		return fmt.Errorf("deploy lock force acquired by %s at %v. Use --force-lock to override", activeLockState.User, activeLockState.AcquisitionTime)
+		return fmt.Errorf("deploy lock force-acquired by %s at %v.\n"+
+			"Another deployment may be in progress. Use --force-lock to override, but this may\n"+
+			"conflict with the other deployment if it is still active",
+			activeLockState.User, activeLockState.AcquisitionTime)
 	}
 	return nil
 }

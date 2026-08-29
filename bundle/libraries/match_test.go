@@ -1,7 +1,6 @@
 package libraries
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -30,7 +29,7 @@ func TestValidateEnvironments(t *testing.T) {
 										Dependencies: []string{
 											"./wheel.whl",
 											"simplejson",
-											"/Workspace/Users/foo@bar.com/artifacts/test.whl",
+											"/Workspace/Users/foo@bar.test/artifacts/test.whl",
 										},
 									},
 								},
@@ -42,7 +41,7 @@ func TestValidateEnvironments(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
+	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Nil(t, diags)
 }
 
@@ -62,7 +61,7 @@ func TestValidateEnvironmentsNoFile(t *testing.T) {
 										Dependencies: []string{
 											"./wheel.whl",
 											"simplejson",
-											"/Workspace/Users/foo@bar.com/artifacts/test.whl",
+											"/Workspace/Users/foo@bar.test/artifacts/test.whl",
 										},
 									},
 								},
@@ -74,7 +73,7 @@ func TestValidateEnvironmentsNoFile(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
+	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Len(t, diags, 1)
 	require.Equal(t, "file doesn't exist ./wheel.whl", diags[0].Summary)
 }
@@ -97,7 +96,7 @@ func TestValidateTaskLibraries(t *testing.T) {
 											Whl: "./wheel.whl",
 										},
 										{
-											Whl: "/Workspace/Users/foo@bar.com/artifacts/test.whl",
+											Whl: "/Workspace/Users/foo@bar.test/artifacts/test.whl",
 										},
 									},
 								},
@@ -109,7 +108,7 @@ func TestValidateTaskLibraries(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
+	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Nil(t, diags)
 }
 
@@ -130,7 +129,7 @@ func TestValidateTaskLibrariesNoFile(t *testing.T) {
 											Whl: "./wheel.whl",
 										},
 										{
-											Whl: "/Workspace/Users/foo@bar.com/artifacts/test.whl",
+											Whl: "/Workspace/Users/foo@bar.test/artifacts/test.whl",
 										},
 									},
 								},
@@ -142,7 +141,7 @@ func TestValidateTaskLibrariesNoFile(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
+	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Len(t, diags, 1)
 	require.Equal(t, "file doesn't exist ./wheel.whl", diags[0].Summary)
 }

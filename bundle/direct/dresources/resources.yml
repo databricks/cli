@@ -1,139 +1,837 @@
-# Resource lifecycle configuration for Databricks Asset Bundles.
+# Resource lifecycle configuration for Declarative Automation Bundles.
 # This file defines how field changes affect resource operations.
 #
 # Available options:
 #   recreate_on_changes: fields that trigger delete + create
-#   update_id_on_changes: fields that trigger UpdateWithID (ID may change)
+#   provided_id_fields: fields composing the name-based ID the resource is fetched by.
+#     Local changes trigger delete + create. Remote-only differences are skipped:
+#     a successful get-by-ID means a differing remote value can only be backend
+#     normalization; a real out-of-band rename would 404 (handled as resource-gone).
+#   updatable_id_fields: like provided_id_fields, but a local change triggers
+#     UpdateWithID (rename; the ID changes) instead of delete + create. Remote-only
+#     differences are skipped the same way (only local changes act).
 #   ignore_remote_changes: fields where remote changes are ignored
 #   ignore_local_changes: fields where local changes are ignored (can't be updated via API)
+#   backend_defaults: fields where the backend may set defaults (skipped when old/new are nil but remote is set)
+#     Optional "values" list constrains which remote values are allowed (as JSON-compatible literals).
+#
+# Each field entry has:
+#   field: the field path
+#   reason: why this field is in this category (immutable, input_only, output_only, or descriptive text)
 
 resources:
-  # jobs: no special config
+
+  jobs:
+    # version_id is set to the current DMS deployment version on every deploy, so
+    # it changes constantly. Ignoring it as a local and remote change keeps that
+    # churn from driving an update or showing as drift on its own; when the job is
+    # updated for any other reason, DoUpdate sends the full config via Reset, so
+    # the current version_id is still recorded. deployment_id is intentionally
+    # left out: it is stable across versions, so a change to it is worth showing.
+    ignore_local_changes:
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
+
+    ignore_remote_changes:
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
+
+      # Same as clusters.{aws,azure,gcp}_attributes — see clusters/resource_cluster.go#L361-L363
+      # s.SchemaPath("aws_attributes").SetSuppressDiff()
+      # s.SchemaPath("azure_attributes").SetSuppressDiff()
+      # s.SchemaPath("gcp_attributes").SetSuppressDiff()
+      - field: tasks[*].new_cluster.aws_attributes
+        reason: managed
+      - field: tasks[*].new_cluster.azure_attributes
+        reason: managed
+      - field: tasks[*].new_cluster.gcp_attributes
+        reason: managed
+      - field: tasks[*].for_each_task.task.new_cluster.aws_attributes
+        reason: managed
+      - field: tasks[*].for_each_task.task.new_cluster.azure_attributes
+        reason: managed
+      - field: tasks[*].for_each_task.task.new_cluster.gcp_attributes
+        reason: managed
+      - field: job_clusters[*].new_cluster.aws_attributes
+        reason: managed
+      - field: job_clusters[*].new_cluster.azure_attributes
+        reason: managed
+      - field: job_clusters[*].new_cluster.gcp_attributes
+        reason: managed
+
+      # The Jobs API accepts apply_policy_default_values but does not return it
+      # in GET responses, so the remote is always nil even when the user sets it.
+      # Ignore remote-side nil so old==new (no user change) doesn't trigger drift.
+      - field: tasks[*].new_cluster.apply_policy_default_values
+        reason: not_returned_by_api
+      - field: tasks[*].for_each_task.task.new_cluster.apply_policy_default_values
+        reason: not_returned_by_api
+      - field: job_clusters[*].new_cluster.apply_policy_default_values
+        reason: not_returned_by_api
+
+    backend_defaults:
+      # Same as clusters.enable_elastic_disk — see clusters/resource_cluster.go#L331
+      # s.SchemaPath("enable_elastic_disk").SetComputed()
+      - field: tasks[*].new_cluster.enable_elastic_disk
+      - field: tasks[*].for_each_task.task.new_cluster.enable_elastic_disk
+      - field: job_clusters[*].new_cluster.enable_elastic_disk
+
+      # Same as clusters.enable_local_disk_encryption — see clusters/resource_cluster.go#L332
+      # s.SchemaPath("enable_local_disk_encryption").SetComputed()
+      - field: tasks[*].new_cluster.enable_local_disk_encryption
+      - field: tasks[*].for_each_task.task.new_cluster.enable_local_disk_encryption
+      - field: job_clusters[*].new_cluster.enable_local_disk_encryption
+
+      # Same as clusters.node_type_id — see clusters/resource_cluster.go#L333
+      # s.SchemaPath("node_type_id").SetComputed()
+      - field: tasks[*].new_cluster.node_type_id
+      - field: tasks[*].for_each_task.task.new_cluster.node_type_id
+      - field: job_clusters[*].new_cluster.node_type_id
+
+      # Same as clusters.driver_node_type_id — see clusters/resource_cluster.go#L334
+      # s.SchemaPath("driver_node_type_id").SetComputed()
+      - field: tasks[*].new_cluster.driver_node_type_id
+      - field: tasks[*].for_each_task.task.new_cluster.driver_node_type_id
+      - field: job_clusters[*].new_cluster.driver_node_type_id
+
+      # Same as clusters.driver_instance_pool_id — see clusters/resource_cluster.go#L335
+      # s.SchemaPath("driver_instance_pool_id").SetComputed()
+      - field: tasks[*].new_cluster.driver_instance_pool_id
+      - field: tasks[*].for_each_task.task.new_cluster.driver_instance_pool_id
+      - field: job_clusters[*].new_cluster.driver_instance_pool_id
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L531
+      # s.SchemaPath("format").SetComputed()
+      - field: format
+        values: ["MULTI_TASK", "SINGLE_TASK"]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L639
+      # s.SchemaPath("task", "run_if").SetSuppressDiffWithDefault(jobs.RunIfAllSuccess)
+      - field: "tasks[*].run_if"
+        values: ["ALL_SUCCESS"]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L640
+      # s.SchemaPath("task", "for_each_task", "task", "run_if").SetSuppressDiffWithDefault(jobs.RunIfAllSuccess)
+      - field: "tasks[*].for_each_task.task.run_if"
+        values: ["ALL_SUCCESS"]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L527
+      # s.SchemaPath("run_as").SetComputed()
+      - field: run_as
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L521-L524
+      # s.SchemaPath("task", "notebook_task", "source").SetSuppressDiff()
+      # s.SchemaPath("task", "spark_python_task", "source").SetSuppressDiff()
+      # s.SchemaPath("task", "sql_task", "file", "source").SetSuppressDiff()
+      # s.SchemaPath("task", "dbt_task", "source").SetSuppressDiff()
+      - field: tasks[*].notebook_task.source
+      - field: tasks[*].for_each_task.task.notebook_task.source
+      - field: tasks[*].spark_python_task.source
+      - field: tasks[*].for_each_task.task.spark_python_task.source
+      - field: tasks[*].sql_task.file.source
+      - field: tasks[*].for_each_task.task.sql_task.file.source
+      - field: tasks[*].dbt_task.source
+      - field: tasks[*].for_each_task.task.dbt_task.source
+
+      # Same as clusters.data_security_mode: backend sets this when not specified
+      - field: tasks[*].new_cluster.data_security_mode
+      - field: tasks[*].for_each_task.task.new_cluster.data_security_mode
+      - field: job_clusters[*].new_cluster.data_security_mode
+
+  job_runs:
+    # Every jobs.RunNow field is listed, so nothing the request carries is drift.
+    # TestJobRunIgnoresEveryRequestField keeps the list in step with the SDK.
+    # result_state is not in the list: comparing it against the remote is what
+    # makes a run that has not succeeded visible to the plan.
+    ignore_remote_changes:
+      - field: job_id
+        reason: immutable
+      # GetRun reports job_parameters resolved against the job's defaults, and
+      # nests the rest under overriding_parameters.
+      - field: dbt_commands
+        reason: effective_vs_requested
+      - field: jar_params
+        reason: effective_vs_requested
+      - field: job_parameters
+        reason: effective_vs_requested
+      - field: notebook_params
+        reason: effective_vs_requested
+      - field: pipeline_params
+        reason: effective_vs_requested
+      - field: python_named_params
+        reason: effective_vs_requested
+      - field: python_params
+        reason: effective_vs_requested
+      - field: spark_submit_params
+        reason: effective_vs_requested
+      - field: sql_params
+        reason: effective_vs_requested
+      # Fields the run-now request carries that GetRun never reports back.
+      - field: idempotency_token
+        reason: not_returned_by_api
+      - field: only
+        reason: not_returned_by_api
+      - field: performance_target
+        reason: not_returned_by_api
+      - field: queue
+        reason: not_returned_by_api
+    # A run is immutable and fire-once, so any change recreates it. Omitting
+    # `field` matches every field (root; see TestFieldRuleOmittedIsRoot).
+    # `field: ""` would instead match nothing. The one exception is a run that is
+    # still going, which ResourceJobRun.OverrideChangeDesc downgrades to skip.
+    recreate_on_changes:
+      - reason: immutable
 
   pipelines:
     recreate_on_changes:
-      - storage
-      - ingestion_definition.connection_name
-      - ingestion_definition.ingestion_gateway_id
+      - field: storage
+        reason: immutable
+      - field: ingestion_definition.connection_name
+        reason: immutable
+      - field: ingestion_definition.ingestion_gateway_id
+        reason: immutable
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L204
+      - field: gateway_definition.connection_id
+        reason: immutable
+      - field: gateway_definition.connection_name
+        reason: immutable
+      - field: gateway_definition.gateway_storage_catalog
+        reason: immutable
+      - field: gateway_definition.gateway_storage_schema
+        reason: immutable
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L209
+      - field: ingestion_definition.ingest_from_uc_foreign_catalog
+        reason: immutable
+
+    # See jobs above: version_id is set on every deploy, so it is ignored as a
+    # local/remote change. deployment_id is left out so a change to it still shows.
     ignore_remote_changes:
-      - run_as
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
+      # "id" is handled in a special way before any fields changed
+      # However, it is also part of RemotePipeline via CreatePipeline.
+      # Thus it shows up as a remote change since we don't set on the object.
+      - field: id
+        reason: "!drop"
+      # QQQ should this be here? When run_as is explicitly set, the GET response echoes it back
+      # as a structured run_as.user_name (verified on e2-dogfood with a real user), so it may not
+      # be truly input-only. The explicit-set case could not be confirmed on aws-cli, azure-cli,
+      # or gcp-cli: those envs authenticate as a service principal that lacks servicePrincipal.user
+      # on itself, so it can't self-bind run_as. In the default (unset) case on all three clouds,
+      # GET returns only the flat run_as_user_name and no structured run_as.
+      - field: run_as
+        reason: input_only
+      # Carried by CreatePipeline/EditPipeline but never returned by GET, so remote
+      # always reads back false and a config value of true never converges.
+      - field: allow_duplicate_names
+        reason: input_only
+
+    ignore_local_changes:
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
+      # "id" is output-only, providing it in config would be a mistake
+      - field: id
+        reason: "!drop"
+
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L238
+      # s.SchemaPath("storage").SetCustomSuppressDiff(suppressStorageDiff)
+      # Backend generates storage path like dbfs:/pipelines/<id> when not set by user.
+      - field: storage
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L218
+      # s.SchemaPath("cluster", "node_type_id").SetComputed()
+      - field: clusters[*].node_type_id
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L219
+      # s.SchemaPath("cluster", "driver_node_type_id").SetComputed()
+      - field: clusters[*].driver_node_type_id
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L220
+      # s.SchemaPath("cluster", "enable_local_disk_encryption").SetComputed()
+      - field: clusters[*].enable_local_disk_encryption
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L229-L230
+      # s.SchemaPath("event_log", "catalog").SetComputed()
+      # s.SchemaPath("event_log", "schema").SetComputed()
+      - field: event_log.catalog
+      - field: event_log.schema
 
   models:
-    recreate_on_changes:
+    provided_id_fields:
       # Recreate matches current behavior of Terraform. It is possible to rename without recreate
       # but that would require dynamic select of the method during update since
       # the ml.RenameModel needs to be called instead of ml.UpdateModel.
       # We might reasonably choose to never fix this because this is a legacy resource.
-      - name
+      - field: name
+        reason: terraform_compat
     # Allowing updates for tags requires dynamic selection of the method since
     # tags can only be updated by calling ml.SetModelTag or ml.DeleteModelTag methods.
     # Skip annotation matches the current behavior of Terraform where tags changes are showed
     # in plan but are just ignored / not applied. Since this is a legacy resource we might
     # reasonably choose to not fix it here as well.
     ignore_remote_changes:
-      - tags
+      - field: tags
+        reason: terraform_compat
     ignore_local_changes:
-      - tags
+      - field: tags
+        reason: terraform_compat
 
   # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
   experiments:
     recreate_on_changes:
-      - artifact_location
+      - field: artifact_location
+        reason: immutable
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/mlflow/resource_mlflow_experiment.go#L34
+      # SetForceNew().SetSuppressDiff(): backend generates artifact_location when not set by user
+      - field: artifact_location
     ignore_remote_changes:
       # Tags updates are not supported by TF. This mirrors that behaviour.
-      - tags
+      - field: tags
+        reason: terraform_compat
     ignore_local_changes:
-      - tags
+      - field: tags
+        reason: terraform_compat
 
   # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
   model_serving_endpoints:
+    provided_id_fields:
+      - field: name
+        reason: id_field
     recreate_on_changes:
-      - name
       # description is immutable, can't be updated via API
-      - description
-      - config.auto_capture_config.catalog_name
-      - config.auto_capture_config.schema_name
-      - config.auto_capture_config.table_name_prefix
-      - route_optimized
+      - field: description
+        reason: immutable
+      - field: config.auto_capture_config.catalog_name
+        reason: immutable
+      - field: config.auto_capture_config.schema_name
+        reason: immutable
+      - field: config.auto_capture_config.table_name_prefix
+        reason: immutable
+      - field: route_optimized
+        reason: immutable
+    ignore_remote_changes:
+      # budget_policy_id is in ServingEndpointDetailed but GET never populates it
+      # (the API returns effective_budget_policy_id instead), so the remote always
+      # reports empty. This is not a backend default, so suppress remote changes.
+      - field: budget_policy_id
+        reason: no_update_api
+      # table_names creates a profile and is not returned; inference_table_config round-trips.
+      # The spec annotated this input_only in the v0.171 spec but no longer does, so the rule
+      # has to be manual again.
+      - field: telemetry_config.table_names
+        reason: input_only
+    ignore_local_changes:
+      - field: budget_policy_id
+        reason: no_update_api
+      - field: rate_limits
+        reason: not_implemented
+    backend_defaults:
+      # Remote-only telemetry is reported as a change at this parent path.
+      - field: telemetry_config
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383
+      # common.CustomizeSchemaPath(m, "config", "served_entities", "name").SetComputed()
+      - field: config.served_entities[*].name
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L384
+      # common.CustomizeSchemaPath(m, "config", "served_entities", "workload_type").SetComputed()
+      - field: config.served_entities[*].workload_type
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L372
+      # common.CustomizeSchemaPath(m, "config", "auto_capture_config", "enabled").SetComputed()
+      - field: config.auto_capture_config.enabled
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L395-L396
+      # route_optimized is ForceNew; backend returns false when not set by user.
+      - field: route_optimized
+        values: [false]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L370
+      # common.CustomizeSchemaPath(m, "config", "traffic_config").SetComputed()
+      # The backend defaults traffic_config (100% to the served entity) when the user
+      # does not specify one. Suppress only that default: if the user sets traffic_config
+      # and the remote diverges, normal drift detection still applies.
+      - field: config.traffic_config
 
   registered_models:
-    recreate_on_changes:
+    ignore_remote_changes:
+      # Output-only timestamp/user fields populated by the backend on read.
+      # The user never sets them, so remote-only differences are ignored here
+      # rather than zeroed in RemapState.
+      - field: created_at
+        reason: output_only
+      - field: created_by
+        reason: output_only
+      - field: updated_at
+        reason: output_only
+      - field: updated_by
+        reason: output_only
+      # Aliases are managed on model versions through a separate API, and DoRead
+      # passes IncludeAliases=false, so GET never echoes them back. Without this a
+      # config that sets aliases reports a perpetual update (remote stays empty).
+      - field: aliases
+        reason: input_only
+    provided_id_fields:
       # The name can technically be updated without recreate. We recreate for now though
       # to match TF implementation.
-      - name
-      - catalog_name
-      - schema_name
-      - storage_location
+      - field: name
+        reason: terraform_compat
+      - field: catalog_name
+        reason: id_field
+      - field: schema_name
+        reason: id_field
+    recreate_on_changes:
+      - field: storage_location
+        reason: immutable
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/catalog/resource_registered_model.go#L28
+      # m["storage_location"].Computed = true
+      - field: storage_location
+      # owner, full_name, metastore_id are Computed in TF (backend-set output fields).
+      - field: owner
+      - field: full_name
+      - field: metastore_id
 
   quality_monitors:
+    provided_id_fields:
+      - field: table_name
+        reason: id_field
     recreate_on_changes:
-      - assets_dir
-      - table_name
-    ignore_remote_changes:
-      - warehouse_id
+      - field: assets_dir
+        reason: immutable
+
+  catalogs:
+    recreate_on_changes:
+      - field: storage_root
+        reason: immutable
+      - field: connection_name
+        reason: immutable
+      - field: provider_name
+        reason: immutable
+      - field: share_name
+        reason: immutable
+    updatable_id_fields:
+      - field: name
+        reason: id_changes
+    backend_defaults:
+      # UC auto-populates unity.catalog.managed.<format>.defaults.* keys after create.
+      - field: properties['unity.catalog.managed.*.defaults.*']
 
   schemas:
+    provided_id_fields:
+      # UC lowercases identifier names; remote returns "myschema" for config "MySchema".
+      - field: name
+        reason: id_field
+      - field: catalog_name
+        reason: id_field
     recreate_on_changes:
-      - name
-      - catalog_name
-      - storage_root
+      - field: storage_root
+        reason: immutable
+    normalize_slash:
+      - field: storage_root
+        reason: uc_strips_trailing_slash
+    backend_defaults:
+      # UC auto-populates unity.catalog.managed.<format>.defaults.* keys after create.
+      # Without this, every subsequent plan produces an Update whose payload is empty,
+      # and UC rejects it with "UpdateSchema Nothing to update".
+      - field: properties['unity.catalog.managed.*.defaults.*']
+
+  external_locations:
+    recreate_on_changes:
+      - field: credential_name
+        reason: immutable
+      - field: encryption_details
+        reason: immutable
+      - field: file_event_queue
+        reason: immutable
+    updatable_id_fields:
+      - field: name
+        reason: id_changes
 
   volumes:
+    provided_id_fields:
+      - field: catalog_name
+        reason: id_field
+      - field: schema_name
+        reason: id_field
     recreate_on_changes:
-      - catalog_name
-      - schema_name
-      - storage_location
-      - volume_type
-    update_id_on_changes:
-      - name
-
-  # clusters: no special config
+      - field: storage_location
+        reason: immutable
+      - field: volume_type
+        reason: immutable
+    updatable_id_fields:
+      - field: name
+        reason: id_changes
+    normalize_slash:
+      # UC strips trailing slashes on create; matches the Terraform provider's suppressLocationDiff.
+      # https://github.com/databricks/terraform-provider-databricks/blob/v1.65.1/catalog/resource_volume.go#L25
+      - field: storage_location
+        reason: uc_strips_trailing_slash
+    backend_defaults:
+      # storage_location is Computed; backend generates it for managed volumes.
+      - field: storage_location
 
   dashboards:
-    recreate_on_changes:
-      - parent_path
-
     ignore_remote_changes:
       # "serialized_dashboard" locally and remotely will have different contents
       # We only need to rely on etag here, and can skip this field for diff computation.
-      - serialized_dashboard
+      - field: serialized_dashboard
+        reason: etag_based
 
       # "dataset_catalog" and "dataset_schema" are write-only fields that are not returned by the server.
       # They will always differ between local config (which has values) and remote state (which has empty strings).
-      - dataset_catalog
-      - dataset_schema
+      - field: dataset_catalog
+        reason: input_only
+      - field: dataset_schema
+        reason: input_only
+
+  genie_spaces:
+    ignore_remote_changes:
+      # serialized_space locally (structured YAML) and remotely (JSON string) will differ
+      # textually, so we cannot meaningfully compare them for drift.
+      - field: serialized_space
+        reason: etag_based
+
+  database_instances:
+    provided_id_fields:
+      - field: name
+        reason: id_field
+
+  database_catalogs:
+    provided_id_fields:
+      - field: name
+        reason: id_field
+    # The Database API has no UpdateDatabaseCatalog endpoint (the generated SDK
+    # method is a stub that returns 501 NOT_IMPLEMENTED), so this resource
+    # implements no DoUpdate and every settable field must recreate. The
+    # complementary ignore_remote_changes block in resources.generated.yml
+    # handles the read side (create_database_if_not_exists is input-only, uid is
+    # output-only) so no-op deploys stay idempotent.
+    recreate_on_changes:
+      - reason: immutable
+
+  synced_database_tables:
+    provided_id_fields:
+      - field: name
+        reason: id_field
+    # The Database API has no UpdateSyncedDatabaseTable endpoint (the generated
+    # SDK method is a stub that returns 501 NOT_IMPLEMENTED), so this resource
+    # implements no DoUpdate and every settable field must recreate. The
+    # complementary ignore_remote_changes block in resources.generated.yml
+    # handles the read side (input-only and output-only fields) so no-op deploys
+    # stay idempotent. Same pattern as postgres_synced_tables.
+    recreate_on_changes:
+      - reason: immutable
 
   apps:
-    recreate_on_changes:
-      - name
+    provided_id_fields:
+      - field: name
+        reason: id_field
+    backend_defaults:
+      # Backend sets it "MEDIUM" when not specified in the config
+      - field: compute_size
+      # Backend enables token forwarding and reports true even when the config omits it,
+      # so an omitted field would otherwise plan an update on every deploy. An explicit
+      # value in the config still diffs normally.
+      - field: forward_user_access_token
+      # lifecycle.started is derived from remote compute status in RemapState, so the
+      # remote side always has a value. When the user omits lifecycle from config,
+      # both old and new are nil and backend_defaults correctly skips the remote value.
+      # When the user explicitly sets lifecycle.started, old/new are non-nil and normal
+      # drift detection applies (e.g. detecting out-of-band stop).
+      - field: lifecycle
+      - field: lifecycle.started
+    ignore_remote_changes:
+      - field: space # This field is not yet supported by Update APIs but exposed in the API spec. TODO: fix when update APIs supports it.
+        reason: managed
 
   secret_scopes:
+    backend_defaults:
+      # The Secrets API defaults scope_backend_type to DATABRICKS when not specified.
+      - field: scope_backend_type
+        values: ["DATABRICKS"]
+    provided_id_fields:
+      - field: scope
+        reason: id_field
     recreate_on_changes:
-      - scope
-      - scope_backend_type
-      - backend_azure_keyvault
-      - initial_manage_principal
+      - field: scope_backend_type
+        reason: immutable
+      - field: backend_azure_keyvault
+        reason: immutable
+      - field: initial_manage_principal
+        reason: immutable
 
   # Permissions for secret scopes use ResourceSecretScopeAcls.
   secret_scopes.permissions:
-    update_id_on_changes:
+    updatable_id_fields:
       # When scope name changes, we need UpdateWithID trigger. This is necessary so that subsequent
       # DoRead operations use the correct ID and we do not end up with a persistent drift.
-      - scope_name
+      - field: scope_name
+        reason: id_changes
 
-  # alerts: no special config
+  secrets:
+    sensitive_fields:
+      - field: value
+      - field: effective_value
 
-  # sql_warehouses: no special config
-
-  # database_instances: no special config
-
-  database_catalogs:
+  clusters:
     ignore_remote_changes:
-      # Backend does not set this:
-      - create_database_if_not_exists
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L361-L363
+      # s.SchemaPath("aws_attributes").SetSuppressDiff()
+      # s.SchemaPath("azure_attributes").SetSuppressDiff()
+      # s.SchemaPath("gcp_attributes").SetSuppressDiff()
+      - field: aws_attributes
+        reason: managed
+      - field: azure_attributes
+        reason: managed
+      - field: gcp_attributes
+        reason: managed
+    backend_defaults:
+      # lifecycle.started is derived from remote cluster state in RemapState, so the
+      # remote side always has a value. When the user omits lifecycle from config,
+      # both old and new are nil and backend_defaults correctly skips the remote value.
+      # When the user explicitly sets lifecycle.started, old/new are non-nil and normal
+      # drift detection applies (e.g. detecting out-of-band terminate).
+      - field: lifecycle
+      - field: lifecycle.started
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L331
+      # s.SchemaPath("enable_elastic_disk").SetComputed()
+      - field: enable_elastic_disk
 
-  synced_database_tables:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L332
+      # s.SchemaPath("enable_local_disk_encryption").SetComputed()
+      - field: enable_local_disk_encryption
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L333
+      # s.SchemaPath("node_type_id").SetComputed()
+      - field: node_type_id
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L334
+      # s.SchemaPath("driver_node_type_id").SetComputed()
+      - field: driver_node_type_id
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L335
+      # s.SchemaPath("driver_instance_pool_id").SetComputed()
+      - field: driver_instance_pool_id
+
+      # Terraform currently does not do this, but it is a field with backend default.
+      # See https://github.com/databricks/cli/issues/4418
+      - field: single_user_name
+
+    # We have custom handler for this in cluster.go
+    # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L109-L118
+    # DataSecurityModeDiffSuppressFunc: suppress when old != "" && new == ""
+    #- field: data_security_mode
+
+  cluster_policies:
+    backend_defaults:
+      # A policy authored with policy_family_id and no definition gets its definition
+      # computed from the policy family by the backend and returned on read. Config
+      # leaves definition empty, so old/new are nil and backend_defaults skips the
+      # server-computed remote value; without this every deploy sees drift and re-Edits.
+      - field: definition
+
+  instance_pools:
+    # Field behaviors follow the TF provider tags cross-referenced with the edit API (compute.EditInstancePool):
+    # https://github.com/databricks/terraform-provider-databricks/blob/main/pools/resource_instance_pool.go
     ignore_remote_changes:
-      # Backend does not set these fields in response (it sets effective_ counterparts instead)
-      - database_instance_name
-      - logical_database_name
+      # Backend fills cloud defaults the user omits; treated as managed like clusters above.
+      - field: aws_attributes
+        reason: managed
+      - field: azure_attributes
+        reason: managed
+      - field: gcp_attributes
+        reason: managed
+    recreate_on_changes:
+      # force_new and not accepted by /instance-pools/edit.
+      - field: disk_spec
+      - field: node_type_flexibility
+      - field: preloaded_spark_versions
+      - field: preloaded_docker_images
+    backend_defaults:
+      # Defaults to true server-side.
+      - field: enable_elastic_disk
+      # Backend applies a default of 60 minutes when the field is omitted.
+      - field: idle_instance_autotermination_minutes
+        values: [60]
+      # GCP seeds max_capacity (1000) when omitted; unconstrained as the default is cloud-dependent.
+      - field: max_capacity
+
+  sql_warehouses:
+    ignore_remote_changes:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L62
+      # common.CustomizeSchemaPath(m, "channel").SetSuppressDiff()
+      - field: channel
+        reason: managed
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L82
+      # common.CustomizeSchemaPath(m, "tags").SetSuppressDiff()
+      - field: tags
+        reason: managed
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L85-L87
+      # common.CustomizeSchemaPath(m, "warehouse_type").SetSuppressDiff()
+      - field: warehouse_type
+        reason: managed
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L75
+      # common.CustomizeSchemaPath(m, "min_num_clusters").SetSuppressDiff()
+      - field: min_num_clusters
+        reason: managed
+
+      # creator_name is readonly, can't be updated via API
+      - field: creator_name
+        reason: output_only
+
+    backend_defaults:
+      # lifecycle.started is derived from remote warehouse state in RemapState, so the
+      # remote side always has a value. When the user omits lifecycle from config,
+      # both old and new are nil and backend_defaults correctly skips the remote value.
+      # When the user explicitly sets lifecycle.started, old/new are non-nil and normal
+      # drift detection applies (e.g. detecting out-of-band stop).
+      - field: lifecycle
+      - field: lifecycle.started
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L69
+      # m["enable_serverless_compute"].Computed = true
+      - field: enable_serverless_compute
+
+  postgres_projects:
+    provided_id_fields:
+      # project_id is immutable (part of hierarchical name, not in API spec)
+      - field: project_id
+        reason: id_field
+
+  postgres_branches:
+    provided_id_fields:
+      # parent and branch_id are immutable (part of hierarchical name, not in API spec)
+      - field: parent
+        reason: id_field
+      - field: branch_id
+        reason: id_field
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
+
+  postgres_databases:
+    provided_id_fields:
+      # parent and database_id are immutable (part of hierarchical name, not in API spec)
+      - field: parent
+        reason: id_field
+      - field: database_id
+        reason: id_field
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
+
+  postgres_endpoints:
+    provided_id_fields:
+      # parent and endpoint_id are immutable (part of hierarchical name, not in API spec)
+      - field: parent
+        reason: id_field
+      - field: endpoint_id
+        reason: id_field
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
+
+  postgres_catalogs:
+    provided_id_fields:
+      # catalog_id is part of the hierarchical name and immutable.
+      - field: catalog_id
+        reason: id_field
+    recreate_on_changes:
+      # The Postgres SDK has no UpdateCatalog endpoint, so any local change
+      # requires delete+create. The OpenAPI spec only marks postgres_database
+      # as IMMUTABLE (handled by autogen); branch and create_database_if_missing
+      # need explicit entries here.
+      - reason: immutable
+
+  postgres_synced_tables:
+    # The Postgres API has no UpdateSyncedTable endpoint, so every settable
+    # field is recreate-only on the intent side (local YAML edit -> delete +
+    # create). The complementary ignore_remote_changes block for this resource
+    # lives in resources.generated.yml and handles the read side: it suppresses
+    # drift for the same fields because the GET API does not echo back the
+    # spec. Together they make no-op deploys idempotent while a real config
+    # edit still triggers a recreate. Same pattern as secret_scopes.
+    provided_id_fields:
+      - field: synced_table_id
+        reason: id_field
+    recreate_on_changes:
+      - reason: immutable
+
+  postgres_roles:
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
+    recreate_on_changes:
+      # parent and role_id are immutable (together they form the hierarchical name).
+      - field: parent
+        reason: immutable
+      - field: role_id
+        reason: immutable
+      # The PATCH update_mask only accepts spec.attributes and spec.membership_roles;
+      # the backend rejects spec.postgres_role, spec.auth_method, and spec.identity_type
+      # with 400 INVALID_PARAMETER_VALUE "Unknown field path in update_mask". These spec
+      # fields are not marked immutable in the OpenAPI definition yet, so the generator
+      # doesn't catch them — declare the constraint manually until upstream is fixed.
+      - field: postgres_role
+        reason: immutable
+      - field: auth_method
+        reason: immutable
+      - field: identity_type
+        reason: immutable
+
+  vector_search_endpoints:
+    provided_id_fields:
+      # The endpoint API has no rename; the endpoint is fetched by name.
+      - field: name
+        reason: id_field
+    recreate_on_changes:
+      - field: endpoint_type
+        reason: immutable
+    ignore_remote_changes:
+      # The API returns effective_budget_policy_id which may include inherited workspace policies,
+      # not the user-set budget_policy_id. Ignore until the API exposes the user-set value directly.
+      - field: budget_policy_id
+        reason: effective_vs_requested
+
+  vector_search_indexes:
+    provided_id_fields:
+      - field: name
+        reason: id_field
+    recreate_on_changes:
+      # The index API has no rename or update path, so every config change
+      # has to go through delete + create.
+      - field: endpoint_name
+        reason: immutable
+      - field: index_type
+        reason: immutable
+      - field: index_subtype
+        reason: immutable
+      - field: primary_key
+        reason: immutable
+      - field: delta_sync_index_spec
+        reason: immutable
+      - field: direct_access_index_spec
+        reason: immutable
+    ignore_remote_changes:
+      # The backend rewrites schema_json on create: user-facing type names
+      # ("integer", "long", "short", "byte") are stored in Unity Catalog as
+      # Spark type names ("int", "bigint", "smallint", "tinyint") and the
+      # columns come back in sorted key order, so GET never echoes the user's
+      # literal input. Without this rule the rewrite reads as a change to the
+      # immutable direct_access_index_spec and plans a destructive recreate
+      # that drops all upserted vectors.
+      - field: direct_access_index_spec.schema_json
+        reason: normalized_by_backend
+    backend_defaults:
+      # The Vector Search API assigns index_subtype when the config omits it
+      - field: index_subtype

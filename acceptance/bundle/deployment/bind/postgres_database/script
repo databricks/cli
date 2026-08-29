@@ -1,0 +1,6 @@
+DATABASE_NAME="projects/test-project/branches/main/databases/test-database"
+trace $CLI bundle deployment bind database1 "${DATABASE_NAME}" --auto-approve
+trace $CLI bundle summary
+
+trace $CLI bundle deployment unbind database1
+trace $CLI bundle summary

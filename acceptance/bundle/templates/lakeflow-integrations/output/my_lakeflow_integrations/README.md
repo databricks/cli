@@ -1,0 +1,24 @@
+# my_lakeflow_integrations
+
+A Declarative Automation Bundles project that extends Lakeflow Jobs with custom integrations.
+
+This bundle ships with runnable examples under `src/my_lakeflow_integrations/examples/` and
+corresponding job definitions under `resources/`:
+
+| Example | Type | What it does |
+| --- | --- | --- |
+| `slack.send_slack_message` | Function | Posts a message to Slack through a Unity Catalog connection. |
+| `wait_for_run_sensor.WaitForRunSensor` | Sensor | Polls a job run until it reaches a terminal state. |
+
+## Getting started
+
+1. Open this bundle in a Databricks workspace.
+2. Click the **deployments rocket** 🚀 in the left sidebar to open the
+   **Deployments** panel, then click **Deploy**.
+3. To run a deployed job, hover over the resource in the **Deployments** panel
+   and click **Run**.
+
+## Documentation
+
+* [Declarative Automation Bundles](https://docs.databricks.com/aws/en/dev-tools/bundles/workspace-bundles)
+* [Declarative Automation Bundles configuration reference](https://docs.databricks.com/aws/en/dev-tools/bundles/reference)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"net/url"
 	"os"
 	"regexp"
@@ -13,6 +13,7 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -52,6 +53,14 @@ var metastoreDisabledErrorCodes = []string{
 // is run and can be used to attribute DBU revenue to bundle templates.
 var bundleUuid = uuid.New().String()
 
+// recordDeploymentHistoryEnvVar makes the built-in templates set
+// experimental.record_deployment_history in the databricks.yml they generate. It is scoped to
+// `bundle init` because it persists the setting in the generated project rather than applying
+// it to the bundle being run.
+//
+// Temporary: remove it and its callers in the templates once this is the default.
+const recordDeploymentHistoryEnvVar = "DATABRICKS_BUNDLE_INIT_RECORD_DEPLOYMENT_HISTORY"
+
 func loadHelpers(ctx context.Context) template.FuncMap {
 	w := cmdctx.WorkspaceClient(ctx)
 	return template.FuncMap{
@@ -66,9 +75,9 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"regexp": func(expr string) (*regexp.Regexp, error) {
 			return regexp.Compile(expr)
 		},
-		// Alias for https://pkg.go.dev/math/rand#Intn. Returns, as an int, a non-negative pseudo-random number in the half-open interval [0,n).
+		// Alias for https://pkg.go.dev/math/rand/v2#IntN. Returns, as an int, a non-negative pseudo-random number in the half-open interval [0,n).
 		"random_int": func(n int) int {
-			return rand.Intn(n)
+			return rand.IntN(n)
 		},
 		// Alias for https://pkg.go.dev/github.com/google/uuid#New. Returns, as a string, a UUID which is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC 4122.
 		"uuid": func() string {
@@ -99,7 +108,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		// Get smallest node type (follows Terraform's GetSmallestNodeType)
 		"smallest_node_type": func() (string, error) {
 			if w.Config.Host == "" {
-				return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks configure'")
+				return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks auth login'")
 			}
 			if w.Config.IsAzure() {
 				return "Standard_D3_v2", nil
@@ -113,14 +122,14 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		},
 		"workspace_host": func() (string, error) {
 			if w.Config.Host == "" {
-				return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks configure'")
+				return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks auth login'")
 			}
 			return w.Config.Host, nil
 		},
 		"user_name": func() (string, error) {
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 				if err != nil {
 					return "", err
 				}
@@ -134,7 +143,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"short_name": func() (string, error) {
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 				if err != nil {
 					return "", err
 				}
@@ -147,8 +156,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			if cachedCatalog == nil {
 				metastore, err := w.Metastores.Current(ctx)
 				if err != nil {
-					var aerr *apierr.APIError
-					if errors.As(err, &aerr) && slices.Contains(metastoreDisabledErrorCodes, aerr.ErrorCode) {
+					if aerr, ok := errors.AsType[*apierr.APIError](err); ok && (slices.Contains(metastoreDisabledErrorCodes, aerr.ErrorCode) || aerr.Message == "Bad Target: /api/2.1/unity-catalog/current-metastore-assignment") {
 						// Ignore: access denied or workspace doesn't have a metastore assigned
 						empty_default := ""
 						cachedCatalog = &empty_default
@@ -166,7 +174,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			}
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 				if err != nil {
 					return false, err
 				}
@@ -174,6 +182,10 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			result := iamutil.IsServicePrincipal(cachedUser)
 			cachedIsServicePrincipal = &result
 			return result, nil
+		},
+		"record_deployment_history": func() bool {
+			v, _ := env.GetBool(ctx, recordDeploymentHistoryEnvVar)
+			return v
 		},
 		"lower": func(s string) string {
 			return strings.ToLower(s)

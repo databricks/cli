@@ -1,10 +1,11 @@
 package sync
 
 import (
+	"maps"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/maps"
 )
 
 func TestMakeDirSet(t *testing.T) {
@@ -17,14 +18,14 @@ func TestMakeDirSet(t *testing.T) {
 			"a/e",
 			"b",
 		},
-		maps.Keys(
+		slices.Collect(maps.Keys(
 			MakeDirSet([]string{
 				"./a/b/c/file1",
 				"./a/b/c/file2",
 				"./a/b/d/file",
 				"./a/e/file",
 				"b/file",
-			}),
+			})),
 		),
 	)
 }

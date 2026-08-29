@@ -17,8 +17,10 @@ type DataSourceJobJobSettingsSettingsDbtTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsDeployment struct {
+	DeploymentId     string `json:"deployment_id,omitempty"`
 	Kind             string `json:"kind"`
 	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+	VersionId        string `json:"version_id,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsEmailNotifications struct {
@@ -31,6 +33,7 @@ type DataSourceJobJobSettingsSettingsEmailNotifications struct {
 }
 
 type DataSourceJobJobSettingsSettingsEnvironmentSpec struct {
+	BaseEnvironment    string   `json:"base_environment,omitempty"`
 	Client             string   `json:"client,omitempty"`
 	Dependencies       []string `json:"dependencies,omitempty"`
 	EnvironmentVersion string   `json:"environment_version,omitempty"`
@@ -241,7 +244,7 @@ type DataSourceJobJobSettingsSettingsLibraryMaven struct {
 }
 
 type DataSourceJobJobSettingsSettingsLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsLibraryPypi struct {
@@ -501,6 +504,7 @@ type DataSourceJobJobSettingsSettingsTaskDashboardTaskSubscription struct {
 
 type DataSourceJobJobSettingsSettingsTaskDashboardTask struct {
 	DashboardId  string                                                         `json:"dashboard_id,omitempty"`
+	Filters      map[string]string                                              `json:"filters,omitempty"`
 	WarehouseId  string                                                         `json:"warehouse_id,omitempty"`
 	Subscription *DataSourceJobJobSettingsSettingsTaskDashboardTaskSubscription `json:"subscription,omitempty"`
 }
@@ -548,6 +552,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDashboardTaskSubscriptio
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDashboardTask struct {
 	DashboardId  string                                                                        `json:"dashboard_id,omitempty"`
+	Filters      map[string]string                                                             `json:"filters,omitempty"`
 	WarehouseId  string                                                                        `json:"warehouse_id,omitempty"`
 	Subscription *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDashboardTaskSubscription `json:"subscription,omitempty"`
 }
@@ -598,7 +603,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryMaven struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryPypi struct {
@@ -972,7 +977,7 @@ type DataSourceJobJobSettingsSettingsTaskLibraryMaven struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskLibraryPypi struct {
@@ -1419,10 +1424,15 @@ type DataSourceJobJobSettings struct {
 	Settings        *DataSourceJobJobSettingsSettings `json:"settings,omitempty"`
 }
 
+type DataSourceJobProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
 type DataSourceJob struct {
-	Id          string                    `json:"id,omitempty"`
-	JobId       string                    `json:"job_id,omitempty"`
-	JobName     string                    `json:"job_name,omitempty"`
-	Name        string                    `json:"name,omitempty"`
-	JobSettings *DataSourceJobJobSettings `json:"job_settings,omitempty"`
+	Id             string                       `json:"id,omitempty"`
+	JobId          string                       `json:"job_id,omitempty"`
+	JobName        string                       `json:"job_name,omitempty"`
+	Name           string                       `json:"name,omitempty"`
+	JobSettings    *DataSourceJobJobSettings    `json:"job_settings,omitempty"`
+	ProviderConfig *DataSourceJobProviderConfig `json:"provider_config,omitempty"`
 }

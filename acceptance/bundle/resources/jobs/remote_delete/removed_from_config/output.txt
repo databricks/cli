@@ -1,0 +1,24 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.foo
+Created pipelines.bar
+Files: 7 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] jobs delete [NUMID]
+
+>>> [CLI] pipelines delete [UUID]
+
+=== Remove resources from config, plan and deploy
+=== Plan and deploy again, then summary
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+=== No delete API calls for resources that are already gone remotely
+>>> print_requests.py //jobs/delete //pipelines/

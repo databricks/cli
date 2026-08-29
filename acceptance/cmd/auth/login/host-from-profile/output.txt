@@ -12,5 +12,6 @@ Profile existing-profile was successfully saved
 [DEFAULT]
 
 [existing-profile]
-host      = [DATABRICKS_URL]
-auth_type = databricks-cli
+host         = [DATABRICKS_URL]
+workspace_id = [NUMID]
+auth_type    = databricks-cli

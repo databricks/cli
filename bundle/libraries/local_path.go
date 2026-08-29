@@ -24,6 +24,9 @@ import (
 // - s3:/mybucket/myfile.txt
 // - /Users/jane@doe.com/myfile.txt
 func IsLocalPath(p string) bool {
+	// Trim single or double quotes from the path
+	p = strings.Trim(p, `"'`)
+
 	// If the path has the file:// scheme, it's a runtime path (remote).
 	// Users should use relative paths without scheme for local files to upload.
 	if strings.HasPrefix(p, "file://") {
@@ -42,7 +45,7 @@ func IsLocalPath(p string) bool {
 // IsLibraryLocal returns true if the specified library or environment dependency
 // should be interpreted as a local path.
 // We use this to check if the dependency in environment spec is local or that library is local.
-// We can't use IsLocalPath beacuse environment dependencies can be
+// We can't use IsLocalPath because environment dependencies can be
 // a pypi package name which can be misinterpreted as a local path by IsLocalPath.
 func IsLibraryLocal(dep string) bool {
 	if dep == "" {
@@ -93,7 +96,7 @@ func IsLocalPathInPipFlag(dep string) (string, string, bool) {
 }
 
 func containsPipFlag(input string) bool {
-	// Trailing space means the the flag takes an argument or there's multiple arguments in input
+	// Trailing space means the flag takes an argument or there's multiple arguments in input
 	// Alternatively it could be a flag with no argument and no space after it
 	// For example: -r myfile.txt or --index-url http://myindexurl.com or -i
 	re := regexp.MustCompile(`(^|\s+)--?[a-zA-Z0-9-]+(([\s|=]+)|$)`)

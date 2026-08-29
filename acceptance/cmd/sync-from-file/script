@@ -1,3 +1,7 @@
+# Prevent Git Bash on Windows from converting the /Users/... sync target into a
+# Windows path (e.g. C:/Program Files/Git/Users/...) before the CLI sees it.
+export MSYS_NO_PATHCONV=1
+
 mkdir "project-folder" "project-folder/blob" "project-folder/static" "project-folder/static/folder1" "project-folder/static/folder2" "ignored-folder" "ignored-folder/folder1" "ignored-folder2" ".git"
 touch "project-folder/app.yaml" "project-folder/app.py" "project-folder/app2.py" "project-folder/query.sql" "project-folder/blob/1" "project-folder/blob/2" "ignored-folder2/app.py"
 touch "project-folder/static/folder1/1.txt" "project-folder/static/folder2/2.txt"

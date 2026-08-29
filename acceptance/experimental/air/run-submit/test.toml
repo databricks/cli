@@ -1,0 +1,35 @@
+# A real (non-dry-run) submit that packages a git code_source, uploads the
+# tarball + provenance sidecars, and POSTs runs/submit.
+RecordRequests = true
+
+# run.yaml is generated from run.yaml.tmpl at test time (commit SHA templated in);
+# it isn't a committed input to diff.
+Ignore = ["run.yaml"]
+
+# The SDK probes host reachability with a HEAD request; stub it for determinism.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+[[Server]]
+Pattern = "POST /api/2.0/ai-training/config:validate"
+Response.Body = '{}'
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/runs/submit"
+Response.Body = '''
+{"run_id": 555}
+'''
+
+# The snapshot tarball is named <dir>_<cachekey[:16]>.tar.gz, where <dir> is the
+# test's temp-dir basename and the cache key derives from the pinned commit SHA.
+# Both are stable given the pinned commit dates in the script, but the temp-dir
+# basename varies per run, so collapse the whole tarball filename to a stable token.
+[[Repls]]
+Old = '[a-zA-Z0-9._-]+_[0-9a-f]{16}\.tar\.gz'
+New = '[SNAPSHOT_TARBALL]'
+
+# The per-run launch directory ends in <run>_<16 hex>; the random suffix varies.
+[[Repls]]
+Old = 'submit-smoke_[0-9a-f]{16}'
+New = 'submit-smoke_[RUN_ID]'

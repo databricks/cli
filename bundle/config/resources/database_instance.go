@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
@@ -14,7 +15,7 @@ type DatabaseInstance struct {
 	BaseResource
 	database.DatabaseInstance
 
-	Permissions []DatabaseInstancePermission `json:"permissions,omitempty"`
+	Permissions []Permission `json:"permissions,omitempty"`
 }
 
 func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
@@ -50,6 +51,5 @@ func (d *DatabaseInstance) InitializeURL(baseURL url.URL) {
 	if d.Name == "" {
 		return
 	}
-	baseURL.Path = "compute/database-instances/" + d.Name
-	d.URL = baseURL.String()
+	d.URL = workspaceurls.ResourceURL(baseURL, "database_instances", d.Name)
 }

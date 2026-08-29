@@ -1,8 +1,2 @@
-Local = false
-Cloud = false
-
-[CloudEnvs]
-  aws = false
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+Cloud = true
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

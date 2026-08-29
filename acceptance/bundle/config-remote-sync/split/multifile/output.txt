@@ -1,0 +1,97 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Created jobs.multifile_job
+Files: 8 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Edit a task defined in the second included file
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.multifile_job
+  tasks[task_key='from_second_file'].timeout_seconds: add
+
+
+
+=== databricks.yml is untouched
+
+>>> diff.py databricks.yml.backup databricks.yml
+
+=== overrides/10-first.yml is untouched
+
+>>> diff.py overrides/10-first.yml.backup overrides/10-first.yml
+
+=== overrides/20-second.yml gains timeout_seconds: 777
+
+>>> diff.py overrides/20-second.yml.backup overrides/20-second.yml
+--- overrides/20-second.yml.backup
++++ overrides/20-second.yml
+@@ -8,4 +8,5 @@
+               notebook_task:
+                 notebook_path: /Users/{{workspace_user_name}}/second
++              timeout_seconds: 777
+             - task_key: in_both_files
+               timeout_seconds: 30
+
+=== Edit one field per file on the task declared in both override files
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.multifile_job
+  tasks[task_key='in_both_files'].max_retries: replace
+  tasks[task_key='in_both_files'].timeout_seconds: replace
+
+
+
+=== max_retries updates the first file, timeout_seconds the second
+
+>>> diff.py overrides/10-first.yml.backup overrides/10-first.yml
+--- overrides/10-first.yml.backup
++++ overrides/10-first.yml
+@@ -10,5 +10,5 @@
+                 notebook_path: /Users/{{workspace_user_name}}/first
+             - task_key: in_both_files
+-              max_retries: 1
++              max_retries: 9
+             - task_key: same_field_both_files
+               max_retries: 1
+
+>>> diff.py overrides/20-second.yml.backup overrides/20-second.yml
+--- overrides/20-second.yml.backup
++++ overrides/20-second.yml
+@@ -10,5 +10,5 @@
+               timeout_seconds: 777
+             - task_key: in_both_files
+-              timeout_seconds: 30
++              timeout_seconds: 900
+             - task_key: same_field_both_files
+               max_retries: 2
+
+=== Edit a field that both override files define
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.multifile_job
+  tasks[task_key='same_field_both_files'].max_retries: replace
+
+
+
+=== The winning file is updated; the shadowed copy is left alone
+
+>>> diff.py overrides/10-first.yml.backup overrides/10-first.yml
+
+>>> diff.py overrides/20-second.yml.backup overrides/20-second.yml
+--- overrides/20-second.yml.backup
++++ overrides/20-second.yml
+@@ -12,3 +12,3 @@
+               timeout_seconds: 900
+             - task_key: same_field_both_files
+-              max_retries: 2
++              max_retries: 9
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.multifile_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Destroy: 1 deleted

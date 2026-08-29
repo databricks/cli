@@ -3,7 +3,6 @@
 package project
 
 import (
-	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestAtLeastOnePythonInstalled(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	all, err := DetectInterpreters(ctx)
 	assert.NoError(t, err)
 	a := all.Latest()
@@ -24,7 +23,7 @@ func TestAtLeastOnePythonInstalled(t *testing.T) {
 func TestNoInterpretersFound(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
 
-	ctx := context.Background()
+	ctx := t.Context()
 	all, err := DetectInterpreters(ctx)
 	assert.Nil(t, all)
 	assert.Equal(t, ErrNoPythonInterpreters, err)
@@ -50,7 +49,7 @@ func TestFilteringInterpreters(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, injectedBinary, roguePath)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	all, err := DetectInterpreters(ctx)
 	assert.NoError(t, err)
 	assert.Len(t, all, 3)
@@ -64,7 +63,7 @@ func TestFilteringInterpreters(t *testing.T) {
 func TestInterpretersAtLeastInvalidSemver(t *testing.T) {
 	t.Setenv("PATH", "testdata/other-binaries-filtered")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	all, err := DetectInterpreters(ctx)
 	assert.NoError(t, err)
 
@@ -75,7 +74,7 @@ func TestInterpretersAtLeastInvalidSemver(t *testing.T) {
 func TestInterpretersAtLeast(t *testing.T) {
 	t.Setenv("PATH", "testdata/other-binaries-filtered")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	all, err := DetectInterpreters(ctx)
 	assert.NoError(t, err)
 
@@ -87,7 +86,7 @@ func TestInterpretersAtLeast(t *testing.T) {
 func TestInterpretersAtLeastNotSatisfied(t *testing.T) {
 	t.Setenv("PATH", "testdata/other-binaries-filtered")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	all, err := DetectInterpreters(ctx)
 	assert.NoError(t, err)
 

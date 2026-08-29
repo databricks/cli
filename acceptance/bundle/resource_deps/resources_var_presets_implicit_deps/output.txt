@@ -27,6 +27,7 @@
       "catalog_name": "${resources.schemas.bar.catalog_name}",
       "name": "myname",
       "schema_name": "${resources.schemas.bar.name}",
+      "volume_path": "/Volumes/mycatalog/dev_[USERNAME]_myschema/myname",
       "volume_type": "MANAGED"
     }
   }
@@ -34,9 +35,11 @@
 
 >>> [CLI] bundle deploy -t dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created pipelines.mypipeline
+Created schemas.bar
+Created volumes.foo
+Files: 5 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq -s .[] | select(.path=="/api/2.0/pipelines") | .body.name out.requests.txt
 "[dev [USERNAME]] pipeline for mycatalog.dev_[USERNAME]_myschema.myname"

@@ -1,6 +1,5 @@
 
 >>> [CLI] bundle deployment bind dashboard1 [DASHBOARD_ID] --auto-approve
-Updating deployment state...
 Successfully bound dashboard with an id '[DASHBOARD_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
@@ -11,26 +10,24 @@ Run 'bundle deploy' to deploy changes to your workspace
 recreate dashboards.dashboard1
 
 Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
-
->>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 
 This action will result in the deletion or recreation of the following dashboards.
 This will result in changed IDs and permanent URLs of the dashboards that will be recreated:
   recreate resources.dashboards.dashboard1
-Error: the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed
+Error: the deployment requires destructive actions, but the current console does not support prompting.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
+To proceed, use --auto-approve after reviewing the plan above.
 
+Files: 7 uploaded, 0 deleted
 
 Exit code: 1
 
 >>> [CLI] bundle deployment unbind dashboard1
-Updating deployment state...
-
->>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created dashboards.dashboard1
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] lakeview get [DASHBOARD_ID]
 {

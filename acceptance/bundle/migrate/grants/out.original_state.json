@@ -28,9 +28,17 @@
               }
             ],
             "id": "function/main.schema_grants.mymodel",
+            "mcp_service": null,
             "metastore": null,
             "model": null,
+            "model_provider_service": null,
+            "model_service": null,
             "pipeline": null,
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "recipient": null,
             "schema": null,
             "share": null,
@@ -71,9 +79,17 @@
               }
             ],
             "id": "schema/main.schema_grants",
+            "mcp_service": null,
             "metastore": null,
             "model": null,
+            "model_provider_service": null,
+            "model_service": null,
             "pipeline": null,
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "recipient": null,
             "schema": "main.schema_grants",
             "share": null,
@@ -113,9 +129,17 @@
               }
             ],
             "id": "volume/main.schema_grants.volume_name",
+            "mcp_service": null,
             "metastore": null,
             "model": null,
+            "model_provider_service": null,
+            "model_service": null,
             "pipeline": null,
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "recipient": null,
             "schema": null,
             "share": null,
@@ -152,6 +176,11 @@
             "metastore_id": "[UUID]",
             "name": "mymodel",
             "owner": "[USERNAME]",
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "schema_name": "schema_grants",
             "storage_location": null,
             "updated_at": [UNIX_TIME_MILLIS][0],
@@ -176,14 +205,19 @@
           "attributes": {
             "catalog_name": "main",
             "comment": null,
-            "enable_predictive_optimization": null,
+            "enable_predictive_optimization": "INHERIT",
             "force_destroy": true,
             "id": "main.schema_grants",
-            "metastore_id": null,
+            "metastore_id": "[UUID]",
             "name": "schema_grants",
             "owner": "[USERNAME]",
             "properties": null,
-            "schema_id": "",
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
+            "schema_id": "[UUID]",
             "storage_root": null
           },
           "sensitive_attributes": [],
@@ -205,8 +239,13 @@
             "id": "main.schema_grants.volume_name",
             "name": "volume_name",
             "owner": "[USERNAME]",
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "schema_name": "schema_grants",
-            "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+            "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
             "volume_path": "/Volumes/main/schema_grants/volume_name",
             "volume_type": "MANAGED"
           },

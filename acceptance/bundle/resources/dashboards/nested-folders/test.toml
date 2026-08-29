@@ -1,14 +1,17 @@
 Badness = "Cannot read dashboard, expecting deployment to succeed"
-Local = true
 Cloud = true
-RequiresWarehouse = true
 RecordRequests = false
+RunsOnDbr = true
 
 Ignore = [
     "databricks.yml",
     "resources/dashboards.yml",
+    "tmp.plan.json",
 ]
 
+# Deploying a saved plan must send the same full serialized_dashboard, which the
+# lakeview get in the script reads back.
+EnvMatrix.READPLAN = ["", "1"]
 
 [[Repls]]
 # Windows:

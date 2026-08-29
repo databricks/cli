@@ -1,0 +1,14 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+# Deploy with the original parent_path.
+envsubst < databricks.yml.tmpl | sed "s|PARENT_PATH_PLACEHOLDER|/Users/$CURRENT_USER_NAME/genie-old|" > databricks.yml
+trace $CLI bundle deploy
+
+# Change parent_path. The Genie update API moves the space to the new parent,
+# so the plan should show an update rather than a recreate (delete + create).
+envsubst < databricks.yml.tmpl | sed "s|PARENT_PATH_PLACEHOLDER|/Users/$CURRENT_USER_NAME/genie-new|" > databricks.yml
+title "Plan after changing parent_path should show update"
+trace $CLI bundle plan

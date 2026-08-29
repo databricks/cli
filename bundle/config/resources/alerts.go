@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -14,7 +15,7 @@ type Alert struct {
 	BaseResource
 	sql.AlertV2 //nolint AlertV2 also defines Id and URL field with the same json tag "id" and "url"
 
-	Permissions []AlertPermission `json:"permissions,omitempty"`
+	Permissions []Permission `json:"permissions,omitempty"`
 
 	// Filepath points to the local .dbalert.json file containing the alert definition.
 	// If specified, any fields that are part of the .dbalert.json file schema will not be allowed in
@@ -52,8 +53,7 @@ func (a *Alert) InitializeURL(baseURL url.URL) {
 	if a.ID == "" {
 		return
 	}
-	baseURL.Path = "sql/alerts-v2/" + a.ID
-	a.URL = baseURL.String()
+	a.URL = workspaceurls.ResourceURL(baseURL, "alerts", a.ID)
 }
 
 func (a *Alert) GetName() string {

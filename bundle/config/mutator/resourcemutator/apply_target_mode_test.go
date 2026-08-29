@@ -1,7 +1,6 @@
 package resourcemutator
 
 import (
-	"context"
 	"reflect"
 	"slices"
 	"testing"
@@ -21,8 +20,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -91,6 +92,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				JobRuns: map[string]*resources.JobRun{
+					"job_run1": {RunNow: jobs.RunNow{JobId: 1234}},
+				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
 				},
@@ -131,6 +135,12 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				Catalogs: map[string]*resources.Catalog{
+					"catalog1": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
+				},
+				ExternalLocations: map[string]*resources.ExternalLocation{
+					"externalLocation1": {CreateExternalLocation: catalog.CreateExternalLocation{Name: "externalLocation1"}},
+				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {CreateSchema: catalog.CreateSchema{Name: "schema1"}},
 				},
@@ -140,10 +150,23 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
 				},
+				InstancePools: map[string]*resources.InstancePool{
+					"instance_pool1": {CreateInstancePool: compute.CreateInstancePool{InstancePoolName: "instance_pool1", NodeTypeId: "i3.xlarge"}},
+				},
+				ClusterPolicies: map[string]*resources.ClusterPolicy{
+					"cluster_policy1": {CreatePolicy: compute.CreatePolicy{Name: "cluster_policy1"}},
+				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
 						DashboardConfig: resources.DashboardConfig{
 							DisplayName: "dashboard1",
+						},
+					},
+				},
+				GenieSpaces: map[string]*resources.GenieSpace{
+					"geniespace1": {
+						GenieSpaceConfig: resources.GenieSpaceConfig{
+							Title: "geniespace1",
 						},
 					},
 				},
@@ -157,6 +180,15 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				SecretScopes: map[string]*resources.SecretScope{
 					"secretScope1": {
 						Name: "secretScope1",
+					},
+				},
+				Secrets: map[string]*resources.Secret{
+					"secret1": {
+						Secret: catalog.Secret{
+							CatalogName: "main",
+							SchemaName:  "default",
+							Name:        "secret1",
+						},
 					},
 				},
 				SqlWarehouses: map[string]*resources.SqlWarehouse{
@@ -211,6 +243,86 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				PostgresProjects: map[string]*resources.PostgresProject{
+					"postgres_project1": {
+						PostgresProjectConfig: resources.PostgresProjectConfig{
+							ProjectId: "postgres-project-1",
+							ProjectSpec: postgres.ProjectSpec{
+								DisplayName: "postgres_project1",
+							},
+						},
+					},
+				},
+				PostgresBranches: map[string]*resources.PostgresBranch{
+					"postgres_branch1": {
+						PostgresBranchConfig: resources.PostgresBranchConfig{
+							BranchId: "postgres-branch-1",
+							Parent:   "projects/postgres-project-1",
+						},
+					},
+				},
+				PostgresEndpoints: map[string]*resources.PostgresEndpoint{
+					"postgres_endpoint1": {
+						PostgresEndpointConfig: resources.PostgresEndpointConfig{
+							EndpointId: "postgres-endpoint-1",
+							Parent:     "projects/postgres-project-1/branches/postgres-branch-1",
+							EndpointSpec: postgres.EndpointSpec{
+								EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+							},
+						},
+					},
+				},
+				PostgresCatalogs: map[string]*resources.PostgresCatalog{
+					"postgres_catalog1": {
+						PostgresCatalogConfig: resources.PostgresCatalogConfig{
+							CatalogId: "postgres_catalog_1",
+						},
+					},
+				},
+				PostgresDatabases: map[string]*resources.PostgresDatabase{
+					"postgres_database1": {
+						PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+							DatabaseId: "postgres-database-1",
+							Parent:     "projects/postgres-project-1/branches/postgres-branch-1",
+						},
+					},
+				},
+				PostgresRoles: map[string]*resources.PostgresRole{
+					"postgres_role1": {
+						PostgresRoleConfig: resources.PostgresRoleConfig{
+							RoleId: "postgres-role-1",
+							Parent: "projects/postgres-project-1/branches/postgres-branch-1",
+							RoleRoleSpec: postgres.RoleRoleSpec{
+								PostgresRole: "postgres_role_1",
+							},
+						},
+					},
+				},
+				PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+					"postgres_synced_table1": {
+						PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+							SyncedTableId: "catalog.schema.table1",
+						},
+					},
+				},
+				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+					"vs_endpoint1": {
+						CreateEndpoint: vectorsearch.CreateEndpoint{
+							Name:         "vs_endpoint1",
+							EndpointType: vectorsearch.EndpointTypeStandard,
+						},
+					},
+				},
+				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+					"vs_index1": {
+						CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+							Name:         "main.default.vs_index1",
+							EndpointName: "vs_endpoint1",
+							PrimaryKey:   "id",
+							IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+						},
+					},
+				},
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
@@ -224,7 +336,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 func TestProcessTargetModeDevelopment(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Job 1
@@ -259,6 +371,12 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Model serving endpoint 1
 	assert.Equal(t, "dev_lennart_servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 
+	// Vector search endpoint 1: name is the primary key, so it must not be prefixed.
+	assert.Equal(t, "vs_endpoint1", b.Config.Resources.VectorSearchEndpoints["vs_endpoint1"].Name)
+
+	// Vector search index 1: name is the primary key, so it must not be prefixed.
+	assert.Equal(t, "main.default.vs_index1", b.Config.Resources.VectorSearchIndexes["vs_index1"].Name)
+
 	// Registered model 1
 	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 
@@ -273,8 +391,14 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Clusters
 	assert.Equal(t, "[dev lennart] cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 
+	// Instance pools
+	assert.Equal(t, "[dev lennart] instance_pool1", b.Config.Resources.InstancePools["instance_pool1"].InstancePoolName)
+
 	// Dashboards
 	assert.Equal(t, "[dev lennart] dashboard1", b.Config.Resources.Dashboards["dashboard1"].DisplayName)
+
+	// Genie Spaces
+	assert.Equal(t, "[dev lennart] geniespace1", b.Config.Resources.GenieSpaces["geniespace1"].Title)
 
 	// Alert 1: has schedule without pause status set - should be paused
 	assert.Equal(t, "[dev lennart] alert1", b.Config.Resources.Alerts["alert1"].DisplayName)
@@ -296,7 +420,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
@@ -310,7 +434,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place (Azure allows more characters than AWS).
@@ -324,7 +448,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
@@ -334,7 +458,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 func TestProcessTargetModeDefault(t *testing.T) {
 	b := mockBundle("")
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
@@ -342,9 +466,11 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Equal(t, "catalog1", b.Config.Resources.Catalogs["catalog1"].Name)
 	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
 	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
+	assert.Equal(t, "instance_pool1", b.Config.Resources.InstancePools["instance_pool1"].InstancePoolName)
 	assert.Equal(t, "sql_warehouse1", b.Config.Resources.SqlWarehouses["sql_warehouse1"].Name)
 }
 
@@ -366,51 +492,71 @@ func TestAllResourcesMocked(t *testing.T) {
 	}
 }
 
-// Make sure that we at rename all non UC resources
-func TestAllNonUcResourcesAreRenamed(t *testing.T) {
+// TestAppropriateResourcesAreRenamed checks that every resource with a user-facing
+// Name field is renamed by dev-mode / presets.name_prefix, except for an
+// explicit carve-out list. The carve-out applies to resources whose Name is
+// the API primary key / object id (not a display name) — prefixing those
+// would change the resource's identity rather than its label.
+func TestAppropriateResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	// UC resources should not have a prefix added to their name. Right now
-	// this list only contains the Volume resource since we have yet to remove
-	// prefixing support for UC schemas and registered models.
-	ucFields := []reflect.Type{
-		reflect.TypeOf(&resources.Volume{}),
+	notRenamedFields := []reflect.Type{
+		reflect.TypeFor[*resources.Catalog](),
+		reflect.TypeFor[*resources.ExternalLocation](),
+		reflect.TypeFor[*resources.Volume](),
+		reflect.TypeFor[*resources.VectorSearchEndpoint](),
+		reflect.TypeFor[*resources.VectorSearchIndex](),
 	}
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
+	// Resources whose Name is server-generated or otherwise not a user-facing
+	// label, so the rename matrix doesn't apply. Reflection still finds a
+	// Name field on these via embedded SDK types, hence the explicit skip.
+	notUserNamed := []string{
+		"Apps",
+		"SecretScopes",
+		"Secrets",
+		"DatabaseInstances",
+		"DatabaseCatalogs",
+		"SyncedDatabaseTables",
+		"PostgresProjects",
+		"PostgresBranches",
+		"PostgresEndpoints",
+		"PostgresCatalogs",
+		"PostgresDatabases",
+		"PostgresSyncedTables",
+	}
+
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	resources := reflect.ValueOf(b.Config.Resources)
 	for i := range resources.NumField() {
 		field := resources.Field(i)
+		if field.Kind() != reflect.Map {
+			continue
+		}
+		resourceType := resources.Type().Field(i).Name
+		if slices.Contains(notUserNamed, resourceType) {
+			continue
+		}
+		for _, key := range field.MapKeys() {
+			resource := field.MapIndex(key)
+			nameField := resource.Elem().FieldByName("Name")
+			if !nameField.IsValid() || nameField.Kind() != reflect.String {
+				continue
+			}
 
-		if field.Kind() == reflect.Map {
-			for _, key := range field.MapKeys() {
-				resource := field.MapIndex(key)
-				nameField := resource.Elem().FieldByName("Name")
-				resourceType := resources.Type().Field(i).Name
-
-				// Skip resources that are not renamed
-				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" || resourceType == "SyncedDatabaseTables" {
-					continue
-				}
-
-				if !nameField.IsValid() || nameField.Kind() != reflect.String {
-					continue
-				}
-
-				if slices.Contains(ucFields, resource.Type()) {
-					assert.NotContains(t, nameField.String(), "dev", "process_target_mode should not rename '%s' in '%s'", key, resources.Type().Field(i).Name)
-				} else {
-					assert.Contains(t, nameField.String(), "dev", "process_target_mode should rename '%s' in '%s'", key, resources.Type().Field(i).Name)
-				}
+			if slices.Contains(notRenamedFields, resource.Type()) {
+				assert.NotContains(t, nameField.String(), "dev", "process_target_mode should not rename '%s' in '%s'", key, resourceType)
+			} else {
+				assert.Contains(t, nameField.String(), "dev", "process_target_mode should rename '%s' in '%s'", key, resourceType)
 			}
 		}
 	}
 }
 
 func TestDisableLocking(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := mockBundle(config.Development)
 
 	diags := bundle.ApplySeq(ctx, b, ApplyTargetMode())
@@ -420,7 +566,7 @@ func TestDisableLocking(t *testing.T) {
 }
 
 func TestDisableLockingDisabled(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := mockBundle(config.Development)
 	explicitlyEnabled := true
 	b.Config.Bundle.Deployment.Lock.Enabled = &explicitlyEnabled
@@ -434,7 +580,7 @@ func TestPrefixAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.NamePrefix = "custom_lennart_deploy_"
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "custom_lennart_deploy_job1", b.Config.Resources.Jobs["job1"].Name)
@@ -447,7 +593,7 @@ func TestTagsAlreadySet(t *testing.T) {
 		"dev":    "foo",
 	}
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["custom"])
@@ -458,7 +604,7 @@ func TestTagsNil(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.Tags = nil
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
@@ -468,7 +614,7 @@ func TestTagsEmptySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.Tags = map[string]string{}
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
@@ -478,7 +624,7 @@ func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.JobsMaxConcurrentRuns = 10
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, 10, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
@@ -488,7 +634,7 @@ func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.JobsMaxConcurrentRuns = 1
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, 1, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
@@ -499,7 +645,7 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	notEnabled := false
 	b.Config.Presets.PipelinesDevelopment = &notEnabled
 
-	diags := bundle.ApplySeq(context.Background(), b, ApplyTargetMode(), ApplyPresets())
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development)

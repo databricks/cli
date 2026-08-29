@@ -1,0 +1,9 @@
+sethome "./home"
+
+# home/.databrickscfg is a checked-in input: a default profile with conflicting
+# (basic) auth on a different host. The env below still points a PAT at the test
+# server. Without the #5616 guard, the default profile would be pinned and merged
+# with the env PAT, failing with "more than one authorization method configured".
+title "api without --profile uses env auth, ignoring default_profile (#5616)\n"
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/clusters/list
+trace print_requests.py --get //api/2.0/clusters/list

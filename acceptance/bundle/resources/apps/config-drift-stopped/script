@@ -1,0 +1,19 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy with started=true so the app has an active deployment"
+trace $CLI bundle deploy
+
+title "Change config while running: drift is detected (active deployment present)"
+trace update_file.py databricks.yml original_value changed_value
+trace $CLI bundle plan -o json | jq '.plan[].changes | with_entries(select(.key | startswith("config")))'
+
+title "Stop the app: the backend clears the active deployment"
+trace $CLI apps stop $UNIQUE_NAME | jq '.compute_status.state'
+
+title "Same config change is now skipped: no active deployment to compare against"
+trace $CLI bundle plan -o json | jq '.plan[].changes | with_entries(select(.key | startswith("config")))'

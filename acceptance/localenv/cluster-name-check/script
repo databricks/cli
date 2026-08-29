@@ -1,0 +1,1 @@
+trace $CLI environments setup-local --cluster-name my-cluster --dry-run

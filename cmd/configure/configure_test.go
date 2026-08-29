@@ -1,7 +1,6 @@
 package configure_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -28,6 +27,7 @@ func setup(t *testing.T) string {
 	}
 	t.Setenv(homeEnvVar, tempHomeDir)
 	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
 	t.Setenv("DATABRICKS_TOKEN", "")
 	return tempHomeDir
 }
@@ -45,7 +45,7 @@ func getTempFileWithContent(t *testing.T, tempHomeDir, content string) *os.File 
 }
 
 func TestDefaultConfigureNoInteractive(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempHomeDir := setup(t)
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
 	oldStdin := os.Stdin
@@ -77,7 +77,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 
 func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	// TODO: Replace with similar test code from go SDK, once we start using it directly
-	ctx := context.Background()
+	ctx := t.Context()
 	tempHomeDir := setup(t)
 	defaultCfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
 	cfgPath := filepath.Join(tempHomeDir, "overwrite-databricks-cfg")
@@ -116,7 +116,7 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 }
 
 func TestEnvVarsConfigureNoInteractive(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempHomeDir := setup(t)
 	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
@@ -155,7 +155,7 @@ func TestEnvVarsConfigureNoInteractive(t *testing.T) {
 }
 
 func TestEnvVarsConfigureNoArgsNoInteractive(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempHomeDir := setup(t)
 	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
 
@@ -181,8 +181,67 @@ func TestEnvVarsConfigureNoArgsNoInteractive(t *testing.T) {
 	assertKeyValueInSection(t, defaultSection, "token", "secret")
 }
 
+func TestEnvProfileConfigureNoInteractive(t *testing.T) {
+	ctx := t.Context()
+	tempHomeDir := setup(t)
+	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
+	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
+	defer inp.Close()
+	oldStdin := os.Stdin
+	t.Cleanup(func() { os.Stdin = oldStdin })
+	os.Stdin = inp
+
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "FROM-ENV")
+
+	cmd := cmd.New(ctx)
+	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
+
+	err := root.Execute(ctx, cmd)
+	assert.NoError(t, err)
+
+	cfg, err := ini.Load(cfgPath)
+	assert.NoError(t, err)
+
+	section, err := cfg.GetSection("FROM-ENV")
+	assert.NoError(t, err)
+
+	assertKeyValueInSection(t, section, "host", "https://host")
+	assertKeyValueInSection(t, section, "token", "token")
+}
+
+func TestProfileShorthandOverridesEnvConfigureNoInteractive(t *testing.T) {
+	ctx := t.Context()
+	tempHomeDir := setup(t)
+	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
+	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
+	defer inp.Close()
+	oldStdin := os.Stdin
+	t.Cleanup(func() { os.Stdin = oldStdin })
+	os.Stdin = inp
+
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "FROM-ENV")
+
+	cmd := cmd.New(ctx)
+	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host", "-p", "FROM-FLAG"})
+
+	err := root.Execute(ctx, cmd)
+	assert.NoError(t, err)
+
+	cfg, err := ini.Load(cfgPath)
+	assert.NoError(t, err)
+
+	section, err := cfg.GetSection("FROM-FLAG")
+	assert.NoError(t, err)
+
+	assertKeyValueInSection(t, section, "host", "https://host")
+	assertKeyValueInSection(t, section, "token", "token")
+
+	_, err = cfg.GetSection("FROM-ENV")
+	assert.Error(t, err)
+}
+
 func TestCustomProfileConfigureNoInteractive(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempHomeDir := setup(t)
 	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")

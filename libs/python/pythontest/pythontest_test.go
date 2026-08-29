@@ -1,7 +1,6 @@
 package pythontest
 
 import (
-	"context"
 	"os/exec"
 	"path/filepath"
 	"testing"
@@ -14,7 +13,7 @@ func TestVenvSuccess(t *testing.T) {
 	// Test at least two version to ensure we capture a case where venv version does not match system one
 	for _, pythonVersion := range []string{"3.11", "3.12"} {
 		t.Run(pythonVersion, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			dir := t.TempDir()
 			opts := VenvOpts{
 				PythonVersion: pythonVersion,

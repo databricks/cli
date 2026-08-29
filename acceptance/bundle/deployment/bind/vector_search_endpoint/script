@@ -1,0 +1,23 @@
+ENDPOINT_NAME="test-vs-endpoint-$UNIQUE_NAME"
+export ENDPOINT_NAME
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI vector-search-endpoints delete-endpoint "${ENDPOINT_NAME}"
+}
+trap cleanup EXIT
+
+trace $CLI vector-search-endpoints create-endpoint "${ENDPOINT_NAME}" STANDARD | jq '{id, name, endpoint_type}'
+
+trace $CLI bundle deployment bind endpoint1 "${ENDPOINT_NAME}" --auto-approve
+
+trace $CLI bundle deploy --auto-approve
+
+trace $CLI vector-search-endpoints get-endpoint "${ENDPOINT_NAME}" | jq '{id, name, endpoint_type}'
+
+trace $CLI bundle deployment unbind endpoint1
+
+trace $CLI bundle destroy --auto-approve
+
+# Read the pre-defined endpoint again (expecting it still exists and is not deleted):
+trace $CLI vector-search-endpoints get-endpoint "${ENDPOINT_NAME}" | jq '{id, name, endpoint_type}'

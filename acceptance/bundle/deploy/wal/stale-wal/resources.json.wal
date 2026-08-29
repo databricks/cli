@@ -1,0 +1,2 @@
+{"lineage":"stale-test-lineage","serial":1}
+{"k":"resources.jobs.stale_job","v":{"__id__":"9999","state":{"name":"stale-job"}}}

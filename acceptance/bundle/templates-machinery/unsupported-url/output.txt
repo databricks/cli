@@ -1,0 +1,12 @@
+
+>>> musterr [CLI] bundle init http://github.com/databricks/cli
+Error: unsupported protocol in Git URL "http://github.com/databricks/cli": only https://, ssh://, git@ URLs are supported
+
+>>> musterr [CLI] bundle init git://github.com/databricks/cli
+Error: unsupported protocol in Git URL "git://github.com/databricks/cli": only https://, ssh://, git@ URLs are supported
+
+>>> musterr [CLI] bundle init ftp://github.com/databricks/cli
+Error: unsupported protocol in Git URL "ftp://github.com/databricks/cli": only https://, ssh://, git@ URLs are supported
+
+>>> musterr [CLI] bundle init ftps://github.com/databricks/cli
+Error: unsupported protocol in Git URL "ftps://github.com/databricks/cli": only https://, ssh://, git@ URLs are supported

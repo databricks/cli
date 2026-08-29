@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // ValidationDetail contains detailed output from a failed validation.
@@ -28,27 +29,30 @@ type ValidateResult struct {
 }
 
 func (vr *ValidateResult) String() string {
-	var result string
+	var sb strings.Builder
 
 	if len(vr.ProgressLog) > 0 {
-		result = "Validation Progress:\n"
+		sb.WriteString("Validation Progress:\n")
 		for _, entry := range vr.ProgressLog {
-			result += entry + "\n"
+			sb.WriteString(entry)
+			sb.WriteByte('\n')
 		}
-		result += "\n"
+		sb.WriteByte('\n')
 	}
 
 	if vr.Success {
-		result += "✅ " + vr.Message
+		sb.WriteString("✅ ")
+		sb.WriteString(vr.Message)
 	} else {
-		result += "❌ " + vr.Message
+		sb.WriteString("❌ ")
+		sb.WriteString(vr.Message)
 		if vr.Details != nil {
-			result += fmt.Sprintf("\n\nExit code: %d\n\nStdout:\n%s\n\nStderr:\n%s",
+			fmt.Fprintf(&sb, "\n\nExit code: %d\n\nStdout:\n%s\n\nStderr:\n%s",
 				vr.Details.ExitCode, vr.Details.Stdout, vr.Details.Stderr)
 		}
 	}
 
-	return result
+	return sb.String()
 }
 
 // ValidateOptions configures validation behavior.

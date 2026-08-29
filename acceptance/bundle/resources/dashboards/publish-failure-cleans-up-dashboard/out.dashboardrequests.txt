@@ -2,6 +2,13 @@
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/publish-failure-cleans-up-dashboard/default/state"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/publish-failure-cleans-up-dashboard/default/artifacts/.internal"
   }
 }
@@ -10,16 +17,6 @@
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/publish-failure-cleans-up-dashboard/default/files"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/lakeview/dashboards",
-  "body": {
-    "display_name": "my dashboard",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/publish-failure-cleans-up-dashboard/default/resources",
-    "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
-    "warehouse_id": "doesnotexist"
   }
 }
 {

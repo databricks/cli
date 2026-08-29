@@ -1,0 +1,14 @@
+echo "*" > .gitignore
+
+title "Initial deployment"
+trace $CLI bundle deploy
+
+title "Plan is a no-op despite write-only secret and burst_scaling_enabled not round-tripping"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
+
+title "The write-only fields are skipped as input_only (confirms the matched rules)"
+trace $CLI bundle plan --output json | jq '.plan[].changes'
+
+title "Redeploy is a no-op (no config/ai-gateway/tags update calls)"
+trace $CLI bundle deploy
+trace print_requests.py //serving-endpoints

@@ -1,0 +1,24 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  AZURE:
+    type: complex
+    default:
+      subscription: test-sub-123
+
+resources:
+  schemas:
+    my_schema:
+      catalog_name: main
+      name: test-schema-$UNIQUE_NAME
+
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-$UNIQUE_NAME
+      libraries:
+        - file:
+            path: pipeline.py
+      configuration:
+        europris.swipe.egress_streaming_schema: "${resources.schemas.my_schema.catalog_name}.${resources.schemas.my_schema.name}"
+        europris.azure.subscription: ${var.AZURE.subscription}

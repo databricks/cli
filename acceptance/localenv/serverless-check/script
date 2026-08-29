@@ -1,0 +1,1 @@
+trace $CLI environments setup-local --serverless-version 4 --dry-run

@@ -1,13 +1,5 @@
-Name: test-bundle
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
-Resources:
-  Jobs:
-    bar:
-      Name: Untitled
-      URL:  ${resources.jobs.foo.url}
-    foo:
-      Name: Untitled
-      URL:  my_job_url
+Error: "resources.jobs.foo.url": Terraform-only field; cross-resource references to Terraform-only fields are not supported by the direct engine
+  in databricks.yml:11:12
+
+
+Exit code: 1

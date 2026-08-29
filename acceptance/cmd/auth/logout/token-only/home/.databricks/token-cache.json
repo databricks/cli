@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "tokens": {
+    "dev": {
+      "access_token": "dev-cached-token",
+      "token_type": "Bearer"
+    },
+    "https://accounts.cloud.databricks.test/oidc/accounts/account-id": {
+      "access_token": "dev-host-token",
+      "token_type": "Bearer"
+    }
+  }
+}

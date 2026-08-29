@@ -34,9 +34,11 @@ Validation OK!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created database_catalogs.my_catalog
+Created database_instances.my_instance
+Created synced_database_tables.my_synced_table
+Files: 5 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle summary
 
@@ -50,8 +52,15 @@ The following resources will be deleted:
   delete resources.database_instances.my_instance
   delete resources.synced_database_tables.my_synced_table
 
+This action will result in the deletion of the following Lakebase database instances.
+All data stored in them will be permanently lost:
+  delete resources.database_instances.my_instance
+
+This action will result in the deletion of the following synced database tables.
+The synced data in the destination database will be lost (the source table is preserved):
+  delete resources.synced_database_tables.my_synced_table
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 3 deleted
 Cleaning up temporary source table

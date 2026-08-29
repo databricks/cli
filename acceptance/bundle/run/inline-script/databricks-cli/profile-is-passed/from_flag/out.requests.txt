@@ -1,5 +1,9 @@
 {
   "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
   "path": "/oidc/.well-known/oauth-authorization-server"
 }
 {

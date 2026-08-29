@@ -2,3 +2,8 @@ Cloud = false
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 Ignore = [".databricks"]
+
+# Each test's script sets DATABRICKS_BUNDLE_ENGINE inline; pin the outer
+# matrix to ["direct"] so CI's engine filter includes these tests without
+# also running the same script twice per engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

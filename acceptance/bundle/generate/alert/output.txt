@@ -1,6 +1,16 @@
 
->>> [CLI] workspace mkdirs /Workspace/test-[UNIQUE_NAME]
+>>> [CLI] workspace mkdirs /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME]
 
->>> [CLI] bundle generate alert --existing-id [NUMID] --source-dir out/alert --config-dir out/resource
+>>> [CLI] bundle generate alert --existing-id [ALERT_ID] --source-dir out/alert --config-dir out/resource
 Alert configuration successfully saved to [TEST_TMP_DIR]/out/resource/test_alert.alert.yml
 Serialized alert definition to [TEST_TMP_DIR]/out/alert/test_alert.dbalert.json
+Warning: Generated configuration is not included in the bundle
+
+The file out/resource/test_alert.alert.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - out/resource/*.yml
+
+
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME] --recursive

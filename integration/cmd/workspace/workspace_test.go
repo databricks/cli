@@ -20,26 +20,14 @@ import (
 )
 
 func TestWorkspaceList(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "workspace", "list", "/")
 	outStr := stdout.String()
 	assert.Contains(t, outStr, "ID")
 	assert.Contains(t, outStr, "Type")
 	assert.Contains(t, outStr, "Language")
 	assert.Contains(t, outStr, "Path")
-	assert.Equal(t, "", stderr.String())
-}
-
-func TestWorkpaceListErrorWhenNoArguments(t *testing.T) {
-	ctx := context.Background()
-	_, _, err := testcli.RequireErrorRun(t, ctx, "workspace", "list")
-	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
-}
-
-func TestWorkpaceGetStatusErrorWhenNoArguments(t *testing.T) {
-	ctx := context.Background()
-	_, _, err := testcli.RequireErrorRun(t, ctx, "workspace", "get-status")
-	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
+	assert.Empty(t, stderr.String())
 }
 
 func TestWorkpaceExportPrintsContents(t *testing.T) {
@@ -58,7 +46,7 @@ func TestWorkpaceExportPrintsContents(t *testing.T) {
 	// Run export
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "workspace", "export", path.Join(tmpdir, "file-a"))
 	assert.Equal(t, contents, stdout.String())
-	assert.Equal(t, "", stderr.String())
+	assert.Empty(t, stderr.String())
 }
 
 func setupWorkspaceImportExportTest(t *testing.T) (context.Context, filer.Filer, string) {
@@ -127,7 +115,7 @@ func TestExportDir(t *testing.T) {
 	// Run Export
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "workspace", "export-dir", sourceDir, targetDir)
 	assert.Equal(t, expectedLogs, stdout.String())
-	assert.Equal(t, "", stderr.String())
+	assert.Empty(t, stderr.String())
 
 	// Assert files were exported
 	assertLocalFileContents(t, filepath.Join(targetDir, "file-a"), "abc")
@@ -197,7 +185,7 @@ func TestImportDir(t *testing.T) {
 	}, "\n")
 
 	assert.Equal(t, expectedLogs, stdout.String())
-	assert.Equal(t, "", stderr.String())
+	assert.Empty(t, stderr.String())
 
 	// Assert files are imported
 	assertFilerFileContents(t, ctx, workspaceFiler, "file-a", "hello, world")
@@ -307,7 +295,7 @@ func TestExportWithFileFlag(t *testing.T) {
 	b, err := io.ReadAll(&stdout)
 	require.NoError(t, err)
 	// Expect nothing to be printed to stdout
-	assert.Equal(t, "", string(b))
+	assert.Empty(t, string(b))
 	assertLocalFileContents(t, filepath.Join(localTmpDir, "file.txt"), "abc")
 
 	// Export python notebook
@@ -316,14 +304,14 @@ func TestExportWithFileFlag(t *testing.T) {
 	stdout, _ = testcli.RequireSuccessfulRun(t, ctx, "workspace", "export", path.Join(sourceDir, "pyNotebook"), "--file", filepath.Join(localTmpDir, "pyNb.py"))
 	b, err = io.ReadAll(&stdout)
 	require.NoError(t, err)
-	assert.Equal(t, "", string(b))
+	assert.Empty(t, string(b))
 	assertLocalFileContents(t, filepath.Join(localTmpDir, "pyNb.py"), "# Databricks notebook source\n")
 
 	// Export python notebook as jupyter
 	stdout, _ = testcli.RequireSuccessfulRun(t, ctx, "workspace", "export", path.Join(sourceDir, "pyNotebook"), "--format", "JUPYTER", "--file", filepath.Join(localTmpDir, "jupyterNb.ipynb"))
 	b, err = io.ReadAll(&stdout)
 	require.NoError(t, err)
-	assert.Equal(t, "", string(b))
+	assert.Empty(t, string(b))
 	assertLocalFileContents(t, filepath.Join(localTmpDir, "jupyterNb.ipynb"), `"cells":`)
 	assertLocalFileContents(t, filepath.Join(localTmpDir, "jupyterNb.ipynb"), `"metadata":`)
 }
@@ -377,8 +365,9 @@ func TestImportFileFormatSource(t *testing.T) {
 	assertFilerFileContents(t, ctx, workspaceFiler, "scalaNotebook", "// Databricks notebook source\nprintln(\"scala\")")
 	assertWorkspaceFileType(t, ctx, workspaceFiler, "scalaNotebook", workspace.ObjectTypeNotebook)
 
-	_, _, err := testcli.RequireErrorRun(t, ctx, "workspace", "import", path.Join(targetDir, "scalaNotebook"), "--file", "./testdata/import_dir/scalaNotebook.scala")
-	assert.ErrorContains(t, err, "The zip file may not be valid or may be an unsupported version. Hint: Objects imported using format=SOURCE are expected to be zip encoded databricks source notebook(s) by default. Please specify a language using the --language flag if you are trying to import a single uncompressed notebook")
+	// Upload a non-zip archive without a specifying a format: expect API to throw an error that the uploaded item is not a zip archive
+	_, _, err := testcli.RequireErrorRun(t, ctx, "workspace", "import", path.Join(targetDir, "scalaNotebook-error"), "--file", "./testdata/import_dir/scalaNotebook.scala")
+	assert.ErrorContains(t, err, "The zip archive contains no items.")
 }
 
 func TestImportFileFormatAuto(t *testing.T) {

@@ -1,6 +1,7 @@
 package template
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"path"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
 	"text/template"
 
@@ -60,6 +60,11 @@ type renderer struct {
 	// an explicit {{skip}} directive for that directory in the template.
 	visitedDirs []string
 
+	// Slash-separated paths of the files persisted by persistToDisk, relative to
+	// the output directory. Only files that survived the skip patterns are
+	// recorded, so a file removed by a {{skip}} directive is not listed here.
+	persistedPaths []string
+
 	// [fs.FS] that holds the template's file tree.
 	srcFS fs.FS
 }
@@ -75,20 +80,16 @@ func newRenderer(
 	// Initialize new template, with helper functions loaded
 	tmpl := template.New("").Funcs(helpers)
 
-	// Find user-defined templates in the library directory
-	matches, err := fs.Glob(templateFS, path.Join(libraryDir, "*"))
+	// Parse the shared library before the template's own, so a same-named
+	// definition in the template's library takes precedence.
+	tmpl, err := parseLibrary(tmpl, sharedLibraryFS, "*")
 	if err != nil {
 		return nil, err
 	}
 
-	// Parse user-defined templates.
-	// Note: we do not call [ParseFS] with the glob directly because
-	// it returns an error if no files match the pattern.
-	if len(matches) != 0 {
-		tmpl, err = tmpl.ParseFS(templateFS, matches...)
-		if err != nil {
-			return nil, err
-		}
+	tmpl, err = parseLibrary(tmpl, templateFS, path.Join(libraryDir, "*"))
+	if err != nil {
+		return nil, err
 	}
 
 	srcFS, err := fs.Sub(templateFS, path.Clean(templateDir))
@@ -107,6 +108,19 @@ func newRenderer(
 		visitedDirs:  make([]string, 0),
 		srcFS:        srcFS,
 	}, nil
+}
+
+// parseLibrary parses files in fsys matching pattern into tmpl, tolerating no matches
+// (unlike [template.Template.ParseFS], which errors when nothing matches).
+func parseLibrary(tmpl *template.Template, fsys fs.FS, pattern string) (*template.Template, error) {
+	matches, err := fs.Glob(fsys, pattern)
+	if err != nil {
+		return nil, err
+	}
+	if len(matches) == 0 {
+		return tmpl, nil
+	}
+	return tmpl.ParseFS(fsys, matches...)
 }
 
 // Executes the template by applying config on it. Returns the materialized template
@@ -136,8 +150,7 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	if err != nil {
 		// Parse and return a more readable error for missing values that are used
 		// by the template definition but are not provided in the passed config.
-		target := &template.ExecError{}
-		if errors.As(err, target) {
+		if target, ok := errors.AsType[template.ExecError](err); ok {
 			captureRegex := regexp.MustCompile(`map has no entry for key "(.*)"`)
 			matches := captureRegex.FindStringSubmatch(target.Err.Error())
 			if len(matches) != 2 {
@@ -200,7 +213,7 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 	content, err := r.executeTemplate(string(contentTemplate))
 	// Capture errors caused by the "fail" helper function
-	if target := (&ErrFail{}); errors.As(err, target) {
+	if target, ok := errors.AsType[ErrFail](err); ok {
 		return nil, target
 	}
 	if err != nil {
@@ -288,8 +301,8 @@ func (r *renderer) walk() error {
 			return err
 		}
 		// Sort by name to ensure deterministic ordering
-		sort.Slice(entries, func(i, j int) bool {
-			return entries[i].Name() < entries[j].Name()
+		slices.SortFunc(entries, func(a, b fs.DirEntry) int {
+			return cmp.Compare(a.Name(), b.Name())
 		})
 		for _, entry := range entries {
 			if entry.IsDir() {
@@ -345,6 +358,7 @@ func (r *renderer) persistToDisk(ctx context.Context, out filer.Filer) error {
 		if err != nil {
 			return err
 		}
+		r.persistedPaths = append(r.persistedPaths, file.RelPath())
 	}
 
 	// Ensure all visited directories exist, preserving the template's directory structure.

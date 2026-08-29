@@ -1,7 +1,6 @@
 package git_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,7 +11,7 @@ import (
 
 func TestGitClone(t *testing.T) {
 	tmpDir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 	var err error
 
 	err = git.Clone(ctx, "https://github.com/databricks/databricks-empty-ide-project.git", "", tmpDir)
@@ -32,7 +31,7 @@ func TestGitClone(t *testing.T) {
 
 func TestGitCloneOnNonDefaultBranch(t *testing.T) {
 	tmpDir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 	var err error
 
 	err = git.Clone(ctx, "https://github.com/databricks/notebook-best-practices", "dais-2022", tmpDir)
@@ -52,7 +51,7 @@ func TestGitCloneOnNonDefaultBranch(t *testing.T) {
 func TestGitCloneErrorsWhenRepositoryDoesNotExist(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	err := git.Clone(context.Background(), "https://github.com/monalisa/doesnot-exist.git", "", tmpDir)
+	err := git.Clone(t.Context(), "https://github.com/monalisa/doesnot-exist.git", "", tmpDir)
 	// Expect the error to originate from shelling out to `git clone`
 	assert.ErrorContains(t, err, "git clone failed:")
 }

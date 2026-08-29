@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle init pydabs --config-file ./input.json --output-dir output
-Welcome to PyDABs template for Databricks Asset Bundles!
+Welcome to PyDABs template for Declarative Automation Bundles!
 
 Answer the following questions to customize your project.
 You can always change your configuration in the databricks.yml file later.

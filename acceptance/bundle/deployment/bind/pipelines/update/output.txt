@@ -1,3 +1,10 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/state"
+  }
+}
 
 >>> [CLI] bundle summary -o json
 
@@ -8,8 +15,8 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated pipelines.foo
+Files: 10 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py ^//import-file/ ^//workspace/delete ^//telemetry-ext

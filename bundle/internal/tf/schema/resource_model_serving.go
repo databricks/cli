@@ -158,6 +158,7 @@ type ResourceModelServingConfigServedEntitiesExternalModel struct {
 }
 
 type ResourceModelServingConfigServedEntities struct {
+	BurstScalingEnabled       bool                                                   `json:"burst_scaling_enabled,omitempty"`
 	EntityName                string                                                 `json:"entity_name,omitempty"`
 	EntityVersion             string                                                 `json:"entity_version,omitempty"`
 	EnvironmentVars           map[string]string                                      `json:"environment_vars,omitempty"`
@@ -175,6 +176,7 @@ type ResourceModelServingConfigServedEntities struct {
 }
 
 type ResourceModelServingConfigServedModels struct {
+	BurstScalingEnabled       bool              `json:"burst_scaling_enabled,omitempty"`
 	EnvironmentVars           map[string]string `json:"environment_vars,omitempty"`
 	InstanceProfileArn        string            `json:"instance_profile_arn,omitempty"`
 	MaxProvisionedConcurrency int               `json:"max_provisioned_concurrency,omitempty"`
@@ -212,6 +214,10 @@ type ResourceModelServingEmailNotifications struct {
 	OnUpdateSuccess []string `json:"on_update_success,omitempty"`
 }
 
+type ResourceModelServingProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
 type ResourceModelServingRateLimits struct {
 	Calls         int    `json:"calls"`
 	Key           string `json:"key,omitempty"`
@@ -221,6 +227,25 @@ type ResourceModelServingRateLimits struct {
 type ResourceModelServingTags struct {
 	Key   string `json:"key"`
 	Value string `json:"value,omitempty"`
+}
+
+type ResourceModelServingTelemetryConfigInferenceTableConfig struct {
+	Name             string `json:"name,omitempty"`
+	SamplingFraction int    `json:"sampling_fraction,omitempty"`
+}
+
+type ResourceModelServingTelemetryConfigTableNames struct {
+	AnnotationsTable string `json:"annotations_table,omitempty"`
+	LogsTable        string `json:"logs_table,omitempty"`
+	MetricsTable     string `json:"metrics_table,omitempty"`
+	TracesTable      string `json:"traces_table,omitempty"`
+}
+
+type ResourceModelServingTelemetryConfig struct {
+	EnabledTelemetryFeatures []string                                                 `json:"enabled_telemetry_features,omitempty"`
+	TelemetryProfileId       string                                                   `json:"telemetry_profile_id,omitempty"`
+	InferenceTableConfig     *ResourceModelServingTelemetryConfigInferenceTableConfig `json:"inference_table_config,omitempty"`
+	TableNames               *ResourceModelServingTelemetryConfigTableNames           `json:"table_names,omitempty"`
 }
 
 type ResourceModelServing struct {
@@ -234,6 +259,8 @@ type ResourceModelServing struct {
 	AiGateway          *ResourceModelServingAiGateway          `json:"ai_gateway,omitempty"`
 	Config             *ResourceModelServingConfig             `json:"config,omitempty"`
 	EmailNotifications *ResourceModelServingEmailNotifications `json:"email_notifications,omitempty"`
+	ProviderConfig     *ResourceModelServingProviderConfig     `json:"provider_config,omitempty"`
 	RateLimits         []ResourceModelServingRateLimits        `json:"rate_limits,omitempty"`
 	Tags               []ResourceModelServingTags              `json:"tags,omitempty"`
+	TelemetryConfig    *ResourceModelServingTelemetryConfig    `json:"telemetry_config,omitempty"`
 }

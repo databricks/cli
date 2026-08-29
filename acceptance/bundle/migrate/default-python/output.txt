@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle init default-python --config-file ./input.json
-Welcome to the default Python template for Databricks Asset Bundles!
+Welcome to the default Python template for Declarative Automation Bundles!
 
 Answer the following questions to customize your project.
 You can always change your configuration in the databricks.yml file later.
@@ -16,22 +16,14 @@ To get started, refer to the project README.md file and the documentation at htt
 Building python_artifact...
 Uploading .databricks/bundle/dev/patched_wheels/python_artifact_my_default_python/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.sample_job
+Created pipelines.my_default_python_etl
+Files: 21 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_state.py
 
->>> musterr [CLI] bundle deployment migrate
-Building python_artifact...
-Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
-Building python_artifact...
-update jobs.sample_job
-
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
-Error: 'databricks bundle plan' shows actions planned, aborting migration. Please run 'databricks bundle deploy' first to ensure your bundle is up to date, If actions persist after deploy, skip plan check with --noplancheck option
-
->>> [CLI] bundle deployment migrate --noplancheck
+>>> [CLI] bundle deployment migrate
 Building python_artifact...
 Success! Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/my_default_python/.databricks/bundle/dev/resources.json
 
@@ -76,7 +68,12 @@ Building python_artifact...
 {
   "email_notifications": {
     "action": "skip",
-    "reason": "empty_struct",
+    "reason": "empty",
+    "remote": {}
+  },
+  "tasks[task_key='notebook_task'].email_notifications": {
+    "action": "skip",
+    "reason": "empty",
     "remote": {}
   },
   "tasks[task_key='notebook_task'].libraries[0].whl": {
@@ -87,8 +84,23 @@ Building python_artifact...
   },
   "tasks[task_key='notebook_task'].notebook_task.source": {
     "action": "skip",
-    "reason": "server_side_default",
+    "reason": "backend_default",
     "remote": "WORKSPACE"
+  },
+  "tasks[task_key='notebook_task'].run_if": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "ALL_SUCCESS"
+  },
+  "tasks[task_key='notebook_task'].timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": 0
+  },
+  "tasks[task_key='python_wheel_task'].email_notifications": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": {}
   },
   "tasks[task_key='python_wheel_task'].libraries[0].whl": {
     "action": "update",
@@ -96,21 +108,46 @@ Building python_artifact...
     "new": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl",
     "remote": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
   },
+  "tasks[task_key='python_wheel_task'].run_if": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "ALL_SUCCESS"
+  },
+  "tasks[task_key='python_wheel_task'].timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": 0
+  },
+  "tasks[task_key='refresh_pipeline'].email_notifications": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": {}
+  },
+  "tasks[task_key='refresh_pipeline'].run_if": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "ALL_SUCCESS"
+  },
+  "tasks[task_key='refresh_pipeline'].timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": 0
+  },
   "timeout_seconds": {
     "action": "skip",
-    "reason": "server_side_default",
+    "reason": "empty",
     "remote": 0
   },
   "webhook_notifications": {
     "action": "skip",
-    "reason": "empty_struct",
+    "reason": "empty",
     "remote": {}
   }
 }
 {
   "storage": {
     "action": "skip",
-    "reason": "server_side_default",
+    "reason": "backend_default",
     "remote": "dbfs:/pipelines/[UUID]"
   }
 }
@@ -119,9 +156,9 @@ Building python_artifact...
 Building python_artifact...
 Uploading .databricks/bundle/dev/patched_wheels/python_artifact_my_default_python/my_default_python-0.0.1+[UNIX_TIME_NANOS][3]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated jobs.sample_job
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_state.py
 
@@ -129,7 +166,7 @@ Deployment complete!
 --- ../out.state_after_migration.json
 +++ ../out.state_after_deploy.json
 @@ -3,5 +3,5 @@
-  "cli_version": "[DEV_VERSION]",
+  "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
 - "serial": 5,
 + "serial": 6,
@@ -150,7 +187,12 @@ Building python_artifact...
 {
   "email_notifications": {
     "action": "skip",
-    "reason": "empty_struct",
+    "reason": "empty",
+    "remote": {}
+  },
+  "tasks[task_key='notebook_task'].email_notifications": {
+    "action": "skip",
+    "reason": "empty",
     "remote": {}
   },
   "tasks[task_key='notebook_task'].libraries[0].whl": {
@@ -161,8 +203,23 @@ Building python_artifact...
   },
   "tasks[task_key='notebook_task'].notebook_task.source": {
     "action": "skip",
-    "reason": "server_side_default",
+    "reason": "backend_default",
     "remote": "WORKSPACE"
+  },
+  "tasks[task_key='notebook_task'].run_if": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "ALL_SUCCESS"
+  },
+  "tasks[task_key='notebook_task'].timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": 0
+  },
+  "tasks[task_key='python_wheel_task'].email_notifications": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": {}
   },
   "tasks[task_key='python_wheel_task'].libraries[0].whl": {
     "action": "update",
@@ -170,21 +227,46 @@ Building python_artifact...
     "new": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl",
     "remote": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
   },
+  "tasks[task_key='python_wheel_task'].run_if": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "ALL_SUCCESS"
+  },
+  "tasks[task_key='python_wheel_task'].timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": 0
+  },
+  "tasks[task_key='refresh_pipeline'].email_notifications": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": {}
+  },
+  "tasks[task_key='refresh_pipeline'].run_if": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "ALL_SUCCESS"
+  },
+  "tasks[task_key='refresh_pipeline'].timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": 0
+  },
   "timeout_seconds": {
     "action": "skip",
-    "reason": "server_side_default",
+    "reason": "empty",
     "remote": 0
   },
   "webhook_notifications": {
     "action": "skip",
-    "reason": "empty_struct",
+    "reason": "empty",
     "remote": {}
   }
 }
 {
   "storage": {
     "action": "skip",
-    "reason": "server_side_default",
+    "reason": "backend_default",
     "remote": "dbfs:/pipelines/[UUID]"
   }
 }

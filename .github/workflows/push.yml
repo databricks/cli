@@ -14,7 +14,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 0,12 * * *' # Runs at 00:00 and 12:00 UTC daily
+    - cron: '0 0 * * *' # Runs at 00:00 UTC daily
 
 env:
   GOTESTSUM_FORMAT: github-actions
@@ -37,12 +37,12 @@ jobs:
       targets: ${{ steps.mask1.outputs.targets || steps.mask2.outputs.targets || steps.mask3.outputs.targets }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: tools/go.mod
 
@@ -77,8 +77,19 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
-    name: "make test (${{matrix.os.name}}, ${{matrix.deployment}})"
+    name: "task test (${{matrix.os.name}}, ${{matrix.deployment}})"
     runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
 
     strategy:
       fail-fast: false
@@ -119,31 +130,70 @@ jobs:
 
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
           cache-key: test-${{ matrix.deployment }}
 
-      - name: Run tests without coverage
-        # We run tests without coverage on PR, merge_group, and schedule because we don't make use of coverage information
-        # and would like to run the tests as fast as possible. We run it on schedule as well, because that is what
-        # populates the cache and cache may include test results.
-        if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.event_name == 'schedule' }}
+      # Make origin/main available with enough history for `git diff --merge-base
+      # origin/main`, which the acceptance subset selector uses to always run the
+      # tests this PR adds/changes on the windows/macOS cells. actions/checkout does
+      # a shallow single-ref clone by default, so origin/main is otherwise absent and
+      # the diff fails, silently disabling change detection. This must run AFTER
+      # setup-build-environment, whose own checkout would re-shallow the repo. Only
+      # PRs subset tests, so the fetch is unnecessary elsewhere.
+      - name: Fetch origin/main for change detection
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            git fetch --no-tags --unshallow origin
+          fi
+
+      - name: Run tests
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
-        run: make test
+          # On pull requests, run only a subset of acceptance subtests on the slower
+          # windows/macOS cells so neither lands on the critical path to merge. An
+          # empty percentage disables subsetting, so Linux PRs and push-to-main run
+          # the full suite (full coverage on every OS). The percentages are fixed and
+          # tuned to keep windows/macOS under the Linux wall-clock time. The seed is
+          # the head commit, so a re-run of the same commit repeats the subset while a
+          # new commit reshuffles it.
+          TESTS_SELECT_SUBSET_SEED: ${{ github.event.pull_request.head.sha }}
+          TESTS_SELECT_SUBSET_PCT: ${{ github.event_name == 'pull_request' && (matrix.os.name == 'windows' && '10' || matrix.os.name == 'macos' && '60') || '' }}
+        run: go tool -modfile=tools/task/go.mod task test
 
-      - name: Run tests with coverage
-        # Only run 'make cover' on push to main to make sure it does not get broken.
-        if: ${{ github.event_name == 'push' }}
-        env:
-          ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
-        run: make cover
+      - name: Upload gotestsum JSON output
+        # Always upload so we can inspect timing even if tests fail.
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-output-${{ matrix.os.name }}-${{ matrix.deployment }}
+          path: test-output.json
+          if-no-files-found: warn
+          retention-days: 7
 
-      - name: Analyze slow tests
-        run: make slowest
+      # `task test` prints a lot of output that GitHub is slow to render, so
+      # surface just the failed test names on the job summary page (and in this
+      # step's log) for a quick read of what broke.
+      - name: Summarize failed tests
+        if: ${{ failure() }}
+        run: uv run tools/summarize_failed_tests.py test-output.json | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Check no files changed or appeared after running tests
+        run: |
+          # Register untracked files with intent-to-add so `git diff` reports them
+          # too; a plain `git diff` ignores new files, which is how a missing
+          # out.test.toml previously slipped through. Ignored test artifacts are
+          # unaffected because intent-to-add respects .gitignore.
+          git add --intent-to-add .
+          if ! git diff --exit-code; then
+            echo "ERROR: detected changed or new files in the repository; Most likely you have out.test.toml files that are out of date. Run 'go test ./acceptance -run \"^TestAccept$\" -only-out-test-toml' to update."
+            exit 1
+          fi
 
   test-exp-aitools:
     needs:
@@ -152,21 +202,39 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') }}
-    name: "make test-exp-aitools"
-    runs-on: ${{ matrix.os }}
+    name: "task test-exp-aitools (${{matrix.os.name}})"
+    runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      id-token: write
+      contents: read
 
     strategy:
       fail-fast: false
       matrix:
         os:
-          - macos-latest
-          - ubuntu-latest
-          # The Windows tests are broken; see https://github.com/databricks/cli/pull/4024.
-          # - windows-latest
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
+
+        # The Windows tests are broken; see https://github.com/databricks/cli/pull/4024.
+        # - name: windows
+        #   runner:
+        #     group: databricks-protected-runner-group-large
+        #     labels: windows-server-latest-large
 
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
@@ -175,7 +243,7 @@ jobs:
 
       - name: Run tests
         run: |
-          make test-exp-aitools
+          go tool -modfile=tools/task/go.mod task test-exp-aitools
 
   test-exp-ssh:
     needs:
@@ -184,29 +252,57 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
-    name: "make test-exp-ssh"
-    runs-on: ${{ matrix.os }}
+    name: "task test-exp-ssh (${{matrix.os.name}})"
+    runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
 
     strategy:
       fail-fast: false
       matrix:
         os:
-          - macos-latest
-          - ubuntu-latest
-          - windows-latest
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+
+          - name: windows
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
 
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
           cache-key: test-exp-ssh
 
+      # The ssh acceptance test drives a real sshd behind the tunnel; the runner
+      # ships only the client. Install it on Linux (the OS the test is gated to);
+      # elsewhere and in the general test job it skips via SKIP_TEST.
+      - name: Install OpenSSH server
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y openssh-server
+
       - name: Run tests
         run: |
-          make test-exp-ssh
+          go tool -modfile=tools/task/go.mod task test-exp-ssh
 
   test-pipelines:
     needs:
@@ -215,20 +311,41 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-pipelines') }}
-    name: "make test-pipelines"
-    runs-on: ${{ matrix.os }}
+    name: "task test-pipelines (${{matrix.os.name}})"
+    runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
 
     strategy:
       fail-fast: false
       matrix:
         os:
-          - macos-latest
-          - ubuntu-latest
-          - windows-latest
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+
+          - name: windows
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
 
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
@@ -237,7 +354,59 @@ jobs:
 
       - name: Run tests
         run: |
-          make test-pipelines
+          go tool -modfile=tools/task/go.mod task test-pipelines
+
+  test-sandbox:
+    needs:
+      - cleanups
+      - testmask
+
+    # Only run if the target is in the list of targets from testmask
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-sandbox') }}
+    name: "task test-sandbox (${{matrix.os.name}})"
+    runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+
+          - name: windows
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-sandbox
+
+      - name: Run tests
+        run: |
+          go tool -modfile=tools/task/go.mod task test-sandbox
 
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.
@@ -254,6 +423,7 @@ jobs:
       - test-exp-aitools
       - test-exp-ssh
       - test-pipelines
+      - test-sandbox
 
     if: ${{ always() }}
     name: test-result
@@ -267,103 +437,52 @@ jobs:
           fi
           echo "All tests passed ✅"
 
-  validate-generated-is-up-to-date:
+  validate-generated:
     needs: cleanups
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Setup Go
-        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
-        with:
-          go-version-file: go.mod
-          # Use different schema from regular job, to avoid overwriting the same key
-          cache-dependency-path: |
-            go.sum
-            bundle/internal/schema/*.*
-
-      - name: Verify that the schema is up to date
-        run: |
-          if ! ( make schema && git diff --exit-code ); then
-            echo "The schema is not up to date. Please run 'make schema' and commit the changes."
-            exit 1
-          fi
-
-      - name: Verify that the generated enum and required fields are up to date
-        run: |
-          if ! ( make generate-validation && git diff --exit-code ); then
-            echo "The generated enum and required fields are not up to date. Please run 'make generate-validation' and commit the changes."
-            exit 1
-          fi
-
-      # Github repo: https://github.com/ajv-validator/ajv-cli
-      - name: Install ajv-cli
-        run: npm install -g ajv-cli@5.0.0
-
-      # Assert that the generated bundle schema is a valid JSON schema by using
-      # ajv-cli to validate it against bundle configuration files.
-      # By default the ajv-cli runs in strict mode which will fail if the schema
-      # itself is not valid. Strict mode is more strict than the JSON schema
-      # specification. See for details: https://ajv.js.org/options.html#strict-mode-options
-      # The ajv-cli is configured to use the markdownDescription keyword which is not part of the JSON schema specification,
-      # but is used in editors like VSCode to render markdown in the description field
-      - name: Validate bundle schema
-        run: |
-          go run main.go bundle schema > schema.json
-
-          # Add markdownDescription keyword to ajv
-          echo "module.exports = function(a) {
-            a.addKeyword('deprecationMessage');
-            a.addKeyword('doNotSuggest');
-            a.addKeyword('markdownDescription');
-            a.addKeyword('x-databricks-preview');
-          }" >> keywords.js
-
-          for file in ./bundle/internal/schema/testdata/pass/*.yml; do
-            ajv test -s schema.json -d $file --valid -c=./keywords.js
-          done
-
-          for file in ./bundle/internal/schema/testdata/fail/*.yml; do
-            ajv test -s schema.json -d $file --invalid -c=./keywords.js
-          done
-
-  validate-python-codegen:
-    needs: cleanups
-    runs-on: ubuntu-latest
+    # Required by setup-jfrog (GOPROXY exchange) inside setup-build-environment.
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Checkout repository and submodules
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+      # Dedicated cache-key so this job's Go cache doesn't evict the primary
+      # test caches from the 10 GB GHA quota.
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
         with:
-          version: "0.6.5"
+          cache-key: validate-generated
 
-      - name: Verify that python/codegen is up to date
-        working-directory: python
-        run: |-
-          make codegen
+      - name: Download Go modules
+        run: go mod download
 
-          if ! ( git diff --exit-code ); then
-            echo "Generated Python code is not up-to-date. Please run 'pushd python && make codegen' and commit the changes."
-
+      - name: Verify that generated files are up to date
+        run: |
+          go tool -modfile=tools/task/go.mod task --force generate-check
+          # Register untracked files with intent-to-add so `git diff` reports new
+          # files (e.g. a newly generated command) too, not just modifications.
+          git add --intent-to-add .
+          if ! git diff --exit-code; then
+            echo "Generated files are not up to date. Please run './task generate-check' and commit the changes."
             exit 1
           fi
 
   # Trigger integration tests in a separate repository.
-  # Requires secrets from "test-trigger-is" environment (not available for fork PRs).
-  # Auto-approves for merge groups to avoid running twice and queue timeouts.
+  # Writes the same-org "Integration Tests" check run for skip/auto-approve
+  # paths on deco runners. The cross-org `gh workflow run` dispatch is split
+  # into the sibling `trigger-tests` job so it can run on emu-access runners
+  # that are allowlisted in the databricks-eng org.
   integration-trigger:
     needs:
       - testmask
 
     if: >-
-      (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork) ||
-      (github.event_name == 'merge_group') ||
-      (github.event_name == 'push')
+      (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]') ||
+      (github.event_name == 'merge_group')
 
     runs-on:
       group: databricks-deco-testing-runner-group
@@ -373,36 +492,35 @@ jobs:
       checks: write
       contents: read
 
-    environment: "test-trigger-is"
+    # Use the environment only to gate its secrets; skip creating a deployment
+    # object so these runs don't post "deployed to test-trigger-is" items on the
+    # pull request timeline. See:
+    # https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/control-deployments#using-environments-without-deployments
+    environment:
+      name: "test-trigger-is"
+      deployment: false
 
     steps:
-      - name: Generate GitHub App Token
-        if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-        id: generate-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+      - name: Generate GitHub App Token (check runs)
+        if: >-
+          (github.event_name == 'merge_group') ||
+          (github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh'))
+        id: generate-check-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
-          private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
-          owner: ${{ secrets.ORG_NAME }}
-          repositories: ${{ secrets.REPO_NAME }}
-
-      # Trigger integration tests if the primary "test" target is triggered by this change.
-      - name: Trigger integration tests (pull request)
-        if: ${{ github.event_name == 'pull_request' && contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
-        env:
-          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: |-
-          gh workflow run cli-isolated-pr.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
-            --ref main \
-            -f pull_request_number=${{ github.event.pull_request.number }} \
-            -f commit_sha=${{ github.event.pull_request.head.sha }}
+          app-id: ${{ secrets.DECO_TEST_APPROVAL_APP_ID }}
+          private-key: ${{ secrets.DECO_TEST_APPROVAL_PRIVATE_KEY }}
+          # DECO_TEST_APPROVAL is installed on the databricks org (not databricks-eng).
+          owner: databricks
+          repositories: cli
 
       # Skip integration tests if the primary "test" target is not triggered by this change.
       # Use Checks API (not Statuses API) to match the required "Integration Tests" check.
       - name: Skip integration tests (pull request)
-        if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
-        uses: actions/github-script@v7
+        if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
+          github-token: ${{ steps.generate-check-token.outputs.token }}
           script: |
             await github.rest.checks.create({
               owner: context.repo.owner,
@@ -418,11 +536,11 @@ jobs:
             });
 
       # Auto-approve for merge group since tests already passed on the PR.
-      # Use Checks API (not Statuses API) to match the required "Integration Tests" check.
       - name: Auto-approve for merge group
         if: ${{ github.event_name == 'merge_group' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
+          github-token: ${{ steps.generate-check-token.outputs.token }}
           script: |
             await github.rest.checks.create({
               owner: context.repo.owner,
@@ -437,6 +555,55 @@ jobs:
               }
             });
 
+  # Cross-org dispatch to databricks-eng/eng-dev-ecosystem. Must run on an
+  # emu-access runner because the databricks-eng org IP-allowlists only the
+  # release runner group, not deco. See databricks/databricks-sdk-go#1638.
+  trigger-tests:
+    needs:
+      - testmask
+
+    if: >-
+      (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]' && (contains(fromJSON(needs.testmask.outputs.targets), 'test') || contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh'))) ||
+      (github.event_name == 'push')
+
+    runs-on:
+      group: databricks-release-runner-group-emu-access
+      labels: linux-ubuntu-latest-emu-access
+
+    permissions:
+      contents: read
+
+    # Use the environment only to gate its secrets; skip creating a deployment
+    # object so these runs don't post "deployed to test-trigger-is" items on the
+    # pull request timeline. See:
+    # https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/control-deployments#using-environments-without-deployments
+    environment:
+      name: "test-trigger-is"
+      deployment: false
+
+    steps:
+      - name: Generate GitHub App Token
+        id: generate-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
+          private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          owner: ${{ secrets.ORG_NAME }}
+          repositories: ${{ secrets.REPO_NAME }}
+
+      - name: Trigger integration tests (pull request)
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |-
+          gh workflow run cli-isolated-pr.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
+            --ref main \
+            -f pull_request_number=${{ github.event.pull_request.number }} \
+            -f commit_sha=${{ github.event.pull_request.head.sha }}
+
+      # Dispatch the nightly workflow; as a workflow_dispatch event it runs
+      # integration-short (CloudSlow still skips via -short, but locally-covered
+      # tests run against real clouds, unlike the PR task's skiplocal variant).
       - name: Trigger integration tests (push to main)
         if: ${{ github.event_name == 'push' }}
         env:
@@ -445,3 +612,37 @@ jobs:
           gh workflow run cli-isolated-nightly.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
             --ref main \
             -f commit_sha=${{ github.event.after }}
+
+  # Skip integration tests for dependabot PRs.
+  # Dependabot has no access to the "test-trigger-is" environment secrets,
+  # so we use the built-in GITHUB_TOKEN to mark the required "Integration
+  # Tests" check as passed.
+  integration-trigger-dependabot:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.actor == 'dependabot[bot]'
+
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    permissions:
+      checks: write
+
+    steps:
+      - name: Skip integration tests
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |-
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Integration Tests',
+              head_sha: '${{ github.event.pull_request.head.sha }}',
+              status: 'completed',
+              conclusion: 'success',
+              output: {
+                title: 'Integration Tests',
+                summary: '⏭️ Skipped (dependabot PR)'
+              }
+            });

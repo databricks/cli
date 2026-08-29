@@ -1,9 +1,12 @@
 Timeout = '40s'
 TimeoutWindows = '120s'
 
-Local = true
 Cloud = false
 
+# Mask the real databricks-bundles version so the golden pyproject.toml does not
+# churn on every release. The placeholder must stay valid PEP 440: Dependabot's
+# dependency-graph submission scans this generated manifest and aborts the whole
+# pip/uv graph job on an unparseable version (the old "x.y.z" did exactly that).
 [[Repls]]
-Old = '"databricks-bundles==0.\d+.\d+"'
-New = '"databricks-bundles==x.y.z"'
+Old = '"databricks-bundles==\d+\.\d+\.\d+"'
+New = '"databricks-bundles==0.0.0"'

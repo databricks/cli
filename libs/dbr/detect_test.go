@@ -1,7 +1,6 @@
 package dbr
 
 import (
-	"context"
 	"io/fs"
 	"runtime"
 	"testing"
@@ -34,7 +33,7 @@ func TestDetect_NotLinux(t *testing.T) {
 		t.Skip("skipping test on Linux OS")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.Equal(t, Environment{}, detect(ctx))
 }
 
@@ -45,12 +44,12 @@ func TestDetect_Env(t *testing.T) {
 	configureStatFunc(t, fakefs.FileInfo{FakeDir: true}, nil)
 
 	t.Run("empty", func(t *testing.T) {
-		ctx := env.Set(context.Background(), "DATABRICKS_RUNTIME_VERSION", "")
+		ctx := env.Set(t.Context(), "DATABRICKS_RUNTIME_VERSION", "")
 		assert.Equal(t, Environment{}, detect(ctx))
 	})
 
 	t.Run("non-empty cluster", func(t *testing.T) {
-		ctx := env.Set(context.Background(), "DATABRICKS_RUNTIME_VERSION", "15.4")
+		ctx := env.Set(t.Context(), "DATABRICKS_RUNTIME_VERSION", "15.4")
 		assert.Equal(t, Environment{
 			IsDbr:   true,
 			Version: "15.4",
@@ -58,7 +57,7 @@ func TestDetect_Env(t *testing.T) {
 	})
 
 	t.Run("non-empty serverless", func(t *testing.T) {
-		ctx := env.Set(context.Background(), "DATABRICKS_RUNTIME_VERSION", "client.1.13")
+		ctx := env.Set(t.Context(), "DATABRICKS_RUNTIME_VERSION", "client.1.13")
 		assert.Equal(t, Environment{
 			IsDbr:   true,
 			Version: "client.1.13",
@@ -70,7 +69,7 @@ func TestDetect_Stat(t *testing.T) {
 	requireLinux(t)
 
 	// Configure other checks to pass.
-	ctx := env.Set(context.Background(), "DATABRICKS_RUNTIME_VERSION", "non-empty")
+	ctx := env.Set(t.Context(), "DATABRICKS_RUNTIME_VERSION", "non-empty")
 
 	t.Run("error", func(t *testing.T) {
 		configureStatFunc(t, nil, fs.ErrNotExist)

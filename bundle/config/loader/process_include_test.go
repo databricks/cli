@@ -1,7 +1,6 @@
 package loader_test
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -31,7 +30,7 @@ func TestProcessInclude(t *testing.T) {
 	assert.Equal(t, "foo", b.Config.Workspace.Host)
 
 	// Apply the mutator and assert that the host value has been updated
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.Apply(t.Context(), b, m)
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "bar", b.Config.Workspace.Host)
 }
@@ -55,7 +54,7 @@ func TestProcessIncludeFormatMatch(t *testing.T) {
 			}
 
 			m := loader.ProcessInclude(filepath.Join(b.BundleRootPath, fileName), fileName)
-			diags := bundle.Apply(context.Background(), b, m)
+			diags := bundle.Apply(t.Context(), b, m)
 			assert.Empty(t, diags)
 		})
 	}
@@ -210,7 +209,7 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 			}
 
 			m := loader.ProcessInclude(filepath.Join(b.BundleRootPath, fileName), fileName)
-			diags := bundle.Apply(context.Background(), b, m)
+			diags := bundle.Apply(t.Context(), b, m)
 			require.Len(t, diags, 1)
 			assert.Equal(t, expectedDiags, diags)
 		})

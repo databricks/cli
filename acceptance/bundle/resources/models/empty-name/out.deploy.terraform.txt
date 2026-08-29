@@ -1,0 +1,14 @@
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/model-empty-name-[UNIQUE_NAME]/default/files...
+Error: terraform apply: exit status 1
+
+Error: cannot create mlflow model: Got an invalid name ''. Registered Model names cannot be empty strings.
+
+  with databricks_mlflow_model.mymodel,
+  on bundle.tf.json line 17, in resource.databricks_mlflow_model.mymodel:
+  17:       }
+
+
+
+Files: 6 uploaded, 0 deleted

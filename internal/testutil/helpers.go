@@ -1,15 +1,15 @@
 package testutil
 
 import (
-	"os"
 	"strings"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/google/uuid"
 )
 
 // GetEnvOrSkipTest proceeds with test only with that env variable.
 func GetEnvOrSkipTest(t TestingT, name string) string {
-	value := os.Getenv(name)
+	value := env.Get(t.Context(), name)
 	if value == "" {
 		t.Skipf("Environment variable %s is missing", name)
 	}
@@ -18,14 +18,10 @@ func GetEnvOrSkipTest(t TestingT, name string) string {
 
 // RandomName gives random name with optional prefix. e.g. qa.RandomName("tf-")
 func RandomName(prefix ...string) string {
-	out := ""
+	var sb strings.Builder
 	for _, p := range prefix {
-		out += p
+		sb.WriteString(p)
 	}
-	out += strings.ReplaceAll(uuid.New().String(), "-", "")
-	return out
-}
-
-func ReplaceWindowsLineEndings(s string) string {
-	return strings.ReplaceAll(s, "\r\n", "\n")
+	sb.WriteString(strings.ReplaceAll(uuid.New().String(), "-", ""))
+	return sb.String()
 }

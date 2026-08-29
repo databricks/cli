@@ -1,0 +1,11 @@
+# A database instance name is immutable and the Database API has no rename
+# endpoint, so changing it must go through delete + create. Only the direct
+# engine handles this correctly; the terraform path needs an upstream provider
+# fix (marking name immutable in the spec) and is excluded here.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+RecordRequests = true
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]

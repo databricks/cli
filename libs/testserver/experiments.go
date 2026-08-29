@@ -50,6 +50,10 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 
 	experimentId := strconv.FormatInt(nextID(), 10)
 
+	if experiment.ArtifactLocation == "" {
+		experiment.ArtifactLocation = "dbfs:/databricks/mlflow-tracking/" + experimentId
+	}
+
 	// Strip /Workspace prefix from experiment name to match cloud behavior
 	// Input: //Workspace/Users/foo -> Output: /Users/foo
 	experimentName := experiment.Name
@@ -67,6 +71,8 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		ArtifactLocation: experiment.ArtifactLocation,
 		Tags:             append(experiment.Tags, appendTags...),
 		LifecycleStage:   "active",
+		// Echo back like the real GetExperiment; omitting this immutable field triggers a spurious recreate.
+		TraceLocation: experiment.TraceLocation,
 	}
 
 	s.Experiments[experimentId] = ml.GetExperimentResponse{

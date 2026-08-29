@@ -1,0 +1,39 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# This test deploys several times and reports how many files each deploy uploaded, so
+# nothing written between the deploys may end up in the synced tree: the script's own
+# out.after_first_deploy.*, and the test runner's output.txt / ACC_REPLS, which it keeps
+# appending to while the deploy runs.
+sync:
+  exclude:
+    - out*
+    - ACC_REPLS
+
+permissions:
+  - level: CAN_MANAGE
+    user_name: ${workspace.current_user.userName}
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: hello
+          environment_key: default
+          spark_python_task:
+            python_file: ./hello.py
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+
+  apps:
+    my_app:
+      name: test$UNIQUE_NAME
+      source_code_path: ./app
+      resources:
+        - name: my-job
+          job:
+            id: ${resources.jobs.my_job.id}
+            permission: CAN_MANAGE_RUN

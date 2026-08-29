@@ -1,0 +1,7 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "bundle plan fails with lifecycle.started on terraform engine"
+trace errcode $CLI bundle plan
+
+title "bundle deploy fails with lifecycle.started on terraform engine"
+trace errcode $CLI bundle deploy

@@ -1,0 +1,40 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Created jobs.two_removes_job
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Two identical tasks, one in each block; DELETE one (remote), RENAME the other
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.two_removes_job
+  tasks[task_key='task_renamed']: add
+  tasks[task_key='task_target']: remove
+  tasks[task_key='task_toplevel']: remove
+
+
+
+=== Neither block is rewritten: the pairing is not forced
+
+>>> diff.py databricks.yml.backup databricks.yml
+
+
+=== Both tasks keep their original keys, and no new key was written
+>>> grep -c task_key: task_toplevel databricks.yml
+1
+
+>>> grep -c task_key: task_target databricks.yml
+1
+
+>>> grep -c task_key: task_renamed databricks.yml
+0
+
+Exit code: 1
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.two_removes_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Destroy: 1 deleted

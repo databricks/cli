@@ -26,7 +26,7 @@
           }
         ],
         "name": "test-pipeline",
-        "url": "[DATABRICKS_URL]/pipelines/[NEW_PIPELINE_ID]?o=[NUMID]"
+        "url": "[DATABRICKS_URL]/pipelines/[NEW_PIPELINE_ID]?w=[NUMID]"
       }
     }
   },

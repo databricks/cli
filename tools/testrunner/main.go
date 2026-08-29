@@ -6,6 +6,11 @@ Download https://github.com/databricks/cli/blob/ciconfig/known_failures.txt in p
 If download was successful by the time test runner finishes and test runner finishes with non-zero code,
 analyze failures in the test output identified by --jsonfile option. If all failures are expected (listed in known_failures.txt)
 then the failure is masked, the process exits with 0.
+
+A parent test fails whenever one of its subtests fails, so a rule that lists a
+subtest also allows the parent to fail. That allowance only applies when a
+subtest actually failed; if the parent failed on its own (e.g. in setup, before
+any subtest ran), its failure is reported as unexpected.
 */
 package main
 
@@ -117,7 +122,7 @@ func main() {
 }
 
 func downloadConfig(ctx context.Context) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", repoConfigURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, repoConfigURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -127,7 +132,7 @@ func downloadConfig(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
@@ -155,9 +160,10 @@ func checkFailures(config *Config, jsonFile string, originalExitCode int) int {
 		fmt.Printf("testrunner: failed to open JSON file %s: %v\n", jsonFile, err)
 		return originalExitCode
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	scanner := bufio.NewScanner(file)
+	failed := map[string]bool{}
 	unexpectedFailures := map[string]bool{}
 
 	for scanner.Scan() {
@@ -177,21 +183,33 @@ func checkFailures(config *Config, jsonFile string, originalExitCode int) int {
 		}
 
 		result.Package, _ = strings.CutPrefix(result.Package, cutPrefix)
-
 		key := result.Package + " " + result.Test
 
-		if result.Action == "fail" {
+		switch result.Action {
+		case "fail":
+			// Go reports a parent's failure only after its subtests, so any
+			// failing subtest is already in `failed` by the time we get here.
+			failed[key] = true
 			matchedRule := config.matches(result.Package, result.Test)
-			if matchedRule != "" {
+			switch {
+			case matchedRule != "":
 				fmt.Printf("%s %s failure is allowed, matches rule %q\n", result.Package, result.Test, matchedRule)
-			} else {
+			case hasFailedSubtest(failed, key):
+				// A parent test fails when a subtest fails; the subtest is
+				// reported on its own, so the parent's failure is not counted.
+				fmt.Printf("%s %s failure is allowed, a subtest failed\n", result.Package, result.Test)
+			default:
 				fmt.Printf("%s %s failure is not allowed\n", result.Package, result.Test)
 				unexpectedFailures[key] = true
 			}
-		} else if result.Action == "pass" && unexpectedFailures[key] {
-			fmt.Printf("%s %s passed on retry\n", result.Package, result.Test)
-			// We run gotestsum with --rerun-fails, so we need to account for intermittent failures
-			delete(unexpectedFailures, key)
+		case "pass":
+			// We run gotestsum with --rerun-fails, so a test that fails and
+			// later passes is flaky, not a failure.
+			delete(failed, key)
+			if unexpectedFailures[key] {
+				fmt.Printf("%s %s passed on retry\n", result.Package, result.Test)
+				delete(unexpectedFailures, key)
+			}
 		}
 	}
 
@@ -202,10 +220,21 @@ func checkFailures(config *Config, jsonFile string, originalExitCode int) int {
 
 	if len(unexpectedFailures) == 0 {
 		return 0
-	} else {
-		fmt.Printf("testrunner: %d test failures were not expected\n", len(unexpectedFailures))
-		return originalExitCode
 	}
+	fmt.Printf("testrunner: %d test failures were not expected\n", len(unexpectedFailures))
+	return originalExitCode
+}
+
+// hasFailedSubtest reports whether any failing test is a strict subtest of key.
+// Keys are "<package> <test>", so a subtest's key is prefixed by key + "/".
+func hasFailedSubtest(failed map[string]bool, key string) bool {
+	prefix := key + "/"
+	for k := range failed {
+		if strings.HasPrefix(k, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // CI Config Format
@@ -329,10 +358,9 @@ func (r ConfigRule) matches(packageName, testName string) bool {
 
 	// Check test pattern
 	if r.TestPrefix {
-		return matchesPathPrefix(testName, r.TestPattern) || matchesPathPrefix(r.TestPattern, testName)
-	} else {
-		return testName == r.TestPattern || matchesPathPrefix(r.TestPattern, testName)
+		return matchesPathPrefix(testName, r.TestPattern)
 	}
+	return testName == r.TestPattern
 }
 
 // matchesPathPrefix returns true if s matches pattern or starts with pattern + "/"

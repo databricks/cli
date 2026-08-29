@@ -1,0 +1,134 @@
+
+=== command help
+>>> [CLI] experimental air run --help
+Submit a training workload to Databricks serverless GPU compute.
+
+The workload is described by a YAML config file (see --file).
+
+To look up a config field, pass its path to -h:
+
+  databricks experimental air run -h config
+  databricks experimental air run -h config.compute
+  databricks experimental air run -h config.compute.accelerator_type
+
+The path must be a separate argument: cobra reserves -h as a boolean, so
+-h=config.compute and -hconfig.compute are not accepted.
+
+Usage:
+  databricks experimental air run [flags]
+
+Flags:
+      --dry-run                  Validate the config without submitting
+  -f, --file string              Path to the workload YAML config
+  -h, --help                     help for run
+      --idempotency-key string   Return the existing run if this key was already used
+      --override stringArray     Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)
+      --watch                    Stream logs until the run completes
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+=== schema overview
+>>> [CLI] experimental air run -h config
+config
+  The run YAML schema. Pass a field path for details, e.g. config.compute.accelerator_type.
+
+  Fields:
+    experiment_name              (required) Name of the experiment.
+    compute                      (required) Which accelerators to run on and how many.
+    environment                  Python dependencies, or a custom Docker image, for the run's runtime.
+    command                      (required) Shell command that starts the workload.
+    env_variables                Plain environment variables, as NAME: value.
+    secrets                      Environment variables sourced from secrets, as NAME: scope/key.
+    code_source                  Local code to upload and make available to the run.
+    max_retries                  How many times to retry a failed run.
+    timeout_minutes              Wall-clock limit for the run in minutes.
+    idempotency_token            Reuse token: a repeat submission with the same token returns the existing run instead of starting another.
+    parameters                   Free-form values passed through to the workload.
+    mlflow_run_name              Name for the MLflow run.
+    mlflow_experiment_directory  Workspace directory holding the MLflow experiment.
+    mlflow_artifact_location     DBFS location where MLflow artifacts are written.
+    permissions                  Who may view or manage the run, as a list of principal plus level grants.
+    usage_policy_name            Usage policy to bill the run to, by name.
+    usage_policy_id              Usage policy to bill the run to, by id.
+
+Use "-h config.<field>" for details on a field.
+
+=== nested object lists its fields
+>>> [CLI] experimental air run -h config.compute
+config.compute
+  Which accelerators to run on and how many.
+
+  Fields:
+    num_accelerators         Total number of GPUs to allocate.
+    accelerator_type         Which accelerator to run on, e.g. GPU_1xA10.
+    provisioned_capacity_id  Pre-provisioned AIR capacity reservation id.
+
+Use "-h config.compute.<field>" for details on a field.
+
+=== new submission fields are documented
+>>> [CLI] experimental air run -h config.mlflow_artifact_location
+config.mlflow_artifact_location
+  DBFS location where MLflow artifacts are written. A /Volumes path is normalized to dbfs:/Volumes/... .
+
+  Type:     string
+  Required: no
+
+>>> [CLI] experimental air run -h config.compute.provisioned_capacity_id
+config.compute.provisioned_capacity_id
+  Pre-provisioned AIR capacity reservation id. Must be 1-255 characters.
+
+  Type:     string
+  Required: no
+
+>>> [CLI] experimental air run -h config.environment.dependencies
+config.environment.dependencies
+  Inline list of packages to install. Not allowed alongside docker_image.
+
+  Type:     list of strings
+  Required: no
+
+=== leaf field
+>>> [CLI] experimental air run -h config.compute.accelerator_type
+config.compute.accelerator_type
+  Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively.
+
+  Type:     string
+  Required: no
+
+=== conditionally required leaf
+>>> [CLI] experimental air run -h config.environment.docker_image.url
+config.environment.docker_image.url
+  Fully qualified image URL, e.g. myregistry.io/team/train:v3.
+
+  Type:     string
+  Required: when environment.docker_image is set
+
+=== union field reports both accepted shapes
+>>> [CLI] experimental air run -h config.code_source.snapshot.git.remote
+config.code_source.snapshot.git.remote
+  No longer supported: the snapshot archives your local copy. Only false is accepted; use commit to pin a revision.
+
+  Type:     bool or string
+  Required: no
+
+=== the config. prefix is optional
+>>> [CLI] experimental air run -h compute.num_accelerators
+config.compute.num_accelerators
+  Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for supported GPU types.
+
+  Type:     int
+  Required: no
+
+=== unknown field suggests the near match
+>>> [CLI] experimental air run -h config.compute.acclerator_type
+Error: unknown config field "config.compute.acclerator_type"; did you mean "accelerator_type"?
+
+fields under "config.compute" are: accelerator_type, num_accelerators, provisioned_capacity_id
+
+=== free-form map keys are not schema fields
+>>> [CLI] experimental air run -h config.parameters.learning_rate
+Error: "config.parameters" holds user-defined keys, so "learning_rate" is not part of the schema; see "config.parameters" instead

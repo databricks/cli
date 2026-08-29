@@ -103,7 +103,7 @@ func TestPatternSplitKeyError(t *testing.T) {
 	for ind, p := range patterns {
 		t.Run(fmt.Sprintf("%d %#v", ind, p), func(t *testing.T) {
 			pat, key := p.SplitKey()
-			assert.Equal(t, "", key)
+			assert.Empty(t, key)
 			assert.Empty(t, pat)
 		})
 	}

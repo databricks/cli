@@ -1,14 +1,31 @@
 package handler
 
-import "github.com/fatih/color"
+const (
+	ansiReset     = "\x1b[0m"
+	ansiBlackBold = "\x1b[30;1m"
+	ansiWhite     = "\x1b[37m"
+	ansiFaint     = "\x1b[2m"
+	ansiRed       = "\x1b[31m"
+	ansiYellow    = "\x1b[33m"
+	ansiBlue      = "\x1b[34m"
+	ansiMagenta   = "\x1b[35m"
+	ansiCyan      = "\x1b[36m"
+)
 
-// ttyColors is a slice of colors that can be enabled or disabled.
-// This adds one level of indirection to the colors such that they
-// can be easily be enabled or disabled together, regardless of
-// global settings in the color package.
-type ttyColors []*color.Color
+// ttyStyle is an SGR escape prefix that wraps a string with a trailing reset.
+// An empty value emits the input unchanged so the handler can disable colors
+// by zeroing the palette.
+type ttyStyle string
 
-// ttyColor is an enum for the colors in ttyColors.
+func (s ttyStyle) Render(msg string) string {
+	if s == "" {
+		return msg
+	}
+	return string(s) + msg + ansiReset
+}
+
+type ttyColors []ttyStyle
+
 type ttyColor int
 
 const (
@@ -29,28 +46,20 @@ const (
 )
 
 func newColors(enable bool) ttyColors {
-	ttyColors := make(ttyColors, ttyColorLevelLast)
-	ttyColors[ttyColorInvalid] = color.New(color.FgWhite)
-	ttyColors[ttyColorTime] = color.New(color.FgBlack, color.Bold)
-	ttyColors[ttyColorMessage] = color.New(color.Reset)
-	ttyColors[ttyColorAttrKey] = color.New(color.Faint)
-	ttyColors[ttyColorAttrSeparator] = color.New(color.Faint)
-	ttyColors[ttyColorAttrValue] = color.New(color.Reset)
-	ttyColors[ttyColorLevelTrace] = color.New(color.FgMagenta)
-	ttyColors[ttyColorLevelDebug] = color.New(color.FgCyan)
-	ttyColors[ttyColorLevelInfo] = color.New(color.FgBlue)
-	ttyColors[ttyColorLevelWarn] = color.New(color.FgYellow)
-	ttyColors[ttyColorLevelError] = color.New(color.FgRed)
-
-	if enable {
-		for _, color := range ttyColors {
-			color.EnableColor()
-		}
-	} else {
-		for _, color := range ttyColors {
-			color.DisableColor()
-		}
+	if !enable {
+		return make(ttyColors, ttyColorLevelLast)
 	}
-
-	return ttyColors
+	colors := make(ttyColors, ttyColorLevelLast)
+	colors[ttyColorInvalid] = ansiWhite
+	colors[ttyColorTime] = ansiBlackBold
+	colors[ttyColorMessage] = ansiReset
+	colors[ttyColorAttrKey] = ansiFaint
+	colors[ttyColorAttrSeparator] = ansiFaint
+	colors[ttyColorAttrValue] = ansiReset
+	colors[ttyColorLevelTrace] = ansiMagenta
+	colors[ttyColorLevelDebug] = ansiCyan
+	colors[ttyColorLevelInfo] = ansiBlue
+	colors[ttyColorLevelWarn] = ansiYellow
+	colors[ttyColorLevelError] = ansiRed
+	return colors
 }

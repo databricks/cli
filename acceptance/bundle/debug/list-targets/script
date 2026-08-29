@@ -1,0 +1,2 @@
+trace $CLI bundle debug list-targets
+trace $CLI bundle debug list-targets --output json

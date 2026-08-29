@@ -1,7 +1,6 @@
 package terraform
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -12,10 +11,29 @@ import (
 
 func TestConvertLifecycleForAllResources(t *testing.T) {
 	supportedResources := config.SupportedResources()
-	ctx := context.Background()
+	ctx := t.Context()
+
+	// Resources that are only supported in direct mode and should not be converted to Terraform
+	ignoredResources := []string{
+		"catalogs",
+		"cluster_policies",
+		"external_locations",
+		"genie_spaces",
+		"instance_pools",
+		"job_runs",
+		"secrets",
+		"vector_search_endpoints",
+		"vector_search_indexes",
+	}
 
 	for resourceType := range supportedResources {
 		t.Run(resourceType, func(t *testing.T) {
+			for _, ignored := range ignoredResources {
+				if resourceType == ignored {
+					t.Skipf("%s is only supported in direct mode", resourceType)
+				}
+			}
+
 			vin := dyn.NewValue(map[string]dyn.Value{
 				"resources": dyn.NewValue(map[string]dyn.Value{
 					resourceType: dyn.NewValue(map[string]dyn.Value{
@@ -28,7 +46,7 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 				}, nil),
 			}, nil)
 
-			tfroot, err := BundleToTerraformWithDynValue(ctx, vin)
+			tfroot, err := BundleToTerraformWithDynValue(ctx, vin, false)
 			require.NoError(t, err)
 
 			bytes, err := json.Marshal(tfroot.Resource)

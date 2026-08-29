@@ -8,6 +8,22 @@ type ResourceCatalogEffectivePredictiveOptimizationFlag struct {
 	Value             string `json:"value"`
 }
 
+type ResourceCatalogManagedEncryptionSettingsAzureEncryptionSettings struct {
+	AzureCmkAccessConnectorId string `json:"azure_cmk_access_connector_id,omitempty"`
+	AzureCmkManagedIdentityId string `json:"azure_cmk_managed_identity_id,omitempty"`
+	AzureTenantId             string `json:"azure_tenant_id"`
+}
+
+type ResourceCatalogManagedEncryptionSettings struct {
+	AzureKeyVaultKeyId      string                                                           `json:"azure_key_vault_key_id,omitempty"`
+	CustomerManagedKeyId    string                                                           `json:"customer_managed_key_id,omitempty"`
+	AzureEncryptionSettings *ResourceCatalogManagedEncryptionSettingsAzureEncryptionSettings `json:"azure_encryption_settings,omitempty"`
+}
+
+type ResourceCatalogProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
 type ResourceCatalogProvisioningInfo struct {
 	State string `json:"state,omitempty"`
 }
@@ -19,6 +35,7 @@ type ResourceCatalog struct {
 	ConnectionName                      string                                              `json:"connection_name,omitempty"`
 	CreatedAt                           int                                                 `json:"created_at,omitempty"`
 	CreatedBy                           string                                              `json:"created_by,omitempty"`
+	CustomMaxRetentionHours             int                                                 `json:"custom_max_retention_hours,omitempty"`
 	EnablePredictiveOptimization        string                                              `json:"enable_predictive_optimization,omitempty"`
 	ForceDestroy                        bool                                                `json:"force_destroy,omitempty"`
 	FullName                            string                                              `json:"full_name,omitempty"`
@@ -37,5 +54,7 @@ type ResourceCatalog struct {
 	UpdatedAt                           int                                                 `json:"updated_at,omitempty"`
 	UpdatedBy                           string                                              `json:"updated_by,omitempty"`
 	EffectivePredictiveOptimizationFlag *ResourceCatalogEffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
+	ManagedEncryptionSettings           *ResourceCatalogManagedEncryptionSettings           `json:"managed_encryption_settings,omitempty"`
+	ProviderConfig                      *ResourceCatalogProviderConfig                      `json:"provider_config,omitempty"`
 	ProvisioningInfo                    *ResourceCatalogProvisioningInfo                    `json:"provisioning_info,omitempty"`
 }

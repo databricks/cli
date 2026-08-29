@@ -1,22 +1,32 @@
-from dbruntime.databricks_repl_context import get_context
-from databricks.sdk import WorkspaceClient
-import os
-import sys
-import subprocess
+import atexit
+import collections
 import ctypes
 import ctypes.util
-import signal
-import atexit
+import os
 import platform
+import signal
+import subprocess
+import sys
 import time
 
+from databricks.sdk import WorkspaceClient
+from dbruntime.databricks_repl_context import get_context
+
 SSH_TUNNEL_BASENAME = "databricks_cli"
+
+# Exit statuses collected by the SIGCHLD subreaper handler, keyed by pid. The handler
+# can reap the server subprocess before Popen.wait() does, in which case Popen would
+# report exit code 0; this map preserves the real status.
+reaped_statuses = {}
 
 dbutils.widgets.text("version", "")
 dbutils.widgets.text("secretScopeName", "")
 dbutils.widgets.text("authorizedKeySecretName", "")
 dbutils.widgets.text("maxClients", "10")
 dbutils.widgets.text("shutdownDelay", "10m")
+dbutils.widgets.text("sessionId", "")
+dbutils.widgets.text("serverless", "false")
+dbutils.widgets.text("usagePolicyId", "")
 
 
 def cleanup():
@@ -36,6 +46,7 @@ def setup_subreaper():
                 # -1 means any child, WNOHANG means don't block
                 pid, status = os.waitpid(-1, os.WNOHANG)
                 if pid > 0:
+                    reaped_statuses[pid] = status
                     print(f"Reaped child {pid} with status {status}")
                 elif pid == 0:
                     print("No child has changed state")
@@ -76,7 +87,7 @@ def run_ssh_server():
     # Old DBRs require explicit WorkspaceClient arguments
     try:
         client = WorkspaceClient()
-    except Exception as e:
+    except Exception:
         client = WorkspaceClient(
             host=ctx.workspaceUrl or spark.conf.get("spark.databricks.workspaceUrl"), token=ctx.apiToken
         )
@@ -90,6 +101,7 @@ def run_ssh_server():
     os.environ["DATABRICKS_TOKEN"] = ctx.apiToken
     os.environ["DATABRICKS_CLUSTER_ID"] = ctx.clusterId
     os.environ["DATABRICKS_VIRTUAL_ENV"] = sys.executable
+    os.environ["DATABRICKS_REMOTE_ENV"] = "1"
     python_path = os.path.dirname(sys.executable)
     os.environ["PATH"] = f"{python_path}:{os.environ['PATH']}"
     if os.environ.get("VIRTUAL_ENV") is None:
@@ -111,6 +123,19 @@ def run_ssh_server():
 
     shutdown_delay = dbutils.widgets.get("shutdownDelay")
     max_clients = dbutils.widgets.get("maxClients")
+    session_id = dbutils.widgets.get("sessionId")
+    if not session_id:
+        raise RuntimeError("Session ID is required. Please provide it using the 'sessionId' widget.")
+    serverless = dbutils.widgets.get("serverless")
+    usage_policy_id = dbutils.widgets.get("usagePolicyId")
+
+    # Mark this process's WSFS command origin so workspace-file activity from the
+    # remote SSH session is attributable
+    try:
+        with open("/Workspace/.proc/self/metadata/command_origin", "w") as command_origin_file:
+            command_origin_file.write("RemoteSshServer")
+    except OSError as e:
+        print(f"Could not set WSFS command origin: {e}")
 
     arch = platform.machine()
     if arch == "x86_64":
@@ -127,29 +152,49 @@ def run_ssh_server():
 
     binary_path = f"/Workspace/Users/{user_name}/.databricks/ssh-tunnel/{version}/{cli_name}/databricks"
 
+    server_args = [
+        binary_path,
+        "ssh",
+        "server",
+        f"--cluster={ctx.clusterId}",
+        f"--session-id={session_id}",
+        f"--serverless={serverless}",
+        f"--secret-scope-name={secrets_scope}",
+        f"--authorized-key-secret-name={public_key_secret_name}",
+        f"--max-clients={max_clients}",
+        f"--shutdown-delay={shutdown_delay}",
+        f"--version={version}",
+        # "info" has enough verbosity for debugging purposes, and "debug" log level prints too much (including secrets)
+        "--log-level=info",
+        "--log-format=json",
+        # To get the server logs:
+        # 1. Get a job run id from the "databricks ssh connect" output
+        # 2. Run "databricks jobs get-run <id>" and open a run_page_url
+        # TODO: file with log rotation
+        "--log-file=stdout",
+    ]
+
+    # Recorded in the server's metadata.json so reconnects can match the usage policy.
+    if usage_policy_id:
+        server_args.append(f"--usage-policy-id={usage_policy_id}")
+
+    # Tee the server output instead of inheriting stdout: the run-page logs remain the only
+    # place to debug a RUNNING server, but on failure we attach the log tail to the exception
+    # so "ssh connect" can print it (the Jobs run-output API has no stdout logs for notebook tasks).
+    tail = collections.deque(maxlen=100)
+    proc = subprocess.Popen(server_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
     try:
-        subprocess.run(
-            [
-                binary_path,
-                "ssh",
-                "server",
-                f"--cluster={ctx.clusterId}",
-                f"--secret-scope-name={secrets_scope}",
-                f"--authorized-key-secret-name={public_key_secret_name}",
-                f"--max-clients={max_clients}",
-                f"--shutdown-delay={shutdown_delay}",
-                f"--version={version}",
-                # "info" has enough verbosity for debugging purposes, and "debug" log level prints too much (including secrets)
-                "--log-level=info",
-                "--log-format=json",
-                # To get the server logs:
-                # 1. Get a job run id from the "databricks ssh connect" output
-                # 2. Run "databricks jobs get-run <id>" and open a run_page_url
-                # TODO: file with log rotation
-                "--log-file=stdout",
-            ],
-            check=True,
-        )
+        for line in proc.stdout:
+            # flush so the run-page logs stay live while the server is running
+            print(line, end="", flush=True)
+            tail.append(line)
+        returncode = proc.wait()
+        # The SIGCHLD subreaper handler may have collected the server first; Popen reports that as 0.
+        if proc.pid in reaped_statuses:
+            returncode = os.waitstatus_to_exitcode(reaped_statuses[proc.pid])
+        if returncode != 0:
+            # The tail size matches maxRunFailureTraceBytes, the cap the client prints to the terminal.
+            raise RuntimeError(f"SSH server exited with code {returncode}. Last server logs:\n" + "".join(tail)[-2000:])
     finally:
         kill_all_children()
 

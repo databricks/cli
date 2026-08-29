@@ -85,6 +85,7 @@ func (s *Schema) generateSchema(ctx context.Context, execPath string) error {
 	return os.WriteFile(s.ProviderSchemaFile, buf, 0o644)
 }
 
+// Generate produces the provider schema JSON file on disk.
 func (s *Schema) Generate(ctx context.Context) error {
 	var err error
 

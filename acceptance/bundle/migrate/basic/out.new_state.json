@@ -1,6 +1,6 @@
 {
- "state_version": 1,
- "cli_version": "[DEV_VERSION]",
+ "state_version": 2,
+ "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
  "serial": 6,
  "state": {
@@ -48,10 +48,10 @@
     "tags": {
      "myjob_id": "[NUMID]",
      "myjob_name": "Test Migration Job",
-     "myjob_timeout": "",
+     "myjob_timeout": "0",
      "myvolume_id": "mycat.myschema.myvol",
      "volume_catalog_name": "mycat",
-     "volume_storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
+     "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
     }
    },
    "depends_on": [

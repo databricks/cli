@@ -1,7 +1,6 @@
 package configsync
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -15,7 +14,7 @@ import (
 )
 
 func TestResolveSelectors_NoSelectors(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
@@ -32,13 +31,13 @@ func TestResolveSelectors_NoSelectors(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	result, err := resolveSelectors("resources.jobs.test_job.name", b)
+	result, err := resolveSelectors("resources.jobs.test_job.name", b, OperationReplace)
 	require.NoError(t, err)
-	assert.Equal(t, "resources.jobs.test_job.name", result)
+	assert.Equal(t, "resources.jobs.test_job.name", result.path.String())
 }
 
 func TestResolveSelectors_NumericIndices(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
@@ -57,17 +56,17 @@ func TestResolveSelectors_NumericIndices(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	result, err := resolveSelectors("resources.jobs.test_job.tasks[0].task_key", b)
+	result, err := resolveSelectors("resources.jobs.test_job.tasks[0].task_key", b, OperationReplace)
 	require.NoError(t, err)
-	assert.Equal(t, "resources.jobs.test_job.tasks[0].task_key", result)
+	assert.Equal(t, "resources.jobs.test_job.tasks[0].task_key", result.path.String())
 
-	result, err = resolveSelectors("resources.jobs.test_job.tasks[1].task_key", b)
+	result, err = resolveSelectors("resources.jobs.test_job.tasks[1].task_key", b, OperationReplace)
 	require.NoError(t, err)
-	assert.Equal(t, "resources.jobs.test_job.tasks[1].task_key", result)
+	assert.Equal(t, "resources.jobs.test_job.tasks[1].task_key", result.path.String())
 }
 
 func TestResolveSelectors_KeyValueSelector(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
@@ -90,17 +89,17 @@ func TestResolveSelectors_KeyValueSelector(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	result, err := resolveSelectors("resources.jobs.test_job.tasks[task_key='main'].notebook_task.notebook_path", b)
+	result, err := resolveSelectors("resources.jobs.test_job.tasks[task_key='main'].notebook_task.notebook_path", b, OperationReplace)
 	require.NoError(t, err)
-	assert.Equal(t, "resources.jobs.test_job.tasks[1].notebook_task.notebook_path", result)
+	assert.Equal(t, "resources.jobs.test_job.tasks[1].notebook_task.notebook_path", result.path.String())
 
-	result, err = resolveSelectors("resources.jobs.test_job.tasks[task_key='setup'].notebook_task.notebook_path", b)
+	result, err = resolveSelectors("resources.jobs.test_job.tasks[task_key='setup'].notebook_task.notebook_path", b, OperationReplace)
 	require.NoError(t, err)
-	assert.Equal(t, "resources.jobs.test_job.tasks[0].notebook_task.notebook_path", result)
+	assert.Equal(t, "resources.jobs.test_job.tasks[0].notebook_task.notebook_path", result.path.String())
 }
 
 func TestResolveSelectors_SelectorNotFound(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
@@ -120,13 +119,13 @@ func TestResolveSelectors_SelectorNotFound(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	_, err = resolveSelectors("resources.jobs.test_job.tasks[task_key='nonexistent'].notebook_task.notebook_path", b)
+	_, err = resolveSelectors("resources.jobs.test_job.tasks[task_key='nonexistent'].notebook_task.notebook_path", b, OperationReplace)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no array element found with task_key='nonexistent'")
 }
 
 func TestResolveSelectors_SelectorOnNonArray(t *testing.T) {
-	ctx := cmdio.MockDiscard(logdiag.InitContext(context.Background()))
+	ctx := cmdio.MockDiscard(logdiag.InitContext(t.Context()))
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
@@ -143,13 +142,13 @@ func TestResolveSelectors_SelectorOnNonArray(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	_, err = resolveSelectors("resources.jobs.test_job[task_key='main'].name", b)
+	_, err = resolveSelectors("resources.jobs.test_job[task_key='main'].name", b, OperationReplace)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot apply [task_key='main'] selector to non-array value")
 }
 
 func TestResolveSelectors_NestedSelectors(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
@@ -174,13 +173,13 @@ func TestResolveSelectors_NestedSelectors(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	result, err := resolveSelectors("resources.jobs.test_job.tasks[task_key='main'].libraries[0].pypi.package", b)
+	result, err := resolveSelectors("resources.jobs.test_job.tasks[task_key='main'].libraries[0].pypi.package", b, OperationReplace)
 	require.NoError(t, err)
-	assert.Equal(t, "resources.jobs.test_job.tasks[1].libraries[0].pypi.package", result)
+	assert.Equal(t, "resources.jobs.test_job.tasks[1].libraries[0].pypi.package", result.path.String())
 }
 
 func TestResolveSelectors_WildcardNotSupported(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
@@ -200,7 +199,7 @@ func TestResolveSelectors_WildcardNotSupported(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	_, err = resolveSelectors("resources.jobs.test_job.tasks.*.task_key", b)
+	_, err = resolveSelectors("resources.jobs.test_job.tasks.*.task_key", b, OperationReplace)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wildcard patterns are not supported")
+	assert.Contains(t, err.Error(), "wildcards not allowed in path")
 }

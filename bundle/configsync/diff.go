@@ -2,17 +2,25 @@ package configsync
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"reflect"
+	"io"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/cli/libs/structs/structdiff"
 )
 
 type OperationType string
@@ -28,80 +36,94 @@ const (
 type ConfigChangeDesc struct {
 	Operation OperationType `json:"operation"`
 	Value     any           `json:"value,omitempty"` // Normalized remote value (nil for remove operations)
+
+	// LocalEdit reports that the local config value for this field differs from
+	// the last-deployed state, so applying this change overwrites a not-yet-
+	// deployed local edit. Telemetry-only; direct engine only (the terraform
+	// sync snapshot has no per-field base). Not part of the command output.
+	LocalEdit bool `json:"-"`
 }
 
 type ResourceChanges map[string]*ConfigChangeDesc
 
 type Changes map[string]ResourceChanges
 
-// normalizeValue converts values to plain Go types suitable for YAML patching
-// by using SDK marshaling which properly handles ForceSendFields and other annotations.
 func normalizeValue(v any) (any, error) {
-	if v == nil {
-		return nil, nil
-	}
-
-	switch v.(type) {
-	case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-		return v, nil
-	}
-
-	rv := reflect.ValueOf(v)
-	rt := rv.Type()
-
-	if rt.Kind() == reflect.Ptr {
-		rt = rt.Elem()
-	}
-
-	var data []byte
-	var err error
-
-	if rt.Kind() == reflect.Struct {
-		data, err = marshal.Marshal(v)
-	} else {
-		data, err = json.Marshal(v)
-	}
-
+	dynValue, err := convert.FromTyped(v, dyn.NilValue)
 	if err != nil {
-		return v, fmt.Errorf("failed to marshal value of type %T: %w", v, err)
+		return nil, fmt.Errorf("failed to convert value of type %T: %w", v, err)
 	}
 
-	var normalized any
-	err = json.Unmarshal(data, &normalized)
-	if err != nil {
-		return v, fmt.Errorf("failed to unmarshal value: %w", err)
+	return dynValue.AsAny(), nil
+}
+
+func filterEntityDefaults(basePath string, value any) any {
+	if value == nil {
+		return nil
 	}
 
-	return normalized, nil
+	if arr, ok := value.([]any); ok {
+		result := make([]any, 0, len(arr))
+		for i, elem := range arr {
+			elementPath := fmt.Sprintf("%s[%d]", basePath, i)
+			result = append(result, filterEntityDefaults(elementPath, elem))
+		}
+		return result
+	}
+
+	m, ok := value.(map[string]any)
+	if !ok {
+		return value
+	}
+
+	result := make(map[string]any)
+	for key, val := range m {
+		fieldPath := basePath + "." + key
+
+		if shouldSkipField(fieldPath, val, false) {
+			continue
+		}
+
+		if nestedMap, ok := val.(map[string]any); ok {
+			result[key] = filterEntityDefaults(fieldPath, nestedMap)
+		} else {
+			result[key] = val
+		}
+	}
+
+	return result
 }
 
 func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
-	hasConfigValue := cd.Old != nil || cd.New != nil
+	// Use cd.New (current config) to decide whether the field exists "on the config side".
+	// cd.Old (saved state) must not be considered: when the user has already synced a rename
+	// locally (cd.New == nil for the old key) but state still holds the prior key, including
+	// cd.Old in this check would classify the change as Replace and fail later in
+	// resolveSelectors because the old key no longer exists in the YAML.
+	hasConfigValue := cd.New != nil
+	normalizedValue, err := normalizeValue(cd.Remote)
+	if err != nil {
+		return nil, fmt.Errorf("failed to normalize remote value: %w", err)
+	}
 
-	op := OperationUnknown
-	if shouldSkipField(path, cd) {
+	if shouldSkipField(path, normalizedValue, hasConfigValue) {
 		return &ConfigChangeDesc{
 			Operation: OperationSkip,
 		}, nil
 	}
 
-	if cd.Remote == nil && hasConfigValue {
-		op = OperationRemove
-	}
-	if cd.Remote != nil && hasConfigValue {
-		op = OperationReplace
-	}
-	if cd.Remote != nil && !hasConfigValue {
-		op = OperationAdd
-	}
+	normalizedValue = filterEntityDefaults(path, normalizedValue)
+	normalizedValue = resetValueIfNeeded(path, normalizedValue)
 
-	var normalizedValue any
-	var err error
-	if op != OperationRemove {
-		normalizedValue, err = normalizeValue(cd.Remote)
-		if err != nil {
-			return nil, fmt.Errorf("failed to normalize remote value: %w", err)
-		}
+	var op OperationType
+	if normalizedValue == nil && hasConfigValue {
+		op = OperationRemove
+	} else if normalizedValue != nil && hasConfigValue {
+		op = OperationReplace
+	} else if normalizedValue != nil && !hasConfigValue {
+		op = OperationAdd
+	} else {
+		op = OperationSkip
 	}
 
 	return &ConfigChangeDesc{
@@ -110,36 +132,84 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 	}, nil
 }
 
-// DetectChanges compares current remote state with the last deployed state
-// and returns a map of resource changes.
-func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (Changes, error) {
-	changes := make(Changes)
+// OpenDeploymentState returns the deployment bundle whose StateDB is open for
+// reading. For the direct engine the caller (process.go) has already opened
+// b.DeploymentBundle; for the terraform engine the config snapshot is opened
+// here. Both yield read-mode state, so GetResourceID and Data.State are usable.
+// Open the state once per command and pass it to CalculatePlan and
+// ResolveResourceSelectors so the terraform snapshot is read only once.
+func OpenDeploymentState(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (*direct.DeploymentBundle, error) {
+	if err := ensureSnapshotAvailable(ctx, b, engine); err != nil {
+		return nil, fmt.Errorf("state snapshot not available: %w", err)
+	}
+
+	if engine.IsDirect() {
+		return &b.DeploymentBundle, nil
+	}
 
 	deployBundle := &direct.DeploymentBundle{}
-	var statePath string
-	if engine.IsDirect() {
-		_, statePath = b.StateFilenameDirect(ctx)
-	} else {
-		_, statePath = b.StateFilenameConfigSnapshot(ctx)
+	_, statePath := b.StateFilenameConfigSnapshot(ctx)
+	if err := deployBundle.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+		return nil, fmt.Errorf("failed to open state: %w", err)
 	}
+	return deployBundle, nil
+}
 
-	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, statePath)
+// isPermissionsOrGrantsSubResource reports whether a plan resource key is a
+// permissions or grants sub-resource ("resources.<type>.<name>.permissions" /
+// ".grants"). It classifies the key structurally via config.GetNodeAndType,
+// which keys on the path component (index 3), so a resource literally named
+// "permissions" ("resources.jobs.permissions") is not misclassified.
+func isPermissionsOrGrantsSubResource(resourceKey string) bool {
+	path, err := dyn.NewPathFromString(resourceKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to calculate plan: %w", err)
+		return false
 	}
+	_, nodeType := config.GetNodeAndType(path)
+	return strings.HasSuffix(nodeType, ".permissions") || strings.HasSuffix(nodeType, ".grants")
+}
+
+// ExtractChanges extracts the map of remote-vs-config changes from a deploy
+// plan. engine selects the LocalEdit comparison below.
+func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (Changes, error) {
+	changes := make(Changes)
 
 	for resourceKey, entry := range plan.Plan {
+		// permissions and grants are emitted as their own plan keys
+		// ("resources.<type>.<name>.permissions" / ".grants"; see splitResourcePath
+		// in bundle/direct/bundle_plan.go). config-remote-sync cannot write them back
+		// to YAML: their fields (e.g. object_id) are server-populated with no source
+		// location, and bundle-level permissions have no per-resource YAML node at all,
+		// so resolving them would fail the whole sync. Skip them instead.
+		if isPermissionsOrGrantsSubResource(resourceKey) {
+			continue
+		}
+
 		resourceChanges := make(ResourceChanges)
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				change, err := convertChangeDesc(path, changeDesc)
+				if changeDesc.Action == deployplan.Skip {
+					continue
+				}
+
+				fullPath := resourceKey + "." + path
+				change, err := convertChangeDesc(fullPath, changeDesc)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
 				if change.Operation == OperationSkip {
 					continue
 				}
+				// On the direct engine the state snapshot holds real per-field
+				// values, so New != Old means the local config diverged from the
+				// last deploy and this change overwrites that pending edit. The
+				// terraform sync snapshot stores empty per-resource state, so this
+				// comparison is meaningless there and is skipped.
+				if engine.IsDirect() && !structdiff.IsEqual(changeDesc.Old, changeDesc.New) {
+					change.LocalEdit = true
+				}
+				change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)
 				resourceChanges[path] = change
 			}
 		}
@@ -154,144 +224,53 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 	return changes, nil
 }
 
-func matchParts(patternParts, pathParts []string) bool {
-	if len(patternParts) == 0 && len(pathParts) == 0 {
-		return true
-	}
-	if len(patternParts) == 0 || len(pathParts) == 0 {
-		return false
+func ensureSnapshotAvailable(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) error {
+	if engine.IsDirect() {
+		return nil
 	}
 
-	patternPart := patternParts[0]
-	pathPart := pathParts[0]
+	remotePathSnapshot, localPathSnapshot := b.StateFilenameConfigSnapshot(ctx)
 
-	if patternPart == "*" {
-		return matchParts(patternParts[1:], pathParts[1:])
+	if _, err := os.Stat(localPathSnapshot); err == nil {
+		return nil
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("checking snapshot file: %w", err)
 	}
 
-	if strings.Contains(patternPart, "[*]") {
-		prefix := strings.Split(patternPart, "[*]")[0]
+	log.Debugf(ctx, "Resources state snapshot not found locally, pulling from remote")
 
-		if strings.HasPrefix(pathPart, prefix) && strings.Contains(pathPart, "[") {
-			return matchParts(patternParts[1:], pathParts[1:])
+	f, err := deploy.StateFiler(ctx, b)
+	if err != nil {
+		return fmt.Errorf("getting state filer: %w", err)
+	}
+
+	r, err := f.Read(ctx, remotePathSnapshot)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			// Wrap the sentinel so callers can classify this failure
+			// (telemetry reports it as STATE_NOT_FOUND).
+			return fmt.Errorf("resources state snapshot not found remotely at %s: %w", remotePathSnapshot, ErrStateSnapshotNotFound)
 		}
-		return false
+		return fmt.Errorf("reading remote snapshot: %w", err)
+	}
+	defer r.Close()
+
+	content, err := io.ReadAll(r)
+	if err != nil {
+		return fmt.Errorf("reading snapshot content: %w", err)
 	}
 
-	if patternPart == pathPart {
-		return matchParts(patternParts[1:], pathParts[1:])
+	localStateDir := filepath.Dir(localPathSnapshot)
+	err = os.MkdirAll(localStateDir, 0o700)
+	if err != nil {
+		return fmt.Errorf("creating snapshot directory: %w", err)
 	}
 
-	return false
-}
-
-func matchPattern(pattern, path string) bool {
-	patternParts := strings.Split(pattern, ".")
-	pathParts := strings.Split(path, ".")
-	return matchParts(patternParts, pathParts)
-}
-
-// serverSideDefaults contains all hardcoded server-side defaults.
-// This is a temporary solution until the bundle plan issue is resolved.
-var serverSideDefaults = map[string]func(*deployplan.ChangeDesc) bool{
-	// Job-level fields
-	"timeout_seconds": isZero,
-	"usage_policy_id": alwaysDefault, // computed field
-	"edit_mode":       alwaysDefault, // set by CLI
-
-	// Task-level fields
-	"tasks[*].run_if":               isStringEqual("ALL_SUCCESS"),
-	"tasks[*].disabled":             isBoolEqual(false),
-	"tasks[*].timeout_seconds":      isZero,
-	"tasks[*].notebook_task.source": isStringEqual("WORKSPACE"),
-
-	// Cluster fields (tasks)
-	"tasks[*].new_cluster.aws_attributes":     alwaysDefault,
-	"tasks[*].new_cluster.azure_attributes":   alwaysDefault,
-	"tasks[*].new_cluster.gcp_attributes":     alwaysDefault,
-	"tasks[*].new_cluster.data_security_mode": isStringEqual("SINGLE_USER"), // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
-
-	"tasks[*].new_cluster.enable_elastic_disk": alwaysDefault, // deprecated field
-
-	// Cluster fields (job_clusters)
-	"job_clusters[*].new_cluster.aws_attributes":     alwaysDefault,
-	"job_clusters[*].new_cluster.azure_attributes":   alwaysDefault,
-	"job_clusters[*].new_cluster.gcp_attributes":     alwaysDefault,
-	"job_clusters[*].new_cluster.data_security_mode": isStringEqual("SINGLE_USER"), // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
-
-	"job_clusters[*].new_cluster.enable_elastic_disk": alwaysDefault, // deprecated field
-
-	// Terraform defaults
-	"run_as": alwaysDefault,
-
-	// Pipeline fields
-	"storage": defaultIfNotSpecified, // TODO it is computed if not specified, probably we should not skip it
-}
-
-// shouldSkipField checks if a given field path should be skipped as a hardcoded server-side default.
-func shouldSkipField(path string, changeDesc *deployplan.ChangeDesc) bool {
-	// TODO: as for now in bundle plan all remote-side changes are considered as server-side defaults.
-	// Once it is solved - stop skipping server-side defaults in these checks and remove hardcoded default.
-	if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonServerSideDefault {
-		return true
+	err = os.WriteFile(localPathSnapshot, content, 0o600)
+	if err != nil {
+		return fmt.Errorf("writing snapshot file: %w", err)
 	}
 
-	for pattern, isDefault := range serverSideDefaults {
-		if matchPattern(pattern, path) {
-			return isDefault(changeDesc)
-		}
-	}
-	return false
-}
-
-// alwaysDefault always returns true (for computed fields).
-func alwaysDefault(*deployplan.ChangeDesc) bool {
-	return true
-}
-
-func defaultIfNotSpecified(changeDesc *deployplan.ChangeDesc) bool {
-	if changeDesc.Old == nil && changeDesc.New == nil {
-		return true
-	}
-	return false
-}
-
-// isStringEqual returns a function that checks if the remote value equals the given string.
-func isStringEqual(expected string) func(*deployplan.ChangeDesc) bool {
-	return func(changeDesc *deployplan.ChangeDesc) bool {
-		if changeDesc.Remote == nil {
-			return expected == ""
-		}
-		// Convert to string to handle SDK enum types
-		actual := fmt.Sprintf("%v", changeDesc.Remote)
-		return actual == expected
-	}
-}
-
-// isBoolEqual returns a function that checks if the remote value equals the given bool.
-func isBoolEqual(expected bool) func(*deployplan.ChangeDesc) bool {
-	return func(changeDesc *deployplan.ChangeDesc) bool {
-		if actual, ok := changeDesc.Remote.(bool); ok {
-			return actual == expected
-		}
-		return false
-	}
-}
-
-// isZero checks if the remote value is zero (0 or 0.0).
-func isZero(changeDesc *deployplan.ChangeDesc) bool {
-	if changeDesc.Remote == nil {
-		return true
-	}
-
-	switch v := changeDesc.Remote.(type) {
-	case int:
-		return v == 0
-	case int64:
-		return v == 0
-	case float64:
-		return v == 0.0
-	default:
-		return false
-	}
+	log.Debugf(ctx, "Pulled config snapshot from remote to %s", localPathSnapshot)
+	return nil
 }

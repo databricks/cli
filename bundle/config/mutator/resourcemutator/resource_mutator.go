@@ -52,6 +52,7 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 	}{
 		{"resources.dashboards.*.parent_path", b.Config.Workspace.ResourcePath},
 		{"resources.dashboards.*.embed_credentials", false},
+		{"resources.genie_spaces.*.parent_path", b.Config.Workspace.ResourcePath},
 		{"resources.volumes.*.volume_type", "MANAGED"},
 
 		{"resources.alerts.*.parent_path", b.Config.Workspace.ResourcePath},
@@ -115,9 +116,14 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Ensures dashboard parent paths have the required /Workspace prefix
 		DashboardFixups(),
 
+		// Reads (typed): b.Config.Resources.GenieSpaces (checks genie space configurations)
+		// Updates (typed): b.Config.Resources.GenieSpaces[].ParentPath (ensures /Workspace prefix is present)
+		// Ensures genie space parent paths have the required /Workspace prefix
+		GenieSpaceFixups(),
+
 		// Reads (typed): b.Config.Permissions (validates permission levels)
-		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (reads existing permissions)
-		// Updates (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (adds permissions from bundle-level configuration)
+		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps,vector_search_endpoints,...}.*.permissions (reads existing permissions)
+		// Updates (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps,vector_search_endpoints,...}.*.permissions (adds permissions from bundle-level configuration)
 		// Applies bundle-level permissions to all supported resources
 		ApplyBundlePermissions(),
 
@@ -125,6 +131,22 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): resources.*.*.permissions
 		FixPermissions(),
 	)
+}
+
+// immutableExcludingResolver returns a variable reference resolver for the resources
+// section. When experimental.immutable_folder is enabled it excludes
+// workspace.file_path, workspace.artifact_path, and workspace.snapshot_path from
+// resolution: those paths are set by snapshot.Upload() in the Deploy phase, so
+// resolving them here would freeze them to the default bundle path instead.
+// workspace.snapshot_path is also excluded so it stays as a literal ${...} template
+// in the plan output (making the pre-upload intent visible).
+func immutableExcludingResolver(b *bundle.Bundle) bundle.Mutator {
+	if b.IsImmutableFolder() {
+		return mutator.ResolveVariableReferencesOnlyResourcesExcluding(
+			[]string{"workspace.file_path", "workspace.artifact_path", "workspace.snapshot_path"},
+		)
+	}
+	return mutator.ResolveVariableReferencesOnlyResources()
 }
 
 // Normalization is applied multiple times if resource is modified during initialization
@@ -140,7 +162,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
 		// Updates (dynamic): resources.* (strings) (resolves variable references to their actual values)
 		// Resolves variable references in 'resources' using bundle, workspace, and variables prefixes
-		mutator.ResolveVariableReferencesOnlyResources(),
+		immutableExcludingResolver(b),
 
 		// Reads (dynamic): resources.pipelines.*.libraries (checks for notebook.path and file.path fields)
 		// Updates (dynamic): resources.pipelines.*.libraries (expands glob patterns in path fields to multiple library entries)
@@ -167,15 +189,28 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): resources.apps.*.resources (merges app resources with the same name)
 		MergeApps(),
 
-		// Reads (typed): resources.pipelines.*.{catalog,schema,target}, resources.volumes.*.{catalog_name,schema_name} (checks for schema references)
-		// Updates (typed): resources.pipelines.*.{schema,target}, resources.volumes.*.schema_name (converts implicit schema references to explicit ${resources.schemas.<schema_key>.name} syntax)
-		// Translates implicit schema references in DLT pipelines or UC Volumes to explicit syntax to capture dependencies
-		CaptureSchemaDependency(),
+		// Reads (dynamic): resources.{catalogs,schemas,external_locations,volumes,registered_models,vector_search_indexes}.*.grants
+		// Updates (dynamic): same paths — merges grant entries by principal and deduplicates privileges
+		MergeGrants(),
+
+		// Reads (typed): resources.{volumes,registered_models,pipelines,quality_monitors,model_serving_endpoints}.*.{catalog_name,schema_name,...}
+		// Updates (typed): same paths — converts implicit schema/catalog references to explicit ${resources.schemas/catalogs.<key>.name} syntax
+		// Also updates: resources.schemas.*.catalog_name (catalog dependency for schemas)
+		// Translates implicit schema and catalog references across all UC resources to explicit syntax to capture dependencies
+		CaptureUCDependencies(),
 
 		// Reads (dynamic): resources.dashboards.*.file_path
 		// Updates (dynamic): resources.dashboards.*.serialized_dashboard
 		// Drops (dynamic): resources.dashboards.*.file_path
 		ConfigureDashboardSerializedDashboard(),
+
+		// Reads (dynamic): resources.genie_spaces.*.file_path
+		// Updates (dynamic): resources.genie_spaces.*.serialized_space
+		ConfigureGenieSpaceSerializedSpace(),
+
+		// Reads (dynamic): resources.cluster_policies.*.definition
+		// Updates (dynamic): resources.cluster_policies.*.definition (inline YAML -> JSON string)
+		ConfigureClusterPolicyDefinition(),
 
 		// Reads (typed): resources.alerts.*.file_path
 		// Updates (typed): resources.alerts.* (loads alert configuration from .dbalert.json file)
@@ -260,6 +295,17 @@ func NormalizeResources(
 	}
 
 	applyNormalizeMutators(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	// Permissions added to an existing resource by a Python mutator must still get the
+	// deploying user as IS_OWNER, otherwise the Permissions API rejects the PUT with
+	// "must have exactly one owner" (#5682). FixPermissions is idempotent, so re-running
+	// it on resources that already have an owner is a no-op. ApplyBundlePermissions is
+	// intentionally not re-run here: it is not idempotent (it appends bundle-level
+	// permissions) and already ran for these resources in ProcessStaticResources.
+	bundle.ApplyContext(ctx, b, FixPermissions())
 	if logdiag.HasError(ctx) {
 		return
 	}

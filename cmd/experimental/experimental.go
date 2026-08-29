@@ -1,7 +1,9 @@
 package experimental
 
 import (
-	mcp "github.com/databricks/cli/experimental/aitools/cmd"
+	aircmd "github.com/databricks/cli/experimental/air/cmd"
+	aitoolscmd "github.com/databricks/cli/experimental/aitools/cmd"
+	postgrescmd "github.com/databricks/cli/experimental/postgres/cmd"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +22,11 @@ These commands provide early access to new features that are still under
 development. They may change or be removed in future versions without notice.`,
 	}
 
-	cmd.AddCommand(mcp.NewMcpCmd())
+	cmd.AddCommand(aircmd.New())
+	cmd.AddCommand(aitoolscmd.NewAitoolsCmd())
+	cmd.AddCommand(newGenieCmd())
+	cmd.AddCommand(postgrescmd.New())
+	cmd.AddCommand(newWorkspaceOpenCommand())
 
 	return cmd
 }

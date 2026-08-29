@@ -1,0 +1,42 @@
+
+=== Step 1: deploy with purge_on_delete unset
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pg-purge-transitions-[UNIQUE_NAME]/default/files...
+Created postgres_projects.proj
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> get_purge
+(unset)
+
+=== Step 2: set purge_on_delete: true
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pg-purge-transitions-[UNIQUE_NAME]/default/files...
+Updated postgres_projects.proj
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> get_purge
+json.state.resources.postgres_projects.proj.state.purge_on_delete = true;
+
+=== Step 3: flip to purge_on_delete: false
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pg-purge-transitions-[UNIQUE_NAME]/default/files...
+Updated postgres_projects.proj
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> get_purge
+json.state.resources.postgres_projects.proj.state.purge_on_delete = false;
+
+=== Step 4: remove the line again
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pg-purge-transitions-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> get_purge
+json.state.resources.postgres_projects.proj.state.purge_on_delete = false;
+
+=== bundle destroy (must be a plain DELETE, no ?purge=true)
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/

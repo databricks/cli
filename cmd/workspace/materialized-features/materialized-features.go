@@ -3,6 +3,7 @@
 package materialized_features
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -29,6 +30,10 @@ func New() *cobra.Command {
 		Hidden: true,
 		RunE:   root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateFeatureTag())
@@ -73,12 +78,14 @@ func newCreateFeatureTag() *cobra.Command {
   Creates a FeatureTag.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only TABLE_NAME, FEATURE_NAME as positional arguments. Provide 'key' in your JSON input")
+				return errors.New("when --json flag is specified, provide only TABLE_NAME, FEATURE_NAME as positional arguments. Provide 'key' in your JSON input")
 			}
 			return nil
 		}
@@ -97,7 +104,7 @@ func newCreateFeatureTag() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -113,6 +120,7 @@ func newCreateFeatureTag() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -154,6 +162,8 @@ func newDeleteFeatureTag() *cobra.Command {
     KEY: The key of the tag to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -211,6 +221,8 @@ func newGetFeatureLineage() *cobra.Command {
     FEATURE_NAME: The name of the feature.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -229,6 +241,7 @@ func newGetFeatureLineage() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -265,6 +278,8 @@ func newGetFeatureTag() *cobra.Command {
   Gets a FeatureTag.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -284,6 +299,7 @@ func newGetFeatureTag() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -312,9 +328,19 @@ func newListFeatureTags() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listFeatureTagsReq ml.ListFeatureTagsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listFeatureTagsLimit int
 
 	cmd.Flags().IntVar(&listFeatureTagsReq.PageSize, "page-size", listFeatureTagsReq.PageSize, `The maximum number of results to return.`)
-	cmd.Flags().StringVar(&listFeatureTagsReq.PageToken, "page-token", listFeatureTagsReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listFeatureTagsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listFeatureTagsReq.PageToken, "page-token", listFeatureTagsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-feature-tags TABLE_NAME FEATURE_NAME"
 	cmd.Short = `List all feature tags.`
@@ -323,6 +349,8 @@ func newListFeatureTags() *cobra.Command {
   Lists FeatureTags.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -338,6 +366,13 @@ func newListFeatureTags() *cobra.Command {
 		listFeatureTagsReq.FeatureName = args[1]
 
 		response := w.MaterializedFeatures.ListFeatureTags(ctx, listFeatureTagsReq)
+		if listFeatureTagsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listFeatureTagsLimit)
+		}
+		if listFeatureTagsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listFeatureTagsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -381,6 +416,8 @@ func newUpdateFeatureTag() *cobra.Command {
   Updates a FeatureTag.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -398,7 +435,7 @@ func newUpdateFeatureTag() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -412,6 +449,7 @@ func newUpdateFeatureTag() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

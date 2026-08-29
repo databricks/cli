@@ -1,0 +1,7 @@
+bundle:
+  name: test-bundle
+
+resources:
+  catalogs:
+    catalog1:
+      name: catalog_managed_defaults

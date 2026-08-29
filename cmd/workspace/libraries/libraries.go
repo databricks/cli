@@ -3,6 +3,7 @@
 package libraries
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -41,6 +42,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newAllClusterStatuses())
 	cmd.AddCommand(newClusterStatus())
@@ -65,6 +70,15 @@ var allClusterStatusesOverrides []func(
 
 func newAllClusterStatuses() *cobra.Command {
 	cmd := &cobra.Command{}
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var allClusterStatusesLimit int
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&allClusterStatusesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "all-cluster-statuses"
 	cmd.Short = `Get all statuses.`
@@ -74,12 +88,21 @@ func newAllClusterStatuses() *cobra.Command {
   libraries installed on this cluster via the API or the libraries UI.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		response := w.Libraries.AllClusterStatuses(ctx)
+		if allClusterStatusesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", allClusterStatusesLimit)
+		}
+		if allClusterStatusesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, allClusterStatusesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -108,6 +131,15 @@ func newClusterStatus() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var clusterStatusReq compute.ClusterStatus
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var clusterStatusLimit int
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&clusterStatusLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "cluster-status CLUSTER_ID"
 	cmd.Short = `Get status.`
@@ -125,6 +157,8 @@ func newClusterStatus() *cobra.Command {
     CLUSTER_ID: Unique identifier of the cluster whose status should be retrieved.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -139,6 +173,13 @@ func newClusterStatus() *cobra.Command {
 		clusterStatusReq.ClusterId = args[0]
 
 		response := w.Libraries.ClusterStatus(ctx, clusterStatusReq)
+		if clusterStatusLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", clusterStatusLimit)
+		}
+		if clusterStatusLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, clusterStatusLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -179,6 +220,8 @@ func newInstall() *cobra.Command {
   happens in the background after the completion of this request.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -191,13 +234,13 @@ func newInstall() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		err = w.Libraries.Install(ctx, installReq)
@@ -245,6 +288,8 @@ func newUninstall() *cobra.Command {
   currently installed is ignored.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -257,13 +302,13 @@ func newUninstall() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		err = w.Libraries.Uninstall(ctx, uninstallReq)

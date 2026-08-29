@@ -1,0 +1,9 @@
+mkdir -p .databricks/bundle/default
+cp resources.json .databricks/bundle/default/
+cp resources.json.wal .databricks/bundle/default/
+
+echo "=== WAL content ==="
+cat .databricks/bundle/default/resources.json.wal
+
+echo "=== Deploy (should fail with corruption error) ==="
+trace errcode $CLI bundle deploy

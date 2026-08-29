@@ -1,0 +1,9 @@
+sethome "./home"
+
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+unset DATABRICKS_CONFIG_PROFILE
+
+# home/.databrickscfg is a checked-in input with a single profile.
+# No arguments, non-interactive: should error with profile hint
+musterr $CLI auth token

@@ -4,10 +4,6 @@ Response.Body = '''
 print("Hello, World!")
 '''
 
-[[Repls]]
-Old = '\\'
-New = '/'
-
 [[Server]]
 Pattern = "GET /api/2.0/workspace/list"
 Response.Body = '''

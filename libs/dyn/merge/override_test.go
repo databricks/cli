@@ -452,7 +452,7 @@ func TestOverride_PreserveMappingKeys(t *testing.T) {
 		outPairs := out.MustMap().Pairs()
 
 		assert.Equal(t, visitorState{updated: []string{"a"}}, state)
-		assert.Equal(t, 1, len(outPairs))
+		assert.Len(t, outPairs, 1)
 
 		// mapping was first defined in left, so it should keep its location
 		assert.Equal(t, leftLocation, out.Location())

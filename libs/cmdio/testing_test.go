@@ -1,7 +1,6 @@
 package cmdio_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -10,7 +9,7 @@ import (
 )
 
 func TestNewTestContextWithStdout(t *testing.T) {
-	ctx, stdout := cmdio.NewTestContextWithStdout(context.Background())
+	ctx, stdout := cmdio.NewTestContextWithStdout(t.Context())
 
 	// Render writes to stdout
 	data := map[string]string{"message": "test output"}
@@ -21,7 +20,7 @@ func TestNewTestContextWithStdout(t *testing.T) {
 }
 
 func TestNewTestContextWithStderr(t *testing.T) {
-	ctx, stderr := cmdio.NewTestContextWithStderr(context.Background())
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 
 	require.NotPanics(t, func() {
 		cmdio.LogString(ctx, "test message")

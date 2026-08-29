@@ -3,6 +3,7 @@
 package log_delivery
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -22,9 +23,9 @@ func New() *cobra.Command {
 		Use:   "log-delivery",
 		Short: `These APIs manage log delivery configurations for this account.`,
 		Long: `These APIs manage log delivery configurations for this account. The two
-  supported log types for this API are _billable usage logs_ and _audit logs_.
-  This feature is in Public Preview. This feature works with all account ID
-  types.
+  supported log types for this API are _billable usage logs_ (AWS only) and
+  _audit logs_ (AWS and GCP). This feature is in Public Preview. This feature
+  works with all account ID types.
 
   Log delivery works with all account types. However, if your account is on the
   E2 version of the platform or on a select custom plan that allows multiple
@@ -32,7 +33,7 @@ func New() *cobra.Command {
   destinations for each workspace. Log delivery status is also provided to know
   the latest status of log delivery attempts.
 
-  The high-level flow of billable usage delivery:
+  The high-level flow of billable usage delivery (AWS only):
 
   1. **Create storage**: In AWS, [create a new AWS S3 bucket] with a specific
   bucket policy. Using Databricks APIs, call the Account API to create a
@@ -56,11 +57,12 @@ func New() *cobra.Command {
   delivers logs related to the specified workspaces. You can create multiple
   types of delivery configurations per account.
 
-  For billable usage delivery: * For more information about billable usage logs,
-  see [Billable usage log delivery]. For the CSV schema, see the [Usage page]. *
-  The delivery location is <bucket-name>/<prefix>/billable-usage/csv/, where
-  <prefix> is the name of the optional delivery path prefix you set up during
-  log delivery configuration. Files are named
+  For billable usage delivery (AWS only): * For more information about billable
+  usage logs, see [Billable usage log delivery]. For the CSV schema, see the
+  [Usage page]. * The delivery location is
+  <bucket-name>/<prefix>/billable-usage/csv/, where <prefix> is the name of
+  the optional delivery path prefix you set up during log delivery
+  configuration. Files are named
   workspaceId=<workspace-id>-usageMonth=<month>.csv. * All billable usage logs
   apply to specific workspaces (_workspace level_ logs). You can aggregate usage
   for your entire account by creating an _account level_ delivery configuration
@@ -68,9 +70,9 @@ func New() *cobra.Command {
   The files are delivered daily by overwriting the month's CSV file for each
   workspace.
 
-  For audit log delivery: * For more information about about audit log delivery,
-  see [Audit log delivery], which includes information about the used JSON
-  schema. * The delivery location is
+  For audit log delivery (AWS and GCP): * For more information about about audit
+  log delivery, see Audit log delivery [AWS] or [GCP], which includes
+  information about the used JSON schema. * The delivery location is
   <bucket-name>/<delivery-path-prefix>/workspaceId=<workspaceId>/date=<yyyy-mm-dd>/auditlogs_<internal-id>.json.
   Files may get overwritten with the same content multiple times to achieve
   exactly-once delivery. * If the audit log delivery configuration included
@@ -78,16 +80,21 @@ func New() *cobra.Command {
   are delivered. If the log delivery configuration applies to the entire account
   (_account level_ delivery configuration), the audit log delivery includes
   workspace-level audit logs for all workspaces in the account as well as
-  account-level audit logs. See [Audit log delivery] for details. * Auditable
-  events are typically available in logs within 15 minutes.
+  account-level audit logs. See Audit log delivery [AWS] or [GCP] for details. *
+  Auditable events are typically available in logs within 15 minutes.
 
-  [Audit log delivery]: https://docs.databricks.com/administration-guide/account-settings/audit-logs.html
+  [AWS]: https://docs.databricks.com/administration-guide/account-settings/audit-logs.html
   [Billable usage log delivery]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html
+  [GCP]: https://docs.databricks.com/gcp/en/admin/account-settings/audit-logs
   [Usage page]: https://docs.databricks.com/administration-guide/account-settings/usage.html
   [create a new AWS S3 bucket]: https://docs.databricks.com/administration-guide/account-api/aws-storage.html`,
 		GroupID: "billing",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -151,6 +158,8 @@ func newCreate() *cobra.Command {
   [Deliver and access billable usage logs]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -163,19 +172,20 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := a.LogDelivery.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -216,6 +226,8 @@ func newGet() *cobra.Command {
     LOG_DELIVERY_CONFIGURATION_ID: The log delivery configuration id of customer`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -223,10 +235,10 @@ func newGet() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No LOG_DELIVERY_CONFIGURATION_ID argument specified. Loading names for Log Delivery drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No LOG_DELIVERY_CONFIGURATION_ID argument specified. Loading names for Log Delivery drop-down.")
 			names, err := a.LogDelivery.LogDeliveryConfigurationConfigNameToConfigIdMap(ctx, billing.ListLogDeliveryRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Log Delivery drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -237,7 +249,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the log delivery configuration id of customer")
+			return errors.New("expected to have the log delivery configuration id of customer")
 		}
 		getReq.LogDeliveryConfigurationId = args[0]
 
@@ -245,6 +257,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -273,11 +286,21 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq billing.ListLogDeliveryRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `The Credentials id to filter the search results with.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token received from a previous get all budget configurations call.`)
 	cmd.Flags().Var(&listReq.Status, "status", `The log delivery status to filter the search results with. Supported values: [DISABLED, ENABLED]`)
 	cmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", listReq.StorageConfigurationId, `The Storage Configuration id to filter the search results with.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
 	cmd.Short = `Get all log delivery configurations.`
@@ -287,6 +310,8 @@ func newList() *cobra.Command {
   specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -299,6 +324,13 @@ func newList() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		response := a.LogDelivery.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -351,12 +383,14 @@ func newPatchStatus() *cobra.Command {
       Supported values: [DISABLED, ENABLED]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only LOG_DELIVERY_CONFIGURATION_ID as positional arguments. Provide 'status' in your JSON input")
+				return errors.New("when --json flag is specified, provide only LOG_DELIVERY_CONFIGURATION_ID as positional arguments. Provide 'status' in your JSON input")
 			}
 			return nil
 		}
@@ -375,7 +409,7 @@ func newPatchStatus() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

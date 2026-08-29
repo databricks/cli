@@ -30,6 +30,7 @@ Available Commands:
   alert       Generate configuration for an alert
   app         Generate bundle configuration for a Databricks app
   dashboard   Generate configuration for a dashboard
+  genie-space Generate configuration for a Genie space
   job         Generate bundle configuration for a job
   pipeline    Generate bundle configuration for a pipeline
 

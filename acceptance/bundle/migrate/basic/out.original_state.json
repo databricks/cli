@@ -21,8 +21,10 @@
             "dbt_task": [],
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json",
+                "version_id": ""
               }
             ],
             "description": null,
@@ -53,9 +55,14 @@
             "notebook_task": [],
             "notification_settings": [],
             "parameter": [],
+            "parent_path": null,
             "performance_target": null,
             "pipeline_task": [],
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "python_wheel_task": [],
             "queue": [
               {
@@ -78,7 +85,10 @@
             "tags": null,
             "task": [
               {
+                "ai_runtime_task": [],
+                "alert_task": [],
                 "clean_rooms_notebook_task": [],
+                "compute": [],
                 "condition_task": [],
                 "dashboard_task": [],
                 "dbt_cloud_task": [],
@@ -88,7 +98,16 @@
                 "description": "",
                 "disable_auto_optimization": false,
                 "disabled": false,
-                "email_notifications": [],
+                "email_notifications": [
+                  {
+                    "no_alert_for_skipped_runs": false,
+                    "on_duration_warning_threshold_exceeded": [],
+                    "on_failure": [],
+                    "on_start": [],
+                    "on_streaming_backlog_exceeded": [],
+                    "on_success": []
+                  }
+                ],
                 "environment_key": "",
                 "existing_cluster_id": "",
                 "for_each_task": [],
@@ -110,9 +129,10 @@
                 "notification_settings": [],
                 "pipeline_task": [],
                 "power_bi_task": [],
+                "python_operator_task": [],
                 "python_wheel_task": [],
                 "retry_on_timeout": false,
-                "run_if": "",
+                "run_if": "ALL_SUCCESS",
                 "run_job_task": [],
                 "spark_jar_task": [],
                 "spark_python_task": [],
@@ -126,6 +146,7 @@
             "timeout_seconds": 0,
             "timeouts": null,
             "trigger": [],
+            "triggers": [],
             "url": "[DATABRICKS_URL]/#job/[NUMID]",
             "usage_policy_id": null,
             "webhook_notifications": [
@@ -164,8 +185,10 @@
             "creator_user_name": "[USERNAME]",
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json",
+                "version_id": ""
               }
             ],
             "development": false,
@@ -197,12 +220,18 @@
             "name": "Test Migration Pipeline",
             "notification": [],
             "photon": false,
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "restart_window": [],
             "root_path": null,
             "run_as": [],
             "run_as_user_name": "[USERNAME]",
             "schema": null,
             "serverless": false,
+            "serverless_compute_id": null,
             "state": "IDLE",
             "storage": "dbfs:/pipelines/[UUID]",
             "tags": {
@@ -211,7 +240,7 @@
               "myjob_timeout": "0",
               "myvolume_id": "mycat.myschema.myvol",
               "volume_catalog_name": "mycat",
-              "volume_storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
+              "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
             },
             "target": null,
             "timeouts": null,
@@ -242,8 +271,13 @@
             "id": "mycat.myschema.myvol",
             "name": "myvol",
             "owner": "[USERNAME]",
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "schema_name": "myschema",
-            "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+            "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
             "volume_path": "/Volumes/mycat/myschema/myvol",
             "volume_type": "MANAGED"
           },

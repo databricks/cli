@@ -1,15 +1,5 @@
 {
   "method": "POST",
-  "path": "/api/2.0/lakeview/dashboards",
-  "body": {
-    "display_name": "test dashboard",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources",
-    "serialized_dashboard": "{\"pages\":[{\"name\":\"name1\",\"displayName\":\"name1\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
-  }
-}
-{
-  "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources"
@@ -31,6 +21,13 @@
   "body": {
     "embed_credentials": false,
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources"
   }
 }
 {

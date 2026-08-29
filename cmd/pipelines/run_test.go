@@ -1,7 +1,6 @@
 package pipelines
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -144,7 +143,7 @@ Pipeline configurations for this update:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, stdout := cmdio.NewTestContextWithStdout(context.Background())
+			ctx, stdout := cmdio.NewTestContextWithStdout(t.Context())
 
 			err := displayPipelineUpdate(ctx, tt.update, tt.pipelineID, tt.events)
 			assert.NoError(t, err)
@@ -370,7 +369,7 @@ RUNNING                   750ms
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, stdout := cmdio.NewTestContextWithStdout(context.Background())
+			ctx, stdout := cmdio.NewTestContextWithStdout(t.Context())
 
 			err := displayProgressEventsDurations(ctx, tt.events)
 			assert.NoError(t, err)

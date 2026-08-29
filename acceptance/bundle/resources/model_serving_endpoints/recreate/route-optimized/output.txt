@@ -3,9 +3,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created model_serving_endpoints.test_endpoint
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] serving-endpoints get [ORIGINAL_ENDPOINT_ID]
 
@@ -15,9 +15,9 @@ Deployment complete!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Recreated model_serving_endpoints.test_endpoint
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
 >>> print_requests.py //serving-endpoints
 {
@@ -49,22 +49,34 @@ Deployment complete!
   "config": {
     "served_entities": [
       {
-        "entity_name":"system.ai.llama_v3_2_1b_instruct",
-        "entity_version":"1",
-        "name":"llama",
-        "scale_to_zero_enabled":true,
-        "workload_size":"Small"
+        "entity_name": "system.ai.llama_v3_2_1b_instruct",
+        "entity_version": "1",
+        "name": "llama",
+        "scale_to_zero_enabled": true,
+        "workload_size": "Small"
       }
-    ]
+    ],
+    "traffic_config": {
+      "routes": [
+        {
+          "served_entity_name": "llama",
+          "served_model_name": "llama",
+          "traffic_percentage": 100
+        }
+      ]
+    }
   },
-  "creator":"[USERNAME]",
-  "id":"[UUID]",
-  "name":"[ORIGINAL_ENDPOINT_ID]",
-  "permission_level":"CAN_MANAGE",
-  "route_optimized":true,
+  "creation_timestamp": [UNIX_TIME_MILLIS][0],
+  "creator": "[USERNAME]",
+  "description": "",
+  "id": "[UUID]",
+  "last_updated_timestamp": [UNIX_TIME_MILLIS][0],
+  "name": "[ORIGINAL_ENDPOINT_ID]",
+  "permission_level": "CAN_MANAGE",
+  "route_optimized": true,
   "state": {
-    "config_update":"NOT_UPDATING",
-    "ready":"NOT_READY"
+    "config_update": "NOT_UPDATING",
+    "ready": "NOT_READY"
   }
 }
 
@@ -74,5 +86,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

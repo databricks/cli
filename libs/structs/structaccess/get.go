@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
@@ -25,7 +26,7 @@ func GetByString(v any, path string) (any, error) {
 		return v, nil
 	}
 
-	pathNode, err := structpath.Parse(path)
+	pathNode, err := structpath.ParsePath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -45,9 +46,7 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 
 	cur := reflect.ValueOf(v)
 	for _, node := range pathSegments {
-		if node.DotStar() || node.BracketStar() {
-			return reflect.Value{}, fmt.Errorf("wildcards not supported: %s", path.String())
-		}
+		// Note: wildcards cannot appear in PathNode (Parse rejects them)
 
 		var ok bool
 		cur, ok = deref(cur)
@@ -59,8 +58,19 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 		}
 
 		if idx, isIndex := node.Index(); isIndex {
+			// If cur is a struct with an EmbeddedSlice field, navigate through it.
+			if cur.Kind() == reflect.Struct {
+				if embed := findEmbedField(cur); embed.IsValid() {
+					cur = embed
+				}
+			}
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
+				// Terraform represents single-block fields as lists and uses [0] to access them.
+				// Treat [0] on a struct as a no-op so TF-style paths work against DABs structs.
+				if idx == 0 && kind == reflect.Struct {
+					continue
+				}
 				return reflect.Value{}, fmt.Errorf("%s: cannot index %s", node.String(), kind)
 			}
 			if idx < 0 || idx >= cur.Len() {
@@ -71,6 +81,12 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 		}
 
 		if key, value, ok := node.KeyValue(); ok {
+			// If cur is a struct with an EmbeddedSlice field, navigate through it.
+			if cur.Kind() == reflect.Struct {
+				if embed := findEmbedField(cur); embed.IsValid() {
+					cur = embed
+				}
+			}
 			nv, err := accessKeyValue(cur, key, value, node)
 			if err != nil {
 				return reflect.Value{}, err
@@ -143,10 +159,11 @@ func accessKey(v reflect.Value, key string, path *structpath.PathNode) (reflect.
 				if fv.IsNil() {
 					return reflect.Value{}, nil
 				}
-				// Non-nil pointer: check if the pointed-to value is empty for omitempty
-				if isEmptyForOmitEmpty(fv.Elem()) {
-					return reflect.Value{}, nil
-				}
+				// Non-nil pointer: return the dereferenced value.
+				// JSON omitempty only omits nil pointers, not pointers to zero values.
+				// Returning the dereferenced value is consistent with GetStructDiff,
+				// which recursively dereferences non-nil pointers.
+				return fv.Elem(), nil
 			} else if isEmptyForOmitEmpty(fv) {
 				return reflect.Value{}, nil
 			}
@@ -236,6 +253,9 @@ func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.Stru
 			name = ""
 		}
 
+		if sf.Name == EmbeddedSliceFieldName {
+			continue // EmbeddedSlice fields are not accessible by name
+		}
 		if name != "" && name == key {
 			// Skip fields marked as internal or readonly via bundle tag
 			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
@@ -336,12 +356,7 @@ func getEmbeddedStructForReading(fieldValue reflect.Value) reflect.Value {
 
 // containsString checks if a slice contains a specific string
 func containsString(slice []string, str string) bool {
-	for _, s := range slice {
-		if s == str {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, str)
 }
 
 // isEmptyForOmitEmpty returns true if the value should be omitted by JSON omitempty.

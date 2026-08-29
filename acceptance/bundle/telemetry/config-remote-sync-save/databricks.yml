@@ -1,0 +1,11 @@
+bundle:
+  name: config-remote-sync-save
+
+resources:
+  jobs:
+    foo:
+      name: test job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/tester@databricks.com/notebook

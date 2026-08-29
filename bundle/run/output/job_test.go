@@ -110,6 +110,23 @@ func TestNotebookOutputToRunOutput(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestNotebookOutputWithEmptyResultFallsBackToLogs(t *testing.T) {
+	jobOutput := &jobs.RunOutput{
+		NotebookOutput: &jobs.NotebookOutput{
+			Result: "",
+		},
+		Logs:          "hello :)",
+		LogsTruncated: true,
+	}
+	actual := toRunOutput(jobOutput)
+
+	expected := &LogsOutput{
+		Logs:          "hello :)",
+		LogsTruncated: true,
+	}
+	assert.Equal(t, expected, actual)
+}
+
 func TestDbtOutputToRunOutput(t *testing.T) {
 	jobOutput := &jobs.RunOutput{
 		DbtOutput: &jobs.DbtOutput{

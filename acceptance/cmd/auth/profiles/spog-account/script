@@ -1,0 +1,9 @@
+sethome "./home"
+
+# A SPOG account profile: non-accounts.* host with account_id, no workspace_id.
+# Before the fix, this was misclassified as WorkspaceConfig and validated with
+# CurrentUser.Me, which fails on account-scoped SPOG hosts.
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
+
+title "SPOG account profile should be valid"
+trace $CLI auth profiles --output json

@@ -36,7 +36,7 @@ class Location:
         diagnostics of decorated functions.
         """
 
-        code = hasattr(fn, "__code__") and getattr(fn, "__code__")
+        code = hasattr(fn, "__code__") and fn.__code__
 
         if not code:
             return None

@@ -1,0 +1,35 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+project_name="projects/test-pg-proj-${UNIQUE_NAME}"
+hard_branch="${project_name}/branches/test-pg-branch-hard-${UNIQUE_NAME}"
+soft_branch="${project_name}/branches/test-pg-branch-soft-${UNIQUE_NAME}"
+
+cleanup() {
+   # Belt-and-braces in case bundle destroy was skipped or partially failed.
+   # The soft-delete case leaves a record in the trash; --purge clears it.
+   $CLI postgres delete-branch --purge "${hard_branch}" 2>>LOG.delete-branch || true
+   $CLI postgres delete-branch --purge "${soft_branch}" 2>>LOG.delete-branch || true
+   $CLI postgres delete-project --purge "${project_name}" 2>>LOG.delete-project || true
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate
+
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+trace $CLI postgres get-branch "${hard_branch}" | branch_fields
+trace $CLI postgres get-branch "${soft_branch}" | branch_fields
+
+# Deploy requests are split per-engine: Terraform sends "parent" in the branch
+# create body, the direct engine sends it only as a query parameter.
+trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --sort --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+
+# bundle destroy should send ?purge=true on the hard_delete branch and no
+# purge query on the soft_delete branch. Both DELETEs land in the recorded
+# requests so the contrast is visible in the diff.
+title "bundle destroy"
+$CLI bundle destroy --auto-approve > out.destroy.txt 2>&1 || true
+
+trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --sort --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.json

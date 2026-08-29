@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -23,10 +24,10 @@ func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObject
 		}
 
 		// Find the highest permission level for this principal (handles inherited + explicit permissions)
-		var highestLevel string
+		var highestLevel iam.PermissionLevel
 		for _, pl := range a.AllPermissions {
-			level := convertWorkspaceObjectPermissionLevel(pl.PermissionLevel)
-			if resources.GetLevelScore(level) > resources.GetLevelScore(highestLevel) {
+			level := iam.PermissionLevel(convertWorkspaceObjectPermissionLevel(pl.PermissionLevel))
+			if resources.GetLevelScore(string(level)) > resources.GetLevelScore(string(highestLevel)) {
 				highestLevel = level
 			}
 		}
@@ -65,6 +66,22 @@ func (p WorkspacePathPermissions) Compare(perms []resources.Permission) diag.Dia
 	return diags
 }
 
+// UndeclaredWriters returns the principals with write access to the workspace folder
+// (CAN_EDIT or higher — the access needed to deploy the bundle) that are not declared
+// in perms with at least that level. In practice CAN_MANAGE is the only declarable
+// level that grants write access, so such principals must be declared with CAN_MANAGE.
+// Read-only folder access does not need to be declared.
+func (p WorkspacePathPermissions) UndeclaredWriters(perms []resources.Permission) []resources.Permission {
+	var writers []resources.Permission
+	for _, wp := range p.Permissions {
+		if resources.GetLevelScore(string(wp.Level)) >= resources.GetLevelScore(resources.CAN_EDIT) {
+			writers = append(writers, wp)
+		}
+	}
+	_, missing := containsAll(writers, perms)
+	return missing
+}
+
 // samePrincipal checks if two permissions refer to the same user/group/service principal.
 func samePrincipal(a, b resources.Permission) bool {
 	return a.UserName == b.UserName &&
@@ -80,7 +97,7 @@ func containsAll(permA, permB []resources.Permission) (bool, []resources.Permiss
 	for _, a := range permA {
 		found := false
 		for _, b := range permB {
-			if samePrincipal(a, b) && resources.GetLevelScore(b.Level) >= resources.GetLevelScore(a.Level) {
+			if samePrincipal(a, b) && resources.GetLevelScore(string(b.Level)) >= resources.GetLevelScore(string(a.Level)) {
 				found = true
 				break
 			}
@@ -106,7 +123,7 @@ func convertWorkspaceObjectPermissionLevel(level workspace.WorkspaceObjectPermis
 func toString(p []resources.Permission) string {
 	var sb strings.Builder
 	for _, perm := range p {
-		sb.WriteString(fmt.Sprintf("- %s\n", perm.String()))
+		fmt.Fprintf(&sb, "- %s\n", perm.String())
 	}
 	return sb.String()
 }

@@ -1,0 +1,31 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases",
+  "q": {
+    "database_id": "my-database",
+    "replace_existing": "true"
+  },
+  "body": {
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "spec": {
+      "postgres_database": "app_db",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+    }
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database"
+}

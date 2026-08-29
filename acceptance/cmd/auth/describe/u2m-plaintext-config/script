@@ -1,0 +1,8 @@
+sethome "./home"
+
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+unset DATABRICKS_CONFIG_PROFILE
+unset DATABRICKS_AUTH_STORAGE
+
+trace $CLI auth describe --profile u2m-profile

@@ -5,40 +5,40 @@
   16.4.x-scala2.12
 {{- end}}
 
-{{/* A safe version of DB Connect that is compatible with at least half the
-   * clusters running in production.
+{{/* A conservative version of DB Connect for local development.
    *
-   * We need to be very conservative in updating this, since a newer version can
-   * only connect to compute of that same version and higher. If the version is
-   * deemed too old, customers can update the version themselves after initializing
-   * the template.
+   * DB Connect is only forward-compatible: a client connects to compute of the
+   * same version and higher. We keep this conservative (low) so a freshly
+   * initialized project can reach the widest range of DBR versions; a high
+   * version would rule out customers on older DBR. We use 16.4 rather than an
+   * older release because DBR 15 is no longer supported and used Python 3.11,
+   * whereas 16.4 uses Python 3.12 (matching the serverless environment and the
+   * template's Python pin). Customers can move to a newer version themselves
+   * after initializing the template.
    *
    * See https://docs.databricks.com/dev-tools/databricks-connect/python/index.html#requirements
    * for DB Connect release notes and version compatibility.
    */}}
 {{define "conservative_db_connect_version_spec" -}}
-  >=15.4,<15.5
+  >=16.4,<16.5
 {{- end}}
 
 {{/* The serverless environment version to use.
    * See https://docs.databricks.com/release-notes/runtime/index.html for available versions.
    */}}
 {{define "serverless_environment_version" -}}
-  4
+  5
 {{- end}}
 
 {{/* Python version specification for the template.
    * This needs to be compatible with the version of DB Connect and the serverless_environment_version.
    *
-   * Serverless environment version 4 (and upcoming v5), DBR 16, and DBR 17 all use Python 3.12.
-   * DB Connect 15 supports all of these and is compatible with Python 3.10-3.12.
-   *
-   * We use >=3.10,<3.13 rather than pinning to 3.12 specifically because overly narrow pinning
-   * means users always need to use uv or similar tools to install the exact version. A broader
-   * range improves usability while maintaining compatibility with both DB Connect and serverless.
+   * Serverless environment versions 4 and 5, DBR 16, and DBR 17 all use Python 3.12.
+   * DB Connect 16.4 requires Python 3.12, so we pin the project to 3.12 to match both
+   * DB Connect and the serverless runtime.
    */}}
 {{define "python_version_spec" -}}
-  >=3.10,<3.13
+  >=3.12,<3.13
 {{- end}}
 
 {{/* The default Python version used in notebook metadata.
@@ -47,4 +47,4 @@
   3.12
 {{- end}}
 
-{{define "latest_databricks_bundles_version" -}}0.286.0{{- end}}
+{{define "latest_databricks_bundles_version" -}}1.14.0{{- end}}

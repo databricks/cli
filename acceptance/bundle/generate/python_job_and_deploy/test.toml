@@ -1,0 +1,11 @@
+Cloud = true
+
+Ignore = [
+    "databricks.yml",
+    "resources/*",
+    "src/*",
+    ".databricks",
+]
+
+# MSYS2 automatically converts absolute paths on Windows; disable for the workspace path.
+Env.MSYS_NO_PATHCONV = "1"

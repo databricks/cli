@@ -1,9 +1,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created alerts.myalert
+Created alerts.myalert.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] alerts-v2 get-alert [ALERT_ID]
 {
@@ -23,7 +24,7 @@ Deployment complete!
     },
     "threshold": {
       "value": {
-        "double_value": 2
+        "double_value": 1.3
       }
     }
   },
@@ -58,14 +59,12 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted
 
 >>> [CLI] alerts-v2 get-alert [ALERT_ID]
-{
-  "display_name": "My alert",
-  "lifecycle_state": "DELETED"
-}
+Error: Alert with ID '[ALERT_ID]' does not exist.
+
+Exit code: 1
 
 >>> [CLI] bundle summary
 Name: alerts-basic-[UNIQUE_NAME]

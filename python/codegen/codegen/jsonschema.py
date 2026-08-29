@@ -1,14 +1,22 @@
 import json
-from pathlib import Path
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 from typing import Optional
 
 import codegen.packages as packages
 
 
-class Stage:
-    PRIVATE = "PRIVATE"
+class LaunchStage:
+    # Mirrors clijson.LaunchStage in the Go code. jsonschema.json only carries
+    # x-databricks-launch-stage for private-preview fields (the Go schema
+    # generator emits it only there, to mark them experimental and exclude them
+    # from the generated documentation), but the full set is mirrored here for
+    # completeness.
+    GA = "GA"
+    PUBLIC_PREVIEW = "PUBLIC_PREVIEW"
+    PUBLIC_BETA = "PUBLIC_BETA"
+    PRIVATE_PREVIEW = "PRIVATE_PREVIEW"
 
 
 @dataclass
@@ -101,7 +109,7 @@ def _parse_schema(schema: dict) -> Schema:
             ref=v["$ref"],
             description=v.get("description"),
             deprecated=_parse_bool(v.get("deprecated")),
-            stage=v.get("x-databricks-preview"),
+            stage=v.get("x-databricks-launch-stage"),
         )
 
         properties[k] = prop
@@ -118,7 +126,7 @@ def _parse_schema(schema: dict) -> Schema:
         required=schema.get("required", []),
         description=schema.get("description"),
         deprecated=_parse_bool(schema.get("deprecated")),
-        stage=schema.get("x-databricks-preview"),
+        stage=schema.get("x-databricks-launch-stage"),
     )
 
 
@@ -147,19 +155,54 @@ def get_schemas():
         ["$defs", "github.com", "databricks", "cli", "bundle", "config"],
     )
 
-    # we don't need all spec, only get supported types
     flat_spec = {**sdk_types_spec, **resource_types_spec}
-    flat_spec = {
-        key: value for key, value in flat_spec.items() if packages.should_load_ref(key)
-    }
+
+    # Load only types reachable from the root resources, following $refs.
+    reachable = _collect_reachable_refs(packages.RESOURCE_TYPES, flat_spec)
 
     for name, schema in flat_spec.items():
+        if name not in reachable:
+            continue
+
         try:
             output[name] = _parse_schema(schema)
         except Exception as e:
             raise ValueError(f"Failed to parse schema for {name}") from e
 
     return output
+
+
+def _refs_in_raw_schema(schema: dict) -> list[str]:
+    schema = _unwrap_variable(schema) or schema
+
+    return [
+        prop["$ref"].split("/")[-1]
+        for prop in schema.get("properties", {}).values()
+        if prop.get("$ref")
+    ]
+
+
+def _collect_reachable_refs(roots: list[str], flat_spec: dict) -> set[str]:
+    reachable: set[str] = set()
+    stack = list(roots)
+
+    while stack:
+        current = stack.pop()
+        if current in reachable:
+            continue
+
+        reachable.add(current)
+
+        schema = flat_spec.get(current)
+        if schema is None:
+            # primitives and types outside the loaded subtrees are terminal
+            continue
+
+        for ref in _refs_in_raw_schema(schema):
+            if ref not in reachable:
+                stack.append(ref)
+
+    return reachable
 
 
 def _get_spec_path(spec: dict, path: list[str]) -> dict:

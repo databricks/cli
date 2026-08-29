@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
@@ -33,7 +32,7 @@ func TestTelemetryUploadRetriesOnPartialSuccess(t *testing.T) {
 		return nil
 	})
 
-	ctx := WithNewLogger(context.Background())
+	ctx := WithNewLogger(t.Context())
 
 	Log(ctx, protos.DatabricksCliLog{
 		CliTestEvent: &protos.CliTestEvent{
@@ -83,7 +82,7 @@ func uploadRetriesFor(t *testing.T, statusCode int) {
 	t.Setenv("DATABRICKS_HOST", server.URL)
 	t.Setenv("DATABRICKS_TOKEN", "token")
 
-	ctx := WithNewLogger(context.Background())
+	ctx := WithNewLogger(t.Context())
 
 	Log(ctx, protos.DatabricksCliLog{
 		CliTestEvent: &protos.CliTestEvent{
@@ -131,7 +130,7 @@ func TestTelemetryUploadMaxRetries(t *testing.T) {
 
 	t.Setenv("DATABRICKS_HOST", server.URL)
 	t.Setenv("DATABRICKS_TOKEN", "token")
-	ctx := WithNewLogger(context.Background())
+	ctx := WithNewLogger(t.Context())
 
 	Log(ctx, protos.DatabricksCliLog{
 		CliTestEvent: &protos.CliTestEvent{
@@ -152,4 +151,15 @@ func TestTelemetryUploadMaxRetries(t *testing.T) {
 	err := Upload(ctx, protos.ExecutionContext{})
 	assert.EqualError(t, err, "failed to upload telemetry logs after three attempts")
 	assert.Equal(t, 3, count)
+}
+
+func TestLogWithoutLoggerDropsEvent(t *testing.T) {
+	// A context without a telemetry logger must not panic; the event is dropped.
+	assert.NotPanics(t, func() {
+		Log(t.Context(), protos.DatabricksCliLog{
+			CliTestEvent: &protos.CliTestEvent{
+				Name: protos.DummyCliEnumValue1,
+			},
+		})
+	})
 }

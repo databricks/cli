@@ -1,2 +1,2 @@
 trace errcode $CLI secrets list-scopes
-trace errcode $CLI secrets unknown
+trace musterr $CLI secrets unknown

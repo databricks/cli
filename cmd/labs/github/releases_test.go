@@ -1,7 +1,6 @@
 package github
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -26,7 +25,7 @@ func TestLoadsReleasesForCLI(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithApiOverride(ctx, server.URL)
 
 	r := NewReleaseCache("databricks", "cli", t.TempDir(), false)
@@ -46,7 +45,7 @@ func TestLoadsReleasesWhenOffline(t *testing.T) {
 	err := os.WriteFile(cacheFile, []byte(cache), 0o644)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	r := NewReleaseCache("databricks", "cli", cacheDir, true)
 	all, err := r.Load(ctx)
 	assert.NoError(t, err)
@@ -54,7 +53,7 @@ func TestLoadsReleasesWhenOffline(t *testing.T) {
 }
 
 func TestLoadingErrorWhenOffline(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	r := NewReleaseCache("databricks", "cli", t.TempDir(), true)
 	all, err := r.Load(ctx)
 	assert.Error(t, err)

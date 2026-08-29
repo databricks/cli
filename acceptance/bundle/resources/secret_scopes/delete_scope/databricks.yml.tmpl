@@ -1,0 +1,14 @@
+bundle:
+  name: secret-scope-basic-$UNIQUE_NAME
+
+resources:
+  secret_scopes:
+    first:
+      name: test-scope-1-$UNIQUE_NAME
+      backend_type: "DATABRICKS"
+    second: # DELETE
+      name: test-scope-2-$UNIQUE_NAME # DELETE
+      backend_type: "DATABRICKS" # DELETE
+      permissions: # DELETE
+        - user_name: $CURRENT_USER_NAME # DELETE
+          level: MANAGE # DELETE

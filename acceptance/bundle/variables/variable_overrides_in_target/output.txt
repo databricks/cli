@@ -86,3 +86,9 @@
     }
   }
 }
+
+>>> [CLI] bundle validate -o json -t override-lookup-variable-with-value
+"my-specific-cluster-id"
+
+>>> [CLI] bundle validate -o json -t override-lookup-variable-with-lookup
+"9876"

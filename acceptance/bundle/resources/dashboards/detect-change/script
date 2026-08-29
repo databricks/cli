@@ -21,16 +21,20 @@ trace cat out.summary.json
 DASHBOARD_ID=$(jq -r '.id' out.summary.json)
 
 # Capture the dashboard ID as a replacement.
-echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
+add_repl "$DASHBOARD_ID" DASHBOARD_ID
+DASHBOARD=$(retry $CLI lakeview get "$DASHBOARD_ID")
+add_repl "$(echo "$DASHBOARD" | jq -r '.etag')" ETAG_1
 
 rm out.summary.json
 title "Load the dashboard by its ID and confirm its display name: "
-$CLI lakeview get "${DASHBOARD_ID}" | jq '{display_name,page_display_name: (.serialized_dashboard | fromjson | .pages[0].displayName)}'
+echo "$DASHBOARD" | jq '{display_name,page_display_name: (.serialized_dashboard | fromjson | .pages[0].displayName)}'
 
 title "Make an out of band modification to the dashboard and confirm that it is detected:\n"
 RESOURCE_ID=$($CLI workspace get-status "${DASHBOARD_PATH}" | jq -r '.resource_id')
-DASHBOARD_JSON='{"serialized_dashboard": "{}"}'
-$CLI lakeview update "${RESOURCE_ID}" --json "${DASHBOARD_JSON}" | jq '{lifecycle_state}'
+DASHBOARD_JSON="{\"serialized_dashboard\": \"{}\", \"warehouse_id\": \"$TEST_DEFAULT_WAREHOUSE_ID\"}"
+UPDATE_RESP=$($CLI lakeview update "${RESOURCE_ID}" --json "${DASHBOARD_JSON}")
+echo "$UPDATE_RESP" | jq '{lifecycle_state}'
+add_repl "$(echo "$UPDATE_RESP" | jq -r '.etag')" ETAG_2
 
 title "Try to redeploy the bundle and confirm that the out of band modification is detected:"
 trace $CLI bundle plan

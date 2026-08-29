@@ -1,0 +1,22 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+if [ -n "$CLOUD_ENV" ]; then
+    # Unique group so parallel cloud runs don't collide; must exist for the PUT to
+    # reach the owner check rather than failing on an unknown principal.
+    export BUNDLE_VAR_grantee_group="dabs-5682-$UNIQUE_NAME"
+    $CLI groups create --display-name "$BUNDLE_VAR_grantee_group" &> /dev/null || true
+fi
+
+cleanup() {
+    uv run $UV_ARGS -q $CLI bundle destroy --auto-approve &> LOG.destroy
+    rm -fr .databricks __pycache__
+}
+trap cleanup EXIT
+
+# The Python mutator adds a CAN_RUN permission; FixPermissions then adds IS_OWNER for
+# the current user (issue #5682 - previously it did not run on Python-updated resources).
+trace uv run $UV_ARGS -q $CLI bundle validate --output json | \
+  jq ".resources.pipelines.my_pipeline.permissions | map(.level)"
+
+# With the owner present, the deploy succeeds on both engines.
+trace uv run $UV_ARGS -q $CLI bundle deploy

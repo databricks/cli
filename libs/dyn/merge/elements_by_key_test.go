@@ -49,6 +49,27 @@ func TestElementByKey(t *testing.T) {
 	)
 }
 
+func TestElementByKeyPreservesLocations(t *testing.T) {
+	loc := dyn.Location{File: "config.yml", Line: 10, Column: 5}
+	vin := dyn.V([]dyn.Value{
+		dyn.V(map[string]dyn.Value{
+			"key":   dyn.NewValue("foo", []dyn.Location{loc}),
+			"value": dyn.V(42),
+		}),
+	})
+
+	keyFunc := func(v dyn.Value) string {
+		return v.MustString()
+	}
+
+	vout, err := dyn.MapByPath(vin, dyn.EmptyPath, ElementsByKey("key", keyFunc))
+	require.NoError(t, err)
+
+	// Verify the key field retains its original location.
+	keyValue := vout.Index(0).Get("key")
+	assert.Equal(t, loc, keyValue.Location())
+}
+
 func TestElementByKeyWithOverride(t *testing.T) {
 	vin := dyn.V([]dyn.Value{
 		dyn.V(map[string]dyn.Value{

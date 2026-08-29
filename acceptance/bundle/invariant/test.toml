@@ -1,13 +1,14 @@
-Local = true
 Cloud = true
-RequiresUnityCatalog = true
+Timeout = '10m'
 
 Ignore = [
     ".databricks",
+    ".venv",
     "databricks.yml",
     "plan.json",
     "*.py",
     "*.json",
+    "*.err",
     "app",
 ]
 
@@ -20,30 +21,97 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = [
 EnvMatrix.INPUT_CONFIG = [
     "alert.yml.tmpl",
     "app.yml.tmpl",
+    "catalog.yml.tmpl",
+    "catalog_optional_fields.yml.tmpl",
     "cluster.yml.tmpl",
+    "cluster_apply_policy_default_values.yml.tmpl",
+    "cluster_policy.yml.tmpl",
     "dashboard.yml.tmpl",
+    "job_apply_policy_default_values_job_cluster.yml.tmpl",
+    "job_apply_policy_default_values_task_cluster.yml.tmpl",
+    "job_apply_policy_default_values_for_each_task.yml.tmpl",
     "database_catalog.yml.tmpl",
     "database_instance.yml.tmpl",
     "experiment.yml.tmpl",
+    "external_location.yml.tmpl",
+    "genie_space.yml.tmpl",
+    "instance_pool.yml.tmpl",
     "job.yml.tmpl",
+    "job_pydabs_10_tasks.yml.tmpl",
+    "job_pydabs_1000_tasks.yml.tmpl",
+    "job_cross_resource_ref.yml.tmpl",
+    "job_permission_ref.yml.tmpl",
+    "job_run.yml.tmpl",
+    "job_run_job_ref.yml.tmpl",
+    "job_with_depends_on.yml.tmpl",
+    "job_with_task.yml.tmpl",
     "model.yml.tmpl",
+    "model_with_permissions.yml.tmpl",
     "model_serving_endpoint.yml.tmpl",
+    "model_serving_endpoint_telemetry.yml.tmpl",
     "pipeline.yml.tmpl",
+    "pipeline_allow_duplicate_names.yml.tmpl",
+    "pipeline_apply_policy_default_values.yml.tmpl",
+    "pipeline_config_dots.yml.tmpl",
+    "postgres_branch.yml.tmpl",
+    "postgres_catalog.yml.tmpl",
+    "postgres_database.yml.tmpl",
+    "postgres_endpoint.yml.tmpl",
+    "postgres_project.yml.tmpl",
+    "postgres_role.yml.tmpl",
+    "postgres_synced_table.yml.tmpl",
     "registered_model.yml.tmpl",
     "schema.yml.tmpl",
+    "schema_empty_grants.yml.tmpl",
+    "schema_grant_ref.yml.tmpl",
+    "schema_uppercase_name.yml.tmpl",
+    "secret.yml.tmpl",
     "secret_scope.yml.tmpl",
+    "secret_scope_default_backend_type.yml.tmpl",
+    "sql_warehouse.yml.tmpl",
     "synced_database_table.yml.tmpl",
+    "vector_search_endpoint.yml.tmpl",
+    "vector_search_index.yml.tmpl",
     "volume.yml.tmpl",
+    "volume_external.yml.tmpl",
+    "volume_path_job_ref.yml.tmpl",
+    "volume_uppercase_name.yml.tmpl",
 ]
 
-[EnvMatrixExclude]
-no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
-
+EnvMatrixExclude.no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
+# job_run_job_ref sets a health rule value to 2^53+1 to exercise large-integer
+# precision in state migration. The value is out of range for the real backend,
+# so this config is local-only (the mock server stores it verbatim).
+EnvMatrixExclude.no_run_job_ref_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=job_run_job_ref.yml.tmpl"]
+# Postgres resources only work on AWS
+EnvMatrixExclude.no_postgres_project_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_project.yml.tmpl"]
+EnvMatrixExclude.no_postgres_branch_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_branch.yml.tmpl"]
+EnvMatrixExclude.no_postgres_endpoint_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_endpoint.yml.tmpl"]
+EnvMatrixExclude.no_postgres_catalog_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_catalog.yml.tmpl"]
+EnvMatrixExclude.no_postgres_synced_table_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_synced_table.yml.tmpl"]
+EnvMatrixExclude.no_postgres_role_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_role.yml.tmpl"]
+EnvMatrixExclude.no_postgres_database_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_database.yml.tmpl"]
+# Lakebase v1 (database instances/catalogs/synced tables) is not available on GCP,
+# so exclude these from all cloud runs (same as the postgres resources above).
+EnvMatrixExclude.no_database_instance_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=database_instance.yml.tmpl"]
+EnvMatrixExclude.no_database_catalog_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=database_catalog.yml.tmpl"]
+EnvMatrixExclude.no_synced_database_table_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=synced_database_table.yml.tmpl"]
+# managed_encryption_settings needs a CMK registered with the workspace, so this
+# config only runs against the mock server
+EnvMatrixExclude.no_catalog_optional_fields_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=catalog_optional_fields.yml.tmpl"]
+# External locations require actual storage credentials with cloud IAM setup
+# which are environment-specific, so we only test locally with the mock server
+EnvMatrixExclude.no_external_location_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=external_location.yml.tmpl"]
+# External volumes reference external locations; excluded from cloud for the same reason
+EnvMatrixExclude.no_external_volume_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=volume_external.yml.tmpl"]
+# Telemetry requires a real model, which cloud invariant tests do not provision.
+EnvMatrixExclude.no_model_serving_endpoint_telemetry_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=model_serving_endpoint_telemetry.yml.tmpl"]
 # Fake SQL endpoint for local tests
+
 [[Server]]
 Pattern = "POST /api/2.0/sql/statements/"
 Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
 
 [[Server]]
-Pattern = "DELETE /api/2.1/unity-catalog/tables/{name}"
+Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"
 Response.Body = '{"status": "OK"}'

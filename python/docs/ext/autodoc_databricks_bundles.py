@@ -1,20 +1,19 @@
 import inspect
 import re
 import typing
-from dataclasses import is_dataclass, fields
+from dataclasses import fields, is_dataclass
 from inspect import Signature
 from types import NoneType, UnionType
-from typing import get_origin, Union, get_args
+from typing import Union, get_args, get_origin
 
 import sphinx.util.inspect as sphinx_inspect
 from sphinx.addnodes import pending_xref
-
 from sphinx.application import Sphinx
 from sphinx.util.inspect import stringify_signature
 from sphinx.util.typing import ExtensionMetadata
 
 from databricks.bundles.core._resource_type import _ResourceType
-from databricks.bundles.core._transform import _unwrap_variable, _unwrap_optional
+from databricks.bundles.core._transform import _unwrap_optional, _unwrap_variable
 
 
 def get_arg_name(arg):
@@ -73,12 +72,12 @@ def simplify_type(type, unwrap_variable=True):
 
     origin = get_origin(type)
 
-    if origin == list:
+    if origin is list:
         arg = simplify_type(get_args(type)[0], unwrap_variable=unwrap_variable)
         arg = _unwrap_optional(arg) or arg
 
         return list[arg]
-    elif origin == dict:
+    elif origin is dict:
         arg0 = simplify_type(get_args(type)[0], unwrap_variable=unwrap_variable)
         arg1 = simplify_type(get_args(type)[1], unwrap_variable=unwrap_variable)
 
@@ -109,9 +108,10 @@ def stringify_annotation(annotation, mode: str = "fully-qualified-except-typing"
 def resolve_forward_ref(obj, sig):
     # resolve forward references, because some types are recursive
 
+    import typing_extensions
+
     import databricks.bundles.core
     import databricks.bundles.jobs._models.task
-    import typing_extensions
 
     hints = typing.get_type_hints(
         obj,
@@ -303,8 +303,8 @@ def skip_member(app, what, name, obj, skip, options):
 
 
 def setup(app: Sphinx) -> ExtensionMetadata:
-    import databricks.bundles.jobs
     import databricks.bundles.core
+    import databricks.bundles.jobs
 
     # disable support for overloads, because Sphinx doesn't handle them well
     disable_sphinx_overloads()

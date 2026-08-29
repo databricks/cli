@@ -1,0 +1,96 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  my_catalog:
+    default: main
+  # Both resolve to same value to test ambiguity (when we have multiple matches → skip)
+  landing_schema:
+    default: raw_data
+  curated_schema:
+    default: raw_data
+  # Variable with value set only in target (no default)
+  target_env:
+    description: "Environment name"
+  # Variable set via .databricks/bundle/<target>/variable-overrides.json
+  file_override_var:
+    description: "Set from variable-overrides.json"
+  # Used by job environments below. Resolves to a pip-style spec; the same
+  # spec is then targeted by both an Add (new environment_key) and a Replace
+  # (appending another dep to the existing environment).
+  my_env_dep:
+    default: nonexistent-test-pkg==1.2.3
+  # Complex variable to verify no panics
+  cluster_config:
+    type: complex
+    default:
+      node_type_id: Standard_DS3_v2
+      num_workers: 2
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-$UNIQUE_NAME
+      development: false
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook
+      # Three deps cover the compound-interpolation cases:
+      #   [0] pure ${var.X}, untouched in the test → stays as ${var.my_env_dep}
+      #   [1] compound with ${workspace.file_path} → trimmed/extended in the
+      #       script; substring substitution must preserve the variable
+      #   [2] hardcoded literal that happens to equal ${var.my_env_dep}'s
+      #       resolved value → must stay literal (no false-positive promotion)
+      environment:
+        dependencies:
+          - ${var.my_env_dep}
+          - --editable ${workspace.file_path}
+          - nonexistent-test-pkg==1.2.3
+
+  jobs:
+    my_job:
+      parameters:
+        - name: catalog
+          default: ${var.my_catalog}
+        - name: env
+          default: ${var.target_env}
+        - name: file_val
+          default: ${var.file_override_var}
+        # Bundle reference: ${bundle.target} resolves to "default".
+        - name: target_name
+          default: ${bundle.target}
+        # Both use variables that resolve to the same value ("raw_data").
+        # Tests disambiguation: original reference is preserved on Replace.
+        - name: landing
+          default: ${var.landing_schema}
+        - name: curated
+          default: ${var.curated_schema}
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+            base_parameters:
+              # Compound interpolation: mixes ${var.X} and ${bundle.X} refs.
+              source_path: /mnt/${var.my_catalog}/${bundle.target}/raw/landing
+        # Resource reference: ${resources.pipelines.my_pipeline.id} resolves to
+        # the deployed pipeline's ID. Used to test that resource refs are
+        # treated the same as other reference kinds by the sync logic.
+        - task_key: run_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.my_pipeline.id}
+            full_refresh: false
+      # Job environments use ${var.my_env_dep} via a pure variable reference.
+      # The script adds a separate environments entry and modifies the existing
+      # one to verify the variable survives both code paths.
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "4"
+            dependencies:
+              - ${var.my_env_dep}
+
+targets:
+  default:
+    mode: development
+    variables:
+      target_env: production

@@ -7,9 +7,10 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.job_with_permissions
+Created jobs.job_with_permissions.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -20,38 +21,38 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_VIEW"
+          "inherited": false,
+          "permission_level": "CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
-      "user_name":"viewer@example.com"
+      "display_name": "viewer@example.com",
+      "user_name": "viewer@example.com"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     },
     {
       "all_permissions": [
         {
-          "inherited":true,
+          "inherited": true,
           "inherited_from_object": [
             "/jobs/"
           ],
-          "permission_level":"CAN_MANAGE"
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admins"
+      "group_name": "admins"
     }
   ],
-  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
-  "object_type":"job"
+  "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+  "object_type": "job"
 }
 
 === Add permissions out of band
@@ -61,47 +62,47 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_VIEW"
+          "inherited": false,
+          "permission_level": "CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
-      "user_name":"viewer@example.com"
+      "display_name": "viewer@example.com",
+      "user_name": "viewer@example.com"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_MANAGE"
+          "inherited": false,
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admin-team"
+      "group_name": "admin-team"
     },
     {
       "all_permissions": [
         {
-          "inherited":true,
+          "inherited": true,
           "inherited_from_object": [
             "/jobs/"
           ],
-          "permission_level":"CAN_MANAGE"
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admins"
+      "group_name": "admins"
     }
   ],
-  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
-  "object_type":"job"
+  "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+  "object_type": "job"
 }
 
 >>> [CLI] bundle plan
@@ -113,9 +114,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated jobs.job_with_permissions.permissions
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -126,36 +127,36 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_VIEW"
+          "inherited": false,
+          "permission_level": "CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
-      "user_name":"viewer@example.com"
+      "display_name": "viewer@example.com",
+      "user_name": "viewer@example.com"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     },
     {
       "all_permissions": [
         {
-          "inherited":true,
+          "inherited": true,
           "inherited_from_object": [
             "/jobs/"
           ],
-          "permission_level":"CAN_MANAGE"
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admins"
+      "group_name": "admins"
     }
   ],
-  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
-  "object_type":"job"
+  "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+  "object_type": "job"
 }

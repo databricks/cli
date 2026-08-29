@@ -1,0 +1,24 @@
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Env.DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
+# A task whose bound serverless environment records no version cannot be resolved:
+# the job-task path reads the version directly and never falls back to a default
+# (the serverless-vN fallback applies only to the bundle-target path). Fails at
+# resolve (E_RESOLVE); nothing is fetched.
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/get"
+Response.Body = '''
+{
+  "job_id": 12345,
+  "settings": {
+    "name": "serverless-job-unpinned",
+    "tasks": [
+      {"task_key": "transform", "environment_key": "default"}
+    ],
+    "environments": [
+      {"environment_key": "default", "spec": {}}
+    ]
+  }
+}
+'''

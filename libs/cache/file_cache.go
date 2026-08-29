@@ -2,7 +2,9 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
@@ -93,6 +95,12 @@ func (fc *fileCache) cleanupExpiredFiles(ctx context.Context) {
 	}
 }
 
+// BaseDir returns the root directory of the file cache: DATABRICKS_CACHE_DIR
+// when set, otherwise the user cache dir. It does not create the directory.
+func BaseDir(ctx context.Context) (string, error) {
+	return getCacheBaseDir(ctx)
+}
+
 func getCacheBaseDir(ctx context.Context) (string, error) {
 	// Check if user has configured a custom cache directory
 	if customCacheDir := env.Get(ctx, "DATABRICKS_CACHE_DIR"); customCacheDir != "" {
@@ -141,6 +149,34 @@ func NewCache(ctx context.Context, component string, expiry time.Duration, metri
 		fc.cacheEnabled = true
 	}
 	return &Cache{impl: fc}
+}
+
+func (fc *fileCache) putJSON(ctx context.Context, fingerprint any, data []byte) {
+	if !fc.cacheEnabled {
+		return
+	}
+	cacheKey, err := fingerprintToHash(fingerprint)
+	if err != nil {
+		log.Debugf(ctx, "[Local Cache] failed to generate cache key for put: %v", err)
+		return
+	}
+	fc.mu.Lock()
+	defer fc.mu.Unlock()
+	fc.writeToCacheJSON(ctx, fc.getCachePath(cacheKey), data)
+}
+
+func (fc *fileCache) getJSON(ctx context.Context, fingerprint any) ([]byte, bool) {
+	if !fc.cacheEnabled {
+		return nil, false
+	}
+	cacheKey, err := fingerprintToHash(fingerprint)
+	if err != nil {
+		log.Debugf(ctx, "[Local Cache] failed to generate cache key: %v", err)
+		return nil, false
+	}
+	fc.mu.Lock()
+	defer fc.mu.Unlock()
+	return fc.readFromCacheJSON(ctx, fc.getCachePath(cacheKey))
 }
 
 func (fc *fileCache) addTelemetryMetric(key string) {
@@ -217,7 +253,13 @@ func (fc *fileCache) readFromCacheJSON(ctx context.Context, cachePath string) ([
 	// Check file modification time for expiry
 	info, err := os.Stat(cachePath)
 	if err != nil {
-		log.Debugf(ctx, "[Local Cache] failed to stat cache file: %v", err)
+		// ErrNotExist is the common miss case; logging it adds noise and
+		// diverges across OSes (Unix: "no such file or directory";
+		// Windows: "The system cannot find the file specified."). The
+		// follow-up "cache miss, computing" line already captures it.
+		if !errors.Is(err, fs.ErrNotExist) {
+			log.Debugf(ctx, "[Local Cache] failed to stat cache file: %v", err)
+		}
 		return nil, false
 	}
 

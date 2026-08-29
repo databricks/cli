@@ -1,0 +1,29 @@
+# A failed plan must not leave a write-ahead log behind, so repeated planning
+# failures never block a later, healthy deploy. Previously a failed plan still
+# opened the WAL for write (UpgradeToWrite) and returned without finalizing,
+# leaving a header-only WAL; after two failures the WAL serial drifted two ahead
+# of the committed serial and every later command failed WAL recovery until the
+# WAL was deleted by hand.
+#
+# A first deploy creates the job normally. An injected fault then makes the next
+# two deploys fail while planning (planning refreshes the existing job via
+# jobs/get). The final deploy, with the fault expired, must recover and succeed.
+# A non-retried 403 is used so the failure is immediate; a 5xx would be retried
+# with backoff.
+
+title "Deploy 1 (normal: creates the job and the committed state)"
+trace $CLI bundle deploy
+
+# Fail the plan-stage refresh GET for the next two deploys only.
+fault.py "GET /api/2.2/jobs/get" 403 0 2
+
+title "Deploy 2 (planning fails, must not leave a WAL)"
+trace errcode $CLI bundle deploy
+trace assert_not_exists.py .databricks/bundle/default/resources.json.wal
+
+title "Deploy 3 (planning fails again, must not leave a WAL)"
+trace errcode $CLI bundle deploy
+trace assert_not_exists.py .databricks/bundle/default/resources.json.wal
+
+title "Deploy 4 (fault expired: recovers and succeeds)"
+trace $CLI bundle deploy

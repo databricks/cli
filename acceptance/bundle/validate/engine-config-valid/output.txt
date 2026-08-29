@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle validate
+Name: test-engine-config-valid
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-engine-config-valid/default
+
+Validation OK!
+
+>>> [CLI] bundle validate -t terraform-target
+Warning: the terraform deployment engine is deprecated and will stop working in a future version of the CLI
+  in databricks.yml:10:15
+
+See https://docs.databricks.com/aws/en/dev-tools/bundles/direct for how to migrate to the direct deployment engine
+
+Name: test-engine-config-valid
+Target: terraform-target
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-engine-config-valid/terraform-target
+
+Found 1 warning

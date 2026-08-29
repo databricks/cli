@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+
+	"github.com/databricks/cli/libs/env"
 )
 
 const NODE_DEBUG_PORT = "9229"
@@ -14,36 +16,34 @@ type PackageJson struct {
 }
 
 type NodeApp struct {
-	ctx         context.Context
 	config      *Config
 	spec        *AppSpec
 	packageJson *PackageJson
 }
 
-func NewNodeApp(ctx context.Context, config *Config, spec *AppSpec, packageJson *PackageJson) *NodeApp {
+func NewNodeApp(config *Config, spec *AppSpec, packageJson *PackageJson) *NodeApp {
 	if config.DebugPort == "" {
 		config.DebugPort = NODE_DEBUG_PORT
 	}
 
 	return &NodeApp{
-		ctx:         ctx,
 		config:      config,
 		spec:        spec,
 		packageJson: packageJson,
 	}
 }
 
-func (n *NodeApp) PrepareEnvironment() error {
+func (n *NodeApp) PrepareEnvironment(ctx context.Context) error {
 	// Install dependencies
 	installArgs := []string{"npm", "install"}
-	if err := runCommand(n.ctx, n.config.AppPath, installArgs); err != nil {
+	if err := runCommand(ctx, n.config.AppPath, installArgs); err != nil {
 		return err
 	}
 
 	// Run build script if it exists
 	if _, ok := n.packageJson.Scripts["build"]; ok {
 		buildArgs := []string{"npm", "run", "build"}
-		if err := runCommand(n.ctx, n.config.AppPath, buildArgs); err != nil {
+		if err := runCommand(ctx, n.config.AppPath, buildArgs); err != nil {
 			return err
 		}
 	}
@@ -51,27 +51,27 @@ func (n *NodeApp) PrepareEnvironment() error {
 	return nil
 }
 
-func (n *NodeApp) GetCommand(debug bool) ([]string, error) {
+func (n *NodeApp) GetCommand(ctx context.Context, debug bool) ([]string, []string, error) {
+	var cmdEnv []string
 	if debug {
-		n.enableDebugging()
+		cmdEnv = n.enableDebugging(ctx)
 	}
 
 	if n.spec.Command == nil {
-		return []string{"npm", "run", "start"}, nil
+		return []string{"npm", "run", "start"}, cmdEnv, nil
 	}
 
-	return n.spec.Command, nil
+	return n.spec.Command, cmdEnv, nil
 }
 
-func (n *NodeApp) enableDebugging() {
-	// Set NODE_OPTIONS environment variable to enable debugging
-	// This will make Node.js listen for debugger connections on the debug port
-	if os.Getenv("NODE_OPTIONS") == "" {
-		os.Setenv("NODE_OPTIONS", "--inspect="+n.config.DebugPort)
-	} else {
-		// If NODE_OPTIONS already exists, append the inspect flag
-		os.Setenv("NODE_OPTIONS", os.Getenv("NODE_OPTIONS")+" --inspect="+n.config.DebugPort)
+// enableDebugging returns environment variables that enable Node.js debugging.
+func (n *NodeApp) enableDebugging(ctx context.Context) []string {
+	nodeOpts := env.Get(ctx, "NODE_OPTIONS")
+	if nodeOpts != "" {
+		nodeOpts += " "
 	}
+	nodeOpts += "--inspect=" + n.config.DebugPort
+	return []string{"NODE_OPTIONS=" + nodeOpts}
 }
 
 func readPackageJson(packageJsonPath string) (*PackageJson, error) {

@@ -18,8 +18,8 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/logger"
-	"github.com/fatih/color"
 
 	"github.com/databricks/cli/libs/python"
 
@@ -104,6 +104,7 @@ type runPythonMutatorOpts struct {
 	bundleRootPath string
 	pythonPath     string
 	loadLocations  bool
+	authEnv        map[string]string
 }
 
 // getOpts adapts deprecated PyDABs and upcoming Python configuration
@@ -217,6 +218,15 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return diag.Errorf("Running Python code is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set")
 	}
 
+	// Propagate auth env so the Databricks SDK in the Python subprocess uses the
+	// same credentials as the CLI. In particular this carries DATABRICKS_CONFIG_PROFILE,
+	// which lets the CLI disambiguate profiles sharing the same host when the SDK
+	// re-invokes `databricks auth token --host <host>`.
+	authEnv, err := b.AuthEnv(ctx)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
 	var mutateDiags diag.Diagnostics
 	var result applyPythonOutputResult
@@ -228,16 +238,18 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, fmt.Errorf("failed to get Python interpreter path: %w", err)
 		}
 
-		cacheDir, err := createCacheDir(ctx)
+		cacheDir, cleanup, err := createCacheDir(ctx)
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("failed to create cache dir: %w", err)
 		}
+		defer cleanup()
 
 		rightRoot, diags := m.runPythonMutator(ctx, leftRoot, runPythonMutatorOpts{
 			cacheDir:       cacheDir,
 			bundleRootPath: b.BundleRootPath,
 			pythonPath:     pythonPath,
 			loadLocations:  opts.loadLocations,
+			authEnv:        authEnv,
 		})
 		mutateDiags = diags
 		if diags.HasError() {
@@ -304,7 +316,8 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	return mutateDiags
 }
 
-func createCacheDir(ctx context.Context) (string, error) {
+// createCacheDir returns the directory for input/output files of the Python subprocess, and a cleanup function.
+func createCacheDir(ctx context.Context) (string, func(), error) {
 	// b.LocalStateDir doesn't work because target isn't yet selected
 
 	// support the same env variable as in b.LocalStateDir
@@ -314,13 +327,20 @@ func createCacheDir(ctx context.Context) (string, error) {
 
 		err := os.MkdirAll(cacheDir, 0o700)
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 
-		return cacheDir, nil
+		// the user picked this location explicitly, keep the files for inspection
+		return cacheDir, func() {}, nil
 	}
 
-	return os.MkdirTemp("", "-python")
+	cacheDir, err := os.MkdirTemp("", "-python")
+	if err != nil {
+		return "", nil, err
+	}
+
+	// input.json contains the full serialized bundle configuration; don't leave it behind in the system temp dir
+	return cacheDir, func() { _ = os.RemoveAll(cacheDir) }, nil
 }
 
 func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, opts runPythonMutatorOpts) (dyn.Value, diag.Diagnostics) {
@@ -364,6 +384,7 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, op
 		process.WithDir(opts.bundleRootPath),
 		process.WithStderrWriter(stderrWriter),
 		process.WithStdoutWriter(stdoutWriter),
+		process.WithEnvs(opts.authEnv),
 	)
 	if processErr != nil {
 		logger.Debugf(ctx, "python mutator process failed: %s", processErr)
@@ -386,7 +407,7 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, op
 		diagnostic := diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  fmt.Sprintf("python mutator process failed: %q, use --debug to enable logging", processErr),
-			Detail:   explainProcessErr(stderrBuf.String()),
+			Detail:   explainProcessErr(ctx, stderrBuf.String()),
 		}
 
 		return dyn.InvalidValue, diag.Diagnostics{diagnostic}
@@ -424,10 +445,10 @@ or activate the environment before running CLI commands:
 // explainProcessErr provides additional explanation for common errors.
 // It's meant to be the best effort, and not all errors are covered.
 // Output should be used only used for error reporting.
-func explainProcessErr(stderr string) string {
+func explainProcessErr(ctx context.Context, stderr string) string {
 	// implemented in cpython/Lib/runpy.py and portable across Python 3.x, including pypy
 	if strings.Contains(stderr, "Error while finding module specification for 'databricks.bundles.build'") {
-		summary := color.CyanString("Explanation: ") + "'databricks-bundles' library is not installed in the Python environment.\n"
+		summary := cmdio.Cyan(ctx, "Explanation: ") + "'databricks-bundles' library is not installed in the Python environment.\n"
 
 		return stderr + "\n" + summary + "\n" + pythonInstallExplanation
 	}

@@ -1,12 +1,13 @@
 package filer
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"io"
 	"io/fs"
 	"path"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/fakefs"
@@ -54,7 +55,7 @@ func (f *FakeFiler) ReadDir(ctx context.Context, p string) ([]fs.DirEntry, error
 		out = append(out, fakefs.DirEntry{FileInfo: v})
 	}
 
-	sort.Slice(out, func(i, j int) bool { return out[i].Name() < out[j].Name() })
+	slices.SortFunc(out, func(a, b fs.DirEntry) int { return cmp.Compare(a.Name(), b.Name()) })
 	return out, nil
 }
 

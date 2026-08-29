@@ -1,7 +1,6 @@
 package env
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -9,7 +8,7 @@ import (
 )
 
 func TestRoot(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testutil.CleanupEnvironment(t)
 
@@ -38,6 +37,6 @@ func TestRoot(t *testing.T) {
 	t.Run("not set", func(t *testing.T) {
 		root, ok := Root(ctx)
 		assert.False(t, ok)
-		assert.Equal(t, "", root)
+		assert.Empty(t, root)
 	})
 }

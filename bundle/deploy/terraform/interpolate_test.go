@@ -1,7 +1,6 @@
 package terraform
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -61,7 +60,7 @@ func TestInterpolate(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, Interpolate())
+	diags := bundle.Apply(t.Context(), b, Interpolate())
 	require.NoError(t, diags.Error())
 
 	j := b.Config.Resources.Jobs["my_job"]
@@ -82,6 +81,39 @@ func TestInterpolate(t *testing.T) {
 	assert.Equal(t, "my_model", m.Name)
 }
 
+func TestInterpolatePostgresResourcesMapIdToName(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"my_job": {
+						JobSettings: jobs.JobSettings{
+							Tags: map[string]string{
+								"postgres_project_id":  "${resources.postgres_projects.my_project.id}",
+								"postgres_branch_id":   "${resources.postgres_branches.my_branch.id}",
+								"postgres_endpoint_id": "${resources.postgres_endpoints.my_endpoint.id}",
+								// name attribute should not be changed
+								"postgres_project_name": "${resources.postgres_projects.my_project.name}",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, Interpolate())
+	require.NoError(t, diags.Error())
+
+	j := b.Config.Resources.Jobs["my_job"]
+	// .id should be mapped to .name for postgres resources (resource path format)
+	assert.Equal(t, "${databricks_postgres_project.my_project.name}", j.Tags["postgres_project_id"])
+	assert.Equal(t, "${databricks_postgres_branch.my_branch.name}", j.Tags["postgres_branch_id"])
+	assert.Equal(t, "${databricks_postgres_endpoint.my_endpoint.name}", j.Tags["postgres_endpoint_id"])
+	// .name reference should also remain .name
+	assert.Equal(t, "${databricks_postgres_project.my_project.name}", j.Tags["postgres_project_name"])
+}
+
 func TestInterpolateUnknownResourceType(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -99,6 +131,6 @@ func TestInterpolateUnknownResourceType(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, Interpolate())
+	diags := bundle.Apply(t.Context(), b, Interpolate())
 	assert.ErrorContains(t, diags.Error(), `reference does not exist: ${resources.unknown.other_unknown.id}`)
 }

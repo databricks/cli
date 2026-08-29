@@ -1,0 +1,6 @@
+title "validate from the bundle root"
+trace $CLI bundle validate -o json | jq .resources.alerts.myalert
+
+title "validate from a subdirectory of the bundle"
+cd resources
+trace $CLI bundle validate -o json | jq .resources.alerts.myalert

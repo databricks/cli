@@ -23,7 +23,7 @@ func (m *applyTargetMode) Name() string {
 }
 
 // Mark all resources as being for 'development' purposes, i.e.
-// changing their their name, adding tags, and (in the future)
+// changing their name, adding tags, and (in the future)
 // marking them as 'hidden' in the UI.
 func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 	if !b.Config.Bundle.Deployment.Lock.IsExplicitlyEnabled() {

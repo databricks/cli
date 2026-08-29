@@ -1,0 +1,5 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "name": "multi-profile-auto-select"
+}

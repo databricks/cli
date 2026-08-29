@@ -1,0 +1,18 @@
+
+=== Initial settings section
+[__settings__]
+default_profile = workspace-a
+
+=== Delete the default profile
+>>> [CLI] auth logout --profile workspace-a --auto-approve --delete
+Deleted profile "workspace-a" with no tokens to clear.
+
+=== Settings after deleting default — default_profile should be cleared
+[__settings__]
+
+=== Delete a non-default profile
+>>> [CLI] auth logout --profile workspace-b --auto-approve --delete
+Deleted profile "workspace-b" with no tokens to clear.
+
+=== Settings after deleting non-default — section should still be present but empty
+[__settings__]

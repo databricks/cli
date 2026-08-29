@@ -1,7 +1,6 @@
 package resourcemutator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
@@ -51,7 +50,7 @@ func TestOverrideComputeModeDevelopment(t *testing.T) {
 	}
 
 	m := resourcemutator.OverrideCompute()
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.Apply(t.Context(), b, m)
 	require.NoError(t, diags.Error())
 	assert.Nil(t, b.Config.Resources.Jobs["job1"].Tasks[0].NewCluster)
 	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
@@ -90,7 +89,7 @@ func TestOverrideComputeModeDefaultIgnoresVariable(t *testing.T) {
 	}
 
 	m := resourcemutator.OverrideCompute()
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.Apply(t.Context(), b, m)
 	require.Len(t, diags, 1)
 	assert.Equal(t, "The DATABRICKS_CLUSTER_ID variable is set but is ignored since the current target does not use 'mode: development'", diags[0].Summary)
 	assert.Equal(t, "cluster2", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
@@ -116,7 +115,7 @@ func TestOverrideComputePipelineTask(t *testing.T) {
 	}
 
 	m := resourcemutator.OverrideCompute()
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.Apply(t.Context(), b, m)
 	require.NoError(t, diags.Error())
 	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
 }
@@ -141,7 +140,7 @@ func TestOverrideComputeForEachTask(t *testing.T) {
 	}
 
 	m := resourcemutator.OverrideCompute()
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.Apply(t.Context(), b, m)
 	require.NoError(t, diags.Error())
 	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[0].ForEachTask.Task)
 }
@@ -172,7 +171,7 @@ func TestOverrideComputeModeProduction(t *testing.T) {
 	}
 
 	m := resourcemutator.OverrideCompute()
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.Apply(t.Context(), b, m)
 	require.Len(t, diags, 1)
 	assert.Equal(t, "Setting a cluster override for a target that uses 'mode: production' is not recommended", diags[0].Summary)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
@@ -205,7 +204,7 @@ func TestOverrideComputeModeProductionIgnoresVariable(t *testing.T) {
 	}
 
 	m := resourcemutator.OverrideCompute()
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.Apply(t.Context(), b, m)
 	require.Len(t, diags, 1)
 	assert.Equal(t, "The DATABRICKS_CLUSTER_ID variable is set but is ignored since the current target does not use 'mode: development'", diags[0].Summary)
 	assert.Equal(t, "cluster2", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)

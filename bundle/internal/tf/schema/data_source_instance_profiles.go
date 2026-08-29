@@ -10,7 +10,7 @@ type DataSourceInstanceProfilesInstanceProfiles struct {
 }
 
 type DataSourceInstanceProfilesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceInstanceProfiles struct {

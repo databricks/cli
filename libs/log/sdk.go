@@ -37,9 +37,6 @@ func (s slogAdapter) log(ctx context.Context, logger *slog.Logger, level slog.Le
 	runtime.Callers(4, pcs[:])
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	r.AddAttrs(slog.Bool("sdk", true))
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	_ = logger.Handler().Handle(ctx, r)
 }
 

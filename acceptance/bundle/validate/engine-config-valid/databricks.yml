@@ -1,0 +1,10 @@
+bundle:
+  name: test-engine-config-valid
+  engine: direct
+
+targets:
+  default:
+    default: true
+  terraform-target:
+    bundle:
+      engine: terraform

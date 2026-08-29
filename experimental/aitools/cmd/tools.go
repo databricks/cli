@@ -1,7 +1,6 @@
-package mcp
+package aitools
 
 import (
-	"github.com/databricks/cli/experimental/aitools/cmd/init_template"
 	"github.com/spf13/cobra"
 )
 
@@ -15,10 +14,8 @@ func newToolsCmd() *cobra.Command {
 
 	cmd.AddCommand(newQueryCmd())
 	cmd.AddCommand(newDiscoverSchemaCmd())
-	cmd.AddCommand(init_template.NewInitTemplateCommand())
-	cmd.AddCommand(newValidateCmd())
-	cmd.AddCommand(newDeployCmd())
 	cmd.AddCommand(newGetDefaultWarehouseCmd())
+	cmd.AddCommand(newStatementCmd())
 
 	return cmd
 }

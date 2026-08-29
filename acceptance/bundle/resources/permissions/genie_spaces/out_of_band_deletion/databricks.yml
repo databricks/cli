@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+resources:
+  genie_spaces:
+    foo:
+      title: "Out Of Band Deletion"
+      warehouse_id: test-warehouse-id
+      parent_path: /Workspace/Users/tester@databricks.com
+      serialized_space:
+        version: 1
+      permissions:
+        - level: CAN_MANAGE
+          user_name: tester@databricks.com
+        - level: CAN_READ
+          group_name: data-team

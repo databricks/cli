@@ -1,3 +1,0 @@
-#!/bin/bash
-$CLI experimental aitools tools init-template empty --name test_empty --catalog main --output-dir output 2>&1 | grep -A 9999 "^--$"
-rm -rf output

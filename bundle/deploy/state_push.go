@@ -19,7 +19,7 @@ func (s *statePush) Name() string {
 }
 
 func (s *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	f, err := s.filerFactory(b)
+	f, err := s.filerFactory(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}

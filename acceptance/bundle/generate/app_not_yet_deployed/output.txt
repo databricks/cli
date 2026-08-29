@@ -1,19 +1,32 @@
 
->>> [CLI] apps create my-app
+>>> [CLI] apps create my-app --no-compute --no-wait
 {
   "app_status": {
-    "message":"Application is running.",
-    "state":"RUNNING"
+    "message": "App status is unavailable.",
+    "state": "UNAVAILABLE"
   },
+  "compute_size": "MEDIUM",
   "compute_status": {
-    "message":"App compute is active.",
-    "state":"ACTIVE"
+    "message": "App compute is stopped.",
+    "state": "STOPPED"
   },
-  "id":"1000",
-  "name":"my-app",
-  "url":"my-app-123.cloud.databricksapps.com"
+  "forward_user_access_token": true,
+  "id": "1000",
+  "name": "my-app",
+  "service_principal_client_id": "[UUID]",
+  "service_principal_id": [NUMID],
+  "service_principal_name": "app-my-app",
+  "url": "my-app-123.cloud.databricksapps.com"
 }
 
 >>> [CLI] bundle generate app --existing-app-name my-app --config-dir . --key out
 Loading app 'my-app' configuration
 App configuration successfully saved to out.app.yml
+Warning: Generated configuration is not included in the bundle
+
+The file out.app.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - *.yml
+

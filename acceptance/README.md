@@ -1,6 +1,21 @@
 Acceptance tests are blackbox tests that are run against compiled binary.
 
-Currently these tests are run against "fake" HTTP server pretending to be Databricks API. However, they will be extended to run against real environment as regular integration tests.
+## Where tests run
+
+**Every test runs locally**, against a "fake" HTTP server pretending to be Databricks API (`libs/testserver`). This is what `./task test` does and it covers the whole `acceptance` tree.
+
+A test can *additionally* opt into running against a real workspace by setting `Cloud = true` in its `test.toml`. That is an extra run, not a different one: `Cloud = true` never means "this test does not run locally". Related settings:
+
+- `CloudSlow = true` only narrows a `Cloud = true` test: its cloud run is skipped when `-short` is passed. On its own (without `Cloud = true`) it does not enable the cloud run.
+- `CloudEnvs` only narrows the cloud run further. It is ignored locally.
+- `Cloud` is inherited from parent `test.toml` files, so a whole subtree can be opted in at once. The root `acceptance/test.toml` defaults it to `Cloud = false`, i.e. local only.
+- Each test's effective settings are visible in its generated `out.test.toml`.
+
+The cloud run is keyed off `CLOUD_ENV`; see `getSkipReason` in `acceptance/acceptance_test.go` for the exact gating. What skips a test *locally* is a different set of settings entirely: `GOOS`, `RunsOnDbr`, and `DATABRICKS_TEST_SKIPLOCAL` (used by cloud CI runs to skip tests that already ran locally).
+
+To run tests against a real workspace: `deco env run -i -n aws-prod-ucws -- <go test command>` (requires the `deco` tool and access to a test env).
+
+## Authoring
 
 To author a test,
  - Add a new directory under `acceptance`. Any level of nesting is supported.
@@ -15,8 +30,12 @@ The scripts are run with `bash -e` so any errors will be propagated. They are ca
 
 For more complex tests one can also use:
 - `errcode` helper: if the command fails with non-zero code, it appends `Exit code: N` to the output but returns success to caller (bash), allowing continuation of script.
+- `musterr` helper: runs the command and fails the test if it *succeeds*; on the expected failure the script continues. Use it to assert a command must error.
 - `trace` helper: prints the arguments before executing the command.
+- `title` helper: prints a `=== <text>` section header to label a phase of the script.
 - custom output files: redirect output to custom file (it must start with `out`), e.g. `$CLI bundle validate > out.txt 2> out.error.txt`.
+
+The complete set of shell helpers (the above plus `withdir`, `git-repo-init`, `uuid`, `sethome`, and others) is defined in `acceptance/script.prepare`.
 
 Any file starting with "LOG" will be logged to test log (visible with go test -v).
 

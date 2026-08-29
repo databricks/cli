@@ -1,7 +1,6 @@
 package cmdctx
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -10,7 +9,7 @@ import (
 )
 
 func TestCommandAccountClient(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	client := &databricks.AccountClient{
 		Config: &config.Config{
 			AccountID: "test-account",
@@ -22,7 +21,7 @@ func TestCommandAccountClient(t *testing.T) {
 		AccountClient(ctx)
 	})
 
-	ctx = SetAccountClient(context.Background(), client)
+	ctx = SetAccountClient(t.Context(), client)
 
 	// Multiple calls should return a pointer to the same client.
 	a := AccountClient(ctx)

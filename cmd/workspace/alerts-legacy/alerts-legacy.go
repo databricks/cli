@@ -3,7 +3,7 @@
 package alerts_legacy
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -20,8 +20,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "alerts-legacy",
-		Short: `The alerts API can be used to perform CRUD operations on alerts.`,
-		Long: `The alerts API can be used to perform CRUD operations on alerts. An alert is a
+		Short: `*Public Preview* The alerts API can be used to perform CRUD operations on alerts.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+The alerts API can be used to perform CRUD operations on alerts. An alert is a
   Databricks SQL object that periodically runs a query, evaluates a condition of
   its result, and notifies one or more users and/or notification destinations if
   the condition was met. Alerts can be scheduled using the sql_task type of
@@ -34,6 +36,10 @@ func New() *cobra.Command {
 		GroupID: "sql",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -71,8 +77,10 @@ func newCreate() *cobra.Command {
 	cmd.Flags().IntVar(&createReq.Rearm, "rearm", createReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
 
 	cmd.Use = "create"
-	cmd.Short = `Create an alert.`
-	cmd.Long = `Create an alert.
+	cmd.Short = `*Public Preview* Create an alert.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create an alert.
 
   Creates an alert. An alert is a Databricks SQL object that periodically runs a
   query, evaluates a condition of its result, and notifies users or notification
@@ -84,6 +92,8 @@ func newCreate() *cobra.Command {
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -96,19 +106,20 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.AlertsLegacy.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -139,8 +150,10 @@ func newDelete() *cobra.Command {
 	var deleteReq sql.DeleteAlertsLegacyRequest
 
 	cmd.Use = "delete ALERT_ID"
-	cmd.Short = `Delete an alert.`
-	cmd.Long = `Delete an alert.
+	cmd.Short = `*Public Preview* Delete an alert.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete an alert.
 
   Deletes an alert. Deleted alerts are no longer accessible and cannot be
   restored. **Note**: Unlike queries and dashboards, alerts cannot be moved to
@@ -152,6 +165,8 @@ func newDelete() *cobra.Command {
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -199,8 +214,10 @@ func newGet() *cobra.Command {
 	var getReq sql.GetAlertsLegacyRequest
 
 	cmd.Use = "get ALERT_ID"
-	cmd.Short = `Get an alert.`
-	cmd.Long = `Get an alert.
+	cmd.Short = `*Public Preview* Get an alert.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get an alert.
 
   Gets an alert.
 
@@ -210,6 +227,8 @@ func newGet() *cobra.Command {
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -227,6 +246,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -254,8 +274,10 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "list"
-	cmd.Short = `Get alerts.`
-	cmd.Long = `Get alerts.
+	cmd.Short = `*Public Preview* Get alerts.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get alerts.
 
   Gets a list of alerts.
 
@@ -265,6 +287,8 @@ func newList() *cobra.Command {
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -274,6 +298,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -309,8 +334,10 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().IntVar(&updateReq.Rearm, "rearm", updateReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
 
 	cmd.Use = "update ALERT_ID"
-	cmd.Short = `Update an alert.`
-	cmd.Long = `Update an alert.
+	cmd.Short = `*Public Preview* Update an alert.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update an alert.
 
   Updates an alert.
 
@@ -320,6 +347,8 @@ func newUpdate() *cobra.Command {
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -337,13 +366,13 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.AlertId = args[0]
 

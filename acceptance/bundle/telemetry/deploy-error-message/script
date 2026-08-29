@@ -1,0 +1,5 @@
+errcode trace $CLI bundle deploy
+
+trace cat out.requests.txt | jq -r 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.error_message'
+
+rm out.requests.txt

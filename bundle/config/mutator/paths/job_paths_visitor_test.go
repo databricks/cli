@@ -49,6 +49,18 @@ func TestVisitJobPaths(t *testing.T) {
 			{Requirements: "requirements.txt"},
 		},
 	}
+	task7 := jobs.Task{
+		AlertTask: &jobs.AlertTask{
+			WorkspacePath: "abc",
+		},
+	}
+	task8 := jobs.Task{
+		AiRuntimeTask: &jobs.AiRuntimeTask{
+			Deployments: []jobs.DeploymentSpec{
+				{CommandPath: "abc"},
+			},
+		},
+	}
 
 	job0 := &resources.Job{
 		JobSettings: jobs.JobSettings{
@@ -60,6 +72,8 @@ func TestVisitJobPaths(t *testing.T) {
 				task4,
 				task5,
 				task6,
+				task7,
+				task8,
 			},
 		},
 	}
@@ -79,6 +93,8 @@ func TestVisitJobPaths(t *testing.T) {
 		dyn.MustPathFromString("resources.jobs.job0.tasks[2].dbt_task.project_directory"),
 		dyn.MustPathFromString("resources.jobs.job0.tasks[3].sql_task.file.path"),
 		dyn.MustPathFromString("resources.jobs.job0.tasks[6].libraries[0].requirements"),
+		dyn.MustPathFromString("resources.jobs.job0.tasks[7].alert_task.workspace_path"),
+		dyn.MustPathFromString("resources.jobs.job0.tasks[8].ai_runtime_task.deployments[0].command_path"),
 	}
 
 	assert.ElementsMatch(t, expected, actual)
@@ -125,10 +141,20 @@ func TestVisitJobPaths_foreach(t *testing.T) {
 			},
 		},
 	}
+	task1 := jobs.Task{
+		ForEachTask: &jobs.ForEachTask{
+			Task: jobs.Task{
+				AlertTask: &jobs.AlertTask{
+					WorkspacePath: "abc",
+				},
+			},
+		},
+	}
 	job0 := &resources.Job{
 		JobSettings: jobs.JobSettings{
 			Tasks: []jobs.Task{
 				task0,
+				task1,
 			},
 		},
 	}
@@ -144,6 +170,7 @@ func TestVisitJobPaths_foreach(t *testing.T) {
 	actual := collectVisitedPaths(t, root, VisitJobPaths)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.jobs.job0.tasks[0].for_each_task.task.notebook_task.notebook_path"),
+		dyn.MustPathFromString("resources.jobs.job0.tasks[1].for_each_task.task.alert_task.workspace_path"),
 	}
 
 	assert.ElementsMatch(t, expected, actual)

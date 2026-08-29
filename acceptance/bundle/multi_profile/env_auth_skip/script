@@ -1,0 +1,10 @@
+# Substitute the actual host URL into the checked-in .databrickscfg (two
+# workspace profiles for the same host) and databricks.yml.
+envsubst < .databrickscfg > out && mv out .databrickscfg
+envsubst < databricks.yml > out && mv out databricks.yml
+
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+# Keep DATABRICKS_HOST and DATABRICKS_TOKEN set — env auth takes precedence
+# over host-based profile matching, so errMultipleProfiles never fires.
+
+trace $CLI bundle validate -o json | jq '{name: .bundle.name}'

@@ -1,10 +1,10 @@
 
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+Created pipelines.my_pipeline
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 === Running pipeline with --refresh flag and specific tables
 >>> [CLI] pipelines run --refresh table1,table2
@@ -21,16 +21,16 @@ Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "refresh_selection": [
       "table1",
       "table2"
     ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  }
 }
 
 === Running pipeline with --full-refresh-all flag
@@ -48,13 +48,13 @@ Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "full_refresh": true
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  }
 }
 
 === Running pipeline with --full-refresh flag and specific tables
@@ -72,16 +72,16 @@ Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "full_refresh_selection": [
       "table1",
       "table2"
     ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  }
 }
 
 === Running pipeline with --full-refresh flag and --refresh flag
@@ -99,8 +99,10 @@ Update for pipeline completed successfully.
 Pipeline configurations for this update:
 • All tables are refreshed
 
->>> print_requests
+>>> print_requests.py //pipelines
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "full_refresh_selection": [
       "table1",
@@ -110,7 +112,5 @@ Pipeline configurations for this update:
       "table3",
       "table4"
     ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  }
 }

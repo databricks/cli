@@ -6,11 +6,10 @@ Finds all files within current directory matching regex. The output is sorted an
 If --expect N is provided, the number of matches must be N or error is printed.
 """
 
-import sys
+import argparse
 import os
 import re
-import argparse
-
+import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument("regex")
@@ -20,7 +19,7 @@ args = parser.parse_args()
 regex = re.compile(args.regex)
 result = []
 
-for root, dirs, files in os.walk("."):
+for root, _dirs, files in os.walk("."):
     for filename in files:
         path = os.path.join(root, filename).replace("\\", "/")
         path = path.removeprefix("./")

@@ -1,0 +1,31 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+package account
+
+{{$excludes := list}}
+
+import (
+	"github.com/spf13/cobra"
+	{{range .Services}}{{if and .IsAccounts (not .HasParent) (not .IsDataPlane)}}{{if not (in $excludes .KebabName) }}
+	{{.SnakeName}} "github.com/databricks/cli/cmd/account/{{(.TrimPrefix "account").KebabName}}"{{end}}{{end}}{{end}}
+
+	account_groups "github.com/databricks/cli/cmd/account/groups"
+	account_service_principals "github.com/databricks/cli/cmd/account/service-principals"
+	account_users "github.com/databricks/cli/cmd/account/users"
+)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "account",
+		Short: `Databricks Account Commands`,
+	}
+
+	{{range .Services}}{{if and .IsAccounts (not .HasParent) (not .IsDataPlane)}}{{if not (in $excludes .KebabName) -}}
+	cmd.AddCommand({{.SnakeName}}.New())
+	{{end}}{{end}}{{end}}
+	cmd.AddCommand(account_groups.New())
+	cmd.AddCommand(account_service_principals.New())
+	cmd.AddCommand(account_users.New())
+
+	return cmd
+}

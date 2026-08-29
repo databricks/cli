@@ -6,9 +6,9 @@ Note, this intentionally has no logic on guessing what is the right state file (
 the goal is to record all states that are available.
 """
 
-import os
-import glob
 import argparse
+import glob
+import os
 
 
 def print_file(filename):

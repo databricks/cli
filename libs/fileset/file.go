@@ -16,7 +16,7 @@ const (
 	Source            // Any other file type
 )
 
-type File struct {
+type File struct { //nolint:recvcheck // value receiver for read-only Modified(), pointer for IsNotebook() cache
 	// Root path of the fileset.
 	root vfs.Path
 
@@ -65,6 +65,16 @@ func (f File) Modified() (ts time.Time) {
 		return ts
 	}
 	return info.ModTime()
+}
+
+// Size returns the file size in bytes. ok is false if the size cannot be
+// determined, e.g. the file was removed between listing and stat.
+func (f File) Size() (size int64, ok bool) {
+	info, err := f.entry.Info()
+	if err != nil {
+		return 0, false
+	}
+	return info.Size(), true
 }
 
 func (f *File) IsNotebook() (bool, error) {

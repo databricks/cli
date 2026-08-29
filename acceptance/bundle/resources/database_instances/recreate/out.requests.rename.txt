@@ -1,0 +1,15 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/database/instances/test-db-old-[UNIQUE_NAME]",
+  "q": {
+    "purge": "true"
+  }
+}
+{
+  "body": {
+    "capacity": "CU_1",
+    "name": "test-db-new-[UNIQUE_NAME]"
+  },
+  "method": "POST",
+  "path": "/api/2.0/database/instances"
+}

@@ -1,7 +1,6 @@
 package localcache
 
 import (
-	"context"
 	"errors"
 	"net/url"
 	"runtime"
@@ -12,7 +11,7 @@ import (
 )
 
 func TestCreatesDirectoryIfNeeded(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c := NewLocalCache[int64](t.TempDir(), "some/nested/file", 1*time.Minute)
 	thing := []int64{0}
 	tick := func() (int64, error) {
@@ -28,7 +27,7 @@ func TestImpossibleToCreateDir(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("No /dev/null on windows")
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	c := NewLocalCache[int64]("/dev/null", "some/nested/file", 1*time.Minute)
 	thing := []int64{0}
 	tick := func() (int64, error) {
@@ -43,7 +42,7 @@ func TestRefreshes(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("No /dev/null on windows")
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	c := NewLocalCache[int64](t.TempDir(), "time", 1*time.Minute)
 	thing := []int64{0}
 	tick := func() (int64, error) {
@@ -70,7 +69,7 @@ func TestSupportOfflineSystem(t *testing.T) {
 		thing[0] += 1
 		return thing[0], nil
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	first, err := c.Load(ctx, tick)
 	assert.NoError(t, err)
 
@@ -106,7 +105,7 @@ func TestFolderDisappears(t *testing.T) {
 		t.Log("TICKS")
 		return now, nil
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := c.Load(ctx, tick)
 	assert.Error(t, err)
 }
@@ -116,14 +115,14 @@ func TestRefreshFails(t *testing.T) {
 	tick := func() (int64, error) {
 		return 0, errors.New("nope")
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := c.Load(ctx, tick)
 	assert.EqualError(t, err, "refresh: nope")
 }
 
 func TestWrongType(t *testing.T) {
 	c := NewLocalCache[chan int](t.TempDir(), "x", 1*time.Minute)
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := c.Load(ctx, func() (chan int, error) {
 		return make(chan int), nil
 	})

@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/labs/github"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -64,7 +64,7 @@ func NewInstaller(cmd *cobra.Command, name string, offlineInstall bool) (install
 		if err != nil {
 			return nil, fmt.Errorf("load: %w", err)
 		}
-		cmd.PrintErrln(color.YellowString("Installing %s in development mode from %s", prj.Name, wd))
+		cmd.PrintErrln(cmdio.Yellow(cmd.Context(), fmt.Sprintf("Installing %s in development mode from %s", prj.Name, wd)))
 		return &devInstallation{
 			Project: prj,
 			Command: cmd,
@@ -141,7 +141,7 @@ func (f *fetcher) checkReleasedVersions(cmd *cobra.Command, version string, offl
 		log.Debugf(ctx, "Latest %s version is: %s", f.name, versions[0].Version)
 		return versions[0].Version, nil
 	}
-	cmd.PrintErrln(color.YellowString("[WARNING] Installing unreleased version: %s", version))
+	cmd.PrintErrln(cmdio.Yellow(ctx, "[WARNING] Installing unreleased version: "+version))
 	return version, nil
 }
 
@@ -151,6 +151,16 @@ func (f *fetcher) loadRemoteProjectDefinition(cmd *cobra.Command, version string
 	var err error
 	if !offlineInstall {
 		raw, err = github.ReadFileFromRef(ctx, "databrickslabs", f.name, version, "labs.yml")
+		// A 404 on labs.yml has two causes we can't tell apart here: the requested
+		// version doesn't exist, or the repository simply doesn't ship a labs.yml
+		// (most databrickslabs repos don't, e.g. libraries published to package
+		// indexes) and so isn't installable through the CLI. Either way it's not a
+		// download failure, so surface both possibilities instead of the raw error.
+		if errors.Is(err, github.ErrNotFound) {
+			return nil, fmt.Errorf("no labs.yml at databrickslabs/%s@%s (%w); "+
+				"either this version does not exist or this project cannot be installed with the Databricks CLI, "+
+				"see https://github.com/databrickslabs/%s for instructions", f.name, version, err, f.name)
+		}
 		if err != nil {
 			return nil, fmt.Errorf("read labs.yml from GitHub: %w", err)
 		}

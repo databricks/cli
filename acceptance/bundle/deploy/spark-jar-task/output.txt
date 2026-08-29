@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle deploy
+Building my_java_code...
+Uploading myjar/PrintArgs.jar...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/spark-jar-task-[UNIQUE_NAME]/default/files...
+Created jobs.jar_job
+Files: 9 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle run jar_job
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+
+[TIMESTAMP] "[default] Test Spark Jar Job [UNIQUE_NAME]" RUNNING
+[TIMESTAMP] "[default] Test Spark Jar Job [UNIQUE_NAME]" TERMINATED SUCCESS
+Hello from Jar!
+[]
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.jar_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/spark-jar-task-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

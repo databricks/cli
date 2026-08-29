@@ -3,12 +3,23 @@
 package schema
 
 type DataSourceMlflowExperimentProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceMlflowExperimentTags struct {
 	Key   string `json:"key,omitempty"`
 	Value string `json:"value,omitempty"`
+}
+
+type DataSourceMlflowExperimentTraceLocationUcTraceLocation struct {
+	Catalog              string `json:"catalog"`
+	EffectiveTablePrefix string `json:"effective_table_prefix,omitempty"`
+	Schema               string `json:"schema"`
+	TablePrefix          string `json:"table_prefix,omitempty"`
+}
+
+type DataSourceMlflowExperimentTraceLocation struct {
+	UcTraceLocation *DataSourceMlflowExperimentTraceLocationUcTraceLocation `json:"uc_trace_location,omitempty"`
 }
 
 type DataSourceMlflowExperiment struct {
@@ -21,4 +32,5 @@ type DataSourceMlflowExperiment struct {
 	Name             string                                    `json:"name,omitempty"`
 	ProviderConfig   *DataSourceMlflowExperimentProviderConfig `json:"provider_config,omitempty"`
 	Tags             []DataSourceMlflowExperimentTags          `json:"tags,omitempty"`
+	TraceLocation    *DataSourceMlflowExperimentTraceLocation  `json:"trace_location,omitempty"`
 }

@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -33,9 +32,9 @@ func TestTranslatePathsApps_FilePathRelativeSubDirectory(t *testing.T) {
 				Apps: map[string]*resources.App{
 					"app": {
 						App: apps.App{
-							Name: "My App",
+							Name:           "My App",
+							SourceCodePath: "../src/app",
 						},
-						SourceCodePath: "../src/app",
 					},
 				},
 			},
@@ -46,7 +45,7 @@ func TestTranslatePathsApps_FilePathRelativeSubDirectory(t *testing.T) {
 		File: filepath.Join(dir, "resources/app.yml"),
 	}})
 
-	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
 	// Assert that the file path for the app has been converted to its local absolute path.

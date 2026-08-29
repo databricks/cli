@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
@@ -45,6 +46,5 @@ func (s *SyncedDatabaseTable) InitializeURL(baseURL url.URL) {
 	if s.Name == "" {
 		return
 	}
-	baseURL.Path = "explore/data/" + s.Name
-	s.URL = baseURL.String()
+	s.URL = workspaceurls.ResourceURL(baseURL, "synced_database_tables", s.Name)
 }

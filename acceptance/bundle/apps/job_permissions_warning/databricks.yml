@@ -1,0 +1,28 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      permissions:
+        - level: CAN_MANAGE
+          user_name: ${workspace.current_user.userName}
+      tasks:
+        - task_key: hello
+          spark_python_task:
+            python_file: ./hello.py
+          new_cluster:
+            num_workers: 1
+            spark_version: 14.0.x-scala2.13
+            node_type_id: i3.xlarge
+
+  apps:
+    my_app:
+      name: myapp
+      source_code_path: ./app
+      resources:
+        - name: my-job
+          job:
+            id: ${resources.jobs.my_job.id}
+            permission: CAN_MANAGE_RUN

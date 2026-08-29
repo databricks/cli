@@ -1,0 +1,36 @@
+
+=== Upload notebook to a workspace path
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/test_notebook-[UNIQUE_NAME].py --file test_notebook.py --format AUTO --overwrite
+
+=== Create a job that references the notebookCreated job
+
+=== Generate bundle config from the job
+>>> [CLI] bundle generate job --existing-job-id [JOB_ID] --key out --config-dir resources --source-dir src --force
+File successfully saved to src/test_notebook-[UNIQUE_NAME].py
+Job configuration successfully saved to resources/out.job.yml
+Warning: Generated configuration is not included in the bundle
+
+The file resources/out.job.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - resources/*.yml
+
+
+=== Verify generated yaml has expected fields
+=== Deploy the generated bundle
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python_job_and_deploy-[UNIQUE_NAME]/default/files...
+Files: 8 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Destroy the deployed bundle
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/python_job_and_deploy-[UNIQUE_NAME]/default
+
+Destroy: 0 deleted
+
+=== Cleanup: delete the original job and notebook
+>>> errcode [CLI] jobs delete [JOB_ID]
+
+>>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/test_notebook-[UNIQUE_NAME]

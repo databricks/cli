@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,7 +14,7 @@ func assertExpectedModel(t *testing.T, p *resources.RegisteredModel) {
 	assert.Equal(t, "default", p.SchemaName)
 	assert.Equal(t, "comment", p.Comment)
 	assert.Equal(t, "account users", p.Grants[0].Principal)
-	assert.Equal(t, "EXECUTE", p.Grants[0].Privileges[0])
+	assert.Equal(t, catalog.Privilege("EXECUTE"), p.Grants[0].Privileges[0])
 }
 
 func TestRegisteredModelDevelopment(t *testing.T) {

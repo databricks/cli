@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -19,9 +20,12 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 		}
 	}
 
+	// UC normalizes schema and volume names to lowercase.
+	volume.SchemaName = strings.ToLower(volume.SchemaName)
+	volume.Name = strings.ToLower(volume.Name)
 	volume.FullName = volume.CatalogName + "." + volume.SchemaName + "." + volume.Name
 
-	if volume.StorageLocation != "" {
+	if volume.StorageLocation != "" && volume.VolumeType != catalog.VolumeTypeExternal {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
@@ -30,8 +34,15 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 			},
 		}
 	}
+
 	volume.VolumeId = nextUUID()
-	volume.StorageLocation = fmt.Sprintf("s3://deco-uc-prod-isolated-aws-us-east-1/metastore/%s/volumes/%s", TestMetastore.MetastoreId, volume.VolumeId)
+
+	if volume.StorageLocation != "" {
+		// Strip trailing slash to mimic UC API normalization behavior.
+		volume.StorageLocation = strings.TrimRight(volume.StorageLocation, "/")
+	} else {
+		volume.StorageLocation = fmt.Sprintf("s3://%s/metastore/%s/volumes/%s", testMetastoreName, TestMetastore.MetastoreId, volume.VolumeId)
+	}
 
 	volume.CreatedAt = nowMilli()
 	volume.UpdatedAt = volume.CreatedAt
@@ -65,6 +76,11 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 		}
 	}
 
+	fields, errResponse := parseUCUpdate(req.Body, "UpdateVolume")
+	if errResponse != nil {
+		return *errResponse
+	}
+
 	var request catalog.UpdateVolumeRequestContent
 
 	if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -74,13 +90,7 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 		}
 	}
 
-	if request.Comment != "" {
-		existing.Comment = request.Comment
-	}
-
-	if request.Owner != "" {
-		existing.Owner = request.Owner
-	}
+	applyUpdatedFields(&existing, request, fields)
 
 	if request.NewName != "" {
 		delete(s.Volumes, fullname)

@@ -21,10 +21,11 @@ type tfInstaller struct{}
 // Install installs a Terraform binary using the HashiCorp installer library.
 func (i tfInstaller) Install(ctx context.Context, dir string, version *version.Version) (string, error) {
 	installer := &releases.ExactVersion{
-		Product:    product.Terraform,
-		Version:    version,
-		InstallDir: dir,
-		Timeout:    1 * time.Minute,
+		Product:          product.Terraform,
+		Version:          version,
+		InstallDir:       dir,
+		Timeout:          1 * time.Minute,
+		ArmoredPublicKey: hashicorpPublicKey,
 	}
 	return installer.Install(ctx)
 }

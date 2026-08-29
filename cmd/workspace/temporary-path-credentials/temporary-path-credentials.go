@@ -3,6 +3,7 @@
 package temporary_path_credentials
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,36 +21,39 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "temporary-path-credentials",
-		Short: `Temporary Path Credentials refer to short-lived, downscoped credentials used to access external cloud storage locations registered in Databricks.`,
-		Long: `Temporary Path Credentials refer to short-lived, downscoped credentials used
-  to access external cloud storage locations registered in Databricks. These
-  credentials are employed to provide secure and time-limited access to data in
-  cloud environments such as AWS, Azure, and Google Cloud. Each cloud provider
-  has its own type of credentials: AWS uses temporary session tokens via AWS
-  Security Token Service (STS), Azure utilizes Shared Access Signatures (SAS)
-  for its data storage services, and Google Cloud supports temporary credentials
+		Short: `Temporary Path Credentials are short-lived, downscoped credentials used to access external cloud storage locations registered in Databricks.`,
+		Long: `Temporary Path Credentials are short-lived, downscoped credentials used to
+  access external cloud storage locations registered in Databricks. These
+  credentials provide secure and time-limited access to data in cloud
+  environments such as AWS, Azure, and Google Cloud. Each cloud provider has its
+  own type of credentials: AWS uses temporary session tokens through AWS
+  Security Token Service (STS), Azure uses Shared Access Signatures (SAS) for
+  its data storage services, and Google Cloud supports temporary credentials
   through OAuth 2.0.
 
   Temporary path credentials ensure that data access is limited in scope and
   duration, reducing the risk of unauthorized access or misuse. To use the
-  temporary path credentials API, a metastore admin needs to enable the
+  temporary path credentials API, a metastore admin must enable the
   external_access_enabled flag (off by default) at the metastore level. A user
-  needs to be granted the EXTERNAL USE LOCATION permission by external location
-  owner. For requests on existing external tables, user also needs to be granted
-  the EXTERNAL USE SCHEMA permission at the schema level by catalog admin.
+  must be granted the EXTERNAL USE LOCATION permission by the external location
+  owner. For requests on existing external tables and external volumes, the user
+  must also be granted the EXTERNAL USE SCHEMA permission at the schema level by
+  the catalog owner.
 
   Note that EXTERNAL USE SCHEMA is a schema level permission that can only be
-  granted by catalog admin explicitly and is not included in schema ownership or
-  ALL PRIVILEGES on the schema for security reasons. Similarly, EXTERNAL USE
-  LOCATION is an external location level permission that can only be granted by
-  external location owner explicitly and is not included in external location
-  ownership or ALL PRIVILEGES on the external location for security reasons.
-
-  This API only supports temporary path credentials for external locations and
-  external tables, and volumes will be supported in the future.`,
+  granted by the catalog owner explicitly and is not included in schema
+  ownership or ALL PRIVILEGES on the schema for security reasons. Similarly,
+  EXTERNAL USE LOCATION is an external location level permission that can only
+  be granted by the external location owner explicitly and is not included in
+  external location ownership or ALL PRIVILEGES on the external location for
+  security reasons.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newGenerateTemporaryPathCredentials())
@@ -102,12 +106,14 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
       Supported values: [PATH_CREATE_TABLE, PATH_READ, PATH_READ_WRITE]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'url', 'operation' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'url', 'operation' in your JSON input")
 			}
 			return nil
 		}
@@ -126,7 +132,7 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -147,6 +153,7 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

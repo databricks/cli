@@ -1,8 +1,8 @@
 Uploading dummy.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.my_job
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Case 1: Added locally, updated remotely with different value
 
@@ -22,9 +22,11 @@ Deployment complete!
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
+  email_notifications.on_failure: replace
   email_notifications.on_failure[0]: replace
   max_concurrent_runs: replace
   tags['env']: remove
+  timeout_seconds: remove
 
 
 
@@ -33,31 +35,28 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -1,5 +1,4 @@
- bundle:
-   name: test-bundle-[UNIQUE_NAME]
--
- resources:
-   jobs:
-@@ -13,5 +12,4 @@
-             node_type_id: [NODE_TYPE_ID]
-             num_workers: 1
--
- targets:
-   default:
-@@ -24,5 +22,5 @@
+@@ -25,5 +25,5 @@
                - success@example.com
              on_failure:
 -              - config-failure@example.com
 +              - remote-failure@example.com
            parameters:
              - name: catalog
-@@ -35,7 +33,6 @@
+@@ -36,8 +36,6 @@
                unit: DAYS
            tags:
 -            env: config-production
              team: data-team
 -          max_concurrent_runs: 3
+-          timeout_seconds: 3600
 +          max_concurrent_runs: 5
-           timeout_seconds: 3600
            environments:
+             - environment_key: default
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

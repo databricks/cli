@@ -32,8 +32,7 @@ func setupWsfsFiler(t testutil.TestingT) (filer.Filer, string) {
 
 	// Check if we can use this API here, skip test if we cannot.
 	_, err = f.Read(ctx, "we_use_this_call_to_test_if_this_api_is_enabled")
-	var aerr *apierr.APIError
-	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusBadRequest {
+	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.StatusCode == http.StatusBadRequest {
 		t.Skip(aerr.Message)
 	}
 
@@ -59,14 +58,14 @@ func setupDbfsFiler(t testutil.TestingT) (filer.Filer, string) {
 }
 
 func setupUcVolumesFiler(t testutil.TestingT) (filer.Filer, string) {
-	_, wt := acc.WorkspaceTest(t)
+	ctx, wt := acc.WorkspaceTest(t)
 
 	if os.Getenv("TEST_METASTORE_ID") == "" {
 		t.Skip("Skipping tests that require a UC Volume when metastore id is not set.")
 	}
 
 	tmpdir := acc.TemporaryVolume(wt)
-	f, err := filer.NewFilesClient(wt.W, tmpdir)
+	f, err := filer.NewFilesClient(ctx, wt.W, tmpdir)
 	require.NoError(t, err)
 
 	return f, path.Join("dbfs:/", tmpdir)

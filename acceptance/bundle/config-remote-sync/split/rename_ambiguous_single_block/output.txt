@@ -1,0 +1,84 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.ambiguous_single_block_job
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Rename alpha -> zzz and beta -> aaa, and point gamma at the new keys
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.ambiguous_single_block_job
+  tasks[task_key='aaa']: add
+  tasks[task_key='alpha']: remove
+  tasks[task_key='beta']: remove
+  tasks[task_key='gamma'].depends_on[task_key='aaa']: add
+  tasks[task_key='gamma'].depends_on[task_key='alpha']: remove
+  tasks[task_key='gamma'].depends_on[task_key='beta']: remove
+  tasks[task_key='gamma'].depends_on[task_key='zzz']: add
+  tasks[task_key='zzz']: add
+
+
+
+=== Both renames apply and depends_on follows them
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -15,9 +15,9 @@
+     ambiguous_single_block_job:
+       tasks:
+-        - task_key: alpha
++        - task_key: zzz
+           max_retries: 1
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/alpha
+-        - task_key: beta
++        - task_key: aaa
+           max_retries: 1
+           notebook_task:
+@@ -25,6 +25,6 @@
+         - task_key: gamma
+           depends_on:
+-            - task_key: alpha
+-            - task_key: beta
++            - task_key: zzz
++            - {task_key: aaa}
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/gamma
+
+=== Checking for old task keys (should be gone if renames applied):
+
+>>> grep -c task_key: alpha databricks.yml
+0
+
+Exit code: 1
+
+>>> grep -c task_key: beta databricks.yml
+0
+
+Exit code: 1
+
+=== Checking for new task keys:
+
+>>> grep -c task_key: zzz databricks.yml
+2
+
+>>> grep -c task_key: aaa databricks.yml
+2
+
+=== Checking depends_on (gamma's dependencies):
+
+>>> grep -A5 task_key: gamma databricks.yml
+          depends_on:
+            - task_key: zzz
+            - {task_key: aaa}
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/gamma
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.ambiguous_single_block_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

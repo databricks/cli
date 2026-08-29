@@ -1,0 +1,29 @@
+if [ -z "${CLOUD_ENV:-}" ]; then
+  # Local runs have no release artifacts and never execute the uploaded
+  # binaries, so stand in empty archives (dev name omits the version).
+  mkdir -p releases
+  : >releases/databricks_cli_linux_amd64.zip
+  : >releases/databricks_cli_linux_arm64.zip
+  CLI_RELEASES_DIR="$PWD/releases"
+fi
+
+if [ -n "${CLOUD_ENV:-}" ]; then
+  # On cloud serverless GPU compute runs the remote command over a full SSH
+  # handshake; dump the run on failure.
+  errcode $CLI ssh connect --name serverless-gpu-test --accelerator=GPU_1xA10 --releases-dir=$CLI_RELEASES_DIR -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
+  if ! grep -q "Connection successful" out.stdout.txt; then
+    run_id=$(cat LOG.stderr | grep -o "Job submitted successfully with run ID: [0-9]*" | grep -o "[0-9]*$")
+    trace $CLI jobs get-run "$run_id" > LOG.job
+  fi
+else
+  # No compute locally: the test server backs the driver-proxy /ssh websocket with a
+  # real sshd, so this one run asserts both the bootstrap job and a full handshake +
+  # remote exec over the ws:// tunnel. Needs sshd (only task test-exp-ssh provisions
+  # it); the test server probes the same way, so skip where it's absent.
+  if [ -z "$(command -v sshd || ls /usr/sbin/sshd /usr/local/sbin/sshd /sbin/sshd 2>/dev/null)" ]; then
+    echo "SKIP_TEST sshd (openssh-server) not installed"
+    exit 0
+  fi
+  errcode $CLI ssh connect --name serverless-gpu-test --accelerator=GPU_1xA10 --releases-dir=$CLI_RELEASES_DIR --user-known-hosts-file=known_hosts -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
+  trace print_requests.py //api/2.2/jobs/runs/submit
+fi

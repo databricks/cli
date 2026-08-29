@@ -1,0 +1,39 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files...
+Created jobs.foo
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== After the initial deploy the python_file exists
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py
+{
+  "object_type": "FILE",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py"
+}
+
+=== Delete the remote bundle directory out-of-band (simulates deleting it in the UI)
+>>> [CLI] workspace delete --recursive /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete
+
+=== Redeploy reuses the stale snapshot, so the python_file is NOT re-uploaded
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py) doesn't exist.
+
+=== Removing the sync snapshot forces a full re-upload, restoring the python_file
+>>> rm -rf .databricks/bundle/default/sync-snapshots
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files...
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py
+{
+  "object_type": "FILE",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py"
+}

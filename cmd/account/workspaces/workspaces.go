@@ -34,6 +34,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
@@ -73,7 +77,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, ``)
-	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud name.`)
+	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `DEPRECATED: This field is being ignored by the server and will be removed in the future.`)
 	// TODO: complex arg: cloud_resource_container
 	cmd.Flags().Var(&createReq.ComputeMode, "compute-mode", `If the compute mode is SERVERLESS, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. Supported values: [HYBRID, SERVERLESS]`)
 	cmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object.`)
@@ -140,6 +144,8 @@ func newCreate() *cobra.Command {
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -157,7 +163,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -171,12 +177,12 @@ func newCreate() *cobra.Command {
 		if createSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
 			statusMessage := i.WorkspaceStatusMessage
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(createTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -216,6 +222,8 @@ func newDelete() *cobra.Command {
   Deletes a Databricks workspace, both specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -236,6 +244,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -280,6 +289,8 @@ func newGet() *cobra.Command {
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -300,6 +311,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -333,6 +345,8 @@ func newList() *cobra.Command {
   Lists Databricks workspaces for an account.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -342,6 +356,7 @@ func newList() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -419,6 +434,8 @@ func newUpdate() *cobra.Command {
     WORKSPACE_ID: A unique integer ID for the workspace`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -436,7 +453,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -454,12 +471,12 @@ func newUpdate() *cobra.Command {
 		if updateSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
 			statusMessage := i.WorkspaceStatusMessage
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(updateTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}

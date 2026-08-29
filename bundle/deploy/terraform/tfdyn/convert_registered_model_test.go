@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -21,9 +20,9 @@ func TestConvertRegisteredModel(t *testing.T) {
 			SchemaName:  "schema",
 			Comment:     "comment",
 		},
-		Grants: []resources.Grant{
+		Grants: []catalog.PrivilegeAssignment{
 			{
-				Privileges: []string{"EXECUTE"},
+				Privileges: []catalog.Privilege{catalog.PrivilegeExecute},
 				Principal:  "jane@doe.com",
 			},
 		},
@@ -32,7 +31,7 @@ func TestConvertRegisteredModel(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = registeredModelConverter{}.Convert(ctx, "my_registered_model", vin, out)
 	require.NoError(t, err)

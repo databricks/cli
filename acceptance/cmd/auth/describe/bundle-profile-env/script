@@ -1,0 +1,15 @@
+# Bake the harness host into the bundle file and the profile config.
+envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# Select the profile via the environment, not a flag or databricks.yml. Auth is
+# fully determined by the profile, so remove the ambient host/token.
+unset DATABRICKS_HOST DATABRICKS_TOKEN
+export DATABRICKS_CONFIG_PROFILE=env-profile
+
+# Inside a bundle root the resolved config labels every attribute "bundle", so
+# before #2303 the profile read "(from bundle)" even though it came from
+# DATABRICKS_CONFIG_PROFILE. describe must attribute it to the env var.
+title "Describe inside a bundle attributes the profile to DATABRICKS_CONFIG_PROFILE (#2303)\n"
+trace $CLI auth describe

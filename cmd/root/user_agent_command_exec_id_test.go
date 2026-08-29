@@ -1,7 +1,6 @@
 package root
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
@@ -10,7 +9,7 @@ import (
 )
 
 func TestWithCommandExecIdInUserAgent(t *testing.T) {
-	ctx := cmdctx.GenerateExecId(context.Background())
+	ctx := cmdctx.GenerateExecId(t.Context())
 	ctx = withCommandExecIdInUserAgent(ctx)
 
 	// user agent should contain cmd-exec-id/<UUID>

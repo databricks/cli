@@ -1,0 +1,22 @@
+bundle:
+  name: deploy-postgres-purge-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+# Two projects side by side so the recorded destroy requests make the
+# purge_on_delete contrast obvious:
+#   - hard_delete:  purge_on_delete: true   -> DELETE …?purge=true
+#   - soft_delete:  field omitted (default) -> DELETE …    (no purge query)
+resources:
+  postgres_projects:
+    hard_delete:
+      project_id: test-pg-proj-hard-$UNIQUE_NAME
+      display_name: "purge_on_delete = true"
+      pg_version: 16
+      purge_on_delete: true
+
+    soft_delete:
+      project_id: test-pg-proj-soft-$UNIQUE_NAME
+      display_name: "purge_on_delete unset (soft delete)"
+      pg_version: 16

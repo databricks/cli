@@ -17,12 +17,22 @@ trace $CLI bundle deployment bind experiment1 ${EXPERIMENT_ID} --auto-approve
 
 trace $CLI bundle deploy --force-lock --auto-approve
 
-trace $CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}' > out.get.$DATABRICKS_BUNDLE_ENGINE.json
+# Plan should show no changes with /Workspace/Users/... path in config.
+# Use --output json to verify the change details including skip reason.
+# Write per-engine output since direct includes change details that terraform doesn't.
+# Filter to only the name change (tags/artifact_location may differ between local and cloud).
+$CLI bundle plan --output json | jq '{plan: .plan | map_values({action, name_change: (.changes.name // null)})}' > out.plan1.$DATABRICKS_BUNDLE_ENGINE.json
+
+trace $CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}'
+
+# Now change the config to use /Users/... path (without /Workspace prefix).
+# Plan should still show no changes because the diff is suppressed.
+EXPERIMENT_NAME="//Users/${CURRENT_USER_NAME}/test-experiment$UNIQUE_NAME"
+envsubst < databricks.yml.tmpl > databricks.yml
+$CLI bundle plan --output json | jq '{plan: .plan | map_values({action, name_change: (.changes.name // null)})}' > out.plan2.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle deployment unbind experiment1
 
 trace $CLI bundle destroy --auto-approve
 
-trace $CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}' > out.get2.$DATABRICKS_BUNDLE_ENGINE.json
-diff out.get.$DATABRICKS_BUNDLE_ENGINE.json out.get2.$DATABRICKS_BUNDLE_ENGINE.json
-rm out.get2.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}'

@@ -1,7 +1,6 @@
 package vfs
 
 import (
-	"context"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestFilerPath(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 

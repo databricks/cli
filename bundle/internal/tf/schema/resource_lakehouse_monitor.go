@@ -37,14 +37,17 @@ type ResourceLakehouseMonitorNotifications struct {
 	OnNewClassificationTagDetected *ResourceLakehouseMonitorNotificationsOnNewClassificationTagDetected `json:"on_new_classification_tag_detected,omitempty"`
 }
 
+type ResourceLakehouseMonitorProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
 type ResourceLakehouseMonitorSchedule struct {
 	PauseStatus          string `json:"pause_status,omitempty"`
 	QuartzCronExpression string `json:"quartz_cron_expression"`
 	TimezoneId           string `json:"timezone_id"`
 }
 
-type ResourceLakehouseMonitorSnapshot struct {
-}
+type ResourceLakehouseMonitorSnapshot struct{}
 
 type ResourceLakehouseMonitorTimeSeries struct {
 	Granularities []string `json:"granularities"`
@@ -70,6 +73,7 @@ type ResourceLakehouseMonitor struct {
 	DataClassificationConfig *ResourceLakehouseMonitorDataClassificationConfig `json:"data_classification_config,omitempty"`
 	InferenceLog             *ResourceLakehouseMonitorInferenceLog             `json:"inference_log,omitempty"`
 	Notifications            *ResourceLakehouseMonitorNotifications            `json:"notifications,omitempty"`
+	ProviderConfig           *ResourceLakehouseMonitorProviderConfig           `json:"provider_config,omitempty"`
 	Schedule                 *ResourceLakehouseMonitorSchedule                 `json:"schedule,omitempty"`
 	Snapshot                 *ResourceLakehouseMonitorSnapshot                 `json:"snapshot,omitempty"`
 	TimeSeries               *ResourceLakehouseMonitorTimeSeries               `json:"time_series,omitempty"`

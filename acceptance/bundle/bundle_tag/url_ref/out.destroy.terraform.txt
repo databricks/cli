@@ -1,8 +1,10 @@
+Warning: "resources.jobs.foo.url": Terraform-only field; this reference will not work with the direct engine
+  in databricks.yml:11:12
+
 The following resources will be deleted:
   delete resources.jobs.bar
   delete resources.jobs.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted

@@ -1,0 +1,10 @@
+
+>>> errcode [CLI] bundle plan
+Warning: unknown field: started
+  at resources.jobs.my_job.lifecycle
+  in databricks.yml:9:9
+
+create apps.my_app
+create jobs.my_job
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Parses output of benchmark runs (e.g. "make bench100") and prints a summary table.
+Parses output of benchmark runs (e.g. "./task bench-100") and prints a summary table.
 """
 
-import sys
 import re
 import statistics
+import sys
 from collections import defaultdict
 
 

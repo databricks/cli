@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourceDatabaseSyncedDatabaseTablesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
 type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesDataSynchronizationStatusContinuousUpdateStatusInitialPipelineSyncProgress struct {
 	EstimatedCompletionTimeSeconds   int    `json:"estimated_completion_time_seconds,omitempty"`
 	LatestVersionCurrentlyProcessing int    `json:"latest_version_currently_processing,omitempty"`
@@ -72,13 +76,24 @@ type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesDataSynchronizationStatus
 	TriggeredUpdateStatus  *DataSourceDatabaseSyncedDatabaseTablesSyncedTablesDataSynchronizationStatusTriggeredUpdateStatus  `json:"triggered_update_status,omitempty"`
 }
 
+type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
 type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpecNewPipelineSpec struct {
 	BudgetPolicyId string `json:"budget_policy_id,omitempty"`
 	StorageCatalog string `json:"storage_catalog,omitempty"`
 	StorageSchema  string `json:"storage_schema,omitempty"`
 }
 
+type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpecTypeOverrides struct {
+	ColumnName string `json:"column_name"`
+	PgType     string `json:"pg_type"`
+	Size       int    `json:"size,omitempty"`
+}
+
 type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpec struct {
+	AcceleratedSync                bool                                                                   `json:"accelerated_sync,omitempty"`
 	CreateDatabaseObjectsIfMissing bool                                                                   `json:"create_database_objects_if_missing,omitempty"`
 	ExistingPipelineId             string                                                                 `json:"existing_pipeline_id,omitempty"`
 	NewPipelineSpec                *DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpecNewPipelineSpec `json:"new_pipeline_spec,omitempty"`
@@ -86,6 +101,7 @@ type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpec struct {
 	SchedulingPolicy               string                                                                 `json:"scheduling_policy,omitempty"`
 	SourceTableFullName            string                                                                 `json:"source_table_full_name,omitempty"`
 	TimeseriesKey                  string                                                                 `json:"timeseries_key,omitempty"`
+	TypeOverrides                  []DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpecTypeOverrides  `json:"type_overrides,omitempty"`
 }
 
 type DataSourceDatabaseSyncedDatabaseTablesSyncedTables struct {
@@ -95,12 +111,14 @@ type DataSourceDatabaseSyncedDatabaseTablesSyncedTables struct {
 	EffectiveLogicalDatabaseName  string                                                                       `json:"effective_logical_database_name,omitempty"`
 	LogicalDatabaseName           string                                                                       `json:"logical_database_name,omitempty"`
 	Name                          string                                                                       `json:"name"`
+	ProviderConfig                *DataSourceDatabaseSyncedDatabaseTablesSyncedTablesProviderConfig            `json:"provider_config,omitempty"`
 	Spec                          *DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpec                      `json:"spec,omitempty"`
 	UnityCatalogProvisioningState string                                                                       `json:"unity_catalog_provisioning_state,omitempty"`
 }
 
 type DataSourceDatabaseSyncedDatabaseTables struct {
-	InstanceName string                                               `json:"instance_name"`
-	PageSize     int                                                  `json:"page_size,omitempty"`
-	SyncedTables []DataSourceDatabaseSyncedDatabaseTablesSyncedTables `json:"synced_tables,omitempty"`
+	InstanceName   string                                                `json:"instance_name"`
+	PageSize       int                                                   `json:"page_size,omitempty"`
+	ProviderConfig *DataSourceDatabaseSyncedDatabaseTablesProviderConfig `json:"provider_config,omitempty"`
+	SyncedTables   []DataSourceDatabaseSyncedDatabaseTablesSyncedTables  `json:"synced_tables,omitempty"`
 }

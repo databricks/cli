@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -21,7 +20,7 @@ func TestConvertDashboard(t *testing.T) {
 			EmbedCredentials: true,
 		},
 
-		Permissions: []resources.DashboardPermission{
+		Permissions: []resources.Permission{
 			{
 				Level:    "CAN_VIEW",
 				UserName: "jane@doe.com",
@@ -32,7 +31,7 @@ func TestConvertDashboard(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = dashboardConverter{}.Convert(ctx, "my_dashboard", vin, out)
 	require.NoError(t, err)
@@ -67,7 +66,7 @@ func TestConvertDashboardSerializedDashboardString(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = dashboardConverter{}.Convert(ctx, "my_dashboard", vin, out)
 	require.NoError(t, err)
@@ -96,7 +95,7 @@ func TestConvertDashboardSerializedDashboardAny(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = dashboardConverter{}.Convert(ctx, "my_dashboard", vin, out)
 	require.NoError(t, err)
@@ -125,7 +124,7 @@ func TestConvertDashboardDatasetCatalogSchema(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = dashboardConverter{}.Convert(ctx, "my_dashboard", vin, out)
 	require.NoError(t, err)

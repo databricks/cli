@@ -1,13 +1,11 @@
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.test_job
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deployment migrate -p non_existent321
-Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
 
 Validate the migration by running "databricks bundle plan -p non_existent321", there should be no actions planned.
@@ -19,13 +17,12 @@ To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.js
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy -t prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.test_job
+Created schemas.test_schema
+Files: 6 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deployment migrate -p non_existent321 -t prod
-Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 Success! Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/prod/resources.json
 
 Validate the migration by running "databricks bundle plan -t prod -p non_existent321", there should be no actions planned.

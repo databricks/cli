@@ -1,0 +1,30 @@
+
+>>> print_requests.py //api/2.2/jobs/runs/submit
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/submit",
+  "body": {
+    "run_name": "ssh-server-bootstrap-[TEST_DEFAULT_CLUSTER_ID]",
+    "tasks": [
+      {
+        "existing_cluster_id": "[TEST_DEFAULT_CLUSTER_ID]",
+        "notebook_task": {
+          "base_parameters": {
+            "authorizedKeySecretName": "client-public-key",
+            "maxClients": "10",
+            "secretScopeName": "[USERNAME]-[TEST_DEFAULT_CLUSTER_ID]-ssh-tunnel-keys",
+            "serverless": "false",
+            "sessionId": "[TEST_DEFAULT_CLUSTER_ID]",
+            "shutdownDelay": "10m0s",
+            "usagePolicyId": "",
+            "version": "[CLI_VERSION]"
+          },
+          "notebook_path": "/Workspace/Users/[USERNAME]/.databricks/ssh-tunnel/[CLI_VERSION]/[TEST_DEFAULT_CLUSTER_ID]/ssh-server-bootstrap"
+        },
+        "task_key": "start_ssh_server",
+        "timeout_seconds": 86400
+      }
+    ],
+    "timeout_seconds": 86400
+  }
+}

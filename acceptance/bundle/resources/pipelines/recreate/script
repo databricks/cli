@@ -16,7 +16,7 @@ trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"
 title "Switch from catalog to storage (triggers recreation)"
 trace update_file.py databricks.yml "catalog: main" "storage: dbfs:/my-storage"
 # Remove target reference since storage-based pipelines can't use it
-trace update_file.py databricks.yml "target: \${resources.schemas.bar.id}" "#target: \${resources.schemas.bar.id}"
+trace update_file.py databricks.yml "target: \${resources.schemas.bar.name}" "#target: \${resources.schemas.bar.name}"
 
 trace $CLI bundle plan 2>&1
 

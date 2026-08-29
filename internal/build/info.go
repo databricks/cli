@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	nextchanges "github.com/databricks/cli/.nextchanges"
 	"golang.org/x/mod/semver"
 )
 
@@ -42,11 +43,65 @@ func (i Info) GetSanitizedVersion() string {
 	return version
 }
 
-var info Info
+// devIdentifier is the prerelease identifier marking a build that was not
+// produced from a release tag.
+const devIdentifier = "dev"
 
-var once sync.Once
+// DefaultSemver is the version reported when buildVersion was not injected,
+// i.e. a plain "go build" rather than a goreleaser build. It is the next release
+// version with a dev prerelease identifier, so it sorts above the latest release
+// and below the release it will become:
+//
+//	Compare(v1.11.0, v1.12.0-dev+sha) = -1
+//	Compare(v1.12.0, v1.12.0-dev+sha) = +1
+//
+// A bare "0.0.0-dev" would instead sort below every published release, even
+// though a local build is built from main and is therefore newer than the
+// latest release. This matches what goreleaser produces for snapshot builds
+// (see snapshot.version_template in .goreleaser.yaml).
+var DefaultSemver = devVersion(nextchanges.Version)
 
-const DefaultSemver = "0.0.0-dev"
+// devVersion returns the development-build version for an upcoming release,
+// normally a plain version with a dev prerelease ("1.12.0" -> "1.12.0-dev").
+//
+// The prerelease branch is for completeness with next_release_version() in
+// internal/genkit/tagging.py, which bumps the prerelease instead of the minor
+// when .nextchanges/version already carries one; it is not because this repo
+// publishes prereleases (it never has). Appending "-dev" to "1.13.0-rc.2" would
+// produce the prerelease "rc.2-dev", a single identifier that merely ends in
+// "dev", so IsDevelopmentVersion would report false and every dev-build
+// exemption would silently switch off. A dot-separated identifier
+// ("1.13.0-rc.2.dev") keeps detection working and still sorts after the rc and
+// before the final release.
+func devVersion(next string) string {
+	if semver.Prerelease("v"+next) != "" {
+		return next + "." + devIdentifier
+	}
+	return next + "-" + devIdentifier
+}
+
+// IsDevelopmentVersion reports whether a version string is a development build's.
+// It keys off the trailing dev prerelease identifier rather than a specific
+// version number, so it keeps working as the next release version changes. The
+// version may be given with or without a leading "v".
+//
+// Prefer Info.IsDevelopment when you have the running build's Info; this is for
+// callers holding only a version string (e.g. one read from a file or a
+// parameter), so the definition of "development build" lives in one place.
+func IsDevelopmentVersion(version string) bool {
+	prerelease := strings.TrimPrefix(semver.Prerelease("v"+strings.TrimPrefix(version, "v")), "-")
+	if prerelease == "" {
+		return false
+	}
+	identifiers := strings.Split(prerelease, ".")
+	return identifiers[len(identifiers)-1] == devIdentifier
+}
+
+// IsDevelopment reports whether this binary was built from a development or
+// snapshot build rather than a release tag.
+func (i Info) IsDevelopment() bool {
+	return i.IsSnapshot || IsDevelopmentVersion(i.Version)
+}
 
 // getDefaultBuildVersion uses build information stored by Go itself
 // to synthesize a build version if one wasn't set.
@@ -73,7 +128,7 @@ func getDefaultBuildVersion() string {
 	return out
 }
 
-func initialize() {
+func initialize() Info {
 	// If buildVersion is empty it means the binary was NOT built through goreleaser.
 	// We try to pull version information from debug.BuildInfo().
 	if buildVersion == "" {
@@ -86,7 +141,7 @@ func initialize() {
 		panic(fmt.Sprintf(`version is not a valid semver string: "%s"`, buildVersion))
 	}
 
-	info = Info{
+	return Info{
 		ProjectName: buildProjectName,
 		Version:     buildVersion,
 
@@ -106,9 +161,10 @@ func initialize() {
 	}
 }
 
+var getInfo = sync.OnceValue(initialize)
+
 func GetInfo() Info {
-	once.Do(initialize)
-	return info
+	return getInfo()
 }
 
 func parseInt(s string) int64 {

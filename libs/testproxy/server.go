@@ -2,8 +2,6 @@ package testproxy
 
 import (
 	"bytes"
-	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -27,7 +25,7 @@ type ProxyServer struct {
 	ResponseCallback func(request *testserver.Request, response *testserver.EncodedResponse)
 }
 
-// This creates a reverse proxy server that sits in front of a real Databricks
+// New creates a reverse proxy server that sits in front of the upstream
 // workspace. This is useful for recording API requests and responses in
 // integration tests.
 //
@@ -38,22 +36,20 @@ type ProxyServer struct {
 // OAuth endpoints based on the nature of the URL.
 // For reference, see:
 // https://github.com/databricks/databricks-sdk-go/blob/79e4b3a6e9b0b7dcb1af9ad4025deb447b01d933/common/environment/environments.go#L57
-func New(t testutil.TestingT) *ProxyServer {
+//
+// An upstream with no fields set resolves a real workspace and its auth from the
+// environment; an explicit host and token point at a testserver instead.
+func New(t testutil.TestingT, upstream *config.Config) *ProxyServer {
 	s := &ProxyServer{
 		t: t,
 	}
 
-	// Create an API client using the current authentication context.
-	// In CI test environments this would read the appropriate environment
-	// variables.
-	var err error
-	cfg := &config.Config{}
-	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
+	clientCfg, err := config.HTTPClientConfigFromConfig(upstream)
 	require.NoError(t, err)
 	s.apiClient = httpclient.NewApiClient(clientCfg)
 
 	// Set up the proxy handler as the default handler for all requests.
-	server := httptest.NewServer(http.HandlerFunc(s.proxyToCloud))
+	server := httptest.NewServer(http.HandlerFunc(s.proxyToUpstream))
 	t.Cleanup(server.Close)
 
 	s.Server = server
@@ -63,7 +59,7 @@ func New(t testutil.TestingT) *ProxyServer {
 func (s *ProxyServer) reqBody(r testserver.Request) any {
 	// The SDK expects the query parameters to be specified in the "request body"
 	// argument for GET, DELETE, and HEAD requests in the .Do method.
-	if r.Method == "GET" || r.Method == "DELETE" || r.Method == "HEAD" {
+	if r.Method == http.MethodGet || r.Method == http.MethodDelete || r.Method == http.MethodHead {
 		queryParams := make(map[string]any)
 		for k, v := range r.URL.Query() {
 			queryParams[k] = v[0]
@@ -75,7 +71,7 @@ func (s *ProxyServer) reqBody(r testserver.Request) any {
 	return r.Body
 }
 
-func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
+func (s *ProxyServer) proxyToUpstream(w http.ResponseWriter, r *http.Request) {
 	request := testserver.NewRequest(s.t, r, nil)
 	if s.RequestCallback != nil {
 		s.RequestCallback(&request)
@@ -124,28 +120,36 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 		visitors = append(visitors, httpclient.WithResponseHeader(header, responseHeaders[header]))
 	}
 
-	err := s.apiClient.Do(context.Background(), r.Method, r.URL.Path,
+	err := s.apiClient.Do(s.t.Context(), r.Method, r.URL.Path,
 		visitors...,
 	)
 
 	var encodedResponse *testserver.EncodedResponse
 
-	// API errors from the SDK are expected to be of the type [apierr.APIError]. If we
-	// get an API error then parse the error and forward it back to the client
-	// in an appropriate format.
-	apiErr := &apierr.APIError{}
-	if errors.As(err, &apiErr) {
-		body := map[string]string{
-			"error_code": apiErr.ErrorCode,
-			"message":    apiErr.Message,
+	// API errors from the SDK are of type [apierr.APIError]. Forward the raw
+	// response bytes verbatim — including any error details — so callers see
+	// exactly what the workspace returned. Re-marshalling from the parsed
+	// APIError would drop fields the SDK doesn't surface (e.g. metadata in
+	// details[]) and silently break callers that inspect them.
+	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
+		rw := apiErr.ResponseWrapper
+		if rw == nil {
+			// The SDK populates ResponseWrapper for every APIError produced
+			// from a real HTTP response. If this ever fires the SDK changed
+			// shape and we need to revisit how we forward error bodies.
+			panic("apierr.APIError has no ResponseWrapper")
 		}
-
-		b, err := json.Marshal(body)
-		assert.NoError(s.t, err)
-
 		encodedResponse = &testserver.EncodedResponse{
-			StatusCode: apiErr.StatusCode,
-			Body:       b,
+			StatusCode: rw.Response.StatusCode,
+			Body:       rw.DebugBytes,
+		}
+		// Visitors registered via WithResponseHeader are not invoked when
+		// the SDK returns an error, so populate the include list directly
+		// from the original response headers.
+		for _, header := range includeResponseHeaders {
+			if v := rw.Response.Header.Get(header); v != "" {
+				*responseHeaders[header] = v
+			}
 		}
 	}
 

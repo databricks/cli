@@ -13,11 +13,14 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 var (
 	allowedLevels = []string{permissions.CAN_MANAGE, permissions.CAN_VIEW, permissions.CAN_RUN}
-	levelsMap     = map[string](map[string]string){
+	// Map of allowed permission levels to the corresponding permission level of specific resources
+	levelsMap = map[string](map[string]string){
 		"jobs": {
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_VIEW",
@@ -45,6 +48,10 @@ var (
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_READ",
 		},
+		"genie_spaces": {
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_READ",
+		},
 		"apps": {
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_USE",
@@ -67,11 +74,24 @@ var (
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_USE",
 		},
+		"postgres_projects": {
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_USE",
+		},
 		"clusters": {
 			// https://docs.databricks.com/aws/en/security/auth/access-control/#compute-acls
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_ATTACH_TO",
 			permissions.CAN_RUN:    "CAN_RESTART",
+		},
+		"vector_search_endpoints": {
+			// https://docs.databricks.com/aws/en/security/auth/access-control/#vector-search-endpoint-acls
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_USE",
+		},
+		"instance_pools": {
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_ATTACH_TO",
 		},
 	}
 )
@@ -147,7 +167,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 
 func validatePermissions(b *bundle.Bundle) error {
 	for _, p := range b.Config.Permissions {
-		if !slices.Contains(allowedLevels, p.Level) {
+		if !slices.Contains(allowedLevels, string(p.Level)) {
 			return fmt.Errorf("invalid permission level: %s, allowed values: [%s]", p.Level, strings.Join(allowedLevels, ", "))
 		}
 	}
@@ -168,7 +188,7 @@ func convertPermissions(
 ) []resources.Permission {
 	var permissions []resources.Permission
 	for _, p := range bundlePermissions {
-		level, ok := lm[p.Level]
+		level, ok := lm[string(p.Level)]
 		// If there is no bundle permission level defined in the map, it means
 		// it's not applicable for the resource, therefore skipping
 		if !ok {
@@ -180,7 +200,7 @@ func convertPermissions(
 		}
 
 		permissions = append(permissions, resources.Permission{
-			Level:                level,
+			Level:                iam.PermissionLevel(level),
 			UserName:             p.UserName,
 			GroupName:            p.GroupName,
 			ServicePrincipalName: p.ServicePrincipalName,
@@ -225,9 +245,10 @@ func notifyForPermissionOverlap(
 	resourcePermissions []resources.Permission,
 	resourceName string,
 ) bool {
-	isOverlap, _ := isPermissionOverlap(permission, resourcePermissions, resourceName)
-	// TODO: When we start to collect all diagnostics at the top level and visualize jointly,
-	// use diagnostics returned from isPermissionOverlap to display warnings
+	isOverlap, diagnostics := isPermissionOverlap(permission, resourcePermissions, resourceName)
+	for _, d := range diagnostics {
+		logdiag.LogDiag(ctx, d)
+	}
 
 	return isOverlap
 }

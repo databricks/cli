@@ -1,0 +1,5 @@
+Cloud = true
+RecordRequests = false
+Ignore = ["databricks.yml", ".databricks"]
+
+Env.MSYS_NO_PATHCONV = "1"

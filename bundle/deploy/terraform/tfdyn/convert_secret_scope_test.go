@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -25,7 +24,7 @@ func TestConvertSecretScopeWithPermissions(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = secretScopeConverter{}.Convert(ctx, "my_scope", vin, out)
 	require.NoError(t, err)
@@ -69,7 +68,7 @@ func TestConvertSecretScopeSinglePermission(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = secretScopeConverter{}.Convert(ctx, "single_scope", vin, out)
 	require.NoError(t, err)
@@ -89,13 +88,13 @@ func TestConvertSecretScopeNoPermissions(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = secretScopeConverter{}.Convert(ctx, "no_permissions_scope", vin, out)
 	require.NoError(t, err)
 
 	// No ACLs should be created
-	assert.Len(t, out.SecretAcl, 0)
+	assert.Empty(t, out.SecretAcl)
 
 	// But the scope should still be created
 	assert.Contains(t, out.SecretScope, "no_permissions_scope")

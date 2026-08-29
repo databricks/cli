@@ -1,0 +1,22 @@
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+envsubst < databricks.yml.tmpl | sed "s/NAME_PLACEHOLDER/test-db-old-${UNIQUE_NAME}/" > databricks.yml
+
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "Rename the instance: name is immutable, so the plan recreates it"
+sed "s/test-db-old-${UNIQUE_NAME}/test-db-new-${UNIQUE_NAME}/" databricks.yml > databricks.yml.new
+mv databricks.yml.new databricks.yml
+
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+
+# The rename must be a DELETE of the old instance plus a POST creating the new
+# one. A PATCH to the renamed instance would 404 (the bug this guards against).
+jq --sort-keys 'select(.method != "GET" and (.path | contains("/database/instances")))' < out.requests.txt > out.requests.rename.txt
+rm -f out.requests.txt

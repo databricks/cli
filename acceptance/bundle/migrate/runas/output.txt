@@ -31,9 +31,10 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
   in databricks.yml:5:3
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created pipelines.foo
+Created pipelines.foo.permissions
+Files: 7 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //pipelines
 
@@ -81,20 +82,6 @@ Consider using a adding a top-level permissions section such as the following:
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
   in databricks.yml:5:3
 
-Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
-Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
-If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
-
-Consider using a adding a top-level permissions section such as the following:
-
-  permissions:
-    - user_name: [USERNAME]
-      level: CAN_MANAGE
-
-See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:5:3
-
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 Success! Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/production/resources.json
 
 Validate the migration by running "databricks bundle plan", there should be no actions planned.
@@ -152,10 +139,9 @@ The following resources will be deleted:
   delete resources.pipelines.foo
 
 This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
   delete resources.pipelines.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

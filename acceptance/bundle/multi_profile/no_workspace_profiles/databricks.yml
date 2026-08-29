@@ -1,0 +1,5 @@
+bundle:
+  name: multi-profile-no-ws
+
+workspace:
+  host: $DATABRICKS_HOST

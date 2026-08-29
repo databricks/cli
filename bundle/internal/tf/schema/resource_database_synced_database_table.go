@@ -72,13 +72,24 @@ type ResourceDatabaseSyncedDatabaseTableDataSynchronizationStatus struct {
 	TriggeredUpdateStatus  *ResourceDatabaseSyncedDatabaseTableDataSynchronizationStatusTriggeredUpdateStatus  `json:"triggered_update_status,omitempty"`
 }
 
+type ResourceDatabaseSyncedDatabaseTableProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
 type ResourceDatabaseSyncedDatabaseTableSpecNewPipelineSpec struct {
 	BudgetPolicyId string `json:"budget_policy_id,omitempty"`
 	StorageCatalog string `json:"storage_catalog,omitempty"`
 	StorageSchema  string `json:"storage_schema,omitempty"`
 }
 
+type ResourceDatabaseSyncedDatabaseTableSpecTypeOverrides struct {
+	ColumnName string `json:"column_name"`
+	PgType     string `json:"pg_type"`
+	Size       int    `json:"size,omitempty"`
+}
+
 type ResourceDatabaseSyncedDatabaseTableSpec struct {
+	AcceleratedSync                bool                                                    `json:"accelerated_sync,omitempty"`
 	CreateDatabaseObjectsIfMissing bool                                                    `json:"create_database_objects_if_missing,omitempty"`
 	ExistingPipelineId             string                                                  `json:"existing_pipeline_id,omitempty"`
 	NewPipelineSpec                *ResourceDatabaseSyncedDatabaseTableSpecNewPipelineSpec `json:"new_pipeline_spec,omitempty"`
@@ -86,6 +97,7 @@ type ResourceDatabaseSyncedDatabaseTableSpec struct {
 	SchedulingPolicy               string                                                  `json:"scheduling_policy,omitempty"`
 	SourceTableFullName            string                                                  `json:"source_table_full_name,omitempty"`
 	TimeseriesKey                  string                                                  `json:"timeseries_key,omitempty"`
+	TypeOverrides                  []ResourceDatabaseSyncedDatabaseTableSpecTypeOverrides  `json:"type_overrides,omitempty"`
 }
 
 type ResourceDatabaseSyncedDatabaseTable struct {
@@ -95,6 +107,7 @@ type ResourceDatabaseSyncedDatabaseTable struct {
 	EffectiveLogicalDatabaseName  string                                                        `json:"effective_logical_database_name,omitempty"`
 	LogicalDatabaseName           string                                                        `json:"logical_database_name,omitempty"`
 	Name                          string                                                        `json:"name"`
+	ProviderConfig                *ResourceDatabaseSyncedDatabaseTableProviderConfig            `json:"provider_config,omitempty"`
 	Spec                          *ResourceDatabaseSyncedDatabaseTableSpec                      `json:"spec,omitempty"`
 	UnityCatalogProvisioningState string                                                        `json:"unity_catalog_provisioning_state,omitempty"`
 }

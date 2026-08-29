@@ -1,0 +1,15 @@
+cleanup() {
+    $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Initial deploy: cluster created and running"
+trace $CLI bundle deploy
+trace print_requests.py //clusters/start
+
+title "Change tags and deploy from plan: no extra start"
+trace update_file.py databricks.yml "env: original" "env: updated"
+$CLI bundle plan -o json > tmp.plan.json
+$CLI bundle deploy $(readplanarg tmp.plan.json)
+trace print_requests.py //clusters/start

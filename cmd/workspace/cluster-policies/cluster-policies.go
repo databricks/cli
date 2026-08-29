@@ -3,6 +3,7 @@
 package cluster_policies
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -47,6 +48,10 @@ func New() *cobra.Command {
 		GroupID: "compute",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -99,6 +104,8 @@ func newCreate() *cobra.Command {
   Creates a new policy with prescribed settings.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -116,7 +123,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -127,6 +134,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -170,12 +178,14 @@ func newDelete() *cobra.Command {
     POLICY_ID: The ID of the policy to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'policy_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'policy_id' in your JSON input")
 			}
 			return nil
 		}
@@ -193,17 +203,17 @@ func newDelete() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
 			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
+				sp := cmdio.NewSpinner(ctx)
+				sp.Update("No POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-				close(promptSpinner)
+				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -214,7 +224,7 @@ func newDelete() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id of the policy to delete")
+				return errors.New("expected to have the id of the policy to delete")
 			}
 			deleteReq.PolicyId = args[0]
 		}
@@ -274,12 +284,14 @@ func newEdit() *cobra.Command {
     POLICY_ID: The ID of the policy to update.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'policy_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'policy_id' in your JSON input")
 			}
 			return nil
 		}
@@ -297,17 +309,17 @@ func newEdit() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
 			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
+				sp := cmdio.NewSpinner(ctx)
+				sp.Update("No POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-				close(promptSpinner)
+				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -318,7 +330,7 @@ func newEdit() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id of the policy to update")
+				return errors.New("expected to have the id of the policy to update")
 			}
 			editReq.PolicyId = args[0]
 
@@ -367,6 +379,8 @@ func newGet() *cobra.Command {
     POLICY_ID: Canonical unique identifier for the Cluster Policy.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -374,10 +388,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
 			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -388,7 +402,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have canonical unique identifier for the cluster policy")
+			return errors.New("expected to have canonical unique identifier for the cluster policy")
 		}
 		getReq.PolicyId = args[0]
 
@@ -396,6 +410,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -435,6 +450,8 @@ func newGetPermissionLevels() *cobra.Command {
     CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -442,10 +459,10 @@ func newGetPermissionLevels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
 			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -456,7 +473,7 @@ func newGetPermissionLevels() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster policy for which to get or manage permissions")
+			return errors.New("expected to have the cluster policy for which to get or manage permissions")
 		}
 		getPermissionLevelsReq.ClusterPolicyId = args[0]
 
@@ -464,6 +481,7 @@ func newGetPermissionLevels() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -504,6 +522,8 @@ func newGetPermissions() *cobra.Command {
     CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -511,10 +531,10 @@ func newGetPermissions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
 			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -525,7 +545,7 @@ func newGetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster policy for which to get or manage permissions")
+			return errors.New("expected to have the cluster policy for which to get or manage permissions")
 		}
 		getPermissionsReq.ClusterPolicyId = args[0]
 
@@ -533,6 +553,7 @@ func newGetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -561,9 +582,18 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq compute.ListClusterPoliciesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().Var(&listReq.SortColumn, "sort-column", `The cluster policy attribute to sort by. Supported values: [POLICY_CREATION_TIME, POLICY_NAME]`)
 	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order in which the policies get listed. Supported values: [ASC, DESC]`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "list"
 	cmd.Short = `List cluster policies.`
@@ -572,6 +602,8 @@ func newList() *cobra.Command {
   Returns a list of policies accessible by the requesting user.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -584,6 +616,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ClusterPolicies.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -630,6 +669,8 @@ func newSetPermissions() *cobra.Command {
     CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -642,17 +683,17 @@ func newSetPermissions() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
 			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -663,7 +704,7 @@ func newSetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster policy for which to get or manage permissions")
+			return errors.New("expected to have the cluster policy for which to get or manage permissions")
 		}
 		setPermissionsReq.ClusterPolicyId = args[0]
 
@@ -671,6 +712,7 @@ func newSetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -716,6 +758,8 @@ func newUpdatePermissions() *cobra.Command {
     CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -728,17 +772,17 @@ func newUpdatePermissions() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
 			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -749,7 +793,7 @@ func newUpdatePermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster policy for which to get or manage permissions")
+			return errors.New("expected to have the cluster policy for which to get or manage permissions")
 		}
 		updatePermissionsReq.ClusterPolicyId = args[0]
 
@@ -757,6 +801,7 @@ func newUpdatePermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
@@ -13,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/utils"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -29,13 +30,6 @@ func Upload(libs map[string][]LocationToUpdate) bundle.Mutator {
 	}
 }
 
-func UploadWithClient(libs map[string][]LocationToUpdate, client filer.Filer) bundle.Mutator {
-	return &upload{
-		libs:   libs,
-		client: client,
-	}
-}
-
 type upload struct {
 	client filer.Filer
 	libs   map[string][]LocationToUpdate
@@ -44,6 +38,9 @@ type upload struct {
 type LocationToUpdate struct {
 	configPath dyn.Path
 	location   dyn.Location
+	// extras is the pip extras suffix (e.g. "[train]") to re-append to the
+	// rewritten remote path. Empty for libraries that carry no extras.
+	extras string
 }
 
 func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -58,7 +55,7 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		u.client = client
 	}
 
-	sources := utils.SortedKeys(u.libs)
+	sources := slices.Sorted(maps.Keys(u.libs))
 
 	errs, errCtx := errgroup.WithContext(ctx)
 	errs.SetLimit(maxFilesRequestsInFlight)
@@ -70,7 +67,7 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		} else {
 			relPath = filepath.ToSlash(relPath)
 		}
-		cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", relPath))
+		cmdio.LogProgress(ctx, fmt.Sprintf("Uploading %s...", relPath))
 		errs.Go(func() error {
 			return UploadFile(errCtx, source, u.client)
 		})

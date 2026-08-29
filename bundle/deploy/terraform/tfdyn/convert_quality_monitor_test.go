@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -28,7 +27,7 @@ func TestConvertQualityMonitor(t *testing.T) {
 	}
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = qualityMonitorConverter{}.Convert(ctx, "my_monitor", vin, out)
 

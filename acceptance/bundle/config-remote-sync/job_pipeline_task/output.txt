@@ -1,10 +1,11 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.my_job
+Created pipelines.my_pipeline
+Files: 6 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify pipeline_task full_refresh to True
-=== Modify pipeline development to True
+=== Modify pipeline continuous to True
 === Detect and save changes
 Detected changes in 2 resource(s):
 
@@ -12,7 +13,7 @@ Resource: resources.jobs.my_job
   tasks[task_key='run_pipeline'].pipeline_task.full_refresh: replace
 
 Resource: resources.pipelines.my_pipeline
-  development: replace
+  continuous: add
 
 
 
@@ -21,24 +22,29 @@ Resource: resources.pipelines.my_pipeline
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -1,14 +1,12 @@
- bundle:
-   name: test-bundle-[UNIQUE_NAME]
--
- resources:
-   pipelines:
-     my_pipeline:
-       name: test-pipeline-[UNIQUE_NAME]
--      development: false
-+      development: true
-       libraries:
-         - notebook:
+@@ -11,4 +11,5 @@
              path: /Users/{{workspace_user_name}}/notebook
--
+
++      continuous: true
    jobs:
      my_job:
-@@ -17,3 +15,3 @@
+@@ -17,5 +18,5 @@
            pipeline_task:
              pipeline_id: ${resources.pipelines.my_pipeline.id}
 -            full_refresh: false
 +            full_refresh: true
+
+ targets:
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+  delete resources.pipelines.my_pipeline
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.my_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

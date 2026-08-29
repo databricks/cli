@@ -1,7 +1,6 @@
 package env
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -9,7 +8,7 @@ import (
 )
 
 func TestTempDir(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testutil.CleanupEnvironment(t)
 
@@ -23,6 +22,6 @@ func TestTempDir(t *testing.T) {
 	t.Run("not set", func(t *testing.T) {
 		tempDir, ok := TempDir(ctx)
 		assert.False(t, ok)
-		assert.Equal(t, "", tempDir)
+		assert.Empty(t, tempDir)
 	})
 }

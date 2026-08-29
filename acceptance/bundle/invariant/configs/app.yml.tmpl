@@ -6,3 +6,6 @@ resources:
     foo:
       name: app-$UNIQUE_NAME
       source_code_path: ./app
+      permissions:
+        - level: CAN_USE
+          group_name: users

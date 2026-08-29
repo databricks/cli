@@ -1,10 +1,15 @@
 Ignore = [
     "databricks.yml",
     "dash.lvdash.json",
+    "tmp.plan.name1.json",
+    "tmp.plan.name2.json",
 ]
 
-[Env]
+# Deploying a saved plan must send the same full serialized_dashboard as an
+# in-memory plan; both variants share the request goldens below.
+EnvMatrix.READPLAN = ["", "1"]
+
 # MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
 # C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
 # Setting this environment variable prevents that conversion on windows.
-MSYS_NO_PATHCONV = "1"
+Env.MSYS_NO_PATHCONV = "1"

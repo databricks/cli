@@ -1,8 +1,6 @@
 package bundle
 
 import (
-	"context"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/env"
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
@@ -22,7 +19,7 @@ import (
 
 // mustLoad calls MustLoad and returns the bundle and collected diagnostics
 func mustLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 	b := MustLoad(ctx)
 	diags := logdiag.FlushCollected(ctx)
@@ -31,7 +28,7 @@ func mustLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
 
 // tryLoad calls TryLoad and returns the bundle and collected diagnostics
 func tryLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 	b := TryLoad(ctx)
 	diags := logdiag.FlushCollected(ctx)
@@ -39,19 +36,19 @@ func tryLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
 }
 
 func TestLoadNotExists(t *testing.T) {
-	b, err := Load(context.Background(), "/doesntexist")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+	b, err := Load(t.Context(), "/doesntexist")
+	assert.ErrorContains(t, err, "databricks.yml not found")
 	assert.Nil(t, b)
 }
 
 func TestLoadExists(t *testing.T) {
-	b, err := Load(context.Background(), "./tests/basic")
+	b, err := Load(t.Context(), "./tests/basic")
 	assert.NoError(t, err)
 	assert.NotNil(t, b)
 }
 
 func TestBundleLocalStateDir(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	projectDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
 	require.NoError(t, err)
@@ -74,8 +71,31 @@ func TestBundleLocalStateDir(t *testing.T) {
 	assert.Equal(t, filepath.Join(projectDir, ".databricks", "bundle", "default"), cacheDir)
 }
 
+func TestGetSyncIncludePatternsScopesSnapshotDir(t *testing.T) {
+	ctx := t.Context()
+	projectDir := t.TempDir()
+	f, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
+	require.NoError(t, err)
+	f.Close()
+
+	b, err := Load(ctx, projectDir)
+	require.NoError(t, err)
+	b.Config.Bundle.Target = "default"
+
+	// Without an AI Runtime code snapshot, the dir is not force-included.
+	includes, err := b.GetSyncIncludePatterns(ctx)
+	require.NoError(t, err)
+	assert.NotContains(t, includes, AiCodeSnapshotDir+"/*")
+
+	// Once the aicode mutator sets the flag, it is.
+	b.HasAiRuntimeCodeSnapshot = true
+	includes, err = b.GetSyncIncludePatterns(ctx)
+	require.NoError(t, err)
+	assert.Contains(t, includes, AiCodeSnapshotDir+"/*")
+}
+
 func TestBundleLocalStateDirOverride(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	projectDir := t.TempDir()
 	bundleTmpDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
@@ -112,16 +132,16 @@ func TestBundleMustLoadFailureWithEnv(t *testing.T) {
 	b, diags := mustLoad(t)
 	require.Nil(t, b)
 	require.Len(t, diags, 1, "expected diagnostics")
-	assert.Contains(t, diags[0].Summary, "invalid bundle root")
+	assert.Contains(t, diags[0].Summary, "Invalid bundle root")
 	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
 func TestBundleMustLoadFailureIfNotFound(t *testing.T) {
-	testutil.Chdir(t, t.TempDir())
+	t.Chdir(t.TempDir())
 	b, diags := mustLoad(t)
 	require.Nil(t, b)
 	require.Len(t, diags, 1, "expected diagnostics")
-	assert.Contains(t, diags[0].Summary, "unable to locate bundle root")
+	assert.Contains(t, diags[0].Summary, "Unable to locate the bundle root")
 	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
@@ -138,12 +158,12 @@ func TestBundleTryLoadFailureWithEnv(t *testing.T) {
 	b, diags := tryLoad(t)
 	require.Nil(t, b)
 	require.Len(t, diags, 1, "expected diagnostics")
-	assert.Contains(t, diags[0].Summary, "invalid bundle root")
+	assert.Contains(t, diags[0].Summary, "Invalid bundle root")
 	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
 func TestBundleTryLoadOkIfNotFound(t *testing.T) {
-	testutil.Chdir(t, t.TempDir())
+	t.Chdir(t.TempDir())
 	b, diags := tryLoad(t)
 	assert.Nil(t, b)
 	assert.Empty(t, diags, "expected no diagnostics")
@@ -178,4 +198,31 @@ func TestBundleGetResourceConfigJobsPointer(t *testing.T) {
 	res, err = b.Config.GetResourceConfig("resources.not_found.my_job")
 	require.EqualError(t, err, "no such resource type in the config: \"not_found\"")
 	require.Nil(t, res)
+}
+
+func TestClearWorkspaceClient(t *testing.T) {
+	ctx := t.Context()
+
+	// First attempt: profile "profile-A" doesn't exist → error mentions "profile-A".
+	b := &Bundle{}
+	b.Config.Workspace.Host = "https://nonexistent.example.com"
+	b.Config.Workspace.Profile = "profile-A"
+
+	_, err1 := b.WorkspaceClientE(ctx)
+	require.Error(t, err1)
+	assert.Contains(t, err1.Error(), "profile-A")
+
+	// Without retry, second call returns the same cached error (same object).
+	_, err1b := b.WorkspaceClientE(ctx)
+	assert.Same(t, err1, err1b, "expected same cached error without retry")
+
+	// After retry, change the profile to "profile-B" and call again.
+	// If retry didn't re-execute, the error would still mention "profile-A".
+	b.ClearWorkspaceClient(ctx)
+	b.Config.Workspace.Profile = "profile-B"
+
+	_, err2 := b.WorkspaceClientE(ctx)
+	require.Error(t, err2)
+	assert.Contains(t, err2.Error(), "profile-B", "expected re-execution to pick up new profile")
+	assert.NotContains(t, err2.Error(), "profile-A", "stale cached error should not appear")
 }

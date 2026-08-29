@@ -1,7 +1,6 @@
 package permissions
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -34,7 +33,7 @@ func TestValidateSharedRootPermissionsForShared(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	diags := bundle.Apply(context.Background(), b, ValidateSharedRootPermissions())
+	diags := bundle.Apply(t.Context(), b, ValidateSharedRootPermissions())
 	require.Empty(t, diags)
 }
 
@@ -45,7 +44,7 @@ func TestValidateSharedRootPermissionsForSharedError(t *testing.T) {
 				RootPath: "/Workspace/Shared/foo/bar",
 			},
 			Permissions: []resources.Permission{
-				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
+				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -59,7 +58,7 @@ func TestValidateSharedRootPermissionsForSharedError(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	diags := bundle.Apply(context.Background(), b, ValidateSharedRootPermissions())
+	diags := bundle.Apply(t.Context(), b, ValidateSharedRootPermissions())
 	require.Len(t, diags, 1)
 	require.Equal(t, "the bundle root path /Workspace/Shared/foo/bar is writable by all workspace users", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)

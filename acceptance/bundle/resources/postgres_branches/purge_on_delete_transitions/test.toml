@@ -1,0 +1,4 @@
+# Direct engine only: this test exercises the FSF preservation in
+# PrepareState and direct's plan/diff classification when the user flips
+# purge_on_delete. Terraform has its own provider-managed state lifecycle.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

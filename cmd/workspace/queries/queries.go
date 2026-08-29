@@ -3,6 +3,7 @@
 package queries
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -28,6 +29,10 @@ func New() *cobra.Command {
 		GroupID: "sql",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -72,6 +77,8 @@ func newCreate() *cobra.Command {
   Creates a query.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -89,7 +96,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -100,6 +107,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -139,6 +147,8 @@ func newDelete() *cobra.Command {
   days.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -146,10 +156,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Queries drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Queries drop-down.")
 			names, err := w.Queries.ListQueryObjectsResponseQueryDisplayNameToIdMap(ctx, sql.ListQueriesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Queries drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -160,7 +170,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		deleteReq.Id = args[0]
 
@@ -204,6 +214,8 @@ func newGet() *cobra.Command {
   Gets a query.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -211,10 +223,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Queries drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Queries drop-down.")
 			names, err := w.Queries.ListQueryObjectsResponseQueryDisplayNameToIdMap(ctx, sql.ListQueriesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Queries drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -225,7 +237,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		getReq.Id = args[0]
 
@@ -233,6 +245,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -261,9 +274,19 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq sql.ListQueriesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
 	cmd.Short = `List queries.`
@@ -274,6 +297,8 @@ func newList() *cobra.Command {
   throttling, service degradation, or a temporary ban.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -286,6 +311,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Queries.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -314,9 +346,19 @@ func newListVisualizations() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listVisualizationsReq sql.ListVisualizationsForQueryRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listVisualizationsLimit int
 
 	cmd.Flags().IntVar(&listVisualizationsReq.PageSize, "page-size", listVisualizationsReq.PageSize, ``)
-	cmd.Flags().StringVar(&listVisualizationsReq.PageToken, "page-token", listVisualizationsReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listVisualizationsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listVisualizationsReq.PageToken, "page-token", listVisualizationsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-visualizations ID"
 	cmd.Short = `List visualizations on a query.`
@@ -328,6 +370,8 @@ func newListVisualizations() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -335,10 +379,10 @@ func newListVisualizations() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Queries drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Queries drop-down.")
 			names, err := w.Queries.ListQueryObjectsResponseQueryDisplayNameToIdMap(ctx, sql.ListQueriesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Queries drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -349,11 +393,18 @@ func newListVisualizations() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		listVisualizationsReq.Id = args[0]
 
 		response := w.Queries.ListVisualizations(ctx, listVisualizationsReq)
+		if listVisualizationsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listVisualizationsLimit)
+		}
+		if listVisualizationsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listVisualizationsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -410,12 +461,14 @@ func newUpdate() *cobra.Command {
       future.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only ID as positional arguments. Provide 'update_mask' in your JSON input")
+				return errors.New("when --json flag is specified, provide only ID as positional arguments. Provide 'update_mask' in your JSON input")
 			}
 			return nil
 		}
@@ -434,7 +487,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -449,6 +502,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

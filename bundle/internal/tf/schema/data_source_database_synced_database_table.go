@@ -72,13 +72,24 @@ type DataSourceDatabaseSyncedDatabaseTableDataSynchronizationStatus struct {
 	TriggeredUpdateStatus  *DataSourceDatabaseSyncedDatabaseTableDataSynchronizationStatusTriggeredUpdateStatus  `json:"triggered_update_status,omitempty"`
 }
 
+type DataSourceDatabaseSyncedDatabaseTableProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
 type DataSourceDatabaseSyncedDatabaseTableSpecNewPipelineSpec struct {
 	BudgetPolicyId string `json:"budget_policy_id,omitempty"`
 	StorageCatalog string `json:"storage_catalog,omitempty"`
 	StorageSchema  string `json:"storage_schema,omitempty"`
 }
 
+type DataSourceDatabaseSyncedDatabaseTableSpecTypeOverrides struct {
+	ColumnName string `json:"column_name"`
+	PgType     string `json:"pg_type"`
+	Size       int    `json:"size,omitempty"`
+}
+
 type DataSourceDatabaseSyncedDatabaseTableSpec struct {
+	AcceleratedSync                bool                                                      `json:"accelerated_sync,omitempty"`
 	CreateDatabaseObjectsIfMissing bool                                                      `json:"create_database_objects_if_missing,omitempty"`
 	ExistingPipelineId             string                                                    `json:"existing_pipeline_id,omitempty"`
 	NewPipelineSpec                *DataSourceDatabaseSyncedDatabaseTableSpecNewPipelineSpec `json:"new_pipeline_spec,omitempty"`
@@ -86,6 +97,7 @@ type DataSourceDatabaseSyncedDatabaseTableSpec struct {
 	SchedulingPolicy               string                                                    `json:"scheduling_policy,omitempty"`
 	SourceTableFullName            string                                                    `json:"source_table_full_name,omitempty"`
 	TimeseriesKey                  string                                                    `json:"timeseries_key,omitempty"`
+	TypeOverrides                  []DataSourceDatabaseSyncedDatabaseTableSpecTypeOverrides  `json:"type_overrides,omitempty"`
 }
 
 type DataSourceDatabaseSyncedDatabaseTable struct {
@@ -95,6 +107,7 @@ type DataSourceDatabaseSyncedDatabaseTable struct {
 	EffectiveLogicalDatabaseName  string                                                          `json:"effective_logical_database_name,omitempty"`
 	LogicalDatabaseName           string                                                          `json:"logical_database_name,omitempty"`
 	Name                          string                                                          `json:"name"`
+	ProviderConfig                *DataSourceDatabaseSyncedDatabaseTableProviderConfig            `json:"provider_config,omitempty"`
 	Spec                          *DataSourceDatabaseSyncedDatabaseTableSpec                      `json:"spec,omitempty"`
 	UnityCatalogProvisioningState string                                                          `json:"unity_catalog_provisioning_state,omitempty"`
 }

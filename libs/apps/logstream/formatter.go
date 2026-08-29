@@ -1,13 +1,14 @@
 package logstream
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/fatih/color"
 )
 
 // wsEntry represents a structured log entry from the websocket stream.
@@ -38,28 +39,31 @@ func newLogFormatter(colorize bool, outputFormat flags.Output) *logFormatter {
 }
 
 // FormatEntry formats a structured log entry for output.
-func (f *logFormatter) FormatEntry(entry *wsEntry) string {
+func (f *logFormatter) FormatEntry(ctx context.Context, entry *wsEntry) string {
 	if f.outputFormat == flags.OutputJSON {
 		return f.formatEntryJSON(entry)
 	}
-	return f.formatEntryText(entry)
+	return f.formatEntryText(ctx, entry)
 }
 
 // formatEntryText formats a structured log entry as human-readable text.
-func (f *logFormatter) formatEntryText(entry *wsEntry) string {
+func (f *logFormatter) formatEntryText(ctx context.Context, entry *wsEntry) string {
 	timestamp := formatTimestamp(entry.Timestamp)
 	source := strings.ToUpper(entry.Source)
 	message := strings.TrimRight(entry.Message, "\r\n")
 
 	if f.colorize {
-		timestamp = color.HiBlackString(timestamp)
-		source = color.HiBlueString(source)
+		timestamp = cmdio.HiBlack(ctx, timestamp)
+		source = cmdio.HiBlue(ctx, source)
 	}
 
 	return fmt.Sprintf("%s [%s] %s", timestamp, source, message)
 }
 
 // formatEntryJSON formats a structured log entry as JSON (NDJSON line).
+// On marshal failure it falls back to the plain text path; that fallback is
+// uncolored because we have no ctx at that point and JSON output is never
+// piped to a TTY-colored renderer anyway.
 func (f *logFormatter) formatEntryJSON(entry *wsEntry) string {
 	normalized := wsEntry{
 		Source:    strings.ToUpper(entry.Source),
@@ -68,7 +72,11 @@ func (f *logFormatter) formatEntryJSON(entry *wsEntry) string {
 	}
 	data, err := json.Marshal(normalized)
 	if err != nil {
-		return f.formatEntryText(entry)
+		return fmt.Sprintf("%s [%s] %s",
+			formatTimestamp(entry.Timestamp),
+			strings.ToUpper(entry.Source),
+			strings.TrimRight(entry.Message, "\r\n"),
+		)
 	}
 	return string(data)
 }

@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -16,12 +18,30 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/gorilla/mux"
+	"github.com/databricks/cli/libs/testserver/testsql"
 )
 
 const testPidKey = "test-pid"
 
 var testPidRegex = regexp.MustCompile(testPidKey + `/(\d+)`)
+
+// IsLocalhostProbe reports whether r is an external port-classification probe
+// rather than traffic from the CLI-under-test or its helper scripts.
+//
+// Some Databricks-internal development environments run a port watcher that
+// auto-forwards every new localhost listener and probes it to decide whether it
+// speaks HTTP or HTTPS, connecting back and sending `HEAD / HTTP/1.0` with
+// `Host: localhost`. All legitimate test traffic is configured against
+// 127.0.0.1:PORT, so the Host is the reliable discriminator: a request whose
+// host is bare "localhost" never originates from the test. The method and path
+// checks keep the match tight so a genuinely misdirected request still surfaces.
+func IsLocalhostProbe(r *http.Request) bool {
+	host := r.Host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	return host == "localhost" && r.Method == http.MethodHead && r.URL.Path == "/"
+}
 
 func ExtractPidFromHeaders(headers http.Header) int {
 	ua := headers.Get("User-Agent")
@@ -38,13 +58,18 @@ func ExtractPidFromHeaders(headers http.Header) int {
 
 type Server struct {
 	*httptest.Server
-	Router *mux.Router
+	*Router
 
 	t testutil.TestingT
 
 	fakeWorkspaces map[string]*FakeWorkspace
 	fakeOidc       *FakeOidc
 	mu             sync.Mutex
+
+	kills  *killRules
+	faults *FaultRules
+
+	sqlHandler *testsql.Handler
 
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
@@ -58,6 +83,7 @@ type Request struct {
 	Vars      map[string]string
 	Workspace *FakeWorkspace
 	Context   context.Context
+	Token     string
 }
 
 type Response struct {
@@ -83,7 +109,6 @@ func NewRequest(t testutil.TestingT, r *http.Request, fakeWorkspace *FakeWorkspa
 		URL:       r.URL,
 		Headers:   r.Header,
 		Body:      body,
-		Vars:      mux.Vars(r),
 		Workspace: fakeWorkspace,
 		Context:   r.Context(),
 	}
@@ -200,8 +225,21 @@ func getHeaders(value []byte) http.Header {
 }
 
 func New(t testutil.TestingT) *Server {
-	router := mux.NewRouter()
-	server := httptest.NewServer(router)
+	router := NewRouter()
+	kills := newKillRules()
+	faults := NewFaultRules()
+
+	// Wrap the router so kill rules fire for ALL requests, including those with
+	// no registered handler that would otherwise bypass serve() entirely.
+	killMiddleware := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := getToken(r)
+		if kills.check(t, r.Method, r.URL.Path, token, r.Header) {
+			return
+		}
+		router.ServeHTTP(w, r)
+	})
+
+	server := httptest.NewServer(killMiddleware)
 	t.Cleanup(server.Close)
 
 	s := &Server{
@@ -210,10 +248,27 @@ func New(t testutil.TestingT) *Server {
 		t:              t,
 		fakeWorkspaces: map[string]*FakeWorkspace{},
 		fakeOidc:       &FakeOidc{url: server.URL},
+		kills:          kills,
+		faults:         faults,
+		sqlHandler:     testsql.New(),
 	}
+	router.Dispatch = s.serve
+
+	t.Cleanup(func() {
+		for _, ws := range s.fakeWorkspaces {
+			ws.Cleanup()
+		}
+	})
 
 	// Set up the not found handler as fallback
 	notFoundFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Answer external port-classification probes benignly instead of failing
+		// the test with a spurious "No handler" error. See IsLocalhostProbe.
+		if IsLocalhostProbe(r) {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		pattern := r.Method + " " + r.URL.Path
 		bodyBytes, err := io.ReadAll(r.Body)
 		var body string
@@ -250,10 +305,37 @@ Response.Body = '<response body here>'
 			t.Errorf("Response write error: %s", err)
 		}
 	})
-	router.NotFoundHandler = notFoundFunc
-	router.MethodNotAllowedHandler = notFoundFunc
+	router.NotFound = notFoundFunc
+
+	// Register test-only endpoints for setting up kill and fault rules from scripts.
+	s.Handle("POST", "/__testserver/kill", killEndpointHandler(s.kills))
+	s.Handle("POST", "/__testserver/fault", faultEndpointHandler(s.faults))
+
+	// Register a default handler for the SDK's host metadata discovery endpoint.
+	// The SDK resolves this during config initialization (as of v0.126.0) to
+	// determine workspace/account IDs, cloud, and OIDC endpoints. Without this
+	// handler, any test that creates an SDK client against this server would fail
+	// with "No handler for URL: /.well-known/databricks-config".
+	s.Handle("GET", "/.well-known/databricks-config", func(_ Request) any {
+		return map[string]any{
+			"oidc_endpoint": server.URL + "/oidc",
+			"workspace_id":  "900800700600",
+		}
+	})
 
 	return s
+}
+
+// workspaceKeyForToken strips the identity prefix so a test's user, primary SP,
+// and guest tokens resolve to the same FakeWorkspace and share state. The uuid
+// suffix keeps distinct tests isolated.
+func workspaceKeyForToken(token string) string {
+	for _, prefix := range []string{UserNameTokenPrefix, ServicePrincipalTokenPrefix, GuestServicePrincipalTokenPrefix} {
+		if s, ok := strings.CutPrefix(token, prefix); ok {
+			return s
+		}
+	}
+	return token
 }
 
 func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
@@ -261,32 +343,38 @@ func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 		return nil
 	}
 
+	key := workspaceKeyForToken(token)
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, ok := s.fakeWorkspaces[token]; !ok {
-		s.fakeWorkspaces[token] = NewFakeWorkspace(s.URL, token)
+	if _, ok := s.fakeWorkspaces[key]; !ok {
+		s.fakeWorkspaces[key] = NewFakeWorkspace(s.URL, token)
 	}
 
-	return s.fakeWorkspaces[token]
+	return s.fakeWorkspaces[key]
 }
 
-type HandlerFunc func(req Request) any
+func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFunc, vars map[string]string) {
+	token := getToken(r)
 
-func (s *Server) Handle(method, path string, handler HandlerFunc) {
-	s.Router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
-		// it's own fake fakeWorkspace to avoid interference between tests.
-		fakeWorkspace := s.getWorkspaceForToken(getToken(r))
+	// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
+	// it's own fake fakeWorkspace to avoid interference between tests.
+	fakeWorkspace := s.getWorkspaceForToken(token)
 
-		request := NewRequest(s.t, r, fakeWorkspace)
+	request := NewRequest(s.t, r, fakeWorkspace)
+	request.Vars = vars
+	request.Token = token
 
-		if s.RequestCallback != nil {
-			s.RequestCallback(&request)
-		}
+	if s.RequestCallback != nil {
+		s.RequestCallback(&request)
+	}
 
-		var resp EncodedResponse
+	var resp EncodedResponse
 
+	fault := s.faults.Check(r.Method, r.URL.Path, token)
+
+	if fault == nil || fault.AfterHandler {
 		if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
 			resp = EncodedResponse{
 				StatusCode: 500,
@@ -299,22 +387,28 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 			}
 			resp = normalizeResponse(s.t, respAny)
 		}
+	}
 
-		for k, v := range resp.Headers {
-			w.Header()[k] = v
+	if fault != nil {
+		resp = EncodedResponse{
+			StatusCode: fault.StatusCode,
+			Body:       []byte(fault.Body),
+			Headers:    getJsonHeaders(),
 		}
+	}
 
-		w.WriteHeader(resp.StatusCode)
+	maps.Copy(w.Header(), resp.Headers)
 
-		if s.ResponseCallback != nil {
-			s.ResponseCallback(&request, &resp)
-		}
+	w.WriteHeader(resp.StatusCode)
 
-		if _, err := w.Write(resp.Body); err != nil {
-			s.t.Errorf("Failed to write response: %s", err)
-			return
-		}
-	}).Methods(method)
+	if s.ResponseCallback != nil {
+		s.ResponseCallback(&request, &resp)
+	}
+
+	if _, err := w.Write(resp.Body); err != nil {
+		s.t.Errorf("Failed to write response: %s", err)
+		return
+	}
 }
 
 func getToken(r *http.Request) string {
@@ -334,7 +428,7 @@ func isNil(i any) bool {
 	}
 	v := reflect.ValueOf(i)
 	switch v.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Interface, reflect.Slice:
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.Interface, reflect.Slice:
 		return v.IsNil()
 	default:
 		return false

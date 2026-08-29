@@ -26,10 +26,11 @@ type ResourceClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourceClusterAzureAttributes struct {
-	Availability     string                                          `json:"availability,omitempty"`
-	FirstOnDemand    int                                             `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                             `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                          `json:"availability,omitempty"`
+	CapacityReservationGroup string                                          `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                             `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                             `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceClusterClusterLogConfDbfs struct {
@@ -84,6 +85,7 @@ type ResourceClusterDriverNodeTypeFlexibility struct {
 type ResourceClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -162,7 +164,7 @@ type ResourceClusterLibrary struct {
 }
 
 type ResourceClusterProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceClusterWorkerNodeTypeFlexibility struct {
@@ -179,49 +181,51 @@ type ResourceClusterWorkloadType struct {
 }
 
 type ResourceCluster struct {
-	ApplyPolicyDefaultValues   bool                                      `json:"apply_policy_default_values,omitempty"`
-	AutoterminationMinutes     int                                       `json:"autotermination_minutes,omitempty"`
-	ClusterId                  string                                    `json:"cluster_id,omitempty"`
-	ClusterName                string                                    `json:"cluster_name,omitempty"`
-	CustomTags                 map[string]string                         `json:"custom_tags,omitempty"`
-	DataSecurityMode           string                                    `json:"data_security_mode,omitempty"`
-	DefaultTags                map[string]string                         `json:"default_tags,omitempty"`
-	DriverInstancePoolId       string                                    `json:"driver_instance_pool_id,omitempty"`
-	DriverNodeTypeId           string                                    `json:"driver_node_type_id,omitempty"`
-	EnableElasticDisk          bool                                      `json:"enable_elastic_disk,omitempty"`
-	EnableLocalDiskEncryption  bool                                      `json:"enable_local_disk_encryption,omitempty"`
-	Id                         string                                    `json:"id,omitempty"`
-	IdempotencyToken           string                                    `json:"idempotency_token,omitempty"`
-	InstancePoolId             string                                    `json:"instance_pool_id,omitempty"`
-	IsPinned                   bool                                      `json:"is_pinned,omitempty"`
-	IsSingleNode               bool                                      `json:"is_single_node,omitempty"`
-	Kind                       string                                    `json:"kind,omitempty"`
-	NoWait                     bool                                      `json:"no_wait,omitempty"`
-	NodeTypeId                 string                                    `json:"node_type_id,omitempty"`
-	NumWorkers                 int                                       `json:"num_workers,omitempty"`
-	PolicyId                   string                                    `json:"policy_id,omitempty"`
-	RemoteDiskThroughput       int                                       `json:"remote_disk_throughput,omitempty"`
-	RuntimeEngine              string                                    `json:"runtime_engine,omitempty"`
-	SingleUserName             string                                    `json:"single_user_name,omitempty"`
-	SparkConf                  map[string]string                         `json:"spark_conf,omitempty"`
-	SparkEnvVars               map[string]string                         `json:"spark_env_vars,omitempty"`
-	SparkVersion               string                                    `json:"spark_version"`
-	SshPublicKeys              []string                                  `json:"ssh_public_keys,omitempty"`
-	State                      string                                    `json:"state,omitempty"`
-	TotalInitialRemoteDiskSize int                                       `json:"total_initial_remote_disk_size,omitempty"`
-	Url                        string                                    `json:"url,omitempty"`
-	UseMlRuntime               bool                                      `json:"use_ml_runtime,omitempty"`
-	Autoscale                  *ResourceClusterAutoscale                 `json:"autoscale,omitempty"`
-	AwsAttributes              *ResourceClusterAwsAttributes             `json:"aws_attributes,omitempty"`
-	AzureAttributes            *ResourceClusterAzureAttributes           `json:"azure_attributes,omitempty"`
-	ClusterLogConf             *ResourceClusterClusterLogConf            `json:"cluster_log_conf,omitempty"`
-	ClusterMountInfo           []ResourceClusterClusterMountInfo         `json:"cluster_mount_info,omitempty"`
-	DockerImage                *ResourceClusterDockerImage               `json:"docker_image,omitempty"`
-	DriverNodeTypeFlexibility  *ResourceClusterDriverNodeTypeFlexibility `json:"driver_node_type_flexibility,omitempty"`
-	GcpAttributes              *ResourceClusterGcpAttributes             `json:"gcp_attributes,omitempty"`
-	InitScripts                []ResourceClusterInitScripts              `json:"init_scripts,omitempty"`
-	Library                    []ResourceClusterLibrary                  `json:"library,omitempty"`
-	ProviderConfig             *ResourceClusterProviderConfig            `json:"provider_config,omitempty"`
-	WorkerNodeTypeFlexibility  *ResourceClusterWorkerNodeTypeFlexibility `json:"worker_node_type_flexibility,omitempty"`
-	WorkloadType               *ResourceClusterWorkloadType              `json:"workload_type,omitempty"`
+	ApplyPolicyDefaultValues     bool                                      `json:"apply_policy_default_values,omitempty"`
+	AutoterminationMinutes       int                                       `json:"autotermination_minutes,omitempty"`
+	ClearCloudAttributesOnRemove bool                                      `json:"clear_cloud_attributes_on_remove,omitempty"`
+	ClusterId                    string                                    `json:"cluster_id,omitempty"`
+	ClusterName                  string                                    `json:"cluster_name,omitempty"`
+	CustomTags                   map[string]string                         `json:"custom_tags,omitempty"`
+	DataSecurityMode             string                                    `json:"data_security_mode,omitempty"`
+	DefaultTags                  map[string]string                         `json:"default_tags,omitempty"`
+	DependencyMode               string                                    `json:"dependency_mode,omitempty"`
+	DriverInstancePoolId         string                                    `json:"driver_instance_pool_id,omitempty"`
+	DriverNodeTypeId             string                                    `json:"driver_node_type_id,omitempty"`
+	EnableElasticDisk            bool                                      `json:"enable_elastic_disk,omitempty"`
+	EnableLocalDiskEncryption    bool                                      `json:"enable_local_disk_encryption,omitempty"`
+	Id                           string                                    `json:"id,omitempty"`
+	IdempotencyToken             string                                    `json:"idempotency_token,omitempty"`
+	InstancePoolId               string                                    `json:"instance_pool_id,omitempty"`
+	IsPinned                     bool                                      `json:"is_pinned,omitempty"`
+	IsSingleNode                 bool                                      `json:"is_single_node,omitempty"`
+	Kind                         string                                    `json:"kind,omitempty"`
+	NoWait                       bool                                      `json:"no_wait,omitempty"`
+	NodeTypeId                   string                                    `json:"node_type_id,omitempty"`
+	NumWorkers                   int                                       `json:"num_workers,omitempty"`
+	PolicyId                     string                                    `json:"policy_id,omitempty"`
+	RemoteDiskThroughput         int                                       `json:"remote_disk_throughput,omitempty"`
+	RuntimeEngine                string                                    `json:"runtime_engine,omitempty"`
+	SingleUserName               string                                    `json:"single_user_name,omitempty"`
+	SparkConf                    map[string]string                         `json:"spark_conf,omitempty"`
+	SparkEnvVars                 map[string]string                         `json:"spark_env_vars,omitempty"`
+	SparkVersion                 string                                    `json:"spark_version"`
+	SshPublicKeys                []string                                  `json:"ssh_public_keys,omitempty"`
+	State                        string                                    `json:"state,omitempty"`
+	TotalInitialRemoteDiskSize   int                                       `json:"total_initial_remote_disk_size,omitempty"`
+	Url                          string                                    `json:"url,omitempty"`
+	UseMlRuntime                 bool                                      `json:"use_ml_runtime,omitempty"`
+	Autoscale                    *ResourceClusterAutoscale                 `json:"autoscale,omitempty"`
+	AwsAttributes                *ResourceClusterAwsAttributes             `json:"aws_attributes,omitempty"`
+	AzureAttributes              *ResourceClusterAzureAttributes           `json:"azure_attributes,omitempty"`
+	ClusterLogConf               *ResourceClusterClusterLogConf            `json:"cluster_log_conf,omitempty"`
+	ClusterMountInfo             []ResourceClusterClusterMountInfo         `json:"cluster_mount_info,omitempty"`
+	DockerImage                  *ResourceClusterDockerImage               `json:"docker_image,omitempty"`
+	DriverNodeTypeFlexibility    *ResourceClusterDriverNodeTypeFlexibility `json:"driver_node_type_flexibility,omitempty"`
+	GcpAttributes                *ResourceClusterGcpAttributes             `json:"gcp_attributes,omitempty"`
+	InitScripts                  []ResourceClusterInitScripts              `json:"init_scripts,omitempty"`
+	Library                      []ResourceClusterLibrary                  `json:"library,omitempty"`
+	ProviderConfig               *ResourceClusterProviderConfig            `json:"provider_config,omitempty"`
+	WorkerNodeTypeFlexibility    *ResourceClusterWorkerNodeTypeFlexibility `json:"worker_node_type_flexibility,omitempty"`
+	WorkloadType                 *ResourceClusterWorkloadType              `json:"workload_type,omitempty"`
 }

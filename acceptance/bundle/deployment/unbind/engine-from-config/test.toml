@@ -1,0 +1,4 @@
+Cloud = false # test leaves deployed job
+Ignore = [".databricks"]
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

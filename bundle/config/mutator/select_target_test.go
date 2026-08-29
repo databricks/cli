@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -26,7 +25,7 @@ func TestSelectTarget(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.SelectTarget("default"))
+	diags := bundle.Apply(t.Context(), b, mutator.SelectTarget("default"))
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "bar", b.Config.Workspace.Host)
 }
@@ -39,6 +38,6 @@ func TestSelectTargetNotFound(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.SelectTarget("doesnt-exist"))
+	diags := bundle.Apply(t.Context(), b, mutator.SelectTarget("doesnt-exist"))
 	require.Error(t, diags.Error(), "no targets defined")
 }

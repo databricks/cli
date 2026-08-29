@@ -1,0 +1,32 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Initial deploy on terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt
+
+title "Opt in via env var; inject 403 on the DELETE of remote terraform.tfstate"
+# resources.json is uploaded successfully; then we back up terraform.tfstate to
+# .backup and delete the original. Fault the second workspace/delete call
+# (skipping the first one, which is the deploy's own artifacts cleanup) to
+# fail the terraform.tfstate delete. The migration must surface a
+# commit-error warning; the local state stays terraform.
+fault.py "POST /api/2.0/workspace/delete" 403 1 1
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt
+
+title "Local state was NOT rewritten (still terraform)\n"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
+
+title "Retry recovers: subsequent deploy re-does the backup and completes"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt
+
+title "Local state is now direct\n"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
+
+rm -f out.requests.txt

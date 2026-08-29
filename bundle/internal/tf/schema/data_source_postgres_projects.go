@@ -2,6 +2,33 @@
 
 package schema
 
+type DataSourcePostgresProjectsProjectsInitialBranchSpec struct {
+	IsProtected bool `json:"is_protected,omitempty"`
+}
+
+type DataSourcePostgresProjectsProjectsInitialEndpointSpecGroup struct {
+	EnableReadableSecondaries bool `json:"enable_readable_secondaries,omitempty"`
+	Max                       int  `json:"max"`
+	Min                       int  `json:"min"`
+}
+
+type DataSourcePostgresProjectsProjectsInitialEndpointSpec struct {
+	AutoscalingLimitMaxCu  int                                                         `json:"autoscaling_limit_max_cu,omitempty"`
+	AutoscalingLimitMinCu  int                                                         `json:"autoscaling_limit_min_cu,omitempty"`
+	Group                  *DataSourcePostgresProjectsProjectsInitialEndpointSpecGroup `json:"group,omitempty"`
+	NoSuspension           bool                                                        `json:"no_suspension,omitempty"`
+	SuspendTimeoutDuration string                                                      `json:"suspend_timeout_duration,omitempty"`
+}
+
+type DataSourcePostgresProjectsProjectsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
+type DataSourcePostgresProjectsProjectsSpecCustomTags struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
 type DataSourcePostgresProjectsProjectsSpecDefaultEndpointSettings struct {
 	AutoscalingLimitMaxCu  float64           `json:"autoscaling_limit_max_cu,omitempty"`
 	AutoscalingLimitMinCu  float64           `json:"autoscaling_limit_min_cu,omitempty"`
@@ -11,10 +38,19 @@ type DataSourcePostgresProjectsProjectsSpecDefaultEndpointSettings struct {
 }
 
 type DataSourcePostgresProjectsProjectsSpec struct {
+	BudgetPolicyId           string                                                         `json:"budget_policy_id,omitempty"`
+	CustomTags               []DataSourcePostgresProjectsProjectsSpecCustomTags             `json:"custom_tags,omitempty"`
+	DefaultBranch            string                                                         `json:"default_branch,omitempty"`
 	DefaultEndpointSettings  *DataSourcePostgresProjectsProjectsSpecDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
 	DisplayName              string                                                         `json:"display_name,omitempty"`
+	EnablePgNativeLogin      bool                                                           `json:"enable_pg_native_login,omitempty"`
 	HistoryRetentionDuration string                                                         `json:"history_retention_duration,omitempty"`
 	PgVersion                int                                                            `json:"pg_version,omitempty"`
+}
+
+type DataSourcePostgresProjectsProjectsStatusCustomTags struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 type DataSourcePostgresProjectsProjectsStatusDefaultEndpointSettings struct {
@@ -27,24 +63,42 @@ type DataSourcePostgresProjectsProjectsStatusDefaultEndpointSettings struct {
 
 type DataSourcePostgresProjectsProjectsStatus struct {
 	BranchLogicalSizeLimitBytes int                                                              `json:"branch_logical_size_limit_bytes,omitempty"`
+	BudgetPolicyId              string                                                           `json:"budget_policy_id,omitempty"`
+	ComputeLastActiveTime       string                                                           `json:"compute_last_active_time,omitempty"`
+	CustomTags                  []DataSourcePostgresProjectsProjectsStatusCustomTags             `json:"custom_tags,omitempty"`
+	DefaultBranch               string                                                           `json:"default_branch,omitempty"`
 	DefaultEndpointSettings     *DataSourcePostgresProjectsProjectsStatusDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
 	DisplayName                 string                                                           `json:"display_name,omitempty"`
+	EnablePgNativeLogin         bool                                                             `json:"enable_pg_native_login,omitempty"`
 	HistoryRetentionDuration    string                                                           `json:"history_retention_duration,omitempty"`
 	Owner                       string                                                           `json:"owner,omitempty"`
 	PgVersion                   int                                                              `json:"pg_version,omitempty"`
+	ProjectId                   string                                                           `json:"project_id,omitempty"`
 	SyntheticStorageSizeBytes   int                                                              `json:"synthetic_storage_size_bytes,omitempty"`
 }
 
 type DataSourcePostgresProjectsProjects struct {
-	CreateTime string                                    `json:"create_time,omitempty"`
-	Name       string                                    `json:"name"`
-	Spec       *DataSourcePostgresProjectsProjectsSpec   `json:"spec,omitempty"`
-	Status     *DataSourcePostgresProjectsProjectsStatus `json:"status,omitempty"`
-	Uid        string                                    `json:"uid,omitempty"`
-	UpdateTime string                                    `json:"update_time,omitempty"`
+	CreateTime          string                                                 `json:"create_time,omitempty"`
+	DeleteTime          string                                                 `json:"delete_time,omitempty"`
+	InitialBranchSpec   *DataSourcePostgresProjectsProjectsInitialBranchSpec   `json:"initial_branch_spec,omitempty"`
+	InitialEndpointSpec *DataSourcePostgresProjectsProjectsInitialEndpointSpec `json:"initial_endpoint_spec,omitempty"`
+	Name                string                                                 `json:"name"`
+	ProjectId           string                                                 `json:"project_id,omitempty"`
+	ProviderConfig      *DataSourcePostgresProjectsProjectsProviderConfig      `json:"provider_config,omitempty"`
+	PurgeTime           string                                                 `json:"purge_time,omitempty"`
+	Spec                *DataSourcePostgresProjectsProjectsSpec                `json:"spec,omitempty"`
+	Status              *DataSourcePostgresProjectsProjectsStatus              `json:"status,omitempty"`
+	Uid                 string                                                 `json:"uid,omitempty"`
+	UpdateTime          string                                                 `json:"update_time,omitempty"`
+}
+
+type DataSourcePostgresProjectsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourcePostgresProjects struct {
-	PageSize int                                  `json:"page_size,omitempty"`
-	Projects []DataSourcePostgresProjectsProjects `json:"projects,omitempty"`
+	PageSize       int                                       `json:"page_size,omitempty"`
+	Projects       []DataSourcePostgresProjectsProjects      `json:"projects,omitempty"`
+	ProviderConfig *DataSourcePostgresProjectsProviderConfig `json:"provider_config,omitempty"`
+	ShowDeleted    bool                                      `json:"show_deleted,omitempty"`
 }

@@ -1,5 +1,8 @@
 Cloud=true
-Local=false
+# The MLOps Stacks template registers the model in Unity Catalog and runs its
+# jobs on serverless compute, so this test only works on a UC-enabled workspace
+# (which also has serverless jobs). Gate on UC so it skips on the non-UC cloud
+# envs instead of failing with METASTORE_DOES_NOT_EXIST.
 
 Badness = "the newly initialized bundle from the 'mlops-stacks' template contains two validation warnings in the configuration"
 
@@ -7,14 +10,11 @@ Ignore = [
     "config.json"
 ]
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
-# On direct, this fails with
-#        +Endpoint: PUT [DATABRICKS_URL]/api/2.0/permissions/registered-models/%5Bdev%20[USERNAME]%5D%20dev-project_name_[UNIQUE_NAME]-model
-#        +HTTP Status: 400 Bad Request
-#        +API error_code: INVALID_PARAMETER_VALUE
-#        +API message: '[dev [USERNAME]] dev-project_name_[UNIQUE_NAME]-model' is not a valid registered model ID.
-
-
 [[Repls]]
 Old = "aws|azure|gcp"
 New = "[CLOUD_ENV_BASE]"
+
+# $TESTDIR uses backslashes on Windows, hence the either-separator match.
+[[Repls]]
+Old = 'bundle init .*[\\/]mlops-stacks/template'
+New = "bundle init mlops-stacks"

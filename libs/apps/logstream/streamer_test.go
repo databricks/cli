@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/fatih/color"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,24 +31,27 @@ func TestLogStreamerTailBufferFlushes(t *testing.T) {
 		for i := 1; i <= 3; i++ {
 			require.NoError(t, sendEntry(conn, float64(i), fmt.Sprintf("msg%d", i)))
 		}
-		time.Sleep(50 * time.Millisecond)
 		_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second))
 	})
 	defer server.Close()
 
 	buf := &bytes.Buffer{}
 	streamer := &logStreamer{
-		dialer:    &websocket.Dialer{},
-		url:       toWebSocketURL(server.URL),
-		token:     "test",
-		tail:      2,
-		follow:    false,
-		prefetch:  25 * time.Millisecond,
+		dialer: &websocket.Dialer{},
+		url:    toWebSocketURL(server.URL),
+		token:  "test",
+		tail:   2,
+		follow: false,
+		// No prefetch: the tail flushes deterministically on the clean connection
+		// close. A wall-clock prefetch timer races message delivery and flushes a
+		// partial buffer on a loaded runner (the prefetch-timer path is covered by
+		// TestLogStreamerTailFlushesWithoutFollow).
+		prefetch:  0,
 		writer:    buf,
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	require.Len(t, lines, 2, "expected only last two log lines")
 	assert.Contains(t, lines[0], "msg2")
@@ -81,7 +84,7 @@ func TestLogStreamerTailFlushErrorPropagates(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	err := streamer.Run(context.Background())
+	err := streamer.Run(t.Context())
 	require.Error(t, err)
 	assert.Equal(t, writerErr, err)
 }
@@ -106,7 +109,7 @@ func TestLogStreamerTrimsCRLFInStructuredEntries(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 	output := buf.String()
 	assert.Contains(t, output, "line with crlf")
 	assert.NotContains(t, output, "\r")
@@ -129,7 +132,7 @@ func TestLogStreamerDialErrorIncludesResponseBody(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	err := streamer.Run(context.Background())
+	err := streamer.Run(t.Context())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "HTTP 403 Forbidden")
 	assert.Contains(t, err.Error(), "token invalid")
@@ -156,7 +159,7 @@ func TestLogStreamerRetriesOnDialFailure(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Millisecond)
 	defer cancel()
 
 	require.ErrorIs(t, streamer.Run(ctx), context.DeadlineExceeded)
@@ -186,7 +189,7 @@ func TestLogStreamerSendsSearchTerm(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 	assert.Contains(t, buf.String(), "boom")
 }
 
@@ -214,26 +217,25 @@ func TestLogStreamerFiltersSources(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 	output := strings.TrimSpace(buf.String())
 	assert.Contains(t, output, "app")
 	assert.NotContains(t, output, "sys")
 }
 
 func TestFormatLogEntryColorizesWhenEnabled(t *testing.T) {
-	original := color.NoColor
-	color.NoColor = false
-	defer func() { color.NoColor = original }()
-
 	entry := &wsEntry{Source: "app", Timestamp: 1, Message: "hello\n"}
 
+	ttyCtx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	plainCtx := cmdio.MockDiscard(t.Context())
+
 	colorFormatter := newLogFormatter(true, flags.OutputText)
-	colored := colorFormatter.FormatEntry(entry)
+	colored := colorFormatter.FormatEntry(ttyCtx, entry)
 	assert.Contains(t, colored, "\x1b[")
-	assert.Contains(t, colored, fmt.Sprintf("[%s]", color.HiBlueString("APP")))
+	assert.Contains(t, colored, fmt.Sprintf("[%s]", cmdio.HiBlue(ttyCtx, "APP")))
 
 	plainFormatter := newLogFormatter(false, flags.OutputText)
-	plain := plainFormatter.FormatEntry(entry)
+	plain := plainFormatter.FormatEntry(plainCtx, entry)
 	assert.NotContains(t, plain, "\x1b[")
 	assert.Contains(t, plain, "[APP]")
 }
@@ -259,7 +261,7 @@ func TestLogStreamerOutputsNDJSON(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputJSON),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	require.Len(t, lines, 2, "expected two NDJSON lines")
@@ -307,7 +309,7 @@ func TestTailWithoutPrefetchRespectsTailSize(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	require.Len(t, lines, 2)
 	assert.Contains(t, lines[0], "line3")
@@ -331,7 +333,7 @@ func TestCloseErrorPropagatesWhenAbnormal(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	err := streamer.Run(context.Background())
+	err := streamer.Run(t.Context())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "log stream closed with code 4403")
 	assert.Contains(t, err.Error(), "auth failed")
@@ -361,6 +363,7 @@ func (f *flakyDialer) DialContext(ctx context.Context, urlStr string, requestHea
 func newTestLogServer(t *testing.T, handler func(int, *websocket.Conn)) *httptest.Server {
 	upgrader := websocket.Upgrader{}
 	var connCount atomic.Int32
+	var handlers sync.WaitGroup
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := int(connCount.Add(1))
@@ -369,12 +372,20 @@ func newTestLogServer(t *testing.T, handler func(int, *websocket.Conn)) *httptes
 			t.Errorf("failed to upgrade connection: %v", err)
 			return
 		}
-		go handler(id, conn)
+		handlers.Go(func() {
+			handler(id, conn)
+		})
 	}))
 
 	t.Cleanup(func() {
+		// Close connections first so handlers blocked on the socket unblock, then
+		// wait for every handler goroutine to finish. Handlers assert with require
+		// on the *testing.T; without this wait a handler could call an assertion
+		// after the test completed, which panics the whole package test binary
+		// instead of failing the one test.
 		server.CloseClientConnections()
 		server.Close()
+		handlers.Wait()
 	})
 	return server
 }
@@ -421,7 +432,7 @@ func TestLogStreamerTailFlushesWithoutFollow(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
 
 	done := make(chan error, 1)
@@ -462,7 +473,7 @@ func TestLogStreamerFollowTailWithoutPrefetchEmitsRequestedLines(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	done := make(chan error, 1)
@@ -488,7 +499,7 @@ func TestLogStreamerFollowTailWithoutPrefetchEmitsRequestedLines(t *testing.T) {
 func TestLogStreamerFollowTailDoesNotReplayAfterReconnect(t *testing.T) {
 	t.Parallel()
 
-	stopCtx, stop := context.WithCancel(context.Background())
+	stopCtx, stop := context.WithCancel(t.Context())
 	defer stop()
 
 	server := newTestLogServer(t, func(id int, conn *websocket.Conn) {
@@ -520,7 +531,7 @@ func TestLogStreamerFollowTailDoesNotReplayAfterReconnect(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	done := make(chan error, 1)
@@ -601,7 +612,7 @@ func TestLogStreamerRefreshesTokenAfterAuthClose(t *testing.T) {
 		formatter:     newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	done := make(chan error, 1)
@@ -640,14 +651,14 @@ func TestLogStreamerEmitsPlainTextFrames(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 	assert.Contains(t, buf.String(), "plain text line")
 }
 
 func TestLogStreamerTimeoutStopsQuietFollowStream(t *testing.T) {
 	t.Parallel()
 
-	stopCtx, stop := context.WithCancel(context.Background())
+	stopCtx, stop := context.WithCancel(t.Context())
 	defer stop()
 
 	server := newTestLogServer(t, func(id int, conn *websocket.Conn) {
@@ -665,7 +676,7 @@ func TestLogStreamerTimeoutStopsQuietFollowStream(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 	defer cancel()
 
 	done := make(chan error, 1)
@@ -758,7 +769,7 @@ func TestAppStatusCheckerStopsFollowing(t *testing.T) {
 		formatter:        newLogFormatter(false, flags.OutputText),
 	}
 
-	err := streamer.Run(context.Background())
+	err := streamer.Run(t.Context())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "app is no longer available")
 	assert.Contains(t, err.Error(), "app stopped")

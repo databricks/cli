@@ -10,8 +10,8 @@ import (
 )
 
 func FormatAPIErrorSummary(e error) string {
-	var apiErr *apierr.APIError
-	if !errors.As(e, &apiErr) {
+	apiErr, ok := errors.AsType[*apierr.APIError](e)
+	if !ok {
 		return e.Error()
 	}
 	extra := strings.TrimSpace(fmt.Sprintf("%d %s", apiErr.StatusCode, apiErr.ErrorCode))
@@ -19,8 +19,8 @@ func FormatAPIErrorSummary(e error) string {
 }
 
 func FormatAPIErrorDetails(e error) string {
-	var apiErr *apierr.APIError
-	if !errors.As(e, &apiErr) {
+	apiErr, ok := errors.AsType[*apierr.APIError](e)
+	if !ok {
 		return ""
 	}
 

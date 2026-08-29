@@ -1,0 +1,32 @@
+bundle:
+  name: update-postgres-database-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Test Project for Database Update"
+      pg_version: 16
+      history_retention_duration: 604800s
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  postgres_roles:
+    owner:
+      parent: ${resources.postgres_branches.main.id}
+      role_id: app-owner
+      postgres_role: app_owner
+
+  postgres_databases:
+    my_database:
+      database_id: my-database
+      parent: ${resources.postgres_branches.main.id}
+      postgres_database: initial_db_name
+      role: ${resources.postgres_roles.owner.id}

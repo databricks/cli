@@ -44,7 +44,7 @@ type statePullOpts struct {
 }
 
 func testStatePull(t *testing.T, opts statePullOpts) {
-	s := &statePull{func(b *bundle.Bundle) (filer.Filer, error) {
+	s := &statePull{func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
 		f := mockfiler.NewMockFiler(t)
 
 		deploymentStateData, err := json.Marshal(DeploymentState{
@@ -81,7 +81,7 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, file := range opts.localFiles {
 		testutil.Touch(t, b.SyncRootPath, "bar", file)
@@ -249,7 +249,7 @@ func TestStatePullSnapshotExists(t *testing.T) {
 }
 
 func TestStatePullNoState(t *testing.T) {
-	s := &statePull{func(b *bundle.Bundle) (filer.Filer, error) {
+	s := &statePull{func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
 		f := mockfiler.NewMockFiler(t)
 
 		f.EXPECT().Read(mock.Anything, DeploymentStateFileName).Return(nil, os.ErrNotExist)
@@ -268,7 +268,7 @@ func TestStatePullNoState(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	diags := bundle.Apply(ctx, b, s)
 	require.NoError(t, diags.Error())
@@ -422,7 +422,7 @@ func TestStatePullAndNotebookIsRemovedLocally(t *testing.T) {
 }
 
 func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
-	s := &statePull{func(b *bundle.Bundle) (filer.Filer, error) {
+	s := &statePull{func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
 		f := mockfiler.NewMockFiler(t)
 
 		deploymentStateData, err := json.Marshal(DeploymentState{
@@ -456,7 +456,7 @@ func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	diags := bundle.Apply(ctx, b, s)
 	require.True(t, diags.HasError())

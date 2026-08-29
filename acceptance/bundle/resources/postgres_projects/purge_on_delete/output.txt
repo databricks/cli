@@ -1,0 +1,67 @@
+
+>>> [CLI] bundle validate
+Name: deploy-postgres-purge-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-purge-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-purge-[UNIQUE_NAME]/default/files...
+Created postgres_projects.hard_delete
+Created postgres_projects.soft_delete
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] postgres get-project projects/test-pg-proj-hard-[UNIQUE_NAME]
+{
+  "name": "projects/test-pg-proj-hard-[UNIQUE_NAME]",
+  "project_id": "test-pg-proj-hard-[UNIQUE_NAME]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_branch": "projects/test-pg-proj-hard-[UNIQUE_NAME]/branches/production",
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu": 1,
+      "autoscaling_limit_min_cu": 1,
+      "suspend_timeout_duration": "86400s"
+    },
+    "display_name": "purge_on_delete = true",
+    "enable_pg_native_login": false,
+    "history_retention_duration": "604800s",
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "project_id": "test-pg-proj-hard-[UNIQUE_NAME]",
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
+
+>>> [CLI] postgres get-project projects/test-pg-proj-soft-[UNIQUE_NAME]
+{
+  "name": "projects/test-pg-proj-soft-[UNIQUE_NAME]",
+  "project_id": "test-pg-proj-soft-[UNIQUE_NAME]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_branch": "projects/test-pg-proj-soft-[UNIQUE_NAME]/branches/production",
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu": 1,
+      "autoscaling_limit_min_cu": 1,
+      "suspend_timeout_duration": "86400s"
+    },
+    "display_name": "purge_on_delete unset (soft delete)",
+    "enable_pg_native_login": false,
+    "history_retention_duration": "604800s",
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "project_id": "test-pg-proj-soft-[UNIQUE_NAME]",
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
+
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+=== bundle destroy
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/

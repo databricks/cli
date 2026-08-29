@@ -1,12 +1,14 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created pipelines.my
+Files: 8 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
     "deployment": {
@@ -22,9 +24,7 @@ Deployment complete!
       }
     ],
     "name": "test-pipeline-[UNIQUE_NAME]"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
+  }
 }
 pipelines my id='[MY_ID]' name='test-pipeline-[UNIQUE_NAME]'
 
@@ -32,37 +32,38 @@ pipelines my id='[MY_ID]' name='test-pipeline-[UNIQUE_NAME]'
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated pipelines.my
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Fetch pipeline ID and verify remote state
 >>> [CLI] pipelines get [MY_ID]
 {
-  "creator_user_name":"[USERNAME]",
-  "last_modified":[UNIX_TIME_MILLIS],
-  "name":"test-pipeline-[UNIQUE_NAME]",
-  "pipeline_id":"[MY_ID]",
-  "run_as_user_name":"[USERNAME]",
+  "creator_user_name": "[USERNAME]",
+  "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+  "last_modified": [UNIX_TIME_MILLIS],
+  "name": "test-pipeline-[UNIQUE_NAME]",
+  "pipeline_id": "[MY_ID]",
+  "run_as_user_name": "[USERNAME]",
   "spec": {
-    "channel":"CURRENT",
+    "channel": "CURRENT",
     "deployment": {
-      "kind":"BUNDLE",
-      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
     },
-    "edition":"ADVANCED",
-    "id":"[MY_ID]",
+    "edition": "ADVANCED",
+    "id": "[MY_ID]",
     "libraries": [
       {
         "file": {
-          "path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/bar.py"
+          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/bar.py"
         }
       }
     ],
-    "name":"test-pipeline-[UNIQUE_NAME]",
-    "storage":"dbfs:/pipelines/[MY_ID]"
+    "name": "test-pipeline-[UNIQUE_NAME]",
+    "storage": "dbfs:/pipelines/[MY_ID]"
   },
-  "state":"IDLE"
+  "state": "IDLE"
 }
 
 === Destroy the pipeline and verify that it's removed from the state and from remote
@@ -71,13 +72,12 @@ The following resources will be deleted:
   delete resources.pipelines.my
 
 This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
   delete resources.pipelines.my
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted
 
 >>> print_requests
 {

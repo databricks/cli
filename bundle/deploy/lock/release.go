@@ -51,6 +51,12 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	case GoalBind, GoalUnbind:
 		return diag.FromErr(b.Locker.Unlock(ctx))
 	case GoalDestroy:
+		// Destroy may have proceeded without acquiring a lock (see lock.Acquire:
+		// --force-lock tolerates a workspace directory at its child-node limit).
+		// There is nothing to release in that case.
+		if !b.Locker.Active {
+			return nil
+		}
 		return diag.FromErr(b.Locker.Unlock(ctx, locker.AllowLockFileNotExist))
 	default:
 		return diag.Errorf("unknown goal for lock release: %s", m.goal)

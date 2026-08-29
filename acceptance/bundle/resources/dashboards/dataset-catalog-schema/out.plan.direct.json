@@ -1,6 +1,6 @@
 {
   "plan_version": 2,
-  "cli_version": "[DEV_VERSION]",
+  "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
   "plan": {
@@ -11,7 +11,7 @@
         "dashboard_id": "[DASHBOARD_ID]",
         "display_name": "test bundle-deploy-dashboard-dataset [UUID]",
         "embed_credentials": true,
-        "etag": [ETAG],
+        "etag": "[ETAG]",
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]",
         "path": "/Users/[USERNAME]/test bundle-deploy-dashboard-dataset [UUID].lvdash.json",
@@ -21,28 +21,53 @@
         "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
       },
       "changes": {
+        "create_time": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[TIMESTAMP]"
+        },
+        "dashboard_id": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[DASHBOARD_ID]"
+        },
         "dataset_catalog": {
           "action": "skip",
-          "reason": "builtin_rule",
+          "reason": "input_only",
           "old": "main",
           "new": "main"
         },
         "dataset_schema": {
           "action": "skip",
-          "reason": "builtin_rule",
+          "reason": "input_only",
           "old": "default",
           "new": "default"
         },
         "etag": {
           "action": "skip",
           "reason": "custom",
-          "old": [ETAG],
-          "remote": [ETAG]
+          "old": "[ETAG]",
+          "remote": "[ETAG]"
+        },
+        "lifecycle_state": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "ACTIVE"
+        },
+        "path": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "/Users/[USERNAME]/test bundle-deploy-dashboard-dataset [UUID].lvdash.json"
         },
         "serialized_dashboard": {
           "action": "skip",
           "old": "[SERIALIZED_FIXTURE_OLD]",
           "new": "[SERIALIZED_FIXTURE_NEW]"
+        },
+        "update_time": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[TIMESTAMP]"
         }
       }
     }

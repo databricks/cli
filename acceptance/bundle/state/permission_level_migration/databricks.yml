@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    my_job:
+      name: "my job"
+      permissions:
+        - level: CAN_VIEW
+          group_name: viewers

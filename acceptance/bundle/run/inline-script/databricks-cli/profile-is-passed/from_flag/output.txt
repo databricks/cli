@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle run --profile myprofile -- [CLI] current-user me
 {
-  "id":"[USERID]",
-  "userName":"[USERNAME]"
+  "id": "[USERID]",
+  "userName": "[USERNAME]"
 }

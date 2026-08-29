@@ -1,0 +1,24 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/volumes/mycatalog.myschema.bazname"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/volumes/mycatalog.myschema.fooname"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/volumes/mycatalog.myschema.mycatalog.myschema.bazname"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/mycatalog.myschema.bazname"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/mycatalog.myschema.fooname"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/mycatalog.myschema.mycatalog.myschema.bazname"
+}

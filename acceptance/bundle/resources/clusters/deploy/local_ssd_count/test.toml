@@ -1,0 +1,12 @@
+Badness = "In terraform, local_ssd_count field is not sent to backend"
+Cloud = true
+RecordRequests = true
+
+# Testing GCP-specific field
+CloudEnvs.gcp = true
+CloudEnvs.aws = false
+CloudEnvs.azure = false
+
+Ignore = [
+    "databricks.yml",
+]

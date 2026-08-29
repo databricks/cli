@@ -1,7 +1,6 @@
 package loader_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -12,7 +11,7 @@ import (
 
 func TestEntryPointNoRootPath(t *testing.T) {
 	b := &bundle.Bundle{}
-	diags := bundle.Apply(context.Background(), b, loader.EntryPoint())
+	diags := bundle.Apply(t.Context(), b, loader.EntryPoint())
 	require.Error(t, diags.Error())
 }
 
@@ -20,7 +19,7 @@ func TestEntryPoint(t *testing.T) {
 	b := &bundle.Bundle{
 		BundleRootPath: "testdata/basic",
 	}
-	diags := bundle.Apply(context.Background(), b, loader.EntryPoint())
+	diags := bundle.Apply(t.Context(), b, loader.EntryPoint())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "loader_test", b.Config.Bundle.Name)
 }

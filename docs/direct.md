@@ -1,17 +1,17 @@
 ## Status
 
-Status: experimental, only recommended for development targets or evaluation, not for production use.
+Status: Generally Available (GA). The direct engine is the default; existing Terraform deployments are migrated to it automatically.
 Known issues: https://github.com/databricks/cli/issues?q=state%3Aopen%20label%3Aengine%2Fdirect
 
 ## Reporting bugs
 
-Click "new issue" on [https://github.com/databricks/cli/issues](https://github.com/databricks/cli/issues) and select "Bug report for Databricks Asset Bundles with direct deployment engine".
+Click "new issue" on [https://github.com/databricks/cli/issues](https://github.com/databricks/cli/issues) and select "Bug report for Declarative Automation Bundles with direct deployment engine".
 
 Please ensure you are on the latest version of CLI when reporting an issue.
 
 ## Background
 
-Databricks Asset Bundles were originally implemented on top of databricks-terraform-provider.
+Declarative Automation Bundles were originally implemented on top of databricks-terraform-provider.
 Since version 0.279.0 DABs support two different deployment engines: "terraform" and "direct".
 The latter does not make use of Terraform.
 It is intended to be a drop-in replacement and will become the only engine we support in 2026\.
@@ -37,7 +37,11 @@ There are known issues, see https://github.com/databricks/cli/issues?q=state%3Ao
 ### Migrating the existing deployment
 
 The direct engine uses its own state file, also JSON, but with a different schema from terraform state file.
-In order to migrate an existing Terraform-based deployment, use the `databricks bundle deployment migrate` command. The command reads IDs from the existing deployment.
+Since v1.14.0, after deploying with terraform, automatic migration to direct engine is attempted. If successful, it replaces terraform state with direct state so following operations use direct engine.
+
+#### Manual migration via "bundle deployment migrate" command
+
+Migrating via this command is still possible, but no longer necessary. The command writes local state only, so it doubles as a way to preview the direct engine without committing to it: run `bundle plan` to check that it works, then `bundle deploy` to commit the migration — or, before that deploy, remove `.databricks` to undo it.
 
 The full sequence of operations:
 
@@ -53,7 +57,14 @@ rm .databricks/bundle/my_target/resources.json
 
 ### Using on new bundles
 
-For bundles that were never deployed, the migrate command will not work. Instead, deploy with an environment variable set: `DATABRICKS_BUNDLE_ENGINE=direct databricks bundle deploy -t my_target`.
+New bundles use the direct engine by default, so no configuration is needed. The migrate command does not apply here; it is only for bundles previously deployed with Terraform.
+
+To opt out and keep using Terraform, you have two options:
+
+- Set bundle.engine OR targets.\*.engine to "terraform" in your databricks.yml
+- Set DATABRICKS_BUNDLE_ENGINE=terraform env var before the deployment.
+
+If both are provided, the config takes precedence over the env var.
 
 ## Differences from terraform
 

@@ -23,7 +23,7 @@ func TestGetMaxLevel(t *testing.T) {
 	assert.Equal(t, "CAN_MANAGE", resources.GetMaxLevel("CAN_MANAGE", "CAN_MANAGE"))
 	assert.Equal(t, "CAN_READ", resources.GetMaxLevel("CAN_READ", ""))
 	assert.Equal(t, "CAN_READ", resources.GetMaxLevel("", "CAN_READ"))
-	assert.Equal(t, "", resources.GetMaxLevel("", ""))
+	assert.Empty(t, resources.GetMaxLevel("", ""))
 
 	assert.Equal(t, "UNKNOWN_B", resources.GetMaxLevel("UNKNOWN_A", "UNKNOWN_B"))
 	assert.Equal(t, "UNKNOWN_B", resources.GetMaxLevel("UNKNOWN_B", "UNKNOWN_A"))

@@ -1,21 +1,18 @@
-Local = true
 Cloud = true
-RequiresWarehouse = true
 
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-
-[Env]
 # MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
 # C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
 # Setting this environment variable prevents that conversion on windows.
-MSYS_NO_PATHCONV = "1"
+Env.MSYS_NO_PATHCONV = "1"
+# Direct-engine eventual consistency: the first GET of a freshly created dashboard
+# returns 404, so reads right after deploy must be retried (retry.py). Skipped on
+# terraform, whose provider reads the dashboard back after create and fails on the 404.
+Env.INJECT_STALE_ON_DIRECT = "1"
+# Widen retry.py's window well beyond its ~2s default (5 attempts x 500ms). retry.py's
+# loop is not scaled by TimeoutCIMultiplier (that only scales the overall test timeout),
+# and real dashboard rename/update eventual consistency on cloud regularly exceeds 2s,
+# which flaked these read-after-deploy checks. 20 attempts x 1000ms gives a ~20s window.
+Env.RETRY_MAX_ATTEMPTS = "20"
+Env.RETRY_INTERVAL_MS = "1000"
 
-# Etag can be both negative and positive.
-[[Repls]]
-Old = "\"[-0-9]{8,}\""
-New = "[ETAG]"
-
-[[Repls]]
-Old = "\"[0-9]{8,}\""
-New = "[ETAG]"
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

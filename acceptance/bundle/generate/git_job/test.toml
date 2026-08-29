@@ -22,7 +22,7 @@ Response.Body = '''
                 "task_key": "test_task_2",
                 "notebook_task": {
                     "source": "WORKSPACE",
-                    "notebook_path": "/Workspace/Users/foo@bar.com/some/test/notebook.py"
+                    "notebook_path": "/Workspace/Users/foo@bar.test/some/test/notebook.py"
                 }
             }
         ]

@@ -33,9 +33,9 @@ type DataSourceAlertV2EvaluationThresholdColumn struct {
 }
 
 type DataSourceAlertV2EvaluationThresholdValue struct {
-	BoolValue   bool   `json:"bool_value,omitempty"`
-	DoubleValue int    `json:"double_value,omitempty"`
-	StringValue string `json:"string_value,omitempty"`
+	BoolValue   bool    `json:"bool_value,omitempty"`
+	DoubleValue float64 `json:"double_value,omitempty"`
+	StringValue string  `json:"string_value,omitempty"`
 }
 
 type DataSourceAlertV2EvaluationThreshold struct {
@@ -51,6 +51,16 @@ type DataSourceAlertV2Evaluation struct {
 	Source             *DataSourceAlertV2EvaluationSource       `json:"source,omitempty"`
 	State              string                                   `json:"state,omitempty"`
 	Threshold          *DataSourceAlertV2EvaluationThreshold    `json:"threshold,omitempty"`
+}
+
+type DataSourceAlertV2Parameters struct {
+	Name  string `json:"name"`
+	Type  string `json:"type,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type DataSourceAlertV2ProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceAlertV2RunAs struct {
@@ -74,7 +84,9 @@ type DataSourceAlertV2 struct {
 	Id                string                           `json:"id"`
 	LifecycleState    string                           `json:"lifecycle_state,omitempty"`
 	OwnerUserName     string                           `json:"owner_user_name,omitempty"`
+	Parameters        []DataSourceAlertV2Parameters    `json:"parameters,omitempty"`
 	ParentPath        string                           `json:"parent_path,omitempty"`
+	ProviderConfig    *DataSourceAlertV2ProviderConfig `json:"provider_config,omitempty"`
 	QueryText         string                           `json:"query_text,omitempty"`
 	RunAs             *DataSourceAlertV2RunAs          `json:"run_as,omitempty"`
 	RunAsUserName     string                           `json:"run_as_user_name,omitempty"`

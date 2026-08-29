@@ -1,11 +1,12 @@
 package mutator
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/internal/bundletest"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/require"
 )
@@ -54,7 +55,7 @@ func TestPrependWorkspacePrefix(t *testing.T) {
 			},
 		}
 
-		diags := bundle.Apply(context.Background(), b, PrependWorkspacePrefix())
+		diags := bundle.Apply(t.Context(), b, PrependWorkspacePrefix())
 		require.Empty(t, diags)
 		require.Equal(t, tc.expected, b.Config.Workspace.RootPath)
 		require.Equal(t, tc.expected, b.Config.Workspace.ArtifactPath)
@@ -62,6 +63,23 @@ func TestPrependWorkspacePrefix(t *testing.T) {
 		require.Equal(t, tc.expected, b.Config.Workspace.StatePath)
 		require.Equal(t, tc.expected, b.Config.Workspace.ResourcePath)
 	}
+}
+
+func TestPrependWorkspacePrefixPreservesLocations(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				RootPath: "/Users/test",
+			},
+		},
+	}
+	locations := []dyn.Location{{File: "databricks.yml", Line: 42, Column: 5}}
+	bundletest.SetLocation(b, "workspace.root_path", locations)
+
+	diags := bundle.Apply(t.Context(), b, PrependWorkspacePrefix())
+	require.Empty(t, diags)
+	require.Equal(t, "/Workspace/Users/test", b.Config.Workspace.RootPath)
+	require.Equal(t, locations, b.Config.GetLocations("workspace.root_path"))
 }
 
 func TestPrependWorkspaceForDefaultConfig(t *testing.T) {
@@ -80,7 +98,7 @@ func TestPrependWorkspaceForDefaultConfig(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.ApplySeq(context.Background(), b, DefineDefaultWorkspaceRoot(), ExpandWorkspaceRoot(), DefineDefaultWorkspacePaths(), PrependWorkspacePrefix())
+	diags := bundle.ApplySeq(t.Context(), b, DefineDefaultWorkspaceRoot(), ExpandWorkspaceRoot(), DefineDefaultWorkspacePaths(), PrependWorkspacePrefix())
 	require.Empty(t, diags)
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev", b.Config.Workspace.RootPath)
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev/artifacts", b.Config.Workspace.ArtifactPath)

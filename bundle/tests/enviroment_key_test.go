@@ -1,7 +1,6 @@
 package config_tests
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -10,9 +9,9 @@ import (
 )
 
 func TestEnvironmentKeyProvidedAndNoPanic(t *testing.T) {
-	b, diags := loadTargetWithDiags("./environment_key_only", "default")
+	b, diags := loadTargetWithDiags(t, "./environment_key_only", "default")
 	require.Empty(t, diags)
 
-	diags = bundle.Apply(context.Background(), b, libraries.ExpandGlobReferences())
+	diags = bundle.Apply(t.Context(), b, libraries.ExpandGlobReferences())
 	require.Empty(t, diags)
 }

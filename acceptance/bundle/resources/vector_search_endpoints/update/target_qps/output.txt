@@ -1,0 +1,48 @@
+
+=== Initial deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
+Created vector_search_endpoints.my_endpoint
+Created vector_search_endpoints.my_endpoint.permissions
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //vector-search/endpoints //permissions
+
+>>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
+{
+  "name": "vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STANDARD"
+}
+
+=== Update target_qps
+>>> update_file.py databricks.yml target_qps: 1 target_qps: 2
+
+>>> [CLI] bundle plan
+update vector_search_endpoints.my_endpoint
+update vector_search_endpoints.my_endpoint.permissions
+
+Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
+Updated vector_search_endpoints.my_endpoint
+Updated vector_search_endpoints.my_endpoint.permissions
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //vector-search/endpoints //permissions
+
+>>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
+{
+  "name": "vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STANDARD"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

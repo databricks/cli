@@ -12,6 +12,7 @@ import (
 // Resources defines Databricks resources associated with the bundle.
 type Resources struct {
 	Jobs      map[string]*resources.Job      `json:"jobs,omitempty"`
+	JobRuns   map[string]*resources.JobRun   `json:"job_runs,omitempty"`
 	Pipelines map[string]*resources.Pipeline `json:"pipelines,omitempty"`
 
 	Models                map[string]*resources.MlflowModel          `json:"models,omitempty"`
@@ -19,10 +20,13 @@ type Resources struct {
 	ModelServingEndpoints map[string]*resources.ModelServingEndpoint `json:"model_serving_endpoints,omitempty"`
 	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
 	QualityMonitors       map[string]*resources.QualityMonitor       `json:"quality_monitors,omitempty"`
+	Catalogs              map[string]*resources.Catalog              `json:"catalogs,omitempty"`
 	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
 	Volumes               map[string]*resources.Volume               `json:"volumes,omitempty"`
+	ExternalLocations     map[string]*resources.ExternalLocation     `json:"external_locations,omitempty"`
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
+	GenieSpaces           map[string]*resources.GenieSpace           `json:"genie_spaces,omitempty"`
 	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
 	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
 	Alerts                map[string]*resources.Alert                `json:"alerts,omitempty"`
@@ -30,6 +34,18 @@ type Resources struct {
 	DatabaseInstances     map[string]*resources.DatabaseInstance     `json:"database_instances,omitempty"`
 	DatabaseCatalogs      map[string]*resources.DatabaseCatalog      `json:"database_catalogs,omitempty"`
 	SyncedDatabaseTables  map[string]*resources.SyncedDatabaseTable  `json:"synced_database_tables,omitempty"`
+	PostgresProjects      map[string]*resources.PostgresProject      `json:"postgres_projects,omitempty"`
+	PostgresBranches      map[string]*resources.PostgresBranch       `json:"postgres_branches,omitempty"`
+	PostgresEndpoints     map[string]*resources.PostgresEndpoint     `json:"postgres_endpoints,omitempty"`
+	PostgresCatalogs      map[string]*resources.PostgresCatalog      `json:"postgres_catalogs,omitempty"`
+	PostgresDatabases     map[string]*resources.PostgresDatabase     `json:"postgres_databases,omitempty"`
+	PostgresRoles         map[string]*resources.PostgresRole         `json:"postgres_roles,omitempty"`
+	PostgresSyncedTables  map[string]*resources.PostgresSyncedTable  `json:"postgres_synced_tables,omitempty"`
+	VectorSearchEndpoints map[string]*resources.VectorSearchEndpoint `json:"vector_search_endpoints,omitempty"`
+	VectorSearchIndexes   map[string]*resources.VectorSearchIndex    `json:"vector_search_indexes,omitempty"`
+	InstancePools         map[string]*resources.InstancePool         `json:"instance_pools,omitempty"`
+	Secrets               map[string]*resources.Secret               `json:"secrets,omitempty"`
+	ClusterPolicies       map[string]*resources.ClusterPolicy        `json:"cluster_policies,omitempty"`
 }
 
 type ConfigResource interface {
@@ -48,6 +64,9 @@ type ConfigResource interface {
 
 	// InitializeURL initializes the URL field of the resource.
 	InitializeURL(baseURL url.URL)
+
+	// GetLifecycle returns the lifecycle settings for the resource.
+	GetLifecycle() resources.LifecycleConfig
 }
 
 // ResourceGroup represents a group of resources of the same type.
@@ -81,15 +100,19 @@ func (r *Resources) AllResources() []ResourceGroup {
 	descriptions := SupportedResources()
 	return []ResourceGroup{
 		collectResourceMap(descriptions["jobs"], r.Jobs),
+		collectResourceMap(descriptions["job_runs"], r.JobRuns),
 		collectResourceMap(descriptions["pipelines"], r.Pipelines),
 		collectResourceMap(descriptions["models"], r.Models),
 		collectResourceMap(descriptions["experiments"], r.Experiments),
 		collectResourceMap(descriptions["model_serving_endpoints"], r.ModelServingEndpoints),
 		collectResourceMap(descriptions["registered_models"], r.RegisteredModels),
 		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
+		collectResourceMap(descriptions["catalogs"], r.Catalogs),
 		collectResourceMap(descriptions["schemas"], r.Schemas),
+		collectResourceMap(descriptions["external_locations"], r.ExternalLocations),
 		collectResourceMap(descriptions["clusters"], r.Clusters),
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
+		collectResourceMap(descriptions["genie_spaces"], r.GenieSpaces),
 		collectResourceMap(descriptions["volumes"], r.Volumes),
 		collectResourceMap(descriptions["apps"], r.Apps),
 		collectResourceMap(descriptions["alerts"], r.Alerts),
@@ -98,110 +121,28 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["database_instances"], r.DatabaseInstances),
 		collectResourceMap(descriptions["database_catalogs"], r.DatabaseCatalogs),
 		collectResourceMap(descriptions["synced_database_tables"], r.SyncedDatabaseTables),
+		collectResourceMap(descriptions["postgres_projects"], r.PostgresProjects),
+		collectResourceMap(descriptions["postgres_branches"], r.PostgresBranches),
+		collectResourceMap(descriptions["postgres_endpoints"], r.PostgresEndpoints),
+		collectResourceMap(descriptions["postgres_catalogs"], r.PostgresCatalogs),
+		collectResourceMap(descriptions["postgres_databases"], r.PostgresDatabases),
+		collectResourceMap(descriptions["postgres_roles"], r.PostgresRoles),
+		collectResourceMap(descriptions["postgres_synced_tables"], r.PostgresSyncedTables),
+		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
+		collectResourceMap(descriptions["vector_search_indexes"], r.VectorSearchIndexes),
+		collectResourceMap(descriptions["instance_pools"], r.InstancePools),
+		collectResourceMap(descriptions["secrets"], r.Secrets),
+		collectResourceMap(descriptions["cluster_policies"], r.ClusterPolicies),
 	}
 }
 
+// FindResourceByConfigKey searches all resource maps for a resource with the given key.
 func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {
 	var found []ConfigResource
-	for k := range r.Jobs {
-		if k == key {
-			found = append(found, r.Jobs[k])
-		}
-	}
 
-	for k := range r.Pipelines {
-		if k == key {
-			found = append(found, r.Pipelines[k])
-		}
-	}
-
-	for k := range r.Apps {
-		if k == key {
-			found = append(found, r.Apps[k])
-		}
-	}
-
-	for k := range r.Schemas {
-		if k == key {
-			found = append(found, r.Schemas[k])
-		}
-	}
-
-	for k := range r.Experiments {
-		if k == key {
-			found = append(found, r.Experiments[k])
-		}
-	}
-
-	for k := range r.Clusters {
-		if k == key {
-			found = append(found, r.Clusters[k])
-		}
-	}
-
-	for k := range r.Volumes {
-		if k == key {
-			found = append(found, r.Volumes[k])
-		}
-	}
-
-	for k := range r.Dashboards {
-		if k == key {
-			found = append(found, r.Dashboards[k])
-		}
-	}
-
-	for k := range r.RegisteredModels {
-		if k == key {
-			found = append(found, r.RegisteredModels[k])
-		}
-	}
-
-	for k := range r.QualityMonitors {
-		if k == key {
-			found = append(found, r.QualityMonitors[k])
-		}
-	}
-
-	for k := range r.ModelServingEndpoints {
-		if k == key {
-			found = append(found, r.ModelServingEndpoints[k])
-		}
-	}
-
-	for k := range r.SecretScopes {
-		if k == key {
-			found = append(found, r.SecretScopes[k])
-		}
-	}
-
-	for k := range r.Alerts {
-		if k == key {
-			found = append(found, r.Alerts[k])
-		}
-	}
-
-	for k := range r.SqlWarehouses {
-		if k == key {
-			found = append(found, r.SqlWarehouses[k])
-		}
-	}
-
-	for k := range r.DatabaseInstances {
-		if k == key {
-			found = append(found, r.DatabaseInstances[k])
-		}
-	}
-
-	for k := range r.DatabaseCatalogs {
-		if k == key {
-			found = append(found, r.DatabaseCatalogs[k])
-		}
-	}
-
-	for k := range r.SyncedDatabaseTables {
-		if k == key {
-			found = append(found, r.SyncedDatabaseTables[k])
+	for _, group := range r.AllResources() {
+		if res, ok := group.Resources[key]; ok {
+			found = append(found, res)
 		}
 	}
 
@@ -224,15 +165,20 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 func SupportedResources() map[string]resources.ResourceDescription {
 	return map[string]resources.ResourceDescription{
 		"jobs":                    (&resources.Job{}).ResourceDescription(),
+		"job_runs":                (&resources.JobRun{}).ResourceDescription(),
 		"pipelines":               (&resources.Pipeline{}).ResourceDescription(),
 		"models":                  (&resources.MlflowModel{}).ResourceDescription(),
 		"experiments":             (&resources.MlflowExperiment{}).ResourceDescription(),
+		"instance_pools":          (&resources.InstancePool{}).ResourceDescription(),
 		"model_serving_endpoints": (&resources.ModelServingEndpoint{}).ResourceDescription(),
 		"registered_models":       (&resources.RegisteredModel{}).ResourceDescription(),
 		"quality_monitors":        (&resources.QualityMonitor{}).ResourceDescription(),
+		"catalogs":                (&resources.Catalog{}).ResourceDescription(),
 		"schemas":                 (&resources.Schema{}).ResourceDescription(),
+		"external_locations":      (&resources.ExternalLocation{}).ResourceDescription(),
 		"clusters":                (&resources.Cluster{}).ResourceDescription(),
 		"dashboards":              (&resources.Dashboard{}).ResourceDescription(),
+		"genie_spaces":            (&resources.GenieSpace{}).ResourceDescription(),
 		"volumes":                 (&resources.Volume{}).ResourceDescription(),
 		"apps":                    (&resources.App{}).ResourceDescription(),
 		"secret_scopes":           (&resources.SecretScope{}).ResourceDescription(),
@@ -241,5 +187,16 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"database_instances":      (&resources.DatabaseInstance{}).ResourceDescription(),
 		"database_catalogs":       (&resources.DatabaseCatalog{}).ResourceDescription(),
 		"synced_database_tables":  (&resources.SyncedDatabaseTable{}).ResourceDescription(),
+		"postgres_projects":       (&resources.PostgresProject{}).ResourceDescription(),
+		"postgres_branches":       (&resources.PostgresBranch{}).ResourceDescription(),
+		"postgres_endpoints":      (&resources.PostgresEndpoint{}).ResourceDescription(),
+		"postgres_catalogs":       (&resources.PostgresCatalog{}).ResourceDescription(),
+		"postgres_databases":      (&resources.PostgresDatabase{}).ResourceDescription(),
+		"postgres_roles":          (&resources.PostgresRole{}).ResourceDescription(),
+		"postgres_synced_tables":  (&resources.PostgresSyncedTable{}).ResourceDescription(),
+		"vector_search_endpoints": (&resources.VectorSearchEndpoint{}).ResourceDescription(),
+		"vector_search_indexes":   (&resources.VectorSearchIndex{}).ResourceDescription(),
+		"secrets":                 (&resources.Secret{}).ResourceDescription(),
+		"cluster_policies":        (&resources.ClusterPolicy{}).ResourceDescription(),
 	}
 }

@@ -1,0 +1,19 @@
+bundle:
+  name: test-bundle-immutable-perms-$UNIQUE_NAME
+
+experimental:
+  immutable_folder: true
+
+resources:
+  jobs:
+    my_job:
+      name: my job
+      tasks:
+        - task_key: spark_python_task
+          spark_python_task:
+            python_file: ./src/main.py
+          environment_key: env
+      environments:
+        - environment_key: env
+          spec:
+            environment_version: "4"

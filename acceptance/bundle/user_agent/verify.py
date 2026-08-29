@@ -3,12 +3,11 @@
 Summarize requests logs. For each log write OK if User-Agent has the right engine/ tag and MISS if not.
 """
 
-import os
-import sys
 import json
+import os
 import subprocess
+import sys
 from pathlib import Path
-
 
 TESTROOT = Path(os.environ["TESTROOT"])
 

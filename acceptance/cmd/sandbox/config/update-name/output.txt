@@ -1,0 +1,5 @@
+
+  id         happy-panda-1234
+  name       renamed-project
+  autostop   15m
+

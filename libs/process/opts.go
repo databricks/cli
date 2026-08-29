@@ -38,24 +38,6 @@ func WithDir(dir string) execOption {
 	}
 }
 
-func WithStdoutPipe(dst *io.ReadCloser) execOption {
-	return func(_ context.Context, c *exec.Cmd) error {
-		outPipe, err := c.StdoutPipe()
-		if err != nil {
-			return err
-		}
-		*dst = outPipe
-		return nil
-	}
-}
-
-func WithStdinReader(src io.Reader) execOption {
-	return func(_ context.Context, c *exec.Cmd) error {
-		c.Stdin = src
-		return nil
-	}
-}
-
 func WithStderrWriter(dst io.Writer) execOption {
 	return func(_ context.Context, c *exec.Cmd) error {
 		c.Stderr = dst

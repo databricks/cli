@@ -8,17 +8,25 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/terraform_dabs_map"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 )
 
-type MigrateMode bool
-
-func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, plan *deployplan.Plan, migrateMode MigrateMode) {
+func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) {
 	if plan == nil {
 		panic("Planning is not done")
+	}
+
+	// Read before the early return below so a malformed value is reported even when there is
+	// nothing to deploy.
+	maxWait, err := resourceMaxWait(ctx)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	if len(plan.Plan) == 0 {
@@ -26,7 +34,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
-	b.StateDB.AssertOpened()
+	b.StateDB.AssertOpenedForWrite()
 	b.RemoteStateCache.Clear()
 
 	g, err := makeGraph(plan)
@@ -51,9 +59,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		action := entry.Action
 		errorPrefix := fmt.Sprintf("cannot %s %s", action, resourceKey)
-		if migrateMode {
-			errorPrefix = "cannot migrate " + resourceKey
-		}
 
 		if action == deployplan.Undefined {
 			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s: unknown action %q", resourceKey, action))
@@ -74,18 +79,34 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
+		// Deletes are capped even with dependents: state is dropped before the wait, so a
+		// cut-short delete leaves the resource untracked while it tears down, and a dependency
+		// deleted after it may be rejected for still having a child. Accepted deliberately.
+		// Recreate's internal delete-wait is never routed through the cap at all, because it
+		// releases the name for the create that follows.
+		unitWait := maxWait
+		if action != deployplan.Delete && hasBlockingDependents(g, resourceKey) {
+			unitWait = maxWaitUnset
+			if maxWait != maxWaitUnset {
+				log.Debugf(ctx, "Not capping wait for %s: other resources depend on it", resourceKey)
+			}
+		}
+
 		d := &DeploymentUnit{
 			ResourceKey: resourceKey,
 			Adapter:     adapter,
 			DependsOn:   entry.DependsOn,
+			MaxWait:     unitWait,
 		}
 
 		if action == deployplan.Delete {
-			if migrateMode {
-				logdiag.LogError(ctx, fmt.Errorf("%s: Unexpected delete action during migration", errorPrefix))
-				return false
+			if entry.Gone {
+				// Planning confirmed the resource is already deleted remotely; only
+				// remove it from the state, without calling the delete API.
+				err = b.StateDB.DeleteState(resourceKey)
+			} else {
+				err = d.Destroy(ctx, &b.StateDB)
 			}
-			err = d.Destroy(ctx, &b.StateDB)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
@@ -101,7 +122,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			}
 
 			// Get the cached StructVar to check for unresolved refs and get value
-			sv, ok := b.StructVarCache.Load(resourceKey)
+			sv, ok := b.StateCache.Load(resourceKey)
 			if !ok {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing cached StructVar", errorPrefix))
 				return false
@@ -112,19 +133,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 
-			if migrateMode {
-				// In migration mode we're reading resources in DAG order so that we have fully resolved config snapshots stored
-				dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
-				if !hasEntry || dbentry.ID == "" {
-					logdiag.LogError(ctx, fmt.Errorf("state entry not found for %q", resourceKey))
-					return false
-				}
-				err = b.StateDB.SaveState(resourceKey, dbentry.ID, sv.Value, entry.DependsOn)
-			} else {
-				// TODO: redo calcDiff to downgrade planned action if possible (?)
-				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry.Changes)
-			}
-
+			// TODO: redo calcDiff to downgrade planned action if possible (?)
+			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
@@ -136,13 +146,13 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		//       already resolved and should not play a role here.
 		needRemoteState := len(g.Adj[resourceKey]) > 0
 		if needRemoteState {
-			entry, _ := b.StateDB.GetResourceEntry(d.ResourceKey)
-			if entry.ID == "" {
+			id := b.StateDB.GetResourceID(d.ResourceKey)
+			if id == "" {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing entry in state after deploy", errorPrefix))
 				return false
 			}
 
-			err = d.refreshRemoteState(ctx, entry.ID)
+			err = d.refreshRemoteState(ctx, id)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read remote state: %w", errorPrefix, err))
 				return false
@@ -152,18 +162,17 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		return true
 	})
-
-	// This must run even if deploy failed:
-	err = b.StateDB.Finalize()
-	if err != nil {
-		logdiag.LogError(ctx, err)
-	}
 }
 
-func (b *DeploymentBundle) LookupReferenceRemote(ctx context.Context, path *structpath.PathNode) (any, error) {
-	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
-	targetResourceKey := path.Prefix(3).String()
-	fieldPath := path.SkipPrefix(3)
+func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
+	targetResourceKey, fieldPath := splitResourcePath(path)
+	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
+
+	// Translate Terraform-style field paths to DABs naming before lookup.
+	fieldPath, err := terraform_dabs_map.TerraformPathToDABs(targetGroup, fieldPath)
+	if err != nil {
+		return nil, err
+	}
 	fieldPathS := fieldPath.String()
 
 	targetEntry, err := b.Plan.ReadLockEntry(targetResourceKey)
@@ -183,11 +192,11 @@ func (b *DeploymentBundle) LookupReferenceRemote(ctx context.Context, path *stru
 	}
 
 	if fieldPathS == "id" {
-		dbentry, hasEntry := b.StateDB.GetResourceEntry(targetResourceKey)
-		if !hasEntry || dbentry.ID == "" {
+		id := b.StateDB.GetResourceID(targetResourceKey)
+		if id == "" {
 			return nil, errors.New("internal error: no db entry")
 		}
-		return dbentry.ID, nil
+		return id, nil
 	}
 
 	remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)

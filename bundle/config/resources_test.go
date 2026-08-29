@@ -1,8 +1,8 @@
 package config
 
 import (
-	"context"
 	"encoding/json"
+	"net/url"
 	"reflect"
 	"strings"
 	"testing"
@@ -15,13 +15,17 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/serving"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -47,18 +51,15 @@ import (
 // a way to directly assert that MarshalJSON and UnmarshalJSON are implemented
 // at the top level.
 func TestCustomMarshallerIsImplemented(t *testing.T) {
-	r := Resources{}
-	rt := reflect.TypeOf(r)
+	rt := reflect.TypeFor[Resources]()
 
-	for i := range rt.NumField() {
-		field := rt.Field(i)
-
+	for field := range rt.Fields() {
 		// Fields in Resources are expected be of the form map[string]*resourceStruct
 		assert.Equal(t, reflect.Map, field.Type.Kind(), "Resource %s is not a map", field.Name)
 		kt := field.Type.Key()
 		assert.Equal(t, reflect.String, kt.Kind(), "Resource %s is not a map with string keys", field.Name)
 		vt := field.Type.Elem()
-		assert.Equal(t, reflect.Ptr, vt.Kind(), "Resource %s is not a map with pointer values", field.Name)
+		assert.Equal(t, reflect.Pointer, vt.Kind(), "Resource %s is not a map with pointer values", field.Name)
 
 		// Marshalling a resourceStruct will panic if resourceStruct does not have a custom marshaller
 		// This is because resourceStruct embeds a Go SDK struct that implements
@@ -84,7 +85,7 @@ func TestCustomMarshallerIsImplemented(t *testing.T) {
 
 func TestResourcesAllResourcesCompleteness(t *testing.T) {
 	r := Resources{}
-	rt := reflect.TypeOf(r)
+	rt := reflect.TypeFor[Resources]()
 
 	// Collect set of includes resource types
 	var types []string
@@ -92,8 +93,7 @@ func TestResourcesAllResourcesCompleteness(t *testing.T) {
 		types = append(types, group.Description.PluralName)
 	}
 
-	for i := range rt.NumField() {
-		field := rt.Field(i)
+	for field := range rt.Fields() {
 		jsonTag := field.Tag.Get("json")
 
 		if idx := strings.Index(jsonTag, ","); idx != -1 {
@@ -108,12 +108,51 @@ func TestSupportedResources(t *testing.T) {
 	// Please add your resource to the SupportedResources() function in resources.go if you add a new resource.
 	actual := SupportedResources()
 
-	typ := reflect.TypeOf(Resources{})
-	for i := range typ.NumField() {
-		field := typ.Field(i)
+	typ := reflect.TypeFor[Resources]()
+	for field := range typ.Fields() {
 		jsonTags := strings.Split(field.Tag.Get("json"), ",")
 		pluralName := jsonTags[0]
 		assert.Equal(t, actual[pluralName].PluralName, pluralName)
+	}
+}
+
+// All bundle resources must have a workspace URL, except those listed in noURL.
+// When a pattern key or a bundle plural name drifts, ResourceURL returns "" and
+// this test fails loudly instead of silently producing empty URLs in bundle summary.
+// When adding a new resource, add a URL pattern in libs/workspaceurls or add the
+// plural name to noURL with a comment explaining why no URL exists.
+func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
+	// Resources that intentionally have no workspace URL.
+	noURL := map[string]bool{
+		"external_locations": true,
+		// A job run does have a workspace URL, but it's addressed by two IDs
+		// (job + run) so it can't be expressed as a single-ID pattern here; it's
+		// built in JobRun.InitializeURL via workspaceurls.JobRunURL instead.
+		"job_runs":           true,
+		"postgres_branches":  true,
+		"postgres_databases": true,
+		"postgres_endpoints": true,
+		"postgres_projects":  true,
+		"postgres_roles":     true,
+		"secret_scopes":      true,
+	}
+
+	supported := SupportedResources()
+
+	// Catch stale noURL entries when a resource is removed from SupportedResources.
+	for name := range noURL {
+		_, ok := supported[name]
+		require.Truef(t, ok, "%q is in the noURL list but is not a supported bundle resource; remove it from noURL", name)
+	}
+
+	base := url.URL{Scheme: "https", Host: "example.com"}
+	for name := range supported {
+		got := workspaceurls.ResourceURL(base, name, "test-id")
+		if noURL[name] {
+			assert.Emptyf(t, got, "workspaceurls.ResourceURL(%q) returned non-empty; remove %q from noURL or remove its URL pattern", name, name)
+		} else {
+			assert.NotEmptyf(t, got, "workspaceurls.ResourceURL(%q) returned empty; add a URL pattern in libs/workspaceurls or add %q to noURL", name, name)
+		}
 	}
 }
 
@@ -122,6 +161,11 @@ func TestResourcesBindSupport(t *testing.T) {
 		Jobs: map[string]*resources.Job{
 			"my_job": {
 				JobSettings: jobs.JobSettings{},
+			},
+		},
+		JobRuns: map[string]*resources.JobRun{
+			"my_job_run": {
+				RunNow: jobs.RunNow{},
 			},
 		},
 		Pipelines: map[string]*resources.Pipeline{
@@ -139,6 +183,16 @@ func TestResourcesBindSupport(t *testing.T) {
 				CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{},
 			},
 		},
+		Catalogs: map[string]*resources.Catalog{
+			"my_catalog": {
+				CreateCatalog: catalog.CreateCatalog{},
+			},
+		},
+		ExternalLocations: map[string]*resources.ExternalLocation{
+			"my_external_location": {
+				CreateExternalLocation: catalog.CreateExternalLocation{},
+			},
+		},
 		Schemas: map[string]*resources.Schema{
 			"my_schema": {
 				CreateSchema: catalog.CreateSchema{},
@@ -147,8 +201,17 @@ func TestResourcesBindSupport(t *testing.T) {
 		Clusters: map[string]*resources.Cluster{
 			"my_cluster": {},
 		},
+		InstancePools: map[string]*resources.InstancePool{
+			"my_instance_pool": {},
+		},
+		ClusterPolicies: map[string]*resources.ClusterPolicy{
+			"my_cluster_policy": {},
+		},
 		Dashboards: map[string]*resources.Dashboard{
 			"my_dashboard": {},
+		},
+		GenieSpaces: map[string]*resources.GenieSpace{
+			"my_genie_space": {},
 		},
 		Volumes: map[string]*resources.Volume{
 			"my_volume": {
@@ -180,6 +243,15 @@ func TestResourcesBindSupport(t *testing.T) {
 				Name: "0",
 			},
 		},
+		Secrets: map[string]*resources.Secret{
+			"my_secret": {
+				Secret: catalog.Secret{
+					CatalogName: "main",
+					SchemaName:  "default",
+					Name:        "my_secret",
+				},
+			},
+		},
 		SqlWarehouses: map[string]*resources.SqlWarehouse{
 			"my_sql_warehouse": {
 				CreateWarehouseRequest: sql.CreateWarehouseRequest{},
@@ -200,18 +272,106 @@ func TestResourcesBindSupport(t *testing.T) {
 				SyncedDatabaseTable: database.SyncedDatabaseTable{},
 			},
 		},
+		PostgresProjects: map[string]*resources.PostgresProject{
+			"my_postgres_project": {
+				PostgresProjectConfig: resources.PostgresProjectConfig{
+					ProjectId: "my-postgres-project",
+					ProjectSpec: postgres.ProjectSpec{
+						DisplayName: "my_postgres_project",
+					},
+				},
+			},
+		},
+		PostgresBranches: map[string]*resources.PostgresBranch{
+			"my_postgres_branch": {
+				PostgresBranchConfig: resources.PostgresBranchConfig{
+					BranchId: "my-postgres-branch",
+					Parent:   "projects/my-postgres-project",
+				},
+			},
+		},
+		PostgresEndpoints: map[string]*resources.PostgresEndpoint{
+			"my_postgres_endpoint": {
+				PostgresEndpointConfig: resources.PostgresEndpointConfig{
+					EndpointId: "my-postgres-endpoint",
+					Parent:     "projects/my-postgres-project/branches/my-postgres-branch",
+					EndpointSpec: postgres.EndpointSpec{
+						EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+					},
+				},
+			},
+		},
+		PostgresCatalogs: map[string]*resources.PostgresCatalog{
+			"my_postgres_catalog": {
+				PostgresCatalogConfig: resources.PostgresCatalogConfig{
+					CatalogId: "my_postgres_catalog",
+				},
+			},
+		},
+		PostgresDatabases: map[string]*resources.PostgresDatabase{
+			"my_postgres_database": {
+				PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+					DatabaseId: "my-postgres-database",
+					Parent:     "projects/my-postgres-project/branches/my-postgres-branch",
+				},
+			},
+		},
+		PostgresRoles: map[string]*resources.PostgresRole{
+			"my_postgres_role": {
+				PostgresRoleConfig: resources.PostgresRoleConfig{
+					RoleId: "my-postgres-role",
+					Parent: "projects/my-postgres-project/branches/my-postgres-branch",
+					RoleRoleSpec: postgres.RoleRoleSpec{
+						PostgresRole: "my_postgres_role",
+					},
+				},
+			},
+		},
+		PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+			"my_postgres_synced_table": {
+				PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+					SyncedTableId: "catalog.schema.my_postgres_synced_table",
+				},
+			},
+		},
+		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+			"my_vector_search_endpoint": {
+				CreateEndpoint: vectorsearch.CreateEndpoint{
+					Name:         "my_vector_search_endpoint",
+					EndpointType: vectorsearch.EndpointTypeStandard,
+				},
+			},
+		},
+		VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+			"my_vector_search_index": {
+				CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+					Name:         "my_vector_search_index",
+					EndpointName: "my_vector_search_endpoint",
+					PrimaryKey:   "id",
+					IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+				},
+			},
+		},
 	}
-	unbindableResources := map[string]bool{"model": true}
+	unbindableResources := map[string]bool{
+		"model": true,
+	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 	m.GetMockJobsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockCatalogsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockExternalLocationsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockSchemasAPI().EXPECT().GetByFullName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockClustersAPI().EXPECT().GetByClusterId(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockInstancePoolsAPI().EXPECT().GetByInstancePoolId(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockGenieAPI().EXPECT().GetSpace(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVolumesAPI().EXPECT().Read(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAppsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAlertsV2API().EXPECT().GetAlertById(mock.Anything, mock.Anything).Return(nil, nil)
@@ -224,6 +384,17 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockDatabaseAPI().EXPECT().GetDatabaseInstance(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockDatabaseAPI().EXPECT().GetDatabaseCatalog(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockDatabaseAPI().EXPECT().GetSyncedDatabaseTable(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetProject(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetCatalog(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetDatabase(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetSyncedTable(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockSecretsUcAPI().EXPECT().GetSecret(mock.Anything, mock.Anything).Return(&catalog.Secret{FullName: "0"}, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {

@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -20,7 +19,7 @@ func TestComputeIdToClusterId(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, mutator.ComputeIdToClusterId())
+	diags := bundle.Apply(t.Context(), b, mutator.ComputeIdToClusterId())
 	assert.NoError(t, diags.Error())
 	assert.Equal(t, "compute-id", b.Config.Bundle.ClusterId)
 	assert.Empty(t, b.Config.Bundle.ComputeId)
@@ -41,11 +40,11 @@ func TestComputeIdToClusterIdInTargetOverride(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, mutator.ComputeIdToClusterId())
+	diags := bundle.Apply(t.Context(), b, mutator.ComputeIdToClusterId())
 	assert.NoError(t, diags.Error())
 	assert.Empty(t, b.Config.Targets["dev"].ComputeId)
 
-	diags = diags.Extend(bundle.Apply(context.Background(), b, mutator.SelectTarget("dev")))
+	diags = diags.Extend(bundle.Apply(t.Context(), b, mutator.SelectTarget("dev")))
 	assert.NoError(t, diags.Error())
 
 	assert.Equal(t, "compute-id-dev", b.Config.Bundle.ClusterId)

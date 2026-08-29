@@ -1,7 +1,6 @@
 package config_tests
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -13,7 +12,7 @@ import (
 func TestJobClusterKeyNotDefinedTest(t *testing.T) {
 	b := loadTarget(t, "./job_cluster_key", "default")
 
-	diags := bundle.Apply(context.Background(), b, validate.JobClusterKeyDefined())
+	diags := bundle.Apply(t.Context(), b, validate.JobClusterKeyDefined())
 	require.Len(t, diags, 1)
 	require.NoError(t, diags.Error())
 	require.Equal(t, diag.Warning, diags[0].Severity)
@@ -23,6 +22,6 @@ func TestJobClusterKeyNotDefinedTest(t *testing.T) {
 func TestJobClusterKeyDefinedTest(t *testing.T) {
 	b := loadTarget(t, "./job_cluster_key", "development")
 
-	diags := bundle.Apply(context.Background(), b, validate.JobClusterKeyDefined())
+	diags := bundle.Apply(t.Context(), b, validate.JobClusterKeyDefined())
 	require.Empty(t, diags)
 }

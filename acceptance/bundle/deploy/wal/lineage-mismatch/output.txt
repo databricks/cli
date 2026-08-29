@@ -1,0 +1,7 @@
+Any command should fail with lineage mismatch error
+Error: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: WAL recovery failed: WAL lineage ("wal-lineage-bbb") does not match state lineage ("state-lineage-aaa")
+
+
+>>> musterr [CLI] bundle destroy --auto-approve
+Error: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: WAL recovery failed: WAL lineage ("wal-lineage-bbb") does not match state lineage ("state-lineage-aaa")
+

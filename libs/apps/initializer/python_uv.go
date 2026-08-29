@@ -42,6 +42,10 @@ func (i *InitializerPythonUv) NextSteps() string {
 	return "uv run python app.py"
 }
 
+func (i *InitializerPythonUv) InstallCommand() string {
+	return "uv sync"
+}
+
 func (i *InitializerPythonUv) RunDev(ctx context.Context, workDir string) error {
 	appCmd := detectPythonCommand(workDir)
 	cmdStr := "uv run " + strings.Join(appCmd, " ")

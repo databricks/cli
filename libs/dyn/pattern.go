@@ -33,7 +33,7 @@ func (p Pattern) String() string {
 				}
 				buf.WriteString(c.Key())
 			} else {
-				buf.WriteString(fmt.Sprintf("[%d]", c.Index()))
+				fmt.Fprintf(&buf, "[%d]", c.Index())
 			}
 		default:
 			buf.WriteString("???")
@@ -108,11 +108,6 @@ func (e expectedMapError) Error() string {
 	return fmt.Sprintf("expected a map at %q, found %s", e.p, e.v.Kind())
 }
 
-func IsExpectedMapError(err error) bool {
-	var target expectedMapError
-	return errors.As(err, &target)
-}
-
 type expectedSequenceError struct {
 	p Path
 	v Value
@@ -122,9 +117,18 @@ func (e expectedSequenceError) Error() string {
 	return fmt.Sprintf("expected a sequence at %q, found %s", e.p, e.v.Kind())
 }
 
-func IsExpectedSequenceError(err error) bool {
-	var target expectedSequenceError
-	return errors.As(err, &target)
+// isNoMatchError reports whether err means the pattern suffix didn't match the
+// visited value. Wildcard components skip such elements (e.g. a job with an
+// empty "tasks:" block) instead of failing the visit for all valid siblings.
+func isNoMatchError(err error) bool {
+	if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) || IsCannotTraverseNilError(err) {
+		return true
+	}
+	if _, ok := errors.AsType[expectedMapError](err); ok {
+		return true
+	}
+	_, ok := errors.AsType[expectedSequenceError](err)
+	return ok
 }
 
 // This function implements the patternComponent interface.
@@ -143,7 +147,7 @@ func (c anyKeyComponent) visit(v Value, prefix Path, suffix Pattern, opts visitO
 		nv, err := visit(pv, append(prefix, Key(pk.MustString())), suffix, opts)
 		if err != nil {
 			// Leave the value intact if the suffix pattern didn't match any value.
-			if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) {
+			if isNoMatchError(err) {
 				continue
 			}
 			return InvalidValue, err
@@ -175,7 +179,7 @@ func (c anyIndexComponent) visit(v Value, prefix Path, suffix Pattern, opts visi
 		nv, err := visit(value, append(prefix, Index(i)), suffix, opts)
 		if err != nil {
 			// Leave the value intact if the suffix pattern didn't match any value.
-			if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) {
+			if isNoMatchError(err) {
 				continue
 			}
 			return InvalidValue, err

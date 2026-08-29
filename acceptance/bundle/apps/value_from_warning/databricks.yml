@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+
+resources:
+  apps:
+    myapp:
+      name: myapp
+      source_code_path: ./app
+      config:
+        env:
+          - name: MY_SECRET
+            valueFrom: secret://my_secret

@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -35,7 +34,7 @@ func TestAnnotatePipelinesMutator(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, AnnotatePipelines())
+	diags := bundle.Apply(t.Context(), b, AnnotatePipelines())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t,
@@ -67,6 +66,6 @@ func TestAnnotatePipelinesMutatorPipelineWithoutASpec(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, AnnotatePipelines())
+	diags := bundle.Apply(t.Context(), b, AnnotatePipelines())
 	require.NoError(t, diags.Error())
 }

@@ -2,7 +2,6 @@ package appproxy
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,7 +19,7 @@ const (
 )
 
 func sendTestRequest(t *testing.T, url, path string) (int, []byte) {
-	req, err := http.NewRequest("GET", url+path, bytes.NewBufferString("{'test': 'value'}"))
+	req, err := http.NewRequest(http.MethodGet, url+path, bytes.NewBufferString("{'test': 'value'}"))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -35,14 +34,14 @@ func sendTestRequest(t *testing.T, url, path string) (int, []byte) {
 }
 
 func startProxy(t *testing.T, serverAddr string) (*Proxy, string) {
-	proxy, err := New(context.Background(), "http://"+serverAddr)
+	proxy, err := New(t.Context(), "http://"+serverAddr)
 	require.NoError(t, err)
 
-	ln, err := proxy.listen(fmt.Sprintf("localhost:%d", PROXY_PORT))
+	ln, err := proxy.Listen(fmt.Sprintf("localhost:%d", PROXY_PORT))
 	require.NoError(t, err)
 
 	go func() {
-		_ = proxy.serve(ln)
+		_ = proxy.Serve(ln)
 	}()
 
 	return proxy, ln.Addr().String()

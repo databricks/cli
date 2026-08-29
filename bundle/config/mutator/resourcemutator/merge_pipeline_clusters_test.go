@@ -1,7 +1,6 @@
 package resourcemutator_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -43,7 +42,7 @@ func TestMergePipelineClusters(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, resourcemutator.MergePipelineClusters())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.MergePipelineClusters())
 	assert.NoError(t, diags.Error())
 
 	p := b.Config.Resources.Pipelines["foo"]
@@ -87,7 +86,7 @@ func TestMergePipelineClustersCaseInsensitive(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, resourcemutator.MergePipelineClusters())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.MergePipelineClusters())
 	assert.NoError(t, diags.Error())
 
 	p := b.Config.Resources.Pipelines["foo"]
@@ -108,7 +107,7 @@ func TestMergePipelineClustersNilPipelines(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, resourcemutator.MergePipelineClusters())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.MergePipelineClusters())
 	assert.NoError(t, diags.Error())
 }
 
@@ -121,6 +120,6 @@ func TestMergePipelineClustersEmptyPipelines(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, resourcemutator.MergePipelineClusters())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.MergePipelineClusters())
 	assert.NoError(t, diags.Error())
 }

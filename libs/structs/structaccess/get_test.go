@@ -11,12 +11,13 @@ import (
 
 // unexported global test case type
 type testCase struct {
-	name     string
-	path     string
-	want     any
-	wantSelf bool
-	errFmt   string
-	notFound string // if set, expect NotFoundError with this message
+	name       string
+	path       string
+	want       any
+	wantSelf   bool
+	errFmt     string
+	notFound   string // if set, expect NotFoundError with this message
+	getOnlyErr string // if set, Validate passes but Get returns this error
 }
 
 func testGet(t *testing.T, obj any, path string, want any) {
@@ -181,9 +182,9 @@ func runCommonTests(t *testing.T, obj any) {
 
 		// Errors common to both
 		{
-			name:   "wildcard not supported",
-			path:   "items[*].id",
-			errFmt: "wildcards not supported: items[*].id",
+			name:       "wildcard not supported for Get",
+			path:       "items[*].id",
+			getOnlyErr: "wildcards not allowed in path",
 		},
 		{
 			name:   "missing field",
@@ -191,9 +192,21 @@ func runCommonTests(t *testing.T, obj any) {
 			errFmt: "connection.missing: field \"missing\" not found in structaccess.inner",
 		},
 		{
-			name:   "wrong index target",
-			path:   "connection[0]",
-			errFmt: "connection[0]: cannot index struct",
+			// [0] on a struct is a no-op (Terraform list-block syntax for single blocks)
+			name: "index [0] on struct is no-op",
+			path: "connection[0]",
+			want: inner{ID: "abc", Name: "x"},
+		},
+		{
+			name: "index [0] on struct then field",
+			path: "connection[0].id",
+			want: "abc",
+		},
+		{
+			// Non-zero index on a struct is still an error.
+			name:   "non-zero index on struct is error",
+			path:   "connection[1]",
+			errFmt: "connection[1]: cannot index struct",
 		},
 		{
 			name:     "out of range index",
@@ -273,6 +286,10 @@ func runCommonTests(t *testing.T, obj any) {
 				require.EqualError(t, err, tt.notFound)
 				var notFound *NotFoundError
 				require.ErrorAs(t, err, &notFound)
+				return
+			}
+			if tt.getOnlyErr != "" {
+				require.EqualError(t, err, tt.getOnlyErr)
 				return
 			}
 			if tt.errFmt != "" {
@@ -385,7 +402,7 @@ func TestGet_Embedded_NilPointerAnonymousNotDescended(t *testing.T) {
 	type host struct {
 		*embedded
 	}
-	require.NoError(t, ValidateByString(reflect.TypeOf(host{}), "hidden"))
+	require.NoError(t, ValidateByString(reflect.TypeFor[host](), "hidden"))
 	_, err := GetByString(host{}, "hidden")
 	require.EqualError(t, err, "hidden: field \"hidden\" not found in structaccess.host")
 }
@@ -398,7 +415,7 @@ func TestGet_Embedded_ValueAnonymousResolved(t *testing.T) {
 		embedded
 	}
 	in := host{embedded: embedded{Hidden: "x"}}
-	require.NoError(t, ValidateByString(reflect.TypeOf(in), "hidden"))
+	require.NoError(t, ValidateByString(reflect.TypeFor[host](), "hidden"))
 	testGet(t, in, "hidden", "x")
 }
 
@@ -417,15 +434,15 @@ func TestGet_BundleTag_SkipsDirect(t *testing.T) {
 	// Direct readonly/internal fields should be invisible
 	_, err := GetByString(S{A: "x", B: "y", C: "z"}, "a")
 	require.EqualError(t, err, "a: field \"a\" not found in structaccess.S")
-	require.EqualError(t, ValidateByString(reflect.TypeOf(S{}), "a"), "a: field \"a\" not found in structaccess.S")
+	require.EqualError(t, ValidateByString(reflect.TypeFor[S](), "a"), "a: field \"a\" not found in structaccess.S")
 
 	_, err = GetByString(S{}, "b")
 	require.EqualError(t, err, "b: field \"b\" not found in structaccess.S")
-	require.EqualError(t, ValidateByString(reflect.TypeOf(S{}), "b"), "b: field \"b\" not found in structaccess.S")
+	require.EqualError(t, ValidateByString(reflect.TypeFor[S](), "b"), "b: field \"b\" not found in structaccess.S")
 
 	// Visible field works
 	testGet(t, S{C: "z"}, "c", "z")
-	require.NoError(t, ValidateByString(reflect.TypeOf(S{}), "c"))
+	require.NoError(t, ValidateByString(reflect.TypeFor[S](), "c"))
 }
 
 func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
@@ -438,7 +455,7 @@ func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
 	// Promoted readonly field should be invisible
 	_, err := GetByString(host{embedded: embedded{Hidden: "x"}}, "hidden")
 	require.EqualError(t, err, "hidden: field \"hidden\" not found in structaccess.host")
-	require.EqualError(t, ValidateByString(reflect.TypeOf(host{}), "hidden"), "hidden: field \"hidden\" not found in structaccess.host")
+	require.EqualError(t, ValidateByString(reflect.TypeFor[host](), "hidden"), "hidden: field \"hidden\" not found in structaccess.host")
 }
 
 func TestGet_EmbeddedStructForceSendFields(t *testing.T) {
@@ -685,8 +702,9 @@ func TestGet_PointerToStructWithZeroValues(t *testing.T) {
 		NestedNoOmit: &NestedStruct{ID: 0, Name: "", Count: 0},
 	}
 
-	// The pointer was explicitly set, so it should return the struct even with zero values
-	testGet(t, obj, "nested_omit", &NestedStruct{ID: 0, Name: "", Count: 0})
+	// The pointer was explicitly set; it should return the dereferenced struct (not nil).
+	// JSON omitempty only omits nil pointers, not pointers to zero values.
+	testGet(t, obj, "nested_omit", NestedStruct{ID: 0, Name: "", Count: 0})
 	testGet(t, obj, "nested_omit.id", int64(0))
 	testGet(t, obj, "nested_omit.name", "")
 	testGet(t, obj, "nested_omit.count", 0)
@@ -720,7 +738,7 @@ func TestGetJobSettings(t *testing.T) {
 		},
 	}
 
-	testGet(t, &jobSettings, "tasks[0].run_job_task", &jobs.RunJobTask{})
+	testGet(t, &jobSettings, "tasks[0].run_job_task", jobs.RunJobTask{})
 	testGet(t, &jobSettings, "tasks[0].run_job_task.job_id", int64(0))
 }
 
@@ -731,6 +749,82 @@ func TestPipeline(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, "ingestion_definition: cannot access nil value", err.Error())
 	require.Nil(t, v)
+}
+
+func TestGet_EmbedTag(t *testing.T) {
+	type Item struct {
+		Name  string `json:"name"`
+		Level string `json:"level,omitempty"`
+	}
+
+	type Container struct {
+		ObjectID      string `json:"object_id"`
+		EmbeddedSlice []Item `json:"items,omitempty"`
+	}
+
+	c := Container{
+		ObjectID: "abc",
+		EmbeddedSlice: []Item{
+			{Name: "alice", Level: "admin"},
+			{Name: "bob", Level: "reader"},
+		},
+	}
+
+	// Access non-embed field normally.
+	testGet(t, c, "object_id", "abc")
+
+	// Access EmbeddedSlice elements via index.
+	testGet(t, c, "[0].name", "alice")
+	testGet(t, c, "[1].level", "reader")
+
+	// Access via key-value selector.
+	testGet(t, c, "[name='bob'].level", "reader")
+
+	// Out of range.
+	_, err := GetByString(c, "[5].name")
+	require.Error(t, err)
+	var notFound *NotFoundError
+	require.ErrorAs(t, err, &notFound)
+
+	// EmbeddedSlice field is not accessible by json tag name.
+	_, err = GetByString(c, "items")
+	require.Error(t, err)
+	require.NotErrorAs(t, err, &notFound)
+}
+
+func TestValidate_EmbedTag(t *testing.T) {
+	type Item struct {
+		Name  string `json:"name"`
+		Level string `json:"level,omitempty"`
+	}
+
+	type Container struct {
+		ObjectID      string `json:"object_id"`
+		EmbeddedSlice []Item `json:"items,omitempty"`
+	}
+
+	typ := reflect.TypeFor[Container]()
+
+	// Valid paths through EmbeddedSlice.
+	require.NoError(t, ValidateByString(typ, "[0].name"))
+	require.NoError(t, ValidateByString(typ, "[*].level"))
+	require.NoError(t, ValidateByString(typ, "[name='alice'].level"))
+	require.NoError(t, ValidateByString(typ, "object_id"))
+
+	// EmbeddedSlice itself is not accessible by json tag name.
+	require.Error(t, ValidateByString(typ, "items"))
+	require.Error(t, ValidateByString(typ, "items[0].name"))
+}
+
+func TestGet_EmbedTagEmpty(t *testing.T) {
+	type Container struct {
+		ObjectID      string `json:"object_id"`
+		EmbeddedSlice []int  `json:"items,omitempty"`
+	}
+
+	// Empty embed slice with omitempty: index should fail.
+	_, err := GetByString(Container{ObjectID: "abc"}, "[0]")
+	require.Error(t, err)
 }
 
 func TestGetKeyValue_NestedMultiple(t *testing.T) {

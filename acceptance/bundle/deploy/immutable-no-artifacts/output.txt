@@ -1,0 +1,32 @@
+
+>>> [CLI] bundle validate
+Name: test-bundle-immutable-no-artifacts-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-no-artifacts-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading immutable bundle snapshot...
+Created jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] jobs get [NUMID]
+"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
+
+>>> [CLI] jobs get [NUMID]
+"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
+
+>>> [CLI] jobs get [NUMID]
+"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/some_path"
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-no-artifacts-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

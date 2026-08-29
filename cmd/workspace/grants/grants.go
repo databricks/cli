@@ -3,6 +3,8 @@
 package grants
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -25,18 +27,23 @@ func New() *cobra.Command {
   object. Securable objects in Unity Catalog are hierarchical and privileges are
   inherited downward.
 
-  Securable objects in Unity Catalog are hierarchical and privileges are
-  inherited downward. This means that granting a privilege on the catalog
-  automatically grants the privilege to all current and future objects within
-  the catalog. Similarly, privileges granted on a schema are inherited by all
-  current and future objects within that schema.`,
+  This means that granting a privilege on the catalog automatically grants the
+  privilege to all current and future objects within the catalog. Similarly,
+  privileges granted on a schema are inherited by all current and future objects
+  within that schema.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newGetEffective())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newListEffective())
 	cmd.AddCommand(newUpdate())
 
 	// Apply optional overrides to this command.
@@ -84,6 +91,8 @@ func newGet() *cobra.Command {
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -102,6 +111,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -155,6 +165,8 @@ func newGetEffective() *cobra.Command {
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -173,6 +185,7 @@ func newGetEffective() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -183,6 +196,168 @@ func newGetEffective() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getEffectiveOverrides {
 		fn(cmd, &getEffectiveReq)
+	}
+
+	return cmd
+}
+
+// start list command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+	*catalog.ListPrivilegeAssignmentsRequest,
+)
+
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listReq catalog.ListPrivilegeAssignmentsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
+
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Specifies the maximum number of privilege assignments to return (page length).`)
+	cmd.Flags().StringVar(&listReq.Principal, "principal", listReq.Principal, `If provided, only the permissions for the specified principal (user or group) are returned.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list SECURABLE_TYPE FULL_NAME"
+	cmd.Short = `*Public Preview* List permissions.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List permissions.
+
+  Lists the privilege assignments for a securable. Does not include inherited
+  privileges. Paginated version of Get Permissions API.
+
+  Arguments:
+    SECURABLE_TYPE: Type of securable.
+    FULL_NAME: Full name of securable.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listReq.SecurableType = args[0]
+		listReq.FullName = args[1]
+
+		response := w.Grants.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+// start list-effective command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listEffectiveOverrides []func(
+	*cobra.Command,
+	*catalog.ListEffectivePrivilegeAssignmentsRequest,
+)
+
+func newListEffective() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listEffectiveReq catalog.ListEffectivePrivilegeAssignmentsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listEffectiveLimit int
+
+	cmd.Flags().IntVar(&listEffectiveReq.PageSize, "page-size", listEffectiveReq.PageSize, `Specifies the maximum number of privilege assignments to return (page length).`)
+	cmd.Flags().StringVar(&listEffectiveReq.Principal, "principal", listEffectiveReq.Principal, `If provided, only the effective permissions for the specified principal (user or group) are returned.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listEffectiveLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listEffectiveReq.PageToken, "page-token", listEffectiveReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-effective SECURABLE_TYPE FULL_NAME"
+	cmd.Short = `*Public Preview* List effective permissions.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List effective permissions.
+
+  Lists the effective privilege assignments for a securable. Includes inherited
+  privileges. Paginated version of Get Effective Permissions API.
+
+  Arguments:
+    SECURABLE_TYPE: Type of securable.
+    FULL_NAME: Full name of securable.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listEffectiveReq.SecurableType = args[0]
+		listEffectiveReq.FullName = args[1]
+
+		response := w.Grants.ListEffective(ctx, listEffectiveReq)
+		if listEffectiveLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listEffectiveLimit)
+		}
+		if listEffectiveLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listEffectiveLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listEffectiveOverrides {
+		fn(cmd, &listEffectiveReq)
 	}
 
 	return cmd
@@ -206,6 +381,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
+	cmd.Flags().BoolVar(&updateReq.OmitPermissionsInResponse, "omit-permissions-in-response", updateReq.OmitPermissionsInResponse, `Optional, default false.`)
 
 	cmd.Use = "update SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Update permissions.`
@@ -218,6 +394,8 @@ func newUpdate() *cobra.Command {
     FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -235,7 +413,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -248,6 +426,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

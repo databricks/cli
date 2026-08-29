@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
+	"github.com/databricks/cli/libs/log"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
@@ -50,6 +51,15 @@ type stateInstanceAttributes struct {
 }
 
 // Returns a mapping resourceKey -> stateInstanceAttributes
+// ParseResourcesStateFromBytes parses a terraform state file from already-read bytes.
+func ParseResourcesStateFromBytes(ctx context.Context, raw []byte) (ExportedResourcesMap, error) {
+	var state resourcesState
+	if err := json.Unmarshal(raw, &state); err != nil {
+		return nil, err
+	}
+	return resourcesStateToMap(ctx, &state)
+}
+
 func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap, error) {
 	rawState, err := os.ReadFile(path)
 	if err != nil {
@@ -58,12 +68,10 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 		}
 		return nil, err
 	}
-	var state resourcesState
-	err = json.Unmarshal(rawState, &state)
-	if err != nil {
-		return nil, err
-	}
+	return ParseResourcesStateFromBytes(ctx, rawState)
+}
 
+func resourcesStateToMap(ctx context.Context, state *resourcesState) (ExportedResourcesMap, error) {
 	if state.Version != SupportedStateVersion {
 		return nil, fmt.Errorf("unsupported deployment state version: %d. Try re-deploying the bundle", state.Version)
 	}
@@ -75,21 +83,27 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 			continue
 		}
 		for _, instance := range resource.Instances {
-			groupName, ok := TerraformToGroupName[resource.Type]
-
-			if !ok {
-				// secret_acls
-				continue
-			}
-
 			var resourceKey string
 			var resourceState ResourceState
 
+			groupName, ok := TerraformToGroupName[resource.Type]
+			if !ok {
+				log.Warnf(ctx, "Unknown Terraform resource type: %s", resource.Type)
+				continue
+			}
+
 			switch groupName {
-			case "apps":
+			case "secret_acls":
+				// Secret ACLs don't have their own state entries; permissions are
+				// created alongside the scope in the "secret_scopes" case below.
+				continue
+			case "secret_scopes":
 				resourceKey = "resources." + groupName + "." + resource.Name
 				resourceState = ResourceState{ID: instance.Attributes.Name}
-			case "secret_scopes":
+				// The direct engine manages permissions as a sub-resource
+				// (SecretScopeFixups adds MANAGE ACL for the current user).
+				result[resourceKey+".permissions"] = ResourceState{ID: instance.Attributes.Name}
+			case "apps", "database_instances", "database_catalogs", "synced_database_tables", "postgres_projects", "postgres_branches", "postgres_catalogs", "postgres_databases", "postgres_endpoints", "postgres_roles", "postgres_synced_tables":
 				resourceKey = "resources." + groupName + "." + resource.Name
 				resourceState = ResourceState{ID: instance.Attributes.Name}
 			case "dashboards":
@@ -124,5 +138,10 @@ func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (ExportedResourc
 		return nil, err
 	}
 	filename, _ := b.StateFilenameTerraform(ctx)
-	return parseResourcesState(ctx, filepath.Join(cacheDir, filename))
+	return ParseResourcesStateFromPath(ctx, filepath.Join(cacheDir, filename))
+}
+
+// ParseResourcesStateFromPath parses a terraform state file at a known path.
+func ParseResourcesStateFromPath(ctx context.Context, path string) (ExportedResourcesMap, error) {
+	return parseResourcesState(ctx, path)
 }

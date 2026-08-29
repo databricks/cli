@@ -1,7 +1,6 @@
 package resourcemutator
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/diag"
@@ -144,7 +143,7 @@ func TestTriggerPauseStatusWhenUnpaused(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.TriggerPauseStatus = config.Unpaused
 
-	diags := bundle.ApplySeq(context.Background(), b, ValidateTargetMode())
+	diags := bundle.ApplySeq(t.Context(), b, ValidateTargetMode())
 	require.ErrorContains(t, diags.Error(), "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default")
 }
 

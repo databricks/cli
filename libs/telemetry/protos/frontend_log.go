@@ -16,7 +16,11 @@ type FrontendLogEntry struct {
 type DatabricksCliLog struct {
 	ExecutionContext *ExecutionContext `json:"execution_context,omitempty"`
 
-	CliTestEvent      *CliTestEvent      `json:"cli_test_event,omitempty"`
-	BundleInitEvent   *BundleInitEvent   `json:"bundle_init_event,omitempty"`
-	BundleDeployEvent *BundleDeployEvent `json:"bundle_deploy_event,omitempty"`
+	CliTestEvent                *CliTestEvent                `json:"cli_test_event,omitempty"`
+	BundleInitEvent             *BundleInitEvent             `json:"bundle_init_event,omitempty"`
+	BundleDeployEvent           *BundleDeployEvent           `json:"bundle_deploy_event,omitempty"`
+	SshTunnelEvent              *SshTunnelEvent              `json:"ssh_tunnel_event,omitempty"`
+	BundleConfigRemoteSyncEvent *BundleConfigRemoteSyncEvent `json:"bundle_config_remote_sync_event,omitempty"`
+	AitoolsInstallEvent         *AitoolsInstallEvent         `json:"aitools_install_event,omitempty"`
+	SetupLocalEvent             *SetupLocalEvent             `json:"setup_local_event,omitempty"`
 }

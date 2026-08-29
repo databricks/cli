@@ -29,7 +29,7 @@ const (
 // It uses the reference value both for location information and to determine if the typed
 // value was changed or not. For example, if a struct-by-value field is nil in the reference
 // it will be zero-valued in the typed configuration. If it remains zero-valued, this
-// this function will still emit a nil value in the dynamic representation.
+// function will still emit a nil value in the dynamic representation.
 func FromTyped(src any, ref dyn.Value) (dyn.Value, error) {
 	return fromTyped(src, ref)
 }
@@ -59,7 +59,12 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 	var err error
 	switch srcv.Kind() {
 	case reflect.Struct:
-		v, err = fromTypedStruct(srcv, ref, options...)
+		// Handle SDK native types using JSON marshaling.
+		if slices.Contains(sdkNativeTypes, srcv.Type()) {
+			v, err = fromTypedSDKNative(srcv, ref, options...)
+		} else {
+			v, err = fromTypedStruct(srcv, ref, options...)
+		}
 	case reflect.Map:
 		v, err = fromTypedMap(srcv, ref)
 	case reflect.Slice:
@@ -126,6 +131,13 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 		nv, err := fromTyped(v.Interface(), refv, options...)
 		if err != nil {
 			return dyn.InvalidValue, err
+		}
+
+		// If the field carries the bundle:"sensitive" tag and resolved to a string
+		// (including empty), wrap it as a sensitive value so that all downstream
+		// serializers (JSON, YAML) redact it automatically.
+		if info.Sensitive[k] && nv.Kind() == dyn.KindString {
+			nv = dyn.NewSensitiveValue(nv.MustString(), nv.Locations())
 		}
 
 		// Either if the key was set in the reference, the field is not zero-valued, OR it's forced

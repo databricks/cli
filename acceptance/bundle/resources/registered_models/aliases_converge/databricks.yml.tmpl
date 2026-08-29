@@ -1,0 +1,16 @@
+bundle:
+  name: deploy-registered-models-aliases-$UNIQUE_NAME
+
+resources:
+  registered_models:
+    my_registered_model:
+      name: my-registered-model-aliases-$UNIQUE_NAME
+      comment: $COMMENT
+      catalog_name: main
+      schema_name: default
+      # Aliases live on model versions and GET does not echo them back
+      # (DoRead uses IncludeAliases=false), so a config that sets them used to
+      # report a perpetual in-place update and never converge.
+      aliases:
+        - alias_name: champion
+          id: alias-champion

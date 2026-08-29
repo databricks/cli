@@ -46,7 +46,7 @@ resources:
           new_cluster:
             spark_version: {{template "latest_lts_dbr_version"}}
             node_type_id: {{smallest_node_type}}
-            data_security_mode: SINGLE_USER
+            data_security_mode: DATA_SECURITY_MODE_AUTO
             num_workers: 0
             spark_conf:
               spark.master: "local[*, 4]"

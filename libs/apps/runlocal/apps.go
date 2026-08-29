@@ -7,11 +7,11 @@ import (
 )
 
 type App interface {
-	PrepareEnvironment() error
-	GetCommand(bool) ([]string, error)
+	PrepareEnvironment(ctx context.Context) error
+	GetCommand(ctx context.Context, debug bool) (cmd, env []string, err error)
 }
 
-func NewApp(ctx context.Context, config *Config, spec *AppSpec) (App, error) {
+func NewApp(config *Config, spec *AppSpec) (App, error) {
 	// Check if the app is a Node.js app by checking if there is a package.json file in the root of the app
 	packageJsonPath := filepath.Join(config.AppPath, "package.json")
 	_, err := os.Stat(packageJsonPath)
@@ -21,8 +21,8 @@ func NewApp(ctx context.Context, config *Config, spec *AppSpec) (App, error) {
 		if err != nil {
 			return nil, err
 		}
-		return NewNodeApp(ctx, config, spec, packageJson), nil
+		return NewNodeApp(config, spec, packageJson), nil
 	}
 
-	return NewPythonApp(ctx, config, spec), nil
+	return NewPythonApp(config, spec), nil
 }

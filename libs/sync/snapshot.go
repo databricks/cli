@@ -19,7 +19,7 @@ import (
 // Bump it up every time a potentially breaking change is made to the snapshot schema
 const LatestSnapshotVersion = "v1"
 
-// A snapshot is a persistant store of knowledge this CLI has about state of files
+// A snapshot is a persistent store of knowledge this CLI has about state of files
 // in the remote repo. We use the last modified times (mtime) of files to determine
 // whether a files need to be updated in the remote repo.
 //

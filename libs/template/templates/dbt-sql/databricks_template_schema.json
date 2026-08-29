@@ -1,5 +1,5 @@
 {
-    "welcome_message": "\nWelcome to the dbt template for Databricks Asset Bundles!\n\nA workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.\nworkspace_host: {{workspace_host}}",
+    "welcome_message": "\nWelcome to the dbt template for Declarative Automation Bundles!\n\nA workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.\nworkspace_host: {{workspace_host}}",
     "properties": {
         "project_name": {
             "type": "string",
@@ -18,17 +18,18 @@
         "default_catalog": {
             "type": "string",
             "default": "{{default_catalog}}",
-            "pattern": "^\\w*$",
+            "pattern": "^(\\w[\\w-]*)?$",
             "pattern_match_failure_message": "Invalid catalog name.",
             "description": "\nPlease provide an initial catalog{{if eq (default_catalog) \"\"}} (leave blank when not using Unity Catalog){{end}}.\ndefault_catalog",
             "order": 3
         },
         "personal_schemas": {
             "type": "string",
-            "description": "\nWould you like to use a personal schema for each user working on this project? (e.g., 'catalog.{{short_name}}')\npersonal_schemas",
+            "description": "Use a personal schema for each user working on this project\n(this is recommended, your personal schema will be '{{.default_catalog}}.{{short_name}}')",
+            "default": "yes",
             "enum": [
-                "yes, use a schema based on the current user name during development",
-                "no, use a shared schema during development"
+                "yes",
+                "no, I will customize the schema configuration later in databricks.yml"
             ],
             "order": 4
         },
@@ -36,13 +37,13 @@
             "skip_prompt_if": {
                 "properties": {
                     "personal_schemas": {
-                        "const": "yes, use a schema based on the current user name during development"
+                        "const": "yes"
                     }
                 }
             },
             "type": "string",
             "default": "default",
-            "pattern": "^\\w+$",
+            "pattern": "^\\w[\\w-]*$",
             "pattern_match_failure_message": "Invalid schema name.",
             "description": "\nPlease provide an initial schema during development.\ndefault_schema",
             "order": 5

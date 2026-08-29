@@ -5,28 +5,28 @@
 === deploy initial dashboard
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard update inplace/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created dashboards.test_dashboard
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === update the dashboard
 >>> [CLI] lakeview update [DASHBOARD_ID] --serialized-dashboard {"a":"b"}
 {
-  "create_time":"[TIMESTAMP]",
-  "dashboard_id":"[DASHBOARD_ID]",
-  "display_name":"test dashboard",
-  "etag":"[NUMID]",
-  "lifecycle_state":"ACTIVE",
-  "parent_path":"/Users/[USERNAME]/.bundle/dashboard update inplace/default/resources",
-  "path":"/Users/[USERNAME]/.bundle/dashboard update inplace/default/resources/test dashboard.lvdash.json",
-  "serialized_dashboard":"{\"a\":\"b\"}\n",
-  "update_time":"[TIMESTAMP]",
-  "warehouse_id":"my-warehouse-1234"
+  "create_time": "[TIMESTAMP]",
+  "dashboard_id": "[DASHBOARD_ID]",
+  "display_name": "test dashboard",
+  "etag": "[NUMID]",
+  "lifecycle_state": "ACTIVE",
+  "parent_path": "/Users/[USERNAME]/.bundle/dashboard update inplace/default/resources",
+  "path": "/Users/[USERNAME]/.bundle/dashboard update inplace/default/resources/test dashboard.lvdash.json",
+  "serialized_dashboard": "{\"a\":\"b\"}\n",
+  "update_time": "[TIMESTAMP]",
+  "warehouse_id": ""
 }
 
 === update the dashboard file using bundle generate
 >>> [CLI] bundle generate dashboard --resource test_dashboard --force
-Writing dashboard to "dash.lvdash.json"
+Writing dashboard to dash.lvdash.json
 
 >>> cat dash.lvdash.json
 {

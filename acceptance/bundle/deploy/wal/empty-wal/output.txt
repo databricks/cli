@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-empty-test/default/files...
+Created jobs.test_job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged

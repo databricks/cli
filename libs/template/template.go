@@ -30,14 +30,14 @@ const (
 	ExperimentalDefaultPython TemplateName = "experimental-default-python-vnext"
 	DefaultSql                TemplateName = "default-sql"
 	LakeflowPipelines         TemplateName = "lakeflow-pipelines"
+	LakeflowIntegrations      TemplateName = "lakeflow-integrations"
 	// CLIPipelines is deprecated. Use LakeflowPipelines instead
-	CLIPipelines           TemplateName = "cli-pipelines"
-	DbtSql                 TemplateName = "dbt-sql"
-	MlopsStacks            TemplateName = "mlops-stacks"
-	Pydabs                 TemplateName = "pydabs"
-	Custom                 TemplateName = "custom"
-	ExperimentalJobsAsCode TemplateName = "experimental-jobs-as-code"
-	Default                TemplateName = "default"
+	CLIPipelines TemplateName = "cli-pipelines"
+	DbtSql       TemplateName = "dbt-sql"
+	MlopsStacks  TemplateName = "mlops-stacks"
+	Pydabs       TemplateName = "pydabs"
+	Custom       TemplateName = "custom"
+	Default      TemplateName = "default"
 )
 
 var databricksTemplates = []Template{
@@ -56,6 +56,7 @@ var databricksTemplates = []Template{
 	{
 		name:        DefaultMinimal,
 		description: "The minimal template, for advanced users",
+		aliases:     []string{"empty"},
 		Reader:      &builtinReader{name: string(DefaultMinimal)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultMinimal}},
 	},
@@ -71,6 +72,13 @@ var databricksTemplates = []Template{
 		description: "The default template for Lakeflow Spark Declarative Pipelines",
 		Reader:      &builtinReader{name: string(LakeflowPipelines)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: LakeflowPipelines}},
+	},
+	{
+		name:        LakeflowIntegrations,
+		hidden:      true,
+		description: "The template for Lakeflow integrations",
+		Reader:      &builtinReader{name: string(LakeflowIntegrations)},
+		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: LakeflowIntegrations}},
 	},
 	{
 		name:        CLIPipelines,
@@ -98,13 +106,6 @@ var databricksTemplates = []Template{
 		description: "A variant of the 'default-python' template that defines resources in Python instead of YAML",
 		Reader:      &builtinReader{name: string(Pydabs)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: Pydabs}},
-	},
-	{
-		name:        ExperimentalJobsAsCode,
-		hidden:      true,
-		description: "Jobs as code template (experimental)",
-		Reader:      &builtinReader{name: string(ExperimentalJobsAsCode)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: ExperimentalJobsAsCode}},
 	},
 }
 

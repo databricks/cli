@@ -26,10 +26,11 @@ type DataSourceClusterClusterInfoAzureAttributesLogAnalyticsInfo struct {
 }
 
 type DataSourceClusterClusterInfoAzureAttributes struct {
-	Availability     string                                                       `json:"availability,omitempty"`
-	FirstOnDemand    int                                                          `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                          `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *DataSourceClusterClusterInfoAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                       `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                       `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                          `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                          `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *DataSourceClusterClusterInfoAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type DataSourceClusterClusterInfoClusterLogConfDbfs struct {
@@ -106,6 +107,7 @@ type DataSourceClusterClusterInfoExecutors struct {
 type DataSourceClusterClusterInfoGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -181,10 +183,11 @@ type DataSourceClusterClusterInfoSpecAzureAttributesLogAnalyticsInfo struct {
 }
 
 type DataSourceClusterClusterInfoSpecAzureAttributes struct {
-	Availability     string                                                           `json:"availability,omitempty"`
-	FirstOnDemand    int                                                              `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                              `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *DataSourceClusterClusterInfoSpecAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                           `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                           `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                              `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                              `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *DataSourceClusterClusterInfoSpecAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecClusterLogConfDbfs struct {
@@ -239,6 +242,7 @@ type DataSourceClusterClusterInfoSpecDriverNodeTypeFlexibility struct {
 type DataSourceClusterClusterInfoSpecGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -302,7 +306,7 @@ type DataSourceClusterClusterInfoSpecLibraryMaven struct {
 }
 
 type DataSourceClusterClusterInfoSpecLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecLibraryPypi struct {
@@ -322,7 +326,7 @@ type DataSourceClusterClusterInfoSpecLibrary struct {
 }
 
 type DataSourceClusterClusterInfoSpecProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecWorkerNodeTypeFlexibility struct {
@@ -344,6 +348,7 @@ type DataSourceClusterClusterInfoSpec struct {
 	ClusterName                string                                                     `json:"cluster_name,omitempty"`
 	CustomTags                 map[string]string                                          `json:"custom_tags,omitempty"`
 	DataSecurityMode           string                                                     `json:"data_security_mode,omitempty"`
+	DependencyMode             string                                                     `json:"dependency_mode,omitempty"`
 	DriverInstancePoolId       string                                                     `json:"driver_instance_pool_id,omitempty"`
 	DriverNodeTypeId           string                                                     `json:"driver_node_type_id,omitempty"`
 	EnableElasticDisk          bool                                                       `json:"enable_elastic_disk,omitempty"`
@@ -409,6 +414,7 @@ type DataSourceClusterClusterInfo struct {
 	CustomTags                 map[string]string                                      `json:"custom_tags,omitempty"`
 	DataSecurityMode           string                                                 `json:"data_security_mode,omitempty"`
 	DefaultTags                map[string]string                                      `json:"default_tags,omitempty"`
+	DependencyMode             string                                                 `json:"dependency_mode,omitempty"`
 	DriverInstancePoolId       string                                                 `json:"driver_instance_pool_id,omitempty"`
 	DriverNodeTypeId           string                                                 `json:"driver_node_type_id,omitempty"`
 	EnableElasticDisk          bool                                                   `json:"enable_elastic_disk,omitempty"`
@@ -454,7 +460,7 @@ type DataSourceClusterClusterInfo struct {
 }
 
 type DataSourceClusterProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceCluster struct {

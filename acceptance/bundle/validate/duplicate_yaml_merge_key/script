@@ -1,0 +1,8 @@
+musterr trace $CLI bundle validate
+
+update_file.py databricks.yml "            <<: *cluster1
+            <<: *cluster2" "            <<: [*cluster1, *cluster2]"
+
+trace $CLI bundle validate
+
+$CLI bundle validate -o json | jq '.resources.jobs.my_job.tasks[0].new_cluster'

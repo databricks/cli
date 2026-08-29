@@ -1,0 +1,50 @@
+
+=== Deploy: app created with no_compute; config is not deployed until the app starts
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-config-no-deployment/default/files...
+Created apps.myapp
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Plan is a no-op: config/source_code_path drift is skipped while the app has no active deployment
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Both deploy-only fields are skipped with reason "no active deployment"
+>>> [CLI] bundle plan -o json
+{
+  "config": {
+    "action": "skip",
+    "reason": "no active deployment",
+    "old": {
+      "command": [
+        "python",
+        "app.py"
+      ],
+      "env": [
+        {
+          "name": "MY_ENV_VAR",
+          "value": "test_value"
+        }
+      ]
+    },
+    "new": {
+      "command": [
+        "python",
+        "app.py"
+      ],
+      "env": [
+        {
+          "name": "MY_ENV_VAR",
+          "value": "test_value"
+        }
+      ]
+    }
+  },
+  "source_code_path": {
+    "action": "skip",
+    "reason": "no active deployment",
+    "old": "/Workspace/Users/[USERNAME]/.bundle/app-config-no-deployment/default/files/app",
+    "new": "/Workspace/Users/[USERNAME]/.bundle/app-config-no-deployment/default/files/app"
+  }
+}

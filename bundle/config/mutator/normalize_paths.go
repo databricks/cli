@@ -7,6 +7,7 @@ import (
 	"net/url"
 	pathlib "path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -44,10 +45,8 @@ func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnost
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return paths.VisitPaths(v, func(path dyn.Path, kind paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
-			for _, gitSourcePrefix := range gitSourcePaths {
-				if path.HasPrefix(gitSourcePrefix) {
-					return v, nil
-				}
+			if slices.ContainsFunc(gitSourcePaths, path.HasPrefix) {
+				return v, nil
 			}
 
 			value, ok := v.AsString()

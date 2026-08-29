@@ -3,6 +3,7 @@
 package provider_providers
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -19,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "provider-providers",
-		Short:   `Providers are entities that manage assets in Marketplace.`,
-		Long:    `Providers are entities that manage assets in Marketplace.`,
+		Use:   "provider-providers",
+		Short: `*Public Preview* Providers are entities that manage assets in Marketplace.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Providers are entities that manage assets in Marketplace.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -59,12 +66,16 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
-	cmd.Short = `Create a provider.`
-	cmd.Long = `Create a provider.
+	cmd.Short = `*Public Preview* Create a provider.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a provider.
 
   Create a provider`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -77,19 +88,20 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.ProviderProviders.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -120,12 +132,16 @@ func newDelete() *cobra.Command {
 	var deleteReq marketplace.DeleteProviderRequest
 
 	cmd.Use = "delete ID"
-	cmd.Short = `Delete provider.`
-	cmd.Long = `Delete provider.
+	cmd.Short = `*Public Preview* Delete provider.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete provider.
 
   Delete provider`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -133,10 +149,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Provider Providers drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Provider Providers drop-down.")
 			names, err := w.ProviderProviders.ProviderInfoNameToIdMap(ctx, marketplace.ListProvidersRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Providers drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -147,7 +163,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		deleteReq.Id = args[0]
 
@@ -185,12 +201,16 @@ func newGet() *cobra.Command {
 	var getReq marketplace.GetProviderRequest
 
 	cmd.Use = "get ID"
-	cmd.Short = `Get provider.`
-	cmd.Long = `Get provider.
+	cmd.Short = `*Public Preview* Get provider.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get provider.
 
   Get provider profile`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -198,10 +218,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Provider Providers drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Provider Providers drop-down.")
 			names, err := w.ProviderProviders.ProviderInfoNameToIdMap(ctx, marketplace.ListProvidersRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Providers drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -212,7 +232,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		getReq.Id = args[0]
 
@@ -220,6 +240,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -248,17 +269,31 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListProvidersRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List providers.`
-	cmd.Long = `List providers.
+	cmd.Short = `*Public Preview* List providers.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List providers.
 
   List provider profiles for account.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -271,6 +306,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ProviderProviders.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -304,12 +346,16 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update ID"
-	cmd.Short = `Update provider.`
-	cmd.Long = `Update provider.
+	cmd.Short = `*Public Preview* Update provider.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update provider.
 
   Update provider profile`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -327,13 +373,13 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.Id = args[0]
 
@@ -341,6 +387,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

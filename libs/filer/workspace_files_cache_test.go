@@ -80,8 +80,8 @@ func TestWorkspaceFilesCache_ReadDirCache(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-	cache := newWorkspaceFilesReadaheadCache(f)
+	ctx := t.Context()
+	cache := newWorkspaceFilesReadaheadCache(ctx, f)
 	defer cache.Cleanup()
 
 	// First read dir should hit the filer, second should hit the cache.
@@ -121,8 +121,8 @@ func TestWorkspaceFilesCache_ReadDirCacheIsolation(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-	cache := newWorkspaceFilesReadaheadCache(f)
+	ctx := t.Context()
+	cache := newWorkspaceFilesReadaheadCache(ctx, f)
 	defer cache.Cleanup()
 
 	// First read dir should hit the filer, second should hit the cache.
@@ -152,8 +152,8 @@ func TestWorkspaceFilesCache_StatCache(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-	cache := newWorkspaceFilesReadaheadCache(f)
+	ctx := t.Context()
+	cache := newWorkspaceFilesReadaheadCache(ctx, f)
 	defer cache.Cleanup()
 
 	// First stat should hit the filer, second should hit the cache.
@@ -221,8 +221,8 @@ func TestWorkspaceFilesCache_ReadDirPopulatesStatCache(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-	cache := newWorkspaceFilesReadaheadCache(f)
+	ctx := t.Context()
+	cache := newWorkspaceFilesReadaheadCache(ctx, f)
 	defer cache.Cleanup()
 
 	// Issue read dir to populate the stat cache.
@@ -288,8 +288,8 @@ func TestWorkspaceFilesCache_ReadDirTriggersReadahead(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-	cache := newWorkspaceFilesReadaheadCache(f)
+	ctx := t.Context()
+	cache := newWorkspaceFilesReadaheadCache(ctx, f)
 	defer cache.Cleanup()
 
 	// Issue read dir to populate the stat cache.

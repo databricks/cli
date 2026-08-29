@@ -27,6 +27,15 @@ func convertAppResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 		log.Debugf(ctx, "app normalization diagnostic: %s", diag.Summary)
 	}
 
+	// SDK v0.175 added source_code_path, git_source, and default_git_source to
+	// apps.App. These are deploy-only fields DABs handles via source upload (see
+	// bundle/direct/dresources/app.go), not databricks_app resource attributes, so
+	// keep them out of the Terraform state.
+	vout, err := dyn.DropKeys(vout, []string{"source_code_path", "git_source", "default_git_source"})
+	if err != nil {
+		return vout, err
+	}
+
 	return vout, nil
 }
 
@@ -38,7 +47,7 @@ func (appConverter) Convert(ctx context.Context, key string, vin dyn.Value, out 
 		return err
 	}
 
-	// We always set no_compute to true as it allows DABs not to wait for app compute to be started when app is created.
+	// Always skip compute during creation; lifecycle.started is only supported in direct mode.
 	vout, err = dyn.Set(vout, "no_compute", dyn.V(true))
 	if err != nil {
 		return err

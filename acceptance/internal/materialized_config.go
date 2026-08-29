@@ -1,47 +1,100 @@
 package internal
 
 import (
-	"bytes"
-
-	"github.com/BurntSushi/toml"
+	"encoding/json"
+	"fmt"
+	"maps"
+	"slices"
+	"strings"
 )
+
+// filteredEnvMatrix returns a copy of matrix with values removed by single-condition
+// exclude rules applied directly. Multi-condition rules (pruning specific combinations)
+// are left for runtime and do not affect the per-key value lists.
+// Keys with an empty value list are preserved as-is: an empty list signals
+// an intentional override that clears an inherited matrix variable.
+func filteredEnvMatrix(matrix, exclude map[string][]string) map[string][]string {
+	if len(exclude) == 0 {
+		return matrix
+	}
+	result := maps.Clone(matrix)
+	for _, conditions := range exclude {
+		if len(conditions) != 1 {
+			continue
+		}
+		k, v, ok := strings.Cut(conditions[0], "=")
+		if !ok {
+			continue
+		}
+		if vals, exists := result[k]; exists && len(vals) > 0 {
+			result[k] = slices.DeleteFunc(slices.Clone(vals), func(x string) bool { return x == v })
+		}
+	}
+	return result
+}
 
 const MaterializedConfigFile = "out.test.toml"
 
-type MaterializedConfig struct {
-	GOOS                 map[string]bool     `toml:"GOOS,omitempty"`
-	CloudEnvs            map[string]bool     `toml:"CloudEnvs,omitempty"`
-	Local                *bool               `toml:"Local,omitempty"`
-	Cloud                *bool               `toml:"Cloud,omitempty"`
-	CloudSlow            *bool               `toml:"CloudSlow,omitempty"`
-	RequiresUnityCatalog *bool               `toml:"RequiresUnityCatalog,omitempty"`
-	RequiresCluster      *bool               `toml:"RequiresCluster,omitempty"`
-	RequiresWarehouse    *bool               `toml:"RequiresWarehouse,omitempty"`
-	EnvMatrix            map[string][]string `toml:"EnvMatrix,omitempty"`
+// GenerateMaterializedConfig creates a TOML representation of the configuration fields
+// that determine where and how a test is executed.
+func GenerateMaterializedConfig(config *TestConfig) string {
+	var buf strings.Builder
+
+	writeBool(&buf, "Cloud", config.Cloud)
+	writeBool(&buf, "CloudSlow", config.CloudSlow)
+	writeBool(&buf, "RunsOnDbr", config.RunsOnDbr)
+	if config.Phase != 0 {
+		fmt.Fprintf(&buf, "Phase = %d\n", config.Phase)
+	}
+
+	for _, k := range slices.Sorted(maps.Keys(config.GOOS)) {
+		fmt.Fprintf(&buf, "GOOS.%s = %v\n", k, config.GOOS[k])
+	}
+	for _, k := range slices.Sorted(maps.Keys(config.CloudEnvs)) {
+		fmt.Fprintf(&buf, "CloudEnvs.%s = %v\n", k, config.CloudEnvs[k])
+	}
+	envMatrix := filteredEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude)
+	for _, k := range slices.Sorted(maps.Keys(envMatrix)) {
+		writeTomlStringArray(&buf, "EnvMatrix."+k, envMatrix[k])
+	}
+
+	return buf.String()
 }
 
-// GenerateMaterializedConfig creates a TOML representation of the configuration fields
-// that determine where and how a test is executed
-func GenerateMaterializedConfig(config TestConfig) (string, error) {
-	materialized := MaterializedConfig{
-		GOOS:                 config.GOOS,
-		CloudEnvs:            config.CloudEnvs,
-		Local:                config.Local,
-		Cloud:                config.Cloud,
-		CloudSlow:            config.CloudSlow,
-		RequiresUnityCatalog: config.RequiresUnityCatalog,
-		RequiresCluster:      config.RequiresCluster,
-		RequiresWarehouse:    config.RequiresWarehouse,
-		EnvMatrix:            config.EnvMatrix,
+func writeBool(buf *strings.Builder, key string, v *bool) {
+	if v != nil {
+		fmt.Fprintf(buf, "%s = %v\n", key, *v)
 	}
+}
 
-	var buf bytes.Buffer
-	encoder := toml.NewEncoder(&buf)
-	err := encoder.Encode(materialized)
-	if err != nil {
-		return "", err
+// writeTomlStringArray writes a TOML string array. Arrays with more than 3 elements
+// use one element per line for readability.
+func writeTomlStringArray(buf *strings.Builder, key string, vals []string) {
+	if len(vals) > 3 {
+		fmt.Fprintf(buf, "%s = [\n", key)
+		for i, v := range vals {
+			if i < len(vals)-1 {
+				fmt.Fprintf(buf, "  %s,\n", tomlQuote(v))
+			} else {
+				fmt.Fprintf(buf, "  %s\n", tomlQuote(v))
+			}
+		}
+		buf.WriteString("]\n")
+		return
 	}
+	fmt.Fprintf(buf, "%s = [", key)
+	for i, v := range vals {
+		if i > 0 {
+			buf.WriteString(", ")
+		}
+		buf.WriteString(tomlQuote(v))
+	}
+	buf.WriteString("]\n")
+}
 
-	// Add newline at the end of the TOML
-	return buf.String(), nil
+// tomlQuote returns a TOML basic string literal for s using JSON encoding,
+// whose escape sequences (\", \\, \n, \r, \t, \uXXXX) are all valid in TOML.
+func tomlQuote(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
 }

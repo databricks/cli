@@ -28,6 +28,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add subservices
 	cmd.AddCommand(csp_enablement_account.New())
 	cmd.AddCommand(disable_legacy_features.New())

@@ -1,7 +1,6 @@
 package resourcemutator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
@@ -24,7 +23,7 @@ func TestMergeJobClusters(t *testing.T) {
 							JobClusters: []jobs.JobCluster{
 								{
 									JobClusterKey: "foo",
-									NewCluster: compute.ClusterSpec{
+									NewCluster: &compute.ClusterSpec{
 										SparkVersion: "13.3.x-scala2.12",
 										NodeTypeId:   "i3.xlarge",
 										NumWorkers:   2,
@@ -32,13 +31,13 @@ func TestMergeJobClusters(t *testing.T) {
 								},
 								{
 									JobClusterKey: "bar",
-									NewCluster: compute.ClusterSpec{
+									NewCluster: &compute.ClusterSpec{
 										SparkVersion: "10.4.x-scala2.12",
 									},
 								},
 								{
 									JobClusterKey: "foo",
-									NewCluster: compute.ClusterSpec{
+									NewCluster: &compute.ClusterSpec{
 										NodeTypeId: "i3.2xlarge",
 										NumWorkers: 4,
 									},
@@ -51,7 +50,7 @@ func TestMergeJobClusters(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, resourcemutator.MergeJobClusters())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.MergeJobClusters())
 	assert.NoError(t, diags.Error())
 
 	j := b.Config.Resources.Jobs["foo"]
@@ -80,14 +79,14 @@ func TestMergeJobClustersWithNilKey(t *testing.T) {
 						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
-									NewCluster: compute.ClusterSpec{
+									NewCluster: &compute.ClusterSpec{
 										SparkVersion: "13.3.x-scala2.12",
 										NodeTypeId:   "i3.xlarge",
 										NumWorkers:   2,
 									},
 								},
 								{
-									NewCluster: compute.ClusterSpec{
+									NewCluster: &compute.ClusterSpec{
 										NodeTypeId: "i3.2xlarge",
 										NumWorkers: 4,
 									},
@@ -100,7 +99,7 @@ func TestMergeJobClustersWithNilKey(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, resourcemutator.MergeJobClusters())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.MergeJobClusters())
 	assert.NoError(t, diags.Error())
 	assert.Len(t, b.Config.Resources.Jobs["foo"].JobClusters, 1)
 }

@@ -1,0 +1,24 @@
+SCHEMA_NAME=schema_out_of_band_principal_$UNIQUE_NAME
+SCHEMA_FULL_NAME=main.$SCHEMA_NAME
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+trace $CLI grants update schema "$SCHEMA_FULL_NAME" --json @update.json > /dev/null
+$CLI grants get schema "$SCHEMA_FULL_NAME" | gron.py --noindex | sort | contains.py "$CURRENT_USER_NAME" 'deco-test-user@databricks.com' > /dev/null
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+# remote_state.__embed__ order is non-deterministic; extract and sort separately into per-engine file
+jq '.plan["resources.schemas.grants_schema.grants"].remote_state.__embed__' out.plan.$DATABRICKS_BUNDLE_ENGINE.json | gron.py --noindex | sort_lines.py --repl > out.embed.$DATABRICKS_BUNDLE_ENGINE.txt
+tmp=$(mktemp)
+# __embed__ is extracted above; drop it so its non-deterministic order does not churn this golden.
+# effective_predictive_optimization_flag is inherited from the metastore and backend-controlled; drop it so the test does not depend on metastore settings.
+# updated_at/updated_by reflect UC's post-create system write that populates managed defaults, so on managed-defaults clouds they show a system principal rather than the creator; drop them.
+jq 'del(.plan["resources.schemas.grants_schema.grants"].remote_state.__embed__)' out.plan.$DATABRICKS_BUNDLE_ENGINE.json | normalize_uc_payload.py effective_predictive_optimization_flag updated_at updated_by > "$tmp" && mv "$tmp" out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace $CLI bundle plan -o json | normalize_uc_payload.py effective_predictive_optimization_flag updated_at updated_by > out.plan2.$DATABRICKS_BUNDLE_ENGINE.json

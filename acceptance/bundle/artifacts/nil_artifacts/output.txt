@@ -12,5 +12,3 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/nil_artifacts_test/default
 
 Found 1 error
-
-Exit code: 1

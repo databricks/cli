@@ -2,7 +2,6 @@ package render
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"testing"
@@ -19,7 +18,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
-	"github.com/fatih/color"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,20 +25,13 @@ import (
 func TestRenderSummaryHeaderTemplate_nilBundle(t *testing.T) {
 	writer := &bytes.Buffer{}
 
-	err := renderSummaryHeaderTemplate(context.Background(), writer, nil)
+	err := renderSummaryHeaderTemplate(cmdio.MockDiscard(t.Context()), writer, nil)
 	require.NoError(t, err)
 
-	assert.Equal(t, "", writer.String())
+	assert.Empty(t, writer.String())
 }
 
 func TestRenderDiagnosticsSummary(t *testing.T) {
-	// Disable colors for consistent test output
-	oldNoColor := color.NoColor
-	color.NoColor = true
-	defer func() {
-		color.NoColor = oldNoColor
-	}()
-
 	testCases := []struct {
 		name            string
 		bundle          *bundle.Bundle
@@ -115,7 +106,7 @@ func TestRenderDiagnosticsSummary(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := logdiag.InitContext(context.Background())
+			ctx := logdiag.InitContext(cmdio.MockDiscard(t.Context()))
 			logdiag.SetCollect(ctx, true) // Collect diagnostics instead of outputting to stderr
 
 			// Simulate diagnostic counts by logging fake diagnostics
@@ -145,13 +136,6 @@ type renderDiagnosticsTestCase struct {
 }
 
 func TestRenderDiagnostics(t *testing.T) {
-	// Disable colors for consistent test output
-	oldNoColor := color.NoColor
-	color.NoColor = true
-	defer func() {
-		color.NoColor = oldNoColor
-	}()
-
 	testCases := []renderDiagnosticsTestCase{
 		{
 			name:     "empty diagnostics",
@@ -276,7 +260,7 @@ func TestRenderDiagnostics(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx, stderr := cmdio.NewTestContextWithStderr(context.Background())
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 
 			err := cmdio.RenderDiagnostics(ctx, tc.diags)
 			require.NoError(t, err)
@@ -287,14 +271,7 @@ func TestRenderDiagnostics(t *testing.T) {
 }
 
 func TestRenderSummaryTemplate_nilBundle(t *testing.T) {
-	// Disable colors for consistent test output
-	oldNoColor := color.NoColor
-	color.NoColor = true
-	defer func() {
-		color.NoColor = oldNoColor
-	}()
-
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(cmdio.MockDiscard(t.Context()))
 	writer := &bytes.Buffer{}
 
 	err := renderSummaryHeaderTemplate(ctx, writer, nil)
@@ -307,14 +284,7 @@ func TestRenderSummaryTemplate_nilBundle(t *testing.T) {
 }
 
 func TestRenderSummary(t *testing.T) {
-	ctx := context.Background()
-
-	// Disable colors for consistent test output
-	oldNoColor := color.NoColor
-	color.NoColor = true
-	defer func() {
-		color.NoColor = oldNoColor
-	}()
+	ctx := cmdio.MockDiscard(t.Context())
 
 	// Create a mock bundle with various resources
 	b := &bundle.Bundle{

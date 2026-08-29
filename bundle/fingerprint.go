@@ -16,17 +16,17 @@ func (f *UserFingerprint) IsEmpty() bool {
 
 func (b *Bundle) GetUserFingerprint(ctx context.Context) UserFingerprint {
 	return UserFingerprint{
-		Host:       b.WorkspaceClient().Config.Host,
-		AuthHeader: b.getAuthorizationHeader(),
+		Host:       b.WorkspaceClient(ctx).Config.Host,
+		AuthHeader: b.getAuthorizationHeader(ctx),
 	}
 }
 
 // getAuthorizationHeader extracts the Authorization header from the workspace client configuration.
 // If it fails to authenticate, it returns an empty string.
-func (b *Bundle) getAuthorizationHeader() string {
+func (b *Bundle) getAuthorizationHeader(ctx context.Context) string {
 	// Create a dummy request to extract the Authorization header
 	req := &http.Request{Header: http.Header{}}
-	if err := b.WorkspaceClient().Config.Authenticate(req); err != nil {
+	if err := b.WorkspaceClient(ctx).Config.Authenticate(req); err != nil {
 		return ""
 	}
 

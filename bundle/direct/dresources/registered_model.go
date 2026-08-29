@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
@@ -34,13 +35,16 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 
 		Aliases:     model.Aliases,
 		BrowseOnly:  model.BrowseOnly,
-		CreatedAt:   model.CreatedAt,
-		CreatedBy:   model.CreatedBy,
 		FullName:    model.FullName,
 		MetastoreId: model.MetastoreId,
 		Owner:       model.Owner,
-		UpdatedAt:   model.UpdatedAt,
-		UpdatedBy:   model.UpdatedBy,
+
+		// Output only fields. Remote changes to these are ignored via
+		// ignore_remote_changes in resources.yml rather than zeroed here.
+		CreatedAt: model.CreatedAt,
+		CreatedBy: model.CreatedBy,
+		UpdatedAt: model.UpdatedAt,
+		UpdatedBy: model.UpdatedBy,
 	}
 }
 
@@ -62,13 +66,18 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.
 	return response.FullName, response, nil
 }
 
-func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ Changes) (*catalog.RegisteredModelInfo, error) {
+// See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
+var registeredModelForceSend = []string{"Comment"}
+
+func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ *PlanEntry) (*catalog.RegisteredModelInfo, error) {
 	updateRequest := catalog.UpdateRegisteredModelRequest{
 		FullName:        id,
 		Comment:         config.Comment,
-		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](config.ForceSendFields, "Owner", "NewName"),
+		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(slices.Clone(registeredModelForceSend), config.ForceSendFields...), "Owner", "NewName"),
 
-		// Owner is not part of the configuration tree
+		// Owner is settable in the config (it comes from the embedded
+		// CreateRegisteredModelRequest) and create sends it, but update never has: a
+		// change to it is silently dropped rather than applied.
 		Owner: "",
 
 		// Name updates are not supported yet without recreating. Can be added as a follow-up.
@@ -96,7 +105,7 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 	return response, nil
 }
 
-func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string, _ *catalog.CreateRegisteredModelRequest) error {
 	return r.client.RegisteredModels.Delete(ctx, catalog.DeleteRegisteredModelRequest{
 		FullName: id,
 	})

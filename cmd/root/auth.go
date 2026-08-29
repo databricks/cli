@@ -9,20 +9,34 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
+
+// errNotWorkspaceClient is a CLI-internal sentinel error. It signals that the
+// configured host is an account host, not a workspace host.
+//
+// workspaceClientOrPrompt synthesizes this error (line ~214) when it detects a
+// wrong host type via cfg.HostType(). MustAnyClient checks for it to decide
+// whether to fall through and try an account client instead.
+//
+// The SDK exported this as databricks.ErrNotWorkspaceClient until v0.126.0. The
+// SDK stopped *returning* it in v0.125.0 (host-type validation moved to host
+// metadata resolution), but the CLI was already synthesizing it locally. The
+// SDK removed the variable entirely in v0.127.0, so we now own it here.
+var errNotWorkspaceClient = errors.New("invalid Databricks Workspace configuration - host is not a workspace host")
 
 type ErrNoWorkspaceProfiles struct {
 	path string
 }
 
 func (e ErrNoWorkspaceProfiles) Error() string {
-	return e.path + " does not contain workspace profiles; please create one by running 'databricks configure'"
+	return e.path + " does not contain workspace profiles; please create one by running 'databricks auth login'"
 }
 
 type ErrNoAccountProfiles struct {
@@ -38,6 +52,55 @@ func initProfileFlag(cmd *cobra.Command) {
 	cmd.RegisterFlagCompletionFunc("profile", profile.ProfileCompletion)
 }
 
+// isPATOnSPOGWithoutWorkspaceID reports whether the resolved config is a PAT
+// profile pointing at a SPOG host with no workspace_id set. The SDK strips the
+// routing identifier from the request, which lands on the account-plane where
+// PATs aren't accepted. The legacy "none" sentinel (auth.WorkspaceIDNone) is
+// treated as empty here, matching the convention used elsewhere in the repo
+// (e.g. libs/databrickscfg/profile/profiler.go).
+func isPATOnSPOGWithoutWorkspaceID(cfg *config.Config) bool {
+	return cfg.AuthType == auth.AuthTypePat &&
+		(cfg.WorkspaceID == "" || cfg.WorkspaceID == auth.WorkspaceIDNone) &&
+		auth.HasUnifiedHostSignal(cfg.DiscoveryURL)
+}
+
+// patSPOGNoWorkspaceIDError describes the configuration gap and how to fix it.
+func patSPOGNoWorkspaceIDError(profileName string) error {
+	if profileName == "" {
+		return errors.New("personal access token (PAT) auth on this host requires a workspace_id; PATs are workspace-scoped, but no workspace_id is set. Add workspace_id = <id> (or set DATABRICKS_WORKSPACE_ID) to the profile associated with this PAT token")
+	}
+	return fmt.Errorf("profile %q uses PAT auth on a SPOG host but is missing workspace_id; PATs are workspace-scoped, so the request can't be routed. Edit the profile to add workspace_id = <id> matching the workspace the token was minted in", profileName)
+}
+
+// ErrAccountOnlyProfile signals that the resolved profile has an account_id
+// but no workspace_id, so workspace APIs can't be reached. Workspace-only
+// commands surface this as an actionable error; MustAnyClient (used by `auth
+// describe` and similar) recognizes the type and falls through to the account
+// client so account-only profiles still describe cleanly.
+type ErrAccountOnlyProfile struct {
+	profileName string
+	// host is the profile's canonical host name (config.CanonicalHostName);
+	// IsClassicAccountHost only matches the canonical form.
+	host string
+}
+
+func (e ErrAccountOnlyProfile) Error() string {
+	// A classic account console host serves no workspace APIs at all, so the
+	// generic "set workspace_id" advice below can never make workspace
+	// commands work there; following it is how broken profiles get created
+	// (https://github.com/databricks/cli/issues/5479).
+	if auth.IsClassicAccountHost(e.host) {
+		return fmt.Sprintf("profile %q points to a Databricks account console host (%s), which serves only account-level APIs; this command requires a workspace. Run `databricks auth login --host https://<workspace-url>` to create a workspace profile, or use `databricks account ...` commands with this profile", e.profileName, e.host)
+	}
+	return fmt.Sprintf("profile %q has no workspace_id set (account-only); this command requires a workspace. Edit the profile to set workspace_id to a real ID, or pass --profile with a workspace-scoped profile", e.profileName)
+}
+
+// accountOnlyProfileError describes why a workspace command can't run against
+// a profile that has an account_id but no workspace_id.
+func accountOnlyProfileError(cfg *config.Config) error {
+	return ErrAccountOnlyProfile{profileName: cfg.Profile, host: cfg.CanonicalHostName()}
+}
+
 func profileFlagValue(cmd *cobra.Command) (string, bool) {
 	profileFlag := cmd.Flag("profile")
 	if profileFlag == nil {
@@ -47,6 +110,17 @@ func profileFlagValue(cmd *cobra.Command) (string, bool) {
 	return value, value != ""
 }
 
+// applyProfileAuthPrecedence makes an explicit --profile win over auth env vars
+// via ProfileAuthLoaders (#5096), skipping env host normalization since the host
+// comes from the profile. Without a profile flag, env-first behavior is kept.
+func applyProfileAuthPrecedence(ctx context.Context, cfg *config.Config, hasProfileFlag bool) {
+	if hasProfileFlag {
+		cfg.Loaders = databrickscfg.ProfileAuthLoaders
+		return
+	}
+	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
+}
+
 // Helper function to create an account client or prompt once if the given configuration is not valid.
 func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.AccountClient, error) {
 	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
@@ -54,16 +128,39 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 	}
 
-	prompt := false
-	if allowPrompt && err != nil && cmdio.IsPromptSupported(ctx) {
-		// Prompt to select a profile if the current configuration is not an account client.
-		prompt = prompt || errors.Is(err, databricks.ErrNotAccountClient)
-		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
-		prompt = prompt || errors.Is(err, config.ErrCannotConfigureDefault)
+	// If auth succeeded and we have an account ID, trust the SDK's resolution.
+	// The SDK resolves host metadata (including .well-known/databricks-config)
+	// during config initialization, so a successful auth means the config is valid
+	// regardless of what HostType() returns from URL pattern matching.
+	if err == nil && cfg.AccountID != "" {
+		return a, nil
 	}
 
-	if !prompt {
-		// If we are not prompting, we can return early.
+	// Determine if we should prompt for a profile based on host type.
+	// The SDK no longer returns ErrNotAccountClient from NewAccountClient
+	// (as of v0.125.0, host-type validation was removed in favor of host
+	// metadata resolution). Use HostType() to detect the wrong host type.
+	var needsPrompt bool
+	switch cfg.HostType() { //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
+	case config.AccountHost, config.UnifiedHost:
+		// Valid host type for account client, but still need account ID.
+		needsPrompt = cfg.AccountID == ""
+	default:
+		// WorkspaceHost or unknown: wrong type for account client.
+		needsPrompt = true
+	}
+	if !needsPrompt && err != nil && errors.Is(err, config.ErrCannotConfigureDefault) {
+		needsPrompt = true
+	}
+
+	if !needsPrompt {
+		return a, err
+	}
+
+	if !allowPrompt || !cmdio.IsPromptSupported(ctx) {
+		if err == nil {
+			err = databricks.ErrNotAccountClient
+		}
 		return a, err
 	}
 
@@ -72,12 +169,12 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	if err != nil {
 		return nil, err
 	}
+	// The picked profile resolves into its own config, not the caller's cfg.
+	// Return the client (even on failure) so the caller renders errors against
+	// that config rather than the original, otherwise-empty one.
 	a, err = databricks.NewAccountClient(&databricks.Config{Profile: profile})
 	if err == nil {
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
-		if err != nil {
-			return nil, err
-		}
 	}
 	return a, err
 }
@@ -89,16 +186,18 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 		return false, nil
 	}
 
-	// If the error is other than "not a workspace client error" or "no workspace profiles",
-	// return it because configuration is for workspace client
-	// and we don't want to try to create an account client.
-	if !errors.Is(werr, databricks.ErrNotWorkspaceClient) && !errors.As(werr, &ErrNoWorkspaceProfiles{}) {
+	// If the error indicates a wrong config type (workspace host used for account client,
+	// or config type mismatch detected by workspaceClientOrPrompt), or an account-only
+	// profile (no workspace_id), fall through to try the account client.
+	_, noWorkspaceProfiles := errors.AsType[ErrNoWorkspaceProfiles](werr)
+	_, accountOnly := errors.AsType[ErrAccountOnlyProfile](werr)
+	if !errors.Is(werr, errNotWorkspaceClient) && !noWorkspaceProfiles && !accountOnly {
 		return false, werr
 	}
 
 	// Otherwise, the config used is account client one, so try to create an account client
 	aerr := MustAccountClient(cmd, args)
-	if errors.As(aerr, &ErrNoAccountProfiles{}) {
+	if _, ok := errors.AsType[ErrNoAccountProfiles](aerr); ok {
 		return false, aerr
 	}
 
@@ -107,18 +206,21 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 
 func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
+	ctx := cmd.Context()
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
 	pr, hasProfileFlag := profileFlagValue(cmd)
 	if hasProfileFlag {
 		cfg.Profile = pr
 	}
+	applyProfileAuthPrecedence(ctx, cfg, hasProfileFlag)
 
-	ctx := cmd.Context()
 	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
 	profiler := profile.GetProfiler(ctx)
+
+	ResolveDefaultProfile(ctx, cfg)
 
 	if cfg.Profile == "" {
 		// account-level CLI was not really done before, so here are the assumptions:
@@ -139,6 +241,11 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
 	a, err := accountClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
+		// A profile picked interactively resolves into the client's own config,
+		// not cfg; render against it so the error names the right profile.
+		if a != nil {
+			cfg = a.Config
+		}
 		return renderError(ctx, cfg, err)
 	}
 
@@ -150,20 +257,61 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 // Helper function to create a workspace client or prompt once if the given configuration is not valid.
 func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.WorkspaceClient, error) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	if err == nil && cfg.Profile != "" && cfg.AccountID != "" &&
+		(cfg.WorkspaceID == "" || cfg.WorkspaceID == auth.WorkspaceIDNone) {
+		// Account-only profile (created with --skip-workspace): account_id is
+		// set but workspace_id is absent (new shape) or the legacy "none"
+		// sentinel. Without a workspace_id the SDK would either send "none" as
+		// a routing identifier or fail later with an opaque auth error.
+		// Reject up front with a message the user can act on.
+		//
+		// We require cfg.Profile to be set so we don't reject env-var-only
+		// configs targeting a unified host where workspace APIs are also
+		// served from the account host. This branch runs first so MustAnyClient
+		// can recognize ErrAccountOnlyProfile and fall through to the account
+		// client; the PAT-on-SPOG check below handles the remaining cases
+		// (env-var-only configs and profiles without account_id resolved).
+		return nil, accountOnlyProfileError(cfg)
+	}
+	if err == nil && isPATOnSPOGWithoutWorkspaceID(cfg) {
+		// PATs are workspace-scoped. On a SPOG host without workspace_id the
+		// SDK can't add the routing identifier, the backend treats the call as
+		// account-plane, and PATs aren't accepted there. The result is an
+		// opaque "Credential was not sent" error from the auth endpoint;
+		// rewrite up front so the user sees what's actually wrong.
+		return nil, patSPOGNoWorkspaceIDError(cfg.Profile)
+	}
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}
 
-	prompt := false
-	if allowPrompt && err != nil && cmdio.IsPromptSupported(ctx) {
-		// Prompt to select a profile if the current configuration is not a workspace client.
-		prompt = prompt || errors.Is(err, databricks.ErrNotWorkspaceClient)
-		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
-		prompt = prompt || errors.Is(err, config.ErrCannotConfigureDefault)
+	// If auth succeeded, trust the SDK's resolution. The SDK resolves host
+	// metadata (including .well-known/databricks-config) during config
+	// initialization, so a successful auth means the config is valid
+	// regardless of what HostType() returns from URL pattern matching.
+	if err == nil {
+		return w, nil
 	}
 
-	if !prompt {
-		// If we are not prompting, we can return early.
+	// Determine if we should prompt for a profile. The SDK no longer returns
+	// ErrNotWorkspaceClient from NewWorkspaceClient (as of v0.125.0, host-type
+	// validation was removed in favor of host metadata resolution). Use
+	// HostType() to detect wrong host type, and check for ErrCannotConfigureDefault.
+	wrongHostType := cfg.HostType() == config.AccountHost //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
+	needsPrompt := wrongHostType || errors.Is(err, config.ErrCannotConfigureDefault)
+
+	if !needsPrompt {
+		return w, err
+	}
+
+	if !allowPrompt || !cmdio.IsPromptSupported(ctx) {
+		// Only synthesize ErrNotWorkspaceClient for wrong host type so that
+		// callers like MustAnyClient can fall through to account client.
+		// For other errors (e.g. ErrCannotConfigureDefault), return the
+		// original error to preserve actionable error messages.
+		if wrongHostType {
+			return w, errNotWorkspaceClient
+		}
 		return w, err
 	}
 
@@ -172,12 +320,12 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	if err != nil {
 		return nil, err
 	}
+	// The picked profile resolves into its own config, not the caller's cfg.
+	// Return the client (even on failure) so the caller renders errors against
+	// that config rather than the original, otherwise-empty one.
 	w, err = databricks.NewWorkspaceClient(&databricks.Config{Profile: profile})
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
-		if err != nil {
-			return nil, err
-		}
 	}
 	return w, err
 }
@@ -193,6 +341,8 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	if hasProfileFlag {
 		cfg.Profile = profile
 	}
+	applyProfileAuthPrecedence(ctx, cfg, hasProfileFlag)
+	ResolveDefaultProfile(ctx, cfg)
 
 	_, isTargetFlagSet := targetFlagValue(cmd)
 	// If the profile flag is set but the target flag is not, we should skip loading the bundle configuration.
@@ -213,9 +363,9 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		}
 
 		if b != nil {
-			ctx = cmdctx.SetConfigUsed(ctx, b.Config.Workspace.Config())
+			ctx = cmdctx.SetConfigUsed(ctx, b.Config.Workspace.Config(ctx))
 			cmd.SetContext(ctx)
-			client, err := b.WorkspaceClientE()
+			client, err := b.WorkspaceClientE(ctx)
 			if err != nil {
 				return err
 			}
@@ -226,12 +376,35 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
 	w, err := workspaceClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
+		// A profile picked interactively resolves into the client's own config,
+		// not cfg; render against it so the error names the right profile.
+		if w != nil {
+			cfg = w.Config
+		}
 		return renderError(ctx, cfg, err)
 	}
 
 	ctx = cmdctx.SetWorkspaceClient(ctx, w)
 	cmd.SetContext(ctx)
 	return nil
+}
+
+// ResolveDefaultProfile applies [__settings__].default_profile when no profile
+// is set via --profile or DATABRICKS_CONFIG_PROFILE.
+//
+// It skips when DATABRICKS_HOST is set: the SDK ignores .databrickscfg while
+// cfg.Profile is empty, so pinning a default profile would merge it with the env
+// config and fail with "more than one authorization method configured" (#5616).
+func ResolveDefaultProfile(ctx context.Context, cfg *config.Config) {
+	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
+		return
+	}
+	if envlib.Get(ctx, "DATABRICKS_HOST") != "" {
+		return
+	}
+	if resolved := databrickscfg.ResolveDefaultProfile(ctx); resolved != "" {
+		cfg.Profile = resolved
+	}
 }
 
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
@@ -250,22 +423,14 @@ func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 	case 1:
 		return profiles[0].Name, nil
 	}
-	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
+	return profile.SelectProfile(ctx, profile.SelectConfig{
 		Label:             "Workspace profiles defined in " + path,
-		Items:             profiles,
-		Searcher:          profiles.SearchCaseInsensitive,
+		Profiles:          profiles,
 		StartInSearchMode: true,
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . | faint }}",
-			Active:   `{{.Name | bold}} ({{.Host|faint}})`,
-			Inactive: `{{.Name}}`,
-			Selected: `{{ "Using workspace profile" | faint }}: {{ .Name | bold }}`,
-		},
+		ActiveTemplate:    `{{.Name | bold}} ({{.Host|faint}})`,
+		InactiveTemplate:  `{{.Name}}`,
+		SelectedTemplate:  `{{ "Using workspace profile" | faint }}: {{ .Name | bold }}`,
 	})
-	if err != nil {
-		return "", err
-	}
-	return profiles[i].Name, nil
 }
 
 func AskForAccountProfile(ctx context.Context) (string, error) {
@@ -284,22 +449,14 @@ func AskForAccountProfile(ctx context.Context) (string, error) {
 	case 1:
 		return profiles[0].Name, nil
 	}
-	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
+	return profile.SelectProfile(ctx, profile.SelectConfig{
 		Label:             "Account profiles defined in " + path,
-		Items:             profiles,
-		Searcher:          profiles.SearchCaseInsensitive,
+		Profiles:          profiles,
 		StartInSearchMode: true,
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . | faint }}",
-			Active:   `{{.Name | bold}} ({{.AccountID|faint}} {{.Cloud|faint}})`,
-			Inactive: `{{.Name}}`,
-			Selected: `{{ "Using account profile" | faint }}: {{ .Name | bold }}`,
-		},
+		ActiveTemplate:    `{{.Name | bold}} ({{.AccountID|faint}} {{.Cloud|faint}})`,
+		InactiveTemplate:  `{{.Name}}`,
+		SelectedTemplate:  `{{ "Using account profile" | faint }}: {{ .Name | bold }}`,
 	})
-	if err != nil {
-		return "", err
-	}
-	return profiles[i].Name, nil
 }
 
 // To verify that a client is configured correctly, we pass an empty HTTP request

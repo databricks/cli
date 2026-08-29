@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"strings"
@@ -27,7 +26,7 @@ func StartCmdServer(t *testing.T) *testserver.Server {
 		// Change current working directory to match the callsite.
 		defer chdir(t, q.Get("cwd"))()
 
-		c := testcli.NewRunner(t, context.Background(), args...)
+		c := testcli.NewRunner(t, t.Context(), args...)
 		c.Verbose = false
 		stdout, stderr, err := c.Run()
 		result := map[string]any{
@@ -45,15 +44,15 @@ func StartCmdServer(t *testing.T) *testserver.Server {
 }
 
 // chdir variant that is intended to be used with defer so that it can switch back before function ends.
-// This is unlike testutil.Chdir which switches back only when tests end.
+// This is unlike t.Chdir which switches back only when tests end.
 func chdir(t *testing.T, cwd string) func() {
 	require.NotEmpty(t, cwd)
 	prevDir, err := os.Getwd()
 	require.NoError(t, err)
-	err = os.Chdir(cwd)
+	err = os.Chdir(cwd) //nolint:usetesting // must restore before function ends, not at test cleanup
 	require.NoError(t, err)
 	return func() {
-		_ = os.Chdir(prevDir)
+		_ = os.Chdir(prevDir) //nolint:usetesting // see above
 	}
 }
 
@@ -63,7 +62,7 @@ func configureEnv(t *testing.T, env map[string]string) func() {
 	// Set current process's environment to match the input.
 	os.Clearenv()
 	for key, val := range env {
-		os.Setenv(key, val)
+		os.Setenv(key, val) //nolint:usetesting // custom restore needed; t.Setenv can't clearenv+restore all
 	}
 
 	// Function callback to use with defer to restore original environment.
@@ -71,7 +70,7 @@ func configureEnv(t *testing.T, env map[string]string) func() {
 		os.Clearenv()
 		for _, kv := range oldEnv {
 			kvs := strings.SplitN(kv, "=", 2)
-			os.Setenv(kvs[0], kvs[1])
+			os.Setenv(kvs[0], kvs[1]) //nolint:usetesting // see above
 		}
 	}
 }

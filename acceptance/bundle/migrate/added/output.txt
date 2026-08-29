@@ -1,0 +1,54 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-added-test/default/files...
+Created jobs.job_a
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle deployment migrate
+Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
+
+Validate the migration by running "databricks bundle plan", there should be no actions planned.
+
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
+
+To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/default/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate
+
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+create jobs.job_b
+
+Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-added-test/default/files...
+Created jobs.job_b
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //jobs/create
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-added-test/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "Job B",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged

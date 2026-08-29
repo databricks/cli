@@ -1,5 +1,5 @@
 
-Welcome to the default SQL template for Databricks Asset Bundles!
+Welcome to the default SQL template for Declarative Automation Bundles!
 
 A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
 workspace_host: [DATABRICKS_URL]
@@ -16,7 +16,7 @@ See also the documentation at https://docs.databricks.com/dev-tools/bundles/inde
     "databricks_cli_log": {
       "execution_context": {
         "cmd_exec_id": "[CMD-EXEC-ID]",
-        "version": "[DEV_VERSION]",
+        "version": "[CLI_VERSION]",
         "command": "bundle_init",
         "operating_system": "[OS]",
         "execution_time_ms": SMALL_INT,
@@ -28,7 +28,7 @@ See also the documentation at https://docs.databricks.com/dev-tools/bundles/inde
         "template_enum_args": [
           {
             "key": "personal_schemas",
-            "value": "yes, automatically use a schema based on the current user name during development"
+            "value": "yes"
           }
         ]
       }

@@ -1,0 +1,20 @@
+Ignore = [
+    "home"
+]
+
+# Override .well-known to return account-scoped OIDC, simulating a SPOG host.
+# The oidc_endpoint contains /oidc/accounts/ which signals account-scoped OIDC.
+[[Server]]
+Pattern = "GET /.well-known/databricks-config"
+Response.Body = '''
+{
+    "account_id": "spog-acct-123",
+    "oidc_endpoint": "localhost/oidc/accounts/spog-acct-123"
+}
+'''
+
+# Provide a handler for the account workspaces list endpoint used by
+# auth profiles validation for account-type configs.
+[[Server]]
+Pattern = "GET /api/2.0/accounts/spog-acct-123/workspaces"
+Response.Body = '[]'

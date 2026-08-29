@@ -10,8 +10,3 @@ Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'terrafor
 
 >>> musterr [CLI] bundle destroy --auto-approve
 Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'terraform' or 'direct')
-
->>> musterr [CLI] bundle validate
-Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'terraform' or 'direct')
-
-Found 1 error

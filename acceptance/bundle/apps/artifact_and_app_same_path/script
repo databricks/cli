@@ -1,0 +1,2 @@
+trace $CLI bundle validate -o json | jq -r '.resources.apps.my_app.source_code_path'
+trace $CLI bundle validate -o json | jq -r '.artifacts.my_artifact.path'

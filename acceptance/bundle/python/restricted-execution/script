@@ -1,4 +1,3 @@
-echo "$DATABRICKS_BUNDLES_WHEEL" > "requirements-latest.txt"
 
 export SOME_ENV_VAR="value_from_env"
 

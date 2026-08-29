@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
-	"github.com/databricks/cli/libs/agent"
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
@@ -78,9 +80,15 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withCommandExecIdInUserAgent(ctx)
 		ctx = withUpstreamInUserAgent(ctx)
-		ctx = withAgentInUserAgent(ctx)
+		ctx = withInteractiveModeInUserAgent(ctx)
+		ctx = installer.WithAiToolsInUserAgent(ctx)
+		ctx = installer.WithAiDevKitInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
+
+		// Recommend installing Databricks AI tooling to Claude Code when it is
+		// driving the CLI without the tooling installed (best-effort, stderr only).
+		agents.MaybeHint(ctx, cmd)
 		return nil
 	}
 
@@ -95,8 +103,10 @@ func New(ctx context.Context) *cobra.Command {
 	return cmd
 }
 
-// Wrap flag errors to include the usage string.
+// flagErrorFunc wraps flag errors to include the usage string and, for unknown
+// flags, a "Did you mean" suggestion based on Levenshtein distance.
 func flagErrorFunc(c *cobra.Command, err error) error {
+	err = suggestFlagFromError(c, err)
 	return fmt.Errorf("%w\n\n%s", err, c.UsageString())
 }
 
@@ -135,9 +145,6 @@ Stack Trace:
 	// Detect if the CLI is running on DBR and store this on the context.
 	ctx = dbr.DetectRuntime(ctx)
 
-	// Detect if the CLI is running under an agent.
-	ctx = agent.Detect(ctx)
-
 	// Set a command execution ID value in the context
 	ctx = cmdctx.GenerateExecId(ctx)
 
@@ -146,6 +153,16 @@ Stack Trace:
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
 	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
+		if cmdctx.HasConfigUsed(cmd.Context()) {
+			cfg := cmdctx.ConfigUsed(cmd.Context())
+			err = auth.EnrichAuthError(cmd.Context(), cfg, err)
+		}
+		// A workspace client on the context means the command operates against
+		// a workspace; see AppendAccountHostHint for why every error from such
+		// commands gets the account-console-host note.
+		if cmdctx.HasWorkspaceClient(cmd.Context()) {
+			err = auth.AppendAccountHostHint(cmdctx.WorkspaceClient(cmd.Context()).Config, err)
+		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
 	}
 
@@ -176,21 +193,12 @@ Stack Trace:
 	commandStr := commandString(cmd)
 	ctx = cmd.Context()
 
-	// Log bundle deploy failures. Only log if we have successfully configured
-	// an authenticated Databricks client. We cannot log unauthenticated telemetry
-	// from the CLI yet.
-	if cmdctx.HasConfigUsed(ctx) && commandStr == "bundle_deploy" && exitCode != 0 {
-		telemetry.Log(ctx, protos.DatabricksCliLog{
-			BundleDeployEvent: &protos.BundleDeployEvent{},
-		})
-	}
-
 	telemetryErr := telemetry.Upload(cmd.Context(), protos.ExecutionContext{
 		CmdExecID:       cmdctx.ExecId(ctx),
 		Version:         build.GetInfo().Version,
 		Command:         commandStr,
 		OperatingSystem: runtime.GOOS,
-		DbrVersion:      dbr.RuntimeVersion(ctx),
+		DbrVersion:      dbr.RuntimeVersion(ctx).String(),
 		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
 		ExitCode:        int64(exitCode),
 	})

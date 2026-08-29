@@ -1,0 +1,9 @@
+bundle:
+  name: test_lifecycle_started
+
+resources:
+  jobs:
+    my_job:
+      name: my_job
+      lifecycle:
+        started: true

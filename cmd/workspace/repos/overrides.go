@@ -43,7 +43,7 @@ func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepoReq
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -118,7 +118,7 @@ func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepoReq
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -141,10 +141,10 @@ func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepoReq
 func repoArgumentToRepoID(ctx context.Context, w *databricks.WorkspaceClient, args []string) (int64, error) {
 	// ---- Begin copy from cmd/workspace/repos/repos.go ----
 	if len(args) == 0 {
-		promptSpinner := cmdio.Spinner(ctx)
-		promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
+		sp := cmdio.NewSpinner(ctx)
+		sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
 		names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-		close(promptSpinner)
+		sp.Close()
 		if err != nil {
 			return 0, fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 		}
@@ -166,13 +166,12 @@ func repoArgumentToRepoID(ctx context.Context, w *databricks.WorkspaceClient, ar
 		return id, nil
 	}
 
-	// If the argument cannot be parsed as a repo ID, try to look it up by name.
+	// Look up the path via get-status. We don't gate on the object type: Git-CLI
+	// folders report DIRECTORY rather than REPO, and the repos API is the
+	// authority on whether the ID resolves to a repo.
 	oi, err := w.Workspace.GetStatusByPath(ctx, arg)
 	if err != nil {
 		return 0, fmt.Errorf("failed to look up repo by path: %w", err)
-	}
-	if oi.ObjectType != workspace.ObjectTypeRepo {
-		return 0, fmt.Errorf("object at path %q is not a repo", arg)
 	}
 	return oi.ObjectId, nil
 }

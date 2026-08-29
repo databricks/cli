@@ -1,0 +1,16 @@
+bundle:
+  name: "run_as_job_default_$UNIQUE_NAME"
+
+resources:
+  jobs:
+    job_with_run_as:
+      tasks:
+        - task_key: "task_one"
+          notebook_task:
+            notebook_path: "./test.py"
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+      run_as:
+        user_name: deco-test-user@databricks.com

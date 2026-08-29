@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle init default-python --config-file ./input.json
-Welcome to the default Python template for Databricks Asset Bundles!
+Welcome to the default Python template for Declarative Automation Bundles!
 
 Answer the following questions to customize your project.
 You can always change your configuration in the databricks.yml file later.
@@ -34,12 +34,18 @@ Workspace:
 
 Validation OK!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/dev/files...
-Deploying resources...
-Deployment complete!
-Deleting files...
-Destroy complete!
+Created jobs.sample_job
+Created pipelines.X[UNIQUE_NAME]_etl
+Files: 23 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+Destroy: 2 deleted
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/X[UNIQUE_NAME]/prod/files...
-Deploying resources...
-Deployment complete!
-Deleting files...
-Destroy complete!
+Created jobs.sample_job
+Created jobs.sample_job.permissions
+Created pipelines.X[UNIQUE_NAME]_etl
+Created pipelines.X[UNIQUE_NAME]_etl.permissions
+Files: 25 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+
+Destroy: 2 deleted

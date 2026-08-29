@@ -1,0 +1,23 @@
+bundle:
+  name: test-bundle
+
+variables:
+  my_source:
+    default: "GIT"
+
+resources:
+  jobs:
+    my_job:
+      tasks:
+        - task_key: "task1"
+          # This is a valid variable reference that resolves to a valid enum value,
+          # but it should not trigger an enum warning before resolution.
+          notebook_task:
+            source: ${var.my_source}
+            notebook_path: "/path/to/notebook"
+        - task_key: "task2"
+          # This is a resource reference that is not resolved during validation.
+          # It should not trigger an enum warning.
+          notebook_task:
+            source: ${resources.jobs.my_job.id}
+            notebook_path: "/path/to/notebook"

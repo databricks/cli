@@ -20,3 +20,9 @@ func WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {
 	}
 	return v.(*databricks.WorkspaceClient)
 }
+
+// HasWorkspaceClient reports whether a workspace client was configured on the
+// context via SetWorkspaceClient.
+func HasWorkspaceClient(ctx context.Context) bool {
+	return ctx.Value(workspaceClientKey) != nil
+}

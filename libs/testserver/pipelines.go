@@ -3,7 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	"time"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -35,16 +35,48 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 		}
 	}
 
+	// Unity Catalog requires target_schema_name to be a single schema segment, so a
+	// dotted catalog.schema value is rejected; the catalog belongs in the separate
+	// catalog field. Only the dot trips this check, but the backend's canned error
+	// also lists dashes and other characters as invalid.
+	if strings.Contains(spec.Target, ".") {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    fmt.Sprintf("CreatePipeline target_schema_name %q is not a valid name. Valid names must contain only alphanumeric characters and underscores, and cannot contain spaces, periods, forward slashes, or control characters.", spec.Target),
+			},
+		}
+	}
+
 	var r pipelines.GetPipelineResponse
 	r.Spec = &spec
+
+	// parameters is not on PipelineSpec (only on CreatePipeline), so the decode above
+	// drops it. The backend echoes it on GetPipelineResponse.Parameters; mirror that
+	// here, else a re-read misses it and the CLI plans a perpetual update.
+	var create pipelines.CreatePipeline
+	if err := json.Unmarshal(req.Body, &create); err != nil {
+		return Response{
+			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
+			StatusCode: 400,
+		}
+	}
+	r.Parameters = create.Parameters
 
 	pipelineId := nextUUID()
 	r.PipelineId = pipelineId
 	r.CreatorUserName = "tester@databricks.com"
-	r.LastModified = time.Now().UnixMilli()
+	r.LastModified = nowMilli()
 	r.Name = r.Spec.Name
+	// run_as is on CreatePipeline, not PipelineSpec, so the spec decode drops it. The backend
+	// echoes it top-level on GetPipelineResponse.RunAs; mirror that so a re-read is faithful.
+	if create.RunAs != nil {
+		r.RunAs = create.RunAs
+	}
 	r.RunAsUserName = "tester@databricks.com"
 	r.State = "IDLE"
+	r.EffectivePublishingMode = pipelines.PublishingModeDefaultPublishingMode
 
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = r
@@ -85,7 +117,26 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 		}
 	}
 
+	// parameters is on EditPipeline, not PipelineSpec; round-trip it like
+	// PipelineCreate does.
+	var edit pipelines.EditPipeline
+	if err := json.Unmarshal(req.Body, &edit); err != nil {
+		return Response{
+			Body:       fmt.Sprintf("internal error: %s", err),
+			StatusCode: 400,
+		}
+	}
+
 	item.Spec = &spec
+	item.Parameters = edit.Parameters
+	// The backend echoes the spec name on GetPipelineResponse.Name; mirror that so a
+	// rename is reflected on the next read.
+	item.Name = spec.Name
+	// run_as is on EditPipeline, not PipelineSpec; keep it in sync like Parameters so an edit
+	// that changes run_as is reflected on the next read (matches cloud top-level echo).
+	if edit.RunAs != nil {
+		item.RunAs = edit.RunAs
+	}
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = item
 

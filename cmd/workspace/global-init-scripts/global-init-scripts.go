@@ -3,6 +3,7 @@
 package global_init_scripts
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -33,6 +34,10 @@ func New() *cobra.Command {
 		GroupID: "compute",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -80,12 +85,14 @@ func newCreate() *cobra.Command {
     SCRIPT: The Base64-encoded content of the script.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'script' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'script' in your JSON input")
 			}
 			return nil
 		}
@@ -104,7 +111,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -121,6 +128,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -160,6 +168,8 @@ func newDelete() *cobra.Command {
     SCRIPT_ID: The ID of the global init script.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -167,10 +177,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down.")
 			names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -181,7 +191,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the global init script")
+			return errors.New("expected to have the id of the global init script")
 		}
 		deleteReq.ScriptId = args[0]
 
@@ -228,6 +238,8 @@ func newGet() *cobra.Command {
     SCRIPT_ID: The ID of the global init script.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -235,10 +247,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down.")
 			names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -249,7 +261,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the global init script")
+			return errors.New("expected to have the id of the global init script")
 		}
 		getReq.ScriptId = args[0]
 
@@ -257,6 +269,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -282,6 +295,15 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "list"
 	cmd.Short = `Get init scripts.`
@@ -293,12 +315,21 @@ func newList() *cobra.Command {
   script](:method:globalinitscripts/get) operation.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		response := w.GlobalInitScripts.List(ctx)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -347,12 +378,14 @@ func newUpdate() *cobra.Command {
     SCRIPT: The Base64-encoded content of the script.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only SCRIPT_ID as positional arguments. Provide 'name', 'script' in your JSON input")
+				return errors.New("when --json flag is specified, provide only SCRIPT_ID as positional arguments. Provide 'name', 'script' in your JSON input")
 			}
 			return nil
 		}
@@ -371,7 +404,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

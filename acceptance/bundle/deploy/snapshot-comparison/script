@@ -17,6 +17,8 @@ cleanup() {
     (cd bundle1 && unset DATABRICKS_BUNDLE_ENGINE && trace $CLI bundle destroy --auto-approve)
     title "Cleanup bundle 2"
     (cd bundle2 && unset DATABRICKS_BUNDLE_ENGINE && trace $CLI bundle destroy --auto-approve)
+
+    rm -f out.requests.txt
 }
 trap cleanup EXIT
 
@@ -30,11 +32,11 @@ title "Deploy bundle 2 with terraform and YamlSync"
 (cd bundle2 && trace DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC=true DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy)
 
 title "Normalize bundle names for comparison"
-trace cp bundle1/.databricks/bundle/default/resources.json out.bundle1.json
-trace cp bundle2/.databricks/bundle/default/resources-config-sync-snapshot.json out.bundle2.json
+trace cp bundle1/.databricks/bundle/default/resources.json tmp.bundle1.json
+trace cp bundle2/.databricks/bundle/default/resources-config-sync-snapshot.json tmp.bundle2.json
 
-trace update_file.py out.bundle1.json "snapshot-test-1-" "snapshot-test-NORMALIZED-"
-trace update_file.py out.bundle2.json "snapshot-test-2-" "snapshot-test-NORMALIZED-"
+trace update_file.py tmp.bundle1.json "snapshot-test-1-" "snapshot-test-NORMALIZED-"
+trace update_file.py tmp.bundle2.json "snapshot-test-2-" "snapshot-test-NORMALIZED-"
 
 title "Compare normalized snapshots"
-trace diff.py out.bundle1.json out.bundle2.json
+trace diff.py tmp.bundle1.json tmp.bundle2.json

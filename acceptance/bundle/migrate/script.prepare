@@ -1,0 +1,7 @@
+# Filter print_telemetry_bool_values output to auto-migration keys
+# (direct_drymigrate_*, direct_migrate_*, direct_migrated_via_*). Callers
+# clear out.requests.txt themselves; some tests want to keep it for a
+# subsequent print_requests.py assertion.
+print_migration_telemetry() {
+    print_telemetry_bool_values | grep '^direct_' || true
+}

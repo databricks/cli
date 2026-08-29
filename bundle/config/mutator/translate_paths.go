@@ -47,6 +47,14 @@ func (err ErrIsNotNotebook) Error() string {
 	return fmt.Sprintf("file at %s is not a notebook", err.path)
 }
 
+// seenKey is the cache key for the seen map in translateContext.
+// It includes both the local path and the translation mode to prevent
+// cross-mode cache collisions (e.g. artifact vs. workspace path translations).
+type seenKey struct {
+	path string
+	mode paths.TranslateMode
+}
+
 type translatePaths struct{}
 
 type translatePathsDashboards struct{}
@@ -76,14 +84,22 @@ func (m *translatePathsDashboards) Name() string {
 type translateContext struct {
 	b *bundle.Bundle
 
-	// seen is a map of local paths to their corresponding remote paths.
-	// If a local path has already been successfully resolved, we do not need to resolve it again.
-	seen map[string]string
+	// seen is a map of (local path, translation mode) pairs to their corresponding remote paths.
+	// If a local path has already been successfully resolved for a given mode, we do not need to resolve it again.
+	seen map[seenKey]string
 
 	// remoteRoot is the root path of the remote workspace.
 	// It is equal to ${workspace.file_path} for regular deployments.
 	// It points to the source root path for source-linked deployments.
 	remoteRoot string
+
+	// skipLocalFileValidation makes path translation tolerant of missing local files.
+	// When set, paths are translated without verifying files exist on the local filesystem.
+	// This is used by config-remote-sync: a user may rename a resource's root folder
+	// in the workspace UI, and the updated path may not exist locally. Path translation
+	// is still needed to produce fully resolved paths for comparison with remote state,
+	// but local file validation would incorrectly fail.
+	skipLocalFileValidation bool
 }
 
 // rewritePath converts a given relative path from the loaded config to a new path based on the passed rewriting function
@@ -127,7 +143,8 @@ func (t *translateContext) rewritePath(
 
 	// Local path is relative to the directory the resource was defined in.
 	localPath := filepath.Join(dir, input)
-	if interp, ok := t.seen[localPath]; ok {
+	key := seenKey{path: localPath, mode: opts.Mode}
+	if interp, ok := t.seen[key]; ok {
 		return interp, nil
 	}
 
@@ -173,40 +190,36 @@ func (t *translateContext) rewritePath(
 		return "", err
 	}
 
-	t.seen[localPath] = interp
+	t.seen[key] = interp
 	return interp, nil
 }
 
 func (t *translateContext) translateNotebookPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	if t.skipLocalFileValidation {
+		return path.Join(t.remoteRoot, notebook.StripExtension(localRelPath)), nil
+	}
+
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, localRelPath)
 	if errors.Is(err, fs.ErrNotExist) {
 		if path.Ext(localFullPath) != notebook.ExtensionNone {
 			return "", fmt.Errorf("notebook %s not found", literal)
 		}
 
-		extensions := []string{
-			notebook.ExtensionPython,
-			notebook.ExtensionR,
-			notebook.ExtensionScala,
-			notebook.ExtensionSql,
-			notebook.ExtensionJupyter,
-		}
-
 		// Check whether a file with a notebook extension already exists. This
 		// way we can provide a more targeted error message.
-		for _, ext := range extensions {
+		for _, ext := range notebook.Extensions {
 			literalWithExt := literal + ext
 			localRelPathWithExt := localRelPath + ext
 			if _, err := fs.Stat(t.b.SyncRoot, localRelPathWithExt); err == nil {
 				return "", fmt.Errorf(`notebook %q not found. Did you mean %q?
 Local notebook references are expected to contain one of the following
-file extensions: [%s]`, literal, literalWithExt, strings.Join(extensions, ", "))
+file extensions: [%s]`, literal, literalWithExt, strings.Join(notebook.Extensions, ", "))
 			}
 		}
 
 		// Return a generic error message if no matching possible file is found.
 		return "", fmt.Errorf(`notebook %q not found. Local notebook references are expected
-to contain one of the following file extensions: [%s]`, literal, strings.Join(extensions, ", "))
+to contain one of the following file extensions: [%s]`, literal, strings.Join(notebook.Extensions, ", "))
 	}
 	if err != nil {
 		return "", fmt.Errorf("unable to determine if %s is a notebook: %w", localFullPath, err)
@@ -215,12 +228,16 @@ to contain one of the following file extensions: [%s]`, literal, strings.Join(ex
 		return "", ErrIsNotNotebook{localFullPath}
 	}
 
-	// Upon import, notebooks are stripped of their extension.
-	localRelPathNoExt := strings.TrimSuffix(localRelPath, path.Ext(localRelPath))
-	return path.Join(t.remoteRoot, localRelPathNoExt), nil
+	// Upon import, notebooks are stripped of their extension. Designer files
+	// keep their full ".designer.ipynb" suffix.
+	return path.Join(t.remoteRoot, notebook.StripExtension(localRelPath)), nil
 }
 
 func (t *translateContext) translateFilePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	if t.skipLocalFileValidation {
+		return path.Join(t.remoteRoot, localRelPath), nil
+	}
+
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, localRelPath)
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
@@ -235,6 +252,10 @@ func (t *translateContext) translateFilePath(ctx context.Context, literal, local
 }
 
 func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	if t.skipLocalFileValidation {
+		return path.Join(t.remoteRoot, localRelPath), nil
+	}
+
 	info, err := t.b.SyncRoot.Stat(localRelPath)
 	if err != nil {
 		return "", err
@@ -250,6 +271,10 @@ func (t *translateContext) translateGlobPath(ctx context.Context, literal, local
 }
 
 func (t *translateContext) translateLocalAbsoluteDirectoryPath(ctx context.Context, literal, localFullPath, _ string) (string, error) {
+	if t.skipLocalFileValidation {
+		return localFullPath, nil
+	}
+
 	info, err := os.Stat(filepath.FromSlash(localFullPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("directory %s not found", literal)
@@ -277,10 +302,10 @@ func (t *translateContext) translateLocalRelativeWithPrefixPath(ctx context.Cont
 func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.Value, dir string, opts translateOptions) (dyn.Value, error) {
 	out, err := t.rewritePath(ctx, dir, v.MustString(), opts)
 	if err != nil {
-		if target := (&ErrIsNotebook{}); errors.As(err, target) {
+		if target, ok := errors.AsType[ErrIsNotebook](err); ok {
 			return dyn.InvalidValue, fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, p, target)
 		}
-		if target := (&ErrIsNotNotebook{}); errors.As(err, target) {
+		if target, ok := errors.AsType[ErrIsNotNotebook](err); ok {
 			return dyn.InvalidValue, fmt.Errorf(`expected a notebook for "%s" but got a file: %w`, p, target)
 		}
 		return dyn.InvalidValue, err
@@ -295,11 +320,26 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 }
 
 func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
-	// Set the remote root to the sync root if source-linked deployment is enabled.
-	// Otherwise, set it to the workspace file path.
-	if config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment) {
+	switch {
+	case b.IsImmutableFolder():
+		// Reject an explicit workspace.file_path: immutable bundles control that path
+		// automatically (it is set to the content-addressed snapshot location after upload).
+		// A user-supplied value would be silently discarded, so we error early instead.
+		if loc := b.Config.GetLocation("workspace.file_path"); loc.File != "" {
+			return diag.Diagnostics{{
+				Severity:  diag.Error,
+				Summary:   "workspace.file_path cannot be configured when experimental.immutable_folder is true",
+				Locations: []dyn.Location{loc},
+			}}
+		}
+		// Use a placeholder referencing workspace.snapshot_path so that paths are stored
+		// as ${workspace.snapshot_path}/files/<rel> during validate. After
+		// snapshot.Upload() sets workspace.snapshot_path, a variable-resolution pass
+		// expands these references to the actual content-addressed paths.
+		t.remoteRoot = "${workspace.snapshot_path}/files"
+	case config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment):
 		t.remoteRoot = t.b.SyncRootPath
-	} else {
+	default:
 		t.remoteRoot = t.b.Config.Workspace.FilePath
 	}
 
@@ -319,8 +359,9 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 
 func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	t := &translateContext{
-		b:    b,
-		seen: make(map[string]string),
+		b:                       b,
+		seen:                    make(map[seenKey]string),
+		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
 	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
@@ -335,12 +376,14 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	t := &translateContext{
-		b:    b,
-		seen: make(map[string]string),
+		b:                       b,
+		seen:                    make(map[seenKey]string),
+		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
 	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
 		t.applyDashboardTranslations,
+		t.applyGenieSpaceTranslations,
 	})
 }
 

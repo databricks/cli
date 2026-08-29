@@ -1,0 +1,2 @@
+# This test only asserts the create error; recorded requests are noisy and differ by env.
+RecordRequests = false

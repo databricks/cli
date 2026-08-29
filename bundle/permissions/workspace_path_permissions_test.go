@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/require"
 )
@@ -17,11 +18,11 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 	}{
 		{
 			perms: []resources.Permission{
-				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
+				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
 				{
-					UserName: "foo@bar.com",
+					UserName: "foo@bar.test",
 					AllPermissions: []workspace.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
@@ -31,11 +32,11 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 		},
 		{
 			perms: []resources.Permission{
-				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
+				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
 				{
-					UserName: "foo@bar.com",
+					UserName: "foo@bar.test",
 					AllPermissions: []workspace.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
@@ -51,12 +52,12 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 		},
 		{
 			perms: []resources.Permission{
-				{Level: CAN_VIEW, UserName: "foo@bar.com"},
+				{Level: CAN_VIEW, UserName: "foo@bar.test"},
 				{Level: CAN_MANAGE, ServicePrincipalName: "sp.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
 				{
-					UserName: "foo@bar.com",
+					UserName: "foo@bar.test",
 					AllPermissions: []workspace.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_READ"},
 					},
@@ -66,11 +67,11 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 		},
 		{
 			perms: []resources.Permission{
-				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
+				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
 				{
-					UserName: "foo@bar.com",
+					UserName: "foo@bar.test",
 					AllPermissions: []workspace.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
@@ -95,11 +96,11 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 		},
 		{
 			perms: []resources.Permission{
-				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
+				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
 				{
-					UserName: "foo2@bar.com",
+					UserName: "foo2@bar.test",
 					AllPermissions: []workspace.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
@@ -110,7 +111,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 					Severity: diag.Warning,
 					Summary:  "workspace folder has permissions not configured in bundle",
 					Detail: "The following permissions apply to the workspace folder at \"path\" " +
-						"but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo2@bar.com\n\n" +
+						"but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo2@bar.test\n\n" +
 						"Add them to your bundle permissions or remove them from the folder.\n" +
 						"See https://docs.databricks.com/dev-tools/bundles/permissions",
 				},
@@ -135,11 +136,11 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 		{
 			name: "bundle grants higher permission than workspace - no warning",
 			perms: []resources.Permission{
-				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
+				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
 				{
-					UserName: "foo@bar.com",
+					UserName: "foo@bar.test",
 					AllPermissions: []workspace.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_READ"},
 					},
@@ -150,11 +151,11 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 		{
 			name: "bundle grants lower permission than workspace - warning",
 			perms: []resources.Permission{
-				{Level: CAN_VIEW, UserName: "foo@bar.com"},
+				{Level: CAN_VIEW, UserName: "foo@bar.test"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
 				{
-					UserName: "foo@bar.com",
+					UserName: "foo@bar.test",
 					AllPermissions: []workspace.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
@@ -165,7 +166,7 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 					Severity: diag.Warning,
 					Summary:  "workspace folder has permissions not configured in bundle",
 					Detail: "The following permissions apply to the workspace folder at \"path\" " +
-						"but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo@bar.com\n\n" +
+						"but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo@bar.test\n\n" +
 						"Add them to your bundle permissions or remove them from the folder.\n" +
 						"See https://docs.databricks.com/dev-tools/bundles/permissions",
 				},
@@ -174,11 +175,11 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 		{
 			name: "bundle grants same permission as workspace - no warning",
 			perms: []resources.Permission{
-				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
+				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
 				{
-					UserName: "foo@bar.com",
+					UserName: "foo@bar.test",
 					AllPermissions: []workspace.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
@@ -201,7 +202,7 @@ func TestWorkspacePathPermissionsDeduplication(t *testing.T) {
 	// User has both inherited CAN_VIEW and explicit CAN_MANAGE
 	acl := []workspace.WorkspaceObjectAccessControlResponse{
 		{
-			UserName: "foo@bar.com",
+			UserName: "foo@bar.test",
 			AllPermissions: []workspace.WorkspaceObjectPermission{
 				{PermissionLevel: "CAN_READ"},   // inherited
 				{PermissionLevel: "CAN_MANAGE"}, // explicit
@@ -213,6 +214,98 @@ func TestWorkspacePathPermissionsDeduplication(t *testing.T) {
 
 	// Should only have one permission entry with the highest level
 	require.Len(t, wp.Permissions, 1)
-	require.Equal(t, CAN_MANAGE, wp.Permissions[0].Level)
-	require.Equal(t, "foo@bar.com", wp.Permissions[0].UserName)
+	require.Equal(t, iam.PermissionLevel(CAN_MANAGE), wp.Permissions[0].Level)
+	require.Equal(t, "foo@bar.test", wp.Permissions[0].UserName)
+}
+
+func TestWorkspacePathPermissionsUndeclaredWriters(t *testing.T) {
+	manage := func(p resources.Permission) resources.Permission {
+		p.Level = CAN_MANAGE
+		return p
+	}
+	user := resources.Permission{UserName: "foo@bar.test"}
+	group := resources.Permission{GroupName: "team"}
+	sp := resources.Permission{ServicePrincipalName: "00000000-0000-0000-0000-000000000001"}
+
+	testCases := []struct {
+		name     string
+		folder   []resources.Permission
+		declared []resources.Permission
+		expected []resources.Permission
+	}{
+		{
+			name:     "empty folder ACL",
+			expected: nil,
+		},
+		{
+			name:     "reader does not need to be declared",
+			folder:   []resources.Permission{{Level: CAN_VIEW, UserName: user.UserName}},
+			expected: nil,
+		},
+		{
+			name:     "runner does not need to be declared",
+			folder:   []resources.Permission{{Level: CAN_RUN, GroupName: group.GroupName}},
+			expected: nil,
+		},
+		{
+			name:     "manager declared",
+			folder:   []resources.Permission{manage(user)},
+			declared: []resources.Permission{manage(user)},
+			expected: nil,
+		},
+		{
+			name:     "manager not declared",
+			folder:   []resources.Permission{manage(user)},
+			expected: []resources.Permission{manage(user)},
+		},
+		{
+			name:     "manager declared with a lower level",
+			folder:   []resources.Permission{manage(user)},
+			declared: []resources.Permission{{Level: CAN_VIEW, UserName: user.UserName}},
+			expected: []resources.Permission{manage(user)},
+		},
+		{
+			name:     "editor must be declared with CAN_MANAGE",
+			folder:   []resources.Permission{{Level: resources.CAN_EDIT, GroupName: group.GroupName}},
+			declared: []resources.Permission{manage(group)},
+			expected: nil,
+		},
+		{
+			name:     "editor not declared",
+			folder:   []resources.Permission{{Level: resources.CAN_EDIT, GroupName: group.GroupName}},
+			declared: []resources.Permission{manage(user)},
+			expected: []resources.Permission{{Level: resources.CAN_EDIT, GroupName: group.GroupName}},
+		},
+		{
+			name:     "group writer requires the same group declared",
+			folder:   []resources.Permission{manage(group)},
+			declared: []resources.Permission{manage(user), manage(sp)},
+			expected: []resources.Permission{manage(group)},
+		},
+		{
+			name:     "service principal writer declared",
+			folder:   []resources.Permission{manage(sp)},
+			declared: []resources.Permission{manage(sp)},
+			expected: nil,
+		},
+		{
+			name:     "mixed: writers declared, reader not",
+			folder:   []resources.Permission{manage(user), manage(group), {Level: CAN_VIEW, ServicePrincipalName: sp.ServicePrincipalName}},
+			declared: []resources.Permission{manage(user), manage(group)},
+			expected: nil,
+		},
+		{
+			name:     "multiple undeclared writers are all returned",
+			folder:   []resources.Permission{manage(user), manage(group)},
+			declared: []resources.Permission{manage(sp)},
+			expected: []resources.Permission{manage(user), manage(group)},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := WorkspacePathPermissions{Path: "path", Permissions: tc.folder}
+			require.Equal(t, tc.expected, p.UndeclaredWriters(tc.declared))
+		})
+	}
 }

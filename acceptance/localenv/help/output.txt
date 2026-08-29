@@ -1,0 +1,31 @@
+Set up a local Python environment that matches a Databricks cluster or serverless version, so code you run on your machine behaves the same as it does on Databricks.
+
+Use this when you want to develop or debug a Databricks project locally: it installs the matching Python version and a compatible databricks-connect, and pins your dependencies to versions known to work with your chosen compute. It creates or updates a .venv (managed by uv) in the current directory and records the setup in pyproject.toml, leaving the rest of your project untouched.
+
+Usage:
+  databricks environments setup-local [flags]
+
+Examples:
+  # Match a serverless version
+  databricks environments setup-local --serverless-version 5
+
+  # Match an existing cluster by name
+  databricks environments setup-local --cluster-name my-cluster
+
+  # See what would change without writing anything
+  databricks environments setup-local --serverless-version 5 --dry-run
+
+Flags:
+      --cluster-id string           cluster ID to use as the compute target
+      --cluster-name string         cluster name to use as the compute target (resolved to an ID via the Clusters API)
+      --constraints-only            apply the Python version and constraints without adding the databricks-connect dependency
+      --dry-run                     compute the plan without writing files or provisioning
+  -h, --help                        help for setup-local
+      --job-task string             job task to use as the compute target, as <job-id>.<task-key> (the task key is required)
+      --serverless-version string   serverless version to use as the compute target (e.g. 5)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

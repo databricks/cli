@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
@@ -72,8 +73,8 @@ func (v *View) IgnoreDirectory(dir string) (bool, error) {
 	return v.Ignore(dir + "/")
 }
 
-func NewView(worktreeRoot, root vfs.Path) (*View, error) {
-	repo, err := NewRepository(worktreeRoot)
+func NewView(ctx context.Context, worktreeRoot, root vfs.Path) (*View, error) {
+	repo, err := NewRepository(ctx, worktreeRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +100,8 @@ func NewView(worktreeRoot, root vfs.Path) (*View, error) {
 	return result, nil
 }
 
-func NewViewAtRoot(root vfs.Path) (*View, error) {
-	return NewView(root, root)
+func NewViewAtRoot(ctx context.Context, root vfs.Path) (*View, error) {
+	return NewView(ctx, root, root)
 }
 
 func (v *View) SetupDefaults() {

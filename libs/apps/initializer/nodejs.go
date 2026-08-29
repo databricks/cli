@@ -20,12 +20,14 @@ type InitializerNodeJs struct {
 func (i *InitializerNodeJs) Initialize(ctx context.Context, workDir string) *InitResult {
 	i.workDir = workDir
 
-	// Step 1: Run npm install
-	if err := i.runNpmInstall(ctx, workDir); err != nil {
-		return &InitResult{
-			Success: false,
-			Message: "Failed to install dependencies",
-			Error:   err,
+	// Step 1: Run npm install (skip if node_modules already exists from a background install)
+	if !fileExists(filepath.Join(workDir, "node_modules")) {
+		if err := i.runNpmInstall(ctx, workDir); err != nil {
+			return &InitResult{
+				Success: false,
+				Message: "Failed to install dependencies",
+				Error:   err,
+			}
 		}
 	}
 
@@ -50,6 +52,12 @@ func (i *InitializerNodeJs) NextSteps() string {
 	return "npm run dev"
 }
 
+func (i *InitializerNodeJs) InstallCommand() string {
+	// Mirrors runNpmInstall — `npm ci` reproduces the lockfile and is what
+	// the background install in cmd/apps would have run.
+	return "npm ci"
+}
+
 func (i *InitializerNodeJs) RunDev(ctx context.Context, workDir string) error {
 	cmdio.LogString(ctx, "Starting development server (npm run dev)...")
 	cmd := exec.CommandContext(ctx, "npm", "run", "dev")
@@ -72,11 +80,12 @@ func (i *InitializerNodeJs) runNpmInstall(ctx context.Context, workDir string) e
 	// Check if npm is available
 	if _, err := exec.LookPath("npm"); err != nil {
 		cmdio.LogString(ctx, "⚠ npm not found. Please install Node.js and run 'npm install' manually.")
-		return nil
+		return nil //nolint:nilerr // npm not found is a non-critical warning
 	}
 
 	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {
-		cmd := exec.CommandContext(ctx, "npm", "install")
+		// Faster npm install command.
+		cmd := exec.CommandContext(ctx, "npm", "ci", "--no-audit", "--no-fund", "--prefer-offline")
 		cmd.Dir = workDir
 		cmd.Stdout = nil
 		cmd.Stderr = nil
@@ -89,7 +98,7 @@ func (i *InitializerNodeJs) runAppkitSetup(ctx context.Context, workDir string) 
 	// Check if npx is available
 	if _, err := exec.LookPath("npx"); err != nil {
 		log.Debugf(ctx, "npx not found, skipping appkit setup")
-		return nil
+		return nil //nolint:nilerr // npx not found is a non-critical warning
 	}
 
 	return prompt.RunWithSpinnerCtx(ctx, "Running setup...", func() error {

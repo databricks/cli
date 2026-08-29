@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle validate
+Warning: required field "project_id" is not set
+  at resources.postgres_projects.my_project
+  in databricks.yml:10:7
+
+Name: deploy-postgres-no-id-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-no-id-[UNIQUE_NAME]/default
+
+Found 1 warning

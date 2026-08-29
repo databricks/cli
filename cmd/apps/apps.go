@@ -11,6 +11,7 @@ const ManagementGroupID = "management"
 func Commands() []*cobra.Command {
 	return []*cobra.Command{
 		newInitCmd(),
+		newManifestCmd(),
 		newDevRemoteCmd(),
 		newLogsCommand(),
 		newRunLocal(),

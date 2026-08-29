@@ -10,7 +10,6 @@ python/docs/images/databricks-logo.svg
 # Binary files
 **/*.zip
 **/*.whl
-**/*.png
 
 # new lines are recorded differently on windows and unix.
 # In unix: "raw_body": "hello, world\n"
@@ -27,7 +26,5 @@ python/databricks/bundles/*/_models/*.py
 # Developed elsewhere:
 internal/genkit/tagging.py
 
-# Docsgen:
-bundle/docsgen/output/resources.md
-bundle/docsgen/output/reference.md
-bundle/docsgen/testdata/anchors.md
+# Vendored from https://github.com/databricks/mlops-stacks:
+acceptance/bundle/deploy/mlops-stacks/template/**

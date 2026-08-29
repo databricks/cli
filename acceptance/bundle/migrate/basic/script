@@ -1,3 +1,4 @@
+export DATABRICKS_BUNDLE_ENGINE=
 # Migrating without state, should print a message about missing state.
 trace musterr $CLI bundle deployment migrate
 
@@ -13,17 +14,17 @@ rm out.backup_state.json
 # check that this is stored as resolved value, not as reference:
 trace jq '.state."resources.pipelines.test_pipeline".state.tags.volume_storage_location' out.new_state.json | contains.py 's3://'
 
-# this is expected to fail because state does not match env var
-trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle plan
-trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle deploy
+# this is expected to warn because state does not match env var, but still succeed using state engine
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
 title "Should show that it's already migrated"
 trace musterr $CLI bundle deployment migrate
 
 rm out.requests.txt
 # Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
-trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "2 unchanged"  # should be "3 unchanged" once permanent drift is fixed
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "2 unchanged"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "3 unchanged"
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "3 unchanged"
 trace print_requests.py --get //jobs/get | contains.py 'engine/direct'
 
 trace DATABRICKS_BUNDLE_ENGINE="" $CLI bundle deploy
@@ -46,7 +47,7 @@ trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json > out.plan_update.json
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy
 
 title "Different target, still on terraform"
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy -t prod
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy -t prod
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states -t prod
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states -t prod --force-pull
 

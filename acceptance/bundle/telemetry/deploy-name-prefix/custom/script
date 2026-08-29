@@ -1,5 +1,8 @@
 trace $CLI bundle deploy
 
-trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental | {bool_values}'
+# Common bool_values are engine-agnostic; the terraform-only direct_drymigrate_*
+# entries go to a per-engine file so output.txt stays shared.
+trace print_telemetry_bool_values | grep -v direct_drymigrate
+print_telemetry_bool_values | grep direct_drymigrate > out.drymigrate.$DATABRICKS_BUNDLE_ENGINE.txt || true
 
 rm out.requests.txt

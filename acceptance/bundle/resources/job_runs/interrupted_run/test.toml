@@ -1,0 +1,4 @@
+# The interruption is staged by injecting a fault into the testserver, so this
+# stays off cloud.
+Badness = "An in-progress run is planned as skip, so a deploy after an interrupted wait does not resume waiting for it to finish."
+Ignore = ["tmp.plan.json"]

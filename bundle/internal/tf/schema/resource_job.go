@@ -18,8 +18,10 @@ type ResourceJobDbtTask struct {
 }
 
 type ResourceJobDeployment struct {
+	DeploymentId     string `json:"deployment_id,omitempty"`
 	Kind             string `json:"kind"`
 	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+	VersionId        string `json:"version_id,omitempty"`
 }
 
 type ResourceJobEmailNotifications struct {
@@ -32,6 +34,7 @@ type ResourceJobEmailNotifications struct {
 }
 
 type ResourceJobEnvironmentSpec struct {
+	BaseEnvironment    string   `json:"base_environment,omitempty"`
 	Client             string   `json:"client,omitempty"`
 	Dependencies       []string `json:"dependencies,omitempty"`
 	EnvironmentVersion string   `json:"environment_version,omitempty"`
@@ -53,14 +56,19 @@ type ResourceJobGitSourceJobSource struct {
 	JobConfigPath       string `json:"job_config_path"`
 }
 
+type ResourceJobGitSourceSparseCheckout struct {
+	Patterns []string `json:"patterns,omitempty"`
+}
+
 type ResourceJobGitSource struct {
-	Branch      string                           `json:"branch,omitempty"`
-	Commit      string                           `json:"commit,omitempty"`
-	Provider    string                           `json:"provider,omitempty"`
-	Tag         string                           `json:"tag,omitempty"`
-	Url         string                           `json:"url"`
-	GitSnapshot *ResourceJobGitSourceGitSnapshot `json:"git_snapshot,omitempty"`
-	JobSource   *ResourceJobGitSourceJobSource   `json:"job_source,omitempty"`
+	Branch         string                              `json:"branch,omitempty"`
+	Commit         string                              `json:"commit,omitempty"`
+	Provider       string                              `json:"provider,omitempty"`
+	Tag            string                              `json:"tag,omitempty"`
+	Url            string                              `json:"url"`
+	GitSnapshot    *ResourceJobGitSourceGitSnapshot    `json:"git_snapshot,omitempty"`
+	JobSource      *ResourceJobGitSourceJobSource      `json:"job_source,omitempty"`
+	SparseCheckout *ResourceJobGitSourceSparseCheckout `json:"sparse_checkout,omitempty"`
 }
 
 type ResourceJobHealthRules struct {
@@ -97,10 +105,11 @@ type ResourceJobJobClusterNewClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourceJobJobClusterNewClusterAzureAttributes struct {
-	Availability     string                                                          `json:"availability,omitempty"`
-	FirstOnDemand    int                                                             `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                             `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceJobJobClusterNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                          `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                          `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                             `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                             `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceJobJobClusterNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceJobJobClusterNewClusterClusterLogConfDbfs struct {
@@ -155,6 +164,7 @@ type ResourceJobJobClusterNewClusterDriverNodeTypeFlexibility struct {
 type ResourceJobJobClusterNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -218,7 +228,7 @@ type ResourceJobJobClusterNewClusterLibraryMaven struct {
 }
 
 type ResourceJobJobClusterNewClusterLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobJobClusterNewClusterLibraryPypi struct {
@@ -238,7 +248,7 @@ type ResourceJobJobClusterNewClusterLibrary struct {
 }
 
 type ResourceJobJobClusterNewClusterProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobJobClusterNewClusterWorkerNodeTypeFlexibility struct {
@@ -261,6 +271,7 @@ type ResourceJobJobClusterNewCluster struct {
 	ClusterName                       string                                                    `json:"cluster_name,omitempty"`
 	CustomTags                        map[string]string                                         `json:"custom_tags,omitempty"`
 	DataSecurityMode                  string                                                    `json:"data_security_mode,omitempty"`
+	DependencyMode                    string                                                    `json:"dependency_mode,omitempty"`
 	DriverInstancePoolId              string                                                    `json:"driver_instance_pool_id,omitempty"`
 	DriverNodeTypeId                  string                                                    `json:"driver_node_type_id,omitempty"`
 	EnableElasticDisk                 bool                                                      `json:"enable_elastic_disk,omitempty"`
@@ -297,8 +308,9 @@ type ResourceJobJobClusterNewCluster struct {
 }
 
 type ResourceJobJobCluster struct {
-	JobClusterKey string                           `json:"job_cluster_key"`
-	NewCluster    *ResourceJobJobClusterNewCluster `json:"new_cluster,omitempty"`
+	JobClusterKey       string                           `json:"job_cluster_key"`
+	ServerlessComputeId string                           `json:"serverless_compute_id,omitempty"`
+	NewCluster          *ResourceJobJobClusterNewCluster `json:"new_cluster,omitempty"`
 }
 
 type ResourceJobLibraryCran struct {
@@ -313,7 +325,7 @@ type ResourceJobLibraryMaven struct {
 }
 
 type ResourceJobLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobLibraryPypi struct {
@@ -356,10 +368,11 @@ type ResourceJobNewClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourceJobNewClusterAzureAttributes struct {
-	Availability     string                                                `json:"availability,omitempty"`
-	FirstOnDemand    int                                                   `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                   `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceJobNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                   `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                   `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceJobNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceJobNewClusterClusterLogConfDbfs struct {
@@ -414,6 +427,7 @@ type ResourceJobNewClusterDriverNodeTypeFlexibility struct {
 type ResourceJobNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -477,7 +491,7 @@ type ResourceJobNewClusterLibraryMaven struct {
 }
 
 type ResourceJobNewClusterLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobNewClusterLibraryPypi struct {
@@ -497,7 +511,7 @@ type ResourceJobNewClusterLibrary struct {
 }
 
 type ResourceJobNewClusterProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobNewClusterWorkerNodeTypeFlexibility struct {
@@ -519,6 +533,7 @@ type ResourceJobNewCluster struct {
 	ClusterName                string                                          `json:"cluster_name,omitempty"`
 	CustomTags                 map[string]string                               `json:"custom_tags,omitempty"`
 	DataSecurityMode           string                                          `json:"data_security_mode,omitempty"`
+	DependencyMode             string                                          `json:"dependency_mode,omitempty"`
 	DriverInstancePoolId       string                                          `json:"driver_instance_pool_id,omitempty"`
 	DriverNodeTypeId           string                                          `json:"driver_node_type_id,omitempty"`
 	EnableElasticDisk          bool                                            `json:"enable_elastic_disk,omitempty"`
@@ -577,7 +592,7 @@ type ResourceJobPipelineTask struct {
 }
 
 type ResourceJobProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobPythonWheelTask struct {
@@ -602,10 +617,17 @@ type ResourceJobRunJobTask struct {
 	JobParameters map[string]string `json:"job_parameters,omitempty"`
 }
 
+type ResourceJobScheduleSqlCondition struct {
+	SqlQueryId  string `json:"sql_query_id"`
+	TriggerMode string `json:"trigger_mode,omitempty"`
+	WarehouseId string `json:"warehouse_id"`
+}
+
 type ResourceJobSchedule struct {
-	PauseStatus          string `json:"pause_status,omitempty"`
-	QuartzCronExpression string `json:"quartz_cron_expression"`
-	TimezoneId           string `json:"timezone_id"`
+	PauseStatus          string                           `json:"pause_status,omitempty"`
+	QuartzCronExpression string                           `json:"quartz_cron_expression"`
+	TimezoneId           string                           `json:"timezone_id"`
+	SqlCondition         *ResourceJobScheduleSqlCondition `json:"sql_condition,omitempty"`
 }
 
 type ResourceJobSparkJarTask struct {
@@ -624,11 +646,48 @@ type ResourceJobSparkSubmitTask struct {
 	Parameters []string `json:"parameters,omitempty"`
 }
 
+type ResourceJobTaskAiRuntimeTaskDeploymentsCompute struct {
+	AcceleratorCount int    `json:"accelerator_count"`
+	AcceleratorType  string `json:"accelerator_type"`
+}
+
+type ResourceJobTaskAiRuntimeTaskDeployments struct {
+	CommandPath string                                          `json:"command_path"`
+	Name        string                                          `json:"name,omitempty"`
+	Compute     *ResourceJobTaskAiRuntimeTaskDeploymentsCompute `json:"compute,omitempty"`
+}
+
+type ResourceJobTaskAiRuntimeTask struct {
+	CodeSourcePath            string                                    `json:"code_source_path,omitempty"`
+	DockerImageUrl            string                                    `json:"docker_image_url,omitempty"`
+	Experiment                string                                    `json:"experiment"`
+	MlflowArtifactLocation    string                                    `json:"mlflow_artifact_location,omitempty"`
+	MlflowExperimentDirectory string                                    `json:"mlflow_experiment_directory,omitempty"`
+	MlflowRun                 string                                    `json:"mlflow_run,omitempty"`
+	Deployments               []ResourceJobTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
+}
+
+type ResourceJobTaskAlertTaskSubscribers struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
+}
+
+type ResourceJobTaskAlertTask struct {
+	AlertId       string                                `json:"alert_id,omitempty"`
+	WarehouseId   string                                `json:"warehouse_id,omitempty"`
+	WorkspacePath string                                `json:"workspace_path,omitempty"`
+	Subscribers   []ResourceJobTaskAlertTaskSubscribers `json:"subscribers,omitempty"`
+}
+
 type ResourceJobTaskCleanRoomsNotebookTask struct {
 	CleanRoomName          string            `json:"clean_room_name"`
 	Etag                   string            `json:"etag,omitempty"`
 	NotebookBaseParameters map[string]string `json:"notebook_base_parameters,omitempty"`
 	NotebookName           string            `json:"notebook_name"`
+}
+
+type ResourceJobTaskCompute struct {
+	HardwareAccelerator string `json:"hardware_accelerator,omitempty"`
 }
 
 type ResourceJobTaskConditionTask struct {
@@ -650,6 +709,7 @@ type ResourceJobTaskDashboardTaskSubscription struct {
 
 type ResourceJobTaskDashboardTask struct {
 	DashboardId  string                                    `json:"dashboard_id,omitempty"`
+	Filters      map[string]string                         `json:"filters,omitempty"`
 	WarehouseId  string                                    `json:"warehouse_id,omitempty"`
 	Subscription *ResourceJobTaskDashboardTaskSubscription `json:"subscription,omitempty"`
 }
@@ -688,11 +748,48 @@ type ResourceJobTaskEmailNotifications struct {
 	OnSuccess                          []string `json:"on_success,omitempty"`
 }
 
+type ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeploymentsCompute struct {
+	AcceleratorCount int    `json:"accelerator_count"`
+	AcceleratorType  string `json:"accelerator_type"`
+}
+
+type ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments struct {
+	CommandPath string                                                         `json:"command_path"`
+	Name        string                                                         `json:"name,omitempty"`
+	Compute     *ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeploymentsCompute `json:"compute,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskAiRuntimeTask struct {
+	CodeSourcePath            string                                                   `json:"code_source_path,omitempty"`
+	DockerImageUrl            string                                                   `json:"docker_image_url,omitempty"`
+	Experiment                string                                                   `json:"experiment"`
+	MlflowArtifactLocation    string                                                   `json:"mlflow_artifact_location,omitempty"`
+	MlflowExperimentDirectory string                                                   `json:"mlflow_experiment_directory,omitempty"`
+	MlflowRun                 string                                                   `json:"mlflow_run,omitempty"`
+	Deployments               []ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskAlertTaskSubscribers struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskAlertTask struct {
+	AlertId       string                                               `json:"alert_id,omitempty"`
+	WarehouseId   string                                               `json:"warehouse_id,omitempty"`
+	WorkspacePath string                                               `json:"workspace_path,omitempty"`
+	Subscribers   []ResourceJobTaskForEachTaskTaskAlertTaskSubscribers `json:"subscribers,omitempty"`
+}
+
 type ResourceJobTaskForEachTaskTaskCleanRoomsNotebookTask struct {
 	CleanRoomName          string            `json:"clean_room_name"`
 	Etag                   string            `json:"etag,omitempty"`
 	NotebookBaseParameters map[string]string `json:"notebook_base_parameters,omitempty"`
 	NotebookName           string            `json:"notebook_name"`
+}
+
+type ResourceJobTaskForEachTaskTaskCompute struct {
+	HardwareAccelerator string `json:"hardware_accelerator,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskConditionTask struct {
@@ -714,6 +811,7 @@ type ResourceJobTaskForEachTaskTaskDashboardTaskSubscription struct {
 
 type ResourceJobTaskForEachTaskTaskDashboardTask struct {
 	DashboardId  string                                                   `json:"dashboard_id,omitempty"`
+	Filters      map[string]string                                        `json:"filters,omitempty"`
 	WarehouseId  string                                                   `json:"warehouse_id,omitempty"`
 	Subscription *ResourceJobTaskForEachTaskTaskDashboardTaskSubscription `json:"subscription,omitempty"`
 }
@@ -791,7 +889,7 @@ type ResourceJobTaskForEachTaskTaskLibraryMaven struct {
 }
 
 type ResourceJobTaskForEachTaskTaskLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskLibraryPypi struct {
@@ -834,10 +932,11 @@ type ResourceJobTaskForEachTaskTaskNewClusterAzureAttributesLogAnalyticsInfo str
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterAzureAttributes struct {
-	Availability     string                                                                   `json:"availability,omitempty"`
-	FirstOnDemand    int                                                                      `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                                      `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceJobTaskForEachTaskTaskNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                                   `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                                   `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                                      `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                                      `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceJobTaskForEachTaskTaskNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterClusterLogConfDbfs struct {
@@ -892,6 +991,7 @@ type ResourceJobTaskForEachTaskTaskNewClusterDriverNodeTypeFlexibility struct {
 type ResourceJobTaskForEachTaskTaskNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -955,7 +1055,7 @@ type ResourceJobTaskForEachTaskTaskNewClusterLibraryMaven struct {
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterLibraryPypi struct {
@@ -975,7 +1075,7 @@ type ResourceJobTaskForEachTaskTaskNewClusterLibrary struct {
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterWorkerNodeTypeFlexibility struct {
@@ -997,6 +1097,7 @@ type ResourceJobTaskForEachTaskTaskNewCluster struct {
 	ClusterName                string                                                             `json:"cluster_name,omitempty"`
 	CustomTags                 map[string]string                                                  `json:"custom_tags,omitempty"`
 	DataSecurityMode           string                                                             `json:"data_security_mode,omitempty"`
+	DependencyMode             string                                                             `json:"dependency_mode,omitempty"`
 	DriverInstancePoolId       string                                                             `json:"driver_instance_pool_id,omitempty"`
 	DriverNodeTypeId           string                                                             `json:"driver_node_type_id,omitempty"`
 	EnableElasticDisk          bool                                                               `json:"enable_elastic_disk,omitempty"`
@@ -1046,8 +1147,13 @@ type ResourceJobTaskForEachTaskTaskNotificationSettings struct {
 }
 
 type ResourceJobTaskForEachTaskTaskPipelineTask struct {
-	FullRefresh bool   `json:"full_refresh,omitempty"`
-	PipelineId  string `json:"pipeline_id"`
+	FullRefresh              bool              `json:"full_refresh,omitempty"`
+	FullRefreshSelection     []string          `json:"full_refresh_selection,omitempty"`
+	Parameters               map[string]string `json:"parameters,omitempty"`
+	PipelineId               string            `json:"pipeline_id"`
+	RefreshFlowSelection     []string          `json:"refresh_flow_selection,omitempty"`
+	RefreshSelection         []string          `json:"refresh_selection,omitempty"`
+	ResetCheckpointSelection []string          `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskPowerBiTaskPowerBiModel struct {
@@ -1073,6 +1179,16 @@ type ResourceJobTaskForEachTaskTaskPowerBiTask struct {
 	Tables                 []ResourceJobTaskForEachTaskTaskPowerBiTaskTables      `json:"tables,omitempty"`
 }
 
+type ResourceJobTaskForEachTaskTaskPythonOperatorTaskParameters struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskPythonOperatorTask struct {
+	Main       string                                                       `json:"main,omitempty"`
+	Parameters []ResourceJobTaskForEachTaskTaskPythonOperatorTaskParameters `json:"parameters,omitempty"`
+}
+
 type ResourceJobTaskForEachTaskTaskPythonWheelTask struct {
 	EntryPoint      string            `json:"entry_point,omitempty"`
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
@@ -1081,7 +1197,11 @@ type ResourceJobTaskForEachTaskTaskPythonWheelTask struct {
 }
 
 type ResourceJobTaskForEachTaskTaskRunJobTaskPipelineParams struct {
-	FullRefresh bool `json:"full_refresh,omitempty"`
+	FullRefresh              bool     `json:"full_refresh,omitempty"`
+	FullRefreshSelection     []string `json:"full_refresh_selection,omitempty"`
+	RefreshFlowSelection     []string `json:"refresh_flow_selection,omitempty"`
+	RefreshSelection         []string `json:"refresh_selection,omitempty"`
+	ResetCheckpointSelection []string `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskRunJobTask struct {
@@ -1196,7 +1316,10 @@ type ResourceJobTaskForEachTaskTask struct {
 	RunIf                   string                                                `json:"run_if,omitempty"`
 	TaskKey                 string                                                `json:"task_key"`
 	TimeoutSeconds          int                                                   `json:"timeout_seconds,omitempty"`
+	AiRuntimeTask           *ResourceJobTaskForEachTaskTaskAiRuntimeTask          `json:"ai_runtime_task,omitempty"`
+	AlertTask               *ResourceJobTaskForEachTaskTaskAlertTask              `json:"alert_task,omitempty"`
 	CleanRoomsNotebookTask  *ResourceJobTaskForEachTaskTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
+	Compute                 *ResourceJobTaskForEachTaskTaskCompute                `json:"compute,omitempty"`
 	ConditionTask           *ResourceJobTaskForEachTaskTaskConditionTask          `json:"condition_task,omitempty"`
 	DashboardTask           *ResourceJobTaskForEachTaskTaskDashboardTask          `json:"dashboard_task,omitempty"`
 	DbtCloudTask            *ResourceJobTaskForEachTaskTaskDbtCloudTask           `json:"dbt_cloud_task,omitempty"`
@@ -1212,6 +1335,7 @@ type ResourceJobTaskForEachTaskTask struct {
 	NotificationSettings    *ResourceJobTaskForEachTaskTaskNotificationSettings   `json:"notification_settings,omitempty"`
 	PipelineTask            *ResourceJobTaskForEachTaskTaskPipelineTask           `json:"pipeline_task,omitempty"`
 	PowerBiTask             *ResourceJobTaskForEachTaskTaskPowerBiTask            `json:"power_bi_task,omitempty"`
+	PythonOperatorTask      *ResourceJobTaskForEachTaskTaskPythonOperatorTask     `json:"python_operator_task,omitempty"`
 	PythonWheelTask         *ResourceJobTaskForEachTaskTaskPythonWheelTask        `json:"python_wheel_task,omitempty"`
 	RunJobTask              *ResourceJobTaskForEachTaskTaskRunJobTask             `json:"run_job_task,omitempty"`
 	SparkJarTask            *ResourceJobTaskForEachTaskTaskSparkJarTask           `json:"spark_jar_task,omitempty"`
@@ -1266,7 +1390,7 @@ type ResourceJobTaskLibraryMaven struct {
 }
 
 type ResourceJobTaskLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobTaskLibraryPypi struct {
@@ -1309,10 +1433,11 @@ type ResourceJobTaskNewClusterAzureAttributesLogAnalyticsInfo struct {
 }
 
 type ResourceJobTaskNewClusterAzureAttributes struct {
-	Availability     string                                                    `json:"availability,omitempty"`
-	FirstOnDemand    int                                                       `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice  int                                                       `json:"spot_bid_max_price,omitempty"`
-	LogAnalyticsInfo *ResourceJobTaskNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
+	Availability             string                                                    `json:"availability,omitempty"`
+	CapacityReservationGroup string                                                    `json:"capacity_reservation_group,omitempty"`
+	FirstOnDemand            int                                                       `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice          int                                                       `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo         *ResourceJobTaskNewClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceJobTaskNewClusterClusterLogConfDbfs struct {
@@ -1367,6 +1492,7 @@ type ResourceJobTaskNewClusterDriverNodeTypeFlexibility struct {
 type ResourceJobTaskNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -1430,7 +1556,7 @@ type ResourceJobTaskNewClusterLibraryMaven struct {
 }
 
 type ResourceJobTaskNewClusterLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobTaskNewClusterLibraryPypi struct {
@@ -1450,7 +1576,7 @@ type ResourceJobTaskNewClusterLibrary struct {
 }
 
 type ResourceJobTaskNewClusterProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobTaskNewClusterWorkerNodeTypeFlexibility struct {
@@ -1473,6 +1599,7 @@ type ResourceJobTaskNewCluster struct {
 	ClusterName                       string                                              `json:"cluster_name,omitempty"`
 	CustomTags                        map[string]string                                   `json:"custom_tags,omitempty"`
 	DataSecurityMode                  string                                              `json:"data_security_mode,omitempty"`
+	DependencyMode                    string                                              `json:"dependency_mode,omitempty"`
 	DriverInstancePoolId              string                                              `json:"driver_instance_pool_id,omitempty"`
 	DriverNodeTypeId                  string                                              `json:"driver_node_type_id,omitempty"`
 	EnableElasticDisk                 bool                                                `json:"enable_elastic_disk,omitempty"`
@@ -1522,8 +1649,13 @@ type ResourceJobTaskNotificationSettings struct {
 }
 
 type ResourceJobTaskPipelineTask struct {
-	FullRefresh bool   `json:"full_refresh,omitempty"`
-	PipelineId  string `json:"pipeline_id"`
+	FullRefresh              bool              `json:"full_refresh,omitempty"`
+	FullRefreshSelection     []string          `json:"full_refresh_selection,omitempty"`
+	Parameters               map[string]string `json:"parameters,omitempty"`
+	PipelineId               string            `json:"pipeline_id"`
+	RefreshFlowSelection     []string          `json:"refresh_flow_selection,omitempty"`
+	RefreshSelection         []string          `json:"refresh_selection,omitempty"`
+	ResetCheckpointSelection []string          `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type ResourceJobTaskPowerBiTaskPowerBiModel struct {
@@ -1549,6 +1681,16 @@ type ResourceJobTaskPowerBiTask struct {
 	Tables                 []ResourceJobTaskPowerBiTaskTables      `json:"tables,omitempty"`
 }
 
+type ResourceJobTaskPythonOperatorTaskParameters struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type ResourceJobTaskPythonOperatorTask struct {
+	Main       string                                        `json:"main,omitempty"`
+	Parameters []ResourceJobTaskPythonOperatorTaskParameters `json:"parameters,omitempty"`
+}
+
 type ResourceJobTaskPythonWheelTask struct {
 	EntryPoint      string            `json:"entry_point,omitempty"`
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
@@ -1557,7 +1699,11 @@ type ResourceJobTaskPythonWheelTask struct {
 }
 
 type ResourceJobTaskRunJobTaskPipelineParams struct {
-	FullRefresh bool `json:"full_refresh,omitempty"`
+	FullRefresh              bool     `json:"full_refresh,omitempty"`
+	FullRefreshSelection     []string `json:"full_refresh_selection,omitempty"`
+	RefreshFlowSelection     []string `json:"refresh_flow_selection,omitempty"`
+	RefreshSelection         []string `json:"refresh_selection,omitempty"`
+	ResetCheckpointSelection []string `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type ResourceJobTaskRunJobTask struct {
@@ -1672,7 +1818,10 @@ type ResourceJobTask struct {
 	RunIf                   string                                 `json:"run_if,omitempty"`
 	TaskKey                 string                                 `json:"task_key"`
 	TimeoutSeconds          int                                    `json:"timeout_seconds,omitempty"`
+	AiRuntimeTask           *ResourceJobTaskAiRuntimeTask          `json:"ai_runtime_task,omitempty"`
+	AlertTask               *ResourceJobTaskAlertTask              `json:"alert_task,omitempty"`
 	CleanRoomsNotebookTask  *ResourceJobTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
+	Compute                 *ResourceJobTaskCompute                `json:"compute,omitempty"`
 	ConditionTask           *ResourceJobTaskConditionTask          `json:"condition_task,omitempty"`
 	DashboardTask           *ResourceJobTaskDashboardTask          `json:"dashboard_task,omitempty"`
 	DbtCloudTask            *ResourceJobTaskDbtCloudTask           `json:"dbt_cloud_task,omitempty"`
@@ -1689,6 +1838,7 @@ type ResourceJobTask struct {
 	NotificationSettings    *ResourceJobTaskNotificationSettings   `json:"notification_settings,omitempty"`
 	PipelineTask            *ResourceJobTaskPipelineTask           `json:"pipeline_task,omitempty"`
 	PowerBiTask             *ResourceJobTaskPowerBiTask            `json:"power_bi_task,omitempty"`
+	PythonOperatorTask      *ResourceJobTaskPythonOperatorTask     `json:"python_operator_task,omitempty"`
 	PythonWheelTask         *ResourceJobTaskPythonWheelTask        `json:"python_wheel_task,omitempty"`
 	RunJobTask              *ResourceJobTaskRunJobTask             `json:"run_job_task,omitempty"`
 	SparkJarTask            *ResourceJobTaskSparkJarTask           `json:"spark_jar_task,omitempty"`
@@ -1717,6 +1867,12 @@ type ResourceJobTriggerPeriodic struct {
 	Unit     string `json:"unit"`
 }
 
+type ResourceJobTriggerSqlCondition struct {
+	SqlQueryId  string `json:"sql_query_id"`
+	TriggerMode string `json:"trigger_mode,omitempty"`
+	WarehouseId string `json:"warehouse_id"`
+}
+
 type ResourceJobTriggerTableUpdate struct {
 	Condition                     string   `json:"condition,omitempty"`
 	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
@@ -1725,11 +1881,64 @@ type ResourceJobTriggerTableUpdate struct {
 }
 
 type ResourceJobTrigger struct {
-	PauseStatus string                         `json:"pause_status,omitempty"`
-	FileArrival *ResourceJobTriggerFileArrival `json:"file_arrival,omitempty"`
-	Model       *ResourceJobTriggerModel       `json:"model,omitempty"`
-	Periodic    *ResourceJobTriggerPeriodic    `json:"periodic,omitempty"`
-	TableUpdate *ResourceJobTriggerTableUpdate `json:"table_update,omitempty"`
+	PauseStatus  string                          `json:"pause_status,omitempty"`
+	FileArrival  *ResourceJobTriggerFileArrival  `json:"file_arrival,omitempty"`
+	Model        *ResourceJobTriggerModel        `json:"model,omitempty"`
+	Periodic     *ResourceJobTriggerPeriodic     `json:"periodic,omitempty"`
+	SqlCondition *ResourceJobTriggerSqlCondition `json:"sql_condition,omitempty"`
+	TableUpdate  *ResourceJobTriggerTableUpdate  `json:"table_update,omitempty"`
+}
+
+type ResourceJobTriggersContinuous struct {
+	TaskRetryMode string `json:"task_retry_mode,omitempty"`
+}
+
+type ResourceJobTriggersFileArrival struct {
+	MinTimeBetweenTriggersSeconds int    `json:"min_time_between_triggers_seconds,omitempty"`
+	Url                           string `json:"url"`
+	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
+}
+
+type ResourceJobTriggersModel struct {
+	Aliases                       []string `json:"aliases,omitempty"`
+	Condition                     string   `json:"condition"`
+	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
+	SecurableName                 string   `json:"securable_name,omitempty"`
+	WaitAfterLastChangeSeconds    int      `json:"wait_after_last_change_seconds,omitempty"`
+}
+
+type ResourceJobTriggersPeriodic struct {
+	Interval int    `json:"interval"`
+	Unit     string `json:"unit"`
+}
+
+type ResourceJobTriggersSchedule struct {
+	QuartzCronExpression string `json:"quartz_cron_expression"`
+	TimezoneId           string `json:"timezone_id"`
+}
+
+type ResourceJobTriggersSqlCondition struct {
+	SqlQueryId  string `json:"sql_query_id"`
+	TriggerMode string `json:"trigger_mode,omitempty"`
+	WarehouseId string `json:"warehouse_id"`
+}
+
+type ResourceJobTriggersTableUpdate struct {
+	Condition                     string   `json:"condition,omitempty"`
+	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
+	TableNames                    []string `json:"table_names"`
+	WaitAfterLastChangeSeconds    int      `json:"wait_after_last_change_seconds,omitempty"`
+}
+
+type ResourceJobTriggers struct {
+	PauseStatus  string                           `json:"pause_status,omitempty"`
+	Continuous   *ResourceJobTriggersContinuous   `json:"continuous,omitempty"`
+	FileArrival  *ResourceJobTriggersFileArrival  `json:"file_arrival,omitempty"`
+	Model        *ResourceJobTriggersModel        `json:"model,omitempty"`
+	Periodic     *ResourceJobTriggersPeriodic     `json:"periodic,omitempty"`
+	Schedule     *ResourceJobTriggersSchedule     `json:"schedule,omitempty"`
+	SqlCondition *ResourceJobTriggersSqlCondition `json:"sql_condition,omitempty"`
+	TableUpdate  *ResourceJobTriggersTableUpdate  `json:"table_update,omitempty"`
 }
 
 type ResourceJobWebhookNotificationsOnDurationWarningThresholdExceeded struct {
@@ -1773,6 +1982,7 @@ type ResourceJob struct {
 	MaxRetries             int                              `json:"max_retries,omitempty"`
 	MinRetryIntervalMillis int                              `json:"min_retry_interval_millis,omitempty"`
 	Name                   string                           `json:"name,omitempty"`
+	ParentPath             string                           `json:"parent_path,omitempty"`
 	PerformanceTarget      string                           `json:"performance_target,omitempty"`
 	RetryOnTimeout         bool                             `json:"retry_on_timeout,omitempty"`
 	Tags                   map[string]string                `json:"tags,omitempty"`
@@ -1804,5 +2014,6 @@ type ResourceJob struct {
 	SparkSubmitTask        *ResourceJobSparkSubmitTask      `json:"spark_submit_task,omitempty"`
 	Task                   []ResourceJobTask                `json:"task,omitempty"`
 	Trigger                *ResourceJobTrigger              `json:"trigger,omitempty"`
+	Triggers               []ResourceJobTriggers            `json:"triggers,omitempty"`
 	WebhookNotifications   *ResourceJobWebhookNotifications `json:"webhook_notifications,omitempty"`
 }

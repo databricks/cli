@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -18,7 +19,20 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 		}
 	}
 
-	// Create the model
+	// MLflow rejects an empty name; the fake would otherwise store a model under a key
+	// nothing can look up.
+	if request.Name == "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "Got an invalid name ''. Registered Model names cannot be empty strings.",
+			},
+		}
+	}
+
+	// Create the model with a numeric ID (matching real API behavior)
+	modelId := strconv.FormatInt(nextID(), 10)
 	model := ml.Model{
 		Name:        request.Name,
 		Description: request.Description,
@@ -26,6 +40,7 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 	}
 
 	s.ModelRegistryModels[request.Name] = model
+	s.ModelRegistryModelIDs[request.Name] = modelId
 
 	return Response{
 		Body: ml.CreateModelResponse{
@@ -80,6 +95,7 @@ func (s *FakeWorkspace) ModelRegistryGetModel(req Request) any {
 	return Response{
 		Body: ml.GetModelResponse{
 			RegisteredModelDatabricks: &ml.ModelDatabricks{
+				Id:              s.ModelRegistryModelIDs[name],
 				Name:            model.Name,
 				Description:     model.Description,
 				Tags:            model.Tags,

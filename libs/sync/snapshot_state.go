@@ -2,17 +2,16 @@ package sync
 
 import (
 	"fmt"
-	"path"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/notebook"
 )
 
 // SnapshotState keeps track of files on the local filesystem and their corresponding
 // entries in WSFS.
-type SnapshotState struct {
+type SnapshotState struct { //nolint:recvcheck // value receiver for ToSlash() copy, pointer for mutation
 	// Map of local file names to their last recorded modified time. Files found
 	// to have a newer mtime have their content synced to their remote version.
 	LastModifiedTimes map[string]time.Time `json:"last_modified_times"`
@@ -57,8 +56,7 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 			continue
 		}
 		if isNotebook {
-			ext := path.Ext(remoteName)
-			remoteName = strings.TrimSuffix(remoteName, ext)
+			remoteName = notebook.StripExtension(remoteName)
 		}
 
 		// Add the file to snapshot state

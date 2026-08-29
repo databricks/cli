@@ -3,7 +3,7 @@
 package enhanced_security_monitoring
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -20,8 +20,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "enhanced-security-monitoring",
-		Short: `Controls whether enhanced security monitoring is enabled for the current workspace.`,
-		Long: `Controls whether enhanced security monitoring is enabled for the current
+		Short: `*Public Preview* Controls whether enhanced security monitoring is enabled for the current workspace.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Controls whether enhanced security monitoring is enabled for the current
   workspace. If the compliance security profile is enabled, this is
   automatically enabled. By default, it is disabled. However, if the compliance
   security profile is enabled, this is automatically enabled.
@@ -30,6 +32,10 @@ func New() *cobra.Command {
   setting and it is not permanent.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -60,12 +66,16 @@ func newGet() *cobra.Command {
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Get the enhanced security monitoring setting.`
-	cmd.Long = `Get the enhanced security monitoring setting.
+	cmd.Short = `*Public Preview* Get the enhanced security monitoring setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the enhanced security monitoring setting.
 
   Gets the enhanced security monitoring setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -81,6 +91,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -114,8 +125,10 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"
-	cmd.Short = `Update the enhanced security monitoring setting.`
-	cmd.Long = `Update the enhanced security monitoring setting.
+	cmd.Short = `*Public Preview* Update the enhanced security monitoring setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the enhanced security monitoring setting.
 
   Updates the enhanced security monitoring setting for the workspace. A fresh
   etag needs to be provided in PATCH requests (as part of the setting field).
@@ -124,6 +137,8 @@ func newUpdate() *cobra.Command {
   the request must be retried by using the fresh etag in the 409 response.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -136,19 +151,20 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Settings.EnhancedSecurityMonitoring().Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

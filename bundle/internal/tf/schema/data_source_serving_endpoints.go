@@ -186,24 +186,44 @@ type DataSourceServingEndpointsEndpointsTags struct {
 	Value string `json:"value,omitempty"`
 }
 
+type DataSourceServingEndpointsEndpointsTelemetryConfigInferenceTableConfig struct {
+	Name             string `json:"name,omitempty"`
+	SamplingFraction int    `json:"sampling_fraction,omitempty"`
+}
+
+type DataSourceServingEndpointsEndpointsTelemetryConfigTableNames struct {
+	AnnotationsTable string `json:"annotations_table,omitempty"`
+	LogsTable        string `json:"logs_table,omitempty"`
+	MetricsTable     string `json:"metrics_table,omitempty"`
+	TracesTable      string `json:"traces_table,omitempty"`
+}
+
+type DataSourceServingEndpointsEndpointsTelemetryConfig struct {
+	EnabledTelemetryFeatures []string                                                                 `json:"enabled_telemetry_features,omitempty"`
+	InferenceTableConfig     []DataSourceServingEndpointsEndpointsTelemetryConfigInferenceTableConfig `json:"inference_table_config,omitempty"`
+	TableNames               []DataSourceServingEndpointsEndpointsTelemetryConfigTableNames           `json:"table_names,omitempty"`
+	TelemetryProfileId       string                                                                   `json:"telemetry_profile_id,omitempty"`
+}
+
 type DataSourceServingEndpointsEndpoints struct {
-	AiGateway            []DataSourceServingEndpointsEndpointsAiGateway `json:"ai_gateway,omitempty"`
-	BudgetPolicyId       string                                         `json:"budget_policy_id,omitempty"`
-	Config               []DataSourceServingEndpointsEndpointsConfig    `json:"config,omitempty"`
-	CreationTimestamp    int                                            `json:"creation_timestamp,omitempty"`
-	Creator              string                                         `json:"creator,omitempty"`
-	Description          string                                         `json:"description,omitempty"`
-	Id                   string                                         `json:"id,omitempty"`
-	LastUpdatedTimestamp int                                            `json:"last_updated_timestamp,omitempty"`
-	Name                 string                                         `json:"name,omitempty"`
-	State                []DataSourceServingEndpointsEndpointsState     `json:"state,omitempty"`
-	Tags                 []DataSourceServingEndpointsEndpointsTags      `json:"tags,omitempty"`
-	Task                 string                                         `json:"task,omitempty"`
-	UsagePolicyId        string                                         `json:"usage_policy_id,omitempty"`
+	AiGateway            []DataSourceServingEndpointsEndpointsAiGateway       `json:"ai_gateway,omitempty"`
+	BudgetPolicyId       string                                               `json:"budget_policy_id,omitempty"`
+	Config               []DataSourceServingEndpointsEndpointsConfig          `json:"config,omitempty"`
+	CreationTimestamp    int                                                  `json:"creation_timestamp,omitempty"`
+	Creator              string                                               `json:"creator,omitempty"`
+	Description          string                                               `json:"description,omitempty"`
+	Id                   string                                               `json:"id,omitempty"`
+	LastUpdatedTimestamp int                                                  `json:"last_updated_timestamp,omitempty"`
+	Name                 string                                               `json:"name,omitempty"`
+	State                []DataSourceServingEndpointsEndpointsState           `json:"state,omitempty"`
+	Tags                 []DataSourceServingEndpointsEndpointsTags            `json:"tags,omitempty"`
+	Task                 string                                               `json:"task,omitempty"`
+	TelemetryConfig      []DataSourceServingEndpointsEndpointsTelemetryConfig `json:"telemetry_config,omitempty"`
+	UsagePolicyId        string                                               `json:"usage_policy_id,omitempty"`
 }
 
 type DataSourceServingEndpointsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceServingEndpoints struct {

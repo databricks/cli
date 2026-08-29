@@ -9,6 +9,10 @@ type ResourcePermissionsAccessControl struct {
 	UserName             string `json:"user_name,omitempty"`
 }
 
+type ResourcePermissionsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
 type ResourcePermissions struct {
 	AlertV2Id              string                             `json:"alert_v2_id,omitempty"`
 	AppName                string                             `json:"app_name,omitempty"`
@@ -17,12 +21,14 @@ type ResourcePermissions struct {
 	ClusterPolicyId        string                             `json:"cluster_policy_id,omitempty"`
 	DashboardId            string                             `json:"dashboard_id,omitempty"`
 	DatabaseInstanceName   string                             `json:"database_instance_name,omitempty"`
+	DatabaseProjectName    string                             `json:"database_project_name,omitempty"`
 	DirectoryId            string                             `json:"directory_id,omitempty"`
 	DirectoryPath          string                             `json:"directory_path,omitempty"`
 	ExperimentId           string                             `json:"experiment_id,omitempty"`
 	Id                     string                             `json:"id,omitempty"`
 	InstancePoolId         string                             `json:"instance_pool_id,omitempty"`
 	JobId                  string                             `json:"job_id,omitempty"`
+	KnowledgeAssistantId   string                             `json:"knowledge_assistant_id,omitempty"`
 	NotebookId             string                             `json:"notebook_id,omitempty"`
 	NotebookPath           string                             `json:"notebook_path,omitempty"`
 	ObjectType             string                             `json:"object_type,omitempty"`
@@ -35,8 +41,10 @@ type ResourcePermissions struct {
 	SqlDashboardId         string                             `json:"sql_dashboard_id,omitempty"`
 	SqlEndpointId          string                             `json:"sql_endpoint_id,omitempty"`
 	SqlQueryId             string                             `json:"sql_query_id,omitempty"`
+	SupervisorAgentId      string                             `json:"supervisor_agent_id,omitempty"`
 	VectorSearchEndpointId string                             `json:"vector_search_endpoint_id,omitempty"`
 	WorkspaceFileId        string                             `json:"workspace_file_id,omitempty"`
 	WorkspaceFilePath      string                             `json:"workspace_file_path,omitempty"`
 	AccessControl          []ResourcePermissionsAccessControl `json:"access_control,omitempty"`
+	ProviderConfig         *ResourcePermissionsProviderConfig `json:"provider_config,omitempty"`
 }

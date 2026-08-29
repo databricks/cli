@@ -1,0 +1,13 @@
+{
+  "state_engine": "terraform",
+  "resources": [
+    {
+      "resource_type": "jobs",
+      "count": 3
+    },
+    {
+      "resource_type": "pipelines",
+      "count": 2
+    }
+  ]
+}

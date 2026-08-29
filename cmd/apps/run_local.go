@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +29,7 @@ const SHUTDOWN_TIMEOUT = 15 * time.Second
 func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int) (*runlocal.Config, *runlocal.AppSpec, error) {
 	ctx := cmd.Context()
 	w := cmdctx.WorkspaceClient(ctx)
-	workspaceId, err := w.CurrentWorkspaceID(ctx)
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -38,7 +39,7 @@ func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int)
 		return nil, nil, err
 	}
 
-	config := runlocal.NewConfig(w.Config.Host, workspaceId, cwd, runlocal.DEFAULT_HOST, appPort)
+	config := runlocal.NewConfig(w.Config.Host, workspaceID, cwd, runlocal.DEFAULT_HOST, appPort)
 	if entryPoint != "" {
 		config.AppSpecFiles = []string{entryPoint}
 	}
@@ -53,7 +54,7 @@ func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int)
 func setupApp(cmd *cobra.Command, config *runlocal.Config, spec *runlocal.AppSpec, customEnv []string, prepareEnvironment bool) (runlocal.App, []string, error) {
 	ctx := cmd.Context()
 	cfg := cmdctx.ConfigUsed(ctx)
-	app, err := runlocal.NewApp(ctx, config, spec)
+	app, err := runlocal.NewApp(config, spec)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -70,7 +71,7 @@ func setupApp(cmd *cobra.Command, config *runlocal.Config, spec *runlocal.AppSpe
 	env = append(env, appEnv...)
 
 	if prepareEnvironment {
-		err := app.PrepareEnvironment()
+		err := app.PrepareEnvironment(ctx)
 		if err != nil {
 			return app, nil, err
 		}
@@ -81,7 +82,7 @@ func setupApp(cmd *cobra.Command, config *runlocal.Config, spec *runlocal.AppSpe
 
 func startAppProcess(cmd *cobra.Command, config *runlocal.Config, app runlocal.App, env []string, debug bool) (*exec.Cmd, error) {
 	ctx := cmd.Context()
-	specCommand, err := app.GetCommand(debug)
+	specCommand, cmdEnv, err := app.GetCommand(ctx, debug)
 	if err != nil {
 		return nil, err
 	}
@@ -98,6 +99,7 @@ func startAppProcess(cmd *cobra.Command, config *runlocal.Config, app runlocal.A
 		appCmdEnv = append(appCmdEnv, envVar.String())
 	}
 	appCmdEnv = append(appCmdEnv, env...)
+	appCmdEnv = append(appCmdEnv, cmdEnv...)
 	appCmd.Env = appCmdEnv
 	appCmd.Dir = config.AppPath
 
@@ -115,7 +117,7 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config
 		return err
 	}
 
-	me, err := w.CurrentUser.Me(ctx)
+	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return err
 	}
@@ -125,9 +127,15 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config
 	}
 
 	proxyAddr := fmt.Sprintf("localhost:%d", port)
+	// Bind synchronously so a taken port fails the command instead of only printing an error from the goroutine.
+	ln, err := proxy.Listen(proxyAddr)
+	if err != nil {
+		return fmt.Errorf("failed to start app proxy: %w", err)
+	}
+
+	cmdio.LogString(ctx, "To access your app go to http://"+proxyAddr)
 	go func() {
-		cmdio.LogString(ctx, "To access your app go to http://"+proxyAddr)
-		err := proxy.ListenAndServe(proxyAddr)
+		err := proxy.Serve(ln)
 		if err != nil {
 			cmd.PrintErrln(err)
 		}
@@ -138,6 +146,12 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config
 	}
 
 	return nil
+}
+
+func killAppProcess(appCmd *exec.Cmd) {
+	_ = appCmd.Process.Kill()
+	// Reap the process so it doesn't linger as a zombie until the CLI exits.
+	_ = appCmd.Wait()
 }
 
 // SIGTERM (not supported on Windows) and SIGINT (Ctrl+C, supported cross-platform)
@@ -190,7 +204,7 @@ func newRunLocal() *cobra.Command {
 
 	  This command starts an app locally.`
 
-	cmd.Flags().IntVar(&port, "port", 8001, "Port on which to run the app app proxy")
+	cmd.Flags().IntVar(&port, "port", 8001, "Port on which to run the app proxy")
 	cmd.Flags().IntVar(&appPort, "app-port", runlocal.DEFAULT_PORT, "Port on which to run the app")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Enable debug mode")
 	cmd.Flags().BoolVar(&prepareEnvironment, "prepare-environment", false, "Prepares the environment for running the app. Requires 'uv' to be installed.")
@@ -224,6 +238,7 @@ func newRunLocal() *cobra.Command {
 
 		err = setupProxy(ctx, cmd, config, w, port, debug)
 		if err != nil {
+			killAppProcess(appCmd)
 			return err
 		}
 

@@ -7,26 +7,33 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/internal/clijson"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
+// interpolationPattern builds a JSON Schema regex for ${prefix.path...} references.
+// Path segments use [dynvar.BaseVarDef]; unlike the runtime matcher in ref.go, this
+// requires a fixed prefix (var, resources, ...) and at least one ".segment" after it.
 func interpolationPattern(s string) string {
-	return fmt.Sprintf(`\$\{(%s(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\[[0-9]+\])*)+)\}`, s)
+	return fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)+)\}`, s, dynvar.BaseVarDef)
 }
 
 func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	if typ == reflect.TypeOf(config.Root{}) || typ == reflect.TypeOf(variable.Variable{}) {
+	if typ == reflect.TypeFor[config.Root]() || typ == reflect.TypeFor[variable.Variable]() {
 		return s
 	}
 
 	// The variables block in a target override allows for directly specifying
 	// the value of the variable.
-	if typ == reflect.TypeOf(variable.TargetVariable{}) {
+	if typ == reflect.TypeFor[variable.TargetVariable]() {
 		return jsonschema.Schema{
 			AnyOf: []jsonschema.Schema{
 				// We keep the original schema so that autocomplete suggestions
@@ -86,7 +93,7 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 
 func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	switch typ {
-	case reflect.TypeOf(resources.Job{}):
+	case reflect.TypeFor[resources.Job]():
 		// This field has been deprecated in jobs API v2.1 and is always set to
 		// "MULTI_TASK" in the backend. We should not expose it to the user.
 		delete(s.Properties, "format")
@@ -97,7 +104,11 @@ func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 		delete(s.Properties, "deployment")
 		delete(s.Properties, "edit_mode")
 
-	case reflect.TypeOf(jobs.GitSource{}):
+	case reflect.TypeFor[resources.JobRun]():
+		// CLI-managed; not user-configurable.
+		delete(s.Properties, "idempotency_token")
+
+	case reflect.TypeFor[jobs.GitSource]():
 		// These fields are readonly and are not meant to be set by the user.
 		delete(s.Properties, "job_source")
 		delete(s.Properties, "git_snapshot")
@@ -111,7 +122,7 @@ func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 
 func removePipelineFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	switch typ {
-	case reflect.TypeOf(resources.Pipeline{}):
+	case reflect.TypeFor[resources.Pipeline]():
 		// Even though DABs supports this field, TF provider does not. Thus, we
 		// should not expose it to the user.
 		delete(s.Properties, "dry_run")
@@ -127,11 +138,30 @@ func removePipelineFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Sche
 	return s
 }
 
+// removeDeploymentFields strips deployment_id and version_id from the job and
+// pipeline deployment blocks. The CLI sets these to track the bundle
+// deployment in the Deployment Metadata Service; they are not user-configurable,
+// so they must not appear in the JSON schema or the generated annotation files.
+// The parent "deployment" block is already removed from the Job and Pipeline
+// schemas (see removeJobsFields / removePipelineFields); this removes the fields
+// from the JobDeployment / PipelineDeployment type definitions themselves.
+func removeDeploymentFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	switch typ {
+	case reflect.TypeFor[jobs.JobDeployment](), reflect.TypeFor[pipelines.PipelineDeployment]():
+		delete(s.Properties, "deployment_id")
+		delete(s.Properties, "version_id")
+	default:
+		// Do nothing
+	}
+
+	return s
+}
+
 // While volume_type is required in the volume create API, DABs automatically sets
 // it's value to "MANAGED" if it's not provided. Thus, we make it optional
 // in the bundle schema.
 func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	if typ != reflect.TypeOf(resources.Volume{}) {
+	if typ != reflect.TypeFor[resources.Volume]() {
 		return s
 	}
 
@@ -156,11 +186,8 @@ func removeOutputOnlyFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 	for name, prop := range s.Properties {
 		// Check if this property is marked as output-only via FieldBehaviors
 		if prop.FieldBehaviors != nil {
-			for _, behavior := range prop.FieldBehaviors {
-				if behavior == "OUTPUT_ONLY" {
-					toRemove = append(toRemove, name)
-					break
-				}
+			if slices.Contains(prop.FieldBehaviors, "OUTPUT_ONLY") {
+				toRemove = append(toRemove, name)
 			}
 		}
 	}
@@ -183,52 +210,91 @@ func removeOutputOnlyFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 }
 
 func main() {
-	if len(os.Args) != 3 {
-		fmt.Println("Usage: go run main.go <work-dir> <output-file>")
+	if len(os.Args) < 4 {
+		fmt.Println("Usage: go run main.go <work-dir> <output-file> <cli-json> [--docs]")
 		os.Exit(1)
 	}
 
-	// Directory with annotation files
+	// Directory with the annotations file
 	workdir := os.Args[1]
 	// Output file, where the generated JSON schema will be written to.
 	outputFile := os.Args[2]
+	// The .codegen/cli.json spec. Its schema graph carries the descriptions,
+	// enums and field behaviors the CLI reflects onto its config types.
+	cliJSONFile := os.Args[3]
 
-	generateSchema(workdir, outputFile)
+	// When --docs is passed, skip interpolation patterns and add sinceVersion annotations.
+	// This generates a schema optimized for documentation.
+	docsMode := len(os.Args) >= 5 && os.Args[4] == "--docs"
+
+	generateSchema(workdir, outputFile, cliJSONFile, docsMode)
 }
 
-func generateSchema(workdir, outputFile string) {
-	annotationsPath := filepath.Join(workdir, "annotations.yml")
-	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
-	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
+// configTypeGraph builds the type graph for the bundle config root with the
+// schema generator's structural field prunes applied, so the annotations file
+// only documents fields the generated schema actually contains. Both the
+// generator and the detached-annotation test use it to stay in lockstep.
+func configTypeGraph() (*typeGraph, error) {
+	return newTypeGraph(reflect.TypeFor[config.Root](), removeJobsFields, removePipelineFields)
+}
 
-	// Input file, the databricks openapi spec.
-	inputFile := os.Getenv("DATABRICKS_OPENAPI_SPEC")
-	if inputFile != "" {
-		p, err := newParser(inputFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("Writing OpenAPI annotations to %s\n", annotationsOpenApiPath)
-		err = p.extractAnnotations(reflect.TypeOf(config.Root{}), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
-		if err != nil {
-			log.Fatal(err)
-		}
+func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
+	annotationsPath := filepath.Join(workdir, "annotations.yml")
+
+	// The cli.json schema graph is keyed by SDK type name (e.g.
+	// "jobs.JobSettings"); the annotation parser matches Go SDK types against
+	// those keys directly.
+	doc, err := clijson.Parse(cliJSONFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if len(doc.Schemas) == 0 {
+		log.Fatalf("no schemas found in %s", cliJSONFile)
 	}
 
-	a, err := newAnnotationHandler([]string{annotationsOpenApiPath, annotationsOpenApiOverridesPath, annotationsPath})
+	extracted, err := newParser(doc.Schemas).extractAnnotations(reflect.TypeFor[config.Root]())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Generate the JSON schema from the bundle Go struct.
-	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
+	graph, err := configTypeGraph()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fromFile, unknown, err := loadAnnotationsFile(annotationsPath, graph)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, k := range unknown {
+		fmt.Printf("Dropping annotation at `%s`: no matching field in the bundle configuration\n", k)
+	}
+
+	// fromFile feeds both the merge in newAnnotationHandler and the
+	// annotations-file rewrite in syncWithMissingAnnotations, so drop stale
+	// placeholders first: a marker upstream now documents would otherwise
+	// shadow the real description.
+	dropShadowingPlaceholders(fromFile, extracted)
+
+	a, err := newAnnotationHandler(extracted, fromFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	transforms := []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		removeJobsFields,
 		removePipelineFields,
+		removeDeploymentFields,
 		makeVolumeTypeOptional,
 		a.addAnnotations,
 		removeOutputOnlyFields,
-		addInterpolationPatterns,
-	})
+	}
+	if !docsMode {
+		transforms = append(transforms, addInterpolationPatterns)
+	}
+
+	// Generate the JSON schema from the bundle Go struct.
+	s, err := jsonschema.FromType(reflect.TypeFor[config.Root](), transforms)
 
 	// AdditionalProperties is set to an empty schema to allow non-typed keys used as yaml-anchors
 	// Example:
@@ -243,9 +309,19 @@ func generateSchema(workdir, outputFile string) {
 	}
 
 	// Overwrite the input annotation file, adding missing annotations
-	err = a.syncWithMissingAnnotations(annotationsPath)
+	err = a.syncWithMissingAnnotations(annotationsPath, graph)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	// In docs mode, add sinceVersion annotations by analyzing git history.
+	if docsMode {
+		sinceVersions, err := computeSinceVersions()
+		if err != nil {
+			fmt.Printf("Warning: could not compute sinceVersion annotations: %v\n", err)
+		} else {
+			addSinceVersionToSchema(&s, sinceVersions)
+		}
 	}
 
 	b, err := json.MarshalIndent(s, "", "  ")

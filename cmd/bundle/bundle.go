@@ -8,8 +8,8 @@ import (
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bundle",
-		Short: "Databricks Asset Bundles let you express data/AI/analytics projects as code.",
-		Long: `Databricks Asset Bundles let you express data/AI/analytics projects as code.
+		Short: "Declarative Automation Bundles let you express data/AI/analytics projects as code.",
+		Long: `Declarative Automation Bundles let you express data/AI/analytics projects as code.
 
 Common workflows:
   databricks bundle init default-python      # Initialize new project
@@ -40,5 +40,6 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 	cmd.AddCommand(newOpenCommand())
 	cmd.AddCommand(newPlanCommand())
 	cmd.AddCommand(newConfigRemoteSyncCommand())
+
 	return cmd
 }

@@ -69,9 +69,12 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created alerts.my_alert
+Created pipelines.my_pipeline
+Created schemas.my_schema
+Created sql_warehouses.my_sql_warehouse
+Files: 7 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 === Post-deployment view of resources with id and without modified_status
 >>> [CLI] bundle summary -o json
@@ -97,7 +100,7 @@ Deployment complete!
         "quartz_cron_schedule": "44 19 */1 * * ?",
         "timezone_id": "Europe/Amsterdam"
       },
-      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?o=[NUMID]",
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?w=[NUMID]",
       "warehouse_id": "aaaaaaaaaaaaaaaa"
     }
   },
@@ -118,7 +121,7 @@ Deployment complete!
         }
       ],
       "name": "test-pipeline",
-      "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]"
     }
   },
   "schemas": {
@@ -127,7 +130,7 @@ Deployment complete!
       "comment": "COMMENT1",
       "id": "main.test-schema",
       "name": "test-schema",
-      "url": "[DATABRICKS_URL]/explore/data/main/test-schema?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/explore/data/main/test-schema?w=[NUMID]"
     }
   },
   "sql_warehouses": {
@@ -140,7 +143,7 @@ Deployment complete!
       "max_num_clusters": 1,
       "name": "test-sql-warehouse",
       "spot_instance_policy": "COST_OPTIMIZED",
-      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]"
     }
   }
 }
@@ -152,28 +155,28 @@ Deployment complete!
     "my_alert": {
       "id": "[UUID]",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?w=[NUMID]"
     }
   },
   "pipelines": {
     "my_pipeline": {
       "id": "[UUID]",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]"
     }
   },
   "schemas": {
     "my_schema": {
       "id": "main.test-schema",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/explore/data/main/test-schema?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/explore/data/main/test-schema?w=[NUMID]"
     }
   },
   "sql_warehouses": {
     "my_sql_warehouse": {
       "id": "[UUID]",
       "modified_status": "deleted",
-      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]"
+      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]"
     }
   }
 }
@@ -189,13 +192,12 @@ This action will result in the deletion of the following UC schemas. Any underly
   delete resources.schemas.my_schema
 
 This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
   delete resources.pipelines.my_pipeline
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 4 deleted
 
 >>> [CLI] bundle summary -o json
 {}

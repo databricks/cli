@@ -1,0 +1,12 @@
+bundle:
+  name: pipeline-parameters
+
+resources:
+  pipelines:
+    my:
+      name: test-pipeline
+      parameters:
+        my_param: my_value
+      libraries:
+        - file:
+            path: "./foo.py"

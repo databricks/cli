@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    my_job:
+      name: my_job
+      deployment:
+        kind: BUNDLE
+        deployment_id: "dep-123"
+        version_id: "ver-456"
+  pipelines:
+    my_pipeline:
+      name: my_pipeline
+      deployment:
+        kind: BUNDLE
+        deployment_id: "dep-789"
+        version_id: "ver-012"

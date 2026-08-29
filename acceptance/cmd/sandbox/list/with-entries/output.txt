@@ -1,0 +1,7 @@
+
+  ID                    NAME          STATUS      AUTOSTOP    DEFAULT
+  ───────────────────────────────────────────────────────────────────
+  happy-panda-1234      my-project    running     15m         
+  sad-otter-5678        -             stopped     10m         
+  creating-newt-9999    -             creating…   never       
+

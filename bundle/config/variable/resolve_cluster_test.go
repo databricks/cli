@@ -1,7 +1,6 @@
 package variable
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -22,7 +21,7 @@ func TestResolveCluster_ResolveSuccess(t *testing.T) {
 			{ClusterId: "2345", ClusterName: "cluster2"},
 		}, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveCluster{name: "cluster2"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
@@ -37,7 +36,7 @@ func TestResolveCluster_ResolveNotFound(t *testing.T) {
 		ListAll(mock.Anything, mock.Anything).
 		Return([]compute.ClusterDetails{}, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveCluster{name: "cluster"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.Error(t, err)

@@ -1,0 +1,24 @@
+Cloud = false
+
+# Serverless requires Unity Catalog.
+
+# Record requests so we can assert the bootstrap job the CLI submits.
+RecordRequests = true
+
+# Stand-in release archives staged by the local run; not golden output.
+Ignore = [
+  "releases",
+]
+
+# The local run drives a real sshd, reliable only on Linux.
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false
+
+# No --name: the connection name is a hash of the (random) local host, so
+# normalize it to keep the submitted job payload deterministic.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+[[Repls]]
+Old = 'databricks-cpu-[0-9a-f]{8}'
+New = "[CPU_CONN]"

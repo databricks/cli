@@ -1,7 +1,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat"
     ]
   },
   "method": "GET",
@@ -10,7 +10,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat"
     ]
   },
   "method": "GET",
@@ -23,7 +23,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat"
     ]
   },
   "method": "GET",
@@ -36,9 +36,9 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] engine/terraform auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]"
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
+  "path": "/.well-known/databricks-config"
 }

@@ -15,10 +15,19 @@ import (
 )
 
 var (
-	scriptsDir    = getPythonScriptsDir()
-	prebuiltWheel = "testdata/my_test_code-0.0.1-py3-none-any.whl"
-	emptyZip      = "testdata/empty.zip"
+	scriptsDir       = getPythonScriptsDir()
+	prebuiltWheel    = "testdata/my_test_code-0.0.1-py3-none-any.whl"
+	emptyZip         = "testdata/empty.zip"
+	vendoredPackages = mustAbs("../vendored_py_packages")
 )
+
+func mustAbs(path string) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		panic(err)
+	}
+	return abs
+}
 
 func getPythonScriptsDir() string {
 	if runtime.GOOS == "windows" {
@@ -55,10 +64,6 @@ func minimalPythonProject() map[string]string {
 		"pyproject.toml": `[project]
 name = "myproj"
 version = "0.1.0"
-
-[build-system]
-requires = ["setuptools>=61.0.0", "wheel"]
-build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -135,6 +140,7 @@ func TestPatchWheel(t *testing.T) {
 	// Unset any existing virtualenv so that "uv pip install" below is not confused
 	// (it prefers virtual env from the environment and fallsback to .venv in current directory)
 	t.Setenv("VIRTUAL_ENV", "")
+	t.Setenv("UV_OFFLINE", "true")
 
 	for _, py := range pythonVersions {
 		t.Run(py, func(t *testing.T) {
@@ -146,7 +152,7 @@ func TestPatchWheel(t *testing.T) {
 
 			runCmd(t, tempDir, "uv", "venv", "-q", "--python", py)
 
-			runCmd(t, tempDir, "uv", "build", "-q", "--wheel")
+			runCmd(t, tempDir, "uv", "build", "-q", "--wheel", "--no-index", "--find-links", vendoredPackages)
 			distDir := filepath.Join(tempDir, "dist")
 			origWheel := getWheel(t, distDir)
 
@@ -182,10 +188,10 @@ func TestPatchWheel(t *testing.T) {
 			require.True(t, isBuilt3)
 			require.Greater(t, patchedWheel3, patchedWheel)
 
-			// Now use regular pip to re-install the wheel. First install pip.
-			runCmd(t, tempDir, "uv", "pip", "install", "-q", "pip")
+			// Now use regular pip to re-install the wheel. Install pip from vendored packages (no network needed).
+			runCmd(t, tempDir, "uv", "pip", "install", "-q", "--no-index", "--find-links", vendoredPackages, "pip")
 
-			pippath := filepath.Join(".venv", getPythonScriptsDir(), "pip")
+			pippath := filepath.Join(tempDir, ".venv", getPythonScriptsDir(), "pip")
 			runCmd(t, tempDir, pippath, "install", "-q", patchedWheel3)
 			verifyVersion(t, tempDir, patchedWheel3)
 		})

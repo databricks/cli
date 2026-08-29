@@ -1,0 +1,6 @@
+$CLI sandbox register --name test-machine
+
+# Verify the gateway host was cached in the local state file.
+# The framework Ignores the .databricks directory by default, so we
+# print the cached value to stdout for assertion instead.
+cat "$HOME/.databricks/sandbox.json" | jq -r '.gatewayHosts // {}'

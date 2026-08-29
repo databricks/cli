@@ -11,7 +11,7 @@ import (
 )
 
 func TestForwarded(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	var buf bytes.Buffer
 	err := Forwarded(ctx, []string{
 		"python3", "-c", "print(input('input: '))",
@@ -22,7 +22,7 @@ func TestForwarded(t *testing.T) {
 }
 
 func TestForwardedFails(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	var buf bytes.Buffer
 	err := Forwarded(ctx, []string{
 		"_non_existent_",
@@ -31,7 +31,7 @@ func TestForwardedFails(t *testing.T) {
 }
 
 func TestForwardedFailsOnStdinPipe(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	var buf bytes.Buffer
 	err := Forwarded(ctx, []string{
 		"_non_existent_",

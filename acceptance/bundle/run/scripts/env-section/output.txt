@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle run show_env
+bundle=script-env-section
+region=us-west-2
+database=mydb
+mixed=region=us-west-2;db=mydb

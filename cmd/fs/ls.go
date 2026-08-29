@@ -1,9 +1,10 @@
 package fs
 
 import (
+	"cmp"
 	"io/fs"
 	"path"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
@@ -41,7 +42,7 @@ func newLsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "ls DIR_PATH",
 		Short:   "Lists files.",
-		Long:    `Lists files in DBFS and UC Volumes.`,
+		Long:    `Lists files in DBFS, UC Volumes and UC Skills.`,
 		Args:    root.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 	}
@@ -72,8 +73,8 @@ func newLsCommand() *cobra.Command {
 			}
 			jsonDirEntries[i] = *jsonDirEntry
 		}
-		sort.Slice(jsonDirEntries, func(i, j int) bool {
-			return jsonDirEntries[i].Name < jsonDirEntries[j].Name
+		slices.SortFunc(jsonDirEntries, func(a, b jsonDirEntry) int {
+			return cmp.Compare(a.Name, b.Name)
 		})
 
 		// Use template for long mode if the flag is set

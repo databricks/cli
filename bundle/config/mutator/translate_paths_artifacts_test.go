@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -43,7 +42,7 @@ func TestTranslatePathsArtifacts_InsideSyncRoot(t *testing.T) {
 		File: filepath.Join(dir, "config/artifacts.yml"),
 	}})
 
-	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
 	// Assert that the artifact path has been converted to a local absolute path.
@@ -77,7 +76,7 @@ func TestTranslatePathsArtifacts_OutsideSyncRoot(t *testing.T) {
 		File: filepath.Join(dir, "config/artifacts.yml"),
 	}})
 
-	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
 	// Assert that the artifact path has been converted to a local absolute path.

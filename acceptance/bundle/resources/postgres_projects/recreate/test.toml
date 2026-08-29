@@ -1,0 +1,5 @@
+[[Repls]]
+# Normalize TraceId in error messages (run before default NUMID replacement at Order 9-10)
+Old = 'TraceId: [a-f0-9]+'
+New = 'TraceId: [TRACE_ID]'
+Order = 1

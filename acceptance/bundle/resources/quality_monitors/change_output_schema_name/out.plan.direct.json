@@ -1,6 +1,6 @@
 {
   "plan_version": 2,
-  "cli_version": "[DEV_VERSION]",
+  "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
   "plan": {
@@ -35,7 +35,7 @@
         },
         "warehouse_id": {
           "action": "skip",
-          "reason": "builtin_rule",
+          "reason": "missing_in_remote",
           "old": "[TEST_DEFAULT_WAREHOUSE_ID]",
           "new": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }

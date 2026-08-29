@@ -3,6 +3,7 @@
 package git_credentials
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -30,6 +31,10 @@ func New() *cobra.Command {
 		GroupID: "workspace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -74,24 +79,25 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create a credential entry.`
 	cmd.Long = `Create a credential entry.
 
-  Creates a Git credential entry for the user. Only one Git credential per user
-  is supported, so any attempts to create credentials if an entry already exists
-  will fail. Use the PATCH endpoint to update existing credentials, or the
-  DELETE endpoint to delete existing credentials.
+  Creates a Git credential entry for the user. Use the PATCH endpoint to update
+  existing credentials, or the DELETE endpoint to delete existing credentials.
 
   Arguments:
     GIT_PROVIDER: Git provider. This field is case-insensitive. The available Git providers
-      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices,
-      gitHubEnterprise, bitbucketServer, gitLabEnterpriseEdition and
-      awsCodeCommit.`
+      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices (Azure
+      DevOps Services, including Microsoft Entra ID authentication),
+      gitHubEnterprise, bitbucketServer (Bitbucket Data Center),
+      gitLabEnterpriseEdition (GitLab Self-Managed), and awsCodeCommit.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'git_provider' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'git_provider' in your JSON input")
 			}
 			return nil
 		}
@@ -110,7 +116,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -124,6 +130,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -165,6 +172,8 @@ func newDelete() *cobra.Command {
     CREDENTIAL_ID: The ID for the corresponding credential to access.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -172,10 +181,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down.")
 			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx, workspace.ListCredentialsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -186,7 +195,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding credential to access")
+			return errors.New("expected to have the id for the corresponding credential to access")
 		}
 		_, err = fmt.Sscan(args[0], &deleteReq.CredentialId)
 		if err != nil {
@@ -238,6 +247,8 @@ func newGet() *cobra.Command {
     CREDENTIAL_ID: The ID for the corresponding credential to access.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -245,10 +256,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down.")
 			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx, workspace.ListCredentialsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -259,7 +270,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding credential to access")
+			return errors.New("expected to have the id for the corresponding credential to access")
 		}
 		_, err = fmt.Sscan(args[0], &getReq.CredentialId)
 		if err != nil {
@@ -270,6 +281,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -298,8 +310,17 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq workspace.ListCredentialsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
-	cmd.Flags().Int64Var(&listReq.PrincipalId, "principal-id", listReq.PrincipalId, `The ID of the service principal whose credentials will be modified.`)
+	cmd.Flags().Int64Var(&listReq.PrincipalId, "principal-id", listReq.PrincipalId, `The ID of the service principal whose credentials will be listed.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "list"
 	cmd.Short = `Get Git credentials.`
@@ -308,6 +329,8 @@ func newList() *cobra.Command {
   Lists the calling user's Git credentials.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -320,6 +343,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.GitCredentials.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -368,17 +398,20 @@ func newUpdate() *cobra.Command {
   Arguments:
     CREDENTIAL_ID: The ID for the corresponding credential to access.
     GIT_PROVIDER: Git provider. This field is case-insensitive. The available Git providers
-      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices,
-      gitHubEnterprise, bitbucketServer, gitLabEnterpriseEdition and
-      awsCodeCommit.`
+      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices (Azure
+      DevOps Services, including Microsoft Entra ID authentication),
+      gitHubEnterprise, bitbucketServer (Bitbucket Data Center),
+      gitLabEnterpriseEdition (GitLab Self-Managed), and awsCodeCommit.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only CREDENTIAL_ID as positional arguments. Provide 'git_provider' in your JSON input")
+				return errors.New("when --json flag is specified, provide only CREDENTIAL_ID as positional arguments. Provide 'git_provider' in your JSON input")
 			}
 			return nil
 		}
@@ -397,7 +430,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

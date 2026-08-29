@@ -1,0 +1,62 @@
+name: Changelog Preview
+
+# Renders the CHANGELOG.md section the next release would generate from the
+# .nextchanges/ fragments into this check's job summary, so reviewers see the
+# rendered changelog without cutting a release. Fails the check if a fragment
+# is misplaced (so it can't be silently skipped by the renderer).
+#
+# Runs on pull requests (rendering the PR's own .nextchanges/ content) and on
+# pushes to main (so anyone can view the preview for any commit on main). Uses
+# a read-only token: it only reads .nextchanges/ and never needs write
+# credentials.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - ".nextchanges/**"
+      - "internal/genkit/**"
+      - "tools/validate_nextchanges.py"
+      - "tools/update_github_links.py"
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    env:
+      NEXTCHANGES_DIR: '.nextchanges'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.8.9"
+
+      # Fail the check on a misplaced/unexpected file under .nextchanges/ so it
+      # can't slip through as a silently-skipped (unrendered) fragment.
+      - name: Validate .nextchanges placement
+        run: uv run tools/validate_nextchanges.py
+
+      - name: Render changelog preview
+        run: |-
+          # Render into a variable first so a renderer error fails this step
+          # (rather than being swallowed by a pipe), then emit the .md directly
+          # into the job summary so GitHub renders it as the changelog.
+          preview=$(uv run --locked internal/genkit/tagging.py --preview)
+          {
+            echo '## Changelog preview'
+            echo ''
+            echo 'This is a preview of what the next release would add to CHANGELOG.md based on `.nextchanges/`.'
+            echo ''
+            echo '_NOTE: the date and version are computed at release time._'
+            echo ''
+            echo '---'
+            echo ''
+            echo "$preview"
+          } >> "$GITHUB_STEP_SUMMARY"

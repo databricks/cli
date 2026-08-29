@@ -1,0 +1,17 @@
+bundle:
+  name: uc-catalog-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  catalogs:
+    test_catalog:
+      name: test_catalog_$UNIQUE_NAME
+      comment: "This catalog was created from DABs"
+      properties:
+        owner: "dabs"
+
+targets:
+  development:
+    default: true

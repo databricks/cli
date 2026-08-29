@@ -4,10 +4,10 @@ Cross-platform script to kill processes using specific ports.
 Usage: kill_port.py <port1> [port2] [port3] ...
 """
 
-import sys
-import subprocess
 import platform
 import re
+import subprocess
+import sys
 
 
 def kill_processes_on_port(port):
@@ -58,7 +58,7 @@ def kill_processes_on_port(port):
                                     capture_output=True,
                                 )
 
-    except Exception as e:
+    except Exception:
         # Silently continue - port cleanup is best effort
         pass
 

@@ -11,7 +11,9 @@ import (
 	budgets "github.com/databricks/cli/cmd/account/budgets"
 	credentials "github.com/databricks/cli/cmd/account/credentials"
 	custom_app_integration "github.com/databricks/cli/cmd/account/custom-app-integration"
+	disaster_recovery "github.com/databricks/cli/cmd/account/disaster-recovery"
 	encryption_keys "github.com/databricks/cli/cmd/account/encryption-keys"
+	endpoints "github.com/databricks/cli/cmd/account/endpoints"
 	account_federation_policy "github.com/databricks/cli/cmd/account/federation-policy"
 	account_groups_v2 "github.com/databricks/cli/cmd/account/groups-v2"
 	account_iam_v2 "github.com/databricks/cli/cmd/account/iam-v2"
@@ -56,7 +58,9 @@ func New() *cobra.Command {
 	cmd.AddCommand(budgets.New())
 	cmd.AddCommand(credentials.New())
 	cmd.AddCommand(custom_app_integration.New())
+	cmd.AddCommand(disaster_recovery.New())
 	cmd.AddCommand(encryption_keys.New())
+	cmd.AddCommand(endpoints.New())
 	cmd.AddCommand(account_federation_policy.New())
 	cmd.AddCommand(account_groups_v2.New())
 	cmd.AddCommand(account_iam_v2.New())

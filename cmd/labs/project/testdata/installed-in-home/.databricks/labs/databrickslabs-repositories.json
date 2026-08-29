@@ -25,7 +25,9 @@
       "stargazers_count": 100500,
       "fork": false,
       "archived": false,
-      "topics": [],
+      "topics": [
+        "databricks-cli-installable"
+      ],
       "html_url": "https://github.com/databrickslabs/ucx",
       "clone_url": "https://github.com/databrickslabs/ucx.git",
       "ssh_url": "git@github.com:databrickslabs/ucx.git",

@@ -1,0 +1,34 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-hard-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-soft-[UNIQUE_NAME]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj-hard-[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
+      "display_name": "purge_on_delete = true",
+      "pg_version": 16
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj-soft-[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
+      "display_name": "purge_on_delete unset (soft delete)",
+      "pg_version": 16
+    }
+  }
+}

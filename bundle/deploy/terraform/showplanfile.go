@@ -10,12 +10,6 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-// silentlyUpdatedResources contains resource types that are automatically created by DABs,
-// no need to show them in the plan
-var silentlyUpdatedResources = map[string]bool{
-	"databricks_secret_acl": true,
-}
-
 var prefixToGroup = []struct{ prefix, group string }{
 	{"job_", "jobs"},
 	{"pipeline_", "pipelines"},
@@ -28,6 +22,7 @@ var prefixToGroup = []struct{ prefix, group string }{
 	{"model_serving_", "model_serving_endpoints"},
 	{"sql_endpoint_", "sql_warehouses"},
 	{"database_instance_", "database_instances"},
+	{"postgres_project_", "postgres_projects"},
 }
 
 var grantsPrefix = []struct{ prefix, group string }{
@@ -62,6 +57,17 @@ func convertGrantsResourceNameToKey(terraformName string) string {
 	return ""
 }
 
+// convertSecretAclNameToScopeKey converts terraform secret ACL resource names to scope permission keys.
+// ACL names have format "secret_acl_<scope_key>_<idx>" (see convert_secret_scope.go).
+// e.g., "secret_acl_my_scope_0" -> "resources.secret_scopes.my_scope.permissions"
+func convertSecretAclNameToScopeKey(name string) string {
+	name, _ = strings.CutPrefix(name, "secret_acl_")
+	if i := strings.LastIndex(name, "_"); i >= 0 {
+		name = name[:i]
+	}
+	return "resources.secret_scopes." + name + ".permissions"
+}
+
 // populatePlan populates a deployplan.Plan from Terraform resource changes.
 func populatePlan(ctx context.Context, plan *deployplan.Plan, changes []*tfjson.ResourceChange) {
 	for _, rc := range changes {
@@ -87,25 +93,35 @@ func populatePlan(ctx context.Context, plan *deployplan.Plan, changes []*tfjson.
 
 		group, ok := TerraformToGroupName[rc.Type]
 		if !ok {
-			if !silentlyUpdatedResources[rc.Type] {
-				log.Warnf(ctx, "unknown resource type '%s'", rc.Type)
-			}
+			log.Warnf(ctx, "unknown resource type '%s'", rc.Type)
 			continue
 		}
 
 		var key string
 		switch group {
 		case "permissions":
-			// Convert terraform permission resource name back to hierarchical resource key
 			key = convertPermissionsResourceNameToKey(rc.Name)
 		case "grants":
-			// Convert terraform grants resource name back to hierarchical resource key
 			key = convertGrantsResourceNameToKey(rc.Name)
+		case "secret_acls":
+			key = convertSecretAclNameToScopeKey(rc.Name)
 		default:
 			key = "resources." + group + "." + rc.Name
 		}
 
-		plan.Plan[key] = &deployplan.PlanEntry{Action: actionType}
+		if existing, ok := plan.Plan[key]; ok {
+			// For secret ACLs, multiple individual ACL changes are merged into a single
+			// scope-level permissions entry. When the actions differ (e.g., some ACLs are
+			// recreated while others are deleted), it means permissions are being updated,
+			// not deleted entirely.
+			if group == "secret_acls" && existing.Action != actionType {
+				existing.Action = deployplan.Update
+			} else {
+				existing.Action = deployplan.GetHigherAction(existing.Action, actionType)
+			}
+		} else {
+			plan.Plan[key] = &deployplan.PlanEntry{Action: actionType}
+		}
 	}
 }
 

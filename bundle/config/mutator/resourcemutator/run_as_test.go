@@ -1,7 +1,6 @@
 package resourcemutator
 
 import (
-	"context"
 	"slices"
 	"testing"
 
@@ -32,26 +31,43 @@ func allResourceTypes(t *testing.T) []string {
 	// Assert the total list of resource supported, as a sanity check that using
 	// the dyn library gives us the correct list of all resources supported. Please
 	// also update this check when adding a new resource
-	require.Equal(t, []string{
-		"alerts",
-		"apps",
-		"clusters",
-		"dashboards",
-		"database_catalogs",
-		"database_instances",
-		"experiments",
-		"jobs",
-		"model_serving_endpoints",
-		"models",
-		"pipelines",
-		"quality_monitors",
-		"registered_models",
-		"schemas",
-		"secret_scopes",
-		"sql_warehouses",
-		"synced_database_tables",
-		"volumes",
-	},
+	require.Equal(
+		t, []string{
+			"alerts",
+			"apps",
+			"catalogs",
+			"cluster_policies",
+			"clusters",
+			"dashboards",
+			"database_catalogs",
+			"database_instances",
+			"experiments",
+			"external_locations",
+			"genie_spaces",
+			"instance_pools",
+			"job_runs",
+			"jobs",
+			"model_serving_endpoints",
+			"models",
+			"pipelines",
+			"postgres_branches",
+			"postgres_catalogs",
+			"postgres_databases",
+			"postgres_endpoints",
+			"postgres_projects",
+			"postgres_roles",
+			"postgres_synced_tables",
+			"quality_monitors",
+			"registered_models",
+			"schemas",
+			"secret_scopes",
+			"secrets",
+			"sql_warehouses",
+			"synced_database_tables",
+			"vector_search_endpoints",
+			"vector_search_indexes",
+			"volumes",
+		},
 		resourceTypes,
 	)
 
@@ -114,7 +130,7 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 		Config: config,
 	}
 
-	diags := bundle.Apply(context.Background(), b, SetRunAs())
+	diags := bundle.Apply(t.Context(), b, SetRunAs())
 	assert.NoError(t, diags.Error())
 
 	for _, job := range b.Config.Resources.Jobs {
@@ -158,19 +174,34 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 // they are not on the allow list below.
 var allowList = []string{
 	"alerts",
+	"catalogs",
 	"clusters",
 	"dashboards",
 	"database_catalogs",
 	"database_instances",
+	"external_locations",
 	"synced_database_tables",
 	"jobs",
 	"pipelines",
 	"models",
+	"postgres_branches",
+	"postgres_catalogs",
+	"postgres_databases",
+	"postgres_endpoints",
+	"postgres_projects",
+	"postgres_roles",
+	"postgres_synced_tables",
 	"registered_models",
 	"experiments",
+	"genie_spaces",
+	"instance_pools",
+	"job_runs",
 	"schemas",
 	"secret_scopes",
+	"secrets",
 	"sql_warehouses",
+	"vector_search_endpoints",
+	"vector_search_indexes",
 	"volumes",
 }
 
@@ -220,7 +251,7 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		b := &bundle.Bundle{
 			Config: *r,
 		}
-		diags := bundle.Apply(context.Background(), b, SetRunAs())
+		diags := bundle.Apply(t.Context(), b, SetRunAs())
 		require.Error(t, diags.Error())
 		assert.Contains(t, diags.Error().Error(), "do not support a setting a run_as user that is different from the owner.\n"+
 			"Current identity: alice. Run as identity: bob.\n"+
@@ -274,7 +305,7 @@ func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 		b := &bundle.Bundle{
 			Config: *r,
 		}
-		diags := bundle.Apply(context.Background(), b, SetRunAs())
+		diags := bundle.Apply(t.Context(), b, SetRunAs())
 		require.NoError(t, diags.Error())
 	}
 }

@@ -1,0 +1,22 @@
+# Two consecutive deploys are killed mid-apply, after UpgradeToWrite has written
+# the WAL header but before Finalize runs (killed on the jobs/create call, before
+# the job's state is recorded). A kill cannot be prevented by bailing out early,
+# so each crash leaves a header-only WAL behind. Recovery must discard those
+# no-op WALs without advancing the serial; otherwise the second crash would write
+# its WAL header two serials ahead of the committed state and block every later
+# command. Regression test for the dstate recovery fix.
+kill_after.py "POST /api/2.2/jobs/create" 0 2
+
+title "First deploy (killed before recording the job, leaves a header-only WAL)"
+trace errcode $CLI bundle deploy
+trace cat .databricks/bundle/default/resources.json.wal
+
+title "Second deploy (killed again, leaves another header-only WAL)"
+trace errcode $CLI bundle deploy --force-lock
+trace cat .databricks/bundle/default/resources.json.wal
+
+title "Third deploy (must recover and succeed, not blocked by the leftover WAL)"
+trace errcode $CLI bundle deploy --force-lock
+
+trace errcode assert_not_exists.py .databricks/bundle/default/resources.json.wal
+trace errcode cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys)}'

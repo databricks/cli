@@ -3,6 +3,7 @@
 package registered_models
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -28,9 +29,9 @@ func New() *cobra.Command {
   An MLflow registered model resides in the third layer of Unity Catalog’s
   three-level namespace. Registered models contain model versions, which
   correspond to actual ML models (MLflow models). Creating new model versions
-  currently requires use of the MLflow Python client. Once model versions are
-  created, you can load them for batch inference using MLflow Python client
-  APIs, or deploy them for real-time serving using Databricks Model Serving.
+  requires use of the MLflow Python client. After model versions are created,
+  you can load them for batch inference using MLflow Python client APIs, or
+  deploy them for real-time serving using Databricks Model Serving.
 
   All operations on registered models and model versions require USE_CATALOG
   permissions on the enclosing catalog and USE_SCHEMA permissions on the
@@ -47,12 +48,16 @@ func New() *cobra.Command {
   update permissions on the registered model, users must be owners of the
   registered model.
 
-  Note: The securable type for models is FUNCTION. When using REST APIs (e.g.
-  tagging, grants) that specify a securable type, use FUNCTION as the securable
-  type.`,
+  Note: The securable type for models is FUNCTION. When using REST APIs (for
+  example, tagging, grants) that specify a securable type, use FUNCTION as the
+  securable type.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -89,7 +94,6 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: aliases
-	cmd.Flags().BoolVar(&createReq.BrowseOnly, "browse-only", createReq.BrowseOnly, `Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.`)
 	cmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, `The name of the catalog where the schema and the registered model reside.`)
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the registered model.`)
 	cmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `Creation timestamp of the registered model in milliseconds since the Unix epoch.`)
@@ -121,6 +125,8 @@ func newCreate() *cobra.Command {
   schema.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -138,7 +144,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -149,6 +155,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -194,6 +201,8 @@ func newDelete() *cobra.Command {
     FULL_NAME: The three-level (fully qualified) name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -201,10 +210,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Registered Models drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No FULL_NAME argument specified. Loading names for Registered Models drop-down.")
 			names, err := w.RegisteredModels.RegisteredModelInfoNameToFullNameMap(ctx, catalog.ListRegisteredModelsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Registered Models drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -215,7 +224,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the registered model")
+			return errors.New("expected to have the three-level (fully qualified) name of the registered model")
 		}
 		deleteReq.FullName = args[0]
 
@@ -268,6 +277,8 @@ func newDeleteAlias() *cobra.Command {
     ALIAS: The name of the alias`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -333,6 +344,8 @@ func newGet() *cobra.Command {
     FULL_NAME: The three-level (fully qualified) name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -340,10 +353,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Registered Models drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No FULL_NAME argument specified. Loading names for Registered Models drop-down.")
 			names, err := w.RegisteredModels.RegisteredModelInfoNameToFullNameMap(ctx, catalog.ListRegisteredModelsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Registered Models drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -354,7 +367,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the registered model")
+			return errors.New("expected to have the three-level (fully qualified) name of the registered model")
 		}
 		getReq.FullName = args[0]
 
@@ -362,6 +375,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -390,12 +404,22 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq catalog.ListRegisteredModelsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().StringVar(&listReq.CatalogName, "catalog-name", listReq.CatalogName, `The identifier of the catalog under which to list registered models.`)
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include registered models in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Max number of registered models to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque token to send for the next page of results (pagination).`)
 	cmd.Flags().StringVar(&listReq.SchemaName, "schema-name", listReq.SchemaName, `The identifier of the schema under which to list registered models.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
 	cmd.Short = `List Registered Models.`
@@ -407,7 +431,7 @@ func newList() *cobra.Command {
   The returned models are filtered based on the privileges of the calling user.
   For example, the metastore admin is able to list all the registered models. A
   regular user needs to be the owner or have the **EXECUTE** privilege on the
-  registered model to recieve the registered models in the response. For the
+  registered model to receive the registered models in the response. For the
   latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
   schema.
@@ -420,6 +444,8 @@ func newList() *cobra.Command {
   end of results has been reached.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -432,6 +458,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.RegisteredModels.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -481,12 +514,14 @@ func newSetAlias() *cobra.Command {
     VERSION_NUM: The version number of the model version to which the alias points`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME, ALIAS as positional arguments. Provide 'version_num' in your JSON input")
+				return errors.New("when --json flag is specified, provide only FULL_NAME, ALIAS as positional arguments. Provide 'version_num' in your JSON input")
 			}
 			return nil
 		}
@@ -505,7 +540,7 @@ func newSetAlias() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -525,6 +560,7 @@ func newSetAlias() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -558,7 +594,6 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: aliases
-	cmd.Flags().BoolVar(&updateReq.BrowseOnly, "browse-only", updateReq.BrowseOnly, `Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.`)
 	cmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `The name of the catalog where the schema and the registered model reside.`)
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the registered model.`)
 	cmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `Creation timestamp of the registered model in milliseconds since the Unix epoch.`)
@@ -590,6 +625,8 @@ func newUpdate() *cobra.Command {
     FULL_NAME: The three-level (fully qualified) name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -602,17 +639,17 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Registered Models drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No FULL_NAME argument specified. Loading names for Registered Models drop-down.")
 			names, err := w.RegisteredModels.RegisteredModelInfoNameToFullNameMap(ctx, catalog.ListRegisteredModelsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Registered Models drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -623,7 +660,7 @@ func newUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the registered model")
+			return errors.New("expected to have the three-level (fully qualified) name of the registered model")
 		}
 		updateReq.FullName = args[0]
 
@@ -631,6 +668,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

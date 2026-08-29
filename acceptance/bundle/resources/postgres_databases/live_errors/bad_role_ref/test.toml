@@ -1,0 +1,14 @@
+# Stub the database create endpoint to reject the unknown role reference,
+# matching the live API behavior observed on aws-prod-ucws 2026-05-19:
+#   404 Not Found: role not found; role_id:"<id>" [TraceId: <hex>]
+# The default testserver does not validate that the referenced role exists.
+[[Server]]
+Pattern = "POST /api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases"
+Response.StatusCode = 404
+Response.Body = '''{"error_code": "NOT_FOUND", "message": "role not found; role_id:\"does-not-exist\" [TraceId: [TRACE_ID]]"}'''
+
+[[Repls]]
+# Cloud responses include a "[TraceId: <hex>]" suffix on this error; normalize.
+Old = '\[TraceId: [a-f0-9]+\]'
+New = '[TraceId: [TRACE_ID]]'
+Order = 5

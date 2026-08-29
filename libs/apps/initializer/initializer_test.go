@@ -55,10 +55,7 @@ func TestGetProjectInitializer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create temp directory
-			tmpDir, err := os.MkdirTemp("", "initializer-test-*")
-			require.NoError(t, err)
-			defer os.RemoveAll(tmpDir)
+			tmpDir := t.TempDir()
 
 			// Create test files
 			for name, content := range tt.files {
@@ -88,6 +85,22 @@ func TestNextSteps(t *testing.T) {
 
 	pythonPip := &InitializerPythonPip{}
 	assert.Contains(t, pythonPip.NextSteps(), ".venv")
+}
+
+func TestInstallCommand(t *testing.T) {
+	nodejs := &InitializerNodeJs{}
+	assert.Equal(t, "npm ci", nodejs.InstallCommand())
+
+	pythonUv := &InitializerPythonUv{}
+	assert.Equal(t, "uv sync", pythonUv.InstallCommand())
+
+	// pip's install command creates the venv and installs via the full pip
+	// path so it composes with NextSteps (which activates the venv).
+	pythonPip := &InitializerPythonPip{}
+	got := pythonPip.InstallCommand()
+	assert.Contains(t, got, "venv .venv")
+	assert.Contains(t, got, "pip install -r requirements.txt")
+	assert.NotContains(t, got, "activate", "should not activate; NextSteps handles activation")
 }
 
 func TestSupportsDevRemote(t *testing.T) {
@@ -140,9 +153,7 @@ func TestDetectPythonCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpDir, err := os.MkdirTemp("", "python-cmd-test-*")
-			require.NoError(t, err)
-			defer os.RemoveAll(tmpDir)
+			tmpDir := t.TempDir()
 
 			for name, content := range tt.files {
 				err := os.WriteFile(filepath.Join(tmpDir, name), []byte(content), 0o644)

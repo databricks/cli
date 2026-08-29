@@ -1,7 +1,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
     ]
   },
   "method": "GET",
@@ -10,16 +10,20 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json"
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json"
+  }
 }
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
     ]
   },
   "method": "GET",
@@ -32,7 +36,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
     ]
   },
   "method": "GET",
@@ -45,16 +49,20 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
+  }
 }
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -67,9 +75,18 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] engine/direct auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
     ]
   },
   "method": "GET",
   "path": "/api/2.1/unity-catalog/schemas/mycatalog.myschema"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]"
+    ]
+  },
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
 }

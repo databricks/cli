@@ -51,18 +51,18 @@ func TestCheckDashboardsModifiedRemotely_NoDashboards(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
+	diags := bundle.Apply(t.Context(), b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
 	assert.Empty(t, diags)
 }
 
 func TestCheckDashboardsModifiedRemotely_FirstDeployment(t *testing.T) {
 	b := mockDashboardBundle(t)
-	diags := bundle.Apply(context.Background(), b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
+	diags := bundle.Apply(t.Context(), b, CheckDashboardsModifiedRemotely(false, engine.EngineTerraform))
 	assert.Empty(t, diags)
 }
 
 func TestCheckDashboardsModifiedRemotely_ExistingStateNoChange(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	b := mockDashboardBundle(t)
 	writeFakeDashboardState(t, ctx, b)
@@ -85,7 +85,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateNoChange(t *testing.T) {
 }
 
 func TestCheckDashboardsModifiedRemotely_ExistingStateChange(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	b := mockDashboardBundle(t)
 	writeFakeDashboardState(t, ctx, b)
@@ -111,7 +111,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateChange(t *testing.T) {
 }
 
 func TestCheckDashboardsModifiedRemotely_ExistingStateFailureToGet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	b := mockDashboardBundle(t)
 	writeFakeDashboardState(t, ctx, b)
@@ -134,7 +134,7 @@ func TestCheckDashboardsModifiedRemotely_ExistingStateFailureToGet(t *testing.T)
 }
 
 func TestCheckDashboardsModifiedRemotely_ExistingStateChangePlanMode(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	b := mockDashboardBundle(t)
 	writeFakeDashboardState(t, ctx, b)

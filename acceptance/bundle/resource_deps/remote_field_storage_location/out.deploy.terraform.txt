@@ -1,7 +1,6 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
 Error: terraform apply: exit status 1
 
 Error: Provider produced inconsistent final plan
@@ -10,12 +9,12 @@ When expanding the plan for databricks_volume.foo to include new values
 learned so far during apply, provider
 "registry.terraform.io/databricks/databricks" produced an invalid new value
 for .comment: was null, but now
-cty.StringVal("s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]").
+cty.StringVal("s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]").
 
 This is a bug in the provider, which should be reported in the provider's own
 issue tracker.
 
 
-Updating deployment state...
+Files: 7 uploaded, 0 deleted
 
 Exit code: 1

@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -45,7 +44,7 @@ func StartDefaultServer(t *testing.T, logRequests bool) {
 	// This approach ensures test reliability across platforms.
 	//
 	// See debugging journey in https://github.com/databricks/cli/pull/3575.
-	homeDir, err := os.MkdirTemp("", "acceptance-home-dir")
+	homeDir, err := os.MkdirTemp("", "acceptance-home-dir") //nolint:usetesting // t.TempDir() fails on Windows; see PR #3575
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		err := os.RemoveAll(homeDir)
@@ -64,8 +63,32 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) (*sdkconfig.Config, iam.User) {
-	cloudEnv := os.Getenv("CLOUD_ENV")
+// staleOnceEnabled reports whether the testserver should simulate eventual
+// consistency (the first GET after a create returns 404). It is opt-in via
+// INJECT_STALE_ON_DIRECT=1 and only applies to the direct engine.
+//
+// testEnv carries the per-variant EnvMatrix values, which are not visible via
+// os/env because matrix variants run in parallel and only reach the CLI subprocess.
+func staleOnceEnabled(testEnv []string) bool {
+	if v, _ := lookupEnv(testEnv, "INJECT_STALE_ON_DIRECT"); v != "1" {
+		return false
+	}
+	engine, _ := lookupEnv(testEnv, "DATABRICKS_BUNDLE_ENGINE")
+	return engine == "direct"
+}
+
+func lookupEnv(testEnv []string, key string) (string, bool) {
+	prefix := key + "="
+	for _, kv := range testEnv {
+		if v, ok := strings.CutPrefix(kv, prefix); ok {
+			return v, true
+		}
+	}
+	return "", false
+}
+
+func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string, testEnv []string) (*sdkconfig.Config, iam.User) {
+	cloudEnv := env.Get(t.Context(), "CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
 
 	// Use a unique token for each test. This allows us to maintain
@@ -77,6 +100,11 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	if isTruePtr(config.IsServicePrincipal) {
 		token = testserver.ServicePrincipalTokenPrefix + tokenSuffix
 		testUser = testserver.TestUserSP
+	} else if staleOnceEnabled(testEnv) {
+		// Use the eventual-consistency token so the testserver returns 404 on the
+		// first GET after a create, matching real cloud propagation delays.
+		token = testserver.EventualConsistencyTokenPrefix + tokenSuffix
+		testUser = testserver.TestUser
 	} else {
 		token = testserver.UserNameTokenPrefix + tokenSuffix
 		testUser = testserver.TestUser
@@ -86,29 +114,53 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		w, err := databricks.NewWorkspaceClient()
 		require.NoError(t, err)
 
-		user, err := w.CurrentUser.Me(context.Background())
+		user, err := w.CurrentUser.Me(t.Context(), iam.MeRequest{})
 		require.NoError(t, err, "Failed to get current user")
 
 		cfg := w.Config
 
-		// If we are running in a cloud environment AND we are recording requests,
-		// start a dedicated server to act as a reverse proxy to a real Databricks workspace.
-		if recordRequests {
-			host := startProxyServer(t, logRequests, config.IncludeRequestHeaders, outputDir)
+		// If we are running in a cloud environment AND we need to intercept requests
+		// (for recording or logging), start a proxy server.
+		if recordRequests || logRequests {
+			// An empty config resolves the real workspace from the environment.
+			host := startProxyServer(t, &sdkconfig.Config{}, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 			cfg = &sdkconfig.Config{
 				Host:  host,
 				Token: token,
+				// Preserve the resolved config-file path (e.g. deco sets it to /dev/null)
+				// so the CLI subprocess stays isolated from the developer's ~/.databrickscfg,
+				// matching the non-proxy path. Otherwise the subprocess re-reads the default
+				// config and can fall back to a default_profile (e.g. via [__settings__]),
+				// which breaks auth on cloud record-requests runs.
+				ConfigFile: cfg.ConfigFile,
 			}
 		}
 
 		return cfg, *user
 	}
 
+	// Same topology as cloud, with the testserver as the upstream. Both servers see
+	// the same requests, so only the proxy records and logs.
+	if isTruePtr(config.Proxy) {
+		upstream := startLocalServer(t, config.Server, false, false, nil, outputDir)
+		host := startProxyServer(t, &sdkconfig.Config{
+			Host:  upstream,
+			Token: token,
+		}, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
+
+		cfg := &sdkconfig.Config{
+			Host:  host,
+			Token: token,
+		}
+
+		return cfg, testUser
+	}
+
 	// If we are not recording requests, and no custom server stubs are configured,
 	// use the default shared server.
 	if len(config.Server) == 0 && !recordRequests {
 		cfg := &sdkconfig.Config{
-			Host:  os.Getenv("DATABRICKS_DEFAULT_HOST"),
+			Host:  env.Get(t.Context(), "DATABRICKS_DEFAULT_HOST"),
 			Token: token,
 		}
 
@@ -124,7 +176,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	}
 
 	// For the purposes of replacements, use testUser for local runs.
-	// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
+	// Note, users might have overridden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
 	return cfg, testUser
 }
 
@@ -184,22 +236,13 @@ func startLocalServer(t *testing.T,
 		s.ResponseCallback = logResponseCallback(t)
 	}
 
-	// Track remaining kill counts per pattern (for KillCaller > 0)
-	killCounters := make(map[string]int)
-	killCountersMu := &sync.Mutex{}
-
 	for ind := range stubs {
-		// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
-		// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
+		// Later stubs take precedence over earlier ones (leaf configs override parent configs).
+		// The first handler registered for a given pattern wins, so we reverse the order.
 		stub := stubs[len(stubs)-1-ind]
 		require.NotEmpty(t, stub.Pattern)
 		items := strings.Split(stub.Pattern, " ")
 		require.Len(t, items, 2)
-
-		// Initialize kill counter for this pattern
-		if stub.KillCaller > 0 {
-			killCounters[stub.Pattern] = stub.KillCaller
-		}
 
 		s.Handle(items[0], items[1], func(req testserver.Request) any {
 			if stub.Delay > 0 {
@@ -219,67 +262,29 @@ func startLocalServer(t *testing.T,
 				}
 			}
 
-			if shouldKillCaller(stub, killCounters, killCountersMu) {
-				killCaller(t, stub.Pattern, req.Headers)
-			}
-
 			return stub.Response
 		})
 	}
 
-	// The earliest handlers take precedence, add default handlers last
+	// The first handler registered for a given pattern wins, so default
+	// handlers registered last serve as fallbacks.
 	testserver.AddDefaultHandlers(s)
 	return s.URL
 }
 
-func shouldKillCaller(stub ServerStub, killCounters map[string]int, mu *sync.Mutex) bool {
-	if stub.KillCaller <= 0 {
-		return false
-	}
-	mu.Lock()
-	defer mu.Unlock()
-	if killCounters[stub.Pattern] <= 0 {
-		return false
-	}
-	killCounters[stub.Pattern]--
-	return true
-}
-
-func killCaller(t *testing.T, pattern string, headers http.Header) {
-	pid := testserver.ExtractPidFromHeaders(headers)
-	if pid == 0 {
-		t.Errorf("KillCaller configured but test-pid not found in User-Agent")
-		return
-	}
-
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		t.Errorf("Failed to find process %d: %s", pid, err)
-		return
-	}
-
-	// Use process.Kill() for cross-platform compatibility.
-	// On Unix, this sends SIGKILL. On Windows, this calls TerminateProcess.
-	if err := process.Kill(); err != nil {
-		t.Errorf("Failed to kill process %d: %s", pid, err)
-		return
-	}
-
-	if !waitForProcessExit(pid, 2*time.Second) {
-		t.Logf("KillCaller: timed out waiting for PID %d to exit (pattern: %s)", pid, pattern)
-	}
-	t.Logf("KillCaller: killed PID %d (pattern: %s)", pid, pattern)
-}
-
 func startProxyServer(t *testing.T,
+	upstream *sdkconfig.Config,
+	recordRequests bool,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
 ) string {
-	s := testproxy.New(t)
+	s := testproxy.New(t, upstream)
 
-	// Always record requests for a proxy server.
-	s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
+	// Record API requests in out.requests.txt if RecordRequests is true in test.toml.
+	if recordRequests {
+		s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
+	}
 
 	// Log API responses if the -logrequests flag is set.
 	if logRequests {

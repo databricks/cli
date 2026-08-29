@@ -1,0 +1,81 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created schemas.myschema
+Created schemas.myschema.grants
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //unity-catalog/permissions --sort
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.myschema",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "USE_SCHEMA"
+        ],
+        "principal": "[USERNAME]",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      },
+      {
+        "add": [
+          "CREATE_TABLE"
+        ],
+        "principal": "extra@example.test",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle plan -o json
+
+>>> print_requests.py --get //unity-catalog/permissions --sort
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.myschema"
+}
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated schemas.myschema.grants
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //unity-catalog/permissions --sort
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.myschema",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "USE_SCHEMA"
+        ],
+        "principal": "[USERNAME]",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      },
+      {
+        "principal": "extra@example.test",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      }
+    ]
+  }
+}
+The following resources will be deleted:
+  delete resources.schemas.myschema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.myschema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

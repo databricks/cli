@@ -1,7 +1,6 @@
-Local = false
 Cloud = true
 RecordRequests = false
-RequiresUnityCatalog = true
+RunsOnDbr = true
 
 Ignore = [
     "databricks.yml",

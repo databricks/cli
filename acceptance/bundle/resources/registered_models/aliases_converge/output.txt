@@ -1,0 +1,56 @@
+
+>>> export COMMENT=original comment
+
+=== Initial deployment with aliases set
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default/files...
+Created registered_models.my_registered_model
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Plan is a no-op: GET never echoes aliases, so they must not drift
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== The config-set aliases are skipped as input_only (confirms the matched rule)
+>>> [CLI] bundle plan --output json
+{
+  "action": "skip",
+  "reason": "input_only",
+  "old": [
+    {
+      "alias_name": "champion",
+      "id": "alias-champion"
+    }
+  ],
+  "new": [
+    {
+      "alias_name": "champion",
+      "id": "alias-champion"
+    }
+  ]
+}
+
+=== Edit the comment: an in-place update, not a recreate
+>>> [CLI] bundle plan
+update registered_models.my_registered_model
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default/files...
+Updated registered_models.my_registered_model
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+=== Re-plan after the edit converges: no further changes
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.registered_models.my_registered_model
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-aliases-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

@@ -1,0 +1,87 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Created jobs.remove_job
+Created jobs.twoblock_remove_job
+Files: 4 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Remove gamma from the top-level block and alpha from the target block
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.remove_job
+  tasks[task_key='alpha']: remove
+  tasks[task_key='gamma']: remove
+
+
+
+=== Exactly gamma and alpha are gone; beta survives
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -13,7 +13,4 @@
+     remove_job:
+       tasks:
+-        - task_key: gamma
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/gamma
+         - task_key: beta
+           notebook_task:
+@@ -36,8 +33,5 @@
+       jobs:
+         remove_job:
+-          tasks:
+-            - task_key: alpha
+-              notebook_task:
+-                notebook_path: /Users/{{workspace_user_name}}/alpha
++          tasks: []
+         twoblock_remove_job:
+           tasks:
+
+=== Remove the task defined in BOTH blocks
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.twoblock_remove_job
+  tasks[task_key='both']: remove
+
+
+
+=== 'both' is gone from both blocks; 'keep' survives
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -19,8 +19,4 @@
+     twoblock_remove_job:
+       tasks:
+-        - task_key: both
+-          max_retries: 2
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/both
+         - task_key: keep
+           notebook_task:
+@@ -35,5 +31,3 @@
+           tasks: []
+         twoblock_remove_job:
+-          tasks:
+-            - task_key: both
+-              timeout_seconds: 30
++          tasks: []
+
+>>> grep -c task_key: both databricks.yml
+0
+
+Exit code: 1
+
+>>> grep -c task_key: keep databricks.yml
+1
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.remove_job
+  delete resources.jobs.twoblock_remove_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Destroy: 2 deleted

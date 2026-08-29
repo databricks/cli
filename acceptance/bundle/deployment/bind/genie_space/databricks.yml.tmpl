@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  genie_spaces:
+    genie_space1:
+      title: $GENIE_SPACE_TITLE
+      warehouse_id: "test-warehouse-id"
+      parent_path: /Users/$CURRENT_USER_NAME
+      # Inline body matches the out-of-band-created space byte-for-byte, so the
+      # only possible post-bind drift signal is the etag.
+      serialized_space:
+        version: 1

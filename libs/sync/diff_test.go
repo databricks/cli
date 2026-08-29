@@ -87,7 +87,7 @@ func TestDiffComputationForRemovedFiles(t *testing.T) {
 	expected := diff{
 		delete: []string{"foo/a/b/c"},
 		rmdir:  []string{"foo", "foo/a", "foo/a/b"},
-		mkdir:  []string{},
+		mkdir:  nil,
 		put:    []string{},
 	}
 	assert.Equal(t, expected, computeDiff(after, before))
@@ -121,8 +121,8 @@ func TestDiffComputationWhenRemoteNameIsChanged(t *testing.T) {
 
 	expected := diff{
 		delete: []string{"foo/a/b/c"},
-		rmdir:  []string{},
-		mkdir:  []string{},
+		rmdir:  nil,
+		mkdir:  nil,
 		put:    []string{"foo/a/b/c.py"},
 	}
 	assert.Equal(t, expected, computeDiff(after, before))
@@ -143,7 +143,7 @@ func TestDiffComputationForNewFiles(t *testing.T) {
 
 	expected := diff{
 		delete: []string{},
-		rmdir:  []string{},
+		rmdir:  nil,
 		mkdir:  []string{"foo", "foo/a", "foo/a/b"},
 		put:    []string{"foo/a/b/c.py"},
 	}
@@ -178,8 +178,8 @@ func TestDiffComputationForUpdatedFiles(t *testing.T) {
 
 	expected := diff{
 		delete: []string{},
-		rmdir:  []string{},
-		mkdir:  []string{},
+		rmdir:  nil,
+		mkdir:  nil,
 		put:    []string{"foo/a/b/c"},
 	}
 	assert.Equal(t, expected, computeDiff(after, before))

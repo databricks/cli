@@ -25,9 +25,9 @@ func New() *cobra.Command {
   **[Cluster permissions](:service:clusters)** — Manage which users can
   manage, restart, or attach to clusters. * **[Cluster policy
   permissions](:service:clusterpolicies)** — Manage which users can use
-  cluster policies. * **[Delta Live Tables pipeline
+  cluster policies. * **[Spark Declarative Pipelines
   permissions](:service:pipelines)** — Manage which users can view, manage,
-  run, cancel, or own a Delta Live Tables pipeline. * **[Job
+  run, cancel, or own a Spark Declarative Pipeline. * **[Job
   permissions](:service:jobs)** — Manage which users can view, manage,
   trigger, cancel, or own a job. * **[MLflow experiment
   permissions](:service:experiments)** — Manage which users can read, edit, or
@@ -53,6 +53,10 @@ func New() *cobra.Command {
 		GroupID: "iam",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -92,12 +96,15 @@ func newGet() *cobra.Command {
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
-      jobs, notebooks, pipelines, queries, registered-models, repos,
-      serving-endpoints, or warehouses.
+      database-projects, dbsql-dashboards, directories, experiments, files,
+      genie, instance-pools, jobs, knowledge-assistants, notebooks, pipelines,
+      queries, registered-models, repos, serving-endpoints, supervisor-agents,
+      vector-search-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -116,6 +123,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -154,12 +162,15 @@ func newGetPermissionLevels() *cobra.Command {
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
-      jobs, notebooks, pipelines, queries, registered-models, repos,
-      serving-endpoints, or warehouses.
+      database-projects, dbsql-dashboards, directories, experiments, files,
+      genie, instance-pools, jobs, knowledge-assistants, notebooks, pipelines,
+      queries, registered-models, repos, serving-endpoints, supervisor-agents,
+      vector-search-endpoints, or warehouses.
     REQUEST_OBJECT_ID: `
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -178,6 +189,7 @@ func newGetPermissionLevels() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -223,12 +235,15 @@ func newSet() *cobra.Command {
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
-      jobs, notebooks, pipelines, queries, registered-models, repos,
-      serving-endpoints, or warehouses.
+      database-projects, dbsql-dashboards, directories, experiments, files,
+      genie, instance-pools, jobs, knowledge-assistants, notebooks, pipelines,
+      queries, registered-models, repos, serving-endpoints, supervisor-agents,
+      vector-search-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -246,7 +261,7 @@ func newSet() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -259,6 +274,7 @@ func newSet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -303,12 +319,15 @@ func newUpdate() *cobra.Command {
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
-      jobs, notebooks, pipelines, queries, registered-models, repos,
-      serving-endpoints, or warehouses.
+      database-projects, dbsql-dashboards, directories, experiments, files,
+      genie, instance-pools, jobs, knowledge-assistants, notebooks, pipelines,
+      queries, registered-models, repos, serving-endpoints, supervisor-agents,
+      vector-search-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -326,7 +345,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -339,6 +358,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

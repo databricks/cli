@@ -2,6 +2,8 @@ package initializer
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -48,6 +51,16 @@ func (i *InitializerPythonPip) NextSteps() string {
 	return "source .venv/bin/activate && python app.py"
 }
 
+func (i *InitializerPythonPip) InstallCommand() string {
+	// Create the venv and install via the full pip path so the suggestion
+	// composes with NextSteps (which activates the venv) without
+	// activating twice.
+	if runtime.GOOS == "windows" {
+		return "python -m venv .venv && .venv\\Scripts\\pip install -r requirements.txt"
+	}
+	return "python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
+}
+
 func (i *InitializerPythonPip) RunDev(ctx context.Context, workDir string) error {
 	cmd := detectPythonCommand(workDir)
 	cmdStr := strings.Join(cmd, " ")
@@ -70,7 +83,7 @@ func (i *InitializerPythonPip) RunDev(ctx context.Context, workDir string) error
 	execCmd.Stderr = os.Stderr
 	execCmd.Stdin = os.Stdin
 	// Also set PATH for any child processes the command might spawn
-	execCmd.Env = append(os.Environ(), "PATH="+venvBin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	execCmd.Env = append(os.Environ(), "PATH="+venvBin+string(os.PathListSeparator)+env.Get(ctx, "PATH"))
 
 	return execCmd.Run()
 }
@@ -95,7 +108,7 @@ func (i *InitializerPythonPip) createVenv(ctx context.Context, workDir string) e
 		pythonCmd = "python"
 		if _, err := exec.LookPath(pythonCmd); err != nil {
 			cmdio.LogString(ctx, "⚠ Python not found. Please install Python and create a virtual environment manually.")
-			return nil
+			return nil //nolint:nilerr // python not found is a non-critical warning
 		}
 	}
 
@@ -111,7 +124,7 @@ func (i *InitializerPythonPip) createVenv(ctx context.Context, workDir string) e
 // installDependencies installs dependencies from requirements.txt.
 func (i *InitializerPythonPip) installDependencies(ctx context.Context, workDir string) error {
 	requirementsPath := filepath.Join(workDir, "requirements.txt")
-	if _, err := os.Stat(requirementsPath); os.IsNotExist(err) {
+	if _, err := os.Stat(requirementsPath); errors.Is(err, fs.ErrNotExist) {
 		log.Debugf(ctx, "No requirements.txt found, skipping dependency installation")
 		return nil
 	}
@@ -125,7 +138,7 @@ func (i *InitializerPythonPip) installDependencies(ctx context.Context, workDir 
 	}
 
 	// Check if pip exists in venv
-	if _, err := os.Stat(pipPath); os.IsNotExist(err) {
+	if _, err := os.Stat(pipPath); errors.Is(err, fs.ErrNotExist) {
 		cmdio.LogString(ctx, "⚠ pip not found in virtual environment. Please install dependencies manually.")
 		return nil
 	}

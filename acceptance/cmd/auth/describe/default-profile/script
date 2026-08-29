@@ -1,0 +1,14 @@
+sethome "./home"
+
+# A config with two profiles and an explicit default.
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
+
+# DATABRICKS_HOST is set in the environment, so authentication is fully
+# determined by the environment and the default profile is not pinned.
+title "Describe without --profile (DATABRICKS_HOST takes precedence over default_profile)\n"
+trace $CLI auth describe
+
+# Without a host in the environment, the default profile is resolved and used.
+unset DATABRICKS_HOST DATABRICKS_TOKEN
+title "Describe without --profile and without DATABRICKS_HOST (uses default_profile)\n"
+trace $CLI auth describe

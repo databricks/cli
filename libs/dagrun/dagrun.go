@@ -2,6 +2,7 @@ package dagrun
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -22,16 +23,12 @@ func NewGraph() *Graph {
 	}
 }
 
-func (g *Graph) Size() int { return len(g.Nodes) }
-
 func (g *Graph) AddNode(n string) {
 	if _, ok := g.Adj[n]; !ok {
 		g.Adj[n] = nil
 		g.Nodes = append(g.Nodes, n)
 	}
 }
-
-func (g *Graph) HasNode(n string) bool { _, ok := g.Adj[n]; return ok }
 
 func (g *Graph) AddDirectedEdge(from, to, label string) {
 	g.AddNode(from)
@@ -129,12 +126,8 @@ func (g *Graph) DetectCycle() error {
 							break
 						}
 					}
-					for i, j := 0, len(nodes)-1; i < j; i, j = i+1, j-1 {
-						nodes[i], nodes[j] = nodes[j], nodes[i]
-					}
-					for i, j := 0, len(edges)-1; i < j; i, j = i+1, j-1 {
-						edges[i], edges[j] = edges[j], edges[i]
-					}
+					slices.Reverse(nodes)
+					slices.Reverse(edges)
 					edges = append(edges, closeLbl)
 					return &CycleError{Nodes: nodes, Edges: edges}
 				}
@@ -179,9 +172,8 @@ func (g *Graph) Run(pool int, runUnit func(node string, failedDependency *string
 	done := make(chan doneResult, len(in))
 
 	var wg sync.WaitGroup
-	wg.Add(pool)
 	for range pool {
-		go runWorkerLoop(&wg, ready, done, runUnit)
+		wg.Go(func() { runWorkerLoop(ready, done, runUnit) })
 	}
 
 	for _, n := range initial {
@@ -229,8 +221,7 @@ type task struct {
 	failedFrom *string
 }
 
-func runWorkerLoop(wg *sync.WaitGroup, ready <-chan task, done chan<- doneResult, runUnit func(string, *string) bool) {
-	defer wg.Done()
+func runWorkerLoop(ready <-chan task, done chan<- doneResult, runUnit func(string, *string) bool) {
 	for t := range ready {
 		success := runUnit(t.n, t.failedFrom)
 		if t.failedFrom != nil {

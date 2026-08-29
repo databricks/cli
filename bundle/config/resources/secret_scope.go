@@ -13,9 +13,18 @@ type SecretScopePermissionLevel string
 
 const (
 	SecretScopePermissionLevelRead   SecretScopePermissionLevel = "READ"
-	SecretScopePermissionLevelManage SecretScopePermissionLevel = "MANAGE"
 	SecretScopePermissionLevelWrite  SecretScopePermissionLevel = "WRITE"
+	SecretScopePermissionLevelManage SecretScopePermissionLevel = "MANAGE"
 )
+
+// Values enables generated enum validation. Order matches privilege rank (READ < WRITE < MANAGE).
+func (SecretScopePermissionLevel) Values() []SecretScopePermissionLevel {
+	return []SecretScopePermissionLevel{
+		SecretScopePermissionLevelRead,
+		SecretScopePermissionLevelWrite,
+		SecretScopePermissionLevelManage,
+	}
+}
 
 // SecretScopePermission holds the permission level setting for a single principal.
 // Multiple of these can be defined on any secret scope.
@@ -28,7 +37,7 @@ type SecretScopePermission struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-type SecretScope struct {
+type SecretScope struct { //nolint:recvcheck // pointer receiver needed for UnmarshalJSON, value for other methods
 	BaseResource
 
 	// A unique name to identify the secret scope.
@@ -67,7 +76,7 @@ func (s SecretScope) Exists(ctx context.Context, w *databricks.WorkspaceClient, 
 	// The indirect methods are not semantically ideal for simple existence checks, so we use the list API here
 	scopes, err := w.Secrets.ListScopesAll(ctx)
 	if err != nil {
-		return false, nil
+		return false, nil //nolint:nilerr // treat API errors as "scope not found"
 	}
 
 	for _, scope := range scopes {

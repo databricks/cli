@@ -1,0 +1,180 @@
+package postgrescmd
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net"
+	"net/url"
+	"strconv"
+	"time"
+
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgconn/ctxwatch"
+)
+
+// defaultConnectTimeout is the dial timeout for a single connect attempt.
+// Lakebase autoscaling endpoints can be cold-starting; Postgres' own dial
+// keeps trying within this window before giving up.
+const defaultConnectTimeout = 120 * time.Second
+
+// connectConfig collects everything pgx needs to dial Postgres. Kept as a
+// struct rather than passed through positional args because the pgx config
+// has many fields and the call sites differ between code paths (production
+// vs unit tests stubbing connectFunc).
+type connectConfig struct {
+	Host           string
+	Port           int
+	Username       string
+	Password       string
+	Database       string
+	ConnectTimeout time.Duration
+}
+
+// retryConfig controls connect retry on idle/waking endpoints. MaxAttempts is
+// the total number of attempts: 1 means no retry, 3 means up to two retries
+// with backoff between. We use the count-of-attempts reading rather than
+// count-of-retries to match libs/psql.RetryConfig.MaxRetries semantics, so
+// behavior stays consistent across the two commands sharing a flag name.
+type retryConfig struct {
+	MaxAttempts  int
+	InitialDelay time.Duration
+	MaxDelay     time.Duration
+}
+
+// connectFunc is a seam for unit tests: production wires pgx.ConnectConfig,
+// tests inject failures (DNS, auth, ctx-cancel mid-connect). We deliberately
+// do not wrap *pgx.Conn behind an interface for query execution; that surface
+// is exercised by integration tests against real Lakebase endpoints.
+type connectFunc func(ctx context.Context, cfg *pgx.ConnConfig) (*pgx.Conn, error)
+
+// buildPgxConfig parses a DSN that includes the real host so pgx derives the
+// right TLSConfig and Fallbacks for sslmode=require. An empty host in the DSN
+// makes pgx fall back to defaultHost(), which resolves to a unix-socket path.
+// pgconn classifies that as a unix socket and assigns TLSConfig=nil; patching
+// cfg.Host after the parse does not re-derive TLSConfig, so the connection
+// goes out in plaintext and Lakebase rejects the pgwire startup with
+// "Invalid protocol version: 196608". User, password, and connect timeout are
+// patched as fields because tokens can contain characters that would need
+// URL-escaping in userinfo.
+//
+// The context-watcher handler is overridden so context cancellation issues
+// a Postgres CancelRequest on the side-channel rather than only closing the
+// underlying TCP connection. Without this override, a Ctrl+C during a long
+// SELECT would tear down the TCP socket but leave the server-side query
+// running until it noticed the broken connection on its next write.
+//
+// CancelRequestDelay = 0: send the cancel-request immediately on ctx cancel.
+// The user just hit Ctrl+C; we want the server to learn now.
+// DeadlineDelay = 5s: if the cancel-request has not gotten the server to
+// terminate the query within 5s, fall back to deadlining the connection.
+// Zero DeadlineDelay would race the cancel-request and could leave the
+// connection unusable.
+func buildPgxConfig(c connectConfig) (*pgx.ConnConfig, error) {
+	dsn := fmt.Sprintf("postgresql://%s/%s?sslmode=require",
+		net.JoinHostPort(c.Host, strconv.Itoa(c.Port)),
+		url.PathEscape(c.Database))
+	cfg, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("parse pgx config: %w", err)
+	}
+	cfg.User = c.Username
+	cfg.Password = c.Password
+	cfg.ConnectTimeout = c.ConnectTimeout
+
+	cfg.BuildContextWatcherHandler = func(pgc *pgconn.PgConn) ctxwatch.Handler {
+		return &pgconn.CancelRequestContextWatcherHandler{
+			Conn:               pgc,
+			CancelRequestDelay: 0,
+			DeadlineDelay:      5 * time.Second,
+		}
+	}
+	return cfg, nil
+}
+
+// connectWithRetry dials Postgres, retrying on connect-time errors that
+// indicate the endpoint is asleep or in the middle of a wake-up. Errors that
+// cannot be improved by retrying (auth failures, permission errors,
+// post-query errors) are returned immediately.
+//
+// MaxAttempts must be >= 1 (caller validates). 1 means a single attempt
+// with no retries.
+func connectWithRetry(ctx context.Context, cfg *pgx.ConnConfig, rc retryConfig, dial connectFunc) (*pgx.Conn, error) {
+	delay := rc.InitialDelay
+	var lastErr error
+
+	for attempt := 1; attempt <= rc.MaxAttempts; attempt++ {
+		if attempt > 1 {
+			cmdio.LogString(ctx, fmt.Sprintf("Connection attempt %d/%d failed, retrying in %v...", attempt-1, rc.MaxAttempts, delay))
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(delay):
+			}
+			if rc.MaxDelay > 0 {
+				delay = min(delay*2, rc.MaxDelay)
+			}
+		}
+
+		conn, err := dial(ctx, cfg)
+		if err == nil {
+			return conn, nil
+		}
+		lastErr = err
+
+		if !isRetryableConnectError(err) {
+			return nil, err
+		}
+		log.Debugf(ctx, "retryable connect error on attempt %d: %v", attempt, err)
+	}
+
+	return nil, fmt.Errorf("failed to connect after %d attempts: %w", rc.MaxAttempts, lastErr)
+}
+
+// isRetryableConnectError classifies whether an error from the connect path
+// is a transient "endpoint asleep / cold-starting" failure.
+//
+// Retryable:
+//   - net.OpError with Op == "dial" (DNS resolution, TCP connect refused,
+//     host unreachable). The "endpoint asleep" cases.
+//   - pgconn.ConnectError that wraps a retryable network error.
+//   - Postgres connection-establishment SQLSTATE codes (08xxx). Lakebase
+//     emits these during cold-start.
+//   - Postgres "cannot_connect_now" (57P03), which Postgres returns during
+//     server startup ("the database system is starting up"). Plausibly emitted
+//     during the wake-up handshake window. We do NOT broaden to all of class 57:
+//     57P01/57P02 are admin shutdowns (debatable) and 57014 is query_canceled.
+//
+// Not retryable: auth errors (28xxx), permission errors (42501),
+// context cancellation/deadlines, anything after Query has been issued
+// (caller never passes that to us; we only run before Query).
+func isRetryableConnectError(err error) bool {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
+		switch {
+		// 08xxx is the connection_exception class.
+		case len(pgErr.Code) == 5 && pgErr.Code[:2] == "08":
+			return true
+		case pgErr.Code == "57P03":
+			return true
+		default:
+			return false
+		}
+	}
+
+	if connectErr, ok := errors.AsType[*pgconn.ConnectError](err); ok {
+		return isRetryableConnectError(connectErr.Unwrap())
+	}
+
+	if opErr, ok := errors.AsType[*net.OpError](err); ok {
+		return opErr.Op == "dial"
+	}
+
+	return false
+}

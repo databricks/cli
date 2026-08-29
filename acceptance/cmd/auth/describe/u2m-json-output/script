@@ -1,0 +1,10 @@
+sethome "./home"
+
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+unset DATABRICKS_CONFIG_PROFILE
+unset DATABRICKS_AUTH_STORAGE
+
+# Filter to just the new token_storage object so the assertion is focused
+# and doesn't churn when other fields evolve.
+trace $CLI auth describe --profile u2m-profile --output json | jq '.token_storage'

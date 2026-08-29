@@ -1,0 +1,42 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "empty_tasks": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/empty_tasks/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "job with empty tasks",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": null
+  },
+  "valid": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/empty_tasks/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "valid job",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "sql_task": {
+          "query": {
+            "query_id": "abc"
+          },
+          "warehouse_id": "w123"
+        },
+        "task_key": "t"
+      }
+    ]
+  }
+}

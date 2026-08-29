@@ -1,7 +1,6 @@
 package variable
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -22,7 +21,7 @@ func TestResolveInstancePool_ResolveSuccess(t *testing.T) {
 			InstancePoolId: "5678",
 		}, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveInstancePool{name: "instance_pool"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
@@ -37,7 +36,7 @@ func TestResolveInstancePool_ResolveNotFound(t *testing.T) {
 		GetByInstancePoolName(mock.Anything, "instance_pool").
 		Return(nil, &apierr.APIError{StatusCode: 404})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveInstancePool{name: "instance_pool"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorIs(t, err, apierr.ErrNotFound)

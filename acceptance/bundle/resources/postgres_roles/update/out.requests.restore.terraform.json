@@ -1,0 +1,29 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
+  "q": {
+    "update_mask": "spec"
+  },
+  "body": {
+    "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "spec": {
+      "attributes": {
+        "createdb": false
+      },
+      "postgres_role": "app_role"
+    }
+  }
+}

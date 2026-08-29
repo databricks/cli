@@ -1,0 +1,13 @@
+bundle:
+  name: catalog-grants-$UNIQUE_NAME
+
+resources:
+  catalogs:
+    grants_catalog:
+      name: catalog_grants_$UNIQUE_NAME
+      comment: "Test catalog for grants"
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges:
+            - USE_CATALOG
+            - CREATE_SCHEMA

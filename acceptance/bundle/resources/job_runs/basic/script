@@ -1,0 +1,27 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    # destroy deletes the triggered run via jobs/runs/delete (also unlinks out.requests.txt)
+    trace print_requests.py //jobs/runs/delete
+}
+trap cleanup EXIT
+
+title "deploy triggers exactly one run"
+trace $CLI bundle validate
+trace $CLI bundle plan
+trace $CLI bundle summary
+trace $CLI bundle deploy
+
+# confirm that redeploy does not trigger a second run
+trace $CLI bundle deploy
+
+trace $CLI bundle plan
+trace $CLI bundle summary
+
+title "exactly one run-now request was made"
+trace print_requests.py //jobs/run-now
+
+# result_state is a planning sentinel and is cleared before SaveState.
+title "the triggered run id is stored in state, without result_state"
+trace read_state.py job_runs my_run id result_state
+read_id.py my_run > /dev/null
+read_id.py my_job > /dev/null

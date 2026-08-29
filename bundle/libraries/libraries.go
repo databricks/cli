@@ -1,6 +1,8 @@
 package libraries
 
 import (
+	"slices"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
@@ -34,10 +36,8 @@ func isEnvsWithLocalLibraries(envs []jobs.JobEnvironment) bool {
 			continue
 		}
 
-		for _, l := range e.Spec.Dependencies {
-			if IsLibraryLocal(l) {
-				return true
-			}
+		if slices.ContainsFunc(e.Spec.Dependencies, IsLibraryLocal) {
+			return true
 		}
 	}
 

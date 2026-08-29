@@ -1,7 +1,6 @@
 package config_tests
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -127,7 +126,7 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 
 	for _, tc := range tcases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := logdiag.InitContext(context.Background())
+			ctx := logdiag.InitContext(t.Context())
 			logdiag.SetCollect(ctx, true)
 			b, err := bundle.Load(ctx, "./validate/"+tc.name)
 			require.NoError(t, err)

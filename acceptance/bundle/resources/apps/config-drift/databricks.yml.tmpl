@@ -1,0 +1,18 @@
+bundle:
+  name: config-drift-$UNIQUE_NAME
+
+resources:
+  apps:
+    myapp:
+      name: $UNIQUE_NAME
+      description: my_app
+      source_code_path: ./app
+      config:
+        command:
+          - python
+          - app.py
+        env:
+          - name: MY_VAR
+            value: original_value
+      lifecycle:
+        started: true

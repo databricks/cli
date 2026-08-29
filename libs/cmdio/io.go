@@ -2,16 +2,37 @@ package cmdio
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
-	"slices"
 	"strings"
 	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/manifoldco/promptui"
 )
+
+// errCtrlC is returned when the user cancels a TUI prompt with Ctrl+C. The
+// "^C" string matches the historical wire format; goldens depend on it.
+var errCtrlC = errors.New("^C")
+
+// runTUI runs a tea.Program through cmdIO's tea program slot so spinners and
+// pagers can't fight a prompt for the terminal. Blocks until the model quits.
+func (c *cmdIO) runTUI(m tea.Model) (tea.Model, error) {
+	p := tea.NewProgram(m,
+		tea.WithInput(c.in),
+		tea.WithOutput(c.err),
+		// Ctrl+C is delivered as a key event so the model can return errCtrlC.
+		tea.WithoutSignalHandler(),
+	)
+	c.acquireTeaProgram(p)
+	defer c.releaseTeaProgram()
+	// NewTestIO sets a synthetic window size because bubbletea's auto-detect
+	// doesn't fire on pipe-backed streams. Nil in production.
+	if c.teaWindowSize != nil {
+		go p.Send(*c.teaWindowSize)
+	}
+	return p.Run()
+}
 
 // cmdIO is the private instance, that is not supposed to be accessed
 // outside of `cmdio` package. Use the public package-level functions
@@ -38,6 +59,11 @@ type cmdIO struct {
 	teaMu      sync.Mutex
 	teaProgram *tea.Program
 	teaDone    chan struct{}
+
+	// teaWindowSize, when non-nil, is delivered to the tea.Program before any
+	// user input is processed. Populated only by NewTestIO so pipe-backed
+	// test runs receive a synthetic WindowSizeMsg.
+	teaWindowSize *tea.WindowSizeMsg
 }
 
 func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, err io.Writer, headerTemplate, template string) *cmdIO {
@@ -52,14 +78,18 @@ func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, er
 	}
 }
 
-func IsInteractive(ctx context.Context) bool {
-	c := fromContext(ctx)
-	return c.capabilities.SupportsInteractive()
-}
-
 func IsPromptSupported(ctx context.Context) bool {
 	c := fromContext(ctx)
 	return c.capabilities.SupportsPrompt()
+}
+
+// IsPagerSupported reports whether stdin, stdout, and stderr are all interactive
+// terminals. This is the requirement for a full-screen or navigable output
+// program: unlike IsPromptSupported it also checks stdout, so it returns false
+// when stdout is piped or redirected.
+func IsPagerSupported(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return c.capabilities.SupportsPager()
 }
 
 // SupportsColor returns true if the given writer supports colored output.
@@ -69,100 +99,11 @@ func SupportsColor(ctx context.Context, w io.Writer) bool {
 	return c.capabilities.SupportsColor(w)
 }
 
-type Tuple struct{ Name, Id string }
-
-func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {
-	if !c.capabilities.SupportsInteractive() {
-		return "", fmt.Errorf("expected to have %s", label)
-	}
-
-	idx, _, err := (&promptui.Select{
-		Label:             label,
-		Items:             items,
-		HideSelected:      true,
-		StartInSearchMode: true,
-		Searcher: func(input string, idx int) bool {
-			lower := strings.ToLower(items[idx].Name)
-			return strings.Contains(lower, strings.ToLower(input))
-		},
-		Templates: &promptui.SelectTemplates{
-			Active:   `{{.Name | bold}} ({{.Id|faint}})`,
-			Inactive: `{{.Name}}`,
-		},
-		Stdin:  io.NopCloser(c.in),
-		Stdout: nopWriteCloser{c.err},
-	}).Run()
-	if err != nil {
-		return id, err
-	}
-	id = items[idx].Id
-	return id, err
-}
-
-// Show a selection prompt where the user can pick one of the name/id items.
-// The items are sorted alphabetically by name.
-func Select[V any](ctx context.Context, names map[string]V, label string) (id string, err error) {
+// GetInteractiveMode returns the interactive mode based on terminal capabilities.
+// Returns one of: InteractiveModeFull, InteractiveModeOutputOnly, or InteractiveModeNone.
+func GetInteractiveMode(ctx context.Context) InteractiveMode {
 	c := fromContext(ctx)
-	var items []Tuple
-	for k, v := range names {
-		items = append(items, Tuple{k, fmt.Sprint(v)})
-	}
-	slices.SortFunc(items, func(a, b Tuple) int {
-		return strings.Compare(a.Name, b.Name)
-	})
-	return c.Select(items, label)
-}
-
-// Show a selection prompt where the user can pick one of the name/id items.
-// The items appear in the order specified in the "items" argument.
-func SelectOrdered(ctx context.Context, items []Tuple, label string) (id string, err error) {
-	c := fromContext(ctx)
-	return c.Select(items, label)
-}
-
-func (c *cmdIO) Secret(label string) (value string, err error) {
-	prompt := (promptui.Prompt{
-		Label:       label,
-		Mask:        '*',
-		HideEntered: true,
-		Stdin:       io.NopCloser(c.in),
-		Stdout:      nopWriteCloser{c.err},
-	})
-
-	return prompt.Run()
-}
-
-func Secret(ctx context.Context, label string) (value string, err error) {
-	c := fromContext(ctx)
-	return c.Secret(label)
-}
-
-type nopWriteCloser struct {
-	io.Writer
-}
-
-func (nopWriteCloser) Close() error {
-	return nil
-}
-
-func Prompt(ctx context.Context) *promptui.Prompt {
-	c := fromContext(ctx)
-	return &promptui.Prompt{
-		Stdin:  io.NopCloser(c.in),
-		Stdout: nopWriteCloser{c.err},
-	}
-}
-
-func RunSelect(ctx context.Context, prompt *promptui.Select) (int, string, error) {
-	c := fromContext(ctx)
-	prompt.Stdin = io.NopCloser(c.in)
-	prompt.Stdout = nopWriteCloser{c.err}
-	return prompt.Run()
-}
-
-func Spinner(ctx context.Context) chan string {
-	c := fromContext(ctx)
-	return c.Spinner(ctx)
+	return c.capabilities.InteractiveMode()
 }
 
 // NewSpinner creates a new spinner for displaying progress indicators.
@@ -179,9 +120,9 @@ func Spinner(ctx context.Context) chan string {
 //
 // The spinner automatically degrades in non-interactive terminals (no output).
 // Context cancellation will automatically close the spinner.
-func NewSpinner(ctx context.Context) *spinner {
+func NewSpinner(ctx context.Context, opts ...SpinnerOption) *spinner {
 	c := fromContext(ctx)
-	return c.NewSpinner(ctx)
+	return c.NewSpinner(ctx, opts...)
 }
 
 type cmdIOType int
@@ -190,6 +131,15 @@ var cmdIOKey cmdIOType
 
 func InContext(ctx context.Context, io *cmdIO) context.Context {
 	return context.WithValue(ctx, cmdIOKey, io)
+}
+
+// HasIO reports whether a cmdIO is set on this context. Commands can assume it
+// is (the root command's PersistentPreRunE installs it), but code that can run
+// before or without that hook (e.g. cobra resolves --help and bare invocations
+// before running hooks) must check first to avoid the panic in fromContext.
+func HasIO(ctx context.Context) bool {
+	_, ok := ctx.Value(cmdIOKey).(*cmdIO)
+	return ok
 }
 
 func fromContext(ctx context.Context) *cmdIO {
@@ -224,8 +174,14 @@ func (c *cmdIO) acquireTeaProgram(p *tea.Program) {
 	defer c.teaMu.Unlock()
 
 	// Wait for existing program to finish
-	if c.teaDone != nil {
-		<-c.teaDone
+	// Receive with teaMu released: releaseTeaProgram locks teaMu to close
+	// teaDone, so waiting while holding it would deadlock. Loop because another
+	// acquirer may register a new program before the lock is reacquired.
+	for c.teaDone != nil {
+		done := c.teaDone
+		c.teaMu.Unlock()
+		<-done
+		c.teaMu.Lock()
 	}
 
 	// Register new program

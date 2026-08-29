@@ -1,0 +1,8 @@
+# Selectors are resolved by the ResolveSelect mutator during initialize, before the
+# engine is known, so these errors are identical on both engines.
+
+# Unqualified name that matches no resource.
+musterr trace $CLI bundle plan --select no_such_resource
+
+# Qualified name whose resource does not exist.
+musterr trace $CLI bundle plan --select jobs.no_such_job

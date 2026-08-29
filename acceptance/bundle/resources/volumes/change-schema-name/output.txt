@@ -1,11 +1,11 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created volumes.volume1
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests
+>>> print_requests.py //unity
 {
   "method": "POST",
   "path": "/api/2.1/unity-catalog/volumes",
@@ -27,7 +27,8 @@ Deployment complete!
       "id": "main.myschema.myvolume",
       "name": "myvolume",
       "schema_name": "myschema",
-      "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?o=[NUMID]",
+      "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[NUMID]",
+      "volume_path": "/Volumes/main/myschema/myvolume",
       "volume_type": "MANAGED"
     }
   }
@@ -49,11 +50,11 @@ For managed volumes, the files stored in the volume are also deleted from your
 cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:
   recreate resources.volumes.volume1
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Recreated volumes.volume1
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
->>> print_requests
+>>> print_requests.py //unity
 {
   "method": "DELETE",
   "path": "/api/2.1/unity-catalog/volumes/main.myschema.myvolume"
@@ -71,9 +72,9 @@ Deployment complete!
 }
 
 >>> musterr [CLI] volumes read main.myschema.myvolume
-Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
+Error: Volume 'main.myschema.myvolume' does not exist.
 
 >>> [CLI] volumes read main.myschema.mynewvolume
-Error: Resource catalog.VolumeInfo not found: main.myschema.mynewvolume
+Error: Volume 'main.myschema.mynewvolume' does not exist.
 
 Exit code: 1

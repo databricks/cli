@@ -1,0 +1,9 @@
+Env.MSYS_NO_PATHCONV = "1"
+
+[[Repls]]
+Old = '\\\\'
+New = '/'
+
+[[Repls]]
+Old = "[0-9a-f]{32}"
+New = "[GENIE_SPACE_ID]"

@@ -1,0 +1,11 @@
+mkdir -p .databricks/bundle/default/terraform
+echo '{"serial": 1, "lineage": "test-lineage"}' > .databricks/bundle/default/terraform/terraform.tfstate
+
+# `bundle debug states` doesn't deploy; it should just report the state without
+# a mismatch warning. The "will attempt to migrate" hint belongs to deploy only.
+title 'Direct opt-in with terraform state on disk: debug states reports without warning\n'
+unset DATABRICKS_BUNDLE_ENGINE
+trace $CLI bundle debug states
+
+title 'Invalid env var with config set: config takes priority, still no warning\n'
+trace DATABRICKS_BUNDLE_ENGINE=bla $CLI bundle debug states

@@ -1,0 +1,17 @@
+# Invariant to test: current CLI can deploy on top of state produced by v0.293.0
+
+invariant_setup
+
+# Deploy with old CLI to produce v0.293.0 state
+trace $CLI_293 --version
+invariant_deploy LOG.deploy.293 $CLI_293 bundle deploy
+
+# Deploy with current CLI on top of old state
+$CLI bundle deploy &> LOG.deploy
+cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
+
+# Verify no drift after current CLI deploy
+invariant_verify_no_drift
+
+$CLI bundle plan 2>LOG.plan.err | contains.py '!panic:' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan
+cat LOG.plan.err | contains.py '!panic:' '!internal error' > /dev/null

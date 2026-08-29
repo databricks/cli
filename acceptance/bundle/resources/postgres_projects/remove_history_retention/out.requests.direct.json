@@ -1,0 +1,13 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
+  "q": {
+    "update_mask": "spec.history_retention_duration"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Project for History Retention Update",
+      "pg_version": 16
+    }
+  }
+}

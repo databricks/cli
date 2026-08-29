@@ -1,4 +1,3 @@
-echo "$DATABRICKS_BUNDLES_WHEEL" > "requirements-latest.txt"
 
 trace uv run $UV_ARGS -q $CLI bundle validate --output json | \
   jq "pick(.experimental.python, .resources)"

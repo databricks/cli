@@ -3,6 +3,7 @@
 package provider_files
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,12 +21,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "provider-files",
-		Short: `Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.`,
-		Long: `Marketplace offers a set of file APIs for various purposes such as preview
+		Short: `*Public Preview* Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Marketplace offers a set of file APIs for various purposes such as preview
   notebooks and provider icons.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -61,13 +68,17 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, ``)
 
 	cmd.Use = "create"
-	cmd.Short = `Create a file.`
-	cmd.Long = `Create a file.
+	cmd.Short = `*Public Preview* Create a file.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a file.
 
   Create a file. Currently, only provider icons and attached notebooks are
   supported.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -80,19 +91,20 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.ProviderFiles.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -123,12 +135,16 @@ func newDelete() *cobra.Command {
 	var deleteReq marketplace.DeleteFileRequest
 
 	cmd.Use = "delete FILE_ID"
-	cmd.Short = `Delete a file.`
-	cmd.Long = `Delete a file.
+	cmd.Short = `*Public Preview* Delete a file.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a file.
 
   Delete a file`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -136,10 +152,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FILE_ID argument specified. Loading names for Provider Files drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No FILE_ID argument specified. Loading names for Provider Files drop-down.")
 			names, err := w.ProviderFiles.FileInfoDisplayNameToIdMap(ctx, marketplace.ListFilesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Files drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -150,7 +166,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		deleteReq.FileId = args[0]
 
@@ -188,12 +204,16 @@ func newGet() *cobra.Command {
 	var getReq marketplace.GetFileRequest
 
 	cmd.Use = "get FILE_ID"
-	cmd.Short = `Get a file.`
-	cmd.Long = `Get a file.
+	cmd.Short = `*Public Preview* Get a file.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a file.
 
   Get a file`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -201,10 +221,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FILE_ID argument specified. Loading names for Provider Files drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No FILE_ID argument specified. Loading names for Provider Files drop-down.")
 			names, err := w.ProviderFiles.FileInfoDisplayNameToIdMap(ctx, marketplace.ListFilesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Files drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -215,7 +235,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		getReq.FileId = args[0]
 
@@ -223,6 +243,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -252,19 +273,33 @@ func newList() *cobra.Command {
 
 	var listReq marketplace.ListFilesRequest
 	var listJson flags.JsonFlag
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List files.`
-	cmd.Long = `List files.
+	cmd.Short = `*Public Preview* List files.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List files.
 
   List files attached to a parent entity.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -277,16 +312,23 @@ func newList() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response := w.ProviderFiles.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 

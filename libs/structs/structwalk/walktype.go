@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
@@ -11,29 +12,31 @@ import (
 // VisitTypeFunc is invoked for fields encountered while walking typ. This includes both leaf nodes as well as any
 // intermediate nodes encountered while walking the struct tree.
 //
-//   path         PathNode representing the JSON-style path to the field.
-//   typ          the field's type – if the field is a pointer to a scalar the pointer type is preserved;
-//                the callback receives the actual type (e.g., *string, *int, etc.).
-//   field        the struct field if this node represents a struct field, nil otherwise.
+//	path         PatternNode representing the JSON-style path to the field (may include wildcards).
+//	typ          the field's type – if the field is a pointer to a scalar the pointer type is preserved;
+//	             the callback receives the actual type (e.g., *string, *int, etc.).
+//	field        the struct field if this node represents a struct field, nil otherwise.
 //
 // The function returns a boolean:
-//   continueWalk: if true, the WalkType function will continue recursively walking the current field.
-//                 if false, the WalkType function will skip walking the current field and all its children.
+//
+//	continueWalk: if true, the WalkType function will continue recursively walking the current field.
+//	              if false, the WalkType function will skip walking the current field and all its children.
 //
 // NOTE: Fields lacking a json tag or tagged as "-" are ignored entirely.
-//       Dynamic types like func, chan, interface, etc. are *not* visited.
-//       Only maps with string keys are traversed so that paths stay JSON-like.
+//
+//	Dynamic types like func, chan, interface, etc. are *not* visited.
+//	Only maps with string keys are traversed so that paths stay JSON-like.
 //
 // The walk is depth-first and deterministic (map keys are sorted lexicographically).
 //
 // Example:
-//   err := structwalk.WalkType(reflect.TypeOf(cfg), func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) {
-//       fmt.Printf("%s = %v\n", path.String(), typ)
-//   })
+//
+//	err := structwalk.WalkType(reflect.TypeOf(cfg), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) {
+//	    fmt.Printf("%s = %v\n", path.String(), typ)
+//	})
 //
 // ******************************************************************************************************
-
-type VisitTypeFunc func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool)
+type VisitTypeFunc func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool)
 
 // WalkType validates that t is a struct or pointer to one and starts the recursive traversal.
 func WalkType(t reflect.Type, visit VisitTypeFunc) error {
@@ -48,7 +51,7 @@ func WalkType(t reflect.Type, visit VisitTypeFunc) error {
 	return nil
 }
 
-func walkTypeValue(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField, visit VisitTypeFunc, visitedCount map[reflect.Type]int) {
+func walkTypeValue(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField, visit VisitTypeFunc, visitedCount map[reflect.Type]int) {
 	if typ == nil {
 		return
 	}
@@ -84,14 +87,14 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, field *reflect.S
 		walkTypeStruct(path, typ, visit, visitedCount)
 
 	case reflect.Slice, reflect.Array:
-		walkTypeValue(structpath.NewBracketStar(path), typ.Elem(), nil, visit, visitedCount)
+		walkTypeValue(structpath.NewPatternBracketStar(path), typ.Elem(), nil, visit, visitedCount)
 
 	case reflect.Map:
 		if typ.Key().Kind() != reflect.String {
 			return // unsupported map key type
 		}
 		// For maps, we walk the value type directly at the current path
-		walkTypeValue(structpath.NewDotStar(path), typ.Elem(), nil, visit, visitedCount)
+		walkTypeValue(structpath.NewPatternDotStar(path), typ.Elem(), nil, visit, visitedCount)
 
 	default:
 		// func, chan, interface, invalid, etc. -> ignore
@@ -100,9 +103,8 @@ func walkTypeValue(path *structpath.PathNode, typ reflect.Type, field *reflect.S
 	visitedCount[typ]--
 }
 
-func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) {
-	for i := range st.NumField() {
-		sf := st.Field(i)
+func walkTypeStruct(path *structpath.PatternNode, st reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) {
+	for sf := range st.Fields() {
 		if sf.PkgPath != "" {
 			continue // unexported
 		}
@@ -122,12 +124,18 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 			continue
 		}
 
+		// EmbeddedSlice: walk at parent path level without adding field name.
+		if sf.Name == structaccess.EmbeddedSliceFieldName {
+			walkTypeValue(path, sf.Type, &sf, visit, visitedCount)
+			continue
+		}
+
 		// Resolve field name from JSON tag or fall back to Go field name
 		fieldName := jsonTagName
 		if fieldName == "" {
 			fieldName = sf.Name
 		}
-		node := structpath.NewDotString(path, fieldName)
+		node := structpath.NewPatternDotString(path, fieldName)
 		walkTypeValue(node, sf.Type, &sf, visit, visitedCount)
 	}
 }

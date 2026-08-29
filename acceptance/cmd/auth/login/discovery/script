@@ -1,0 +1,14 @@
+sethome "./home"
+
+# Use the discovery browser script that simulates login.databricks.com
+export BROWSER="discovery_browser.py"
+
+trace $CLI auth login --profile discovery-test
+
+trace $CLI auth profiles
+
+# Verify the introspection endpoint was called (workspace_id in profile confirms this too).
+trace print_requests.py --get //tokens/introspect
+
+# Track the .databrickscfg file that was created to surface changes.
+mv "./home/.databrickscfg" "./out.databrickscfg"

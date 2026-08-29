@@ -1,0 +1,22 @@
+# Both engines plan the duration change correctly. Applying it is where they part:
+# the direct engine builds update_mask from the plan's change paths, so it sends
+#
+#   PATCH .../endpoints/my-endpoint?update_mask=spec.suspend_timeout_duration
+#
+# and the API answers 400 INVALID_PARAMETER_VALUE, "Unknown field path in
+# update_mask: 'spec.suspend_timeout_duration'". suspend_timeout_duration and
+# no_suspension are two sides of one oneof, and the API masks oneof members under
+# the group name: the field's doc comment in the SDK says to use spec.suspension.
+#
+# That is a separate bug from the diffing this test covers, fixed separately in
+# https://github.com/databricks/cli/pull/6374. It only became reachable now:
+# before, the direct engine planned no change for a duration edit, so it never
+# sent the PATCH at all.
+#
+# out.requests.*.json shows the difference directly: both engines send
+# suspend_timeout_duration: 600s in the body, but direct masks it as
+# spec.suspend_timeout_duration while the Terraform provider masks the whole spec.
+# out.deploy.direct.txt records the resulting failure. libs/testserver/postgres.go
+# validates update_mask against the paths the real API accepts, so the local run
+# reproduces this rather than passing against a fake that ignores the mask.
+Badness = "Direct engine cannot apply a suspend_timeout_duration change: it masks the field under its own name, but the API only accepts the oneof group name spec.suspension"

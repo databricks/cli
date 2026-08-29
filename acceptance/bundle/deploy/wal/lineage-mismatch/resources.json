@@ -1,0 +1,12 @@
+{
+  "state_version": 1,
+  "cli_version": "0.0.0",
+  "lineage": "state-lineage-aaa",
+  "serial": 1,
+  "state": {
+    "resources.jobs.test_job": {
+      "__id__": "1001",
+      "state": {"name": "test-job"}
+    }
+  }
+}

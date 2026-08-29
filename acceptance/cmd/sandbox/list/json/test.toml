@@ -1,0 +1,15 @@
+[[Server]]
+Pattern = "GET /api/2.0/lakebox/sandboxes"
+Response.Body = '''
+{
+  "sandboxes": [
+    {
+      "sandboxId": "happy-panda-1234",
+      "status": "Running",
+      "name": "my-project",
+      "gatewayHost": "uw2.dbrx.dev",
+      "idleTimeout": "900s"
+    }
+  ]
+}
+'''

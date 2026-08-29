@@ -1,0 +1,40 @@
+
+>>> [CLI] bundle init lakeflow-integrations --config-file ./input.json --output-dir output
+Welcome to the Lakeflow integrations template!
+
+
+✨ Your new project has been created in the 'my_lakeflow_integrations' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+
+>>> [CLI] bundle validate -t dev
+Name: my_lakeflow_integrations
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_lakeflow_integrations/dev
+
+Validation OK!
+
+>>> [CLI] bundle validate -t prod
+Name: my_lakeflow_integrations
+Target: prod
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_lakeflow_integrations/prod
+
+Validation OK!
+
+>>> [CLI] bundle deploy -t dev
+Building lakeflow_integrations_yaml...
+Building python_artifact...
+Uploading __generated__/my_lakeflow_integrations.examples.slack.send_slack_message.yml...
+Uploading __generated__/my_lakeflow_integrations.examples.wait_for_run_sensor.WaitForRunSensor.yml...
+Uploading dist/my_lakeflow_integrations-0.0.1-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_lakeflow_integrations/dev/files...
+Created jobs.send_slack_message
+Created jobs.wait_for_run_sensor
+Files: 11 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged

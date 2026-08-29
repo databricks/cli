@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -23,7 +22,7 @@ func TestInitializeVariables(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.InitializeVariables())
+	diags := bundle.Apply(t.Context(), b, mutator.InitializeVariables())
 	require.NoError(t, diags.Error())
 	assert.NotNil(t, b.Config.Variables["foo"])
 	assert.NotNil(t, b.Config.Variables["bar"])
@@ -36,7 +35,7 @@ func TestInitializeVariablesWithoutVariables(t *testing.T) {
 			Variables: nil,
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.InitializeVariables())
+	diags := bundle.Apply(t.Context(), b, mutator.InitializeVariables())
 	require.NoError(t, diags.Error())
 	assert.Nil(t, b.Config.Variables)
 }

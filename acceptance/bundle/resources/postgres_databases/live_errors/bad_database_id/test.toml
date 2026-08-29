@@ -1,0 +1,8 @@
+# Stub the database create endpoint to reject a non-pattern database_id,
+# matching the live API behavior observed on aws-prod-ucws 2026-05-19:
+#   400 Bad Request: Field database_id must match pattern
+#     ^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$, got '<value>'.
+[[Server]]
+Pattern = "POST /api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases"
+Response.StatusCode = 400
+Response.Body = '''{"error_code": "INVALID_PARAMETER_VALUE", "message": "Field database_id must match pattern ^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$, got 'Invalid_DB_ID'."}'''

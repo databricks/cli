@@ -1,0 +1,97 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+✓ Deployment succeeded
+Created apps.myapp
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> cat out.requests.txt
+{
+  "bool_values": [
+    {
+      "key": "local.cache.attempt",
+      "value": true
+    },
+    {
+      "key": "local.cache.miss",
+      "value": true
+    },
+    {
+      "key": "experimental.use_legacy_run_as",
+      "value": false
+    },
+    {
+      "key": "run_as_set",
+      "value": false
+    },
+    {
+      "key": "presets_name_prefix_is_set",
+      "value": false
+    },
+    {
+      "key": "python_wheel_wrapper_is_set",
+      "value": false
+    },
+    {
+      "key": "skip_artifact_cleanup",
+      "value": false
+    },
+    {
+      "key": "state_path_is_shared",
+      "value": false
+    },
+    {
+      "key": "permissions_section_set",
+      "value": false
+    },
+    {
+      "key": "state_path_in_deployer_home",
+      "value": true
+    },
+    {
+      "key": "state_path_in_other_user_home",
+      "value": false
+    },
+    {
+      "key": "state_path_other",
+      "value": false
+    },
+    {
+      "key": "dms_undeclared_deploying_user",
+      "value": false
+    },
+    {
+      "key": "dms_undeclared_other_user",
+      "value": false
+    },
+    {
+      "key": "dms_undeclared_service_principal",
+      "value": false
+    },
+    {
+      "key": "dms_undeclared_group",
+      "value": false
+    },
+    {
+      "key": "dms_compat_auto",
+      "value": true
+    },
+    {
+      "key": "has_serverless_compute",
+      "value": false
+    },
+    {
+      "key": "has_classic_job_compute",
+      "value": false
+    },
+    {
+      "key": "has_classic_interactive_compute",
+      "value": false
+    },
+    {
+      "key": "app_lifecycle_started",
+      "value": true
+    }
+  ]
+}

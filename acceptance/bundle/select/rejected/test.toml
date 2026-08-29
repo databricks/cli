@@ -1,0 +1,2 @@
+# --select is rejected on the terraform engine with an actionable error.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]

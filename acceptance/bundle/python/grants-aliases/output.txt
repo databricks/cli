@@ -1,0 +1,39 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "schemas": {
+      "my_schema": {
+        "catalog_name": "my_catalog",
+        "grants": [
+          {
+            "principal": "data-team@example.com",
+            "privileges": [
+              "USE_SCHEMA"
+            ]
+          }
+        ],
+        "name": "my_schema"
+      },
+      "my_schema_legacy": {
+        "catalog_name": "my_catalog",
+        "grants": [
+          {
+            "principal": "data-team@example.com",
+            "privileges": [
+              "USE_SCHEMA"
+            ]
+          }
+        ],
+        "name": "my_schema_legacy"
+      }
+    }
+  }
+}

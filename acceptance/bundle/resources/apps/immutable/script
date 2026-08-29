@@ -1,0 +1,13 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+trace $CLI bundle run my_app
+
+# Print the app requests to verify that source_code_path in the deployment
+# points to the content-addressed snapshot path rather than a local path.
+trace print_requests.py //apps

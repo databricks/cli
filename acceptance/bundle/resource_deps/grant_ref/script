@@ -1,0 +1,4 @@
+
+trace $CLI bundle plan
+trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy

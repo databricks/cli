@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
+
+// modelNameBrowseOnly scopes the computed browse_only flag to the browse_only
+// drift test, keeping unrelated tests free of it.
+const modelNameBrowseOnly = "model_browse_only"
 
 func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 	defer s.LockUnlock()()
@@ -30,12 +33,16 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 		SchemaName:      createRequest.SchemaName,
 		StorageLocation: createRequest.StorageLocation,
 		FullName:        fullName,
-		CreatedAt:       time.Now().UnixMilli(),
+		CreatedAt:       nowMilli(),
 		CreatedBy:       s.CurrentUser().UserName,
-		UpdatedAt:       time.Now().UnixMilli(),
 		UpdatedBy:       s.CurrentUser().UserName,
 		MetastoreId:     nextUUID(),
 		Owner:           s.CurrentUser().UserName,
+	}
+	registeredModel.UpdatedAt = registeredModel.CreatedAt
+	if createRequest.Name == modelNameBrowseOnly {
+		// Mirror UC, which computes browse_only and echoes it on GET.
+		registeredModel.BrowseOnly = true
 	}
 
 	s.RegisteredModels[fullName] = registeredModel
@@ -55,6 +62,11 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 		}
 	}
 
+	fields, errResponse := parseUpdateFields(req.Body)
+	if errResponse != nil {
+		return *errResponse
+	}
+
 	var updateRequest catalog.UpdateRegisteredModelRequest
 	if err := json.Unmarshal(req.Body, &updateRequest); err != nil {
 		return Response{
@@ -63,13 +75,8 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 		}
 	}
 
-	// Update only the fields that can be updated
-	if updateRequest.Comment != "" {
-		existing.Comment = updateRequest.Comment
-	}
-	if updateRequest.Owner != "" {
-		existing.Owner = updateRequest.Owner
-	}
+	applyUpdatedFields(&existing, updateRequest, fields)
+
 	if updateRequest.NewName != "" {
 		existing.Name = updateRequest.NewName
 
@@ -78,7 +85,7 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 		fullName = existing.CatalogName + "." + existing.SchemaName + "." + updateRequest.NewName
 	}
 
-	existing.UpdatedAt = time.Now().UnixMilli()
+	existing.UpdatedAt = nowMilli()
 	s.RegisteredModels[fullName] = existing
 	return Response{
 		Body: existing,

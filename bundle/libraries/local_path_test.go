@@ -15,6 +15,8 @@ func TestIsLocalPath(t *testing.T) {
 	assert.True(t, IsLocalPath("myfile.txt"))
 	assert.True(t, IsLocalPath("./myfile.txt"))
 	assert.True(t, IsLocalPath("../myfile.txt"))
+	assert.True(t, IsLocalPath("'some/local/path'"))
+	assert.True(t, IsLocalPath("\"some/local/path\""))
 
 	// Absolute paths without scheme (remote).
 	assert.False(t, IsLocalPath("/some/full/path"))

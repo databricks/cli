@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourcePostgresBranchProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
 type DataSourcePostgresBranchSpec struct {
 	ExpireTime       string `json:"expire_time,omitempty"`
 	IsProtected      bool   `json:"is_protected,omitempty"`
@@ -13,12 +17,15 @@ type DataSourcePostgresBranchSpec struct {
 }
 
 type DataSourcePostgresBranchStatus struct {
+	BranchId         string `json:"branch_id,omitempty"`
 	CurrentState     string `json:"current_state,omitempty"`
 	Default          bool   `json:"default,omitempty"`
+	DeleteTime       string `json:"delete_time,omitempty"`
 	ExpireTime       string `json:"expire_time,omitempty"`
 	IsProtected      bool   `json:"is_protected,omitempty"`
 	LogicalSizeBytes int    `json:"logical_size_bytes,omitempty"`
 	PendingState     string `json:"pending_state,omitempty"`
+	PurgeTime        string `json:"purge_time,omitempty"`
 	SourceBranch     string `json:"source_branch,omitempty"`
 	SourceBranchLsn  string `json:"source_branch_lsn,omitempty"`
 	SourceBranchTime string `json:"source_branch_time,omitempty"`
@@ -26,11 +33,13 @@ type DataSourcePostgresBranchStatus struct {
 }
 
 type DataSourcePostgresBranch struct {
-	CreateTime string                          `json:"create_time,omitempty"`
-	Name       string                          `json:"name"`
-	Parent     string                          `json:"parent,omitempty"`
-	Spec       *DataSourcePostgresBranchSpec   `json:"spec,omitempty"`
-	Status     *DataSourcePostgresBranchStatus `json:"status,omitempty"`
-	Uid        string                          `json:"uid,omitempty"`
-	UpdateTime string                          `json:"update_time,omitempty"`
+	BranchId       string                                  `json:"branch_id,omitempty"`
+	CreateTime     string                                  `json:"create_time,omitempty"`
+	Name           string                                  `json:"name"`
+	Parent         string                                  `json:"parent,omitempty"`
+	ProviderConfig *DataSourcePostgresBranchProviderConfig `json:"provider_config,omitempty"`
+	Spec           *DataSourcePostgresBranchSpec           `json:"spec,omitempty"`
+	Status         *DataSourcePostgresBranchStatus         `json:"status,omitempty"`
+	Uid            string                                  `json:"uid,omitempty"`
+	UpdateTime     string                                  `json:"update_time,omitempty"`
 }

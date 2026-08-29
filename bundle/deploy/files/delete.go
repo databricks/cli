@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -21,9 +22,7 @@ func (m *delete) Name() string {
 }
 
 func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	cmdio.LogString(ctx, "Deleting files...")
-
-	err := b.WorkspaceClient().Workspace.Delete(ctx, workspace.Delete{
+	err := b.WorkspaceClient(ctx).Workspace.Delete(ctx, workspace.Delete{
 		Path:      b.Config.Workspace.RootPath,
 		Recursive: true,
 	})
@@ -31,12 +30,29 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
+	removeBundleNameDir(ctx, b)
+
 	// Clean up sync snapshot file
 	err = deleteSnapshotFile(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	return nil
+}
+
+// removeBundleNameDir removes the directory named after the bundle now that the
+// deployment under it is gone. Not recursive, so it fails harmlessly while another
+// target is still deployed there.
+func removeBundleNameDir(ctx context.Context, b *bundle.Bundle) {
+	if !b.RootPathIsNameTargetScoped {
+		return
+	}
+
+	dir := path.Dir(b.Config.Workspace.RootPath)
+	err := b.WorkspaceClient(ctx).Workspace.Delete(ctx, workspace.Delete{Path: dir})
+	if err != nil {
+		log.Infof(ctx, "Leaving %s in place: %s", dir, err)
+	}
 }
 
 func deleteSnapshotFile(ctx context.Context, b *bundle.Bundle) error {

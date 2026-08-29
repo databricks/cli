@@ -1,26 +1,41 @@
 package filer
 
 import (
+	"cmp"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
-	"net/url"
 	"path"
 	"slices"
-	"sort"
-	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/files"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/sdk-go/core/apierr"
+	files "github.com/databricks/sdk-go/files/v2"
+	"github.com/databricks/sdk-go/options/client"
 	"golang.org/x/sync/errgroup"
 )
+
+// cloudResponseHeaderTimeout bounds the wait for a cloud storage response header
+// on a large-file part transfer. It matches the files/v2 engine's own default.
+const cloudResponseHeaderTimeout = 60 * time.Second
+
+// httpStatus returns the HTTP status code of err if it is (or wraps) an
+// [apierr.APIError], and -1 otherwise. The filer keys its error mapping off the
+// HTTP status rather than the SDK's canonical codes.Code: the Files API reports
+// "path already exists" as 409 Conflict, which the SDK maps to codes.Aborted
+// (not codes.AlreadyExists), so matching on the code would miss it.
+func httpStatus(err error) int {
+	if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
+		return aerr.HTTPStatusCode()
+	}
+	return -1
+}
 
 // As of 19th Feb 2024, the Files API backend has a rate limit of 10 concurrent
 // requests and 100 QPS. We limit the number of concurrent requests to 5 to
@@ -86,111 +101,208 @@ func (e filesApiDirEntry) Info() (fs.FileInfo, error) {
 	return e.i, nil
 }
 
+// uploadConcurrency bounds the concurrent part uploads of a large-file
+// (multipart) write. Parts go to cloud storage rather than the rate-limited
+// Files API, so this can fan out wider than the file-level copy parallelism.
+const uploadConcurrency = 64
+
+// multipartUploadEnvVar gates whether large Volumes writes are split into parts
+// by the files/v2 upload engine. The engine is new, so multipart is off by
+// default: when unset or not truthy, Write sends a single-shot PUT (via the
+// files/v2 UploadFile endpoint), leaving fs cp and bundle behavior unchanged.
+const multipartUploadEnvVar = "DATABRICKS_EXPERIMENTAL_MULTIPART_UPLOAD"
+
+// MultipartUploadEnabled reports whether large files written to UC Volumes are
+// split into parts by the files/v2 upload engine, gated by
+// DATABRICKS_EXPERIMENTAL_MULTIPART_UPLOAD (off by default). Both paths use the
+// files/v2 client; the flag only selects the multipart engine over a single-shot
+// PUT.
+func MultipartUploadEnabled(ctx context.Context) bool {
+	enabled, _ := env.GetBool(ctx, multipartUploadEnvVar)
+	return enabled
+}
+
+// uploadProgressKey is the context key for an optional large-file upload
+// progress callback.
+type uploadProgressKey struct{}
+
+// WithUploadProgress returns a context carrying a progress callback for
+// large-file (multipart) uploads. FilesClient.Write forwards it to the upload
+// engine; it has no effect on writes that do not go through the engine (small
+// files, non-seekable streams, non-Volumes targets, or when multipart upload is
+// disabled).
+func WithUploadProgress(ctx context.Context, fn files.ProgressFunc) context.Context {
+	return context.WithValue(ctx, uploadProgressKey{}, fn)
+}
+
+func uploadProgressFromContext(ctx context.Context) files.ProgressFunc {
+	fn, _ := ctx.Value(uploadProgressKey{}).(files.ProgressFunc)
+	return fn
+}
+
 // FilesClient implements the [Filer] interface for the Files API backend.
 type FilesClient struct {
-	workspaceClient *databricks.WorkspaceClient
-	apiClient       *client.DatabricksClient
+	client *files.Client
 
 	// File operations will be relative to this path.
 	root WorkspaceRootPath
+
+	// Large files are uploaded with the multipart engine. The limiter and transfer
+	// client are shared across every Write on this filer, so concurrent uploads
+	// (e.g. fs cp -r) draw from one bounded budget and one connection pool.
+	limiter        files.Limiter
+	transferClient *http.Client
 }
 
-func NewFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
-	apiClient, err := client.New(w.Config)
+func NewFilesClient(ctx context.Context, w *databricks.WorkspaceClient, root string) (Filer, error) {
+	c, err := newFilesAPIClient(ctx, w.Config)
 	if err != nil {
 		return nil, err
 	}
 
 	return &FilesClient{
-		workspaceClient: w,
-		apiClient:       apiClient,
+		client: c,
 
 		root: NewWorkspaceRootPath(root),
+
+		limiter:        files.NewLimiter(uploadConcurrency),
+		transferClient: newTransferClient(uploadConcurrency),
 	}, nil
 }
 
-func (w *FilesClient) urlPath(name string) (string, string, error) {
-	absPath, err := w.root.Join(name)
-	if err != nil {
-		return "", "", err
+// newTransferClient returns an HTTP client for the cloud-leg part transfers of a
+// large-file upload, sized for n concurrent transfers so idle connections are
+// reused rather than re-dialed (Go's default of 2 per host would force
+// re-dialing). It attaches no Databricks credentials (presigned URLs are
+// self-authenticating) and sets no whole-request timeout, which would abort a
+// legitimately long transfer; the upload is bounded by its context instead.
+// files/v2 builds an equivalent client internally when one is not supplied; this
+// filer supplies a shared one so all writes on it draw from a single pool.
+func newTransferClient(n int) *http.Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.ResponseHeaderTimeout = cloudResponseHeaderTimeout
+	transport.MaxIdleConnsPerHost = n
+	transport.MaxIdleConns = max(transport.MaxIdleConns, n)
+	return &http.Client{Transport: transport}
+}
+
+// newFilesAPIClient builds the files/v2 client from the CLI's already resolved
+// config, reusing its auth instead of re-reading a profile. cfg is passed by
+// pointer because config.Config embeds a sync.Mutex and must not be copied.
+func newFilesAPIClient(ctx context.Context, cfg *config.Config) (*files.Client, error) {
+	copts := []client.Option{
+		client.WithHost(cfg.Host),
+		client.WithCredentials(configCredentials{cfg: cfg}),
+		client.WithoutProfileResolution(),
 	}
-
-	// The user specified part of the path must be escaped.
-	urlPath := "/api/2.0/fs/files/" + url.PathEscape(strings.TrimLeft(absPath, "/"))
-
-	return absPath, urlPath, nil
+	// The workspace routing header is needed on unified ("SPOG") hosts; the CLI's
+	// "none" sentinel means "no workspace ID", so it is not forwarded.
+	if id := cfg.WorkspaceID; id != "" && id != auth.WorkspaceIDNone {
+		copts = append(copts, client.WithWorkspaceID(id))
+	}
+	return files.NewClient(ctx, copts...)
 }
 
 func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
-	absPath, urlPath, err := w.urlPath(name)
+	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
 	}
 
 	// Check that target path exists if CreateParentDirectories mode is not set
 	if !slices.Contains(mode, CreateParentDirectories) {
-		err := w.workspaceClient.Files.GetDirectoryMetadataByDirectoryPath(ctx, path.Dir(absPath))
+		dir := path.Dir(absPath)
+		_, err := w.client.GetDirectoryMetadata(ctx, &files.GetDirectoryMetadataRequest{DirectoryPath: &dir})
 		if err != nil {
-			var aerr *apierr.APIError
-			if !errors.As(err, &aerr) {
-				return err
+			// This API returns a 404 if the directory doesn't exist.
+			if httpStatus(err) == http.StatusNotFound {
+				return noSuchDirectoryError{dir}
 			}
-
-			// This API returns a 404 if the file doesn't exist.
-			if aerr.StatusCode == http.StatusNotFound {
-				return noSuchDirectoryError{path.Dir(absPath)}
-			}
-
 			return err
 		}
 	}
 
 	overwrite := slices.Contains(mode, OverwriteIfExists)
-	urlPath = fmt.Sprintf("%s?overwrite=%t", urlPath, overwrite)
-	headers := map[string]string{"Content-Type": "application/octet-stream"}
-	err = w.apiClient.Do(ctx, http.MethodPut, urlPath, headers, nil, reader, nil)
 
-	// Return early on success.
+	// When the multipart flag is enabled, seekable uploads go through the files/v2
+	// upload engine, which sends small files in a single PUT and splits large ones
+	// into parts. Non-seekable streams and the flag-off case use the single-shot
+	// UploadFile endpoint below: the former to avoid buffering the whole stream in
+	// memory, the latter to keep the default behavior a plain PUT. The engine
+	// recovers an io.ReaderAt for concurrent positioned reads when the source
+	// provides one (a local file).
+	if MultipartUploadEnabled(ctx) && isSeekable(reader) {
+		opts := []files.UploadOption{
+			files.WithOverwrite(overwrite),
+			files.WithLimiter(w.limiter),
+			files.WithTransferClient(w.transferClient),
+		}
+		// A caller (fs cp) can attach a progress callback via the context to
+		// render an upload bar; it is absent for other writers (e.g. bundle).
+		if fn := uploadProgressFromContext(ctx); fn != nil {
+			opts = append(opts, files.WithProgress(fn))
+		}
+		_, uerr := w.client.Upload(ctx, absPath, reader, opts...)
+		return mapUploadError(uerr, absPath)
+	}
+
+	_, err = w.client.UploadFile(ctx, &files.UploadFileRequest{
+		FilePath:  &absPath,
+		Contents:  io.NopCloser(reader),
+		Overwrite: &overwrite,
+	})
 	if err == nil {
 		return nil
 	}
 
-	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
-		return err
-	}
-
-	// This API returns 409 if the file already exists, when the object type is file
-	if aerr.StatusCode == http.StatusConflict && aerr.ErrorCode == "ALREADY_EXISTS" {
+	// This API returns 409 if a file already exists at the path.
+	if httpStatus(err) == http.StatusConflict {
 		return fileAlreadyExistsError{absPath}
 	}
+	return err
+}
 
+// isSeekable reports whether r can be seeked, without moving it: a no-op
+// Seek(0, io.SeekCurrent) returns the current offset for a working seeker and
+// errors for a broken one. Probing this way (rather than seeking to the end and
+// back) guarantees the reader keeps its position, so a false result never leaves
+// it parked at EOF for the single-shot fallback, which reads from the current
+// offset and would otherwise upload a truncated object. The engine sizes the
+// stream itself once it takes over.
+func isSeekable(r io.Reader) bool {
+	s, ok := r.(io.Seeker)
+	if !ok {
+		return false
+	}
+	_, err := s.Seek(0, io.SeekCurrent)
+	return err == nil
+}
+
+// mapUploadError translates the upload engine's already-exists sentinel into the
+// filer's error so skip-if-exists logic (which checks fs.ErrExist) keeps working.
+// A nil error passes through unchanged.
+func mapUploadError(err error, absPath string) error {
+	if errors.Is(err, files.ErrAlreadyExists) {
+		return fileAlreadyExistsError{absPath}
+	}
 	return err
 }
 
 func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
-	absPath, urlPath, err := w.urlPath(name)
+	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
 	}
 
-	var reader io.ReadCloser
-	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, nil, nil, nil, &reader)
+	resp, err := w.client.DownloadFile(ctx, &files.DownloadFileRequest{FilePath: &absPath})
 
 	// Return early on success.
 	if err == nil {
-		return reader, nil
-	}
-
-	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
-		return nil, err
+		return resp.Contents, nil
 	}
 
 	// This API returns a 404 if the specified path does not exist.
-	if aerr.StatusCode == http.StatusNotFound {
+	if httpStatus(err) == http.StatusNotFound {
 		// Check if the path is a directory. If so, return not a file error.
 		if _, err := w.statDir(ctx, name); err == nil {
 			return nil, notAFile{absPath}
@@ -214,21 +326,15 @@ func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
 		return cannotDeleteRootError{}
 	}
 
-	err = w.workspaceClient.Files.DeleteByFilePath(ctx, absPath)
+	_, err = w.client.DeleteFile(ctx, &files.DeleteFileRequest{FilePath: &absPath})
 
 	// Return early on success.
 	if err == nil {
 		return nil
 	}
 
-	var aerr *apierr.APIError
-	// Special handling of this error only if it is an API error.
-	if !errors.As(err, &aerr) {
-		return err
-	}
-
 	// This files delete API returns a 404 if the specified path does not exist.
-	if aerr.StatusCode == http.StatusNotFound {
+	if httpStatus(err) == http.StatusNotFound {
 		return fileDoesNotExistError{absPath}
 	}
 
@@ -246,29 +352,30 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 		return cannotDeleteRootError{}
 	}
 
-	err = w.workspaceClient.Files.DeleteDirectoryByDirectoryPath(ctx, absPath)
+	_, err = w.client.DeleteDirectory(ctx, &files.DeleteDirectoryRequest{DirectoryPath: &absPath})
 
-	var aerr *apierr.APIError
-	// Special handling of this error only if it is an API error.
-	if !errors.As(err, &aerr) {
+	// Return early on success.
+	if err == nil {
+		return nil
+	}
+
+	// The directory delete API returns a 400 if the directory is not empty. That
+	// status is generic, so confirm the specific reason before mapping it.
+	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.HTTPStatusCode() == http.StatusBadRequest {
+		if info := aerr.Details().ErrorInfo; info != nil && info.Reason == "FILES_API_DIRECTORY_IS_NOT_EMPTY" {
+			return directoryNotEmptyError{absPath}
+		}
 		return err
 	}
 
-	// The directory delete API returns a 400 if the directory is not empty
-	if aerr.StatusCode == http.StatusBadRequest {
-		var reasons []string
-		details := aerr.ErrorDetails()
-		if details.ErrorInfo != nil {
-			reasons = append(reasons, details.ErrorInfo.Reason)
-		}
-		// Error code 400 is generic and can be returned for other reasons. Make
-		// sure one of the reasons for the error is that the directory is not empty.
-		if !slices.Contains(reasons, "FILES_API_DIRECTORY_IS_NOT_EMPTY") {
-			return err
-		}
-		return directoryNotEmptyError{absPath}
+	// On GCS-backed storage a directory created implicitly is just a key prefix
+	// with no standalone object, so it disappears when its last child is
+	// deleted. The delete API then returns 404 for that already-vanished
+	// directory; treat it as a not-found error so recursive delete can consider
+	// its goal satisfied.
+	if httpStatus(err) == http.StatusNotFound {
+		return noSuchDirectoryError{absPath}
 	}
-
 	return err
 }
 
@@ -326,8 +433,14 @@ func (w *FilesClient) recursiveDelete(ctx context.Context, name string) error {
 	// Delete the directories in reverse order to ensure that the parent
 	// directories are deleted after the children. This is possible because
 	// fs.WalkDir walks the directories in lexicographical order.
-	for i := len(dirsToDelete) - 1; i >= 0; i-- {
-		err := w.deleteDirectory(ctx, dirsToDelete[i])
+	for _, dir := range slices.Backward(dirsToDelete) {
+		err := w.deleteDirectory(ctx, dir)
+		// A directory may have already vanished after its last child was
+		// deleted (see deleteDirectory for the GCS implicit-directory quirk).
+		// The delete's goal is already satisfied, so tolerate it.
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
 		if err != nil {
 			return err
 		}
@@ -360,48 +473,37 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 		return nil, err
 	}
 
-	iter := w.workspaceClient.Files.ListDirectoryContents(ctx, files.ListDirectoryContentsRequest{
-		DirectoryPath: absPath,
-	})
+	var entries []fs.DirEntry
+	for entry, err := range w.client.ListDirectoryContentsIter(ctx, &files.ListDirectoryContentsRequest{
+		DirectoryPath: &absPath,
+	}) {
+		if err != nil {
+			// This API returns a 404 if the specified path does not exist.
+			if httpStatus(err) == http.StatusNotFound {
+				// Check if the path is a file. If so, return not a directory error.
+				if _, ferr := w.statFile(ctx, name); ferr == nil {
+					return nil, notADirectory{absPath}
+				}
 
-	files, err := listing.ToSlice(ctx, iter)
-
-	// Return early on success.
-	if err == nil {
-		entries := make([]fs.DirEntry, len(files))
-		for i, file := range files {
-			entries[i] = filesApiDirEntry{
-				i: filesApiFileInfo{
-					absPath:      file.Path,
-					isDir:        file.IsDirectory,
-					fileSize:     file.FileSize,
-					lastModified: file.LastModified,
-				},
+				// No file or directory exists at the specified path. Return no such directory error.
+				return nil, noSuchDirectoryError{absPath}
 			}
+			return nil, err
 		}
 
-		// Sort by name for parity with os.ReadDir.
-		sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
-		return entries, nil
+		entries = append(entries, filesApiDirEntry{
+			i: filesApiFileInfo{
+				absPath:      value(entry.Path),
+				isDir:        value(entry.IsDirectory),
+				fileSize:     int64(value(entry.FileSize)),
+				lastModified: int64(value(entry.LastModified)),
+			},
+		})
 	}
 
-	// Special handling of this error only if it is an API error.
-	var apierr *apierr.APIError
-	if !errors.As(err, &apierr) {
-		return nil, err
-	}
-
-	// This API returns a 404 if the specified path does not exist.
-	if apierr.StatusCode == http.StatusNotFound {
-		// Check if the path is a file. If so, return not a directory error.
-		if _, err := w.statFile(ctx, name); err == nil {
-			return nil, notADirectory{absPath}
-		}
-
-		// No file or directory exists at the specified path. Return no such directory error.
-		return nil, noSuchDirectoryError{absPath}
-	}
-	return nil, err
+	// Sort by name for parity with os.ReadDir.
+	slices.SortFunc(entries, func(a, b fs.DirEntry) int { return cmp.Compare(a.Name(), b.Name()) })
+	return entries, nil
 }
 
 func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
@@ -410,13 +512,11 @@ func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
 		return err
 	}
 
-	err = w.workspaceClient.Files.CreateDirectory(ctx, files.CreateDirectoryRequest{
-		DirectoryPath: absPath,
-	})
+	_, err = w.client.CreateDirectory(ctx, &files.CreateDirectoryRequest{DirectoryPath: &absPath})
 
-	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusConflict {
+	// This API returns a 409 when a file already exists at the path (the create
+	// is not idempotent over a file).
+	if httpStatus(err) == http.StatusConflict {
 		return fileAlreadyExistsError{absPath}
 	}
 
@@ -430,25 +530,19 @@ func (w *FilesClient) statFile(ctx context.Context, name string) (fs.FileInfo, e
 		return nil, err
 	}
 
-	fileInfo, err := w.workspaceClient.Files.GetMetadataByFilePath(ctx, absPath)
+	resp, err := w.client.GetFileMetadata(ctx, &files.GetFileMetadataRequest{FilePath: &absPath})
 
 	// If the HEAD requests succeeds, the file exists.
 	if err == nil {
 		return filesApiFileInfo{
 			absPath:  absPath,
 			isDir:    false,
-			fileSize: fileInfo.ContentLength,
+			fileSize: value(resp.ContentLength),
 		}, nil
 	}
 
-	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
-		return nil, err
-	}
-
 	// This API returns a 404 if the specified path does not exist.
-	if aerr.StatusCode == http.StatusNotFound {
+	if httpStatus(err) == http.StatusNotFound {
 		return nil, fileDoesNotExistError{absPath}
 	}
 
@@ -462,21 +556,15 @@ func (w *FilesClient) statDir(ctx context.Context, name string) (fs.FileInfo, er
 		return nil, err
 	}
 
-	err = w.workspaceClient.Files.GetDirectoryMetadataByDirectoryPath(ctx, absPath)
+	_, err = w.client.GetDirectoryMetadata(ctx, &files.GetDirectoryMetadataRequest{DirectoryPath: &absPath})
 
 	// If the HEAD requests succeeds, the directory exists.
 	if err == nil {
 		return filesApiFileInfo{absPath: absPath, isDir: true}, nil
 	}
 
-	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
-		return nil, err
-	}
-
 	// The directory metadata API returns a 404 if the specified path does not exist.
-	if aerr.StatusCode == http.StatusNotFound {
+	if httpStatus(err) == http.StatusNotFound {
 		return nil, noSuchDirectoryError{absPath}
 	}
 
@@ -499,4 +587,13 @@ func (w *FilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error
 
 	// Since the path is not a directory, assume that it is a file and issue a stat call.
 	return w.statFile(ctx, name)
+}
+
+// value returns *p, or the zero value of T when p is nil.
+func value[T any](p *T) T {
+	if p == nil {
+		var zero T
+		return zero
+	}
+	return *p
 }

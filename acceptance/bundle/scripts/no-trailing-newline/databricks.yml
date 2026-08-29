@@ -1,0 +1,6 @@
+bundle:
+  name: scripts_no_trailing_newline
+
+experimental:
+  scripts:
+    preinit: "python3 ./myscript.py"

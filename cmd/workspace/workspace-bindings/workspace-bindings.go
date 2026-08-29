@@ -3,6 +3,8 @@
 package workspace_bindings
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -32,8 +34,8 @@ func New() *cobra.Command {
   owner of the securable.
 
   The original path (/api/2.1/unity-catalog/workspace-bindings/catalogs/{name})
-  is deprecated. Please use the new path
-  (/api/2.1/unity-catalog/bindings/{securable_type}/{securable_name}) which
+  is deprecated. Use the new path
+  (/api/2.1/unity-catalog/bindings/{securable_type}/{securable_name}), which
   introduces the ability to bind a securable in READ_ONLY mode (catalogs only).
 
   Securable types that support binding: - catalog - storage_credential -
@@ -41,6 +43,10 @@ func New() *cobra.Command {
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -81,6 +87,8 @@ func newGet() *cobra.Command {
     NAME: The name of the catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -98,6 +106,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -126,9 +135,19 @@ func newGetBindings() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getBindingsReq catalog.GetBindingsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var getBindingsLimit int
 
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&getBindingsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&getBindingsReq.PageToken, "page-token", getBindingsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 	cmd.Flags().IntVar(&getBindingsReq.MaxResults, "max-results", getBindingsReq.MaxResults, `Maximum number of workspace bindings to return.`)
-	cmd.Flags().StringVar(&getBindingsReq.PageToken, "page-token", getBindingsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "get-bindings SECURABLE_TYPE SECURABLE_NAME"
 	cmd.Short = `Get securable workspace bindings.`
@@ -151,6 +170,8 @@ func newGetBindings() *cobra.Command {
     SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -166,6 +187,13 @@ func newGetBindings() *cobra.Command {
 		getBindingsReq.SecurableName = args[1]
 
 		response := w.WorkspaceBindings.GetBindings(ctx, getBindingsReq)
+		if getBindingsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", getBindingsLimit)
+		}
+		if getBindingsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, getBindingsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -212,6 +240,8 @@ func newUpdate() *cobra.Command {
     NAME: The name of the catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -229,7 +259,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -241,6 +271,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -289,6 +320,8 @@ func newUpdateBindings() *cobra.Command {
     SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -306,7 +339,7 @@ func newUpdateBindings() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -319,6 +352,7 @@ func newUpdateBindings() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

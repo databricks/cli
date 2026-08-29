@@ -1,0 +1,3 @@
+json.cli_version = "[CLI_VERSION]";
+json.plan.resources.model_serving_endpoints.my_endpoint.action = "recreate";
+json.plan.resources.model_serving_endpoints.my_endpoint.permissions.action = "recreate";

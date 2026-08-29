@@ -1,0 +1,7 @@
+bundle:
+  name: migrate-removed-test
+
+resources:
+  jobs:
+    job_a: {name: "Job A"}
+    job_b: {name: "Job B"}

@@ -23,7 +23,7 @@ JOB_ID=$($CLI jobs create --json '
 }' | jq -r '.job_id')
 
 echo "Created job with ID: $JOB_ID"
-echo "$JOB_ID:JOB_ID" >> ACC_REPLS
+add_repl "$JOB_ID" JOB_ID
 
 envsubst < $TESTDIR/../job-spark-python-task/databricks.yml.tmpl > databricks.yml
 
@@ -36,7 +36,7 @@ trap cleanup EXIT
 
 title "Expect binding to fail without an auto-approve flag:\n"
 trace errcode $CLI bundle deployment bind foo $JOB_ID &> out.bind-result.txt
-grep "^Error:" out.bind-result.txt
+sed -n '/^Error:/,$p' out.bind-result.txt
 rm out.bind-result.txt
 
 title "Deploy bundle:"

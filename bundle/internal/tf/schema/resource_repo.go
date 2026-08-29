@@ -2,18 +2,24 @@
 
 package schema
 
+type ResourceRepoProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
 type ResourceRepoSparseCheckout struct {
 	Patterns []string `json:"patterns"`
 }
 
 type ResourceRepo struct {
-	Branch         string                      `json:"branch,omitempty"`
-	CommitHash     string                      `json:"commit_hash,omitempty"`
-	GitProvider    string                      `json:"git_provider,omitempty"`
-	Id             string                      `json:"id,omitempty"`
-	Path           string                      `json:"path,omitempty"`
-	Tag            string                      `json:"tag,omitempty"`
-	Url            string                      `json:"url"`
-	WorkspacePath  string                      `json:"workspace_path,omitempty"`
-	SparseCheckout *ResourceRepoSparseCheckout `json:"sparse_checkout,omitempty"`
+	Branch          string                      `json:"branch,omitempty"`
+	CommitHash      string                      `json:"commit_hash,omitempty"`
+	GitCredentialId int                         `json:"git_credential_id,omitempty"`
+	GitProvider     string                      `json:"git_provider,omitempty"`
+	Id              string                      `json:"id,omitempty"`
+	Path            string                      `json:"path,omitempty"`
+	Tag             string                      `json:"tag,omitempty"`
+	Url             string                      `json:"url"`
+	WorkspacePath   string                      `json:"workspace_path,omitempty"`
+	ProviderConfig  *ResourceRepoProviderConfig `json:"provider_config,omitempty"`
+	SparseCheckout  *ResourceRepoSparseCheckout `json:"sparse_checkout,omitempty"`
 }

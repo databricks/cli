@@ -64,7 +64,7 @@ Resources:
       URL:  (not deployed)
     independent:
       Name: independent
-      URL:  [DATABRICKS_URL]/jobs/[INDEPENDENT_ID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[INDEPENDENT_ID]?w=[NUMID]
 
 === Plan should still contain foo and bar
 >>> [CLI] bundle plan
@@ -101,8 +101,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted
 
 >>> print_requests.py //jobs
 {

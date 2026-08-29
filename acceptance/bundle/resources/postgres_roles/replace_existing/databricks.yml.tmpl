@@ -1,0 +1,30 @@
+bundle:
+  name: replace-existing-role-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Test Project for Role replace_existing"
+      pg_version: 16
+      history_retention_duration: 604800s
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  # replace_existing takes over a role that already exists on the branch (e.g.
+  # inherited from the parent branch) instead of erroring with ALREADY_EXISTS.
+  # The field is input-only and not surfaced in get-role, but it is visible in
+  # the recorded request body so the diff confirms it was sent.
+  postgres_roles:
+    my_role:
+      parent: ${resources.postgres_branches.main.id}
+      role_id: test-role
+      postgres_role: app_role
+      replace_existing: true

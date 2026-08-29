@@ -1,0 +1,13 @@
+bundle:
+  name: cluster_policy_family
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    # Authored from a policy family with no definition. The backend computes the
+    # definition from the family and returns it on read; the config leaves it empty.
+    family_policy:
+      name: my_family_policy-$UNIQUE_NAME
+      policy_family_id: personal-vm

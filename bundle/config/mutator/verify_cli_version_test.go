@@ -1,7 +1,6 @@
 package mutator
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -132,7 +131,7 @@ func TestVerifyCliVersion(t *testing.T) {
 					},
 				},
 			}
-			diags := bundle.Apply(context.Background(), b, VerifyCliVersion())
+			diags := bundle.Apply(t.Context(), b, VerifyCliVersion())
 			if tc.expectedError != "" {
 				require.NotEmpty(t, diags)
 				require.Contains(t, diags[0].Summary, tc.expectedError)

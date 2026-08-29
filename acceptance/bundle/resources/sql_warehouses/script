@@ -20,7 +20,7 @@ trace update_file.py databricks.yml sql_warehouse_name sql_warehouse_name_2
 trace $CLI bundle deploy
 
 title "Verify the update request"
-trace jq 'select(.method == "POST" and (.path | contains("/sql/warehouses")) and (.body."name" == "sql_warehouse_name_2"))' out.requests.txt
+trace jq 'select(.method == "POST" and (.path | contains("/sql/warehouses")) and (.body."name" == "sql_warehouse_name_2")) | del(.body.creator_name, .body.warehouse_type)' out.requests.txt
 
 trace $CLI bundle summary
 

@@ -1,0 +1,10 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warning: unknown field: autotermination_minutes
+  at task[0].new_cluster
+  in databricks.yml:14:13
+
+Created jobs.job
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged

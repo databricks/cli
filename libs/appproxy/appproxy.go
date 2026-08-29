@@ -3,11 +3,12 @@ package appproxy
 import (
 	"context"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/databricks/cli/libs/log"
 )
 
 type Proxy struct {
@@ -32,22 +33,14 @@ func New(ctx context.Context, targetURL string) (*Proxy, error) {
 	return &proxy, nil
 }
 
-func (p *Proxy) listen(addr string) (net.Listener, error) {
+// Listen binds the proxy to the given address (host:port, e.g. localhost:8080).
+func (p *Proxy) Listen(addr string) (net.Listener, error) {
 	return net.Listen("tcp", addr)
 }
 
-func (p *Proxy) serve(ln net.Listener) error {
+// Serve accepts connections on the given listener and forwards all requests to the targetURL.
+func (p *Proxy) Serve(ln net.Listener) error {
 	return p.server.Serve(ln)
-}
-
-// ListenAndServe starts the proxy server on the given address (host:port, e.g. localhost:8080)
-// The proxy will forward all requests to the targetURL
-func (p *Proxy) ListenAndServe(addr string) error {
-	ln, err := p.listen(addr)
-	if err != nil {
-		return err
-	}
-	return p.serve(ln)
 }
 
 func (p *Proxy) Stop() error {
@@ -122,7 +115,7 @@ func (p *Proxy) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		// If the error is not EOF, then there was a problem
 		if err != io.EOF {
 			// Log the error and perform cleanup
-			log.Printf("Error copying messages: %v", err)
+			log.Warnf(r.Context(), "error copying messages: %v", err)
 			middlewareConn.Close()
 			targetServerConn.Close()
 		}

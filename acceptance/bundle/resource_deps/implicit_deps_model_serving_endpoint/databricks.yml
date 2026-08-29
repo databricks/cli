@@ -1,0 +1,25 @@
+bundle:
+  name: test-bundle
+
+# Tests implicit dependency detection for model serving endpoints:
+# - ai_gateway.inference_table_config.{catalog_name, schema_name} should resolve
+resources:
+  catalogs:
+    my_catalog:
+      name: mycatalog
+  schemas:
+    my_schema:
+      catalog_name: mycatalog
+      name: myschema
+  model_serving_endpoints:
+    my_endpoint:
+      name: my-endpoint
+      ai_gateway:
+        inference_table_config:
+          catalog_name: mycatalog
+          schema_name: myschema
+          enabled: true
+
+targets:
+  dev:
+    mode: development

@@ -1,14 +1,14 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.test_job
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === JSON output format{
   "files": [
     {
       "path": "[TEST_TMP_DIR]/databricks.yml",
-      "originalContent": "bundle:\n  name: test-bundle-[UNIQUE_NAME]\n\nresources:\n  jobs:\n    test_job:\n      max_concurrent_runs: 1\n      tasks:\n        - task_key: main\n          notebook_task:\n            notebook_path: /Users/{{workspace_user_name}}/notebook\n          new_cluster:\n            spark_version: 13.3.x-snapshot-scala2.12\n            node_type_id: [NODE_TYPE_ID]\n            num_workers: 1\n",
-      "modifiedContent": "bundle:\n  name: test-bundle-[UNIQUE_NAME]\nresources:\n  jobs:\n    test_job:\n      max_concurrent_runs: 3\n      tasks:\n        - task_key: main\n          notebook_task:\n            notebook_path: /Users/{{workspace_user_name}}/notebook\n          new_cluster:\n            spark_version: 13.3.x-snapshot-scala2.12\n            node_type_id: [NODE_TYPE_ID]\n            num_workers: 1\n      tags:\n        env: test\n"
+      "originalContent": "bundle:\n  name: test-bundle-[UNIQUE_NAME]\n\nresources:\n  jobs:\n    test_job:\n      max_concurrent_runs: 1\n      tasks:\n        - task_key: main\n          notebook_task:\n            notebook_path: /Users/{{workspace_user_name}}/notebook\n          new_cluster:\n            spark_version: 13.3.x-snapshot-scala2.12\n            node_type_id: [NODE_TYPE_ID]\n            num_workers: 1\n\ntargets:\n  default:\n    mode: development\n",
+      "modifiedContent": "bundle:\n  name: test-bundle-[UNIQUE_NAME]\n\nresources:\n  jobs:\n    test_job:\n      max_concurrent_runs: 3\n      tasks:\n        - task_key: main\n          notebook_task:\n            notebook_path: /Users/{{workspace_user_name}}/notebook\n          new_cluster:\n            spark_version: 13.3.x-snapshot-scala2.12\n            node_type_id: [NODE_TYPE_ID]\n            num_workers: 1\n      tags:\n        env: test\n\ntargets:\n  default:\n    mode: development\n"
     }
   ],
   "changes": {
@@ -17,12 +17,18 @@ Deployment complete!
         "operation": "replace",
         "value": 3
       },
-      "tags": {
+      "tags['env']": {
         "operation": "add",
-        "value": {
-          "env": "test"
-        }
+        "value": "test"
       }
     }
   }
 }
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.test_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

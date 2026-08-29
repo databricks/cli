@@ -1,40 +1,44 @@
 package bundle
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRootFromEnv(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	t.Setenv(env.RootVariable, dir)
 
-	// It should pull the root from the environment variable.
-	root, err := mustGetRoot(ctx)
+	// The bundle root must contain a configuration file.
+	f, err := os.Create(filepath.Join(dir, config.FileNames[0]))
 	require.NoError(t, err)
+	f.Close()
+
+	// It should pull the root from the environment variable.
+	root, diags := mustGetRoot(ctx)
+	require.NoError(t, diags.Error())
 	require.Equal(t, root, dir)
 }
 
 func TestRootFromEnvDoesntExist(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	t.Setenv(env.RootVariable, filepath.Join(dir, "doesntexist"))
 
 	// It should pull the root from the environment variable.
-	_, err := mustGetRoot(ctx)
-	require.Errorf(t, err, "invalid bundle root")
+	_, diags := mustGetRoot(ctx)
+	require.True(t, diags.HasError())
+	require.Contains(t, diags[0].Summary, "Invalid bundle root")
 }
 
 func TestRootFromEnvIsFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	f, err := os.Create(filepath.Join(dir, "invalid"))
 	require.NoError(t, err)
@@ -42,28 +46,38 @@ func TestRootFromEnvIsFile(t *testing.T) {
 	t.Setenv(env.RootVariable, f.Name())
 
 	// It should pull the root from the environment variable.
-	_, err = mustGetRoot(ctx)
-	require.Errorf(t, err, "invalid bundle root")
+	_, diags := mustGetRoot(ctx)
+	require.True(t, diags.HasError())
+	require.Contains(t, diags[0].Summary, "Invalid bundle root")
 }
 
 func TestRootIfEnvIsEmpty(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := ""
 	t.Setenv(env.RootVariable, dir)
 
 	// It should pull the root from the environment variable.
-	_, err := mustGetRoot(ctx)
-	require.Errorf(t, err, "invalid bundle root")
+	_, diags := mustGetRoot(ctx)
+	require.True(t, diags.HasError())
+	require.Contains(t, diags[0].Summary, "Invalid bundle root")
 }
 
 func TestRootLookup(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Have to set then unset to allow the testing package to revert it to its original value.
 	t.Setenv(env.RootVariable, "")
 	os.Unsetenv(env.RootVariable)
 
-	testutil.Chdir(t, t.TempDir())
+	t.Chdir(t.TempDir())
+
+	// Resolve to canonical path for comparison below. This is needed because
+	// os.Getwd may return a path with symlinks (macOS) or 8.3 short names
+	// (Windows) after a relative chdir.
+	root, err := os.Getwd()
+	require.NoError(t, err)
+	root, err = filepath.EvalSymlinks(root)
+	require.NoError(t, err)
 
 	// Create databricks.yml file.
 	f, err := os.Create(config.FileNames[0])
@@ -75,21 +89,24 @@ func TestRootLookup(t *testing.T) {
 	require.NoError(t, err)
 
 	// It should find the project root from $PWD.
-	wd := testutil.Chdir(t, "./a/b/c")
-	root, err := mustGetRoot(ctx)
+	t.Chdir("./a/b/c")
+	foundRoot, diags := mustGetRoot(ctx)
+	require.NoError(t, diags.Error())
+	foundRoot, err = filepath.EvalSymlinks(foundRoot)
 	require.NoError(t, err)
-	require.Equal(t, wd, root)
+	require.Equal(t, root, foundRoot)
 }
 
 func TestRootLookupError(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Have to set then unset to allow the testing package to revert it to its original value.
 	t.Setenv(env.RootVariable, "")
 	os.Unsetenv(env.RootVariable)
 
 	// It can't find a project root from a temporary directory.
-	_ = testutil.Chdir(t, t.TempDir())
-	_, err := mustGetRoot(ctx)
-	require.ErrorContains(t, err, "unable to locate bundle root")
+	t.Chdir(t.TempDir())
+	_, diags := mustGetRoot(ctx)
+	require.True(t, diags.HasError())
+	require.Contains(t, diags[0].Summary, "Unable to locate the bundle root")
 }

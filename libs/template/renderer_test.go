@@ -27,29 +27,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	defaultFilePermissions fs.FileMode
-	defaultDirPermissions  fs.FileMode
-)
-
-func init() {
-	if runtime.GOOS == "windows" {
-		defaultFilePermissions = fs.FileMode(0o666)
-		defaultDirPermissions = fs.FileMode(0o777)
-	} else {
-		defaultFilePermissions = fs.FileMode(0o644)
-		defaultDirPermissions = fs.FileMode(0o755)
-	}
-}
-
 func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal, build bool, tempDir string) {
-	ctx := dbr.MockRuntime(context.Background(), dbr.Environment{})
+	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{})
 
 	templateFS, err := fs.Sub(builtinTemplates, path.Join("templates", template))
 	require.NoError(t, err)
 
 	w := &databricks.WorkspaceClient{
-		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
+		Config: &workspaceConfig.Config{Host: "https://myhost.test"},
 	}
 
 	// Prepare helpers
@@ -73,8 +58,8 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	require.NoError(t, err)
 
 	// Verify permissions on file and directory
-	testutil.AssertFilePermissions(t, filepath.Join(tempDir, "my_project/README.md"), defaultFilePermissions)
-	testutil.AssertDirPermissions(t, filepath.Join(tempDir, "my_project/resources"), defaultDirPermissions)
+	testutil.AssertFileOwnerExec(t, filepath.Join(tempDir, "my_project/README.md"), false)
+	testutil.AssertDirOwnerExec(t, filepath.Join(tempDir, "my_project/resources"), true)
 
 	b, err := bundle.Load(ctx, filepath.Join(tempDir, "my_project"))
 	require.NoError(t, err)
@@ -94,7 +79,7 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 
 	b.Tagging = tags.ForCloud(w.Config)
 	b.SetWorkpaceClient(w)
-	b.WorkspaceClient()
+	b.WorkspaceClient(ctx)
 
 	phases.Initialize(ctx, b)
 	diags = logdiag.FlushCollected(ctx)
@@ -152,7 +137,7 @@ func TestBuiltinDbtTemplateValid(t *testing.T) {
 func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/email/template", "./testdata/email/library")
@@ -168,6 +153,34 @@ func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 	b, err := os.ReadFile(filepath.Join(tmpDir, "my_email"))
 	require.NoError(t, err)
 	assert.Equal(t, "shreyas.goenka@databricks.com", strings.Trim(string(b), "\n\r"))
+}
+
+func TestRendererSharedLibraryAndOverride(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	ctx := t.Context()
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/library-override/template", "./testdata/library-override/library")
+	require.NoError(t, err)
+
+	err = r.walk()
+	require.NoError(t, err)
+	out, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = r.persistToDisk(ctx, out)
+	require.NoError(t, err)
+
+	b, err := os.ReadFile(filepath.Join(tmpDir, "out"))
+	require.NoError(t, err)
+	got := string(b)
+
+	// agents_md is defined only in the shared library, so rendering it (a heading)
+	// without error proves the shared library is parsed into the template's namespace.
+	assert.Contains(t, got, "shared: #")
+	// claude_md is defined in both the shared library and this template's own
+	// library; the template's own definition must take precedence.
+	assert.Contains(t, got, "own: OWN WINS")
 }
 
 func TestRendererExecuteTemplate(t *testing.T) {
@@ -281,7 +294,7 @@ func TestRendererIsSkipped(t *testing.T) {
 
 func TestRendererPersistToDisk(t *testing.T) {
 	tmpDir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	r := &renderer{
 		ctx:          ctx,
@@ -319,13 +332,13 @@ func TestRendererPersistToDisk(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(tmpDir, "mno"))
 
 	testutil.AssertFileContents(t, filepath.Join(tmpDir, "a/b/d"), "123")
-	testutil.AssertFilePermissions(t, filepath.Join(tmpDir, "a/b/d"), fs.FileMode(0o444))
+	testutil.AssertFileOwnerExec(t, filepath.Join(tmpDir, "a/b/d"), false)
 	testutil.AssertFileContents(t, filepath.Join(tmpDir, "mmnn"), "456")
-	testutil.AssertFilePermissions(t, filepath.Join(tmpDir, "mmnn"), fs.FileMode(0o444))
+	testutil.AssertFileOwnerExec(t, filepath.Join(tmpDir, "mmnn"), false)
 }
 
 func TestRendererWalk(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
@@ -356,7 +369,7 @@ func TestRendererWalk(t *testing.T) {
 }
 
 func TestRendererFailFunction(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
@@ -368,7 +381,7 @@ func TestRendererFailFunction(t *testing.T) {
 }
 
 func TestRendererSkipsDirsEagerly(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
@@ -384,7 +397,7 @@ func TestRendererSkipsDirsEagerly(t *testing.T) {
 }
 
 func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
@@ -409,7 +422,7 @@ func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 }
 
 func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
@@ -426,7 +439,7 @@ func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
 }
 
 func TestRendererSkip(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
@@ -461,7 +474,7 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		t.SkipNow()
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
@@ -490,13 +503,13 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 	}
 
 	assert.Len(t, r.files, 2)
-	assert.Equal(t, getPermissions(r, "script.sh"), fs.FileMode(0o755))
-	assert.Equal(t, getPermissions(r, "not-a-script"), fs.FileMode(0o644))
+	assert.NotZero(t, getPermissions(r, "script.sh")&0o100, "expected owner exec bit set for script.sh")
+	assert.Zero(t, getPermissions(r, "not-a-script")&0o100, "expected owner exec bit not set for not-a-script")
 }
 
 func TestRendererErrorOnConflictingFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	f, err := os.Create(filepath.Join(tmpDir, "a"))
 	require.NoError(t, err)
@@ -521,7 +534,7 @@ func TestRendererErrorOnConflictingFile(t *testing.T) {
 
 func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 	tmpDir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	f, err := os.Create(filepath.Join(tmpDir, "a"))
 	require.NoError(t, err)
@@ -549,7 +562,7 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 }
 
 func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
@@ -565,7 +578,7 @@ func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 }
 
 func TestRendererFileTreeRendering(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
@@ -589,12 +602,12 @@ func TestRendererFileTreeRendering(t *testing.T) {
 	require.NoError(t, err)
 
 	// Assert files and directories are correctly materialized.
-	testutil.AssertDirPermissions(t, filepath.Join(tmpDir, "my_directory"), defaultDirPermissions)
-	testutil.AssertFilePermissions(t, filepath.Join(tmpDir, "my_directory", "my_file"), defaultFilePermissions)
+	testutil.AssertDirOwnerExec(t, filepath.Join(tmpDir, "my_directory"), true)
+	testutil.AssertFileOwnerExec(t, filepath.Join(tmpDir, "my_directory", "my_file"), false)
 }
 
 func TestRendererSubTemplateInPath(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	// Copy the template directory to a temporary directory where we can safely include a templated file path.

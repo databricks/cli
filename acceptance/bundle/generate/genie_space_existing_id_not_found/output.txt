@@ -1,0 +1,4 @@
+
+>>> [CLI] bundle generate genie-space --existing-id f00dcafe
+Error: genie space with ID f00dcafe not found
+

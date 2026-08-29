@@ -2,11 +2,12 @@ package mutator
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"golang.org/x/exp/maps"
 )
 
 type selectDefaultTarget struct{}
@@ -26,7 +27,7 @@ func (m *selectDefaultTarget) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	}
 
 	// One target means there's only one default.
-	names := maps.Keys(b.Config.Targets)
+	names := slices.Collect(maps.Keys(b.Config.Targets))
 	if len(names) == 1 {
 		bundle.ApplyContext(ctx, b, SelectTarget(names[0]))
 		return nil

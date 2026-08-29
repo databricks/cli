@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -35,10 +36,15 @@ type AppEnvVar struct {
 type App struct {
 	BaseResource
 	apps.App // nolint App struct also defines Id and URL field with the same json tag "id" and "url"
+	// Note: apps.App already includes GitRepository field from the SDK
 
-	// SourceCodePath is a required field used by DABs to point to Databricks app source code
-	// on local disk and to the corresponding workspace path during app deployment.
-	SourceCodePath string `json:"source_code_path"`
+	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.
+	Lifecycle *LifecycleWithStarted `json:"lifecycle,omitempty"`
+
+	// SourceCodePath and GitSource come from the embedded apps.App. DABs treats them as
+	// deploy-only: source_code_path points at app source on local disk and is translated to
+	// its workspace path, and both are passed to the Deploy API rather than sent as resource
+	// attributes. Declaring them here too would duplicate their json tags and break diffing.
 
 	// Config represents inline app.yaml configuration for the app.
 	// When specified, this configuration is written to an app.yaml file in the source code path during deployment.
@@ -46,6 +52,14 @@ type App struct {
 	Config *AppConfig `json:"config,omitempty"`
 
 	Permissions []AppPermission `json:"permissions,omitempty"`
+}
+
+// GetLifecycle returns the lifecycle settings, using LifecycleWithStarted.
+func (a *App) GetLifecycle() LifecycleConfig {
+	if a.Lifecycle == nil {
+		return LifecycleWithStarted{}
+	}
+	return *a.Lifecycle
 }
 
 func (a *App) UnmarshalJSON(b []byte) error {
@@ -78,8 +92,7 @@ func (a *App) InitializeURL(baseURL url.URL) {
 	if a.ModifiedStatus == "" || a.ModifiedStatus == ModifiedStatusCreated {
 		return
 	}
-	baseURL.Path = "apps/" + a.GetName()
-	a.URL = baseURL.String()
+	a.URL = workspaceurls.ResourceURL(baseURL, "apps", a.GetName())
 }
 
 func (a *App) GetName() string {

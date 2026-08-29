@@ -1,0 +1,26 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+# The backend migrates a version-1 serialized_space to version 2 on write and
+# returns an etag for the migrated (version 2) content. serialized_space is
+# ignore_remote_changes (etag_based), so the permanent local(v1)/remote(v2)
+# mismatch does not surface as drift: the resource action stays "skip" and a
+# re-plan reports no changes.
+title "Plan after deploy is drift-free despite the version 1 -> version 2 migration"
+trace $CLI bundle plan
+
+# The mismatch the etag masks: the local config stays version 1 while the remote
+# (and the etag guarding it) is version 2. The serialized_space change is
+# recorded but skipped via the etag_based rule.
+title "serialized_space: local version 1, remote version 2, skipped (etag_based)"
+$CLI bundle plan -o json \
+  | jq '.plan["resources.genie_spaces.foo"].changes.serialized_space
+        | {action, reason,
+           local_version: (.new | fromjson | .version),
+           remote_version: (.remote | fromjson | .version)}'

@@ -3,6 +3,7 @@
 package ip_access_lists
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -45,6 +46,10 @@ func New() *cobra.Command {
 		GroupID: "settings",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -100,7 +105,9 @@ func newCreate() *cobra.Command {
 
   It can take a few minutes for the changes to take effect. **Note**: Your new
   IP access list has no effect until you enable the feature. See
-  :method:workspaceconf/setStatus
+  [workspaceconf/setStatus]
+
+  [workspaceconf/setStatus]: https://docs.databricks.com/api/workspace/workspaceconf/setstatus
 
   Arguments:
     LABEL: Label for the IP access list. This **cannot** be empty.
@@ -108,12 +115,14 @@ func newCreate() *cobra.Command {
       Supported values: [ALLOW, BLOCK]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'label', 'list_type' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'label', 'list_type' in your JSON input")
 			}
 			return nil
 		}
@@ -132,7 +141,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -153,6 +162,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -192,6 +202,8 @@ func newDelete() *cobra.Command {
     IP_ACCESS_LIST_ID: The ID for the corresponding IP access list`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -199,10 +211,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down.")
 			names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -213,7 +225,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding ip access list")
+			return errors.New("expected to have the id for the corresponding ip access list")
 		}
 		deleteReq.IpAccessListId = args[0]
 
@@ -260,6 +272,8 @@ func newGet() *cobra.Command {
     IP_ACCESS_LIST_ID: The ID for the corresponding IP access list`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -267,10 +281,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down.")
 			names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -281,7 +295,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding ip access list")
+			return errors.New("expected to have the id for the corresponding ip access list")
 		}
 		getReq.IpAccessListId = args[0]
 
@@ -289,6 +303,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -314,6 +329,15 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "list"
 	cmd.Short = `Get access lists.`
@@ -322,12 +346,21 @@ func newList() *cobra.Command {
   Gets all IP access lists for the specified workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		response := w.IpAccessLists.List(ctx)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -377,7 +410,9 @@ func newReplace() *cobra.Command {
   calling user's current IP, error 400 is returned with error_code value
   INVALID_STATE. It can take a few minutes for the changes to take effect.
   Note that your resulting IP access list has no effect until you enable the
-  feature. See :method:workspaceconf/setStatus.
+  feature. See [workspaceconf/setStatus].
+
+  [workspaceconf/setStatus]: https://docs.databricks.com/api/workspace/workspaceconf/setstatus
 
   Arguments:
     IP_ACCESS_LIST_ID: The ID for the corresponding IP access list
@@ -387,12 +422,14 @@ func newReplace() *cobra.Command {
     ENABLED: Specifies whether this IP access list is enabled.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only IP_ACCESS_LIST_ID as positional arguments. Provide 'label', 'list_type', 'enabled' in your JSON input")
+				return errors.New("when --json flag is specified, provide only IP_ACCESS_LIST_ID as positional arguments. Provide 'label', 'list_type', 'enabled' in your JSON input")
 			}
 			return nil
 		}
@@ -411,7 +448,7 @@ func newReplace() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -496,12 +533,16 @@ func newUpdate() *cobra.Command {
 
   It can take a few minutes for the changes to take effect. Note that your
   resulting IP access list has no effect until you enable the feature. See
-  :method:workspaceconf/setStatus.
+  [workspaceconf/setStatus].
+
+  [workspaceconf/setStatus]: https://docs.databricks.com/api/workspace/workspaceconf/setstatus
 
   Arguments:
     IP_ACCESS_LIST_ID: The ID for the corresponding IP access list`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -514,17 +555,17 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down.")
 			names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -535,7 +576,7 @@ func newUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding ip access list")
+			return errors.New("expected to have the id for the corresponding ip access list")
 		}
 		updateReq.IpAccessListId = args[0]
 

@@ -7,9 +7,10 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.bar
+Created jobs.foo
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //jobs
 
@@ -26,9 +27,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated jobs.foo
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //jobs
 
@@ -40,25 +41,25 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] jobs get [BAR_ID]
 {
-  "created_time":[UNIX_TIME_MILLIS],
-  "creator_user_name":"[USERNAME]",
-  "job_id":[BAR_ID],
-  "run_as_user_name":"[USERNAME]",
+  "created_time": [UNIX_TIME_MILLIS],
+  "creator_user_name": "[USERNAME]",
+  "job_id": [BAR_ID],
+  "run_as_user_name": "[USERNAME]",
   "settings": {
     "deployment": {
-      "kind":"BUNDLE",
-      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     },
-    "description":"depends on foo id [FOO_ID]",
-    "edit_mode":"UI_LOCKED",
+    "description": "depends on foo id [FOO_ID]",
+    "edit_mode": "UI_LOCKED",
     "email_notifications": {},
-    "format":"MULTI_TASK",
-    "max_concurrent_runs":1,
-    "name":"bar",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "bar",
     "queue": {
-      "enabled":true
+      "enabled": true
     },
-    "timeout_seconds":0,
+    "timeout_seconds": 0,
     "webhook_notifications": {}
   }
 }
@@ -70,8 +71,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted
 
 >>> print_requests.py //jobs
 {
@@ -90,7 +90,7 @@ Destroy complete!
 }
 
 >>> musterr [CLI] jobs get [FOO_ID]
-Error: Not Found
+Error: Job [FOO_ID] does not exist.
 
 >>> musterr [CLI] jobs get [BAR_ID]
-Error: Not Found
+Error: Job [BAR_ID] does not exist.

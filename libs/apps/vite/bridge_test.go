@@ -1,12 +1,12 @@
 package vite
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,17 +20,11 @@ import (
 func TestValidateFilePath(t *testing.T) {
 	// Create a temporary directory structure for testing
 	tmpDir := t.TempDir()
-	oldWd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldWd) }()
-
-	// Change to temp directory
-	err = os.Chdir(tmpDir)
-	require.NoError(t, err)
+	t.Chdir(tmpDir)
 
 	// Create the allowed directory
 	queriesDir := filepath.Join(tmpDir, "config", "queries")
-	err = os.MkdirAll(queriesDir, 0o755)
+	err := os.MkdirAll(queriesDir, 0o755)
 	require.NoError(t, err)
 
 	// Create a valid test file
@@ -155,11 +149,11 @@ func TestBridgeMessageSerialization(t *testing.T) {
 }
 
 func TestBridgeHandleMessage(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 
 	w := &databricks.WorkspaceClient{}
 
-	vb := NewBridge(ctx, w, "test-app", 5173)
+	vb := NewBridge(ctx, w, "test-app", 5173, false)
 
 	tests := []struct {
 		name        string
@@ -199,18 +193,24 @@ func TestBridgeHandleMessage(t *testing.T) {
 	}
 }
 
+// waitForMessage waits for the websocket test server to deliver a message.
+func waitForMessage(t *testing.T, received <-chan []byte) []byte {
+	select {
+	case message := <-received:
+		return message
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for message")
+		return nil
+	}
+}
+
 func TestBridgeHandleFileReadRequest(t *testing.T) {
 	// Create a temporary directory structure
 	tmpDir := t.TempDir()
-	oldWd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldWd) }()
-
-	err = os.Chdir(tmpDir)
-	require.NoError(t, err)
+	t.Chdir(tmpDir)
 
 	queriesDir := filepath.Join(tmpDir, "config", "queries")
-	err = os.MkdirAll(queriesDir, 0o755)
+	err := os.MkdirAll(queriesDir, 0o755)
 	require.NoError(t, err)
 
 	testContent := "SELECT * FROM users WHERE id = 1"
@@ -219,11 +219,11 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("successful file read", func(t *testing.T) {
-		ctx := cmdio.MockDiscard(context.Background())
+		ctx := cmdio.MockDiscard(t.Context())
 		w := &databricks.WorkspaceClient{}
 
 		// Create a mock tunnel connection using httptest
-		var lastMessage []byte
+		received := make(chan []byte, 1)
 		upgrader := websocket.Upgrader{}
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			conn, err := upgrader.Upgrade(w, r, nil)
@@ -239,7 +239,7 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 				t.Errorf("failed to read message: %v", err)
 				return
 			}
-			lastMessage = message
+			received <- message
 		}))
 		defer server.Close()
 
@@ -250,8 +250,8 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 		defer resp.Body.Close()
 		defer conn.Close()
 
-		vb := NewBridge(ctx, w, "test-app", 5173)
-		vb.tunnelConn = conn
+		vb := NewBridge(ctx, w, "test-app", 5173, false)
+		vb.tunnelConn.Store(conn)
 
 		go func() { _ = vb.tunnelWriter(ctx) }()
 
@@ -264,12 +264,9 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 		err = vb.handleFileReadRequest(msg)
 		require.NoError(t, err)
 
-		// Give the message time to be sent
-		time.Sleep(100 * time.Millisecond)
-
 		// Parse the response
 		var response BridgeMessage
-		err = json.Unmarshal(lastMessage, &response)
+		err = json.Unmarshal(waitForMessage(t, received), &response)
 		require.NoError(t, err)
 
 		assert.Equal(t, "file:read:response", response.Type)
@@ -279,10 +276,10 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 	})
 
 	t.Run("file not found", func(t *testing.T) {
-		ctx := cmdio.MockDiscard(context.Background())
+		ctx := cmdio.MockDiscard(t.Context())
 		w := &databricks.WorkspaceClient{}
 
-		var lastMessage []byte
+		received := make(chan []byte, 1)
 		upgrader := websocket.Upgrader{}
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			conn, err := upgrader.Upgrade(w, r, nil)
@@ -297,7 +294,7 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 				t.Errorf("failed to read message: %v", err)
 				return
 			}
-			lastMessage = message
+			received <- message
 		}))
 		defer server.Close()
 
@@ -307,8 +304,8 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 		defer resp.Body.Close()
 		defer conn.Close()
 
-		vb := NewBridge(ctx, w, "test-app", 5173)
-		vb.tunnelConn = conn
+		vb := NewBridge(ctx, w, "test-app", 5173, false)
+		vb.tunnelConn.Store(conn)
 
 		go func() { _ = vb.tunnelWriter(ctx) }()
 
@@ -321,11 +318,8 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 		err = vb.handleFileReadRequest(msg)
 		require.NoError(t, err)
 
-		// Give the message time to be sent
-		time.Sleep(100 * time.Millisecond)
-
 		var response BridgeMessage
-		err = json.Unmarshal(lastMessage, &response)
+		err = json.Unmarshal(waitForMessage(t, received), &response)
 		require.NoError(t, err)
 
 		assert.Equal(t, "file:read:response", response.Type)
@@ -335,10 +329,10 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 }
 
 func TestBridgeStop(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	w := &databricks.WorkspaceClient{}
 
-	vb := NewBridge(ctx, w, "test-app", 5173)
+	vb := NewBridge(ctx, w, "test-app", 5173, false)
 
 	// Call Stop multiple times to ensure it's idempotent
 	vb.Stop()
@@ -355,11 +349,11 @@ func TestBridgeStop(t *testing.T) {
 }
 
 func TestNewBridge(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	w := &databricks.WorkspaceClient{}
 	appName := "test-app"
 
-	vb := NewBridge(ctx, w, appName, 5173)
+	vb := NewBridge(ctx, w, appName, 5173, false)
 
 	assert.NotNil(t, vb)
 	assert.Equal(t, appName, vb.appName)
@@ -367,4 +361,182 @@ func TestNewBridge(t *testing.T) {
 	assert.NotNil(t, vb.stopChan)
 	assert.NotNil(t, vb.connectionRequests)
 	assert.Equal(t, 10, cap(vb.connectionRequests))
+	assert.False(t, vb.autoApprove)
+}
+
+func TestNewBridge_AutoApprove(t *testing.T) {
+	ctx := t.Context()
+	w := &databricks.WorkspaceClient{}
+
+	vb := NewBridge(ctx, w, "test-app", 5173, true)
+
+	assert.NotNil(t, vb)
+	assert.True(t, vb.autoApprove)
+}
+
+// newWSConn returns a client connection to a test server that discards inbound messages.
+func newWSConn(t *testing.T) *websocket.Conn {
+	upgrader := websocket.Upgrader{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	wsURL := "ws" + server.URL[4:]
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	require.NoError(t, err)
+	resp.Body.Close()
+	t.Cleanup(func() { conn.Close() })
+	return conn
+}
+
+func TestBridgeSetTunnelConnSwapDuringWrites(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	w := &databricks.WorkspaceClient{}
+
+	conn1 := newWSConn(t)
+	conn2 := newWSConn(t)
+
+	vb := NewBridge(ctx, w, "test-app", 5173, false)
+	vb.tunnelConn.Store(conn1)
+
+	writerDone := make(chan struct{})
+	go func() {
+		defer close(writerDone)
+		// A queued write may hit the just-closed old connection, so the error is ignored.
+		_ = vb.tunnelWriter(ctx)
+	}()
+
+	for i := range 100 {
+		vb.tunnelWriteChan <- prioritizedMessage{
+			messageType: websocket.TextMessage,
+			data:        []byte("payload"),
+			priority:    1,
+		}
+		if i == 50 {
+			vb.setTunnelConn(conn2)
+		}
+	}
+
+	close(vb.stopChan)
+	select {
+	case <-writerDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("tunnel writer did not stop")
+	}
+
+	// setTunnelConn must close the connection it replaced.
+	err := conn1.WriteMessage(websocket.TextMessage, []byte("x"))
+	require.Error(t, err)
+}
+
+func TestBridgeConnectionRequestSendDoesNotBlockAfterStop(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	w := &databricks.WorkspaceClient{}
+
+	vb := NewBridge(ctx, w, "test-app", 5173, false)
+
+	// Fill the queue so an unguarded send would block forever.
+	for range cap(vb.connectionRequests) {
+		vb.connectionRequests <- &BridgeMessage{Type: "connection:request"}
+	}
+
+	vb.Stop()
+
+	done := make(chan error, 1)
+	go func() {
+		done <- vb.handleMessage(&BridgeMessage{Type: "connection:request"})
+	}()
+
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(time.Second):
+		t.Fatal("handleMessage blocked on a full connectionRequests queue after stop")
+	}
+}
+
+func TestBridgeConnectionRequestSequentialPrompts(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	w := &databricks.WorkspaceClient{}
+
+	vb := NewBridge(ctx, w, "test-app", 5173, false)
+	go vb.readStdinLines(strings.NewReader("y\nn\n"))
+
+	// Each prompt must consume exactly one line; a leaked reader would swallow the next prompt's answer.
+	require.NoError(t, vb.handleConnectionRequest(&BridgeMessage{Type: "connection:request", Viewer: "a@example.com", RequestID: "req-1"}))
+	require.NoError(t, vb.handleConnectionRequest(&BridgeMessage{Type: "connection:request", Viewer: "b@example.com", RequestID: "req-2"}))
+
+	var responses []BridgeMessage
+	for range 2 {
+		msg := <-vb.tunnelWriteChan
+		var response BridgeMessage
+		require.NoError(t, json.Unmarshal(msg.data, &response))
+		responses = append(responses, response)
+	}
+
+	assert.Equal(t, "connection:response", responses[0].Type)
+	assert.Equal(t, "req-1", responses[0].RequestID)
+	assert.True(t, responses[0].Approved)
+	assert.Equal(t, "connection:response", responses[1].Type)
+	assert.Equal(t, "req-2", responses[1].RequestID)
+	assert.False(t, responses[1].Approved)
+}
+
+func TestBridgeHandleConnectionRequest_AutoApproveSkipsStdin(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	w := &databricks.WorkspaceClient{}
+
+	received := make(chan []byte, 1)
+	upgrader := websocket.Upgrader{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			t.Errorf("failed to upgrade: %v", err)
+			return
+		}
+		defer conn.Close()
+
+		_, message, err := conn.ReadMessage()
+		if err != nil {
+			t.Errorf("failed to read message: %v", err)
+			return
+		}
+		received <- message
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + server.URL[4:]
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	defer conn.Close()
+
+	vb := NewBridge(ctx, w, "test-app", 5173, true)
+	vb.tunnelConn.Store(conn)
+
+	go func() { _ = vb.tunnelWriter(ctx) }()
+
+	msg := &BridgeMessage{
+		Type:      "connection:request",
+		Viewer:    "alice@example.com",
+		RequestID: "req-auto",
+	}
+
+	require.NoError(t, vb.handleConnectionRequest(msg))
+
+	var response BridgeMessage
+	require.NoError(t, json.Unmarshal(waitForMessage(t, received), &response))
+	assert.Equal(t, "connection:response", response.Type)
+	assert.Equal(t, "req-auto", response.RequestID)
+	assert.True(t, response.Approved)
 }

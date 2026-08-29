@@ -17,19 +17,21 @@ func TestSnapshotState(t *testing.T) {
 	require.NoError(t, err)
 
 	// Assert initial contents of the fileset
-	assert.Len(t, files, 4)
-	assert.Equal(t, "invalid-nb.ipynb", files[0].Relative)
-	assert.Equal(t, "my-nb.py", files[1].Relative)
-	assert.Equal(t, "my-script.py", files[2].Relative)
-	assert.Equal(t, "valid-nb.ipynb", files[3].Relative)
+	assert.Len(t, files, 5)
+	assert.Equal(t, "designer-nb.designer.ipynb", files[0].Relative)
+	assert.Equal(t, "invalid-nb.ipynb", files[1].Relative)
+	assert.Equal(t, "my-nb.py", files[2].Relative)
+	assert.Equal(t, "my-script.py", files[3].Relative)
+	assert.Equal(t, "valid-nb.ipynb", files[4].Relative)
 
 	// Assert snapshot state generated from the fileset. Note that the invalid notebook
-	// has been ignored.
+	// has been ignored. The Designer notebook keeps its full ".designer.ipynb" suffix
+	// in the remote name, while other notebooks have their extension stripped.
 	s, err := NewSnapshotState(files)
 	require.NoError(t, err)
-	assertKeysOfMap(t, s.LastModifiedTimes, []string{"valid-nb.ipynb", "my-nb.py", "my-script.py"})
-	assertKeysOfMap(t, s.LocalToRemoteNames, []string{"valid-nb.ipynb", "my-nb.py", "my-script.py"})
-	assertKeysOfMap(t, s.RemoteToLocalNames, []string{"valid-nb", "my-nb", "my-script.py"})
+	assertKeysOfMap(t, s.LastModifiedTimes, []string{"designer-nb.designer.ipynb", "valid-nb.ipynb", "my-nb.py", "my-script.py"})
+	assertKeysOfMap(t, s.LocalToRemoteNames, []string{"designer-nb.designer.ipynb", "valid-nb.ipynb", "my-nb.py", "my-script.py"})
+	assertKeysOfMap(t, s.RemoteToLocalNames, []string{"designer-nb.designer.ipynb", "valid-nb", "my-nb", "my-script.py"})
 	assert.NoError(t, s.validate())
 }
 

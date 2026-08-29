@@ -1,0 +1,25 @@
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Env.DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
+# A bare --job-task <job-id> (no .<task-key>) is a usage error: a job can bind
+# tasks to different environment versions, so the CLI will not guess which one.
+# The error lists the job's task keys. Reported as E_USAGE at the resolve phase.
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/get"
+Response.Body = '''
+{
+  "job_id": 12345,
+  "settings": {
+    "name": "multi-task-job",
+    "tasks": [
+      {"task_key": "ingest", "environment_key": "e1"},
+      {"task_key": "transform", "environment_key": "e2"}
+    ],
+    "environments": [
+      {"environment_key": "e1", "spec": {"environment_version": "3"}},
+      {"environment_key": "e2", "spec": {"environment_version": "4"}}
+    ]
+  }
+}
+'''

@@ -8,3 +8,14 @@ Response.Body = '''
     ]
 }
 '''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects"
+Response.Body = '''
+{
+    "projects": [
+        {"name": "projects/my-project"},
+        {"name": "projects/another-project"}
+    ]
+}
+'''

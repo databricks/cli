@@ -1,0 +1,31 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-catalog-[UNIQUE_NAME]/default/files...
+Created postgres_catalogs.my_catalog
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan
+recreate postgres_catalogs.my_catalog
+
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-catalog-[UNIQUE_NAME]/default/files...
+Recreated postgres_catalogs.my_catalog
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_catalogs.my_catalog
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-catalog-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

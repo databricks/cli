@@ -3,7 +3,6 @@ package dagrun
 import (
 	"fmt"
 	"slices"
-	"sort"
 	"sync"
 	"testing"
 
@@ -194,7 +193,7 @@ func runTestCase(t *testing.T, tc testCase, g *Graph, p int) {
 	if tc.seen != nil {
 		assert.Equal(t, tc.seen, seen)
 	} else if tc.seenSorted != nil {
-		sort.Strings(seen)
+		slices.Sort(seen)
 		assert.Equal(t, tc.seenSorted, seen)
 	} else {
 		assert.Empty(t, seen)

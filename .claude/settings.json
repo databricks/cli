@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./task *)",
+      "Bash(go test:*)",
+      "Bash(go build:*)",
+      "Bash(go vet:*)",
+      "Bash(ruff format:*)",
+      "Bash(git fetch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)",
+      "Bash(git rebase:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr list:*)",
+      "WebSearch"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+# Reproduces https://github.com/databricks/cli/issues/1976: after the remote bundle
+# files are deleted out-of-band, a plain redeploy does not re-upload them.
+
+BUNDLE_PATH="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/out-of-band-delete/default"
+
+trace $CLI bundle deploy
+
+title "After the initial deploy the python_file exists"
+trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | jq '{object_type,path}'
+
+title "Delete the remote bundle directory out-of-band (simulates deleting it in the UI)"
+trace $CLI workspace delete --recursive "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/out-of-band-delete"
+
+title "Redeploy reuses the stale snapshot, so the python_file is NOT re-uploaded"
+trace $CLI bundle deploy
+trace musterr $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py"
+
+title "Removing the sync snapshot forces a full re-upload, restoring the python_file"
+trace rm -rf .databricks/bundle/default/sync-snapshots
+trace $CLI bundle deploy
+trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | jq '{object_type,path}'

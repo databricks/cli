@@ -3,19 +3,19 @@
 Print id of the resource from the state. Update ACC_REPLS for a given ID.
 
  Example: read_id.py foo
- Output job_id, e.g. "5555" and update ACC_REPLS with record "5555:FOO_ID"
+ Output job_id, e.g. "5555" and update ACC_REPLS to replace "5555" with [FOO_ID]
 
 Usage: <group> <name> [attr...]
 """
 
-import sys
-import json
 import argparse
+import json
+import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from print_state import get_state_file
 from add_repl import add_repl
+from print_state import get_state_file
 
 
 def get_id_terraform(filename, name):
@@ -28,7 +28,8 @@ def get_id_terraform(filename, name):
         if r_name == name:
             for inst in r["instances"]:
                 attribute_values = inst.get("attributes") or {}
-                return attribute_values.get("id")
+                # Try "id" first, fall back to "name" for postgres resources
+                return attribute_values.get("id") or attribute_values.get("name")
 
     print(f"Cannot find resource with {name=}. Available: {available}", file=sys.stderr)
 

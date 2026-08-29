@@ -2,11 +2,7 @@
 === create the secret scope
 >>> [CLI] bundle plan -o json
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+>>> [CLI] bundle deploy -qq
 
 >>> [CLI] secrets list-scopes -o json
 {
@@ -19,8 +15,8 @@ Deployment complete!
 
 >>> [CLI] secrets get-secret test-scope-[UNIQUE_NAME]-1 my-key
 {
-  "key":"my-key",
-  "value":"bXktc2VjcmV0LXZhbHVl"
+  "key": "my-key",
+  "value": "bXktc2VjcmV0LXZhbHVl"
 }
 
 >>> [CLI] secrets list-acls test-scope-[UNIQUE_NAME]-1
@@ -58,11 +54,7 @@ Deployment complete!
 === update the name of the scope (should recreate)
 >>> [CLI] bundle plan -o json
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+>>> [CLI] bundle deploy -qq
 
 >>> print_requests.py //secrets
 
@@ -77,8 +69,8 @@ Deployment complete!
 
 >>> [CLI] secrets get-secret test-scope-[UNIQUE_NAME]-2 another-key
 {
-  "key":"another-key",
-  "value":"YW5vdGhlci1zZWNyZXQtdmFsdWU="
+  "key": "another-key",
+  "value": "YW5vdGhlci1zZWNyZXQtdmFsdWU="
 }
 
 >>> [CLI] secrets list-acls test-scope-[UNIQUE_NAME]-2
@@ -105,5 +97,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

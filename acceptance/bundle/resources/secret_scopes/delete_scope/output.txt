@@ -1,0 +1,13 @@
+
+=== create the secret scope
+>>> [CLI] bundle deploy -qq
+
+>>> [CLI] bundle deploy -qq
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.secret_scopes.first
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

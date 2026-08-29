@@ -1,7 +1,6 @@
 package deploy
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -50,7 +49,7 @@ func TestStateUpdate(t *testing.T) {
 	s := &stateUpdate{}
 
 	b := setupBundleForStateUpdate(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	diags := bundle.Apply(ctx, b, s)
 	require.NoError(t, diags.Error())
@@ -98,7 +97,7 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 	s := &stateUpdate{}
 
 	b := setupBundleForStateUpdate(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create an existing state file.
 	statePath, err := getPathToStateFile(ctx, b)

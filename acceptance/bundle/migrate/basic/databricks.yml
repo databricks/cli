@@ -27,7 +27,7 @@ resources:
         myjob_name: ${resources.jobs.test_job.name}
         volume_catalog_name: ${resources.volumes.test_volume.catalog_name}
 
-        # remote field, int, null
+        # remote field, int
         myjob_timeout: ${resources.jobs.test_job.timeout_seconds}
 
         # remote field, string:

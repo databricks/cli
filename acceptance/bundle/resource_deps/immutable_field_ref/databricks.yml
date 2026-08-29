@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    schema:
+      catalog_name: main
+      name: schema
+  volumes:
+    foo:
+      catalog_name: main
+      schema_name: schema
+      name: volume
+      comment: comment1
+  jobs:
+    bar:
+      name: job bar
+      description: storage_location is ${resources.volumes.foo.storage_location}, catalog_name is ${resources.volumes.foo.catalog_name}

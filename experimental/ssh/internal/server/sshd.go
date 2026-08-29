@@ -2,17 +2,33 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 )
+
+// clientAliveIntervalSeconds is how often sshd asks the client to confirm it is still there. It
+// drives the keepalive from the server end of the tunnel; sshconfig.ServerAliveIntervalSeconds
+// documents why an SSH keepalive is what keeps the leg past the driver proxy from being reaped.
+// Configuring it here covers clients the CLI does not configure — a hand-written ProxyCommand host
+// block, or an IDE that supplies its own ssh options — where nothing sets ServerAliveInterval.
+// The two intervals are deliberately independent: neither package imports the other, and each end
+// keeps its own leg warm, so they need not track a single shared value.
+//
+// It also brings in ClientAliveCountMax (OpenSSH default 3), so sshd reclaims a session whose
+// client has gone away after ~90s instead of holding it open until the server's shutdown delay.
+const clientAliveIntervalSeconds = 30
 
 func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, error) {
 	clientPublicKey, err := keys.GetSecret(ctx, client, opts.SecretScopeName, opts.AuthorizedKeySecretName)
@@ -20,14 +36,14 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		return "", fmt.Errorf("failed to get client public key: %w", err)
 	}
 
-	homeDir, err := os.UserHomeDir()
+	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 	sshDir := path.Join(homeDir, opts.ConfigDir)
 
 	err = os.RemoveAll(sshDir)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("failed to remove existing SSH directory: %w", err)
 	}
 
@@ -36,7 +52,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		return "", fmt.Errorf("failed to create SSH directory: %w", err)
 	}
 
-	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, opts.ClusterID, opts.SecretScopeName, opts.ServerPrivateKeyName, opts.ServerPublicKeyName)
+	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, opts.SecretScopeName, opts.ServerPrivateKeyName, opts.ServerPublicKeyName)
 	if err != nil {
 		return "", fmt.Errorf("failed to get SSH key pair from secrets: %w", err)
 	}
@@ -52,33 +68,28 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		return "", err
 	}
 
-	// Set all available env vars, wrapping values in quotes and escaping quotes inside values
-	setEnv := "SetEnv"
+	// Set all available env vars, wrapping values in quotes, escaping quotes, and stripping newlines
+	var setEnvBuf strings.Builder
+	setEnvBuf.WriteString("SetEnv")
 	for _, env := range os.Environ() {
 		parts := strings.SplitN(env, "=", 2)
-		if len(parts) != 2 {
-			continue
+		if len(parts) == 2 {
+			fmt.Fprintf(&setEnvBuf, ` %s="%s"`, parts[0], escapeEnvValue(parts[1]))
 		}
-		valEscaped := strings.ReplaceAll(parts[1], "\"", "\\\"")
-		setEnv += " " + parts[0] + "=\"" + valEscaped + "\""
 	}
-	setEnv += " DATABRICKS_CLI_UPSTREAM=databricks_ssh_tunnel"
-	setEnv += " DATABRICKS_CLI_UPSTREAM_VERSION=" + opts.Version
-	setEnv += " DATABRICKS_SDK_UPSTREAM=databricks_ssh_tunnel"
-	setEnv += " DATABRICKS_SDK_UPSTREAM_VERSION=" + opts.Version
-	setEnv += " GIT_CONFIG_GLOBAL=/Workspace/.proc/self/git/config"
-	setEnv += " ENABLE_DATABRICKS_CLI=true"
-	setEnv += " PYTHONPYCACHEPREFIX=/tmp/pycache"
+	setEnvBuf.WriteString(" DATABRICKS_CLI_UPSTREAM=databricks_ssh_tunnel")
+	setEnvBuf.WriteString(" DATABRICKS_CLI_UPSTREAM_VERSION=" + opts.Version)
+	setEnvBuf.WriteString(" DATABRICKS_SDK_UPSTREAM=databricks_ssh_tunnel")
+	setEnvBuf.WriteString(" DATABRICKS_SDK_UPSTREAM_VERSION=" + opts.Version)
+	setEnvBuf.WriteString(" GIT_CONFIG_GLOBAL=/Workspace/.proc/self/git/config")
+	setEnvBuf.WriteString(" ENABLE_DATABRICKS_CLI=true")
+	setEnvBuf.WriteString(" PYTHONPYCACHEPREFIX=/tmp/pycache")
+	if opts.Serverless {
+		setEnvBuf.WriteString(" DATABRICKS_JUPYTER_SERVERLESS=true")
+	}
+	setEnv := setEnvBuf.String()
 
-	sshdConfigContent := "PubkeyAuthentication yes\n" +
-		"PasswordAuthentication no\n" +
-		"ChallengeResponseAuthentication no\n" +
-		"Subsystem sftp internal-sftp\n" +
-		"HostKey " + keyPath + "\n" +
-		"AuthorizedKeysFile " + authKeysPath + "\n" +
-		setEnv + "\n"
-
-	if err := os.WriteFile(sshdConfig, []byte(sshdConfigContent), 0o600); err != nil {
+	if err := os.WriteFile(sshdConfig, []byte(sshdConfigContent(keyPath, authKeysPath, setEnv)), 0o600); err != nil {
 		return "", err
 	}
 
@@ -91,6 +102,28 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 	return sshdConfig, nil
 }
 
+// sshdConfigContent assembles the configuration the tunnel's sshd runs with.
+func sshdConfigContent(hostKeyPath, authorizedKeysPath, setEnv string) string {
+	return "PubkeyAuthentication yes\n" +
+		"PasswordAuthentication no\n" +
+		"ChallengeResponseAuthentication no\n" +
+		"ClientAliveInterval " + strconv.Itoa(clientAliveIntervalSeconds) + "\n" +
+		"Subsystem sftp internal-sftp\n" +
+		"HostKey " + hostKeyPath + "\n" +
+		"AuthorizedKeysFile " + authorizedKeysPath + "\n" +
+		setEnv + "\n"
+}
+
 func createSSHDProcess(ctx context.Context, configPath string) *exec.Cmd {
 	return exec.CommandContext(ctx, "/usr/sbin/sshd", "-f", configPath, "-i")
+}
+
+// escapeEnvValue escapes a value for use in sshd SetEnv directive.
+// It strips newlines and escapes backslashes and quotes.
+func escapeEnvValue(val string) string {
+	val = strings.ReplaceAll(val, "\r", "")
+	val = strings.ReplaceAll(val, "\n", "")
+	val = strings.ReplaceAll(val, "\\", "\\\\")
+	val = strings.ReplaceAll(val, "\"", "\\\"")
+	return val
 }

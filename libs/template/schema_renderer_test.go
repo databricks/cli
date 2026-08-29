@@ -1,7 +1,6 @@
 package template
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -29,7 +28,7 @@ func TestRenderSchemaWithLocalTemplate(t *testing.T) {
 	inputFile := filepath.Join(tmpDir, "input.json")
 	testutil.WriteFile(t, inputFile, `{"name": "TestUser"}`)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{})
 
 	reader := NewLocalReader(tmpDir)
@@ -55,7 +54,7 @@ func TestRenderSchemaWithoutInputFile(t *testing.T) {
 }`
 	testutil.WriteFile(t, filepath.Join(tmpDir, "databricks_template_schema.json"), schemaContent)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{})
 
 	reader := NewLocalReader(tmpDir)
@@ -76,7 +75,7 @@ func TestRenderSchemaWithMissingVariable(t *testing.T) {
 	inputFile := filepath.Join(tmpDir, "input.json")
 	testutil.WriteFile(t, inputFile, `{}`)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{})
 
 	reader := NewLocalReader(tmpDir)
@@ -94,7 +93,7 @@ func TestRenderSchemaWithInvalidInputFile(t *testing.T) {
 	schemaContent := `{"welcome_message": "Hello"}`
 	testutil.WriteFile(t, filepath.Join(tmpDir, "databricks_template_schema.json"), schemaContent)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{})
 
 	reader := NewLocalReader(tmpDir)
@@ -114,7 +113,7 @@ func TestRenderSchemaWithMalformedInputJson(t *testing.T) {
 	inputFile := filepath.Join(tmpDir, "input.json")
 	testutil.WriteFile(t, inputFile, `{invalid json}`)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{})
 
 	reader := NewLocalReader(tmpDir)
@@ -126,7 +125,7 @@ func TestRenderSchemaWithMalformedInputJson(t *testing.T) {
 }
 
 func TestRenderSchemaWithBuiltinTemplateFS(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	reader := NewBuiltinReader(string(DefaultPython))
 	schemaFS, err := reader.SchemaFS(ctx)
 	require.NoError(t, err)
@@ -147,7 +146,7 @@ func TestRenderSchemaWithSimpleBuiltinTemplate(t *testing.T) {
 }`
 	testutil.WriteFile(t, filepath.Join(tmpDir, "databricks_template_schema.json"), schemaContent)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
 		Config: &workspaceConfig.Config{
 			Host: "https://test.databricks.com",
@@ -167,7 +166,7 @@ func TestLocalReaderSchemaFS(t *testing.T) {
 	testutil.WriteFile(t, filepath.Join(tmpDir, "test.txt"), "content")
 
 	reader := NewLocalReader(tmpDir)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	schemaFS, err := reader.SchemaFS(ctx)
 	require.NoError(t, err)
@@ -176,7 +175,7 @@ func TestLocalReaderSchemaFS(t *testing.T) {
 
 func TestBuiltinReaderSchemaFS(t *testing.T) {
 	reader := NewBuiltinReader(string(DefaultPython))
-	ctx := context.Background()
+	ctx := t.Context()
 
 	fs, err := reader.SchemaFS(ctx)
 	require.NoError(t, err)
@@ -185,7 +184,7 @@ func TestBuiltinReaderSchemaFS(t *testing.T) {
 
 func TestBuiltinReaderSchemaFSNotFound(t *testing.T) {
 	reader := NewBuiltinReader("nonexistent-template")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := reader.SchemaFS(ctx)
 	require.Error(t, err)

@@ -1,6 +1,16 @@
 
->>> [CLI] workspace mkdirs /Workspace/test-[UNIQUE_NAME]
+>>> [CLI] workspace mkdirs /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME]
 
 >>> [CLI] bundle generate dashboard --existing-id [DASHBOARD_ID] --dashboard-dir out/dashboard --resource-dir out/resource
-Writing dashboard to "out/dashboard/test_dashboard.lvdash.json"
-Writing configuration to "out/resource/test_dashboard.dashboard.yml"
+Writing dashboard to out/dashboard/test_dashboard.lvdash.json
+Writing configuration to out/resource/test_dashboard.dashboard.yml
+Warning: Generated configuration is not included in the bundle
+
+The file out/resource/test_dashboard.dashboard.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - out/resource/*.yml
+
+
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME] --recursive

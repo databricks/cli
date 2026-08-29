@@ -26,11 +26,11 @@ func TestYAMLAnchors(t *testing.T) {
 }
 
 func TestYAMLAnchorsNoWarnings(t *testing.T) {
-	_, diags := loadTargetWithDiags("./yaml_anchors", "default")
+	_, diags := loadTargetWithDiags(t, "./yaml_anchors", "default")
 	assert.Empty(t, diags)
 }
 
 func TestYAMLAnchorsSeparateBlockNoWarnings(t *testing.T) {
-	_, diags := loadTargetWithDiags("./yaml_anchors_separate_block", "default")
+	_, diags := loadTargetWithDiags(t, "./yaml_anchors_separate_block", "default")
 	assert.Empty(t, diags)
 }

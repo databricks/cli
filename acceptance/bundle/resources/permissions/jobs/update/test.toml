@@ -1,1 +1,3 @@
 RecordRequests = true
+# Many CLI invocations; extra headroom for heavy parallel runs.
+Timeout = '2m'

@@ -10,7 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -32,14 +34,44 @@ type Downloader struct {
 	sourceDir string
 	configDir string
 	basePath  string
+
+	// downloadSparkPythonFiles controls whether workspace files referenced by a
+	// spark_python_task are downloaded. It is opt-in because a Python file often
+	// imports sibling files that are not captured, so downloading only the entry
+	// point can produce a job that fails at runtime with missing imports.
+	downloadSparkPythonFiles bool
+}
+
+// DownloaderOption configures a Downloader.
+type DownloaderOption func(*Downloader)
+
+// WithSparkPythonFiles enables downloading workspace files referenced by a
+// spark_python_task.
+func WithSparkPythonFiles() DownloaderOption {
+	return func(n *Downloader) {
+		n.downloadSparkPythonFiles = true
+	}
 }
 
 func (n *Downloader) MarkTaskForDownload(ctx context.Context, task *jobs.Task) error {
-	if task.NotebookTask == nil {
-		return nil
+	if task.NotebookTask != nil {
+		return n.markNotebookForDownload(ctx, &task.NotebookTask.NotebookPath)
 	}
 
-	return n.markNotebookForDownload(ctx, &task.NotebookTask.NotebookPath)
+	if n.downloadSparkPythonFiles && task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, task.SparkPythonTask.PythonFile) {
+		return n.markFileForDownload(ctx, &task.SparkPythonTask.PythonFile)
+	}
+
+	return nil
+}
+
+// isWorkspaceFileTask reports whether a task file lives in the Databricks
+// workspace and should be downloaded. Files sourced from Git (source: GIT) are
+// left to the Git repository, and python_file also accepts cloud URIs
+// (dbfs:/, s3:/, adls:/, gcs:/) which are not workspace paths; per the Jobs API,
+// workspace files are absolute and begin with "/".
+func isWorkspaceFileTask(source jobs.Source, filePath string) bool {
+	return source != jobs.SourceGit && strings.HasPrefix(filePath, "/")
 }
 
 func (n *Downloader) MarkPipelineLibraryForDownload(ctx context.Context, lib *pipelines.PipelineLibrary) error {
@@ -73,7 +105,7 @@ func (n *Downloader) markFileForDownload(ctx context.Context, filePath *string) 
 		return err
 	}
 
-	*filePath = rel
+	*filePath = filepath.ToSlash(rel)
 	return nil
 }
 
@@ -94,13 +126,17 @@ func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *stri
 	}
 
 	for _, obj := range objects {
-		if obj.ObjectType == workspace.ObjectTypeDirectory {
+		switch obj.ObjectType {
+		case workspace.ObjectTypeDirectory:
 			continue
-		}
-
-		err := n.markFileForDownload(ctx, &obj.Path)
-		if err != nil {
-			return err
+		case workspace.ObjectTypeNotebook:
+			if err := n.markNotebookForDownload(ctx, &obj.Path); err != nil {
+				return err
+			}
+		default:
+			if err := n.markFileForDownload(ctx, &obj.Path); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -109,7 +145,7 @@ func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *stri
 		return err
 	}
 
-	*dirPath = rel
+	*dirPath = filepath.ToSlash(rel)
 	return nil
 }
 
@@ -161,7 +197,7 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 		ctx,
 		http.MethodGet,
 		"/api/2.0/workspace/get-status",
-		nil,
+		auth.WorkspaceIDHeaders(n.w.Config),
 		nil,
 		map[string]string{
 			"path":               *notebookPath,
@@ -174,27 +210,30 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 	}
 
 	relPath := n.relativePath(*notebookPath)
-	// If the path has any extension, strip it
-	ext := path.Ext(relPath)
-	if ext != "" {
-		relPath = strings.TrimSuffix(relPath, ext)
+
+	relPath = notebook.StripExtension(relPath)
+
+	format := stat.ExportFormat
+	if fixed, ok := notebook.FixedExportFormat(stat.ObjectType); ok {
+		// These object types carry their full extension in the workspace path
+		// (preserved above) and report no export format, so we use a fixed one.
+		format = fixed
+	} else {
+		ext := notebook.GetExtensionByLanguage(&workspace.ObjectInfo{
+			Language:   stat.Language,
+			ObjectType: stat.ObjectType,
+		})
+		if format == workspace.ExportFormatJupyter {
+			ext = notebook.ExtensionJupyter
+		}
+		relPath += ext
 	}
 
-	ext = notebook.GetExtensionByLanguage(&workspace.ObjectInfo{
-		Language:   stat.Language,
-		ObjectType: stat.ObjectType,
-	})
-
-	if stat.ExportFormat == workspace.ExportFormatJupyter {
-		ext = ".ipynb"
-	}
-
-	relPath = relPath + ext
 	targetPath := filepath.Join(n.sourceDir, relPath)
 
 	n.files[targetPath] = exportFile{
 		path:   *notebookPath,
-		format: stat.ExportFormat,
+		format: format,
 	}
 
 	// Update the notebook path to be relative to the config dir
@@ -203,8 +242,76 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 		return err
 	}
 
-	*notebookPath = rel
+	*notebookPath = filepath.ToSlash(rel)
 	return nil
+}
+
+func (n *Downloader) MarkTasksForDownload(ctx context.Context, tasks []jobs.Task) error {
+	var paths []string
+	for _, task := range tasks {
+		if task.NotebookTask != nil {
+			paths = append(paths, task.NotebookTask.NotebookPath)
+		}
+		if n.downloadSparkPythonFiles && task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, task.SparkPythonTask.PythonFile) {
+			paths = append(paths, task.SparkPythonTask.PythonFile)
+		}
+	}
+	if len(paths) > 0 {
+		n.basePath = commonDirPrefix(paths)
+	}
+	for i := range tasks {
+		if err := n.MarkTaskForDownload(ctx, &tasks[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (n *Downloader) CleanupOldFiles(ctx context.Context) {
+	for targetPath := range n.files {
+		rel, err := filepath.Rel(n.sourceDir, targetPath)
+		if err != nil {
+			continue
+		}
+		if filepath.Base(rel) == rel {
+			continue
+		}
+		oldPath := filepath.Join(n.sourceDir, filepath.Base(rel))
+		if _, isNewFile := n.files[oldPath]; isNewFile {
+			continue
+		}
+		if err := os.Remove(oldPath); err == nil {
+			log.Infof(ctx, "Removed previously generated file %s", filepath.ToSlash(oldPath))
+		}
+	}
+}
+
+// commonDirPrefix returns the longest common directory-aligned prefix of the given paths.
+func commonDirPrefix(paths []string) string {
+	if len(paths) == 0 {
+		return ""
+	}
+	if len(paths) == 1 {
+		return path.Dir(paths[0])
+	}
+
+	prefix := paths[0]
+	for _, p := range paths[1:] {
+		for !strings.HasPrefix(p, prefix) {
+			prefix = prefix[:len(prefix)-1]
+			if prefix == "" {
+				return ""
+			}
+		}
+	}
+
+	// Truncate to last '/' to ensure directory alignment.
+	if i := strings.LastIndex(prefix, "/"); i >= 0 {
+		prefix = prefix[:i]
+	} else {
+		prefix = ""
+	}
+	return prefix
 }
 
 func (n *Downloader) relativePath(fullPath string) string {
@@ -228,10 +335,10 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 		info, err := os.Stat(targetPath)
 		if err == nil {
 			if info.IsDir() {
-				return fmt.Errorf("%s is a directory", targetPath)
+				return fmt.Errorf("%s is a directory", filepath.ToSlash(targetPath))
 			}
 			if !force {
-				return fmt.Errorf("%s already exists. Use --force to overwrite", targetPath)
+				return fmt.Errorf("%s already exists. Use --force to overwrite", filepath.ToSlash(targetPath))
 			}
 		}
 	}
@@ -254,14 +361,13 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 			if err != nil {
 				return err
 			}
-			defer file.Close()
 
-			_, err = io.Copy(file, reader)
+			err = writeAndClose(file, reader)
 			if err != nil {
 				return err
 			}
 
-			cmdio.LogString(errCtx, "File successfully saved to "+targetPath)
+			cmdio.LogString(errCtx, "File successfully saved to "+filepath.ToSlash(targetPath))
 			return reader.Close()
 		})
 	}
@@ -269,11 +375,27 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 	return errs.Wait()
 }
 
-func NewDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string) *Downloader {
-	return &Downloader{
+// writeAndClose copies src into dst and closes dst. A copy error takes
+// precedence; otherwise the Close error is returned because a failed Close
+// can mean buffered writes were lost and the file is truncated.
+func writeAndClose(dst io.WriteCloser, src io.Reader) error {
+	_, err := io.Copy(dst, src)
+	cerr := dst.Close()
+	if err == nil {
+		err = cerr
+	}
+	return err
+}
+
+func NewDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string, opts ...DownloaderOption) *Downloader {
+	n := &Downloader{
 		files:     make(map[string]exportFile),
 		w:         w,
 		sourceDir: sourceDir,
 		configDir: configDir,
 	}
+	for _, opt := range opts {
+		opt(n)
+	}
+	return n
 }

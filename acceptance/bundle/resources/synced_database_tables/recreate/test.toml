@@ -1,0 +1,10 @@
+# The Database API has no UpdateSyncedDatabaseTable endpoint (PATCH returns 501),
+# so any field change must go through delete + create. The direct engine handles
+# this; the terraform path would need an upstream provider fix and is excluded.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+RecordRequests = true
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]

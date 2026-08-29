@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  postgres_projects:
+    project:
+      project_id: test-pg-project-$UNIQUE_NAME
+      display_name: Test Postgres Project
+
+  postgres_catalogs:
+    catalog:
+      catalog_id: test_pg_catalog_$UNIQUE_NAME
+      branch: ${resources.postgres_projects.project.name}/branches/production
+      postgres_database: appdb
+      create_database_if_missing: true

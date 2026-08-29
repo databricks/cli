@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -56,11 +57,6 @@ After generation, you can deploy this alert to other targets using:
 	cmd.Flags().StringVar(&alertID, "existing-id", "", `ID of the alert to generate configuration for`)
 	cmd.MarkFlagRequired("existing-id")
 
-	// Alias lookup flag that includes the resource type name.
-	// Included for symmetry with the other generate commands, but we prefer the shorter flag.
-	cmd.Flags().StringVar(&alertID, "existing-alert-id", "", `ID of the alert to generate configuration for`)
-	cmd.Flags().MarkHidden("existing-alert-id")
-
 	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `directory to write the configuration to`)
 	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `directory to write the alert definition to`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `force overwrite existing files in the output directory`)
@@ -74,14 +70,13 @@ After generation, you can deploy this alert to other targets using:
 			return root.ErrAlreadyPrinted
 		}
 
-		w := b.WorkspaceClient()
+		w := b.WorkspaceClient(ctx)
 
 		// Get alert from Databricks
 		alert, err := w.AlertsV2.GetAlert(ctx, sql.GetAlertV2Request{Id: alertID})
 		if err != nil {
 			// Check if it's a not found error to provide a better message
-			var apiErr *apierr.APIError
-			if errors.As(err, &apiErr) && apiErr.StatusCode == 404 {
+			if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusNotFound {
 				return fmt.Errorf("alert with ID %s not found", alertID)
 			}
 			return err
@@ -132,7 +127,7 @@ After generation, you can deploy this alert to other targets using:
 
 		// Check if file exists and force flag
 		if _, err := os.Stat(alertPath); err == nil && !force {
-			return fmt.Errorf("%s already exists. Use --force to overwrite", alertPath)
+			return fmt.Errorf("%s already exists. Use --force to overwrite", filepath.ToSlash(alertPath))
 		}
 
 		// Write alert definition file
@@ -170,8 +165,10 @@ After generation, you can deploy this alert to other targets using:
 			return err
 		}
 
-		cmdio.LogString(ctx, "Alert configuration successfully saved to "+configPath)
-		cmdio.LogString(ctx, "Serialized alert definition to "+alertPath)
+		cmdio.LogString(ctx, "Alert configuration successfully saved to "+filepath.ToSlash(configPath))
+		cmdio.LogString(ctx, "Serialized alert definition to "+filepath.ToSlash(alertPath))
+
+		warnIfNotIncluded(ctx, b, configPath)
 
 		return nil
 	}

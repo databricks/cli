@@ -1,7 +1,6 @@
 package variable
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -37,7 +36,7 @@ func TestLookup_Empty(t *testing.T) {
 	var lookup Lookup
 
 	// Resolve returns an error when no fields are provided
-	_, err := lookup.Resolve(context.Background(), nil)
+	_, err := lookup.Resolve(t.Context(), nil)
 	assert.ErrorContains(t, err, "no valid lookup fields provided")
 
 	// No string representation for an invalid lookup
@@ -51,7 +50,7 @@ func TestLookup_Multiple(t *testing.T) {
 	}
 
 	// Resolve returns an error when multiple fields are provided
-	_, err := lookup.Resolve(context.Background(), nil)
+	_, err := lookup.Resolve(t.Context(), nil)
 	assert.ErrorContains(t, err, "exactly one lookup field must be provided")
 
 	// No string representation for an invalid lookup

@@ -15,7 +15,7 @@ func ConvertPipelineToValue(pipeline *pipelines.PipelineSpec, rootPath, remoteRo
 		pipeline.RootPath = rootPath
 	}
 
-	if pipeline.Libraries != nil {
+	if pipeline.Libraries != nil && remoteRootPath != "" {
 		for i := range pipeline.Libraries {
 			lib := &pipeline.Libraries[i]
 			if lib.Glob != nil {

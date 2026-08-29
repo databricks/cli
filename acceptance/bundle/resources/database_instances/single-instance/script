@@ -25,6 +25,6 @@ for i in {1..10}; do
 done
 
 # _dns fields are excluded since they differ between cloud envs
-trace $CLI database get-database-instance "test-db-instance-single-${UNIQUE_NAME}" | jq 'del(.read_only_dns, .read_write_dns)'
+trace $CLI database get-database-instance "test-db-instance-single-${UNIQUE_NAME}" | database_instance_fields
 
 trace $CLI bundle summary

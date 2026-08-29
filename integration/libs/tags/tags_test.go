@@ -1,6 +1,7 @@
 package tags_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -33,7 +34,7 @@ func testTags(t *testing.T, tags map[string]string) error {
 
 	if resp != nil {
 		t.Cleanup(func() {
-			_ = wt.W.Jobs.DeleteByJobId(ctx, resp.JobId)
+			_ = wt.W.Jobs.DeleteByJobId(context.WithoutCancel(ctx), resp.JobId)
 			// Cannot enable errchecking there, tests fail with:
 			//   Error: Received unexpected error:
 			//   Job 0 does not exist.

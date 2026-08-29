@@ -29,7 +29,6 @@ type syncFlags struct {
 	interval    time.Duration
 	full        bool
 	watch       bool
-	output      flags.Output
 	exclude     []string
 	include     []string
 	dryRun      bool
@@ -37,14 +36,14 @@ type syncFlags struct {
 	includeFrom string
 }
 
-func readPatternsFile(filePath string) ([]string, error) {
+func readPatternsFile(flagName, filePath string) ([]string, error) {
 	if filePath == "" {
 		return nil, nil
 	}
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read exclude-from file: %w", err)
+		return nil, fmt.Errorf("failed to read %s file: %w", flagName, err)
 	}
 
 	var patterns []string
@@ -55,7 +54,7 @@ func readPatternsFile(filePath string) ([]string, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading exclude-from file: %w", err)
+		return nil, fmt.Errorf("error reading %s file: %w", flagName, err)
 	}
 
 	return patterns, nil
@@ -71,12 +70,12 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
 
-	excludePatterns, err := readPatternsFile(f.excludeFrom)
+	excludePatterns, err := readPatternsFile("exclude-from", f.excludeFrom)
 	if err != nil {
 		return nil, err
 	}
 
-	includePatterns, err := readPatternsFile(f.includeFrom)
+	includePatterns, err := readPatternsFile("include-from", f.includeFrom)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +97,7 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 	}
 
 	var outputFunc func(context.Context, <-chan sync.Event, io.Writer)
-	switch f.output {
+	switch root.OutputType(cmd) {
 	case flags.OutputText:
 		outputFunc = sync.TextOutput
 	case flags.OutputJSON:
@@ -119,12 +118,12 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		log.Warnf(ctx, "Running in dry-run mode. No actual changes will be made.")
 	}
 
-	excludePatterns, err := readPatternsFile(f.excludeFrom)
+	excludePatterns, err := readPatternsFile("exclude-from", f.excludeFrom)
 	if err != nil {
 		return nil, err
 	}
 
-	includePatterns, err := readPatternsFile(f.includeFrom)
+	includePatterns, err := readPatternsFile("include-from", f.includeFrom)
 	if err != nil {
 		return nil, err
 	}
@@ -175,13 +174,10 @@ func New() *cobra.Command {
 		GroupID: "development",
 	}
 
-	f := syncFlags{
-		output: flags.OutputText,
-	}
+	var f syncFlags
 	cmd.Flags().DurationVar(&f.interval, "interval", 1*time.Second, "file system polling interval (for --watch)")
 	cmd.Flags().BoolVar(&f.full, "full", false, "perform full synchronization (default is incremental)")
 	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
-	cmd.Flags().Var(&f.output, "output", "type of output format")
 	cmd.Flags().StringSliceVar(&f.exclude, "exclude", nil, "patterns to exclude from sync (can be specified multiple times)")
 	cmd.Flags().StringSliceVar(&f.include, "include", nil, "patterns to include in sync (can be specified multiple times)")
 	cmd.Flags().StringVar(&f.excludeFrom, "exclude-from", "", "file containing patterns to exclude from sync (one pattern per line)")

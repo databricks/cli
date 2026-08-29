@@ -8,9 +8,34 @@ trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext
 title "Assert that mutator execution times are being recorded"
 trace cat telemetry.json | jq ' .entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms | length > 0'
 
+# resources_metadata carries counts for both engines but sizes only for direct, so
+# it diverges across the DATABRICKS_BUNDLE_ENGINE matrix: capture it per-engine and
+# omit it from the engine-agnostic out.telemetry.txt below. Sizes are deterministic
+# for a fixed config and asserted exactly. state_file_size_bytes is dropped because
+# it is os.Stat of resources.json, whose header embeds the CLI version string
+# (<version>-dev+<sha> on linux/macos vs <version>-dev on windows).
+cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources_metadata | if . then del(.state_file_size_bytes) else . end' > out.resources_metadata.$DATABRICKS_BUNDLE_ENGINE.txt
+
+# The dry-run migration to the direct engine runs only after a terraform deploy,
+# so its bool_values entries (direct_drymigrate_*) diverge across the
+# DATABRICKS_BUNDLE_ENGINE matrix (absent for direct). Capture them per-engine and
+# drop them from the engine-agnostic out.telemetry.txt below.
+title "Assert the dry-run migration to the direct engine is reported"
+cat telemetry.json | jq '[.entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values[] | select(.key | startswith("direct_drymigrate_"))]' > out.migration.$DATABRICKS_BUNDLE_ENGINE.txt
+
+# engine_terraform_env reflects DATABRICKS_BUNDLE_ENGINE, which the acceptance
+# matrix sets per variant, so it diverges across the matrix. Capture the
+# engine_terraform_* keys per-engine and drop them from the engine-agnostic
+# out.telemetry.txt below.
+title "Assert the terraform engine opt-in is reported"
+cat telemetry.json | jq '[.entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values[] | select(.key | startswith("engine_terraform_"))]' > out.engine.$DATABRICKS_BUNDLE_ENGINE.txt
+
 # bundle_mutator_execution_time_ms can have variable number of entries depending upon the runtime of the mutators. Thus we omit it from
 # being asserted here.
-cat telemetry.json | jq 'del(.entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms)' > out.telemetry.txt
+#
+# upload_file_count and upload_file_sizes are asserted here and kept deterministic by
+# the sync.paths restriction in databricks.yml (see the comment there).
+cat telemetry.json | jq 'del(.entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms, .entry.databricks_cli_log.bundle_deploy_event.resources_metadata) | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values |= map(select(.key | (startswith("direct_drymigrate_") or startswith("engine_terraform_")) | not))' > out.telemetry.txt
 
 cmd_exec_id=$(extract_command_exec_id.py)
 deployment_id=$(cat .databricks/bundle/default/deployment.json | jq -r .id)

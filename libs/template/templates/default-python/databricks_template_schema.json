@@ -1,6 +1,6 @@
 {
     "template_dir": "../default",
-    "welcome_message": "Welcome to the default Python template for Databricks Asset Bundles!\n\nAnswer the following questions to customize your project.\nYou can always change your configuration in the databricks.yml file later.\n\nNote that {{workspace_host}} is used for initialization.\n(For information on how to change your profile, see https://docs.databricks.com/dev-tools/cli/profiles.html.)",
+    "welcome_message": "Welcome to the default Python template for Declarative Automation Bundles!\n\nAnswer the following questions to customize your project.\nYou can always change your configuration in the databricks.yml file later.\n\nNote that {{workspace_host}} is used for initialization.\n(For information on how to change your profile, see https://docs.databricks.com/dev-tools/cli/profiles.html.)",
     "properties": {
         "template_name": {
             "//": "This property is always set to 'default-python'",
@@ -49,14 +49,14 @@
         "default_catalog": {
             "type": "string",
             "default": "{{if eq (default_catalog) \"\"}}hive_metastore{{else}}{{default_catalog}}{{end}}",
-            "pattern": "^\\w*$",
+            "pattern": "^(\\w[\\w-]*)?$",
             "pattern_match_failure_message": "Invalid catalog name.",
             "description": "Default catalog for any tables created by this project{{if eq (default_catalog) \"\"}} (leave blank when not using Unity Catalog){{end}}",
             "order": 6
         },
         "personal_schemas": {
             "type": "string",
-            "description": "Use a personal schema for each user working on this project.\n(This is recommended. Your personal schema will be '{{.default_catalog}}.{{short_name}}'.)",
+            "description": "Use a personal schema for each user working on this project\n(this is recommended, your personal schema will be '{{.default_catalog}}.{{short_name}}')",
             "default": "yes",
             "enum": [
                 "yes",

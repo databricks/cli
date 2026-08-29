@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
@@ -42,8 +43,8 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 	cmd.Flags().StringVar(&configFile, "config-file", "", "JSON file containing key value pairs of input parameters required for template initialization.")
 	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory path within a Git repository containing the template.")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
-	cmd.Flags().StringVar(&branch, "tag", "", "Git tag to use for template initialization")
-	cmd.Flags().StringVar(&tag, "branch", "", "Git branch to use for template initialization")
+	cmd.Flags().StringVar(&tag, "tag", "", "Git tag to use for template initialization")
+	cmd.Flags().StringVar(&branch, "branch", "", "Git branch to use for template initialization")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -81,6 +82,12 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			return err
 		}
 		tmpl.Writer.LogTelemetry(ctx)
+
+		// Gated on JSON output to keep the text output unchanged: the success
+		// message is already printed by Materialize.
+		if root.OutputType(cmd) == flags.OutputJSON {
+			return cmdio.Render(ctx, tmpl.Writer.InitResult())
+		}
 		return nil
 	}
 	return cmd

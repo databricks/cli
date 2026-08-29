@@ -2,17 +2,12 @@ package validate
 
 import (
 	"context"
-	"fmt"
-	"path"
-	"strconv"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/paths"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -23,7 +18,7 @@ func (f *folderPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return nil
 	}
 
-	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace)
+	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace).Paths
 
 	var diags diag.Diagnostics
 	g, ctx := errgroup.WithContext(ctx)
@@ -53,45 +48,13 @@ func checkFolderPermission(ctx context.Context, b *bundle.Bundle, folderPath str
 		return nil
 	}
 
-	w := b.WorkspaceClient().Workspace
-	obj, err := getClosestExistingObject(ctx, w, folderPath)
+	w := b.WorkspaceClient(ctx).Workspace
+	acl, err := permissions.ResolveFolderACL(ctx, w, folderPath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	objPermissions, err := w.GetPermissions(ctx, workspace.GetWorkspaceObjectPermissionsRequest{
-		WorkspaceObjectId:   strconv.FormatInt(obj.ObjectId, 10),
-		WorkspaceObjectType: "directories",
-	})
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	p := permissions.ObjectAclToResourcePermissions(folderPath, objPermissions.AccessControlList)
-	return p.Compare(b.Config.Permissions)
-}
-
-func getClosestExistingObject(ctx context.Context, w workspace.WorkspaceInterface, folderPath string) (*workspace.ObjectInfo, error) {
-	for {
-		obj, err := w.GetStatusByPath(ctx, folderPath)
-		if err == nil {
-			return obj, nil
-		}
-
-		if !apierr.IsMissing(err) {
-			return nil, err
-		}
-
-		parent := path.Dir(folderPath)
-		// If the parent is the same as the current folder, then we have reached the root
-		if folderPath == parent {
-			break
-		}
-
-		folderPath = parent
-	}
-
-	return nil, fmt.Errorf("folder %s and its parent folders do not exist", folderPath)
+	return acl.Permissions.Compare(b.Config.Permissions)
 }
 
 // Name implements bundle.ReadOnlyMutator.

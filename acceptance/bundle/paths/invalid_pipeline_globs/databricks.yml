@@ -9,5 +9,5 @@ resources:
 
 variables:
   notebook_dir:
-    description: Directory with DLT notebooks
+    description: Directory with SDP notebooks
     default: non-existent

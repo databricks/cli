@@ -1,5 +1,6 @@
 
 >>> errcode [CLI] bundle validate -o json
+Warn: Failed to fix host for metadata resolution: parse "https://${var.host}": invalid character "{" in host name
 Warning: Variable interpolation is not supported for fields that configure authentication
   at workspace.host
   in databricks.yml:10:9
@@ -33,6 +34,7 @@ Error: failed during request visitor: parse "https://${var.host}": invalid chara
 Exit code: 1
 
 >>> errcode [CLI] bundle validate
+Warn: Failed to fix host for metadata resolution: parse "https://${var.host}": invalid character "{" in host name
 Warning: Variable interpolation is not supported for fields that configure authentication
   at workspace.host
   in databricks.yml:10:9
@@ -52,6 +54,7 @@ Found 1 error and 1 warning
 Exit code: 1
 
 >>> errcode [CLI] bundle summary
+Warn: Failed to fix host for metadata resolution: parse "https://${var.host}": invalid character "{" in host name
 Warning: Variable interpolation is not supported for fields that configure authentication
   at workspace.host
   in databricks.yml:10:9

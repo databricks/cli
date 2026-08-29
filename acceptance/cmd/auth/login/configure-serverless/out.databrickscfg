@@ -1,4 +1,5 @@
 [DEFAULT]
 host                  = [DATABRICKS_URL]
 serverless_compute_id = auto
+workspace_id          = [NUMID]
 auth_type             = databricks-cli

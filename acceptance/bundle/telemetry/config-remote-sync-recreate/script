@@ -1,0 +1,15 @@
+trace $CLI bundle deploy
+
+pipeline_id="$(read_id.py foo)"
+
+# Change the immutable ingestion_definition.connection_name remotely.
+# config-remote-sync would sync this into config, so recreate_forcing_changes is 1.
+edit_resource.py pipelines $pipeline_id <<EOF
+r["ingestion_definition"]["connection_name"] = "my_new_connection"
+EOF
+
+trace $CLI bundle config-remote-sync
+
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null)'
+
+rm out.requests.txt

@@ -2,11 +2,11 @@
 # /// script
 # requires-python = ">=3.12"
 # ///
+import glob
 import os
 import re
-import sys
-import glob
 import subprocess
+import sys
 
 
 def load_ignores():
@@ -18,7 +18,9 @@ def load_ignores():
             continue
         if line.startswith("#"):
             continue
-        expanded = glob.glob(line, recursive=True)
+        # include_hidden: without it `**` skips dot-prefixed names, so a directory
+        # pattern silently fails to cover e.g. a vendored tree's .github/.
+        expanded = glob.glob(line, recursive=True, include_hidden=True)
         if len(expanded) == 0:
             print(f".wsignore:{ind + 1}: No matches for line: {line}")
             fail = True

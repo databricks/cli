@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+variables:
+  sp:
+    lookup:
+      service_principal: "$TEST_SP_DISPLAY_NAME"
+
+  result:
+    default: ${var.sp}

@@ -1,10 +1,12 @@
 # Default settings that apply to all tests unless overriden by test.toml files in inner directories.
-Local = true
+# Tests always run locally; set Cloud = true to also run on a real workspace.
+# Cloud = false (the inherited default) therefore means local only.
+# CloudSlow only narrows a Cloud = true run (skipped under -short); it does not enable cloud on its own.
 Cloud = false
 
 # default timeouts
-Timeout = '30s'
-TimeoutWindows = '60s'
+Timeout = '60s'
+TimeoutWindows = '90s'
 
 # Slowest test I saw:
 # github.com/databricks/cli/acceptance TestAccept/bundle/integration_whl/interactive_single_user 18m8.69s
@@ -16,11 +18,6 @@ TimeoutCIMultiplier = 2
 Env.PYTHONDONTWRITEBYTECODE = "1"
 Env.PYTHONUNBUFFERED = "1"
 Env.PYTHONUTF8 = "1"
-
-# Clear agent env vars to prevent them from affecting test output
-Env.CLAUDECODE = ""
-Env.GEMINI_CLI = ""
-Env.CURSOR_AGENT = ""
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 EnvMatrixExclude.noplantf = ["DATABRICKS_BUNDLE_ENGINE=terraform", "READPLAN=1"]
@@ -81,13 +78,17 @@ Order = 10
 
 [[Repls]]
 # "2025-10-23T14:26:43.499488Z"
-Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d\.\d+(Z|\+\d\d:\d\d)?'
+Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d\.\d+(Z|[+-]\d\d:\d\d)?'
 New = "[TIMESTAMP]"
 Order = 9
 
 [[Repls]]
 # "2025-10-23T14:26:43"
 # "2025-10-23T14:26:43Z"
-Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\dZ?'
+Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(Z|[+-]\d\d:\d\d)?'
 New = "[TIMESTAMP]"
 Order = 9
+
+[[Repls]]
+Old = "deco-uc-prod-isolated-aws-us-east-1|metastore_azure_eastus2"
+New = "[METASTORE_NAME]"

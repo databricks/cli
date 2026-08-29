@@ -1,7 +1,6 @@
 package resourcemutator
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"testing"
@@ -11,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,19 +19,31 @@ import (
 // This list exists to ensure that this mutator is updated when new resource is added.
 // These resources are there because they use grants, not permissions:
 var unsupportedResources = []string{
+	"catalogs",
+	"external_locations",
 	"volumes",
 	"schemas",
 	"quality_monitors",
 	"registered_models",
 	"database_catalogs",
 	"synced_database_tables",
+	"postgres_branches",
+	"postgres_databases",
+	"postgres_endpoints",
+	"postgres_catalogs",
+	"postgres_roles",
+	"postgres_synced_tables",
+	"vector_search_indexes",
+	"job_runs",
+	"secrets",
+	"cluster_policies",
 }
 
 func TestApplyBundlePermissions(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath: "/Users/foo@bar.com",
+				RootPath: "/Users/foo@bar.test",
 			},
 			Permissions: []resources.Permission{
 				{Level: permissions.CAN_MANAGE, UserName: "TestUser"},
@@ -75,11 +87,19 @@ func TestApplyBundlePermissions(t *testing.T) {
 					"app_1": {},
 					"app_2": {},
 				},
+				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+					"vs_1": {},
+					"vs_2": {},
+				},
+				InstancePools: map[string]*resources.InstancePool{
+					"instance_pool_1": {},
+					"instance_pool_2": {},
+				},
 			},
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
+	diags := bundle.Apply(t.Context(), b, ApplyBundlePermissions())
 	require.NoError(t, diags.Error())
 
 	require.Len(t, b.Config.Resources.Jobs["job_1"].Permissions, 3)
@@ -129,19 +149,31 @@ func TestApplyBundlePermissions(t *testing.T) {
 	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.ModelServingEndpointPermission{Level: "CAN_QUERY", ServicePrincipalName: "TestServicePrincipal"})
 
 	require.Len(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, 2)
-	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.DashboardPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.DashboardPermission{Level: "CAN_READ", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.Permission{Level: "CAN_READ", GroupName: "TestGroup"})
 
 	require.Len(t, b.Config.Resources.Apps["app_1"].Permissions, 2)
 	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_USE", GroupName: "TestGroup"})
+
+	require.Len(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, 2)
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_USE", GroupName: "TestGroup"})
+
+	require.Len(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, 2)
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_USE", GroupName: "TestGroup"})
+
+	require.Len(t, b.Config.Resources.InstancePools["instance_pool_1"].Permissions, 2)
+	require.Contains(t, b.Config.Resources.InstancePools["instance_pool_1"].Permissions, resources.InstancePoolPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.InstancePools["instance_pool_1"].Permissions, resources.InstancePoolPermission{Level: "CAN_ATTACH_TO", GroupName: "TestGroup"})
 }
 
 func TestWarningOnOverlapPermission(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath: "/Users/foo@bar.com",
+				RootPath: "/Users/foo@bar.test",
 			},
 			Permissions: []resources.Permission{
 				{Level: permissions.CAN_MANAGE, UserName: "TestUser"},
@@ -170,8 +202,12 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
+	diags := bundle.Apply(t.Context(), b, ApplyBundlePermissions())
 	require.NoError(t, diags.Error())
+
+	require.Len(t, diags, 1)
+	require.Equal(t, diag.Warning, diags[0].Severity)
+	require.Equal(t, "'jobs' already has permissions set for 'TestUser' user name", diags[0].Summary)
 
 	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.JobPermission{Level: "CAN_VIEW", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.JobPermission{Level: "CAN_VIEW", GroupName: "TestGroup"})

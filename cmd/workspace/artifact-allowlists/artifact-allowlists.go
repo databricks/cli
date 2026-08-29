@@ -3,6 +3,7 @@
 package artifact_allowlists
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,13 +21,17 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "artifact-allowlists",
-		Short: `In Databricks Runtime 13.3 and above, you can add libraries and init scripts to the allowlist in UC so that users can leverage these artifacts on compute configured with shared access mode.`,
+		Short: `In Databricks Runtime 13.3 and above, you can add libraries and init scripts to the allowlist in UC so that users can use these artifacts on compute configured with shared access mode.`,
 		Long: `In Databricks Runtime 13.3 and above, you can add libraries and init scripts
-  to the allowlist in UC so that users can leverage these artifacts on compute
+  to the allowlist in UC so that users can use these artifacts on compute
   configured with shared access mode.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -66,6 +71,8 @@ func newGet() *cobra.Command {
       Supported values: [INIT_SCRIPT, LIBRARY_JAR, LIBRARY_MAVEN]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -86,6 +93,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -131,6 +139,8 @@ func newUpdate() *cobra.Command {
       Supported values: [INIT_SCRIPT, LIBRARY_JAR, LIBRARY_MAVEN]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -148,13 +158,13 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		_, err = fmt.Sscan(args[0], &updateReq.ArtifactType)
 		if err != nil {
@@ -165,6 +175,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

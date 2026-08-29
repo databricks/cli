@@ -3,6 +3,7 @@
 package jobs
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -43,6 +44,10 @@ func New() *cobra.Command {
 		GroupID: "lakeflow",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCancelAllRuns())
@@ -102,6 +107,8 @@ func newCancelAllRuns() *cobra.Command {
   doesn't prevent new runs from being started.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -119,7 +126,7 @@ func newCancelAllRuns() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -179,12 +186,14 @@ func newCancelRun() *cobra.Command {
     RUN_ID: This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'run_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
@@ -202,17 +211,17 @@ func newCancelRun() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
 			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+				sp := cmdio.NewSpinner(ctx)
+				sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				close(promptSpinner)
+				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -223,7 +232,7 @@ func newCancelRun() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have this field is required")
+				return errors.New("expected to have this field is required")
 			}
 			_, err = fmt.Sscan(args[0], &cancelRunReq.RunId)
 			if err != nil {
@@ -239,7 +248,7 @@ func newCancelRun() *cobra.Command {
 		if cancelRunSkipWait {
 			return nil
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *jobs.Run) {
 			if i.State == nil {
 				return
@@ -249,9 +258,9 @@ func newCancelRun() *cobra.Command {
 			if i.State != nil {
 				statusMessage = i.State.StateMessage
 			}
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(cancelRunTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -292,6 +301,8 @@ func newCreate() *cobra.Command {
 	cmd.Long = `Create a new job.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -304,19 +315,20 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Jobs.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -359,12 +371,14 @@ func newDelete() *cobra.Command {
     JOB_ID: The canonical identifier of the job to delete. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'job_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
 			}
 			return nil
 		}
@@ -382,17 +396,17 @@ func newDelete() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
 			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+				sp := cmdio.NewSpinner(ctx)
+				sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				close(promptSpinner)
+				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -403,7 +417,7 @@ func newDelete() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the canonical identifier of the job to delete")
+				return errors.New("expected to have the canonical identifier of the job to delete")
 			}
 			_, err = fmt.Sscan(args[0], &deleteReq.JobId)
 			if err != nil {
@@ -458,12 +472,14 @@ func newDeleteRun() *cobra.Command {
     RUN_ID: ID of the run to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'run_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
@@ -481,17 +497,17 @@ func newDeleteRun() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
 			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+				sp := cmdio.NewSpinner(ctx)
+				sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				close(promptSpinner)
+				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -502,7 +518,7 @@ func newDeleteRun() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have id of the run to delete")
+				return errors.New("expected to have id of the run to delete")
 			}
 			_, err = fmt.Sscan(args[0], &deleteRunReq.RunId)
 			if err != nil {
@@ -556,6 +572,8 @@ func newExportRun() *cobra.Command {
     RUN_ID: The canonical identifier for the run. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -563,10 +581,10 @@ func newExportRun() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -577,7 +595,7 @@ func newExportRun() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier for the run")
+			return errors.New("expected to have the canonical identifier for the run")
 		}
 		_, err = fmt.Sscan(args[0], &exportRunReq.RunId)
 		if err != nil {
@@ -588,6 +606,7 @@ func newExportRun() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -617,6 +636,7 @@ func newGet() *cobra.Command {
 
 	var getReq jobs.GetJobRequest
 
+	cmd.Flags().BoolVar(&getReq.IncludeTriggerState, "include-trigger-state", getReq.IncludeTriggerState, `Flag that indicates that trigger state should be included in the response.`)
 	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Use next_page_token returned from the previous GetJob response to request the next page of the job's array properties.`)
 
 	cmd.Use = "get JOB_ID"
@@ -639,6 +659,8 @@ func newGet() *cobra.Command {
       field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -646,10 +668,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -660,7 +682,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the job to retrieve information about")
+			return errors.New("expected to have the canonical identifier of the job to retrieve information about")
 		}
 		_, err = fmt.Sscan(args[0], &getReq.JobId)
 		if err != nil {
@@ -671,6 +693,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -710,6 +733,8 @@ func newGetPermissionLevels() *cobra.Command {
     JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -717,10 +742,10 @@ func newGetPermissionLevels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -731,7 +756,7 @@ func newGetPermissionLevels() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+			return errors.New("expected to have the job for which to get or manage permissions")
 		}
 		getPermissionLevelsReq.JobId = args[0]
 
@@ -739,6 +764,7 @@ func newGetPermissionLevels() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -779,6 +805,8 @@ func newGetPermissions() *cobra.Command {
     JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -786,10 +814,10 @@ func newGetPermissions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -800,7 +828,7 @@ func newGetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+			return errors.New("expected to have the job for which to get or manage permissions")
 		}
 		getPermissionsReq.JobId = args[0]
 
@@ -808,6 +836,7 @@ func newGetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -861,6 +890,8 @@ func newGetRun() *cobra.Command {
       This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -868,10 +899,10 @@ func newGetRun() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -882,7 +913,7 @@ func newGetRun() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
+			return errors.New("expected to have the canonical identifier of the run for which to retrieve the metadata")
 		}
 		_, err = fmt.Sscan(args[0], &getRunReq.RunId)
 		if err != nil {
@@ -893,6 +924,7 @@ func newGetRun() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -941,6 +973,8 @@ func newGetRunOutput() *cobra.Command {
     RUN_ID: The canonical identifier for the run.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -948,10 +982,10 @@ func newGetRunOutput() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -962,7 +996,7 @@ func newGetRunOutput() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier for the run")
+			return errors.New("expected to have the canonical identifier for the run")
 		}
 		_, err = fmt.Sscan(args[0], &getRunOutputReq.RunId)
 		if err != nil {
@@ -973,6 +1007,7 @@ func newGetRunOutput() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1001,12 +1036,23 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq jobs.ListJobsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().BoolVar(&listReq.ExpandTasks, "expand-tasks", listReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
-	cmd.Flags().IntVar(&listReq.Limit, "limit", listReq.Limit, `The number of jobs to return.`)
+	cmd.Flags().IntVar(&listReq.Limit, "page-size", listReq.Limit, `The number of jobs to return.`)
+	cmd.Flags().Lookup("page-size").Hidden = true
 	cmd.Flags().StringVar(&listReq.Name, "name", listReq.Name, `A filter on the list based on the exact (case insensitive) job name.`)
 	cmd.Flags().IntVar(&listReq.Offset, "offset", listReq.Offset, `The offset of the first job to return, relative to the most recently created job.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of jobs respectively.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
 	cmd.Short = `List jobs.`
@@ -1015,6 +1061,8 @@ func newList() *cobra.Command {
   Retrieves a list of jobs.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1027,6 +1075,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Jobs.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1055,25 +1110,39 @@ func newListRuns() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listRunsReq jobs.ListRunsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listRunsLimit int
 
 	cmd.Flags().BoolVar(&listRunsReq.ActiveOnly, "active-only", listRunsReq.ActiveOnly, `If active_only is true, only active runs are included in the results; otherwise, lists both active and completed runs.`)
 	cmd.Flags().BoolVar(&listRunsReq.CompletedOnly, "completed-only", listRunsReq.CompletedOnly, `If completed_only is true, only completed runs are included in the results; otherwise, lists both active and completed runs.`)
 	cmd.Flags().BoolVar(&listRunsReq.ExpandTasks, "expand-tasks", listRunsReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
 	cmd.Flags().Int64Var(&listRunsReq.JobId, "job-id", listRunsReq.JobId, `The job for which to list runs.`)
-	cmd.Flags().IntVar(&listRunsReq.Limit, "limit", listRunsReq.Limit, `The number of runs to return.`)
+	cmd.Flags().IntVar(&listRunsReq.Limit, "page-size", listRunsReq.Limit, `The number of runs to return.`)
+	cmd.Flags().Lookup("page-size").Hidden = true
 	cmd.Flags().IntVar(&listRunsReq.Offset, "offset", listRunsReq.Offset, `The offset of the first run to return, relative to the most recent run.`)
-	cmd.Flags().StringVar(&listRunsReq.PageToken, "page-token", listRunsReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of runs respectively.`)
 	cmd.Flags().Var(&listRunsReq.RunType, "run-type", `The type of runs to return. Supported values: [JOB_RUN, SUBMIT_RUN, WORKFLOW_RUN]`)
 	cmd.Flags().Int64Var(&listRunsReq.StartTimeFrom, "start-time-from", listRunsReq.StartTimeFrom, `Show runs that started _at or after_ this value.`)
 	cmd.Flags().Int64Var(&listRunsReq.StartTimeTo, "start-time-to", listRunsReq.StartTimeTo, `Show runs that started _at or before_ this value.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listRunsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listRunsReq.PageToken, "page-token", listRunsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-runs"
 	cmd.Short = `List job runs.`
 	cmd.Long = `List job runs.
 
-  List runs in descending order by start time.`
+  List runs in descending order by end time. If a run has not finished, it falls
+  back to start time.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1086,6 +1155,13 @@ func newListRuns() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Jobs.ListRuns(ctx, listRunsReq)
+		if listRunsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listRunsLimit)
+		}
+		if listRunsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listRunsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1151,12 +1227,14 @@ func newRepairRun() *cobra.Command {
     RUN_ID: The job run ID of the run to repair. The run must not be in progress.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'run_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1174,17 +1252,17 @@ func newRepairRun() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
 			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+				sp := cmdio.NewSpinner(ctx)
+				sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				close(promptSpinner)
+				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -1195,7 +1273,7 @@ func newRepairRun() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the job run id of the run to repair")
+				return errors.New("expected to have the job run id of the run to repair")
 			}
 			_, err = fmt.Sscan(args[0], &repairRunReq.RunId)
 			if err != nil {
@@ -1211,7 +1289,7 @@ func newRepairRun() *cobra.Command {
 		if repairRunSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *jobs.Run) {
 			if i.State == nil {
 				return
@@ -1221,9 +1299,9 @@ func newRepairRun() *cobra.Command {
 			if i.State != nil {
 				statusMessage = i.State.StateMessage
 			}
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(repairRunTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -1267,6 +1345,8 @@ func newReset() *cobra.Command {
   endpoint](:method:jobs/update) to update job settings partially.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1279,13 +1359,13 @@ func newReset() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		err = w.Jobs.Reset(ctx, resetReq)
@@ -1354,12 +1434,14 @@ func newRunNow() *cobra.Command {
     JOB_ID: The ID of the job to be executed`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'job_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1377,17 +1459,17 @@ func newRunNow() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
 			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+				sp := cmdio.NewSpinner(ctx)
+				sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				close(promptSpinner)
+				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -1398,7 +1480,7 @@ func newRunNow() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id of the job to be executed")
+				return errors.New("expected to have the id of the job to be executed")
 			}
 			_, err = fmt.Sscan(args[0], &runNowReq.JobId)
 			if err != nil {
@@ -1414,7 +1496,7 @@ func newRunNow() *cobra.Command {
 		if runNowSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *jobs.Run) {
 			if i.State == nil {
 				return
@@ -1424,9 +1506,9 @@ func newRunNow() *cobra.Command {
 			if i.State != nil {
 				statusMessage = i.State.StateMessage
 			}
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(runNowTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -1476,6 +1558,8 @@ func newSetPermissions() *cobra.Command {
     JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1488,17 +1572,17 @@ func newSetPermissions() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -1509,7 +1593,7 @@ func newSetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+			return errors.New("expected to have the job for which to get or manage permissions")
 		}
 		setPermissionsReq.JobId = args[0]
 
@@ -1517,6 +1601,7 @@ func newSetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1563,6 +1648,7 @@ func newSubmit() *cobra.Command {
 	// TODO: complex arg: health
 	cmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
 	// TODO: complex arg: notification_settings
+	cmd.Flags().Var(&submitReq.PerformanceTarget, "performance-target", `The performance mode on a serverless one-time run. Supported values: [PERFORMANCE_OPTIMIZED, STANDARD]`)
 	// TODO: complex arg: queue
 	// TODO: complex arg: run_as
 	cmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)
@@ -1588,6 +1674,8 @@ func newSubmit() *cobra.Command {
   POST /jobs/run-now endpoints to create and run a saved job.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1605,7 +1693,7 @@ func newSubmit() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1619,7 +1707,7 @@ func newSubmit() *cobra.Command {
 		if submitSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *jobs.Run) {
 			if i.State == nil {
 				return
@@ -1629,9 +1717,9 @@ func newSubmit() *cobra.Command {
 			if i.State != nil {
 				statusMessage = i.State.StateMessage
 			}
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(submitTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -1681,12 +1769,14 @@ func newUpdate() *cobra.Command {
     JOB_ID: The canonical identifier of the job to update. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'job_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1704,17 +1794,17 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
 			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+				sp := cmdio.NewSpinner(ctx)
+				sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				close(promptSpinner)
+				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -1725,7 +1815,7 @@ func newUpdate() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the canonical identifier of the job to update")
+				return errors.New("expected to have the canonical identifier of the job to update")
 			}
 			_, err = fmt.Sscan(args[0], &updateReq.JobId)
 			if err != nil {
@@ -1783,6 +1873,8 @@ func newUpdatePermissions() *cobra.Command {
     JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1795,17 +1887,17 @@ func newUpdatePermissions() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -1816,7 +1908,7 @@ func newUpdatePermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+			return errors.New("expected to have the job for which to get or manage permissions")
 		}
 		updatePermissionsReq.JobId = args[0]
 
@@ -1824,6 +1916,7 @@ func newUpdatePermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -3,14 +3,13 @@
 package project
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAtLeastOnePythonInstalled(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	all, err := DetectInterpreters(ctx)
 	assert.NoError(t, err)
 	a := all.Latest()
@@ -21,7 +20,7 @@ func TestAtLeastOnePythonInstalled(t *testing.T) {
 func TestNoInterpretersFound(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
 
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := DetectInterpreters(ctx)
 	assert.ErrorIs(t, err, ErrNoPythonInterpreters)
 	assert.ErrorContains(t, err, "python.org/downloads")

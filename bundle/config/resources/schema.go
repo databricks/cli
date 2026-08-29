@@ -3,73 +3,22 @@ package resources
 import (
 	"context"
 	"net/url"
-	"strings"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
-type SchemaGrantPrivilege string
-
-const (
-	SchemaGrantPrivilegeAllPrivileges          SchemaGrantPrivilege = "ALL_PRIVILEGES"
-	SchemaGrantPrivilegeApplyTag               SchemaGrantPrivilege = "APPLY_TAG"
-	SchemaGrantPrivilegeCreateFunction         SchemaGrantPrivilege = "CREATE_FUNCTION"
-	SchemaGrantPrivilegeCreateMaterializedView SchemaGrantPrivilege = "CREATE_MATERIALIZED_VIEW"
-	SchemaGrantPrivilegeCreateModel            SchemaGrantPrivilege = "CREATE_MODEL"
-	SchemaGrantPrivilegeCreateTable            SchemaGrantPrivilege = "CREATE_TABLE"
-	SchemaGrantPrivilegeCreateVolume           SchemaGrantPrivilege = "CREATE_VOLUME"
-	SchemaGrantPrivilegeExecute                SchemaGrantPrivilege = "EXECUTE"
-	SchemaGrantPrivilegeExternalUseSchema      SchemaGrantPrivilege = "EXTERNAL_USE_SCHEMA"
-	SchemaGrantPrivilegeManage                 SchemaGrantPrivilege = "MANAGE"
-	SchemaGrantPrivilegeModify                 SchemaGrantPrivilege = "MODIFY"
-	SchemaGrantPrivilegeReadVolume             SchemaGrantPrivilege = "READ_VOLUME"
-	SchemaGrantPrivilegeRefresh                SchemaGrantPrivilege = "REFRESH"
-	SchemaGrantPrivilegeSelect                 SchemaGrantPrivilege = "SELECT"
-	SchemaGrantPrivilegeUseSchema              SchemaGrantPrivilege = "USE_SCHEMA"
-	SchemaGrantPrivilegeWriteVolume            SchemaGrantPrivilege = "WRITE_VOLUME"
-)
-
-// Values returns all valid SchemaGrantPrivilege values
-func (SchemaGrantPrivilege) Values() []SchemaGrantPrivilege {
-	return []SchemaGrantPrivilege{
-		SchemaGrantPrivilegeAllPrivileges,
-		SchemaGrantPrivilegeApplyTag,
-		SchemaGrantPrivilegeCreateFunction,
-		SchemaGrantPrivilegeCreateMaterializedView,
-		SchemaGrantPrivilegeCreateModel,
-		SchemaGrantPrivilegeCreateTable,
-		SchemaGrantPrivilegeCreateVolume,
-		SchemaGrantPrivilegeExecute,
-		SchemaGrantPrivilegeExternalUseSchema,
-		SchemaGrantPrivilegeManage,
-		SchemaGrantPrivilegeModify,
-		SchemaGrantPrivilegeReadVolume,
-		SchemaGrantPrivilegeRefresh,
-		SchemaGrantPrivilegeSelect,
-		SchemaGrantPrivilegeUseSchema,
-		SchemaGrantPrivilegeWriteVolume,
-	}
-}
-
-// SchemaGrant holds the grant level settings for a single principal in Unity Catalog.
-// Multiple of these can be defined on any schema.
-type SchemaGrant struct {
-	Privileges []SchemaGrantPrivilege `json:"privileges"`
-
-	Principal string `json:"principal"`
-}
-
 type Schema struct {
 	BaseResource
 	catalog.CreateSchema
 	// List of grants to apply on this schema.
-	Grants []SchemaGrant `json:"grants,omitempty"`
+	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, fullName string) (bool, error) {
@@ -101,8 +50,7 @@ func (s *Schema) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	baseURL.Path = "explore/data/" + strings.ReplaceAll(s.ID, ".", "/")
-	s.URL = baseURL.String()
+	s.URL = workspaceurls.ResourceURL(baseURL, "schemas", s.ID)
 }
 
 func (s *Schema) GetURL() string {

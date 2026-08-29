@@ -3,6 +3,7 @@
 package volumes
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,18 +21,22 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "volumes",
-		Short: `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing and processing files.`,
+		Short: `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing, and processing files.`,
 		Long: `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing,
-  organizing and processing files. Use cases include running machine learning on
-  unstructured data such as image, audio, video, or PDF files, organizing data
-  sets during the data exploration stages in data science, working with
+  organizing, and processing files. Use cases include running machine learning
+  on unstructured data such as image, audio, video, or PDF files, organizing
+  data sets during the data exploration stages in data science, working with
   libraries that require access to the local file system on cluster machines,
   storing library and config files of arbitrary formats such as .whl or .txt
-  centrally and providing secure access across workspaces to it, or transforming
-  and querying non-tabular data files in ETL.`,
+  centrally and providing secure access to those files across workspaces, or
+  transforming and querying non-tabular data files in ETL.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -104,12 +109,14 @@ func newCreate() *cobra.Command {
       Supported values: [EXTERNAL, MANAGED]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'catalog_name', 'schema_name', 'name', 'volume_type' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'catalog_name', 'schema_name', 'name', 'volume_type' in your JSON input")
 			}
 			return nil
 		}
@@ -128,7 +135,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -155,6 +162,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -198,6 +206,8 @@ func newDelete() *cobra.Command {
     NAME: The three-level (fully qualified) name of the volume`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -205,10 +215,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Volumes drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No NAME argument specified. Loading names for Volumes drop-down.")
 			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -219,7 +229,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
+			return errors.New("expected to have the three-level (fully qualified) name of the volume")
 		}
 		deleteReq.Name = args[0]
 
@@ -255,10 +265,20 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq catalog.ListVolumesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include volumes in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of volumes to return (page length).`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque token returned by a previous request.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
 	cmd.Short = `List Volumes.`
@@ -286,6 +306,8 @@ func newList() *cobra.Command {
     SCHEMA_NAME: The identifier of the schema`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -301,6 +323,13 @@ func newList() *cobra.Command {
 		listReq.SchemaName = args[1]
 
 		response := w.Volumes.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -347,6 +376,8 @@ func newRead() *cobra.Command {
     NAME: The three-level (fully qualified) name of the volume`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -354,10 +385,10 @@ func newRead() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Volumes drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No NAME argument specified. Loading names for Volumes drop-down.")
 			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -368,7 +399,7 @@ func newRead() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
+			return errors.New("expected to have the three-level (fully qualified) name of the volume")
 		}
 		readReq.Name = args[0]
 
@@ -376,6 +407,7 @@ func newRead() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -429,6 +461,8 @@ func newUpdate() *cobra.Command {
     NAME: The three-level (fully qualified) name of the volume`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -441,17 +475,17 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Volumes drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No NAME argument specified. Loading names for Volumes drop-down.")
 			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -462,7 +496,7 @@ func newUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
+			return errors.New("expected to have the three-level (fully qualified) name of the volume")
 		}
 		updateReq.Name = args[0]
 
@@ -470,6 +504,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

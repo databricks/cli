@@ -1,0 +1,5 @@
+Cloud = false # tests don't interact with APIs
+
+EnvMatrix.PYDAB_VERSION = [
+    "current",
+]

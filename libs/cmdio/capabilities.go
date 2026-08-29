@@ -48,13 +48,26 @@ func (c Capabilities) SupportsColor(w io.Writer) bool {
 	return isTTY(w) && c.color
 }
 
-// detectGitBash returns true if running in Git Bash on Windows (has broken promptui support).
-// We do not allow prompting in Git Bash on Windows.
-// Likely due to fact that Git Bash does not correctly support ANSI escape sequences,
-// we cannot use promptui package there.
-// See known issues:
-// - https://github.com/manifoldco/promptui/issues/208
-// - https://github.com/chzyer/readline/issues/191
+// SupportsStdoutColor returns true if stdout supports colored output.
+// Use this when emitting colored bytes to a writer that wraps stdout (e.g.
+// a buffered flusher) where SupportsColor's isTTY check would be misled.
+func (c Capabilities) SupportsStdoutColor() bool {
+	return c.stdoutIsTTY && c.color
+}
+
+// SupportsPager returns true when we can drive an interactive pager.
+// It builds on SupportsPrompt (stderr+stdin TTY, not Git Bash) and
+// additionally requires stdout to be a TTY so rendered rows land on
+// the terminal rather than a redirected file.
+func (c Capabilities) SupportsPager() bool {
+	return c.SupportsPrompt() && c.stdoutIsTTY
+}
+
+// detectGitBash returns true if running under a Cygwin/MSYS2 environment on
+// Windows (Git Bash is the common case).
+//
+// We disable prompting there because bubbletea is not compatible with the
+// Cygwin/MSYS2 pty emulation; making it work is a follow-up.
 func detectGitBash(ctx context.Context) bool {
 	// Check if the MSYSTEM environment variable is set to "MINGW64"
 	msystem := env.Get(ctx, "MSYSTEM")
@@ -65,4 +78,26 @@ func detectGitBash(ctx context.Context) bool {
 	}
 
 	return false
+}
+
+// InteractiveMode represents the level of terminal interactivity available.
+type InteractiveMode string
+
+// Interactive mode constants for user agent tracking.
+const (
+	InteractiveModeFull       InteractiveMode = "full"   // Both interactive output and prompts supported
+	InteractiveModeOutputOnly InteractiveMode = "output" // Interactive output only, no prompts (stdin not TTY or Git Bash)
+	InteractiveModeNone       InteractiveMode = "none"   // Non-interactive (CI, cron, stderr redirected)
+)
+
+// InteractiveMode returns the interactive mode based on terminal capabilities.
+func (c Capabilities) InteractiveMode() InteractiveMode {
+	// SupportsPrompt() implies SupportsInteractive() (it's a stricter check).
+	if c.SupportsPrompt() {
+		return InteractiveModeFull
+	}
+	if c.SupportsInteractive() {
+		return InteractiveModeOutputOnly
+	}
+	return InteractiveModeNone
 }

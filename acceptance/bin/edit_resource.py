@@ -5,17 +5,15 @@ Implements get / update / set for a given resource.
 Fetches a given resource by id from the backend, executes Python code read from stdin and updates the resource.
 """
 
-import sys
-import os
-import subprocess
 import argparse
 import json
+import os
 import pprint
+import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 import util
-from util import run_json, run
-
+from util import run, run_json
 
 CLI = os.environ["CLI"]
 

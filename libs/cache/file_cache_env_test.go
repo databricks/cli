@@ -17,7 +17,7 @@ import (
 )
 
 func TestCacheEnabledEnvVar(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 
 	tests := []struct {
@@ -123,18 +123,18 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 			}
 
 			// First call - should always compute
-			var computeCalls int32
+			var computeCalls atomic.Int32
 			result, err := GetOrCompute[string](testCtx, cache, fingerprint, func(ctx context.Context) (string, error) {
-				atomic.AddInt32(&computeCalls, 1)
+				computeCalls.Add(1)
 				return "computed-value", nil
 			})
 			require.NoError(t, err)
 			assert.Equal(t, "computed-value", result)
-			assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
+			assert.Equal(t, int32(1), computeCalls.Load())
 
 			// Second call - should use cache only if enabled
 			result2, err := GetOrCompute[string](testCtx, cache, fingerprint, func(ctx context.Context) (string, error) {
-				atomic.AddInt32(&computeCalls, 1)
+				computeCalls.Add(1)
 				return "should-not-be-called", nil
 			})
 			require.NoError(t, err)
@@ -142,18 +142,18 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 			if tt.expectCached {
 				// Cache enabled - should return cached value
 				assert.Equal(t, "computed-value", result2)
-				assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls), "Should not recompute when cache is enabled")
+				assert.Equal(t, int32(1), computeCalls.Load(), "Should not recompute when cache is enabled")
 			} else {
 				// Cache disabled - should recompute
 				assert.Equal(t, "should-not-be-called", result2)
-				assert.Equal(t, int32(2), atomic.LoadInt32(&computeCalls), "Should recompute when cache is disabled")
+				assert.Equal(t, int32(2), computeCalls.Load(), "Should recompute when cache is disabled")
 			}
 		})
 	}
 }
 
 func TestCacheDirEnvVar(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 
 	t.Run("uses DATABRICKS_CACHE_DIR when set", func(t *testing.T) {
@@ -203,7 +203,7 @@ func TestCacheDirEnvVar(t *testing.T) {
 }
 
 func TestCacheIsolationByVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	t.Setenv("DATABRICKS_CACHE_DIR", tempDir)
 

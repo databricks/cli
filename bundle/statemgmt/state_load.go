@@ -9,9 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -26,8 +24,8 @@ type (
 const ErrorOnEmptyState LoadMode = 0
 
 type load struct {
-	modes  []LoadMode
-	engine engine.EngineType
+	state ExportedResourcesMap
+	modes []LoadMode
 }
 
 func (l *load) Name() string {
@@ -35,32 +33,37 @@ func (l *load) Name() string {
 }
 
 func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var err error
-	var state ExportedResourcesMap
+	return applyState(ctx, b, l.state, l.modes)
+}
 
-	if l.engine.IsDirect() {
-		_, fullPathDirect := b.StateFilenameDirect(ctx)
-		state, err = b.DeploymentBundle.ExportState(ctx, fullPathDirect)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
-		var err error
-		state, err = terraform.ParseResourcesState(ctx, b)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
-	err = l.validateState(state)
-	if err != nil {
+// applyState merges the exported resource state into the bundle configuration.
+func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMap, modes []LoadMode) diag.Diagnostics {
+	if err := validateLoadedState(state, modes); err != nil {
 		return diag.FromErr(err)
 	}
 
-	// Merge state into configuration.
-	err = StateToBundle(ctx, state, &b.Config)
-	if err != nil {
+	if err := StateToBundle(ctx, state, &b.Config); err != nil {
 		return diag.FromErr(err)
+	}
+
+	// Load each run's resolved job_id into ResolvedJobID (for the URL only). We
+	// leave config's job_id ${resources.jobs.*.id} reference intact so it keeps
+	// its plan dependency. Typed-only write, like the dashboard etag below.
+	for resourceKey, rstate := range state {
+		if !strings.HasPrefix(resourceKey, "resources.job_runs.") || rstate.JobID == 0 {
+			continue
+		}
+		parts := strings.Split(resourceKey, ".")
+		if len(parts) != 3 {
+			continue
+		}
+
+		// A run in state but not config was deleted; skip it.
+		jrconfig, ok := b.Config.Resources.JobRuns[parts[2]]
+		if !ok {
+			continue
+		}
+		jrconfig.ResolvedJobID = rstate.JobID
 	}
 
 	// Merge dashboard etags into configuration.
@@ -164,14 +167,14 @@ func StateToBundle(ctx context.Context, state ExportedResourcesMap, config *conf
 	})
 }
 
-func (l *load) validateState(state ExportedResourcesMap) error {
-	if len(state) == 0 && slices.Contains(l.modes, ErrorOnEmptyState) {
+func validateLoadedState(state ExportedResourcesMap, modes []LoadMode) error {
+	if len(state) == 0 && slices.Contains(modes, ErrorOnEmptyState) {
 		return errors.New("resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?")
 	}
-
 	return nil
 }
 
-func Load(engine engine.EngineType, modes ...LoadMode) bundle.Mutator {
-	return &load{modes: modes, engine: engine}
+// Load returns a mutator that merges the provided resource state into the bundle configuration.
+func Load(state ExportedResourcesMap, modes ...LoadMode) bundle.Mutator {
+	return &load{state: state, modes: modes}
 }

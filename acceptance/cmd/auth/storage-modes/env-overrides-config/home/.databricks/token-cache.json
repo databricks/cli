@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "tokens": {
+    "dev": {
+      "access_token": "dev-cached-token",
+      "token_type": "Bearer"
+    }
+  }
+}

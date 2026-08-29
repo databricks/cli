@@ -1,0 +1,19 @@
+
+=== Initial profile (OAuth with unified host)
+[DEFAULT]
+host                         = https://host
+auth_type                    = databricks-cli
+scopes                       = all-apis
+experimental_is_unified_host = true
+account_id                   = acc-123
+workspace_id                 = ws-456
+
+=== Run configure with PAT token
+>>> [CLI] configure --token --host https://host
+
+=== Profile after PAT configure
+[DEFAULT]
+host         = https://host
+account_id   = acc-123
+workspace_id = ws-456
+token        = [DATABRICKS_TOKEN]

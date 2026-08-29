@@ -1,7 +1,6 @@
 package permissions
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -21,11 +20,11 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath:     "/Users/foo@bar.com",
-				ArtifactPath: "/Users/foo@bar.com/artifacts",
-				FilePath:     "/Users/foo@bar.com/files",
-				StatePath:    "/Users/foo@bar.com/state",
-				ResourcePath: "/Users/foo@bar.com/resources",
+				RootPath:     "/Users/foo@bar.test",
+				ArtifactPath: "/Users/foo@bar.test/artifacts",
+				FilePath:     "/Users/foo@bar.test/files",
+				StatePath:    "/Users/foo@bar.test/state",
+				ResourcePath: "/Users/foo@bar.test/resources",
 			},
 			Permissions: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "TestUser"},
@@ -60,7 +59,7 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 	workspaceApi := m.GetMockWorkspaceAPI()
-	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.com").Return(&workspace.ObjectInfo{
+	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.test").Return(&workspace.ObjectInfo{
 		ObjectId: 1234,
 	}, nil)
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
@@ -71,9 +70,9 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 		},
 		WorkspaceObjectId:   "1234",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
-	diags := bundle.ApplySeq(context.Background(), b, ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions())
+	diags := bundle.ApplySeq(t.Context(), b, ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions())
 	require.Empty(t, diags)
 }
 
@@ -82,10 +81,10 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		Config: config.Root{
 			Workspace: config.Workspace{
 				RootPath:     "/Some/Root/Path",
-				ArtifactPath: "/Users/foo@bar.com/artifacts",
-				FilePath:     "/Users/foo@bar.com/files",
-				StatePath:    "/Users/foo@bar.com/state",
-				ResourcePath: "/Users/foo@bar.com/resources",
+				ArtifactPath: "/Users/foo@bar.test/artifacts",
+				FilePath:     "/Users/foo@bar.test/files",
+				StatePath:    "/Users/foo@bar.test/state",
+				ResourcePath: "/Users/foo@bar.test/resources",
 			},
 			Permissions: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "TestUser"},
@@ -123,16 +122,16 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Some/Root/Path").Return(&workspace.ObjectInfo{
 		ObjectId: 1,
 	}, nil)
-	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.com/artifacts").Return(&workspace.ObjectInfo{
+	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.test/artifacts").Return(&workspace.ObjectInfo{
 		ObjectId: 2,
 	}, nil)
-	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.com/files").Return(&workspace.ObjectInfo{
+	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.test/files").Return(&workspace.ObjectInfo{
 		ObjectId: 3,
 	}, nil)
-	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.com/state").Return(&workspace.ObjectInfo{
+	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.test/state").Return(&workspace.ObjectInfo{
 		ObjectId: 4,
 	}, nil)
-	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.com/resources").Return(&workspace.ObjectInfo{
+	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.test/resources").Return(&workspace.ObjectInfo{
 		ObjectId: 5,
 	}, nil)
 
@@ -144,7 +143,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "1",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
 		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
@@ -154,7 +153,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "2",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
 		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
@@ -164,7 +163,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "3",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
 		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
@@ -174,7 +173,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "4",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
 		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
@@ -184,8 +183,57 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "5",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
-	diags := bundle.Apply(context.Background(), b, ApplyWorkspaceRootPermissions())
+	diags := bundle.Apply(t.Context(), b, ApplyWorkspaceRootPermissions())
 	require.NoError(t, diags.Error())
+}
+
+func TestUndeclaredWriterTypes(t *testing.T) {
+	const deployer = "me@example.com"
+	self := resources.Permission{Level: CAN_MANAGE, UserName: deployer}
+	other := resources.Permission{Level: CAN_MANAGE, UserName: "other@example.com"}
+	sp := resources.Permission{Level: CAN_MANAGE, ServicePrincipalName: "sp-1"}
+	group := resources.Permission{Level: CAN_MANAGE, GroupName: "team"}
+
+	cases := []struct {
+		name                                   string
+		undeclared                             []resources.Permission
+		wantSelf, wantOther, wantSP, wantGroup bool
+	}{
+		{"empty", nil, false, false, false, false},
+		{"deploying user", []resources.Permission{self}, true, false, false, false},
+		{"other user", []resources.Permission{other}, false, true, false, false},
+		{"service principal", []resources.Permission{sp}, false, false, true, false},
+		{"group", []resources.Permission{group}, false, false, false, true},
+		{"all types", []resources.Permission{self, other, sp, group}, true, true, true, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotSelf, gotOther, gotSP, gotGroup := undeclaredWriterTypes(tc.undeclared, deployer)
+			require.Equal(t, tc.wantSelf, gotSelf)
+			require.Equal(t, tc.wantOther, gotOther)
+			require.Equal(t, tc.wantSP, gotSP)
+			require.Equal(t, tc.wantGroup, gotGroup)
+		})
+	}
+}
+
+func TestUserHomeOwner(t *testing.T) {
+	cases := []struct {
+		path  string
+		owner string
+		ok    bool
+	}{
+		{"/Workspace/Users/alice@example.com/.bundle/x/state", "alice@example.com", true},
+		{"/Workspace/Users/alice@example.com", "alice@example.com", true},
+		{"/Workspace/Shared/state", "", false},
+		{"/Workspace/team/state", "", false},
+		{"/Workspace/Users/", "", false},
+	}
+	for _, tc := range cases {
+		owner, ok := userHomeOwner(tc.path)
+		require.Equal(t, tc.ok, ok, tc.path)
+		require.Equal(t, tc.owner, owner, tc.path)
+	}
 }

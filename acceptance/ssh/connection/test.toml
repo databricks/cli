@@ -1,6 +1,21 @@
-Local = false
-Cloud = true
-RequiresCluster = true
+Cloud = false
 
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# On cloud this needs a real dedicated single-user cluster; locally the default
+# test cluster stands in for it.
+
+# Assert the dedicated-cluster bootstrap job the CLI submits on a local run.
+RecordRequests = true
+
+# Local runs stage stand-in release archives here; not part of the golden output.
+Ignore = [
+  "releases",
+]
+
+# Linux-only: the local run drives a real sshd, reliable only there (and where
+# task test-exp-ssh provisions it). Absent GOOS keys default to enabled, so the
+# other OSes must be disabled explicitly.
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

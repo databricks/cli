@@ -1,0 +1,43 @@
+package cmdiotest_test
+
+import (
+	"testing"
+
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// TestPromptBaseline_AltKeyNoop pins that Alt-prefixed keys are silent
+// no-ops in [cmdio.RunPrompt]. Specifically, Alt+f (the readline binding
+// for "move forward by word") must neither move the cursor nor insert a
+// literal 'f' into the buffer. The same shape applies to Alt+b, Alt+d,
+// Alt+Backspace, and any other modified key the prompt model doesn't
+// handle; pinning Alt+f covers the class.
+func TestPromptBaseline_AltKeyNoop(t *testing.T) {
+	t.Parallel()
+	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
+		Label: "Workspace name",
+	})
+	tm.WaitFor("Workspace name")
+
+	// Type "hello" and move cursor two places left so it sits mid-word.
+	// If Alt+f moved the cursor (or inserted), goldens 01 and 02 would
+	// diverge.
+	tm.Type("hello")
+	tm.Type(termtest.KeyLeft)
+	tm.Type(termtest.KeyLeft)
+	tm.Golden("01-cursor-mid")
+
+	tm.Type("\x1bf")
+	tm.Golden("02-after-alt-f")
+
+	tm.Type(termtest.KeyEnter)
+	v, err := tm.Result()
+	require.NoError(t, err, "raw output: %q", tm.Raw())
+	// Final guard: the returned value must be exactly "hello". A literal
+	// 'f' insertion would surface here even if the goldens above somehow
+	// missed it.
+	assert.Equal(t, "hello", v)
+}

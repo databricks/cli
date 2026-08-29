@@ -1,0 +1,45 @@
+{{- /*
+     * Template for the AGENTS.md / CLAUDE.md files created in new projects.
+     *
+     * Goal for this file is to point agents to Databricks AI Tools for guidance.
+     * A secondary goal is to offer a placeholder to users to extend with their own instructions.
+     * It is a non-goal to inline all instructions.
+     *
+     */ -}}
+
+{{- define "agents_md" -}}
+# Declarative Automation Bundles Project
+
+This project uses Declarative Automation Bundles (DABs) for deployment. Add project-specific instructions below.
+
+## For AI Agents: Use Databricks AI Tools
+
+**BEFORE any other action, read the `databricks-core` skill.**
+
+It sets you up to work with this project reliably: CLI authentication, profile
+selection, data discovery, and the bundle deployment workflow. Without it,
+results are often slower and less accurate.
+
+If this skill is not available (Databricks AI Tools are not installed), you can install them for your coding agent in seconds:
+
+```bash
+databricks aitools install
+```
+
+If the CLI is not installed, see: https://docs.databricks.com/dev-tools/cli/install
+
+---
+
+## Project Instructions
+
+<!-- Add your project-specific instructions, coding conventions, or notes here -->
+{{- end -}}
+
+{{- define "claude_md" -}}
+# CLAUDE.md
+
+Project guidance for AI agents lives in AGENTS.md.
+Claude Code loads it via the import below.
+
+@AGENTS.md
+{{- end -}}

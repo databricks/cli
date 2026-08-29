@@ -36,9 +36,9 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created sql_warehouses.test_sql_warehouse
+Files: 21 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Verify the create request
 >>> jq select(.method == "POST" and (.path | contains("/sql/warehouses"))) out.requests.txt
@@ -67,19 +67,19 @@ Resources:
   SQL Warehouses:
     test_sql_warehouse:
       Name: sql_warehouse_name
-      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]
 
 === Update the warehouse name
 >>> update_file.py databricks.yml sql_warehouse_name sql_warehouse_name_2
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated sql_warehouses.test_sql_warehouse
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Verify the update request
->>> jq select(.method == "POST" and (.path | contains("/sql/warehouses")) and (.body."name" == "sql_warehouse_name_2")) out.requests.txt
+>>> jq select(.method == "POST" and (.path | contains("/sql/warehouses")) and (.body."name" == "sql_warehouse_name_2")) | del(.body.creator_name, .body.warehouse_type) out.requests.txt
 {
   "method": "POST",
   "path": "/api/2.0/sql/warehouses/[UUID]/edit",
@@ -105,7 +105,7 @@ Resources:
   SQL Warehouses:
     test_sql_warehouse:
       Name: sql_warehouse_name_2
-      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/sql/warehouses/[UUID]?w=[NUMID]
 
 === Destroy the warehouse
 >>> [CLI] bundle destroy --auto-approve
@@ -114,8 +114,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted
 
 === Verify the destroy request
 >>> jq select(.method == "DELETE" and (.path | contains("/sql/warehouses"))) out.requests.txt

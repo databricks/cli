@@ -1,0 +1,16 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+export POSTGRES_DATABASE=appdb
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+
+# Toggle a recreate-on-change field; plan must show delete + create.
+export POSTGRES_DATABASE=otherdb
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle plan | contains.py "Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged"
+
+trace $CLI bundle deploy

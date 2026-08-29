@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -19,7 +18,7 @@ func TestDefineDefaultWorkspacePaths(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.DefineDefaultWorkspacePaths())
+	diags := bundle.Apply(t.Context(), b, mutator.DefineDefaultWorkspacePaths())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "/files", b.Config.Workspace.FilePath)
 	assert.Equal(t, "/resources", b.Config.Workspace.ResourcePath)
@@ -39,7 +38,7 @@ func TestDefineDefaultWorkspacePathsAlreadySet(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.DefineDefaultWorkspacePaths())
+	diags := bundle.Apply(t.Context(), b, mutator.DefineDefaultWorkspacePaths())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "/foo/bar", b.Config.Workspace.FilePath)
 	assert.Equal(t, "/foo/bar", b.Config.Workspace.ResourcePath)

@@ -29,7 +29,7 @@ type DataSourceSqlWarehouseOdbcParams struct {
 }
 
 type DataSourceSqlWarehouseProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceSqlWarehouseTagsCustomTags struct {

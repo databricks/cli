@@ -1,4 +1,24 @@
 
 >>> [CLI] bundle generate dashboard --existing-path /path/to/dashboard --dashboard-dir out/dashboard --resource-dir out/resource
-Writing dashboard to "out/dashboard/this_is_a_test_dashboard.lvdash.json"
-Writing configuration to "out/resource/this_is_a_test_dashboard.dashboard.yml"
+Writing dashboard to out/dashboard/this_is_a_test_dashboard.lvdash.json
+Writing configuration to out/resource/this_is_a_test_dashboard.dashboard.yml
+Warning: Generated configuration is not included in the bundle
+
+The file out/resource/this_is_a_test_dashboard.dashboard.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - out/resource/*.yml
+
+
+>>> [CLI] bundle generate dashboard --existing-path /path/to/dashboard --key custom_key --dashboard-dir out/dashboard --resource-dir out/resource
+Writing dashboard to out/dashboard/custom_key.lvdash.json
+Writing configuration to out/resource/custom_key.dashboard.yml
+Warning: Generated configuration is not included in the bundle
+
+The file out/resource/custom_key.dashboard.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - out/resource/*.yml
+

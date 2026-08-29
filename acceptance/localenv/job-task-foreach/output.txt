@@ -1,0 +1,8 @@
+
+>>> [CLI] environments setup-local --job-task 12345.fanout --dry-run
+Plan: [TEST_TMP_DIR]/pyproject.toml
+  changed region: requires-python
+  changed region: tool.uv.constraint-dependencies
+  changed region: databricks-connect
+  changed region: tool.databricks.environment
+Check complete. No files were modified.

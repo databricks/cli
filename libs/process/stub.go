@@ -104,7 +104,7 @@ func (s *processStub) Commands() (called []string) {
 	return called
 }
 
-// CombinedEnvironment returns all enviroment variables used for all commands
+// CombinedEnvironment returns all environment variables used for all commands
 func (s *processStub) CombinedEnvironment() map[string]string {
 	environment := map[string]string{}
 	for _, cmd := range s.calls {

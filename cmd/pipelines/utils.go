@@ -12,6 +12,7 @@ import (
 	configresources "github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
@@ -186,7 +187,7 @@ func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, 
 		ctx,
 		"GET",
 		path,
-		nil,
+		auth.WorkspaceIDHeaders(w.Config),
 		nil,
 		queryParams,
 		&response,

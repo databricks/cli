@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"path"
@@ -125,8 +126,8 @@ func (r *Repository) OriginUrl() string {
 }
 
 // loadConfig loads and combines user specific and repository specific configuration files.
-func (r *Repository) loadConfig() error {
-	config, err := globalGitConfig()
+func (r *Repository) loadConfig(ctx context.Context) error {
+	config, err := globalGitConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to load user specific gitconfig: %w", err)
 	}
@@ -202,7 +203,7 @@ func (r *Repository) Ignore(relPath string) (bool, error) {
 	return false, nil
 }
 
-func NewRepository(rootDir vfs.Path) (*Repository, error) {
+func NewRepository(ctx context.Context, rootDir vfs.Path) (*Repository, error) {
 	// Derive $GIT_DIR and $GIT_COMMON_DIR paths if this is a real repository.
 	// If it isn't a real repository, they'll point to the (non-existent) `.git` directory.
 	gitDir, gitCommonDir, err := resolveGitDirs(rootDir)
@@ -217,7 +218,7 @@ func NewRepository(rootDir vfs.Path) (*Repository, error) {
 		ignore:       make(map[string][]ignoreRules),
 	}
 
-	err = repo.loadConfig()
+	err = repo.loadConfig(ctx)
 	if err != nil {
 		// Error doesn't need to be rewrapped.
 		return nil, err

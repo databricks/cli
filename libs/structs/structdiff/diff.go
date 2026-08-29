@@ -2,11 +2,12 @@ package structdiff
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
-	"sort"
 	"strings"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
@@ -107,11 +108,18 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 		if !v2.IsValid() {
 			return nil
 		}
-
+		// Dereference non-nil pointers for consistency with the both-non-nil case,
+		// where pointers are recursively dereferenced via "case reflect.Pointer".
+		for v2.Kind() == reflect.Pointer && !v2.IsNil() {
+			v2 = v2.Elem()
+		}
 		*changes = append(*changes, Change{Path: path, Old: nil, New: v2.Interface()})
 		return nil
 	} else if !v2.IsValid() {
 		// v1 is valid
+		for v1.Kind() == reflect.Pointer && !v1.IsNil() {
+			v1 = v1.Elem()
+		}
 		*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: nil})
 		return nil
 	}
@@ -121,6 +129,17 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 	// This should not happen; if it does, record this a full change
 	if v1Type != v2.Type() {
 		*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
+		return nil
+	}
+
+	if IsOpaqueStruct(v1Type) {
+		equal, err := equalJSON(v1, v2)
+		if err != nil {
+			return err
+		}
+		if !equal {
+			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
+		}
 		return nil
 	}
 
@@ -199,17 +218,21 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 		}
 
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
+		bundleTag := structtag.BundleTag(sf.Tag.Get("bundle"))
 
 		// Resolve field name from JSON tag or fall back to Go field name
+		// Sensitive fields are marked as "json:-" so they are not accidentally stored in the state file.
+		// But we still want to diff them to detect changes based on in-memory values (comes from config and remote)
 		fieldName := jsonTag.Name()
-		if fieldName == "-" {
+		if fieldName == "-" && !bundleTag.Sensitive() {
 			continue
 		}
 
-		if fieldName == "" {
+		isEmbed := sf.Name == structaccess.EmbeddedSliceFieldName
+
+		if fieldName == "" || isEmbed {
 			fieldName = sf.Name
 		}
-		node := structpath.NewDotString(path, fieldName)
 
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
@@ -232,6 +255,14 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 			}
 		}
 
+		// EmbeddedSlice: diff at parent path level without adding field name.
+		var node *structpath.PathNode
+		if isEmbed {
+			node = path
+		} else {
+			node = structpath.NewDotString(path, fieldName)
+		}
+
 		if err := diffValues(ctx, node, v1Field, v2Field, changes); err != nil {
 			return err
 		}
@@ -251,11 +282,7 @@ func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflec
 		keySet[ks] = k
 	}
 
-	var keys []string
-	for s := range keySet {
-		keys = append(keys, s)
-	}
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(keySet))
 
 	for _, ks := range keys {
 		k := keySet[ks]
@@ -295,7 +322,7 @@ func (ctx *diffContext) findKeyFunc(path *structpath.PathNode) KeyFunc {
 }
 
 // pathToPattern converts a PathNode to a pattern string for matching.
-// Slice indices are converted to [*] wildcard.
+// Slice indices and key-value pairs are converted to [*] wildcard.
 func pathToPattern(path *structpath.PathNode) string {
 	if path == nil {
 		return ""
@@ -305,17 +332,10 @@ func pathToPattern(path *structpath.PathNode) string {
 	var result strings.Builder
 
 	for i, node := range components {
-		if idx, ok := node.Index(); ok {
-			// Convert numeric index to wildcard
-			_ = idx
+		if _, ok := node.Index(); ok {
 			result.WriteString("[*]")
-		} else if key, value, ok := node.KeyValue(); ok {
-			// Key-value syntax
-			result.WriteString("[")
-			result.WriteString(key)
-			result.WriteString("=")
-			result.WriteString(structpath.EncodeMapKey(value))
-			result.WriteString("]")
+		} else if _, _, ok := node.KeyValue(); ok {
+			result.WriteString("[*]")
 		} else if key, ok := node.StringKey(); ok {
 			if i != 0 {
 				result.WriteString(".")

@@ -7,24 +7,33 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
+
+// patConfigureExtraClearKeys lists non-credential profile keys that should also
+// be cleared when saving a PAT-based profile. Auth credential keys are derived
+// dynamically from config.ConfigAttributes via databrickscfg.AuthCredentialKeys().
+var patConfigureExtraClearKeys = []string{
+	"auth_type",
+	"scopes",
+	"databricks_cli_path",
+}
 
 func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config.Config) error {
 	ctx := cmd.Context()
 
 	// Ask user to specify the host if not already set.
 	if cfg.Host == "" {
-		prompt := cmdio.Prompt(ctx)
-		prompt.Label = "Databricks workspace host (https://...)"
-		prompt.AllowEdit = true
-		prompt.Validate = func(input string) error {
-			normalized := normalizeHost(input)
-			return validateHost(normalized)
-		}
-		out, err := prompt.Run()
+		out, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+			Label: "Databricks workspace host (https://...)",
+			Validate: func(input string) error {
+				normalized := normalizeHost(input)
+				return validateHost(normalized)
+			},
+		})
 		if err != nil {
 			return err
 		}
@@ -33,10 +42,10 @@ func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config
 
 	// Ask user to specify the token is not already set.
 	if cfg.Token == "" {
-		prompt := cmdio.Prompt(ctx)
-		prompt.Label = "Personal access token"
-		prompt.Mask = '*'
-		out, err := prompt.Run()
+		out, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+			Label: "Personal access token",
+			Mask:  '*',
+		})
 		if err != nil {
 			return err
 		}
@@ -111,11 +120,18 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 		}
 
 		// Populate configuration from flags (if set).
+		// The profile flag is the root persistent flag.
 		if flags.Host != "" {
 			cfg.Host = normalizeHost(flags.Host)
 		}
-		if flags.Profile != "" {
-			cfg.Profile = flags.Profile
+		if profile := cmd.Flag("profile").Value.String(); profile != "" {
+			cfg.Profile = profile
+		}
+
+		// The profile name must be non-empty: SaveToProfile matches sections
+		// by host instead of by name when cfg.Profile is empty.
+		if cfg.Profile == "" {
+			cfg.Profile = "DEFAULT"
 		}
 
 		// Normalize and verify that the host is valid (if set).
@@ -141,14 +157,29 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 		// This is relevant for OAuth only.
 		cfg.DatabricksCliPath = ""
 
-		// Save profile to config file.
-		return databrickscfg.SaveToProfile(ctx, &config.Config{
+		// Save profile to config file. PAT-based configure clears all
+		// non-PAT auth credentials and OAuth metadata to prevent
+		// multi-auth conflicts in the profile.
+		clearKeys := append(databrickscfg.AuthCredentialKeys(), patConfigureExtraClearKeys...)
+
+		// Cluster and serverless are mutually exclusive. Clear serverless
+		// when a cluster is being set (via flag or env var).
+		if cfg.ClusterID != "" {
+			clearKeys = append(clearKeys, "serverless_compute_id")
+		}
+
+		// Clear stale unified-host metadata, PAT profiles don't use it,
+		// and leaving it can change HostType() routing.
+		clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
+
+		err = databrickscfg.SaveToProfile(ctx, &config.Config{
 			Profile:    cfg.Profile,
 			Host:       cfg.Host,
 			Token:      cfg.Token,
 			ClusterID:  cfg.ClusterID,
-			ConfigFile: cfg.ConfigFile,
-		})
+			ConfigFile: env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
+		}, clearKeys...)
+		return err
 	}
 
 	return cmd

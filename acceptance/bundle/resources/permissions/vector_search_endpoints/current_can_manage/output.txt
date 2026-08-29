@@ -1,0 +1,35 @@
+
+>>> [CLI] bundle validate -o json
+[
+  {
+    "level": "CAN_USE",
+    "user_name": "viewer@example.com"
+  },
+  {
+    "group_name": "data-team",
+    "level": "CAN_MANAGE"
+  },
+  {
+    "level": "CAN_MANAGE",
+    "service_principal_name": "[UUID]"
+  },
+  {
+    "level": "CAN_MANAGE",
+    "user_name": "[USERNAME]"
+  }
+]
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created vector_search_endpoints.foo
+Created vector_search_endpoints.foo.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

@@ -1,0 +1,17 @@
+[[Server]]
+Pattern = "POST /api/2.0/lakebox/ssh-keys"
+Response.Body = '''
+{
+  "keyHash": "a0b1c2d3e4f5a0b1c2d3e4f5a0b1c2d3",
+  "name": "test-machine",
+  "createTime": "2026-06-10T17:00:00Z",
+  "gatewayHost": "us-west-2.service-direct.dev.databricks.com"
+}
+'''
+
+# Pin the synthetic test hash so the framework's generic 3+-digit-run →
+# [NUMID] regex doesn't mangle it.
+[[Repls]]
+Old = 'a0b1c2d3e4f5a0b1c2d3e4f5a0b1c2d3'
+New = '[KEY_HASH]'
+Order = 5

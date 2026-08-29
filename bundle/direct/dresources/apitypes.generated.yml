@@ -1,0 +1,69 @@
+# Generated, do not edit. Override via apitypes.yml
+
+alerts: sql.AlertV2
+
+apps: apps.App
+
+catalogs: catalog.CreateCatalog
+
+cluster_policies: compute.CreatePolicy
+
+clusters: compute.ClusterSpec
+
+dashboards: dashboards.Dashboard
+
+database_catalogs: database.DatabaseCatalog
+
+database_instances: database.DatabaseInstance
+
+experiments: ml.CreateExperiment
+
+external_locations: catalog.CreateExternalLocation
+
+genie_spaces: dashboards.GenieUpdateSpaceRequest
+
+instance_pools: compute.CreateInstancePool
+
+job_runs: jobs.RunNow
+
+jobs: jobs.JobSettings
+
+model_serving_endpoints: serving.CreateServingEndpoint
+
+models: ml.CreateModelRequest
+
+pipelines: pipelines.CreatePipeline
+
+postgres_branches: postgres.BranchSpec
+
+postgres_catalogs: postgres.CatalogCatalogSpec
+
+postgres_databases: postgres.DatabaseDatabaseStatus
+
+postgres_endpoints: postgres.EndpointSpec
+
+postgres_projects: postgres.ProjectStatus
+
+postgres_roles: postgres.RoleRoleStatus
+
+postgres_synced_tables: postgres.SyncedTableSyncedTableSpec
+
+quality_monitors: catalog.CreateMonitor
+
+registered_models: catalog.RegisteredModelInfo
+
+schemas: catalog.CreateSchema
+
+secret_scopes: workspace.CreateScope
+
+secrets: catalog.Secret
+
+sql_warehouses: sql.EditWarehouseRequest
+
+synced_database_tables: database.SyncedDatabaseTable
+
+vector_search_endpoints: vectorsearch.CreateEndpoint
+
+vector_search_indexes: vectorsearch.CreateVectorIndexRequest
+
+volumes: catalog.CreateVolumeRequestContent

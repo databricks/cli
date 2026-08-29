@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -21,13 +22,12 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle, directDep
 	var state ExportedResourcesMap
 	var err error
 	if directDeployment {
-		_, localPath := b.StateFilenameDirect(ctx)
-		state, err = b.DeploymentBundle.ExportState(ctx, localPath)
+		state = b.DeploymentBundle.ExportState(ctx)
 	} else {
 		state, err = ParseResourcesState(ctx, b)
-	}
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var dashboards []dashboardState
@@ -88,7 +88,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 
 		path := dyn.MustPathFromString("resources.dashboards." + dashboard.Name)
 		loc := b.Config.GetLocation(path.String())
-		actual, err := b.WorkspaceClient().Lakeview.GetByDashboardId(ctx, dashboard.ID)
+		actual, err := b.WorkspaceClient(ctx).Lakeview.GetByDashboardId(ctx, dashboard.ID)
 		if err != nil {
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
@@ -121,8 +121,8 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 				"Make sure that the local dashboard definition matches what you intend to deploy\n" +
 				"before proceeding with the deployment.\n" +
 				"\n" +
-				"Run `databricks bundle deploy --force` to bypass this error." +
-				"",
+				"To overwrite the remote changes with your local version, use --force.\n" +
+				"The remote modifications will be lost." + agent.AgentNotice(),
 			Paths:     []dyn.Path{path},
 			Locations: []dyn.Location{loc},
 		})

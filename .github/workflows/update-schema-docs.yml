@@ -1,0 +1,103 @@
+name: update-schema-docs
+
+# Regenerate the bundle docs JSON schema after every release and publish it to
+# the `docgen` branch. The docs schema is NOT kept on main — `docgen` is its
+# only home (downstream docs tooling reads it from there).
+#
+# bundle/internal/schema/since_version.go derives `x-since-version` annotations
+# from the list of `v*` git tags that exist when the schema is generated. The
+# `docgen` branch is therefore stale by one release as soon as the next tag is
+# pushed; this workflow keeps it current.
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  # Required by setup-jfrog (GOPROXY exchange).
+  id-token: write
+
+jobs:
+  update-schema-docs:
+    runs-on:
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Regen runs against `main`. fetch-depth: 0 + fetch-tags: true ensure
+          # since_version.go can resolve `git show <tag>:bundle/schema/jsonschema.json`
+          # for every historical release.
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup JFrog
+        uses: ./.github/actions/setup-jfrog
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            bundle/internal/schema/*.*
+
+      - name: Determine release tag
+        id: tag
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" = "tag" ]; then
+            tag="$REF_NAME"
+          else
+            # git tag --list uses fnmatch (no `+`), so post-filter with grep
+            # to match the same shape as the trigger above.
+            tag=$(git tag --list 'v*' --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+          fi
+          if [ -z "$tag" ]; then
+            echo "Could not determine a release tag to publish for." >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Publishing for tag $tag"
+
+      - name: Check out docgen worktree
+        run: |
+          git fetch origin docgen
+          git worktree add "$RUNNER_TEMP/docgen" origin/docgen
+
+      # The docs schema is not kept on main; generate it straight into the docgen
+      # worktree and publish from there. since_version.go reads `git tag --list
+      # 'v*'` to stamp x-since-version; the tags are provided by the checkout
+      # above (fetch-depth: 0 + fetch-tags: true).
+      - name: Regenerate docs schema into the docgen worktree
+        run: |
+          mkdir -p "$RUNNER_TEMP/docgen/bundle/schema"
+          go run ./bundle/internal/schema ./bundle/internal/schema \
+            "$RUNNER_TEMP/docgen/bundle/schema/jsonschema_for_docs.json" .codegen/cli.json --docs
+
+      - name: Stage regenerated file on docgen
+        working-directory: ${{ runner.temp }}/docgen
+        run: git add bundle/schema/jsonschema_for_docs.json
+
+      - name: Commit and push to docgen
+        working-directory: ${{ runner.temp }}/docgen
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |-
+          if git diff --cached --quiet; then
+            echo "docgen already up to date for ${TAG}; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update jsonschema_for_docs.json for ${TAG}"
+          git push origin HEAD:docgen

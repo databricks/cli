@@ -78,6 +78,6 @@ func (r *ResourceSecretScope) DoCreate(ctx context.Context, state *SecretScopeCo
 // DoUpdate is not intentionally implemented here because scopes do not support a update API. All fields are marked to
 // return a recreate trigger.
 
-func (r *ResourceSecretScope) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceSecretScope) DoDelete(ctx context.Context, id string, _ *SecretScopeConfig) error {
 	return r.client.Secrets.DeleteScopeByScope(ctx, id)
 }

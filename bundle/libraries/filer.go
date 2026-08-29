@@ -29,10 +29,10 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 
 	switch {
 	case IsVolumesPath(artifactPath):
-		return filerForVolume(b, uploadPath)
+		return filerForVolume(ctx, b, uploadPath)
 
 	default:
-		return filerForWorkspace(b, uploadPath)
+		return filerForWorkspace(ctx, b, uploadPath)
 	}
 }
 
@@ -46,10 +46,10 @@ func GetFilerForLibrariesCleanup(ctx context.Context, b *bundle.Bundle) (filer.F
 
 	switch {
 	case IsVolumesPath(artifactPath):
-		return filerForVolume(b, artifactPath)
+		return filerForVolume(ctx, b, artifactPath)
 
 	default:
-		return filerForWorkspace(b, artifactPath)
+		return filerForWorkspace(ctx, b, artifactPath)
 	}
 }
 

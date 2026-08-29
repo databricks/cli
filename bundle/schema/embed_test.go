@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/bundle/schema"
@@ -63,4 +64,45 @@ func TestJsonSchema(t *testing.T) {
 	assert.Contains(t, providers.OneOf[0].Enum, "bitbucketCloud")
 	assert.Contains(t, providers.OneOf[0].Enum, "gitHubEnterprise")
 	assert.Contains(t, providers.OneOf[0].Enum, "bitbucketServer")
+}
+
+// JSON Schema requires enum values to be unique; strict validators (e.g. OPA)
+// reject the whole schema otherwise. Duplicates slip in when an enum is
+// hand-authored in annotations.yml for a field cli.json also defines, since the
+// annotation merge concatenates the two sequences. Guard the whole schema.
+func TestJsonSchemaEnumsAreUnique(t *testing.T) {
+	var s any
+	err := json.Unmarshal(schema.Bytes, &s)
+	require.NoError(t, err)
+
+	assert.Empty(t, duplicateEnumPaths(s, ""))
+}
+
+func duplicateEnumPaths(v any, path string) []string {
+	var duplicates []string
+	switch v := v.(type) {
+	case map[string]any:
+		if enum, ok := v["enum"].([]any); ok {
+			seen := map[string]struct{}{}
+			for _, item := range enum {
+				key := fmt.Sprintf("%v", item)
+				if _, ok := seen[key]; ok {
+					duplicates = append(duplicates, path)
+					break
+				}
+				seen[key] = struct{}{}
+			}
+		}
+		for key, value := range v {
+			if path != "" {
+				key = path + "/" + key
+			}
+			duplicates = append(duplicates, duplicateEnumPaths(value, key)...)
+		}
+	case []any:
+		for i, value := range v {
+			duplicates = append(duplicates, duplicateEnumPaths(value, fmt.Sprintf("%s[%d]", path, i))...)
+		}
+	}
+	return duplicates
 }

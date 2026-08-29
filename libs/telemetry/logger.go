@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -28,7 +29,16 @@ const (
 )
 
 func Log(ctx context.Context, event protos.DatabricksCliLog) {
-	fromContext(ctx).log(event)
+	// A missing logger means telemetry was never initialized on this context
+	// (e.g. a command invoked outside the normal cmd/root setup). Dropping the
+	// event is the right call: telemetry is best-effort and must never crash a
+	// command.
+	l, ok := loggerFromContext(ctx)
+	if !ok {
+		log.Debugf(ctx, "telemetry logger not found in the context; dropping event")
+		return
+	}
+	l.log(event)
 }
 
 type logger struct {
@@ -74,6 +84,11 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 			return fmt.Errorf("failed to marshal log: %s", err)
 		}
 		protoLogs[i] = string(b)
+	}
+
+	if !cmdctx.HasConfigUsed(ctx) {
+		log.Debugf(ctx, "no auth config available; skipping telemetry upload")
+		return nil
 	}
 
 	apiClient, err := client.New(cmdctx.ConfigUsed(ctx))
@@ -148,8 +163,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		//
 		// The UI infra team (who owns the /telemetry-ext API) recommends retrying for
 		// all 5xx responses.
-		var apiErr *apierr.APIError
-		if errors.As(err, &apiErr) && apiErr.StatusCode >= 500 {
+		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode >= 500 {
 			log.Infof(ctx, "Attempt %d failed due to a server side error. Retrying status code: %d", i+1, apiErr.StatusCode)
 
 			remainingTime := time.Until(deadline)
@@ -167,8 +181,10 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 }
 
 func attempt(ctx context.Context, apiClient *client.DatabricksClient, protoLogs []string) (*ResponseBody, error) {
+	// Without the workspace routing header, telemetry on unified hosts is
+	// recorded in a central shard instead of the user's workspace.
 	resp := &ResponseBody{}
-	err := apiClient.Do(ctx, http.MethodPost, "/telemetry-ext", nil, nil, RequestBody{
+	err := apiClient.Do(ctx, http.MethodPost, "/telemetry-ext", auth.WorkspaceIDHeaders(apiClient.Config), nil, RequestBody{
 		UploadTime: time.Now().UnixMilli(),
 		// There is a bug in the `/telemetry-ext` API which requires us to
 		// send an empty array for the `Items` field. Otherwise the API returns

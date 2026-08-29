@@ -2,11 +2,13 @@
 
 package schema
 
-type ResourceOnlineTableSpecRunContinuously struct {
+type ResourceOnlineTableProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
-type ResourceOnlineTableSpecRunTriggered struct {
-}
+type ResourceOnlineTableSpecRunContinuously struct{}
+
+type ResourceOnlineTableSpecRunTriggered struct{}
 
 type ResourceOnlineTableSpec struct {
 	PerformFullCopy     bool                                    `json:"perform_full_copy,omitempty"`
@@ -19,10 +21,11 @@ type ResourceOnlineTableSpec struct {
 }
 
 type ResourceOnlineTable struct {
-	Id                            string                   `json:"id,omitempty"`
-	Name                          string                   `json:"name"`
-	Status                        []any                    `json:"status,omitempty"`
-	TableServingUrl               string                   `json:"table_serving_url,omitempty"`
-	UnityCatalogProvisioningState string                   `json:"unity_catalog_provisioning_state,omitempty"`
-	Spec                          *ResourceOnlineTableSpec `json:"spec,omitempty"`
+	Id                            string                             `json:"id,omitempty"`
+	Name                          string                             `json:"name"`
+	Status                        []any                              `json:"status,omitempty"`
+	TableServingUrl               string                             `json:"table_serving_url,omitempty"`
+	UnityCatalogProvisioningState string                             `json:"unity_catalog_provisioning_state,omitempty"`
+	ProviderConfig                *ResourceOnlineTableProviderConfig `json:"provider_config,omitempty"`
+	Spec                          *ResourceOnlineTableSpec           `json:"spec,omitempty"`
 }

@@ -1,0 +1,11 @@
+bundle:
+  name: unicode-vars
+
+variables:
+  变量:
+    default: hello
+
+resources:
+  jobs:
+    foo:
+      name: ${var.变量}

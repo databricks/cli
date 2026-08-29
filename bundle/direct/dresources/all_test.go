@@ -19,14 +19,16 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,10 +41,29 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"catalogs": &resources.Catalog{
+		CreateCatalog: catalog.CreateCatalog{
+			Name:    "mycatalog",
+			Comment: "Test catalog",
+		},
+		// Note: EnablePredictiveOptimization and IsolationMode cannot be set during creation,
+		// only during updates. They are not included in the test config.
+	},
+
+	"external_locations": &resources.ExternalLocation{
+		CreateExternalLocation: catalog.CreateExternalLocation{
+			Name:           "myexternallocation",
+			Url:            "s3://mybucket/mypath",
+			CredentialName: "mycredential",
+			Comment:        "Test external location",
+		},
+	},
+
 	"schemas": &resources.Schema{
 		CreateSchema: catalog.CreateSchema{
 			CatalogName: "main",
 			Name:        "myschema",
+			Comment:     "Test schema",
 		},
 	},
 
@@ -51,12 +72,20 @@ var testConfig map[string]any = map[string]any{
 			CatalogName: "main",
 			SchemaName:  "myschema",
 			Name:        "myvolume",
+			Comment:     "Test volume",
 		},
 	},
 
 	"database_instances": &resources.DatabaseInstance{
 		DatabaseInstance: database.DatabaseInstance{
 			Name: "mydbinstance",
+		},
+	},
+
+	"instance_pools": &resources.InstancePool{
+		CreateInstancePool: compute.CreateInstancePool{
+			InstancePoolName: "my-instance-pool",
+			NodeTypeId:       "i3.xlarge",
 		},
 	},
 
@@ -102,6 +131,16 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"secrets": &resources.Secret{
+		Secret: catalog.Secret{
+			CatalogName: "main",
+			SchemaName:  "default",
+			Name:        "my_secret",
+			Value:       "my_secret_value",
+			Comment:     "Test secret",
+		},
+	},
+
 	"secret_scopes": &resources.SecretScope{
 		Name:        "my_secret_scope",
 		BackendType: workspace.ScopeBackendTypeAzureKeyvault,
@@ -122,6 +161,7 @@ var testConfig map[string]any = map[string]any{
 			Name: "my-endpoint",
 			Config: &serving.EndpointCoreConfigInput{
 				Name: "my-endpoint",
+				//nolint:staticcheck // SA1019: deprecated AutoCaptureConfigInput kept for bundle config compatibility
 				AutoCaptureConfig: &serving.AutoCaptureConfigInput{
 					CatalogName:     "main",
 					SchemaName:      "myschema",
@@ -161,6 +201,28 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"postgres_projects": &resources.PostgresProject{
+		PostgresProjectConfig: resources.PostgresProjectConfig{
+			ProjectId: "test-project",
+			ProjectSpec: postgres.ProjectSpec{
+				DisplayName: "Test Project",
+				PgVersion:   16,
+			},
+		},
+	},
+
+	"postgres_catalogs": &resources.PostgresCatalog{
+		PostgresCatalogConfig: resources.PostgresCatalogConfig{
+			CatalogId: "test_catalog",
+		},
+	},
+
+	"postgres_synced_tables": &resources.PostgresSyncedTable{
+		PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+			SyncedTableId: "main.public.trips_synced",
+		},
+	},
+
 	"alerts": &resources.Alert{
 		AlertV2: sql.AlertV2{
 			DisplayName: "my-alert",
@@ -191,14 +253,70 @@ var testConfig map[string]any = map[string]any{
 			OutputSchemaName: "main.myschema",
 		},
 	},
+
+	"dashboards": &resources.Dashboard{
+		DashboardConfig: resources.DashboardConfig{
+			DisplayName: "my-dashboard",
+			ParentPath:  "/Workspace/Users/user@example.com",
+			WarehouseId: "test-warehouse-id",
+			// Use []any/map[string]any to mirror how this any-typed field is
+			// populated in production (JSON/dyn decoding); a typed []map[string]any
+			// can never come out of that path.
+			SerializedDashboard: map[string]any{
+				"pages": []any{
+					map[string]any{
+						"name":        "page1",
+						"displayName": "Page 1",
+						"pageType":    "PAGE_TYPE_CANVAS",
+					},
+				},
+			},
+
+			DatasetCatalog: "main",
+			DatasetSchema:  "myschema",
+		},
+	},
+
+	"genie_spaces": &resources.GenieSpace{
+		GenieSpaceConfig: resources.GenieSpaceConfig{
+			Title:           "my-genie-space",
+			WarehouseId:     "test-warehouse-id",
+			ParentPath:      "/Workspace/Users/user@example.com",
+			SerializedSpace: "{}",
+		},
+	},
+
+	"vector_search_endpoints": &resources.VectorSearchEndpoint{
+		CreateEndpoint: vectorsearch.CreateEndpoint{
+			Name:         "my-endpoint",
+			EndpointType: vectorsearch.EndpointTypeStandard,
+		},
+	},
+
+	"vector_search_indexes": &resources.VectorSearchIndex{
+		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+			Name:         "main.default.my_index",
+			EndpointName: "my-index-endpoint",
+			PrimaryKey:   "id",
+			IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+			DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
+				SourceTable:  "main.default.source_table",
+				PipelineType: vectorsearch.PipelineTypeTriggered,
+			},
+		},
+		Grants: []catalog.PrivilegeAssignment{{
+			Principal:  "user@example.com",
+			Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+		}},
+	},
 }
 
-type prepareWorkspace func(client *databricks.WorkspaceClient) (any, error)
+type prepareWorkspace func(ctx context.Context, client *databricks.WorkspaceClient) (any, error)
 
 // some resource require other resources to exist
 var testDeps = map[string]prepareWorkspace{
-	"database_catalogs": func(client *databricks.WorkspaceClient) (any, error) {
-		_, err := client.Database.CreateDatabaseInstance(context.Background(), database.CreateDatabaseInstanceRequest{
+	"database_catalogs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		_, err := client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 			DatabaseInstance: database.DatabaseInstance{
 				Name: "mydbinstance1",
 			},
@@ -212,8 +330,44 @@ var testDeps = map[string]prepareWorkspace{
 		}, err
 	},
 
-	"jobs.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.Jobs.Create(context.Background(), jobs.CreateJob{
+	"vector_search_indexes": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		_, err := client.VectorSearchEndpoints.CreateEndpoint(ctx, vectorsearch.CreateEndpoint{
+			Name:         "my-index-endpoint",
+			EndpointType: vectorsearch.EndpointTypeStandard,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return testConfig["vector_search_indexes"], nil
+	},
+
+	"job_runs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// A run can only be triggered against an existing job, so create one first.
+		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
+			Name: "job-for-run",
+			Tasks: []jobs.Task{
+				{
+					TaskKey: "t",
+					NotebookTask: &jobs.NotebookTask{
+						NotebookPath: "/Workspace/Users/user@example.com/notebook",
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.JobRun{
+			RunNow: jobs.RunNow{
+				JobId: resp.JobId,
+			},
+		}, nil
+	},
+
+	"jobs.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
 			Name: "job-permissions",
 			Tasks: []jobs.Task{
 				{
@@ -230,15 +384,15 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "IS_OWNER",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "IS_OWNER",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
 
-	"pipelines.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.Pipelines.Create(context.Background(), pipelines.CreatePipeline{
+	"pipelines.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Pipelines.Create(ctx, pipelines.CreatePipeline{
 			Name: "pipeline-permissions",
 		})
 		if err != nil {
@@ -247,15 +401,16 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/pipelines/" + resp.PipelineId,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				// Pipelines require exactly one owner, like jobs.
+				Level:    "IS_OWNER",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
 
-	"models.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.ModelRegistry.CreateModel(context.Background(), ml.CreateModelRequest{
+	"models.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.ModelRegistry.CreateModel(ctx, ml.CreateModelRequest{
 			Name:        "model-permissions",
 			Description: "model for permissions testing",
 		})
@@ -265,15 +420,15 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/registered-models/" + resp.RegisteredModel.Name,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
 
-	"experiments.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.Experiments.CreateExperiment(context.Background(), ml.CreateExperiment{
+	"experiments.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Experiments.CreateExperiment(ctx, ml.CreateExperiment{
 			Name: "experiment-permissions",
 		})
 		if err != nil {
@@ -282,25 +437,45 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/experiments/" + resp.ExperimentId,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
 
-	"clusters.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+	"clusters.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/clusters/cluster-permissions",
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
 
-	"apps.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		waiter, err := client.Apps.Create(context.Background(), apps.CreateAppRequest{
+	"cluster_policies.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &PermissionsState{
+			ObjectID: "/cluster-policies/cluster-policy-permissions",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_USE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"instance_pools.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &PermissionsState{
+			ObjectID: "/instance-pools/pool-permissions",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"apps.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.Apps.Create(ctx, apps.CreateAppRequest{
 			App: apps.App{
 				Name: "app-permissions",
 			},
@@ -311,25 +486,25 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/apps/" + waiter.Response.Name,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
 
-	"sql_warehouses.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+	"sql_warehouses.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/sql/warehouses/warehouse-permissions",
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
 
-	"database_instances.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		waiter, err := client.Database.CreateDatabaseInstance(context.Background(), database.CreateDatabaseInstanceRequest{
+	"database_instances.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 			DatabaseInstance: database.DatabaseInstance{
 				Name: "dbinstance-permissions",
 			},
@@ -340,15 +515,35 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/database-instances/" + waiter.Response.Name,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
 
-	"dashboards.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		ctx := context.Background()
+	"postgres_projects.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		const projectID = "permissions-project"
+		waiter, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: projectID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if _, err := waiter.Wait(ctx); err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/database-projects/" + projectID,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"dashboards.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		parentPath := "/Workspace/Users/user@example.com"
 
 		// Create parent directory if it doesn't exist
@@ -370,15 +565,34 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/dashboards/" + resp.DashboardId,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
 
-	"model_serving_endpoints.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		waiter, err := client.ServingEndpoints.Create(context.Background(), serving.CreateServingEndpoint{
+	"genie_spaces.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Genie.CreateSpace(ctx, dashboards.GenieCreateSpaceRequest{
+			Title:           "genie-space-permissions",
+			WarehouseId:     "test-warehouse-id",
+			SerializedSpace: "{}",
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/genie/" + resp.SpaceId,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"model_serving_endpoints.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.ServingEndpoints.Create(ctx, serving.CreateServingEndpoint{
 			Name: "endpoint-permissions",
 			Config: &serving.EndpointCoreConfigInput{
 				ServedModels: []serving.ServedModelInput{
@@ -397,15 +611,33 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/serving-endpoints/" + waiter.Response.Name,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
 
-	"alerts.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.AlertsV2.CreateAlert(context.Background(), sql.CreateAlertV2Request{
+	"vector_search_endpoints.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.VectorSearchEndpoints.CreateEndpoint(ctx, vectorsearch.CreateEndpoint{
+			Name:         "vs-endpoint-permissions",
+			EndpointType: vectorsearch.EndpointTypeStandard,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/vector-search-endpoints/" + waiter.Response.Id,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"alerts.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.AlertsV2.CreateAlert(ctx, sql.CreateAlertV2Request{
 			Alert: sql.AlertV2{
 				DisplayName: "alert-permissions",
 				QueryText:   "SELECT 1",
@@ -428,48 +660,92 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/alertsv2/" + resp.Id,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
 
-	"schemas.grants": func(client *databricks.WorkspaceClient) (any, error) {
+	"catalogs.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "catalog",
+			FullName:      "mycatalog",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"external_locations.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "external_location",
+			FullName:      "myexternallocation",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeReadFiles},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"schemas.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &GrantsState{
 			SecurableType: "schema",
 			FullName:      "main.myschema",
-			Grants: []GrantAssignment{{
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
 		}, nil
 	},
 
-	"volumes.grants": func(client *databricks.WorkspaceClient) (any, error) {
+	"volumes.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &GrantsState{
 			SecurableType: "volume",
 			FullName:      "main.myschema.myvolume",
-			Grants: []GrantAssignment{{
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
 		}, nil
 	},
 
-	"registered_models.grants": func(client *databricks.WorkspaceClient) (any, error) {
+	"registered_models.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &GrantsState{
 			SecurableType: "registered-model",
 			FullName:      "modelid",
-			Grants: []GrantAssignment{{
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
 		}, nil
 	},
 
-	"secret_scopes.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		err := client.Secrets.CreateScope(context.Background(), workspace.CreateScope{
+	"vector_search_indexes.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "table",
+			FullName:      "main.default.my_index",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"secrets.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "secret",
+			FullName:      "main.default.my_secret",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"secret_scopes.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		err := client.Secrets.CreateScope(ctx, workspace.CreateScope{
 			Scope:            "permissions_test_scope",
 			ScopeBackendType: workspace.ScopeBackendTypeAzureKeyvault,
 			BackendAzureKeyvault: &workspace.AzureKeyVaultSecretScopeMetadata{
@@ -487,6 +763,139 @@ var testDeps = map[string]prepareWorkspace{
 				{
 					Principal:  "user@example.com",
 					Permission: workspace.AclPermissionManage,
+				},
+			},
+		}, nil
+	},
+
+	"postgres_branches": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-branch",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Branch",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresBranch{
+			PostgresBranchConfig: resources.PostgresBranchConfig{
+				Parent:     "projects/test-project-for-branch",
+				BranchId:   "test-branch",
+				BranchSpec: postgres.BranchSpec{},
+			},
+		}, nil
+	},
+
+	"postgres_endpoints": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-endpoint",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Endpoint",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create parent branch
+		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+			Parent:   "projects/test-project-for-endpoint",
+			BranchId: "test-branch-for-endpoint",
+			Branch:   postgres.Branch{},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresEndpoint{
+			PostgresEndpointConfig: resources.PostgresEndpointConfig{
+				Parent:     "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
+				EndpointId: "test-endpoint",
+				EndpointSpec: postgres.EndpointSpec{
+					EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+				},
+			},
+		}, nil
+	},
+
+	"postgres_databases": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-database",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Database",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create parent branch
+		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+			Parent:   "projects/test-project-for-database",
+			BranchId: "test-branch-for-database",
+			Branch:   postgres.Branch{},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresDatabase{
+			PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+				Parent:     "projects/test-project-for-database/branches/test-branch-for-database",
+				DatabaseId: "test-database",
+				DatabaseDatabaseSpec: postgres.DatabaseDatabaseSpec{
+					PostgresDatabase: "app_db",
+					Role:             "projects/test-project-for-database/branches/test-branch-for-database/roles/owner",
+				},
+			},
+		}, nil
+	},
+
+	"postgres_roles": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-role",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Role",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create parent branch
+		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+			Parent:   "projects/test-project-for-role",
+			BranchId: "test-branch-for-role",
+			Branch:   postgres.Branch{},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresRole{
+			PostgresRoleConfig: resources.PostgresRoleConfig{
+				Parent: "projects/test-project-for-role/branches/test-branch-for-role",
+				RoleId: "test-role",
+				RoleRoleSpec: postgres.RoleRoleSpec{
+					PostgresRole: "test_role",
 				},
 			},
 		}, nil
@@ -511,13 +920,81 @@ func TestAll(t *testing.T) {
 	require.Len(t, m, len(SupportedResources))
 }
 
+// testIgnoreFilter encapsulates the logic for filtering fields based on ignore_remote_changes config.
+type testIgnoreFilter struct {
+	ignoreFields map[string]bool
+}
+
+// newTestIgnoreFilter creates a filter from the adapter's resource configs.
+// It also ignores fields that exist in StateType but not in RemoteType, because
+// those are automatically suppressed by the planner (reason: missing_in_remote)
+// and RemapState cannot populate them from remote state.
+func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
+	ignoreFields := make(map[string]bool)
+	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
+		if cfg == nil {
+			continue
+		}
+		for _, p := range cfg.IgnoreRemoteChanges {
+			ignoreFields[p.Field.String()] = true
+		}
+	}
+	// Auto-include fields present in StateType but absent from RemoteType.
+	_ = structwalk.WalkType(adapter.StateType(), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
+		if path.IsRoot() {
+			return true
+		}
+		if structaccess.ValidatePattern(adapter.RemoteType(), path) != nil {
+			ignoreFields[path.String()] = true
+			return false
+		}
+		return true
+	})
+	return &testIgnoreFilter{ignoreFields: ignoreFields}
+}
+
+// shouldIgnore returns true if the field at the given path should be ignored.
+func (f *testIgnoreFilter) shouldIgnore(path string) bool {
+	if f.ignoreFields[path] {
+		return true
+	}
+	// Check if this is a nested field under an ignored top-level field
+	topLevelField := path
+	if prefix, _, ok := strings.Cut(path, "."); ok {
+		topLevelField = prefix
+	}
+	return f.ignoreFields[topLevelField]
+}
+
+// filterChanges returns only the changes that should not be ignored.
+// It also filters out the "updated_at" timestamp field.
+func (f *testIgnoreFilter) filterChanges(changes []structdiff.Change) []structdiff.Change {
+	var relevantChanges []structdiff.Change
+	for _, change := range changes {
+		fieldName := change.Path.String()
+		if !f.shouldIgnore(fieldName) {
+			relevantChanges = append(relevantChanges, change)
+		}
+	}
+	return relevantChanges
+}
+
+// requireEqual compares two structs and fails the test if there are differences
+// that are not in the ignore_remote_changes list.
+func (f *testIgnoreFilter) requireEqual(t *testing.T, expected, actual any, msgAndArgs ...any) {
+	changes, err := structdiff.GetStructDiff(expected, actual, nil)
+	require.NoError(t, err)
+	relevantChanges := f.filterChanges(changes)
+	require.Empty(t, relevantChanges, msgAndArgs...)
+}
+
 func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) {
 	var inputConfig any
 	var err error
 
 	prepDeps, hasDeps := testDeps[group]
 	if hasDeps {
-		inputConfig, err = prepDeps(client)
+		inputConfig, err = prepDeps(t.Context(), client)
 		require.NoError(t, err)
 	} else {
 		var ok bool
@@ -536,7 +1013,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	newState, err := adapter.PrepareState(inputConfig)
 	require.NoError(t, err, "PrepareState failed")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// initial DoRead() cannot find the resource
 	remote, err := adapter.DoRead(ctx, "1234")
@@ -552,47 +1029,64 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NoError(t, err)
 	require.NotNil(t, remote)
 
+	// RemoteType is included verbatim in the JSON plan's "remote_state" field,
+	// so it must survive a JSON round-trip without losing fields.
+	assertJSONRoundTrip(t, reflect.ValueOf(remote).Elem().Interface(), "RemoteType "+group)
+
 	remappedState, err := adapter.RemapState(remote)
 	require.NoError(t, err)
 	require.NotNil(t, remappedState)
 
+	// Create filter for fields that should be ignored based on ignore_remote_changes config.
+	ignoreFilter := newTestIgnoreFilter(adapter)
+
 	if remoteStateFromCreate != nil {
 		remappedRemoteStateFromCreate, err := adapter.RemapState(remoteStateFromCreate)
 		require.NoError(t, err)
-		require.Equal(t, remappedState, remappedRemoteStateFromCreate)
+		ignoreFilter.requireEqual(t, remappedState, remappedRemoteStateFromCreate,
+			"unexpected differences between remappedState and remappedRemoteStateFromCreate")
 	}
 
-	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, newState)
+	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, createdID, newState)
 	require.NoError(t, err)
 	if remoteStateFromWaitCreate != nil {
+		// Re-read after the wait: the earlier remote can be stale for resources
+		// whose state settles while WaitAfterCreate blocks (e.g. job_runs).
+		remote, err = adapter.DoRead(ctx, createdID)
+		require.NoError(t, err)
 		require.Equal(t, remote, remoteStateFromWaitCreate)
+
+		remappedState, err = adapter.RemapState(remote)
+		require.NoError(t, err)
 	}
 
 	if adapter.HasDoUpdate() {
-		remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState, nil)
+		remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState, &deployplan.PlanEntry{})
 		require.NoError(t, err, "DoUpdate failed")
 		if remoteStateFromUpdate != nil {
 			remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
 			require.NoError(t, err)
-			changes, err := structdiff.GetStructDiff(remappedState, remappedStateFromUpdate, nil)
+			// Compare DoUpdate's result against a fresh DoRead: server-generated
+			// fields (e.g. etag) may change on any write, so DoUpdate's return
+			// value must match what DoRead returns right after.
+			remotePostUpdate, err := adapter.DoRead(ctx, createdID)
 			require.NoError(t, err)
-			// Filter out timestamp fields that are expected to differ in value
-			var relevantChanges []structdiff.Change
-			for _, change := range changes {
-				fieldName := change.Path.String()
-				if fieldName != "updated_at" {
-					relevantChanges = append(relevantChanges, change)
-				}
-			}
-			require.Empty(t, relevantChanges, "unexpected differences found: %v", relevantChanges)
+			remappedPostUpdate, err := adapter.RemapState(remotePostUpdate)
+			require.NoError(t, err)
+			ignoreFilter.requireEqual(t, remappedPostUpdate, remappedStateFromUpdate,
+				"unexpected differences between remappedState and remappedStateFromUpdate")
+			// DoUpdate may mutate newState in place (e.g. etag), so update remappedState
+			// to match the post-update server state for the field checks below.
+			remappedState = remappedStateFromUpdate
 		}
 
-		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, newState)
+		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, createdID, newState)
 		require.NoError(t, err)
 		if remoteStateFromWaitUpdate != nil {
 			remappedStateFromWaitUpdate, err := adapter.RemapState(remoteStateFromWaitUpdate)
 			require.NoError(t, err)
-			require.Equal(t, remappedState, remappedStateFromWaitUpdate)
+			ignoreFilter.requireEqual(t, remappedState, remappedStateFromWaitUpdate,
+				"unexpected differences between remappedState and remappedStateFromWaitUpdate")
 		}
 	}
 
@@ -611,16 +1105,23 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 			// testserver can set field to backend-generated value
 			return
 		}
+		// Skip fields configured in ignore_remote_changes.
+		if ignoreFilter.shouldIgnore(path.String()) {
+			return
+		}
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
 		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
 		// If not true for your resource, add exception here:
 		assert.Equal(t, val, remoteValue, "path=%q\nnewState=%s\nremappedState=%s", path.String(), jsonDump(newState), jsonDump(remappedState))
 	}))
 
-	err = adapter.DoDelete(ctx, createdID)
+	err = adapter.DoDelete(ctx, createdID, newState)
 	require.NoError(t, err)
 
-	p, err := structpath.Parse("name")
+	err = adapter.WaitAfterDelete(ctx, createdID)
+	require.NoError(t, err)
+
+	p, err := structpath.ParsePath("name")
 	require.NoError(t, err)
 
 	if adapter.HasOverrideChangeDesc() {
@@ -629,30 +1130,30 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
+	// Apps DoDelete is fire-and-forget: the API returns success while the app
+	// sits in DELETING state for up to ~20 minutes before the record is removed.
+	// A GET on the DELETING app returns the app, not 404 -- the testserver
+	// mirrors that in libs/testserver/apps.go. DoRead therefore still succeeds
+	// here; the planner treats this transient state as gone via ResourceApp.IsGone
+	// so delete/destroy stay idempotent (acceptance/bundle/invariant/{delete,destroy}_idempotent).
+	deleteLeavesDeleting := group == "apps"
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
-	if deleteIsNoop {
+	switch {
+	case deleteIsNoop:
 		require.NoError(t, err)
-	} else {
+		// The resource genuinely still exists, so it must not report as gone.
+		assert.False(t, adapter.IsGone(remoteAfterDelete))
+	case deleteLeavesDeleting:
+		require.NoError(t, err)
+		require.NotNil(t, remoteAfterDelete)
+		// IsGone lets the planner short-circuit the second delete on this
+		// transient DELETING state; this is what keeps the delete/destroy
+		// invariant tests idempotent, so assert the contract directly.
+		assert.True(t, adapter.IsGone(remoteAfterDelete))
+	default:
 		require.Error(t, err)
 		require.Nil(t, remoteAfterDelete)
-	}
-}
-
-// validateFields uses structwalk to generate all valid field paths and checks membership.
-func validateFields(t *testing.T, configType reflect.Type, fields map[string]deployplan.ActionType) {
-	validPaths := make(map[string]struct{})
-
-	err := structwalk.WalkType(configType, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) bool {
-		validPaths[path.String()] = struct{}{}
-		return true // continue walking
-	})
-	require.NoError(t, err)
-
-	for fieldPath := range fields {
-		if _, exists := validPaths[fieldPath]; !exists {
-			t.Errorf("invalid field '%s' for %s", fieldPath, configType)
-		}
 	}
 }
 
@@ -669,17 +1170,118 @@ func TestResourceConfig(t *testing.T) {
 		}
 
 		t.Run(resourceType, func(t *testing.T) {
-			fieldMap := make(map[string]deployplan.ActionType)
-			for _, p := range cfg.RecreateOnChanges {
-				fieldMap[p.String()] = deployplan.Recreate
+			validateResourceConfig(t, adapter.StateType(), cfg)
+		})
+	}
+}
+
+// TestGeneratedResourceConfig validates that all field patterns in generated resource config
+// exist in the corresponding StateType for each resource.
+func TestGeneratedResourceConfig(t *testing.T) {
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
+		require.NoError(t, err)
+
+		cfg := adapter.GeneratedResourceConfig()
+		if cfg == nil {
+			continue
+		}
+
+		t.Run(resourceType, func(t *testing.T) {
+			validateResourceConfig(t, adapter.StateType(), cfg)
+		})
+	}
+}
+
+func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceLifecycleConfig) {
+	for _, p := range cfg.RecreateOnChanges {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "RecreateOnChanges: %s", p.Field)
+	}
+	for _, p := range cfg.ProvidedIDFields {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "ProvidedIDFields: %s", p.Field)
+	}
+	for _, p := range cfg.UpdatableIDFields {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "UpdatableIDFields: %s", p.Field)
+	}
+	for _, p := range cfg.IgnoreRemoteChanges {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)
+	}
+	for _, p := range cfg.BackendDefaults {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "BackendDefaults: %s", p.Field)
+	}
+}
+
+// TestNoUpdateResourcesCoverAllFields ensures that resources which do not
+// implement DoUpdate classify every settable field. Without DoUpdate the
+// planner rejects any "update" action ("resource does not support update
+// action but plan produced update"), so a field a user can change must be
+// declared recreate_on_changes (or ignore_local_changes) to recreate instead.
+// A provided_id_field also recreates on change (classifyIDField), so it counts
+// as covered too. An output-only field is fine under ignore_remote_changes
+// because the user never sets it, so it can never produce a user-driven change.
+//
+// The check walks the state type and fails on any uncovered scalar leaf. This
+// keeps the recreate_on_changes lists exhaustive as the SDK adds fields.
+func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
+		require.NoError(t, err)
+		if adapter.HasDoUpdate() {
+			continue
+		}
+		if adapter.HasOverrideChangeDesc() {
+			// OverrideChangeDesc classifies changes programmatically (e.g.
+			// vector_search_indexes handles endpoint_uuid there), which this
+			// static walk can't see into.
+			continue
+		}
+
+		// A user change is only neutralized by recreate_on_changes,
+		// provided_id_fields, or ignore_local_changes; output-only fields are
+		// covered by ignore_remote_changes since the user never sets them. A
+		// root rule (omitted field) records the empty path "", which stops the
+		// walk below at the root node and thus covers every field at once.
+		covered := map[string]bool{}
+		for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
+			if cfg == nil {
+				continue
 			}
-			for _, p := range cfg.UpdateIDOnChanges {
-				fieldMap[p.String()] = deployplan.UpdateWithID
+			for _, r := range cfg.RecreateOnChanges {
+				covered[r.Field.String()] = true
 			}
-			for _, p := range cfg.IgnoreRemoteChanges {
-				fieldMap[p.String()] = deployplan.Skip
+			for _, r := range cfg.ProvidedIDFields {
+				covered[r.Field.String()] = true
 			}
-			validateFields(t, adapter.StateType(), fieldMap)
+			for _, r := range cfg.IgnoreLocalChanges {
+				covered[r.Field.String()] = true
+			}
+			for _, r := range cfg.IgnoreRemoteChanges {
+				if strings.HasSuffix(r.Reason, "output_only") {
+					covered[r.Field.String()] = true
+				}
+			}
+		}
+
+		t.Run(resourceType, func(t *testing.T) {
+			err := structwalk.WalkType(adapter.StateType(), func(path *structpath.PatternNode, typ reflect.Type, _ *reflect.StructField) bool {
+				if covered[path.String()] {
+					// This field (or its enclosing object) is classified; the
+					// whole subtree is covered, so stop descending.
+					return false
+				}
+				for typ.Kind() == reflect.Pointer {
+					typ = typ.Elem()
+				}
+				switch typ.Kind() {
+				case reflect.Struct, reflect.Slice, reflect.Array, reflect.Map:
+					// Intermediate node: descend and check its children.
+					return true
+				default:
+					t.Errorf("field %q is not classified; a change to it would plan an unsupported update. Add it to recreate_on_changes.", path)
+					return false
+				}
+			})
+			require.NoError(t, err)
 		})
 	}
 }

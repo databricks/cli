@@ -1,7 +1,6 @@
 package variable
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -22,7 +21,7 @@ func TestResolveDashboard_ResolveSuccess(t *testing.T) {
 			{Id: "5678", Name: "dashboard2"},
 		}, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveDashboard{name: "dashboard"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
@@ -40,7 +39,7 @@ func TestResolveDashboard_ResolveNotFound(t *testing.T) {
 			{Id: "5678", Name: "dashboard2"},
 		}, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveDashboard{name: "dashboard"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorContains(t, err, "dashboard name 'dashboard' does not exist")

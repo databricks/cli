@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -13,7 +12,7 @@ import (
 
 func TestDefaultTarget(t *testing.T) {
 	b := &bundle.Bundle{}
-	diags := bundle.Apply(context.Background(), b, mutator.DefineDefaultTarget())
+	diags := bundle.Apply(t.Context(), b, mutator.DefineDefaultTarget())
 	require.NoError(t, diags.Error())
 
 	env, ok := b.Config.Targets["default"]
@@ -29,7 +28,7 @@ func TestDefaultTargetAlreadySpecified(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.DefineDefaultTarget())
+	diags := bundle.Apply(t.Context(), b, mutator.DefineDefaultTarget())
 	require.NoError(t, diags.Error())
 
 	_, ok := b.Config.Targets["default"]

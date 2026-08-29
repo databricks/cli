@@ -1,11 +1,14 @@
 package runlocal
 
-import "fmt"
+import (
+	"net"
+	"strconv"
+)
 
 type Config struct {
 	AppName       string
 	AppURL        string
-	WorkspaceId   int64
+	WorkspaceID   string
 	ServerName    string
 	Host          string
 	WorkspaceHost string
@@ -21,11 +24,11 @@ const (
 	DEFAULT_PORT     = 8000
 )
 
-func NewConfig(workspaceHost string, workpaceId int64, appDir, host string, port int) *Config {
+func NewConfig(workspaceHost, workspaceID, appDir, host string, port int) *Config {
 	c := &Config{
 		AppName:       DEFAULT_APP_NAME,
-		AppURL:        fmt.Sprintf("http://%s:%d", host, port),
-		WorkspaceId:   workpaceId,
+		AppURL:        "http://" + net.JoinHostPort(host, strconv.Itoa(port)),
+		WorkspaceID:   workspaceID,
 		ServerName:    host,
 		Port:          port,
 		Host:          host,

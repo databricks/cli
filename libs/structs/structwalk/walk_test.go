@@ -18,7 +18,7 @@ func flatten(t *testing.T, value any) map[string]any {
 		results[s] = value
 
 		// Test path parsing round trip
-		newPath, err := structpath.Parse(s)
+		newPath, err := structpath.ParsePath(s)
 		if assert.NoError(t, err, s) {
 			newS := newPath.String()
 			assert.Equal(t, path, newPath, "s=%q newS=%q", s, newS)
@@ -74,7 +74,7 @@ func TestValueTypesEmpty(t *testing.T) {
 	forcedResults := flatten(t, forced)
 
 	// Ensure forced fields are present with zero values
-	assert.Equal(t, "", forcedResults["omit_str"])
+	assert.Empty(t, forcedResults["omit_str"])
 	assert.Equal(t, false, forcedResults["omit_bool"])
 
 	// Non-forced omitempty zero field should remain absent
@@ -214,6 +214,42 @@ func TestEmbeddedStructWithPointer(t *testing.T) {
 		"embedded_field": "embedded_value",
 		"parent_field":   "parent_value",
 	}, flatten(t, parent))
+}
+
+func TestEmbedTagWalk(t *testing.T) {
+	type Item struct {
+		Name string `json:"name"`
+	}
+
+	type Container struct {
+		ObjectID      string `json:"object_id"`
+		EmbeddedSlice []Item `json:"items,omitempty"`
+	}
+
+	c := Container{
+		ObjectID:      "abc",
+		EmbeddedSlice: []Item{{Name: "first"}, {Name: "second"}},
+	}
+
+	result := flatten(t, c)
+
+	// EmbeddedSlice field contents appear at parent level without the field name.
+	assert.Equal(t, map[string]any{
+		"object_id": "abc",
+		"[0].name":  "first",
+		"[1].name":  "second",
+	}, result)
+}
+
+func TestEmbedTagWalkEmpty(t *testing.T) {
+	type Container struct {
+		ObjectID      string `json:"object_id"`
+		EmbeddedSlice []int  `json:"items,omitempty"`
+	}
+
+	// Empty slice with omitempty should be skipped.
+	result := flatten(t, Container{ObjectID: "abc"})
+	assert.Equal(t, map[string]any{"object_id": "abc"}, result)
 }
 
 func TestEmbeddedStructWithJSONTagDash(t *testing.T) {

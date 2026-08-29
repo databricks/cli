@@ -2,9 +2,9 @@
 >>> [CLI] bundle deploy
 Uploading whl/source.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.job
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Expecting 2 wheels in libraries section in /jobs/create
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
@@ -16,7 +16,7 @@ Deployment complete!
         "whl": "/Workspace/foo/bar/artifacts/.internal/source.whl"
       },
       {
-        "whl": "/Workspace/Users/foo@bar.com/mywheel.whl"
+        "whl": "/Workspace/Users/foo@bar.test/mywheel.whl"
       }
     ],
     "python_wheel_task": {
@@ -35,7 +35,7 @@ Deployment complete!
             "whl": "/Workspace/foo/bar/artifacts/.internal/source.whl"
           },
           {
-            "whl": "/Workspace/Users/foo@bar.com/mywheel.whl"
+            "whl": "/Workspace/Users/foo@bar.test/mywheel.whl"
           }
         ],
         "python_wheel_task": {
@@ -63,7 +63,7 @@ Deployment complete!
       "client": "1",
       "dependencies": [
         "/Workspace/foo/bar/artifacts/.internal/source.whl",
-        "/Workspace/Users/foo@bar.com/mywheel.whl"
+        "/Workspace/Users/foo@bar.test/mywheel.whl"
       ]
     }
   }

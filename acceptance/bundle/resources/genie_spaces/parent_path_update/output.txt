@@ -1,0 +1,24 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-genie-space-[UNIQUE_NAME]/default/files...
+Created genie_spaces.update_target
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Plan after changing parent_path should show update
+>>> [CLI] bundle plan
+update genie_spaces.update_target
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.genie_spaces.update_target
+
+This action will result in the deletion of the following Genie spaces.
+The conversation history attached to them is permanently lost:
+  delete resources.genie_spaces.update_target
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-genie-space-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

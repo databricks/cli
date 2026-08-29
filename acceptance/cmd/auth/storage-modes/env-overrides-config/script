@@ -1,0 +1,14 @@
+export DATABRICKS_AUTH_STORAGE=plaintext
+
+# home/.databrickscfg ([__settings__] auth_storage = secure) and
+# home/.databricks/token-cache.json are checked-in inputs.
+title "Token cache keys before logout\n"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
+
+# Env var = plaintext must beat [__settings__] auth_storage = secure.
+# Proof: logout clears the file-backed token-cache.json. If the env override
+# were ignored, the CLI would try the keyring and leave the file cache alone.
+trace $CLI auth logout --profile dev --auto-approve
+
+title "Token cache keys after logout (should be empty)\n"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"

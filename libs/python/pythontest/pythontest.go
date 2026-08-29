@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,7 +44,7 @@ func CreatePythonEnv(opts *VenvOpts) error {
 		opts.Name = testutil.RandomName("test-venv-")
 	}
 
-	cmd := exec.Command("uv", "venv", opts.Name, "--python", opts.PythonVersion, "--seed", "-q")
+	cmd := exec.Command("uv", "venv", opts.Name, "--python", opts.PythonVersion, "-q")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = opts.Dir
@@ -102,6 +103,6 @@ func RequireActivatedPythonEnv(t *testing.T, ctx context.Context, opts *VenvOpts
 	require.NoError(t, err)
 	require.DirExists(t, opts.BinPath)
 
-	newPath := fmt.Sprintf("%s%c%s", opts.BinPath, os.PathListSeparator, os.Getenv("PATH"))
+	newPath := fmt.Sprintf("%s%c%s", opts.BinPath, os.PathListSeparator, env.Get(ctx, "PATH"))
 	t.Setenv("PATH", newPath)
 }

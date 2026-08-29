@@ -3,6 +3,7 @@
 package clean_room_assets
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -26,6 +27,10 @@ func New() *cobra.Command {
 		GroupID: "cleanrooms",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -64,6 +69,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.Asset.CleanRoomName, "clean-room-name", createReq.Asset.CleanRoomName, `The name of the clean room this asset belongs to.`)
 	// TODO: complex arg: foreign_table
 	// TODO: complex arg: foreign_table_local_details
+	// TODO: complex arg: jar_analysis
 	// TODO: complex arg: notebook
 	// TODO: complex arg: table
 	// TODO: complex arg: table_local_details
@@ -93,15 +99,24 @@ func newCreate() *cobra.Command {
       For notebooks, the name is the notebook file name. For jar analyses, the
       name is the jar analysis name.
     ASSET_TYPE: The type of the asset.
-      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]`
+      Supported values: [
+        FOREIGN_TABLE,
+        JAR_ANALYSIS,
+        NOTEBOOK_FILE,
+        TABLE,
+        VIEW,
+        VOLUME,
+      ]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only CLEAN_ROOM_NAME as positional arguments. Provide 'name', 'asset_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only CLEAN_ROOM_NAME as positional arguments. Provide 'name', 'asset_type' in your JSON input")
 			}
 			return nil
 		}
@@ -120,7 +135,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -142,6 +157,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -174,21 +190,33 @@ func newCreateCleanRoomAssetReview() *cobra.Command {
 
 	cmd.Flags().Var(&createCleanRoomAssetReviewJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: jar_analysis_review
 	// TODO: complex arg: notebook_review
 
 	cmd.Use = "create-clean-room-asset-review CLEAN_ROOM_NAME ASSET_TYPE NAME"
-	cmd.Short = `Create a review (e.g. approval) for an asset.`
-	cmd.Long = `Create a review (e.g. approval) for an asset.
+	cmd.Short = `*Beta* Create a review (e.g. approval) for an asset.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a review (e.g. approval) for an asset.
 
   Submit an asset review
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room
     ASSET_TYPE: Asset type. Can either be NOTEBOOK_FILE or JAR_ANALYSIS.
-      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
+      Supported values: [
+        FOREIGN_TABLE,
+        JAR_ANALYSIS,
+        NOTEBOOK_FILE,
+        TABLE,
+        VIEW,
+        VOLUME,
+      ]
     NAME: Name of the asset`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -206,7 +234,7 @@ func newCreateCleanRoomAssetReview() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -224,6 +252,7 @@ func newCreateCleanRoomAssetReview() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -262,11 +291,20 @@ func newDelete() *cobra.Command {
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
     ASSET_TYPE: The type of the asset.
-      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
+      Supported values: [
+        FOREIGN_TABLE,
+        JAR_ANALYSIS,
+        NOTEBOOK_FILE,
+        TABLE,
+        VIEW,
+        VOLUME,
+      ]
     NAME: The fully qualified name of the asset, it is same as the name field in
       CleanRoomAsset.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -328,11 +366,20 @@ func newGet() *cobra.Command {
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
     ASSET_TYPE: The type of the asset.
-      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
+      Supported values: [
+        FOREIGN_TABLE,
+        JAR_ANALYSIS,
+        NOTEBOOK_FILE,
+        TABLE,
+        VIEW,
+        VOLUME,
+      ]
     NAME: The fully qualified name of the asset, it is same as the name field in
       CleanRoomAsset.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -356,6 +403,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -384,8 +432,17 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq cleanrooms.ListCleanRoomAssetsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list CLEAN_ROOM_NAME"
 	cmd.Short = `List assets.`
@@ -395,6 +452,8 @@ func newList() *cobra.Command {
     CLEAN_ROOM_NAME: Name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -409,6 +468,13 @@ func newList() *cobra.Command {
 		listReq.CleanRoomName = args[0]
 
 		response := w.CleanRoomAssets.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -445,6 +511,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Asset.CleanRoomName, "clean-room-name", updateReq.Asset.CleanRoomName, `The name of the clean room this asset belongs to.`)
 	// TODO: complex arg: foreign_table
 	// TODO: complex arg: foreign_table_local_details
+	// TODO: complex arg: jar_analysis
 	// TODO: complex arg: notebook
 	// TODO: complex arg: table
 	// TODO: complex arg: table_local_details
@@ -462,7 +529,14 @@ func newUpdate() *cobra.Command {
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
     ASSET_TYPE: The type of the asset.
-      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
+      Supported values: [
+        FOREIGN_TABLE,
+        JAR_ANALYSIS,
+        NOTEBOOK_FILE,
+        TABLE,
+        VIEW,
+        VOLUME,
+      ]
     NAME: A fully qualified name that uniquely identifies the asset within the clean
       room. This is also the name displayed in the clean room UI.
 
@@ -473,6 +547,8 @@ func newUpdate() *cobra.Command {
       name is the jar analysis name.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -490,7 +566,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -508,6 +584,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

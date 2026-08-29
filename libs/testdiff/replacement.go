@@ -1,12 +1,12 @@
 package testdiff
 
 import (
+	"cmp"
 	"encoding/json"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -25,10 +25,10 @@ var (
 	uuidRegex        = regexp.MustCompile(`[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}`)
 	numIdRegex       = regexp.MustCompile(`[0-9]{3,}`)
 	privatePathRegex = regexp.MustCompile(`(/tmp|/private)(/.*)/([a-zA-Z0-9]+)`)
-	// Version could v0.0.0-dev+21e1aacf518a or just v0.0.0-dev (the latter is currently the case on Windows)
-	devVersionRegex = regexp.MustCompile(`0\.0\.0-dev(\+[a-f0-9]{10,16})?`)
 	// Matches databricks-sdk-go/0.90.0
 	sdkVersionRegex = regexp.MustCompile(`databricks-sdk-go/[0-9]+\.[0-9]+\.[0-9]+`)
+	// Matches databricks-tf-provider/1.121.0
+	tfProviderVersionRegex = regexp.MustCompile(`databricks-tf-provider/[0-9]+\.[0-9]+\.[0-9]+`)
 )
 
 type Replacement struct {
@@ -51,8 +51,8 @@ func (r *ReplacementsContext) Replace(s string) string {
 	// Sort replacements stably by Order to guarantee deterministic application sequence.
 	// A cloned slice is used to avoid mutating the original order held in the context.
 	repls := slices.Clone(r.Repls)
-	sort.SliceStable(repls, func(i, j int) bool {
-		return repls[i].Order < repls[j].Order
+	slices.SortStableFunc(repls, func(a, b Replacement) int {
+		return cmp.Compare(a.Order, b.Order)
 	})
 	for _, repl := range repls {
 		if !repl.Distinct {
@@ -244,14 +244,14 @@ func PrepareReplacementsTemporaryDirectory(t testutil.TestingT, r *ReplacementsC
 	r.append(privatePathRegex, "/tmp/.../$3", 0)
 }
 
-func PrepareReplacementsDevVersion(t testutil.TestingT, r *ReplacementsContext) {
-	t.Helper()
-	r.append(devVersionRegex, "[DEV_VERSION]", 0)
-}
-
 func PrepareReplacementSdkVersion(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
 	r.append(sdkVersionRegex, "databricks-sdk-go/[SDK_VERSION]", 0)
+}
+
+func PrepareReplacementTfProviderVersion(t testutil.TestingT, r *ReplacementsContext) {
+	t.Helper()
+	r.append(tfProviderVersionRegex, "databricks-tf-provider/[TF_PROVIDER_VERSION]", 0)
 }
 
 func goVersion() string {

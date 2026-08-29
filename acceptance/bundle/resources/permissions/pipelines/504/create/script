@@ -1,0 +1,8 @@
+# Inject a single 504 on the first permissions PUT to simulate a transient error.
+# Permissions Set is idempotent, so DoCreate opts in via retrySafe and the deploy succeeds.
+fault.py "PUT /api/2.0/permissions/pipelines/*" 504 0 1
+
+$CLI bundle deploy
+
+# Two PUT requests should appear: the initial 504 and the successful retry.
+trace print_requests.py //api/2.0/permissions/pipelines | jq '.method + " " + .path'

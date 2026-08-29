@@ -3,7 +3,7 @@
 package credentials_manager
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -29,6 +29,10 @@ func New() *cobra.Command {
 		Hidden: true,
 		RunE:   root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newExchangeToken())
@@ -63,9 +67,22 @@ func newExchangeToken() *cobra.Command {
 	cmd.Long = `Exchange token.
 
   Exchange tokens with an Identity Provider to get a new access token. It allows
-  specifying scopes to determine token permissions.`
+  specifying scopes to determine token permissions.
+
+  POST /exchange-tokens/token is the documented public form, expressed via
+  google.api.http below. GET /exchange-tokens/$exchange is a legacy alias used
+  by the Spark driver's OAuth refresh path (DBHttpClient#get sends a body via
+  HttpGetWithEntity) and stays on the legacy option (rpc).endpoints
+  annotation: its path contains a literal $, which google.api.http's LITERAL
+  grammar does not allow, and HttpPathParser does not percent-decode template
+  segments (so encoding as %24exchange would not match the literal $exchange
+  path the Spark driver sends). Per-endpoint visibility: PUBLIC_UNDOCUMENTED
+  preserves the DECO-7732 intent of suppressing the GET alias from the public
+  API spec.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -78,19 +95,20 @@ func newExchangeToken() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.CredentialsManager.ExchangeToken(ctx, exchangeTokenReq)
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

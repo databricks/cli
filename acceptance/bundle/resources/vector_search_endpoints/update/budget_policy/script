@@ -1,0 +1,29 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+print_requests() {
+    local name=$1
+    trace print_requests.py --keep '//vector-search/endpoints' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
+    rm -f out.requests.txt
+}
+
+title "Initial deployment (no budget policy)"
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests create
+
+title "Add budget_policy_id"
+trace update_file.py databricks.yml "endpoint_type: STANDARD" "endpoint_type: STANDARD
+      budget_policy_id: test-policy-id"
+
+trace $CLI bundle plan
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests update

@@ -1,0 +1,13 @@
+
+>>> errcode [CLI] bundle validate
+Error: resources.volumes.volume1.volume_path is computed and read-only; remove it from the configuration
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error
+
+Exit code: 1

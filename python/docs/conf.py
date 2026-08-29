@@ -6,8 +6,8 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.abspath(".."))
 sys.path.append(os.path.abspath("ext"))
@@ -44,7 +44,7 @@ html_theme_options = {
     "logo": "databricks-logo.svg",
     "github_user": "databricks",
     "github_repo": "databricks-bundles",
-    "description": "databricks-bundles: Python support for Databricks Asset Bundles",
+    "description": "databricks-bundles: Python support for Declarative Automation Bundles",
     "fixed_sidebar": "true",
     "logo_text_align": "center",
     "github_button": "true",

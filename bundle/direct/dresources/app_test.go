@@ -1,7 +1,10 @@
 package dresources
 
 import (
-	"context"
+	"encoding/json"
+	"reflect"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/testserver"
@@ -57,8 +60,8 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 	require.NoError(t, err)
 
 	r := (&ResourceApp{}).New(client)
-	ctx := context.Background()
-	name, _, err := r.DoCreate(ctx, &apps.App{Name: "test-app"})
+	ctx := t.Context()
+	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
@@ -113,11 +116,93 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	r := (&ResourceApp{}).New(client)
-	ctx := context.Background()
-	name, _, err := r.DoCreate(ctx, &apps.App{Name: "test-app"})
+	ctx := t.Context()
+	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
 	assert.Equal(t, 2, createCallCount, "expected Create to be called twice")
 	assert.Equal(t, 1, getCallCount, "expected Get to be called once to check app state")
+}
+
+func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
+	// iterate over all apps.App fields using reflection and ensure that UpdateMaskFields contains all of them.
+	config := GetGeneratedResourceConfig("apps")
+	require.NotNil(t, config)
+	var nonUpdatableFields []string
+	for _, field := range config.IgnoreRemoteChanges {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
+	for _, field := range config.RecreateOnChanges {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
+	config = GetResourceConfig("apps")
+	require.NotNil(t, config)
+	for _, field := range config.IgnoreRemoteChanges {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
+	for _, field := range config.RecreateOnChanges {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
+	// provided_id_fields recreate on local changes, so they are not updatable either.
+	for _, field := range config.ProvidedIDFields {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
+	fields := reflect.TypeFor[apps.App]()
+	var allFields []string
+	for field := range fields.Fields() {
+		jsonTag := field.Tag.Get("json")
+		if jsonTag == "" || jsonTag == "-" {
+			continue
+		}
+		jsonTag = strings.TrimSuffix(jsonTag, ",omitempty")
+		allFields = append(allFields, jsonTag)
+		if !slices.Contains(nonUpdatableFields, jsonTag) {
+			assert.Contains(t, UpdateMaskFields, jsonTag, "field %s is not in UpdateMaskFields and not marked as non-updatable", jsonTag)
+		}
+	}
+
+	for _, field := range UpdateMaskFields {
+		assert.Contains(t, allFields, field, "field %s is in UpdateMaskFields but not in apps.App struct", field)
+	}
+}
+
+// TestAppRequestBody_StripsSourceCodePathFromForceSendFields verifies that
+// appRequestBody removes SourceCodePath from ForceSendFields even when the plan
+// JSON round-trip has forced it in — reproduces the v1.14.0 regression where
+// "source_code_path": "" was sent in the UpdateApp body, causing a 400.
+func TestAppRequestBody_StripsSourceCodePathFromForceSendFields(t *testing.T) {
+	config := &AppState{
+		App: apps.App{
+			Name:           "my-app",
+			SourceCodePath: "/Workspace/Users/me/app",
+			// Simulate ForceSendFields as populated by marshal.Unmarshal when the
+			// plan entry is deserialized from JSON (ToStructVar calls json.Unmarshal,
+			// which calls apps.App.UnmarshalJSON -> marshal.Unmarshal, which adds
+			// every basic-type field present in the JSON to ForceSendFields).
+			ForceSendFields: []string{"Name", "SourceCodePath"},
+		},
+	}
+
+	body := appRequestBody(config)
+
+	// SourceCodePath must be cleared and absent from ForceSendFields so that
+	// the SDK's marshal.Marshal omits it from the request body.
+	assert.Empty(t, body.SourceCodePath)
+	assert.NotContains(t, body.ForceSendFields, "SourceCodePath")
+
+	// Verify the field is absent from the marshaled JSON (the root cause of the 400).
+	data, err := json.Marshal(body)
+	require.NoError(t, err)
+	var m map[string]any
+	require.NoError(t, json.Unmarshal(data, &m))
+	assert.NotContains(t, m, "source_code_path", "source_code_path must not appear in the UpdateApp request body")
+
+	// Other ForceSendFields entries must be preserved.
+	assert.Contains(t, body.ForceSendFields, "Name")
 }

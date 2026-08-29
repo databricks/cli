@@ -1,0 +1,7 @@
+Badness = "Reproduces the conflict a bundle hits when it declares a Postgres role that already exists on the branch — the situation on a child branch, which inherits the parent's roles at creation (verified on dogfood 2026-06-10). The bundle plans to create the role and the API rejects it with HTTP 400 'role with that name already exists'. This is the intended interim behavior: until a replace_existing flag lets a bundle take explicit ownership of an existing role, the supported escape hatch is `bundle deployment bind` (see the inherited-role-bind test). The testserver does not model branch role inheritance, so the pre-existing role is staged via `bundle deployment unbind`; the test is therefore local-only."
+
+# Inheritance is staged locally via unbind; not run on cloud.
+Cloud = false
+
+# Deploy error wording differs between engines; the conflict itself is engine-agnostic.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

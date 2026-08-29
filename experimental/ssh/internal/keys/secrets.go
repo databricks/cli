@@ -7,19 +7,35 @@ import (
 	"fmt"
 
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-func CreateKeysSecretScope(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) (string, error) {
-	me, err := client.CurrentUser.Me(ctx)
+// CreateKeysSecretScope creates or retrieves the secret scope for SSH keys.
+// sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
+func CreateKeysSecretScope(ctx context.Context, client *databricks.WorkspaceClient, sessionID string) (string, error) {
+	me, err := client.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
 	}
-	secretScopeName := fmt.Sprintf("%s-%s-ssh-tunnel-keys", me.UserName, clusterID)
+	secretScopeName := fmt.Sprintf("%s-%s-ssh-tunnel-keys", me.UserName, sessionID)
+
+	// Do not create the scope if it already exists.
+	// We can instead filter out "resource already exists" errors from CreateScope,
+	// but that API can also lead to "limit exceeded" errors, even if the scope does actually exist.
+	scope, err := client.Secrets.ListSecretsByScope(ctx, secretScopeName)
+	if err != nil && !errors.Is(err, databricks.ErrResourceDoesNotExist) {
+		return "", fmt.Errorf("failed to check if secret scope %s exists: %w", secretScopeName, err)
+	}
+
+	if scope != nil && err == nil {
+		return secretScopeName, nil
+	}
+
 	err = client.Secrets.CreateScope(ctx, workspace.CreateScope{
 		Scope: secretScopeName,
 	})
-	if err != nil && !errors.Is(err, databricks.ErrResourceAlreadyExists) {
+	if err != nil {
 		return "", fmt.Errorf("failed to create secrets scope: %w", err)
 	}
 	return secretScopeName, nil
@@ -51,16 +67,4 @@ func putSecret(ctx context.Context, client *databricks.WorkspaceClient, scope, k
 		return fmt.Errorf("failed to store secret %s in scope %s: %w", key, scope, err)
 	}
 	return nil
-}
-
-func PutSecretInScope(ctx context.Context, client *databricks.WorkspaceClient, clusterID, key, value string) (string, error) {
-	scopeName, err := CreateKeysSecretScope(ctx, client, clusterID)
-	if err != nil {
-		return "", err
-	}
-	err = putSecret(ctx, client, scopeName, key, value)
-	if err != nil {
-		return "", err
-	}
-	return scopeName, nil
 }

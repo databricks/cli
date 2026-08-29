@@ -1,0 +1,30 @@
+[
+  {
+    "title": "From File",
+    "serialized_space": "{\"version\": 1, \"data_sources\": {\"tables\": [{\"identifier\": \"main.sales.customers\"}]}}\n",
+    "parsed": {
+      "version": 1,
+      "data_sources": {
+        "tables": [
+          {
+            "identifier": "main.sales.customers"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "title": "From Inline",
+    "serialized_space": "{\"data_sources\":{\"tables\":[{\"identifier\":\"main.sales.orders\"}]},\"version\":1}",
+    "parsed": {
+      "data_sources": {
+        "tables": [
+          {
+            "identifier": "main.sales.orders"
+          }
+        ]
+      },
+      "version": 1
+    }
+  }
+]

@@ -1,10 +1,19 @@
 {
   "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]"
+    ]
+  },
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "headers": {
     "Authorization": [
       "Bearer [DATABRICKS_TOKEN]"
     ],
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/jobs_create cmd-exec-id/[UUID] auth/pat"
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/jobs_create cmd-exec-id/[UUID] interactive/none auth/pat"
     ]
   },
   "method": "POST",

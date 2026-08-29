@@ -3,6 +3,7 @@
 package consumer_listings
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -19,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "consumer-listings",
-		Short: `Listings are the core entities in the Marketplace.`,
-		Long: `Listings are the core entities in the Marketplace. They represent the products
+		Short: `*Public Preview* Listings are the core entities in the Marketplace.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Listings are the core entities in the Marketplace. They represent the products
   that are available for consumption.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newBatchGet())
@@ -57,13 +64,17 @@ func newBatchGet() *cobra.Command {
 	// TODO: array: ids
 
 	cmd.Use = "batch-get"
-	cmd.Short = `Get one batch of listings. One may specify up to 50 IDs per request.`
-	cmd.Long = `Get one batch of listings. One may specify up to 50 IDs per request.
+	cmd.Short = `*Public Preview* Get one batch of listings. One may specify up to 50 IDs per request.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get one batch of listings. One may specify up to 50 IDs per request.
 
   Batch get a published listing in the Databricks Marketplace that the consumer
   has access to.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -79,6 +90,7 @@ func newBatchGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -109,13 +121,17 @@ func newGet() *cobra.Command {
 	var getReq marketplace.GetListingRequest
 
 	cmd.Use = "get ID"
-	cmd.Short = `Get listing.`
-	cmd.Long = `Get listing.
+	cmd.Short = `*Public Preview* Get listing.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get listing.
 
   Get a published listing in the Databricks Marketplace that the consumer has
   access to.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -123,10 +139,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Consumer Listings drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Consumer Listings drop-down.")
 			names, err := w.ConsumerListings.ListingSummaryNameToIdMap(ctx, marketplace.ListListingsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Consumer Listings drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -137,7 +153,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return errors.New("expected to have ")
 		}
 		getReq.Id = args[0]
 
@@ -145,6 +161,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -173,6 +190,10 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListListingsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	// TODO: array: assets
 	// TODO: array: categories
@@ -180,18 +201,28 @@ func newList() *cobra.Command {
 	cmd.Flags().BoolVar(&listReq.IsPrivateExchange, "is-private-exchange", listReq.IsPrivateExchange, `Filters each listing based on if it is a private exchange.`)
 	cmd.Flags().BoolVar(&listReq.IsStaffPick, "is-staff-pick", listReq.IsStaffPick, `Filters each listing based on whether it is a staff pick.`)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 	// TODO: array: provider_ids
-	// TODO: array: tags
+	// TODO: complex arg: tags
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List listings.`
-	cmd.Long = `List listings.
+	cmd.Short = `*Public Preview* List listings.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List listings.
 
   List all published listings in the Databricks Marketplace that the consumer
   has access to.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -204,6 +235,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ConsumerListings.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -232,18 +270,30 @@ func newSearch() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var searchReq marketplace.SearchListingsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var searchLimit int
 
 	// TODO: array: assets
 	// TODO: array: categories
 	cmd.Flags().BoolVar(&searchReq.IsFree, "is-free", searchReq.IsFree, ``)
 	cmd.Flags().BoolVar(&searchReq.IsPrivateExchange, "is-private-exchange", searchReq.IsPrivateExchange, ``)
 	cmd.Flags().IntVar(&searchReq.PageSize, "page-size", searchReq.PageSize, ``)
-	cmd.Flags().StringVar(&searchReq.PageToken, "page-token", searchReq.PageToken, ``)
 	// TODO: array: provider_ids
 
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&searchLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&searchReq.PageToken, "page-token", searchReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
 	cmd.Use = "search QUERY"
-	cmd.Short = `Search listings.`
-	cmd.Long = `Search listings.
+	cmd.Short = `*Public Preview* Search listings.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Search listings.
 
   Search published listings in the Databricks Marketplace that the consumer has
   access to. This query supports a variety of different search parameters and
@@ -253,6 +303,8 @@ func newSearch() *cobra.Command {
     QUERY: Fuzzy matches query`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -260,10 +312,10 @@ func newSearch() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No QUERY argument specified. Loading names for Consumer Listings drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No QUERY argument specified. Loading names for Consumer Listings drop-down.")
 			names, err := w.ConsumerListings.ListingSummaryNameToIdMap(ctx, marketplace.ListListingsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Consumer Listings drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -274,11 +326,18 @@ func newSearch() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have fuzzy matches query")
+			return errors.New("expected to have fuzzy matches query")
 		}
 		searchReq.Query = args[0]
 
 		response := w.ConsumerListings.Search(ctx, searchReq)
+		if searchLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", searchLimit)
+		}
+		if searchLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, searchLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 

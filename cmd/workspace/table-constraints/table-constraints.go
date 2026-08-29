@@ -3,6 +3,7 @@
 package table_constraints
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -26,9 +27,9 @@ func New() *cobra.Command {
 
   Primary and foreign keys are informational only and are not enforced. Foreign
   keys must reference a primary key in another table. This primary key is the
-  parent constraint of the foreign key and the table this primary key is on is
+  parent constraint of the foreign key, and the table this primary key is on is
   the parent table of the foreign key. Similarly, the foreign key is the child
-  constraint of its referenced primary key; the table of the foreign key is the
+  constraint of its referenced primary key. The table of the foreign key is the
   child table of the primary key.
 
   You can declare primary keys and foreign keys as part of the table
@@ -37,6 +38,10 @@ func New() *cobra.Command {
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -83,6 +88,8 @@ func newCreate() *cobra.Command {
   table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -95,19 +102,20 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.TableConstraints.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -159,6 +167,8 @@ func newDelete() *cobra.Command {
       constraints.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)

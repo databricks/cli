@@ -1,0 +1,134 @@
+
+=== deploy packages and uploads the local code sources
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files...
+Created jobs.train
+Files: 13 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== each task's tarball holds only synced files (both under the repo root .air_snapshots)
+
+>>> list_code_snapshot.py
+# .air_snapshots/[SNAPSHOT].tar.gz
+src2/command.sh
+src2/train.py
+# .air_snapshots/[SNAPSHOT].tar.gz
+src/.gitignore
+src/command.sh
+src/data/model.bin
+src/train.py
+
+=== both code_source_paths point into the bundle .air_snapshots, command_paths rewritten, deps on environments spec
+
+>>> print_requests.py --sort --del-field raw_body //.air_snapshots/ //jobs/create
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/[SNAPSHOT].tar.gz",
+  "q": {
+    "overwrite": "true"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/[SNAPSHOT].tar.gz",
+  "q": {
+    "overwrite": "true"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "environments": [
+      {
+        "environment_key": "default",
+        "spec": {
+          "dependencies": [
+            "torch>=2.0.0"
+          ],
+          "environment_version": "5"
+        }
+      }
+    ],
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "[default] AI Runtime training",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "ai_runtime_task": {
+          "code_source_path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/[SNAPSHOT].tar.gz",
+          "deployments": [
+            {
+              "command_path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/src/command.sh",
+              "compute": {
+                "accelerator_count": 8,
+                "accelerator_type": "GPU_8xH100"
+              }
+            }
+          ],
+          "experiment": "my-training"
+        },
+        "environment_key": "default",
+        "task_key": "train"
+      },
+      {
+        "ai_runtime_task": {
+          "code_source_path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/[SNAPSHOT].tar.gz",
+          "deployments": [
+            {
+              "command_path": "/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/src2/command.sh",
+              "compute": {
+                "accelerator_count": 8,
+                "accelerator_type": "GPU_8xH100"
+              }
+            }
+          ],
+          "experiment": "my-training-2"
+        },
+        "environment_key": "default",
+        "task_key": "train2"
+      }
+    ]
+  }
+}
+
+=== re-planning unchanged code is a no-op (no changes)
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== editing a file changes the snapshot hash (content-addressed name changes)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files...
+Updated jobs.train
+Files: 4 uploaded, 1 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --sort --del-field raw_body //.air_snapshots/
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default/files/.air_snapshots/[SNAPSHOT].tar.gz",
+  "q": {
+    "overwrite": "true"
+  }
+}
+
+=== destroy removes the deployed bundle (including the synced snapshots)
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.train
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/ai-runtime-test/default
+
+Destroy: 1 deleted

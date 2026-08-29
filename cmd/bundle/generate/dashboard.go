@@ -7,19 +7,23 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/deployment"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -33,7 +37,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
-	"golang.org/x/exp/maps"
 )
 
 type dashboard struct {
@@ -76,12 +79,12 @@ func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) string {
 		return d.resolveFromID(ctx, b)
 	}
 
-	logdiag.LogError(ctx, errors.New("expected one of --dashboard-path, --dashboard-id"))
+	logdiag.LogError(ctx, errors.New("expected one of --existing-path, --existing-id"))
 	return ""
 }
 
 func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) string {
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath)
 	if err != nil {
 		if apierr.IsMissing(err) {
@@ -95,7 +98,7 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) strin
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("dashboard %q is a legacy dashboard", path.Base(d.existingPath)),
 				Detail: "" +
-					"Databricks Asset Bundles work exclusively with AI/BI dashboards.\n" +
+					"Declarative Automation Bundles work exclusively with AI/BI dashboards.\n" +
 					"\n" +
 					"Instructions on how to convert a legacy dashboard to an AI/BI dashboard\n" +
 					"can be found at: https://docs.databricks.com/en/dashboards/clone-legacy-to-aibi.html.",
@@ -128,7 +131,7 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) strin
 }
 
 func (d *dashboard) resolveFromID(ctx context.Context, b *bundle.Bundle) string {
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	obj, err := w.Lakeview.GetByDashboardId(ctx, d.existingID)
 	if err != nil {
 		if apierr.IsMissing(err) {
@@ -191,14 +194,14 @@ func (d *dashboard) saveSerializedDashboard(ctx context.Context, b *bundle.Bundl
 	info, err := os.Stat(filename)
 	if err == nil {
 		if info.IsDir() {
-			return fmt.Errorf("%s is a directory", rel)
+			return fmt.Errorf("%s is a directory", filepath.ToSlash(rel))
 		}
 		if !d.force {
-			return fmt.Errorf("%s already exists. Use --force to overwrite", rel)
+			return fmt.Errorf("%s already exists. Use --force to overwrite", filepath.ToSlash(rel))
 		}
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Writing dashboard to %q", rel))
+	cmdio.LogString(ctx, "Writing dashboard to "+filepath.ToSlash(rel))
 	return os.WriteFile(filename, data, 0o644)
 }
 
@@ -242,11 +245,13 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 		rel = resourcePath
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Writing configuration to %q", rel))
+	cmdio.LogString(ctx, "Writing configuration to "+filepath.ToSlash(rel))
 	err = saver.SaveAsYAML(result, resourcePath, d.force)
 	if err != nil {
 		return err
 	}
+
+	warnIfNotIncluded(ctx, b, resourcePath)
 
 	return nil
 }
@@ -272,7 +277,11 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 			break
 		}
 
-		time.Sleep(1 * time.Second)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(1 * time.Second):
+		}
 	}
 }
 
@@ -294,7 +303,7 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 	// Overwrite the dashboard at the path referenced from the resource.
 	dashboardPath := resource.FilePath
 
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 
 	// Start polling the underlying dashboard for changes.
 	var etag string
@@ -330,14 +339,18 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 }
 
 func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, dashboardID string) {
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	dashboard, err := w.Lakeview.GetByDashboardId(ctx, dashboardID)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 
-	key := textutil.NormalizeString(dashboard.DisplayName)
+	// The "key" flag is a persistent flag on the parent "generate" command.
+	key := d.cmd.Flag("key").Value.String()
+	if key == "" {
+		key = textutil.NormalizeString(dashboard.DisplayName)
+	}
 	err = d.saveConfiguration(ctx, b, dashboard, key)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -373,24 +386,40 @@ func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
 }
 
 func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
-	engine, err := engine.FromEnv(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-
 	phases.Initialize(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}
 
-	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), engine)
+	requiredEngine, err := utils.ResolveEngineSetting(ctx, b)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
 	if logdiag.HasError(ctx) {
 		return
 	}
 
+	var state statemgmt.ExportedResourcesMap
+	if stateDesc.Engine.IsDirect() {
+		_, localPath := b.StateFilenameDirect(ctx)
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		state = b.DeploymentBundle.ExportState(ctx)
+	} else {
+		var err error
+		state, err = terraform.ParseResourcesState(ctx, b)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(stateDesc.Engine),
+		statemgmt.Load(state),
 	)
 	if logdiag.HasError(ctx) {
 		return
@@ -452,7 +481,7 @@ func dashboardResourceCompletion(cmd *cobra.Command, args []string, toComplete s
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
-	return maps.Keys(resources.Completions(b, filterDashboards)), cobra.ShellCompDirectiveNoFileComp
+	return slices.Collect(maps.Keys(resources.Completions(b, filterDashboards))), cobra.ShellCompDirectiveNoFileComp
 }
 
 func NewGenerateDashboardCommand() *cobra.Command {
@@ -502,13 +531,6 @@ bundle files automatically, useful during active dashboard development.`,
 	cmd.Flags().StringVar(&d.existingID, "existing-id", "", `ID of the dashboard to generate configuration for`)
 	cmd.Flags().StringVar(&d.resource, "resource", "", `resource key of dashboard to watch for changes`)
 
-	// Alias lookup flags that include the resource type name.
-	// Included for symmetry with the other generate commands, but we prefer the shorter flags.
-	cmd.Flags().StringVar(&d.existingPath, "existing-dashboard-path", "", `workspace path of the dashboard to generate configuration for`)
-	cmd.Flags().StringVar(&d.existingID, "existing-dashboard-id", "", `ID of the dashboard to generate configuration for`)
-	cmd.Flags().MarkHidden("existing-dashboard-path")
-	cmd.Flags().MarkHidden("existing-dashboard-id")
-
 	// Output flags.
 	cmd.Flags().StringVarP(&d.resourceDir, "resource-dir", "d", "resources", `directory to write the configuration to`)
 	cmd.Flags().StringVarP(&d.dashboardDir, "dashboard-dir", "s", "src", `directory to write the dashboard representation to`)
@@ -519,6 +541,11 @@ bundle files automatically, useful during active dashboard development.`,
 
 	// Exactly one of the lookup flags must be provided.
 	cmd.MarkFlagsOneRequired(
+		"existing-path",
+		"existing-id",
+		"resource",
+	)
+	cmd.MarkFlagsMutuallyExclusive(
 		"existing-path",
 		"existing-id",
 		"resource",

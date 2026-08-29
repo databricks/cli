@@ -1,4 +1,4 @@
-Warning: Ignoring Databricks CLI version constraint for development build. Required: >= 0.229.0, current: [DEV_VERSION]
+Warning: Ignoring Databricks CLI version constraint for development build. Required: >= 0.229.0, current: [CLI_VERSION]
 
 Error: failed to perform target override for target=dev: failed to merge target=dev field=resources: cannot merge string with sequence
 

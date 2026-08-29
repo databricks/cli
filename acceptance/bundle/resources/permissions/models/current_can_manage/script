@@ -3,14 +3,15 @@ rm out.requests.txt
 
 $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-print_requests() {
-    jq -c < out.requests.txt | jq 'select(.method != "GET" and (.path | contains("permissions")))'
-    rm out.requests.txt
-}
-
 rm out.requests.txt
 trace errcode $CLI bundle deploy &> out.deploy.txt
-print_requests > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+
+# Register the model's numeric ID for output replacement.
+# The permissions API uses the numeric ID, not the model name.
+MODEL_ID=$($CLI model-registry get-model test-model | jq -r '.registered_model_databricks.id')
+add_repl "$MODEL_ID" "FOO_MODEL_ID"
+
+print_requests.py //permissions > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle destroy --auto-approve
-print_requests > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json
+print_requests.py //permissions > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json

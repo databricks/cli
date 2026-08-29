@@ -1,0 +1,1076 @@
+version: '3'
+
+vars:
+  # Absolute path so tasks with `dir:` (lint-go-tools, lint-go-codegen) can use it.
+  GO_TOOL: go tool -modfile={{.ROOT_DIR}}/tools/go.mod
+  EXE_EXT: '{{if eq OS "windows"}}.exe{{end}}'
+  # Pinned ruff (linter + formatter). Keep in sync with the version in
+  # .github/workflows/check.yml and python/Taskfile.yml.
+  RUFF: uvx ruff@0.15.17
+  TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
+  ACCEPTANCE_TEST_FILTER: ""
+  # Single brace-expansion glob covering every //go:embed target in the repo,
+  # computed by grepping `//go:embed` directives. Evaluated lazily by Task so
+  # tasks that don't reference it pay nothing. testdata/ dirs are covered by
+  # a separate static `**/testdata/**` glob, not this script.
+  # Limitation: git grep only scans tracked files; new //go:embed directives in
+  # untracked files are missed until the file is staged or committed.
+  # Run via uv with a pinned interpreter floor so the helper works on hosts whose
+  # default python3 is older than the 3.11 this repo's scripts target.
+  EMBED_SOURCES:
+    sh: 'uv run -p ">=3.11" --no-project python tools/list_embeds.py'
+
+env:
+  GOFIPS140: v1.0.0
+
+# pydabs-* tasks live in python/Taskfile.yml so `task pydabs-foo` works when
+# run from python/. Flattened so they keep their `pydabs-` names at the root.
+includes:
+  pydabs:
+    taskfile: ./python/Taskfile.yml
+    dir: ./python
+    flatten: true
+    excludes: [default]
+
+tasks:
+  default:
+    desc: Quick dev loop (checks, formatters, incremental lint, tests). Use `full` for non-incremental linters.
+    cmds:
+      - task: checks
+      - task: fmt-q
+      - task: lint-q
+      - task: test-unit
+      # test-update regenerates golden files so the loop ends with a clean tree
+      # rather than a diff. Intentional: the loop is for local development, not CI.
+      - task: test-update
+
+  full:
+    desc: More complete dev loop (full rather than incremental formatters and linters)
+    cmds:
+      - task: checks
+      - task: fmt
+      - task: lint
+      - task: test-unit
+      # See comment in `default` above.
+      - task: test-update
+
+  all:
+    desc: Run regeneration (except cligen and tf-schema), all checks, lints and test updates
+    cmds:
+      # Skips generate-cligen and generate-tf-schema (outputs are committed;
+      # tf-schema needs provider access). Run `./task generate` explicitly when
+      # codegen inputs change.
+      - task: generate-refschema
+      - task: generate-schema
+      - task: generate-schema-map
+      - task: generate-validation
+      - task: generate-direct
+      - task: pydabs-codegen
+      - task: pydabs-lint
+      - task: pydabs-test
+      - task: checks
+      - task: fmt
+      - task: lint
+      - task: test-update-all
+
+  # --- Linting ---
+  #
+  # Naming convention: the plain name is the full variant (default). Quick
+  # / incremental variants carry a `-q` suffix on the top-level namespace
+  # (e.g. `lint-q-go-root`). `./task` (default) uses the -q variants for
+  # speed; `./task all` uses the full variants.
+
+  lint:
+    desc: Lint all Go files (root + tools + codegen modules) and Python scripts
+    cmds:
+      - task: lint-go
+      - task: lint-python
+
+  lint-q:
+    desc: Lint changed Go files in root module (diff vs main, with --fix) and Python scripts
+    cmds:
+      - task: lint-q-go-root
+      - task: lint-python
+
+  lint-python:
+    desc: Lint first-party Python scripts with ruff
+    sources:
+      - "**/*.py"
+      - ruff.toml
+    cmds:
+      # Lints the whole repo; fixtures and generated outputs are skipped via
+      # `lint.exclude` / `extend-exclude` in ruff.toml. --no-cache: some excluded
+      # acceptance fixtures carry their own pyproject.toml/ruff.toml (config
+      # roots), so without it ruff writes a .ruff_cache into those checked-in
+      # dirs, polluting the goldens and breaking the acceptance tests.
+      - "{{.RUFF}} check --no-cache ."
+
+  # `golangci-lint run` typechecks, so it stops at go.mod boundaries. We have
+  # one task per Go module; `lint-go` composes them to cover the whole repo.
+  #
+  # Flags on every invocation:
+  #   --allow-parallel-runners — by default golangci-lint takes a system-wide
+  #     lock and refuses to start if another copy is already running. This
+  #     flag opts out so parallel runs (e.g. `lint-go`'s three sub-lints, or
+  #     two worktrees linting at once) don't block each other.
+  #   -j=4 — cap analyzer concurrency; higher values use more CPU without
+  #     reducing wall time on this codebase.
+  #
+  # Cross-worktree concurrency relies on content-addressable cache keys added
+  # in golangci-lint v2.12.0; keep the binary at v2.12.0+ in tools/go.mod.
+  lint-go:
+    desc: Lint Go files across all modules (root, tools, codegen)
+    deps: ['lint-go-root', 'lint-go-tools', 'lint-go-codegen']
+
+  lint-go-root:
+    desc: Lint Go files in the root module
+    sources: &ROOT_LINT_SOURCES
+      - "**/*.go"
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
+      - .golangci.yaml
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    cmds:
+      - "{{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 ./..."
+
+  lint-go-tools:
+    desc: Lint Go files in tools/ module
+    dir: tools
+    sources:
+      - "**/*.go"
+      - '{{.ROOT_DIR}}/.golangci.yaml'
+      - go.mod
+      - go.sum
+    cmds:
+      # gocritic is disabled because root's ruleguard rules path is cwd-relative
+      # and cannot be resolved from this nested module.
+      - "{{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --disable gocritic ./..."
+
+  lint-go-codegen:
+    desc: Lint Go files in bundle/internal/tf/codegen module
+    dir: bundle/internal/tf/codegen
+    sources:
+      - "**/*.go"
+      - '{{.ROOT_DIR}}/.golangci.yaml'
+      - go.mod
+      - go.sum
+    cmds:
+      # gocritic is disabled because root's ruleguard rules path is cwd-relative
+      # and cannot be resolved from this nested module.
+      - "{{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --disable gocritic ./..."
+
+  lint-q-go-root:
+    desc: Lint changed Go files in root module (diff vs main, with --fix). Does not check tools/ or bundle/internal/tf/codegen — use `lint` for full coverage.
+    sources:
+      - "**/*.go"
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
+      - .golangci.yaml
+      - go.mod
+      - go.sum
+      - tools/lintdiff.py
+      - "{{.EMBED_SOURCES}}"
+      - "**/testdata/**"
+    cmds:
+      - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --fix"
+
+  # --- Formatting ---
+
+  fmt:
+    desc: Format all files (Python, Go, YAML)
+    deps: ['fmt-python', 'fmt-go', 'fmt-yaml']
+
+  fmt-q:
+    desc: Format changed files (Python, incremental Go, YAML)
+    deps: ['fmt-python', 'fmt-q-go', 'fmt-yaml']
+
+  fmt-python:
+    desc: Lint-fix and format Python files
+    sources:
+      - "**/*.py"
+      - ruff.toml
+    cmds:
+      # Auto-fix the lint issues that ruff can fix (whole repo, minus lint.exclude);
+      # `|| true` so unfixable findings don't abort fmt (lint-python reports them).
+      # --no-cache: see lint-python (avoids polluting acceptance fixture goldens).
+      - "{{.RUFF}} check --no-cache --fix . || true"
+      # Pinned (via the RUFF var) to match the `ruff format --check` step in
+      # .github/workflows/check.yml — newer ruff versions reformat files that
+      # CI considers already formatted.
+      - "{{.RUFF}} format -n"
+
+  # `golangci-lint fmt` walks the filesystem and doesn't typecheck, so it
+  # formats files across all nested modules (tools/, bundle/internal/tf/codegen/)
+  # in a single invocation.
+  fmt-go:
+    desc: Format all Go files
+    sources: &FMT_GO_SOURCES
+      - "**/*.go"
+      - .golangci.yaml
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    cmds:
+      - "{{.GO_TOOL}} golangci-lint fmt"
+
+  fmt-q-go:
+    desc: Format changed Go files (diff vs main)
+    sources:
+      - "**/*.go"
+      - .golangci.yaml
+      - go.mod
+      - go.sum
+      - tools/lintdiff.py
+      - "{{.EMBED_SOURCES}}"
+    cmds:
+      - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint fmt"
+
+  fmt-yaml:
+    desc: Format YAML files
+    sources:
+      - "**/*.yml"
+      - "**/*.yaml"
+      - yamlfmt.yml
+      - tools/go.mod
+      - tools/go.sum
+    cmds:
+      - "{{.GO_TOOL}} yamlfmt ."
+
+  # --- Code checks ---
+
+  tidy:
+    desc: Run go mod tidy across all Go modules (root, tools, codegen)
+    deps: ['tidy-root', 'tidy-tools', 'tidy-codegen']
+
+  tidy-root:
+    desc: Run go mod tidy in root module
+    sources:
+      - go.mod
+      - go.sum
+      - "**/*.go"
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
+      - "{{.EMBED_SOURCES}}"
+    cmds:
+      - "go mod tidy"
+
+  tidy-tools:
+    desc: Run go mod tidy in tools/ module
+    dir: tools
+    sources:
+      - go.mod
+      - go.sum
+      - "**/*.go"
+    cmds:
+      - "go mod tidy"
+
+  tidy-codegen:
+    desc: Run go mod tidy in bundle/internal/tf/codegen module
+    dir: bundle/internal/tf/codegen
+    sources:
+      - go.mod
+      - go.sum
+      - "**/*.go"
+    cmds:
+      - "go mod tidy"
+
+  ws:
+    desc: Fix whitespace issues
+    cmds:
+      - "./tools/validate_whitespace.py --fix"
+
+  links:
+    desc: Update GitHub links in CHANGELOG.md and .nextchanges/ fragments
+    sources:
+      - CHANGELOG.md
+      - ".nextchanges/**/*.md"
+      - tools/update_github_links.py
+    cmds:
+      - "./tools/update_github_links.py"
+
+  check-changelog:
+    desc: Validate .nextchanges fragment placement
+    cmds:
+      - "./tools/validate_nextchanges.py"
+
+  changelog-preview:
+    desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
+    env:
+      NEXTCHANGES_DIR: .nextchanges/
+    cmds:
+      # Validate placement first so a misplaced fragment fails loudly instead of
+      # being silently skipped by the renderer (see validate_nextchanges.py).
+      - task: check-changelog
+      - "uv run --locked internal/genkit/tagging.py --preview"
+
+  deadcode:
+    desc: Check for dead code
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    cmds:
+      - ./tools/check_deadcode.py
+
+  check-lockfiles:
+    desc: Fail if a Databricks PyPI proxy URL leaked into a uv.lock or .py.lock
+    # pydabs-codegen reverts this proxy-URL churn after regenerating, and
+    # generate-clijson scrubs it from the genkit tagging locks; this is a
+    # backstop against a proxy URL reaching a committed lock any other way.
+    cmds:
+      - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
+
+  checks:
+    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, lockfiles)
+    # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
+    # touching more paths should not race with whitespace/link scanners.
+    cmds:
+      - task: tidy
+      - task: ws
+      - task: links
+      - task: deadcode
+      - task: check-changelog
+      - task: check-lockfiles
+
+  install-pythons:
+    desc: Install Python 3.9-3.13 via uv
+    cmds:
+      - "uv python install 3.9 3.10 3.11 3.12 3.13"
+
+  # --- Building ---
+
+  # The root binary only imports bundle/, cmd/, experimental/, internal/, libs/,
+  # so changes to test-only trees (acceptance/, integration/), separate modules
+  # (tools/, bundle/internal/tf/codegen/), and _test.go files don't affect the build.
+  build-yamlfmt:
+    desc: Build the yamlfmt binary used by acceptance tests
+    dir: tools
+    sources:
+      - go.mod
+      - go.sum
+    generates:
+      - yamlfmt{{.EXE_EXT}}
+    cmds:
+      - go build -o yamlfmt{{.EXE_EXT}} github.com/google/yamlfmt/cmd/yamlfmt
+
+  build:
+    desc: Build the CLI binary
+    deps: ['tidy-root']
+    sources: &BUILD_SOURCES
+      - "**/*.go"
+      - exclude: "**/*_test.go"
+      - exclude: acceptance/**
+      - exclude: integration/**
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    generates:
+      - cli
+    cmds:
+      - "go build"
+
+  snapshot:
+    desc: Build snapshot binary to .databricks/databricks
+    sources: *BUILD_SOURCES
+    generates:
+      - .databricks/databricks
+    cmds:
+      - "go build -o .databricks/databricks"
+
+  snapshot-release:
+    desc: Build release binaries locally without uploading
+    # Same as BUILD_SOURCES + .goreleaser.yaml (list concat is not expressible
+    # via YAML anchor alone, so the shared block is duplicated here).
+    sources:
+      - "**/*.go"
+      - exclude: "**/*_test.go"
+      - exclude: acceptance/**
+      - exclude: integration/**
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
+      - go.mod
+      - go.sum
+      - .goreleaser.yaml
+      - .github/scripts/sign-windows.sh
+      - "{{.EMBED_SOURCES}}"
+    generates:
+      - dist/**
+    cmds:
+      - "goreleaser release --clean --skip docker --snapshot"
+
+  # --- Testing ---
+
+  test:
+    desc: Run unit and acceptance tests
+    # Run the legs as sequential cmds (not parallel deps) so the concatenating
+    # cat can be a `defer`, which runs even when a leg fails. When the legs are
+    # deps, the cat in cmds is skipped on failure, so test-output.json is never
+    # produced for a failed run and CI has no gotestsum output to upload.
+    sources:
+      - test-output-unit.json
+      - test-output-acc.json
+    generates:
+      - test-output.json
+    cmds:
+      - defer: cat test-output-unit.json test-output-acc.json > test-output.json
+      - task: test-unit
+      - task: test-acc
+        vars:
+          ACCEPTANCE_TEST_FILTER: "{{.ACCEPTANCE_TEST_FILTER}}"
+
+  test-unit:
+    desc: Run unit tests across all Go modules (root, tools, codegen)
+    sources:
+      - test-output-unit-root.json
+      - tools/test-output-unit-tools.json
+      - bundle/internal/tf/codegen/test-output-unit-codegen.json
+    generates:
+      - test-output-unit.json
+    cmds:
+      - defer: cat test-output-unit-root.json tools/test-output-unit-tools.json bundle/internal/tf/codegen/test-output-unit-codegen.json > test-output-unit.json
+      - task: test-unit-root
+      - task: test-unit-tools
+      - task: test-unit-codegen
+
+  test-unit-root:
+    desc: Run unit tests in root module
+    sources:
+      - "**/*.go"
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
+      - exclude: integration/**
+      - exclude: acceptance/**
+      - acceptance/internal/**
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+      - "**/testdata/**"
+      # libs/patchwheel passes these to uv --find-links.
+      - libs/vendored_py_packages/**
+      # libs/git tests load .gitignore rules from the real repo.
+      - "**/.gitignore"
+      # bundle/tests/** are fixture bundles loaded by sibling *_test.go files.
+      - bundle/tests/**
+      # internal/build reads these at test time.
+      - NOTICE
+      - .codegen/_openapi_sha
+      # bundle/internal/schema TestRequiredAnnotationsForNewFields reads these.
+      - bundle/internal/schema/annotations*.yml
+    generates:
+      - test-output-unit-root.json
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile test-output-unit-root.json \
+          --rerun-fails \
+          --packages "{{.TEST_PACKAGES}}" \
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
+
+  test-unit-tools:
+    desc: Run unit tests in tools/ module
+    dir: tools
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+      # testmask/targets_test.go reads ../../Taskfile.yml
+      - ../Taskfile.yml
+    generates:
+      # Stays inside the task's `dir:` because gotestsum resolves --jsonfile
+      # from each package's binary cwd (not gotestsum's cwd) — `../` paths
+      # land at unpredictable depths. Parent test-unit reads from this path.
+      - test-output-unit-tools.json
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile test-output-unit-tools.json \
+          --rerun-fails \
+          --packages ./... \
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
+
+  test-unit-codegen:
+    desc: Run unit tests in bundle/internal/tf/codegen module
+    dir: bundle/internal/tf/codegen
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      # See comment on test-unit-tools' generates.
+      - test-output-unit-codegen.json
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile test-output-unit-codegen.json \
+          --rerun-fails \
+          --packages ./... \
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
+
+  test-acc:
+    desc: Run acceptance tests
+    # Sources mirror `build` (acceptance_test.go builds the CLI in-process via BuildCLI)
+    # plus acceptance/**. For test-acc the checked-in out.* files are golden inputs:
+    # changing them must re-run the test. test-update* excludes out.* because they
+    # are outputs there — see &ACC_SOURCES_UPDATE below.
+    sources:
+      - "**/*.go"
+      - exclude: "**/*_test.go"
+      - exclude: integration/**
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
+      # acceptance/install_terraform.py parses the provider version from this file.
+      - bundle/internal/tf/codegen/schema/version.go
+      - acceptance/**
+      # Pydabs wheel is built in-process by TestInprocessMode (cd python && uv build).
+      - python/**
+      - libs/vendored_py_packages/**
+      # TestInprocessMode builds yamlfmt via tools/go.mod.
+      - tools/go.mod
+      - tools/go.sum
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    generates:
+      - test-output-acc.json
+      # Materialized test config is rewritten on every run (acceptance_test.go).
+      # Other out.* files are read-only inputs in non-update mode — see test-update.
+      - acceptance/**/out.test.toml
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile test-output-acc.json \
+          --rerun-fails \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-60m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
+
+  test-update:
+    desc: Update acceptance test output (local)
+    # Excludes out* because the task rewrites them; keeping them in sources would
+    # invalidate the checksum and force a re-run on every invocation.
+    # Note: output.txt / output.*.txt are outputs here (Phase 0 regenerates them
+    # so Phase 1 tests can read the fresh versions via $TESTDIR) — not inputs.
+    sources: &ACC_SOURCES_UPDATE
+      - "**/*.go"
+      - exclude: "**/*_test.go"
+      - exclude: integration/**
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
+      - bundle/internal/tf/codegen/schema/version.go
+      - acceptance/**
+      - python/**
+      - libs/vendored_py_packages/**
+      - tools/go.mod
+      - tools/go.sum
+      - exclude: acceptance/**/out*
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    generates: &ACC_GENERATES_UPDATE
+      - acceptance/**/out*
+    cmds:
+      - "go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-60m}"
+
+  test-update-templates:
+    desc: Update acceptance test template output
+    sources: *ACC_SOURCES_UPDATE
+    generates: *ACC_GENERATES_UPDATE
+    cmds:
+      - "go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-60m}"
+
+  test-update-all:
+    desc: Update all acceptance test outputs
+    cmds:
+      - task: test-update
+
+  # Follows upstream HEAD, so its result changes over time: keep it out of
+  # `generate-check`, which requires byte-for-byte reproducible output.
+  bump-mlops-stacks:
+    desc: Bump the vendored mlops-stacks acceptance template to github.com/databricks/mlops-stacks HEAD
+    cmds:
+      - "./tools/bump_mlops_stacks.py"
+      # The bump rewrites a test input, so refresh that test's golden output.
+      - "go test ./acceptance -run '^TestAccept/bundle/deploy/mlops-stacks' -update -timeout=${LOCAL_TIMEOUT:-60m}"
+
+  slowest:
+    desc: Show 50 slowest tests from last run
+    cmds:
+      - "{{.GO_TOOL}} gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50"
+
+  cover:
+    desc: Run tests with coverage
+    generates:
+      - test-output.json
+    cmds:
+      - rm -fr ./acceptance/build/cover/
+      - |
+        VERBOSE_TEST=1 {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile test-output-unit.json \
+          --rerun-fails \
+          --packages "{{.TEST_PACKAGES}}" \
+          -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT:-60m}
+      - |
+        VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile test-output-acc.json \
+          --rerun-fails \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-60m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
+      - cat test-output-unit.json test-output-acc.json > test-output.json
+      - rm -fr ./acceptance/build/cover-merged/
+      - mkdir -p acceptance/build/cover-merged/
+      - "go tool covdata merge -i $(printf '%s,' acceptance/build/cover/* | sed 's/,$//') -o acceptance/build/cover-merged/"
+      - go tool covdata textfmt -i acceptance/build/cover-merged -o coverage-acceptance.txt
+
+  showcover:
+    desc: Open unit test coverage report in browser
+    cmds:
+      - go tool cover -html=coverage.txt
+
+  showcover-acc:
+    desc: Open acceptance test coverage report in browser
+    cmds:
+      - go tool cover -html=coverage-acceptance.txt
+
+  # --- Specialized test suites ---
+
+  # The `sources:` on each test:* subproject target is the single source of truth for:
+  #   1. Taskfile's own checksum-based caching (skip re-run if nothing changed)
+  #   2. CI triggering — tools/testmask reads these sources to decide which CI jobs to run
+  # Keep patterns narrow and specific. Changes to files outside these paths trigger the
+  # generic `test` target (the catch-all) instead.
+
+  test-exp-aitools:
+    desc: Run aitools (top-level + experimental) unit and acceptance tests.
+    sources:
+      - cmd/aitools/**
+      - libs/aitools/**
+      - experimental/aitools/**
+      - acceptance/apps/**
+      - acceptance/experimental/aitools/**
+      - "{{.EMBED_SOURCES}}"
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages "./cmd/aitools/... ./libs/aitools/... ./experimental/aitools/..." \
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/(apps|experimental/aitools)"
+
+  test-exp-ssh:
+    desc: Run experimental SSH unit and acceptance tests
+    sources:
+      - experimental/ssh/**
+      - acceptance/ssh/**
+      - "{{.EMBED_SOURCES}}"
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./experimental/ssh/... \
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/ssh"
+
+  test-pipelines:
+    desc: Run pipelines unit and acceptance tests
+    sources:
+      - cmd/pipelines/**
+      - acceptance/pipelines/**
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./cmd/pipelines/... \
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/pipelines"
+
+  test-sandbox:
+    desc: Run sandbox unit and acceptance tests
+    sources:
+      - cmd/sandbox/**
+      - acceptance/cmd/sandbox/**
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./cmd/sandbox/... \
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/cmd/sandbox"
+
+  # --- Integration tests ---
+
+  integration:
+    desc: Run integration tests (requires Databricks workspace)
+    deps: [install-pythons]
+    cmds:
+      - |
+        go run -modfile=tools/go.mod ./tools/testrunner/main.go \
+          {{.GO_TOOL}} gotestsum \
+          --format github-actions \
+          --rerun-fails \
+          --jsonfile output.json \
+          --packages "./acceptance ./integration/..." \
+          -- -parallel 4 -timeout=12h
+
+  integration-short:
+    desc: Run integration tests except the slow ones (skips CloudSlow via -short)
+    deps: [install-pythons]
+    cmds:
+      - |
+        VERBOSE_TEST=1 \
+        go run -modfile=tools/go.mod ./tools/testrunner/main.go \
+          {{.GO_TOOL}} gotestsum \
+          --format github-actions \
+          --rerun-fails \
+          --jsonfile output.json \
+          --packages "./acceptance ./integration/..." \
+          -- -parallel 4 -timeout=12h -short
+
+  integration-short-skiplocal:
+    desc: Run integration tests for PRs (skips CloudSlow and tests with testserver coverage)
+    deps: [install-pythons]
+    cmds:
+      - |
+        DATABRICKS_TEST_SKIPLOCAL=withchanged VERBOSE_TEST=1 \
+        go run -modfile=tools/go.mod ./tools/testrunner/main.go \
+          {{.GO_TOOL}} gotestsum \
+          --format github-actions \
+          --rerun-fails \
+          --jsonfile output.json \
+          --packages "./acceptance ./integration/..." \
+          -- -parallel 4 -timeout=2h -short
+
+  dbr-integration:
+    desc: Run DBR acceptance tests on Databricks Runtime
+    deps: [install-pythons]
+    cmds:
+      - "DBR_ENABLED=true go test -v -timeout 12h -run TestDbrAcceptance$ ./acceptance"
+
+  dbr-test:
+    desc: Run DBR tests via deco env (requires deco + aws-prod-ucws access)
+    cmds:
+      - "deco env run -i -n aws-prod-ucws -- ./task dbr-integration"
+
+  # --- Code generation ---
+  #
+  # Each generator declares tight `sources:` so Task's checksum cache re-runs only
+  # when inputs actually change. The reflection-based generators (refschema,
+  # schema, schema-docs, docs, validation) pick up SDK type changes via go.mod /
+  # go.sum. The aggregator `generate` orchestrates all of them; individual tasks
+  # can be invoked standalone.
+
+  generate:
+    desc: Run all generators (cligen, tf-schema, refschema, schema, validation, direct, pydabs)
+    cmds:
+      # Runs first: regenerates CLI command stubs from the checked-in
+      # .codegen/cli.json (no universe checkout needed). Refreshing cli.json
+      # itself from the OpenAPI spec is the separate `generate-clijson` task.
+      - task: generate-cligen
+      # Requires Terraform provider access (set TF_CLI_CONFIG_FILE to a
+      # filesystem mirror, or rely on the public registry). Only re-runs when
+      # bundle/internal/tf/codegen/schema/version.go changes.
+      - task: generate-tf-schema
+      # Refreshes acceptance/bundle/refschema/out.fields.txt, which feeds
+      # generate-direct-apitypes and generate-direct-resources below.
+      - task: generate-refschema
+      - task: generate-schema
+      - task: generate-validation
+      - task: generate-direct
+      - task: pydabs-codegen
+
+  # Subset of `generate` that reproduces byte-for-byte on a clean checkout. The
+  # validate-generated-is-up-to-date CI job runs this followed by
+  # `git diff --exit-code` to catch committed artifacts drifting from their
+  # generators. It omits the generators in `generate` whose output isn't
+  # reproducible per-PR:
+  #   - generate-tf-schema downloads the Terraform provider, which no CI runner
+  #     sets up; its output only changes when schema/version.go changes.
+  # The docs schema (jsonschema_for_docs.json) is not generated here or on main
+  # at all — it is built and published to the docgen branch by
+  # .github/workflows/update-schema-docs.yml.
+  # Keep this list in sync with `generate` when adding or removing generators.
+  generate-check:
+    desc: Run the reproducible generators (CI drift subset of `generate`)
+    cmds:
+      - task: generate-cligen
+      - task: generate-refschema
+      - task: generate-schema
+      - task: generate-validation
+      - task: generate-direct
+      - task: pydabs-codegen
+
+  # Regenerates the CLI command stubs (cmd/workspace/**, cmd/account/**) and
+  # .gitattributes from the checked-in .codegen/cli.json. No universe checkout,
+  # no spec download, no network: cli.json is the self-describing spec
+  # produced upstream by `generate-clijson`. internal/cligen renders the
+  # templates derived from genkit's cli_v0 generator and formats the output
+  # in-process (whitespace normalization, unused-import pruning, gofmt), so
+  # the result matches the committed files byte-for-byte.
+  generate-cligen:
+    desc: Regenerate CLI command stubs from .codegen/cli.json
+    sources:
+      - .codegen/cli.json
+      - .gitattributes.manual
+      - internal/cligen/**/*.go
+      - internal/cligen/templates/*.tmpl
+    generates:
+      - cmd/workspace/**/*.go
+      - cmd/account/**/*.go
+      - .gitattributes
+    cmds:
+      - go run ./internal/cligen --input .codegen/cli.json --output .
+
+  # Refreshes .codegen/cli.json from the OpenAPI spec at .codegen/_openapi_sha.
+  # cli.json is a genkit SDK target like any other (mode cli_v1 in .codegen.json):
+  # the cli_v1 producer is decoupled from the spec, so genkit is built from the
+  # universe checkout's HEAD (the current producer), while the spec itself is
+  # fetched by SHA. Run it when the spec SHA is bumped; `task generate` then
+  # consumes the committed cli.json. SDK version bumps (go.mod/go.sum) are a
+  # manual `go get` step beforehand; TestConsistentDatabricksSdkVersion asserts
+  # the two stay in sync.
+  #
+  # No `sources:`/`generates:`: the producer is built from the universe
+  # checkout's HEAD, which no source fingerprint can capture, so a checksum
+  # cache would report "up to date" after pulling a newer producer.
+  generate-clijson:
+    desc: Produce .codegen/cli.json from the OpenAPI spec via genkit (requires universe repo with the cli_v1 producer)
+    vars:
+      UNIVERSE_DIR:
+        sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
+    cmds:
+      # Building from a dirty universe tree would produce a cli.json that no
+      # universe commit can reproduce. Set UNIVERSE_ALLOW_DIRTY=1 to build from
+      # uncommitted producer changes deliberately (e.g. while iterating on the
+      # producer itself).
+      - |
+        if [ -z "$UNIVERSE_ALLOW_DIRTY" ]; then
+          if ! git -C {{.UNIVERSE_DIR}} diff --quiet || ! git -C {{.UNIVERSE_DIR}} diff --cached --quiet; then
+            echo "Error: universe repo at {{.UNIVERSE_DIR}} has uncommitted changes; commit or stash them, or set UNIVERSE_ALLOW_DIRTY=1 to build the producer from the dirty tree"
+            exit 1
+          fi
+        fi
+      - echo "Building genkit at universe HEAD $(git -C {{.UNIVERSE_DIR}} rev-parse --short HEAD)..."
+      - cd {{.UNIVERSE_DIR}} && ./tools/bazel build //openapi/genkit
+      - echo "Generating CLI code..."
+      - '{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk --dir {{.ROOT_DIR}}'
+      # genkit also writes .gitattributes, but that file is owned by
+      # generate-cligen (which derives it from .gitattributes.manual plus the
+      # rendered file list), so discard genkit's copy.
+      - git checkout -- .gitattributes
+      - go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
+      - rm .github/workflows/next-changelog.yml
+      - mv tagging.py internal/genkit/tagging.py
+      - mv tagging.py.lock internal/genkit/tagging.py.lock
+      # The release workflow tagging.yml expects tagging.py in a different location
+      # so we rewrite via sed
+      - |
+        if [ "$(uname)" = "Darwin" ]; then
+          sed -i '' 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+        else
+          sed -i 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+        fi
+      # In an environment configured with the internal PyPI proxy, uv bakes the
+      # proxy URL into the resolved locks. Unlike pydabs (which blind-reverts its
+      # locks because codegen never wants to change them), these locks legitimately
+      # track the synced producer's deps, so rewrite only the proxy URL back to the
+      # public registry and preserve any real dependency changes. Glob the lock
+      # files so a future genkit lock is scrubbed without editing this task. The
+      # trailing slash is optional so both proxy URL forms are matched.
+      # check-lockfiles is the backstop if this ever misses.
+      - |
+        if [ "$(uname)" = "Darwin" ]; then
+          sed -i '' 's|https://pypi-proxy.cloud.databricks.com/simple/\{0,1\}|https://pypi.org/simple|g' internal/genkit/*.py.lock
+        else
+          sed -i 's|https://pypi-proxy.cloud.databricks.com/simple/\{0,1\}|https://pypi.org/simple|g' internal/genkit/*.py.lock
+        fi
+      - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
+      - task: ws
+
+  # Refreshes out.fields.txt, which records the field paths / types emitted by
+  # `bundle debug refschema` (see cmd/bundle/debug/refschema.go). It reflects
+  # over types reachable from bundle/, so any bundle change or SDK bump (go.mod
+  # / go.sum) can affect the output.
+  generate-refschema:
+    desc: Regenerate acceptance/bundle/refschema/out.fields.txt
+    sources:
+      - bundle/**/*.go
+      - exclude: bundle/**/*_test.go
+      - acceptance/bundle/refschema/script
+      - acceptance/bundle/refschema/test.toml
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    generates:
+      - acceptance/bundle/refschema/out.fields.txt
+    cmds:
+      - go test ./acceptance -run TestAccept/bundle/refschema -update
+
+  # Upstream field documentation comes from the checked-in .codegen/cli.json;
+  # bundle/internal/schema/annotations.yml carries the CLI-owned docs and
+  # overrides and is rewritten in place (synced with the config structure).
+  # Editing either input and running `task generate` percolates into
+  # jsonschema.json and pydabs. (The docs schema is built only on release by
+  # .github/workflows/update-schema-docs.yml and published to the docgen branch.)
+  generate-schema:
+    desc: Generate bundle JSON schema
+    sources: &SCHEMA_SOURCES
+      - "**/*.go"
+      - .codegen/cli.json
+      - bundle/internal/schema/annotations.yml
+      - exclude: "**/*_test.go"
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    generates:
+      - bundle/schema/jsonschema.json
+      - bundle/internal/schema/annotations.yml
+    cmds:
+      - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json .codegen/cli.json"
+
+  generate-validation:
+    desc: Generate enum and required field validation code
+    sources:
+      - "**/*.go"
+      - exclude: "**/*_test.go"
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    generates:
+      - bundle/internal/validation/generated/**/*.go
+    cmds:
+      - "sh -c 'go run ./bundle/internal/validation/. && gofmt -w -s ./bundle/internal/validation/generated'"
+
+  generate-schema-map:
+    desc: Regenerate bundle/terraform_dabs_map/generated.go
+    sources:
+      - "**/*.go"
+      - exclude: bundle/terraform_dabs_map/generated.go
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    generates:
+      - bundle/terraform_dabs_map/generated.go
+    cmds:
+      - go test ./bundle/terraform_dabs_map -run TestGenerateSchemaMap -update -v
+
+  generate-tf-schema:
+    desc: Regenerate bundle/internal/tf/schema from the Databricks Terraform provider
+    dir: bundle/internal/tf/codegen
+    sources:
+      - schema/version.go
+      - templates/**
+      - "**/*.go"
+      - exclude: "**/*_test.go"
+    generates:
+      - ../schema/*.go
+    cmds:
+      - go run .
+
+  generate-direct:
+    desc: Generate direct engine config (apitypes + resources)
+    # Depend only on generate-direct-resources; it already pulls in
+    # generate-direct-apitypes transitively. Listing both as parallel deps
+    # races: resources reads apitypes.generated.yml while the apitypes step's
+    # `>` redirect is truncating it, silently dropping every resource whose
+    # type comes from that file. Keep this chain linear.
+    deps: ['generate-direct-resources']
+
+  generate-direct-apitypes:
+    desc: Generate direct engine API types YAML
+    sources:
+      - bundle/direct/tools/generate_apitypes.py
+      - .codegen/cli.json
+      - acceptance/bundle/refschema/out.fields.txt
+    generates:
+      - bundle/direct/dresources/apitypes.generated.yml
+    cmds:
+      - "sh -c 'uv run -p \">=3.11\" --no-project python bundle/direct/tools/generate_apitypes.py .codegen/cli.json acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/apitypes.generated.yml'"
+
+  generate-direct-resources:
+    desc: Generate direct engine resources YAML
+    deps: ['generate-direct-apitypes']
+    sources:
+      - bundle/direct/tools/generate_resources.py
+      - .codegen/cli.json
+      - bundle/direct/dresources/apitypes.generated.yml
+      - bundle/direct/dresources/apitypes.yml
+      - acceptance/bundle/refschema/out.fields.txt
+    generates:
+      - bundle/direct/dresources/resources.generated.yml
+    cmds:
+      - "sh -c 'uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
+
+  # pydabs-* tasks are defined in python/Taskfile.yml (included above).
+
+  # --- Benchmarks ---
+
+  bench-1k:
+    desc: Benchmark with 1000 jobs
+    cmds:
+      - 'BENCHMARK_PARAMS="--jobs 1000" go test ./acceptance -v -tail -run TestAccept/bundle/benchmarks -timeout=120m | tee bench1k.log'
+
+  bench-100:
+    desc: Benchmark with 100 jobs
+    cmds:
+      - 'BENCHMARK_PARAMS="--jobs 100" go test ./acceptance -v -tail -run TestAccept/bundle/benchmarks -timeout=120m | tee bench100.log'
+
+  bench-10:
+    desc: Benchmark with 10 jobs (quick)
+    cmds:
+      - 'BENCHMARK_PARAMS="--jobs 10" go test ./acceptance -v -tail -run TestAccept/bundle/benchmarks -timeout=120m | tee bench10.log'
+
+  bench-1k-summary:
+    desc: Run 1k benchmark and print summary
+    cmds:
+      - task: bench-1k
+      - ./tools/bench_parse.py bench1k.log
+
+  bench-100-summary:
+    desc: Run 100 benchmark and print summary
+    cmds:
+      - task: bench-100
+      - ./tools/bench_parse.py bench100.log
+
+  bench-10-summary:
+    desc: Run 10 benchmark and print summary
+    cmds:
+      - task: bench-10
+      - ./tools/bench_parse.py bench10.log

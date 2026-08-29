@@ -1,0 +1,171 @@
+
+=== Initial deployment
+>>> [CLI] bundle validate
+Name: update-postgres-endpoint-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle plan
+create postgres_branches.main
+create postgres_endpoints.my_endpoint
+create postgres_projects.my_project
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
+Created postgres_branches.main
+Created postgres_endpoints.my_endpoint
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
+{
+  "endpoint_id": "my-endpoint",
+  "name": "[MY_ENDPOINT_ID]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "uid": "[ENDPOINT_UID]",
+  "status": {
+    "endpoint_id": "my-endpoint",
+    "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
+    "autoscaling_limit_min_cu": 0.5,
+    "autoscaling_limit_max_cu": 8,
+    "suspend_timeout_duration": "300s"
+  }
+}
+
+=== Verify no changes
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
+
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+=== Update endpoint autoscaling and re-deploy
+>>> update_file.py databricks.yml autoscaling_limit_max_cu: 8 autoscaling_limit_max_cu: 4
+
+>>> cat databricks.yml
+bundle:
+  name: update-postgres-endpoint-[UNIQUE_NAME]
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      display_name: "Test Project for Endpoint Update"
+      pg_version: 16
+      history_retention_duration: 604800s
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  postgres_endpoints:
+    my_endpoint:
+      parent: ${resources.postgres_branches.main.id}
+      endpoint_id: my-endpoint
+      endpoint_type: ENDPOINT_TYPE_READ_ONLY
+      autoscaling_limit_min_cu: 0.5
+      autoscaling_limit_max_cu: 4
+      suspend_timeout_duration: 300s
+
+>>> [CLI] bundle plan
+update postgres_endpoints.my_endpoint
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
+Updated postgres_endpoints.my_endpoint
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
+{
+  "endpoint_id": "my-endpoint",
+  "name": "[MY_ENDPOINT_ID]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "uid": "[ENDPOINT_UID]",
+  "status": {
+    "endpoint_id": "my-endpoint",
+    "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
+    "autoscaling_limit_min_cu": 0.5,
+    "autoscaling_limit_max_cu": 4,
+    "suspend_timeout_duration": "300s"
+  }
+}
+
+=== Restore endpoint autoscaling to original value
+>>> update_file.py databricks.yml autoscaling_limit_max_cu: 4 autoscaling_limit_max_cu: 8
+
+>>> [CLI] bundle plan
+update postgres_endpoints.my_endpoint
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
+Updated postgres_endpoints.my_endpoint
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
+{
+  "endpoint_id": "my-endpoint",
+  "name": "[MY_ENDPOINT_ID]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "uid": "[ENDPOINT_UID]",
+  "status": {
+    "endpoint_id": "my-endpoint",
+    "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
+    "autoscaling_limit_min_cu": 0.5,
+    "autoscaling_limit_max_cu": 8,
+    "suspend_timeout_duration": "300s"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_endpoints.my_endpoint
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted

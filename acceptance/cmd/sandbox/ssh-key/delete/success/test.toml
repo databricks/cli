@@ -1,0 +1,9 @@
+[[Server]]
+Pattern = "DELETE /api/2.0/lakebox/ssh-keys/98b3b2bce82049769b4ba03990460d09"
+Response.Body = '{}'
+
+# See ssh-key/list/with-entries/test.toml for why we pin the hash.
+[[Repls]]
+Old = '98b3b2bce82049769b4ba03990460d09'
+New = '[KEY_HASH]'
+Order = 5

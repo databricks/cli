@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  apps:
+    myapp:
+      name: my-app
+      source_code_path: .
+      lifecycle:
+        started: true

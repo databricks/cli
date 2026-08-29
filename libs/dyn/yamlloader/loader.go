@@ -10,8 +10,24 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
+// LocationError is an error with a YAML source location that can be displayed
+// to the user with a file path, line, and column number.
+type LocationError struct {
+	Loc     dyn.Location
+	Summary string
+}
+
+func (e *LocationError) Error() string {
+	return fmt.Sprintf("yaml (%s): %s", e.Loc, e.Summary)
+}
+
 type loader struct {
 	path string
+
+	// Aliases currently being expanded. A self-referential anchor (e.g.
+	// "a: &x {b: *x}") makes the yaml.v3 node graph cyclic; without this
+	// bookkeeping, expansion would recurse until stack overflow.
+	activeAliases map[*yaml.Node]bool
 }
 
 func errorf(loc dyn.Location, format string, args ...any) error {
@@ -20,7 +36,8 @@ func errorf(loc dyn.Location, format string, args ...any) error {
 
 func newLoader(path string) *loader {
 	return &loader{
-		path: path,
+		path:          path,
+		activeAliases: make(map[*yaml.Node]bool),
 	}
 }
 
@@ -110,7 +127,12 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 			// However, when used as a key, it is treated as the string "null".
 		case "!!merge":
 			if merge != nil {
-				panic("merge node already set")
+				// The YAML merge key spec allows a single '<<' key per mapping.
+				// To merge multiple maps, use a sequence: '<<: [*anchor1, *anchor2]'.
+				return dyn.InvalidValue, &LocationError{
+					Loc:     d.location(key),
+					Summary: "duplicate YAML merge key ('<<') is not allowed; to merge multiple maps, use a sequence: '<<: [*anchor1, *anchor2]'",
+				}
 			}
 			merge = val
 			continue
@@ -255,5 +277,14 @@ func (d *loader) loadScalar(node *yaml.Node, loc dyn.Location) (dyn.Value, error
 }
 
 func (d *loader) loadAlias(node *yaml.Node, loc dyn.Location) (dyn.Value, error) {
+	if d.activeAliases[node] {
+		return dyn.InvalidValue, errorf(loc, "cyclic reference to anchor %q", node.Value)
+	}
+
+	// The same alias node may be reached again through another alias to an
+	// enclosing anchor, which is not a cycle.
+	d.activeAliases[node] = true
+	defer delete(d.activeAliases, node)
+
 	return d.load(node.Alias)
 }

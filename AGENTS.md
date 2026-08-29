@@ -1,40 +1,59 @@
 This file provides guidance to AI assistants when working with code in this repository.
 
+Rules prefixed `**RULE:**` are mandatory. `GOOD:` and `BAD:` labels on code snippets mark patterns to follow and patterns to avoid. This convention is a common best practice for AI-assistant rule files and is used consistently across `AGENTS.md` and `.agents/rules/*.md`.
+
 # Project Overview
 
-This is the Databricks CLI, a command-line interface for interacting with Databricks workspaces and managing Databricks Assets Bundles (DABs). The project is written in Go and follows a modular architecture.
+This is the Databricks CLI, a command-line interface for interacting with Databricks workspaces and managing Declarative Automation Bundles (DABs), formerly known as Databricks Asset Bundles. The project is written in Go and follows a modular architecture.
 
 # General Rules
 
-When moving code from one place to another, please don't unnecessarily change the code or omit parts.
+**RULE: When moving code from one place to another, don't unnecessarily change or omit parts.** Keep refactors separate from content changes so reviewers can tell them apart.
+
+**RULE: Prefer simplicity over cleverness. Avoid speculative fallbacks and default values.** If you catch yourself adding a fallback branch "just in case," identify the correct path and use only that one. Reviewers in this repo reject speculative flexibility.
+
+**RULE: Keep each PR focused on one change.** If you notice an unrelated cleanup, bug fix, or refactor while making your primary change, leave it alone or put it in a separate PR. Reviewers consistently ask to split mixed PRs, especially when a dependency bump or schema diff rides along with a feature change.
+
+**RULE: Before adding a new helper, search the codebase for an existing one.** Common homes: `libs/` (shared utilities), `libs/databrickscfg/` (config), `libs/git/`, `libs/filer/`, `libs/cmdio/` (CLI I/O, spinners, prompts), `libs/env/` (env vars), `libs/testserver/`, `libs/structpath/` and `libs/dyn/` (path / dynamic values), `acceptance/bin/` (acceptance test helpers), `internal/mocks/` (generated mocks). A function that duplicates an existing name and signature in the same package is a compile error waiting to happen; grep before you name.
 
 # Development Commands
 
 ### Building and Testing
-- `make build` - Build the CLI binary
-- `make test` - Run unit tests for all packages
+
+- `./task build` - Build the CLI binary
+- `./task test` - Run unit and acceptance tests for all packages. This runs the *entire* acceptance suite locally against the fake server in `libs/testserver`.
 - `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder> -tail -test.v` - run a single acceptance test
-- `make integration` - Run integration tests (requires environment variables)
-- `make cover` - Generate test coverage reports
+- `./task integration` - Run integration tests (requires environment variables). The `integration/` tree is deprecated; new coverage that needs a real workspace goes into an acceptance test with `Cloud = true`.
+- `./task cover` - Generate test coverage reports
+
+Every acceptance test runs locally. `Cloud = true` in a `test.toml` means the test *also* runs against a real workspace when `CLOUD_ENV` is set — never that it skips the local run. See `.agents/rules/testing.md`.
 
 ### Code Quality
-- `make lint` - Run linter on changed files only (uses lintdiff.py)
-- `make lintfull` - Run full linter with fixes (golangci-lint)
-- `make ws` - Run whitespace linter
-- `make fmt` - Format code (Go, Python, YAML)
-- `make checks` - Run quick checks (tidy, whitespace, links)
+
+- `./task lint` - Run full linter across all Go modules (root, tools, codegen)
+- `./task lint-q` - Run linter on changed files only (uses lintdiff.py, root module, with --fix)
+- `./task ws` - Run whitespace linter
+- `./task fmt` - Format all code (Go, Python, YAML)
+- `./task fmt-q` - Format changed files only (incremental Go + Python + YAML)
+- `./task checks` - Run quick checks (tidy, whitespace, links)
 
 ### Specialized Commands
-- `make schema` - Generate bundle JSON schema
-- `make docs` - Generate bundle documentation
-- `make generate` - Generate CLI code from OpenAPI spec (requires universe repo)
+
+- `./task generate-schema` - Generate bundle JSON schema
+- `./task generate-cligen` - Regenerate CLI command stubs from the checked-in .codegen/cli.json
+- `./task generate-clijson` - Refresh .codegen/cli.json from the OpenAPI spec via genkit (requires universe repo)
+- `./task generate` - Run all generators
 
 ### Git Commands
-Use "git rm" to remove and "git mv" to rename files instead of directly modifying files on FS.
 
-If asked to rebase, always prefix each git command with appropriate settings so that it never launches interactive editor.
+**RULE: Use `git rm` to remove and `git mv` to rename files, instead of directly modifying files on the filesystem.**
+
+**RULE: When rebasing, prefix git commands so they never launch an interactive editor.**
+
+```sh
 GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git fetch origin main &&
 GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase origin/main
+```
 
 # Architecture
 
@@ -46,7 +65,7 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 - `cmd/workspace/` - Workspace API commands (auto-generated)
 - `cmd/account/` - Account-level API commands (auto-generated)
 
-**bundle/** - Core bundle functionality for Databricks Asset Bundles
+**bundle/** - Core bundle functionality for Declarative Automation Bundles
 - `bundle/bundle.go` - Main Bundle struct and lifecycle management
 - `bundle/config/` - Configuration loading, validation, and schema
 - `bundle/deploy/` - Deployment logic (Terraform and direct modes)
@@ -66,235 +85,100 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 **Mutators**: Transform bundle configuration through a pipeline. Located in `bundle/config/mutator/` and `bundle/mutator/`. Each mutator implements the `Mutator` interface.
 
 **Direct vs Terraform Deployment**: The CLI supports two deployment modes controlled by `DATABRICKS_BUNDLE_ENGINE` environment variable:
-- `terraform` (default) - Uses Terraform for resource management
-- `direct` - Direct API calls without Terraform
-
-# Code Style and Patterns
-
-## Go
-
-Please make sure code that you author is consistent with the codebase and concise.
-
-The code should be self-documenting based on the code and function names.
-
-Functions should be documented with a doc comment as follows:
-
-// SomeFunc does something.
-func SomeFunc() {
-	...
-}
-
-Note how the comment starts with the name of the function and is followed by a period.
-
-Avoid redundant and verbose comments. Use terse comments and only add comments if it complements, not repeats the code.
-
-Focus on making implementation as small and elegant as possible. Avoid unnecessary loops and allocations. If you see an opportunity of making things simpler by dropping or relaxing some requirements, ask user about the trade-off.
-
-Use modern idiomatic Golang features (version 1.24+). Specifically:
- - Use for-range for integer iteration where possible. Instead of for i:=0; i < X; i++ {} you must write for i := range X{}.
- - Use builtin min() and max() where possible (works on any type and any number of values).
- - Do not capture the for-range variable, since go 1.22 a new copy of the variable is created for each loop iteration.
-
-### Configuration Patterns
-- Bundle config uses `dyn.Value` for dynamic typing
-- Config loading supports includes, variable interpolation, and target overrides
-- Schema generation is automated from Go struct tags
-
-## Python
-
-When writing Python scripts, we bias for conciseness. We think of Python in this code base as scripts.
- - use Python 3.11
- - Do not catch exceptions to make nicer messages, only catch if you can add critical information
- - use pathlib.Path in almost all cases over os.path unless it makes code longer
- - Do not add redundant comments.
- - Try to keep your code small and the number of abstractions low.
- - After done, format you code with "ruff format -n <path>"
- - Use "#!/usr/bin/env python3" shebang.
-
-# Testing
-
-### Test Types
-- **Unit tests**: Standard Go tests alongside source files
-- **Integration tests**: `integration/` directory, requires live Databricks workspace
-- **Acceptance tests**: `acceptance/` directory, uses mock HTTP server
-
-Each file like process_target_mode_test.go should have a corresponding test file
-like process_target_mode_test.go. If you add new functionality to a file,
-the test file should be extended to cover the new functionality.
-
-Tests should look like the following:
-
-package mutator_test
-
-func TestApplySomeChangeReturnsDiagnostics(t *testing.T) {
-	...
-}
-
-func TestApplySomeChangeFixesThings(t *testing.T) {
-	ctx := context.Background()
-	b, err := ...some operation...
-	require.NoError(t, err)
-	...
-	assert.Equal(t, ...)
-}
-
-Notice that:
-- Tests are often in the same package but suffixed wit _test.
-- The test names are prefixed with Test and are named after the function or module they are testing.
-- 'require' and 'require.NoError' are used to check for things that would cause the rest of the test case to fail.
-- 'assert' is used to check for expected values where the rest of the test is not expected to fail.
-
-When writing tests, please don't include an explanation in each
-test case in your responses. I am just interested in the tests.
-
-### Acceptance Tests
-- Located in `acceptance/` with nested directory structure
-- Each test directory contains `databricks.yml`, `script`, and `output.txt`
-- Run with `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder> -tail -test.v`
-- Use `-update` flag to regenerate expected output files
-- When a test fails because it has an old output, just run it one more time with an `-update` flag instead of changing the `output.txt` directly
-
-**When asked to update acceptance tests, follow this workflow**:
-
-1. **Run the update command**:
-   - For all acceptance tests: `make test-update`
-   - When asked to update acceptance tests for templates specifically: `make test-update-templates`
-
-2. **Verify code quality**:
-   - Run `make fmt` and `make lint`
-   - **Critical**: If these commands modify any files in `acceptance/`, this indicates an issue in the source files (e.g., in `libs/template/templates/` for template tests)!
-
-3. **Fix the root cause**:
-   - **Never manually edit files in `acceptance/`** - they are auto-generated outputs
-   - Find and fix the corresponding source file that generated the problematic acceptance test output
-   - For template tests: fix files in `libs/template/templates/`
-   - Common issues: trailing whitespace, missing/extra newlines, formatting problems
-
-4. **Regenerate after fixing**:
-   - After fixing the source files, run the update command again (e.g., `make test-update-templates`)
-   - This regenerates the acceptance test outputs from the corrected sources
-   - Now `make fmt` and `make lint` should pass with no changes
-
-**Example workflow**:
-```bash
-# Update acceptance tests
-make test-update  # or make test-update-templates for templates only
-
-# Check for issues - if these modify files in acceptance/, you have a source file problem
-make fmt
-make lint
-
-# If there are modifications in acceptance/:
-# 1. Find the corresponding source file (e.g., in libs/template/templates/ for templates)
-# 2. Fix the issue there (e.g., whitespace, newlines)
-# 3. Regenerate from the fixed source
-make test-update  # or make test-update-templates
-
-# Verify everything is clean
-make fmt    # Should show no changes now
-make lint   # Should show no issues now
-```
-
-**Key principle**: Files in `acceptance/` are outputs, not sources. Always fix the source files and regenerate.
-
-# Logging
-
-Use the following for logging:
-
-```
-import "github.com/databricks/cli/libs/log"
-
-log.Infof(ctx, "...")
-log.Debugf(ctx, "...")
-log.Warnf(ctx, "...")
-log.Errorf(ctx, "...")
-```
-
-Note that the 'ctx' variable here is something that should be passed in as
-an argument by the caller. We should not use context.Background() like we do in tests.
-
-Use cmdio.LogString to print to stdout:
-
-```
-import "github.com/databricks/cli/libs/cmdio"
-
-cmdio.LogString(ctx, "...")
-```
-
-# Specific File Guides
-
-## databricks_template_schema.json
-
-A databricks_template_schema.json file is used to configure bundle templates.
-
-Below is a good reference template:
-
-{
-    "welcome_message": "\nWelcome to the dbt template for Databricks Asset Bundles!\n\nA workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.\nworkspace_host: {{workspace_host}}",
-    "properties": {
-        "project_name": {
-            "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9-_]+$",
-            "pattern_match_failure_message": "Name must consist of letters, numbers, dashes, and underscores.",
-            "default": "dbt_project",
-            "description": "\nPlease provide a unique name for this project.\nproject_name",
-            "order": 1
-        },
-        "http_path": {
-            "type": "string",
-            "pattern": "^/sql/.\\../warehouses/[a-z0-9]+$",
-            "pattern_match_failure_message": "Path must be of the form /sql/1.0/warehouses/<warehouse id>",
-            "description": "\nPlease provide the HTTP Path of the SQL warehouse you would like to use with dbt during development.\nYou can find this path by clicking on \"Connection details\" for your SQL warehouse.\nhttp_path [example: /sql/1.0/warehouses/abcdef1234567890]",
-            "order": 2
-        },
-        "default_catalog": {
-            "type": "string",
-            "default": "{{default_catalog}}",
-            "pattern": "^\\w*$",
-            "pattern_match_failure_message": "Invalid catalog name.",
-            "description": "\nPlease provide an initial catalog{{if eq (default_catalog) \"\"}} (leave blank when not using Unity Catalog){{end}}.\ndefault_catalog",
-            "order": 3
-        },
-        "personal_schemas": {
-            "type": "string",
-            "description": "\nWould you like to use a personal schema for each user working on this project? (e.g., 'catalog.{{short_name}}')\npersonal_schemas",
-            "enum": [
-                "yes, use a schema based on the current user name during development",
-                "no, use a shared schema during development"
-            ],
-            "order": 4
-        },
-        "shared_schema": {
-            "skip_prompt_if": {
-                "properties": {
-                    "personal_schemas": {
-                        "const": "yes, use a schema based on the current user name during development"
-                    }
-                }
-            },
-            "type": "string",
-            "default": "default",
-            "pattern": "^\\w+$",
-            "pattern_match_failure_message": "Invalid schema name.",
-            "description": "\nPlease provide an initial schema during development.\ndefault_schema",
-            "order": 5
-        }
-    },
-    "success_message": "\n📊 Your new project has been created in the '{{.project_name}}' directory!\nIf you already have dbt installed, just type 'cd {{.project_name}}; dbt init' to get started.\nRefer to the README.md file for full \"getting started\" guide and production setup instructions.\n"
-}
-
-Notice that:
-- The welcome message has the template name.
-- By convention, property messages  include the property name after a newline, e.g. default_catalog above has a description that says "\nPlease provide an initial catalog [...].\ndefault_catalog",
-- Each property defines a variable that is used for the template.
-- Each property has a unique 'order' value that increments by 1 with each property.
-- Enums use 'type: "string' and have an 'enum' field with a list of possible values.
-- Helpers such as {{default_catalog}} and {{short_name}} can be used within property descriptors.
-- Properties can be referenced in messages and descriptions using {{.property_name}}. {{.project_name}} is an example.
+- `direct` (default) - Direct API calls without Terraform
+- `terraform` - Uses Terraform for resource management
 
 # Development Tips
 
-- Run `make checks fmt lint` before committing
-- Use `make test-update` to regenerate acceptance test outputs after changes
-- The CLI binary supports both `databricks` and `pipelines` command modes based on executable name
-- Resource definitions in `bundle/config/resources/` are auto-generated from OpenAPI specs
+- Use `./task test-update` to regenerate acceptance test outputs after changes.
+- The CLI binary supports both `databricks` and `pipelines` command modes based on executable name.
+
+# Common Mistakes
+
+**RULE: When adding a direct Go dependency, annotate its license in `go.mod` and update `NOTICE`.** Before picking the SPDX identifier, read `internal/build/license_test.go` to see the current allowlist (the `spdxLicenses` map). That test is the source of truth and will fail CI if a direct `require` line lacks a matching SPDX suffix comment (e.g. `// MIT`). Also add a corresponding entry to `NOTICE` under the matching license section. If a dep's license isn't on the allowlist, discuss before adding.
+
+**RULE: Do not use `os.Exit()` outside of `main.go`.** `main.go` owns the exit path; calling `os.Exit()` elsewhere skips deferred cleanup and complicates testing.
+
+**RULE: Do not remove or skip failing tests to fix CI.** Fix the underlying issue instead.
+
+**RULE: Do not leave debug print statements in committed code.** `fmt.Println`, `log.Printf`, or similar. Always scrub before committing.
+
+**RULE: Do not add defensive `nil` checks for values the caller or framework is documented to always provide.** If a check exists "just in case", either remove it or attach a comment explaining why the invariant might be violated. Direct engine resource methods (`DoCreate`, `DoUpdate`, `RemapState`, etc.) never receive nil receivers or state from the framework, so extra nil-guards there are dead code.
+
+**RULE: Use a non-resolving TLD reserved by [RFC 2606 §2](https://datatracker.ietf.org/doc/html/rfc2606#section-2) (`.test`, `.example`, `.invalid`, `.localhost`) for any test fixture host — `Config.Host`, `databricks.yml`'s `workspace.host`, `.databrickscfg`.** Real domains hit the SDK well-known endpoint resolver and can stall tests for ~5 minutes per call when the runner network can't fast-fail the lookup. The repo convention is `.test` (the TLD RFC 2606 specifically reserves "for use in testing"). See PR #5125 for prior history.
+
+Where a panic is genuinely possible (e.g. `reflect.Type.Elem()` on a non-pointer, division by an empty slice's length), validate at the entry point and return an error.
+
+**RULE: Never copy a `config.Config` by value.** It embeds a `sync.Mutex`, so `go vet` copylocks fails and CI lint blocks it (govet runs with enable-all). Pass it by pointer, or mutate the resolved config in place (e.g. set `HTTPTimeoutSeconds` on it before `client.New`; there is no per-request option).
+
+**RULE: Open URLs through `libs/browser`, never `github.com/pkg/browser` directly.** `pkg/browser` ignores the `BROWSER` env var, so `BROWSER=none` and custom browser commands break. `browser.Open(ctx, url)` handles empty/none/custom in one path; branch on `browser.IsDisabled(ctx)` first if you need custom messaging. For a custom `BROWSER=<command>`, launch via `libs/exec`, not an inline `cmd /c` (that broke Windows OAuth URLs via `%...%` expansion).
+
+**RULE: For hand-written workspace-routed raw API calls (`client.Do` / `apiClient.Do`), set routing headers via `libs/auth.WorkspaceIDHeaders`.** It emits `X-Databricks-Workspace-Id` and suppresses the legacy `workspace_id = none` sentinel. Grepping only for old header names misses calls that never set any routing header but still need one.
+
+**RULE: To keep an intentionally-unreferenced exported function, mark it `//deadcode:allow <reason>` within 6 lines above the `func`.** CI runs `deadcode -test ./...`; a func reachable only from a `*_test.go` is not flagged, so unwiring a feature can leave a sibling entry point dead. (`gofmt` inserts a blank `//` line between the directive and the doc comment; that's expected and still detected.)
+
+**RULE: Write platform agnostic code.** Avoid test logic that runs only on the operating system you are using. Do not forget about Windows!
+
+# Error Handling
+
+**RULE: Wrap errors with context using `%w`.** Preserves the error chain so `errors.Is` and `errors.As` keep working upstream.
+
+GOOD:
+
+```go
+return fmt.Errorf("failed to deploy %s: %w", name, err)
+```
+
+BAD:
+
+```go
+return fmt.Errorf("failed to deploy %s: %s", name, err)
+```
+
+**RULE: Return early on errors; avoid deeply nested if-else chains.**
+
+**RULE: Use `logdiag.LogDiag` and `logdiag.LogError` for logging diagnostics.**
+
+**RULE: Use `diag.Errorf` and `diag.Warningf` to create diagnostics with severity.**
+
+**RULE: Compare errors with `errors.Is` or `errors.As` against a sentinel or typed error. Never branch on `err.Error()` string content.** The SDK exposes sentinels like `apierr.ErrNotFound` and `apierr.ErrResourceDoesNotExist`; the CLI has its own helpers like `isResourceGone`. String-matching error messages breaks the moment the upstream wording changes.
+
+GOOD:
+
+```go
+import "github.com/databricks/databricks-sdk-go/apierr"
+
+if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+	return nil
+}
+```
+
+BAD:
+
+```go
+if err != nil && strings.Contains(err.Error(), "does not exist") {
+	return nil
+}
+```
+
+**RULE: Error strings must not end with punctuation or a newline (golangci-lint ST1005).** Applies to `fmt.Errorf` / `errors.New`: when appending a multi-sentence hint to an error, drop the final period (mid-string periods and newlines are fine). Keep `Error()` methods unpunctuated at the end too, for consistency.
+
+# CLI UX and validation
+
+**RULE: Reject incompatible inputs early with an actionable error. Never silently ignore a flag or config field the current mode can't honor.** If a flag is incompatible with another flag or with a mode, return an error at flag-parse or validation time that tells the user which flag pair is at fault and what to do. If a config field applies only to certain resource types or engines, return a validation error, not a warning that gets lost in log output.
+
+GOOD:
+
+```go
+if opts.Bind && opts.Resource != "dashboards" {
+	return fmt.Errorf("--bind is only supported for dashboards, got %q", opts.Resource)
+}
+```
+
+BAD:
+
+```go
+if opts.Bind && opts.Resource != "dashboards" {
+	// silently drop the flag; user can't tell why nothing happened
+}
+```

@@ -1,0 +1,11 @@
+# Substitute the actual host URL into the checked-in .databrickscfg (two
+# account-only profiles for the same host) and databricks.yml.
+envsubst < .databrickscfg > out && mv out .databrickscfg
+envsubst < databricks.yml > out && mv out databricks.yml
+
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+
+# No workspace-compatible profiles → original multi-profile error returned.
+musterr trace $CLI bundle validate

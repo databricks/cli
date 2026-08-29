@@ -62,11 +62,11 @@ func NewFriendlyHandler(out io.Writer, opts *Options) slog.Handler {
 }
 
 func (h *friendlyHandler) sprint(color ttyColor, args ...any) string {
-	return h.ttyColors[color].Sprint(args...)
+	return h.ttyColors[color].Render(fmt.Sprint(args...))
 }
 
 func (h *friendlyHandler) sprintf(color ttyColor, format string, args ...any) string {
-	return h.ttyColors[color].Sprintf(format, args...)
+	return h.ttyColors[color].Render(fmt.Sprintf(format, args...))
 }
 
 func (h *friendlyHandler) coloredLevel(r slog.Record) string {
@@ -168,7 +168,7 @@ func (s *handleState) appendAttr(a slog.Attr) {
 		str := a.Value.String()
 		format := "%s"
 
-		// Quote values wih spaces, to make them easy to parse.
+		// Quote values with spaces, to make them easy to parse.
 		if strings.ContainsAny(str, " \t\n") {
 			format = "%q"
 		}

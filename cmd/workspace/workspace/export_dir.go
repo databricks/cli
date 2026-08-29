@@ -10,11 +10,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -29,8 +31,8 @@ type exportDirOptions struct {
 
 // isFileSizeError checks if the error is due to file size limits.
 func isFileSizeError(err error) bool {
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) || aerr.StatusCode != http.StatusBadRequest {
+	aerr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok || aerr.StatusCode != http.StatusBadRequest {
 		return false
 	}
 
@@ -55,7 +57,6 @@ func isFileSizeError(err error) bool {
 // These will be skipped with a warning during export-dir.
 var nonExportableTypes = []workspace.ObjectType{
 	workspace.ObjectTypeLibrary,
-	workspace.ObjectTypeDashboard,
 	workspace.ObjectTypeRepo,
 	// MLFLOW_EXPERIMENT is not defined as a constant in the SDK
 	workspace.ObjectType("MLFLOW_EXPERIMENT"),
@@ -63,12 +64,7 @@ var nonExportableTypes = []workspace.ObjectType{
 
 // isNonExportable checks if an object type cannot be exported.
 func isNonExportable(objectType workspace.ObjectType) bool {
-	for _, t := range nonExportableTypes {
-		if objectType == t {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(nonExportableTypes, objectType)
 }
 
 // The callback function exports the file specified at relPath. This function is
@@ -129,7 +125,18 @@ func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer
 		// create the file
 		f, err := os.Create(targetPath)
 		if err != nil {
-			return err
+			// A workspace name can be illegal as a local filename (e.g. a ':'
+			// in "New Notebook 2026-05-04 13:54:24" on Windows). Rename it to a
+			// legal name with a warning rather than aborting the export (#5171).
+			if !isInvalidLocalNameError(err) {
+				return err
+			}
+			targetPath = filepath.Join(filepath.Dir(targetPath), sanitizeLocalName(filepath.Base(targetPath)))
+			log.Warnf(ctx, "%s: name is not valid for the local file system, exporting as %q", sourcePath, filepath.Base(targetPath))
+			f, err = os.Create(targetPath)
+			if err != nil {
+				return err
+			}
 		}
 		defer f.Close()
 

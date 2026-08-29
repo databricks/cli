@@ -1,0 +1,4 @@
+# This script does not directly reference $DATABRICKS_BUNDLE_ENGINE.
+# Engine detection happens via the ancestor _script helper,
+# exercising the anyHelperScriptUsesEngine() path in subset selection.
+source "$TESTDIR/../_script"

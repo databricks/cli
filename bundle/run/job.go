@@ -14,8 +14,8 @@ import (
 	"github.com/databricks/cli/bundle/run/progress"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -49,10 +49,7 @@ func isSuccess(task jobs.RunTask) bool {
 }
 
 func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
-	w := r.bundle.WorkspaceClient()
-	red := color.New(color.FgRed).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
+	w := r.bundle.WorkspaceClient(ctx)
 	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{
 		RunId: runId,
 	})
@@ -65,21 +62,21 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 	}
 	for _, task := range run.Tasks {
 		if isSuccess(task) {
-			log.Infof(ctx, "task %s completed successfully", green(task.TaskKey))
+			log.Infof(ctx, "task %s completed successfully", cmdio.Green(ctx, task.TaskKey))
 		} else if isFailed(task) {
 			taskInfo, err := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{
 				RunId: task.RunId,
 			})
 			if err != nil {
-				log.Errorf(ctx, "task %s failed. Unable to fetch error trace: %s", red(task.TaskKey), err)
+				log.Errorf(ctx, "task %s failed. Unable to fetch error trace: %s", cmdio.Red(ctx, task.TaskKey), err)
 				continue
 			}
 			cmdio.Log(ctx, progress.NewTaskErrorEvent(task.TaskKey, taskInfo.Error, taskInfo.ErrorTrace))
 			log.Errorf(ctx, "Task %s failed!\nError:\n%s\nTrace:\n%s",
-				red(task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
+				cmdio.Red(ctx, task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
 		} else {
 			log.Infof(ctx, "task %s is in state %s",
-				yellow(task.TaskKey), task.State.LifeCycleState)
+				cmdio.Yellow(ctx, task.TaskKey), task.State.LifeCycleState)
 		}
 	}
 }
@@ -100,8 +97,9 @@ func (m *jobRunMonitor) onProgress(info *jobs.Run) {
 
 	// First time we see this run.
 	if m.prevState == nil {
-		log.Infof(m.ctx, "Run available at %s", info.RunPageUrl)
-		cmdio.Log(m.ctx, progress.NewJobRunUrlEvent(info.RunPageUrl))
+		runURL := workspaceurls.ModernizeJobRunPageURL(info.RunPageUrl)
+		log.Infof(m.ctx, "Run available at %s", runURL)
+		cmdio.Log(m.ctx, progress.NewJobRunUrlEvent(runURL))
 	}
 
 	// No state change: do not log.
@@ -146,7 +144,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	// Include resource key in logger.
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
 
-	w := r.bundle.WorkspaceClient()
+	w := r.bundle.WorkspaceClient(ctx)
 
 	monitor := &jobRunMonitor{
 		ctx: ctx,
@@ -161,8 +159,11 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		details, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{
 			RunId: waiter.RunId,
 		})
-		cmdio.Log(ctx, progress.NewJobRunUrlEvent(details.RunPageUrl))
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+		cmdio.Log(ctx, progress.NewJobRunUrlEvent(workspaceurls.ModernizeJobRunPageURL(details.RunPageUrl)))
+		return nil, nil
 	}
 
 	run, err := waiter.OnProgress(monitor.onProgress).GetWithTimeout(jobRunTimeout)
@@ -191,7 +192,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	// The task completed successfully.
 	case jobs.RunResultStateSuccess:
 		log.Infof(ctx, "Run has completed successfully!")
-		return output.GetJobOutput(ctx, r.bundle.WorkspaceClient(), waiter.RunId)
+		return output.GetJobOutput(ctx, r.bundle.WorkspaceClient(ctx), waiter.RunId)
 
 	// The run was stopped after reaching the timeout.
 	case jobs.RunResultStateTimedout:
@@ -245,7 +246,7 @@ func (r *jobRunner) convertPythonParams(opts *Options) error {
 }
 
 func (r *jobRunner) Cancel(ctx context.Context) error {
-	w := r.bundle.WorkspaceClient()
+	w := r.bundle.WorkspaceClient(ctx)
 	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
 	if err != nil {
 		return fmt.Errorf("job ID is not an integer: %s", r.job.ID)

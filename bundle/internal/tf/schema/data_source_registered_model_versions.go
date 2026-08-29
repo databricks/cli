@@ -60,7 +60,7 @@ type DataSourceRegisteredModelVersionsModelVersions struct {
 }
 
 type DataSourceRegisteredModelVersionsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceRegisteredModelVersions struct {

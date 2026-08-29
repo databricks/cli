@@ -1,0 +1,23 @@
+sethome "./home"
+
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
+
+title "Initial config\n"
+cat "./home/.databrickscfg"
+
+title "Delete first non-default profile (alpha)"
+trace $CLI auth logout --profile alpha --auto-approve --delete
+
+title "Backup file should exist\n"
+assert_backup_exists
+
+title "Config after deleting alpha\n"
+cat "./home/.databrickscfg"
+
+title "Delete last profile (gamma)"
+trace $CLI auth logout --profile gamma --auto-approve --delete
+
+title "Config after deleting gamma\n"
+cat "./home/.databrickscfg"
+
+cp "./home/.databrickscfg" "./out.databrickscfg"

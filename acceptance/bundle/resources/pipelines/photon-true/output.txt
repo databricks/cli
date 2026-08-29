@@ -1,0 +1,27 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/photon-true/default/files...
+Created pipelines.my
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/photon-true/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/photon-true/default/files/foo.py"
+        }
+      }
+    ],
+    "name": "test-pipeline",
+    "photon": true
+  }
+}

@@ -7,20 +7,21 @@
   "modified_status": "created",
   "name": "myvolume",
   "schema_name": "myschema",
+  "volume_path": "/Volumes/main/myschema/myvolume",
   "volume_type": "MANAGED"
 }
 
 === Verify volume does not exist
 >>> musterr [CLI] volumes read main.myschema.myvolume
-Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
+Error: Volume 'main.myschema.myvolume' does not exist.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created volumes.volume1
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests
+>>> print_requests.py //unity
 {
   "method": "POST",
   "path": "/api/2.1/unity-catalog/volumes",
@@ -35,23 +36,23 @@ Deployment complete!
 
 === Summary should now show id and url
 "main.myschema.myvolume"
-"[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?o=[NUMID]"
+"[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[NUMID]"
 
 === Verify deployment
 >>> [CLI] volumes read main.myschema.myvolume
 {
-  "catalog_name":"main",
-  "comment":"COMMENT1",
-  "created_at":[UNIX_TIME_MILLIS][0],
-  "created_by":"[USERNAME]",
-  "full_name":"main.myschema.myvolume",
-  "name":"myvolume",
-  "owner":"[USERNAME]",
-  "schema_name":"myschema",
-  "storage_location":"s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
-  "updated_at":[UNIX_TIME_MILLIS][0],
-  "volume_id":"[UUID]",
-  "volume_type":"MANAGED"
+  "catalog_name": "main",
+  "comment": "COMMENT1",
+  "created_at": [UNIX_TIME_MILLIS][0],
+  "created_by": "[USERNAME]",
+  "full_name": "main.myschema.myvolume",
+  "name": "myvolume",
+  "owner": "[USERNAME]",
+  "schema_name": "myschema",
+  "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
+  "updated_at": [UNIX_TIME_MILLIS][0],
+  "volume_id": "[UUID]",
+  "volume_type": "MANAGED"
 }
 
 === Update comment
@@ -64,17 +65,18 @@ Deployment complete!
   "id": "main.myschema.myvolume",
   "name": "myvolume",
   "schema_name": "myschema",
-  "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?o=[NUMID]",
+  "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[NUMID]",
+  "volume_path": "/Volumes/main/myschema/myvolume",
   "volume_type": "MANAGED"
 }
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated volumes.volume1
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
->>> print_requests
+>>> print_requests.py //unity
 {
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/volumes/main.myschema.myvolume",
@@ -99,22 +101,22 @@ is removed from the catalog, but the underlying files are not deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted
 
->>> print_requests
+>>> print_requests.py //unity
 {
   "method": "DELETE",
   "path": "/api/2.1/unity-catalog/volumes/main.myschema.myvolume"
 }
 
 >>> musterr [CLI] volumes read main.myschema.myvolume
-Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
+Error: Volume 'main.myschema.myvolume' does not exist.
 {
   "catalog_name": "main",
   "comment": "COMMENT2",
   "modified_status": "created",
   "name": "myvolume",
   "schema_name": "myschema",
+  "volume_path": "/Volumes/main/myschema/myvolume",
   "volume_type": "MANAGED"
 }

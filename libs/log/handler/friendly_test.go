@@ -2,7 +2,6 @@ package handler
 
 import (
 	"bytes"
-	"context"
 	"log/slog"
 	"strings"
 	"testing"
@@ -37,7 +36,7 @@ func TestFriendlyHandler(t *testing.T) {
 		log.LevelError,
 	} {
 		run(func() {
-			logger.Log(context.Background(), level, "simple message")
+			logger.Log(t.Context(), level, "simple message")
 		})
 	}
 

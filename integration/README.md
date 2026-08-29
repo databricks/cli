@@ -2,6 +2,12 @@
 
 This directory contains integration tests for the project.
 
+## Deprecated: do not add tests here
+
+This tree is deprecated and should not be extended with new tests. A test here only ever runs against a real workspace, so it contributes nothing to the local suite and is only exercised when someone runs a cloud job.
+
+Write an acceptance test instead (see `acceptance/README.md`) and set `Cloud = true` in its `test.toml`. One test then covers both: it runs locally against the fake server in `libs/testserver` on every `./task test`, *and* against a real workspace when `CLOUD_ENV` is set. Existing tests here are still maintained; extend them only when there is no acceptance-test equivalent.
+
 The tree structure generally mirrors the source code tree structure.
 
 Requirements for new files in this directory:
@@ -33,5 +39,5 @@ go test ./integration/...
 Alternatively:
 
 ```bash
-make integration
+./task integration
 ```

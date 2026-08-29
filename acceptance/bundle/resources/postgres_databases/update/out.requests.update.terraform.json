@@ -1,0 +1,31 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/[MY_DATABASE_ID]"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/[MY_DATABASE_ID]",
+  "q": {
+    "update_mask": "spec"
+  },
+  "body": {
+    "name": "[MY_DATABASE_ID]",
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "spec": {
+      "postgres_database": "renamed_db_name",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+    }
+  }
+}

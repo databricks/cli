@@ -1,0 +1,7 @@
+Cloud = false
+RecordRequests = false
+
+# Saved-plan deploy (`--plan`) and the IsGone gone-detection are direct-engine only.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [".databricks", "databricks.yml", "plan_delete.json"]

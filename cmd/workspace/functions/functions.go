@@ -3,6 +3,7 @@
 package functions
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -30,6 +31,10 @@ func New() *cobra.Command {
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -76,6 +81,8 @@ func newCreate() *cobra.Command {
   and **CREATE_FUNCTION** on the function's parent schema`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -88,19 +95,20 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Functions.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -148,6 +156,8 @@ func newDelete() *cobra.Command {
       __catalog_name__.__schema_name__.__function__name__) .`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -155,10 +165,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Functions drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No NAME argument specified. Loading names for Functions drop-down.")
 			names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -169,7 +179,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) ")
+			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) ")
 		}
 		deleteReq.Name = args[0]
 
@@ -225,6 +235,8 @@ func newGet() *cobra.Command {
       __catalog_name__.__schema_name__.__function__name__).`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -232,10 +244,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Functions drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No NAME argument specified. Loading names for Functions drop-down.")
 			names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -246,7 +258,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
 		}
 		getReq.Name = args[0]
 
@@ -254,6 +266,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -282,10 +295,21 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq catalog.ListFunctionsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include functions in the response for which the principal can only access selective metadata for.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of functions to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
 	cmd.Short = `List functions.`
@@ -312,6 +336,8 @@ func newList() *cobra.Command {
     SCHEMA_NAME: Parent schema of functions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -327,6 +353,13 @@ func newList() *cobra.Command {
 		listReq.SchemaName = args[1]
 
 		response := w.Functions.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -379,6 +412,8 @@ func newUpdate() *cobra.Command {
       __catalog_name__.__schema_name__.__function__name__).`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -391,17 +426,17 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Functions drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No NAME argument specified. Loading names for Functions drop-down.")
 			names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -412,7 +447,7 @@ func newUpdate() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
 		}
 		updateReq.Name = args[0]
 
@@ -420,6 +455,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

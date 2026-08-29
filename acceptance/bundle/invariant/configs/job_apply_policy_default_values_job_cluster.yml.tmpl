@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    foo:
+      name: test-job-$UNIQUE_NAME
+      job_clusters:
+        - job_cluster_key: shared
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            instance_pool_id: $TEST_INSTANCE_POOL_ID
+            num_workers: 1
+            apply_policy_default_values: true
+      tasks:
+        - task_key: only_task
+          job_cluster_key: shared
+          notebook_task:
+            notebook_path: /Shared/notebook

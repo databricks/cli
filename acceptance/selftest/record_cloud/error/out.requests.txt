@@ -1,5 +1,9 @@
 {
   "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
   "path": "/api/2.2/jobs/get",
   "q": {
     "job_id": "1234"

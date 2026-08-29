@@ -1,20 +1,16 @@
 echo "*" > .gitignore
 trace $CLI bundle deploy
 
-print_requests() {
-    jq 'select(.method != "GET" and (.path | contains("/unity")))' < out.requests.txt
-    rm out.requests.txt
-}
-
-trace print_requests
+trace print_requests.py //unity
 trace $CLI bundle summary -o json | jq .resources.schemas
 
 title "Update catalog_name and re-deploy"
 trace update_file.py databricks.yml "catalog_name: main" "catalog_name: newmain"
 trace $CLI bundle plan | contains.py recreate
 trace $CLI bundle deploy --auto-approve
-trace print_requests
+trace print_requests.py //unity
 
 trace musterr $CLI schemas get main.myschema
-trace $CLI schemas get newmain.myschema
+# updated_at/updated_by reflect UC's post-create system write that populates managed defaults, so on managed-defaults clouds they show a system principal rather than the creator; drop them (the managed properties map is pruned automatically).
+trace $CLI schemas get newmain.myschema | normalize_uc_payload.py updated_at updated_by
 rm out.requests.txt

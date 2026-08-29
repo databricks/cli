@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -34,7 +33,7 @@ func TestSyncInferRoot_NominalAbsolute(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
 	assert.NoError(t, diags.Error())
 	assert.Equal(t, filepath.FromSlash("/tmp/some/dir"), b.SyncRootPath)
@@ -65,7 +64,7 @@ func TestSyncInferRoot_NominalRelative(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
 	assert.NoError(t, diags.Error())
 	assert.Equal(t, filepath.FromSlash("some/dir"), b.SyncRootPath)
@@ -96,7 +95,7 @@ func TestSyncInferRoot_ParentDirectory(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
 	assert.NoError(t, diags.Error())
 	assert.Equal(t, filepath.FromSlash("/tmp/some"), b.SyncRootPath)
@@ -127,7 +126,7 @@ func TestSyncInferRoot_ManyParentDirectories(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
 	assert.NoError(t, diags.Error())
 	assert.Equal(t, filepath.FromSlash("/tmp/some"), b.SyncRootPath)
@@ -159,7 +158,7 @@ func TestSyncInferRoot_MultiplePaths(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
 	assert.NoError(t, diags.Error())
 	assert.Equal(t, filepath.FromSlash("/tmp/some"), b.SyncRootPath)
@@ -187,7 +186,7 @@ func TestSyncInferRoot_Error(t *testing.T) {
 
 	bundletest.SetLocation(b, "sync.paths", []dyn.Location{{File: "databricks.yml"}})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
 	require.Len(t, diags, 2)
 	assert.Equal(t, `invalid sync path "../../../../error"`, diags[0].Summary)

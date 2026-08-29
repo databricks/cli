@@ -5,13 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net"
 	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/apps/vite"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -112,15 +113,15 @@ func startViteDevServer(ctx context.Context, appURL string, port int) (*exec.Cmd
 
 func newDevRemoteCmd() *cobra.Command {
 	var (
-		appName    string
-		clientPath string
-		port       int
+		appName     string
+		clientPath  string
+		port        int
+		autoApprove bool
 	)
 
 	cmd := &cobra.Command{
-		Use:    "dev-remote",
-		Short:  "Run AppKit app locally with WebSocket bridge to remote server",
-		Hidden: true,
+		Use:   "dev-remote",
+		Short: "Run AppKit app locally with WebSocket bridge to remote server",
 		Long: `Run AppKit app locally with WebSocket bridge to remote server.
 
 Starts a local Vite development server and establishes a WebSocket bridge
@@ -144,7 +145,7 @@ Examples:
 			ctx := cmd.Context()
 
 			// Validate client path early (before any network calls)
-			if _, err := os.Stat(clientPath); os.IsNotExist(err) {
+			if _, err := os.Stat(clientPath); errors.Is(err, fs.ErrNotExist) {
 				return fmt.Errorf("client directory not found: %s", clientPath)
 			}
 
@@ -173,7 +174,7 @@ Examples:
 				appName = selected
 			}
 
-			bridge := vite.NewBridge(ctx, w, appName, port)
+			bridge := vite.NewBridge(ctx, w, appName, port, autoApprove)
 
 			// Validate app exists and get domain before starting Vite
 			var appDomain *url.URL
@@ -183,7 +184,8 @@ Examples:
 				return domainErr
 			})
 			if err != nil {
-				if strings.Contains(err.Error(), "does not exist") || strings.Contains(err.Error(), "is deleted") {
+				// The Apps API reports both a never-created and a deleted app with a 404.
+				if errors.Is(err, apierr.ErrNotFound) {
 					return fmt.Errorf("application '%s' has not been deployed yet. Run `databricks apps deploy` to deploy and then try again", appName)
 				}
 				return fmt.Errorf("failed to get app domain: %w", err)
@@ -233,6 +235,7 @@ Examples:
 	cmd.Flags().StringVar(&appName, "name", "", "Name of the app to connect to (prompts if not provided)")
 	cmd.Flags().StringVar(&clientPath, "client-path", "./client", "Path to the Vite client directory")
 	cmd.Flags().IntVar(&port, "port", vitePort, "Port to run the Vite server on")
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Automatically approve every viewer connection. Anyone with the shareable dev URL will be trusted for the life of the session; use only in trusted environments.")
 
 	return cmd
 }

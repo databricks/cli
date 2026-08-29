@@ -1,16 +1,17 @@
 package tfdyn
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -101,7 +102,7 @@ func patchApplyPolicyDefaultValues(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		}
 	}
 
-	sort.Strings(paths)
+	slices.Sort(paths)
 	valList := make([]dyn.Value, len(paths))
 	for i, s := range paths {
 		valList[i] = dyn.V(s)
@@ -132,19 +133,22 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	var err error
 	tasks, ok := vin.Get("tasks").AsSequence()
 	if ok {
-		sort.Slice(tasks, func(i, j int) bool {
+		slices.SortFunc(tasks, func(a, b dyn.Value) int {
 			// We sort the tasks by their task key. Tasks without task keys are ordered
 			// before tasks with task keys. We do not error for those tasks
 			// since presence of a task_key is validated for in the Jobs backend.
-			tk1, ok := tasks[i].Get("task_key").AsString()
-			if !ok {
-				return true
+			tk1, ok1 := a.Get("task_key").AsString()
+			tk2, ok2 := b.Get("task_key").AsString()
+			if !ok1 && ok2 {
+				return -1
 			}
-			tk2, ok := tasks[j].Get("task_key").AsString()
-			if !ok {
-				return false
+			if ok1 && !ok2 {
+				return 1
 			}
-			return tk1 < tk2
+			if !ok1 && !ok2 {
+				return 0
+			}
+			return cmp.Compare(tk1, tk2)
 		})
 		vout, err = dyn.Set(vin, "tasks", dyn.V(tasks))
 		if err != nil {
@@ -204,9 +208,12 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	}
 
 	// Normalize the output value to the target schema.
+	// A diagnostic here means the field is unknown to the pinned Terraform provider
+	// schema and is dropped from the deployment; warn so the drop is not silent.
+	// Normalize only emits warning severity, so this cannot fail the deploy.
 	vout, diags = convert.Normalize(schema.ResourceJob{}, vout)
-	for _, diag := range diags {
-		log.Debugf(ctx, "job normalization diagnostic: %s", diag.Summary)
+	for _, d := range diags {
+		logdiag.LogDiag(ctx, d)
 	}
 
 	// Apply __apply_policy_default_values_allow_list for tasks

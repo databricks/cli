@@ -1,0 +1,18 @@
+# Pinned commit dates keep the resolved HEAD SHA — and thus the snapshot cache key
+# baked into the tarball name — stable across runs.
+export GIT_AUTHOR_DATE="2020-01-01T00:00:00Z"
+export GIT_COMMITTER_DATE="2020-01-01T00:00:00Z"
+git-repo-init
+
+# Pin the config to the committed HEAD. git.commit tolerates a dirty working tree
+# (the pinned revision is what gets archived), which matters here because the
+# acceptance harness writes output.txt into the working dir as the script runs.
+sed "s/COMMIT_SHA/$(git rev-parse HEAD)/" run.yaml.tmpl > run.yaml
+
+title "submit with a git code_source"
+trace $CLI experimental air run -f run.yaml
+
+title "the ai_runtime_task carries the code_source_path"
+trace print_requests.py //api/2.2/jobs/runs/submit
+
+rm -fr .git

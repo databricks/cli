@@ -1,11 +1,14 @@
 package internal
 
 import (
+	"errors"
+	"hash/fnv"
+	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
 	"slices"
-	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -24,36 +27,34 @@ type TestConfig struct {
 	// Place to describe what's wrong with this test. Does not affect how the test is run.
 	Badness *string
 
+	// Execution phase for this test. Phase 1 tests run after all phase 0 tests complete,
+	// which is useful when a test depends on the output of another tests.
+	// Some tests run diff against sister test output to highlight the differences.
+	// Some tests summarize output of many child tests.
+	Phase int `inherit:"false"`
+
 	// Which OSes the test is enabled on. Each string is compared against runtime.GOOS.
 	// If absent, default to true.
 	GOOS map[string]bool
+
+	// Every test runs locally against the fake server in libs/testserver. None of the
+	// three cloud fields that follow can prevent that: they are only consulted when
+	// CLOUD_ENV is set (an additional run against a real workspace) and can only
+	// subtract from that run. What skips a test locally is a different set entirely:
+	// GOOS, RunsOnDbr, DATABRICKS_TEST_SKIPLOCAL.
 
 	// Which Clouds the test is enabled on. Allowed values: "aws", "azure", "gcp".
 	// If absent, default to true.
 	// Only checked if CLOUD_ENV is not empty.
 	CloudEnvs map[string]bool
 
-	// If true, run this test when running locally with a testserver
-	Local *bool
-
-	// If true, this test will not be run in -short mode (which is default for make test / PR)
-	Slow *bool
-
-	// If true, run this test when running with cloud env configured
+	// If true, ALSO run this test against a real workspace when cloud env is configured.
+	// Does not affect the local run, which happens either way.
 	Cloud *bool
 
-	// If true, run this test when running with cloud env configured and -short is not passed
-	// This also sets -tail when -v is passed.
+	// Only meaningful alongside Cloud=true: the cloud run is skipped when -short is passed.
+	// This also sets -tail when -v is passed. It does not enable the cloud run on its own.
 	CloudSlow *bool
-
-	// If true and Cloud=true, run this test only if unity catalog is available in the cloud environment
-	RequiresUnityCatalog *bool
-
-	// If true and Cloud=true, run this test only if a default test cluster is available in the cloud environment
-	RequiresCluster *bool
-
-	// If true and Cloud=true, run this test only if a default warehouse is available in the cloud environment
-	RequiresWarehouse *bool
 
 	// If set, current user will be set to a service principal-like UUID instead of email (default is false)
 	IsServicePrincipal *bool
@@ -76,6 +77,10 @@ type TestConfig struct {
 	// Record the requests made to the server and write them as output to
 	// out.requests.txt
 	RecordRequests *bool
+
+	// If true, local runs route the CLI through the recording proxy (libs/testproxy)
+	// instead of straight to the testserver, matching the cloud topology.
+	Proxy *bool
 
 	// List of request headers to include when recording requests.
 	IncludeRequestHeaders []string
@@ -129,8 +134,9 @@ type TestConfig struct {
 	// On CI, we want to increase timeout, to account for slower environment
 	TimeoutCIMultiplier float64
 
-	// If true, skip this test when running on DBR / workspace file system.
-	SkipOnDbr *bool
+	// If true, run this test when running on DBR / workspace file system.
+	// Tests must explicitly opt-in to run on DBR.
+	RunsOnDbr *bool
 }
 
 type ServerStub struct {
@@ -146,12 +152,6 @@ type ServerStub struct {
 	// Configure as "1ms", "2s", "3m", etc.
 	// See [time.ParseDuration] for details.
 	Delay time.Duration
-
-	// Number of times to kill the caller process before returning normal responses.
-	// 0 = never kill (default), 1 = kill once then allow, 2 = kill twice then allow, etc.
-	// Useful for testing crash recovery scenarios where first deploy crashes but retry succeeds.
-	// Requires DATABRICKS_CLI_TEST_PID=1 to be set in the test environment.
-	KillCaller int
 }
 
 // FindConfigs finds all the config relevant for this test,
@@ -173,7 +173,7 @@ func FindConfigs(t *testing.T, dir string) []string {
 
 		dir = filepath.Dir(dir)
 
-		if err == nil || os.IsNotExist(err) {
+		if err == nil || errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
 
@@ -193,9 +193,19 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 	}
 
 	result := DoLoadConfig(t, configs[0])
+	leafConfigPath := filepath.Join(dir, configFilename)
+	leafConfig := TestConfig{}
+	hasLeafConfig := configs[0] == leafConfigPath
+	if hasLeafConfig {
+		leafConfig = result
+	}
 
 	for _, cfgName := range configs[1:] {
 		cfg := DoLoadConfig(t, cfgName)
+		if cfgName == leafConfigPath {
+			leafConfig = cfg
+			hasLeafConfig = true
+		}
 		err := mergo.Merge(
 			&result,
 			cfg,
@@ -209,11 +219,53 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 		}
 	}
 
+	restoreNonInheritable(&result, leafConfig, hasLeafConfig)
+
 	// Always ignore .cache directory (used by local cache)
 	result.Ignore = append(result.Ignore, ".cache")
 	result.CompiledIgnoreObject = ignore.CompileIgnoreLines(result.Ignore...)
 
-	return result, strings.Join(configs, ", ")
+	// Validate incompatible configuration combinations
+	configDesc := filepath.ToSlash(strings.Join(configs, ", "))
+	validateConfig(t, result, configDesc)
+
+	return result, configDesc
+}
+
+// validateConfig checks for incompatible configuration combinations.
+func validateConfig(t *testing.T, config TestConfig, configPath string) {
+	// RunsOnDbr and RecordRequests are incompatible because serverless does not
+	// allow access to localhost ports, which the test proxy server requires.
+	if isTruePtr(config.RunsOnDbr) && isTruePtr(config.RecordRequests) {
+		t.Fatalf("Invalid config %s: RunsOnDbr and RecordRequests cannot both be true. "+
+			"Serverless does not allow access to localhost ports, which the test proxy server requires.", configPath)
+	}
+
+	// Reject Ignore patterns that target out* files, since those are generated
+	// output files and must never be ignored.
+	for _, pattern := range config.Ignore {
+		name := strings.TrimLeft(pattern, "!/")
+		if strings.HasPrefix(name, "out") {
+			t.Fatalf("Invalid config %s: Ignore pattern %q targets output files (out*). "+
+				"Output files must not be ignored.", configPath, pattern)
+		}
+	}
+
+	// Reject EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []. It runs the test once
+	// locally with the variable unset, but on CI (which splits work by
+	// filtering ENVFILTER=DATABRICKS_BUNDLE_ENGINE=<value>) the test has no
+	// engine tag, so checkEnvFilters lets it through on BOTH the direct and
+	// terraform runners, duplicating the run. Use ["direct"] to pin it to a
+	// single CI runner, and unset DATABRICKS_BUNDLE_ENGINE in the script if
+	// the test needs to exercise the default engine.
+	//
+	// selftests intentionally exercise the empty-list mechanic and are
+	// exempt.
+	if vals, ok := config.EnvMatrix["DATABRICKS_BUNDLE_ENGINE"]; ok && len(vals) == 0 && !strings.Contains(configPath, "selftest/") {
+		t.Fatalf("Invalid config %s: EnvMatrix.DATABRICKS_BUNDLE_ENGINE = [] "+
+			"runs on both direct and terraform CI runners. Use "+
+			`EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"] instead`, configPath)
+	}
 }
 
 func DoLoadConfig(t *testing.T, path string) TestConfig {
@@ -224,12 +276,34 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 	meta, err := toml.Decode(string(bytes), &config)
 	require.NoError(t, err, "Failed to parse config %s", path)
 
+	if len(meta.Keys()) == 0 {
+		t.Fatalf("test.toml has no settings (delete it instead of leaving it empty): %s", path)
+	}
+
 	keys := meta.Undecoded()
 	for ind, key := range keys {
 		t.Errorf("Undecoded key in %s[%d]: %#v", path, ind, key)
 	}
 
 	return config
+}
+
+// restoreNonInheritable resets fields tagged with `inherit:"false"` to their leaf config values.
+// If there is no leaf config, those fields are reset to their zero value.
+func restoreNonInheritable(result *TestConfig, leafConfig TestConfig, hasLeafConfig bool) {
+	typ := reflect.TypeFor[TestConfig]()
+	val := reflect.ValueOf(result).Elem()
+	leafVal := reflect.ValueOf(leafConfig)
+	for i := range typ.NumField() {
+		field := typ.Field(i)
+		if field.Tag.Get("inherit") == "false" {
+			if hasLeafConfig {
+				val.Field(i).Set(leafVal.Field(i))
+			} else {
+				val.Field(i).SetZero()
+			}
+		}
+	}
 }
 
 // mapTransformer is a mergo transformer that merges two maps
@@ -284,11 +358,7 @@ func ExpandEnvMatrix(matrix, exclude map[string][]string, extraVars []string) []
 		return result
 	}
 
-	keys := make([]string, 0, len(filteredMatrix))
-	for key := range filteredMatrix {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(filteredMatrix))
 
 	// Build an expansion of all combinations.
 	// At each step we look at a given key and append each possible value to each
@@ -366,17 +436,66 @@ func filterExcludedEnvSets(envSets [][]string, exclude map[string][]string) [][]
 	return filtered
 }
 
+// SubsetExpanded selects one variant per DATABRICKS_BUNDLE_ENGINE value (if scriptUsesEngine)
+// or one variant total from an already-expanded and exclusion-filtered list.
+// DATABRICKS_BUNDLE_ENGINE=direct has weight 10; all other variants have weight 1.
+func SubsetExpanded(expanded [][]string, testDir string, scriptUsesEngine bool) [][]string {
+	if len(expanded) <= 1 {
+		return expanded
+	}
+	if scriptUsesEngine {
+		// Collect candidates per engine key, preserving first-seen order.
+		// keyToIdx maps engine value -> index in result/groups slices.
+		var result [][]string
+		var groups [][][]string
+		keyToIdx := make(map[string]int)
+		for _, envset := range expanded {
+			engine := ""
+			for _, kv := range envset {
+				if v, ok := strings.CutPrefix(kv, "DATABRICKS_BUNDLE_ENGINE="); ok {
+					engine = v
+					break
+				}
+			}
+			idx, ok := keyToIdx[engine]
+			if !ok {
+				idx = len(result)
+				keyToIdx[engine] = idx
+				result = append(result, nil)
+				groups = append(groups, nil)
+			}
+			groups[idx] = append(groups[idx], envset)
+		}
+		for i, group := range groups {
+			result[i] = weightedSelect(group, testDir)
+		}
+		return result
+	}
+	return [][]string{weightedSelect(expanded, testDir)}
+}
+
+// weightedSelect picks one envset using weighted consistent hashing.
+// DATABRICKS_BUNDLE_ENGINE=direct has weight 10; all other envsets have weight 1.
+func weightedSelect(envsets [][]string, testDir string) []string {
+	var weighted [][]string
+	for _, envset := range envsets {
+		weight := 1
+		if slices.Contains(envset, "DATABRICKS_BUNDLE_ENGINE=direct") {
+			weight = 10
+		}
+		for range weight {
+			weighted = append(weighted, envset)
+		}
+	}
+	h := fnv.New64a()
+	h.Write([]byte(testDir))
+	return weighted[h.Sum64()%uint64(len(weighted))]
+}
+
 // matchesExclusionRule returns true if envSet contains all KEY=value pairs from excludeRule.
 func matchesExclusionRule(envSet, excludeRule []string) bool {
 	for _, excludePair := range excludeRule {
-		found := false
-		for _, envPair := range envSet {
-			if envPair == excludePair {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(envSet, excludePair) {
 			return false
 		}
 	}

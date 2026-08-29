@@ -1,10 +1,64 @@
 package github
 
 import (
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+type closeRecordingBody struct {
+	io.Reader
+	closed *bool
+}
+
+func (b *closeRecordingBody) Close() error {
+	*b.closed = true
+	return nil
+}
+
+type stubTransport struct {
+	status int
+	closed bool
+}
+
+func (s *stubTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: s.status,
+		Status:     fmt.Sprintf("%d %s", s.status, http.StatusText(s.status)),
+		Header:     http.Header{},
+		Body:       &closeRecordingBody{Reader: strings.NewReader("{}"), closed: &s.closed},
+		Request:    req,
+	}, nil
+}
+
+func TestGetPagedBytesClosesBodyOnHTTPError(t *testing.T) {
+	tests := []struct {
+		name   string
+		status int
+	}{
+		{"not found", http.StatusNotFound},
+		{"server error", http.StatusInternalServerError},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// getPagedBytes hardcodes http.DefaultClient, so swapping its
+			// transport is the only seam to observe body closure.
+			stub := &stubTransport{status: tt.status}
+			prev := http.DefaultClient.Transport
+			http.DefaultClient.Transport = stub
+			t.Cleanup(func() { http.DefaultClient.Transport = prev })
+
+			_, err := getPagedBytes(t.Context(), "GET", "https://api.github.test/x", nil)
+			assert.Error(t, err)
+			assert.True(t, stub.closed)
+		})
+	}
+}
 
 func TestParseNextLink(t *testing.T) {
 	tests := []struct {

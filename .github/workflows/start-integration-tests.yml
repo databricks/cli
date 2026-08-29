@@ -13,12 +13,18 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
-    environment: "test-trigger-is"
+    # Use the environment only to gate its secrets; skip creating a deployment
+    # object so these runs don't post "deployed to test-trigger-is" items on the
+    # pull request timeline. See:
+    # https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/control-deployments#using-environments-without-deployments
+    environment:
+      name: "test-trigger-is"
+      deployment: false
 
     steps:
       - name: Generate GitHub App Token for Workflow Trigger
         id: generate-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
           private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
@@ -27,7 +33,7 @@ jobs:
 
       - name: Generate GitHub App Token for Check Updates
         id: generate-check-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.DECO_TEST_APPROVAL_APP_ID }}
           private-key: ${{ secrets.DECO_TEST_APPROVAL_PRIVATE_KEY }}

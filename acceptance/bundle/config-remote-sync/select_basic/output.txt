@@ -1,0 +1,87 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.job_one
+Created jobs.job_two
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Modify both jobs remotely
+=== Sync only job_one, selected by its type and deployed resource id
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.job_one
+  max_concurrent_runs: replace
+
+
+
+=== Only job_one is updated; job_two is left untouched
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -5,5 +5,5 @@
+   jobs:
+     job_one:
+-      max_concurrent_runs: 1
++      max_concurrent_runs: 5
+       tasks:
+         - task_key: main
+
+=== Selecting job_one again is idempotent
+No changes detected.
+
+
+=== Unfiltered sync still detects the job_two drift (no lost updates)
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.job_two
+  max_concurrent_runs: replace
+
+
+
+=== A stale selector is skipped, not fatal: job_two still syncs alongside it
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.job_two
+  max_concurrent_runs: replace
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -16,5 +16,5 @@
+
+     job_two:
+-      max_concurrent_runs: 2
++      max_concurrent_runs: 10
+       tasks:
+         - task_key: main
+
+=== An unknown resource id alone is rejected (no match at all must not silently succeed)
+
+>>> [CLI] bundle config-remote-sync --select-ids jobs:no-such-id-123
+Error: no deployed jobs resource with id no-such-id-123; deployed jobs ids in state: [JOB_ID], [JOB_ID]
+
+Exit code: 1
+
+=== An id that exists under a different type matches nothing and is rejected too
+
+>>> [CLI] bundle config-remote-sync --select-ids pipelines:[JOB_ONE_ID]
+Error: no deployed pipelines resource with id [JOB_ONE_ID]; the deployment state contains no pipelines resources (deployed resources by type: jobs=2)
+
+Exit code: 1
+
+=== A selector without a type is still rejected
+>>> [CLI] bundle config-remote-sync --select-ids no-such-id-123
+Error: invalid --select-ids value "no-such-id-123", expected <type>:<id> (e.g. jobs:[NUMID])
+
+Exit code: 1
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job_one
+  delete resources.jobs.job_two
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

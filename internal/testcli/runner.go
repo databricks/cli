@@ -91,7 +91,7 @@ func (r *Runner) SendText(text string) {
 	}
 	_, err := r.stdinW.Write([]byte(text + "\n"))
 	if err != nil {
-		panic("Failed to to write to t.stdinW")
+		panic("Failed to write to t.stdinW")
 	}
 }
 
@@ -236,9 +236,19 @@ func (r *Runner) Eventually(condition func() bool, waitFor, tick time.Duration, 
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
+	// Closed when this function returns to release any condition goroutine still
+	// blocked sending into the size-1 [ch]. Without it, a timeout leaves in-flight
+	// senders stuck forever and the deferred [wg.Wait] deadlocks. The defer order
+	// matters: [close] runs before [wg.Wait] (defers run last-in-first-out).
+	done := make(chan struct{})
+	defer close(done)
+
 	// Kick off condition check immediately.
 	wg.Go(func() {
-		ch <- condition()
+		select {
+		case ch <- condition():
+		case <-done:
+		}
 	})
 
 	for tick := ticker.C; ; {
@@ -252,7 +262,10 @@ func (r *Runner) Eventually(condition func() bool, waitFor, tick time.Duration, 
 		case <-tick:
 			tick = nil
 			wg.Go(func() {
-				ch <- condition()
+				select {
+				case ch <- condition():
+				case <-done:
+				}
 			})
 		case v := <-ch:
 			if v {

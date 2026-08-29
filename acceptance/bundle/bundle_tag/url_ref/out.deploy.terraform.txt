@@ -1,4 +1,8 @@
+Warning: "resources.jobs.foo.url": Terraform-only field; this reference will not work with the direct engine
+  in databricks.yml:11:12
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.bar
+Created jobs.foo
+Files: 8 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged

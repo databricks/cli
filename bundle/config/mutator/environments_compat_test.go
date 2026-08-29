@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -27,7 +26,7 @@ func TestEnvironmentsToTargetsWithBothDefined(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, mutator.EnvironmentsToTargets())
+	diags := bundle.Apply(t.Context(), b, mutator.EnvironmentsToTargets())
 	assert.ErrorContains(t, diags.Error(), `both 'environments' and 'targets' are specified;`)
 }
 
@@ -42,7 +41,7 @@ func TestEnvironmentsToTargetsWithEnvironmentsDefined(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, mutator.EnvironmentsToTargets())
+	diags := bundle.Apply(t.Context(), b, mutator.EnvironmentsToTargets())
 	require.NoError(t, diags.Error())
 	assert.Empty(t, b.Config.Environments)
 	assert.Len(t, b.Config.Targets, 1)
@@ -59,7 +58,7 @@ func TestEnvironmentsToTargetsWithTargetsDefined(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, mutator.EnvironmentsToTargets())
+	diags := bundle.Apply(t.Context(), b, mutator.EnvironmentsToTargets())
 	require.NoError(t, diags.Error())
 	assert.Empty(t, b.Config.Environments)
 	assert.Len(t, b.Config.Targets, 1)

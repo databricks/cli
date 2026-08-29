@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -15,10 +14,10 @@ import (
 
 func TestConvertApp(t *testing.T) {
 	src := resources.App{
-		SourceCodePath: "./app",
 		App: apps.App{
-			Name:        "app_id",
-			Description: "app description",
+			SourceCodePath: "./app",
+			Name:           "app_id",
+			Description:    "app description",
 			Resources: []apps.AppResource{
 				{
 					Name: "job1",
@@ -51,7 +50,7 @@ func TestConvertApp(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = appConverter{}.Convert(ctx, "my_app", vin, out)
 	require.NoError(t, err)
@@ -97,9 +96,9 @@ func TestConvertApp(t *testing.T) {
 
 func TestConvertAppWithNoDescription(t *testing.T) {
 	src := resources.App{
-		SourceCodePath: "./app",
 		App: apps.App{
-			Name: "app_id",
+			SourceCodePath: "./app",
+			Name:           "app_id",
 			Resources: []apps.AppResource{
 				{
 					Name: "job1",
@@ -122,7 +121,7 @@ func TestConvertAppWithNoDescription(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = appConverter{}.Convert(ctx, "my_app", vin, out)
 	require.NoError(t, err)

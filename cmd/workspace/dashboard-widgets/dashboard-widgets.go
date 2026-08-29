@@ -3,7 +3,7 @@
 package dashboard_widgets
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -30,6 +30,10 @@ func New() *cobra.Command {
 		Hidden: true,
 		RunE:   root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -62,7 +66,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Text, "text", createReq.Text, `If this is a textbox widget, the application displays this text.`)
-	cmd.Flags().StringVar(&createReq.VisualizationId, "visualization-id", createReq.VisualizationId, `Query Vizualization ID returned by :method:queryvisualizations/create.`)
+	cmd.Flags().StringVar(&createReq.VisualizationId, "visualization-id", createReq.VisualizationId, `Query Visualization ID returned by :method:queryvisualizations/create.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Add widget to a dashboard.`
@@ -71,6 +75,8 @@ func newCreate() *cobra.Command {
   Adds a widget to a dashboard`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -83,19 +89,20 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.DashboardWidgets.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -135,6 +142,8 @@ func newDelete() *cobra.Command {
     ID: Widget ID returned by :method:dashboardwidgets/create`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -185,7 +194,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Text, "text", updateReq.Text, `If this is a textbox widget, the application displays this text.`)
-	cmd.Flags().StringVar(&updateReq.VisualizationId, "visualization-id", updateReq.VisualizationId, `Query Vizualization ID returned by :method:queryvisualizations/create.`)
+	cmd.Flags().StringVar(&updateReq.VisualizationId, "visualization-id", updateReq.VisualizationId, `Query Visualization ID returned by :method:queryvisualizations/create.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Update existing widget.`
@@ -197,6 +206,8 @@ func newUpdate() *cobra.Command {
     ID: Widget ID returned by :method:dashboardwidgets/create`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -214,13 +225,13 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.Id = args[0]
 
@@ -228,6 +239,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

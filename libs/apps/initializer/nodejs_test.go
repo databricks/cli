@@ -44,11 +44,9 @@ func TestHasAppkit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpDir, err := os.MkdirTemp("", "nodejs-test-*")
-			require.NoError(t, err)
-			defer os.RemoveAll(tmpDir)
+			tmpDir := t.TempDir()
 
-			err = os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte(tt.packageJSON), 0o644)
+			err := os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte(tt.packageJSON), 0o644)
 			require.NoError(t, err)
 
 			init := &InitializerNodeJs{}
@@ -58,9 +56,7 @@ func TestHasAppkit(t *testing.T) {
 }
 
 func TestHasAppkitNoPackageJSON(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "nodejs-test-*")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	init := &InitializerNodeJs{}
 	assert.False(t, init.hasAppkit(tmpDir))

@@ -1,6 +1,6 @@
 ---
 name: Bug report for direct deployment engine for DABs
-about: Use this to report an issue with direct deployment engine in Databricks Asset Bundles.
+about: Use this to report an issue with direct deployment engine in Declarative Automation Bundles.
 labels: ["DABs", "engine/direct", "Bug"]
 title: ''
 ---

@@ -1,0 +1,11 @@
+title "list (text)"
+trace $CLI experimental air list
+
+title "list (json)"
+trace $CLI experimental air list -o json
+
+title "list --all-status (text, via AiTrainingService index)"
+trace $CLI experimental air list --all-status
+
+title "list --all-status (json)"
+trace $CLI experimental air list --all-status -o json

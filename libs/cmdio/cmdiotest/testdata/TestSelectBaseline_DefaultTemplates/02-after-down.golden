@@ -1,0 +1,7 @@
+Use the arrow keys to navigate: ↓ ↑ → ←
+? Pick an item:
+    {unity-catalog id-01}
+  ▸ {delta-lake id-02}
+    {delta-sharing id-03}
+    {photon id-04}
+    {mlflow id-05}

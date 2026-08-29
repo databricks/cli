@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-import sys
-import os
 import json
+import os
+import sys
 import urllib.request
 from urllib.parse import urlencode
 

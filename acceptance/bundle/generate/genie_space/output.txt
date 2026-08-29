@@ -1,0 +1,16 @@
+
+>>> [CLI] workspace mkdirs /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME]
+
+>>> [CLI] bundle generate genie-space --existing-id [GENIE_SPACE_ID] --genie-space-dir out/genie_space --resource-dir out/resource
+Writing genie space to out/genie_space/test_genie_space.geniespace.json
+Writing configuration to out/resource/test_genie_space.genie_space.yml
+Warning: Generated configuration is not included in the bundle
+
+The file out/resource/test_genie_space.genie_space.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - out/resource/*.yml
+
+
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME] --recursive

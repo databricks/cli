@@ -1,0 +1,20 @@
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+host = ${DATABRICKS_HOST}
+auth_type = databricks-cli
+
+; First workspace — alpha
+[alpha]
+host = ${DATABRICKS_HOST}
+auth_type = databricks-cli
+
+; Second workspace — beta
+[beta]
+host = ${DATABRICKS_HOST}
+auth_type = databricks-cli
+
+; Third workspace — gamma
+[gamma]
+host = https://accounts.cloud.databricks.test
+account_id = account-id
+auth_type  = databricks-cli

@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -17,7 +16,7 @@ import (
 
 // PushResourcesState uploads the local state file to the remote location.
 func PushResourcesState(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
-	f, err := deploy.StateFiler(b)
+	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -45,7 +44,6 @@ func PushResourcesState(ctx context.Context, b *bundle.Bundle, engine engine.Eng
 	defer local.Close()
 
 	// Upload state file from local cache directory to filer.
-	cmdio.LogString(ctx, "Updating deployment state...")
 	err = f.Write(ctx, remotePath, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -53,7 +51,7 @@ func PushResourcesState(ctx context.Context, b *bundle.Bundle, engine engine.Eng
 }
 
 func BackupRemoteTerraformState(ctx context.Context, b *bundle.Bundle) {
-	f, err := deploy.StateFiler(b)
+	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -72,7 +70,7 @@ func BackupRemoteTerraformState(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	backupPath := remotePath + ".backup"
-	err = f.Write(ctx, backupPath, reader)
+	err = f.Write(ctx, backupPath, reader, filer.OverwriteIfExists)
 	if err != nil {
 		log.Warnf(ctx, "backing up terraform state: could not write %s: %s", backupPath, err)
 		return

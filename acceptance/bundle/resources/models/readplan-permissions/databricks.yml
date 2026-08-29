@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+resources:
+  models:
+    mymodel:
+      name: test-model
+      description: initial # TO_REMOVE
+      permissions:
+        - level: CAN_READ
+          user_name: viewer@example.com
+        - level: CAN_MANAGE # TO_REMOVE
+          user_name: manager@example.test # TO_REMOVE

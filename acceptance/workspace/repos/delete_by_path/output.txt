@@ -4,16 +4,17 @@
 
 >>> [CLI] repos get /Repos/me@databricks.com/test-repo -o json
 {
-  "branch":"main",
-  "id":[NUMID],
-  "path":"/Repos/me@databricks.com/test-repo",
-  "provider":"gitHub",
-  "url":"https://github.com/databricks/databricks-empty-ide-project.git"
+  "branch": "main",
+  "head_commit_id": "0a1b2c3d4e5f6a7b8e7dadd73e50a69d8ba47d8f",
+  "id": [NUMID],
+  "path": "/Repos/me@databricks.com/test-repo",
+  "provider": "gitHub",
+  "url": "https://github.com/databricks/databricks-empty-ide-project.git"
 }
 
 >>> [CLI] repos delete /Repos/me@databricks.com/test-repo
 
 >>> [CLI] repos get /Repos/me@databricks.com/test-repo -o json
-Error: failed to look up repo by path: Workspace path not found
+Error: failed to look up repo by path: Path (/Repos/me@databricks.com/test-repo) doesn't exist.
 
 Exit code: 1

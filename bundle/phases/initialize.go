@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/mutator/aicode"
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/metadata"
@@ -31,7 +32,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.AllResourcesHaveValues(),
 		validate.NoInterpolationInAuthConfig(),
 		validate.NoInterpolationInBundleName(),
+		validate.ValidateEngine(),
 		validate.Scripts(),
+		mutator.ValidateSecretValueIsVariable(),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
@@ -69,6 +72,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// because it affects how workspace variables are resolved.
 		mutator.ApplySourceLinkedDeploymentPreset(),
 
+		// Reads (env): __TEST_DATABRICKS_IMMUTABLE_FOLDER (non-empty value enables immutable folder mode)
+		// Updates (typed): b.Config.Experimental.ImmutableFolder (forces to true when env var is set)
+		// Allows running the full test suite against the immutable folder code path without
+		// modifying any databricks.yml files.
+		mutator.OverrideImmutableFolder(),
+
 		// Reads (typed): b.Config.Workspace.RootPath (checks if it's already set)
 		// Reads (typed): b.Config.Bundle.Name, b.Config.Bundle.Target (used to construct default path)
 		// Updates (typed): b.Config.Workspace.RootPath (sets to ~/.bundle/{name}/{target} if not set)
@@ -93,6 +102,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// This mutator needs to be run before variable interpolation because it
 		// searches for strings with variable references in them.
 		mutator.RewriteWorkspacePrefix(),
+
+		// Collect telemetry on $${} and \${} escape patterns before variable resolution.
+		mutator.CollectEscapeTelemetry(),
 
 		// Reads (dynamic): variables.* (checks if there's a value assigned to variable already or if it has lookup reference)
 		// Updates (dynamic): variables.*.value (sets values from environment variables, variable files, or defaults)
@@ -138,6 +150,24 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
+		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
+		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
+		// model, so exposing it to Python would fail resource loading (like "deployment" below).
+		mutator.InitializeVolumePaths(),
+		mutator.ResolveVolumePathReferencesOnlyResources(),
+
+		// Drop empty-string values on omitempty resource fields so they are not
+		// force-sent to the backend. Runs after variable resolution (a variable may
+		// resolve to "") and after all resource mutations, before validation so that
+		// required fields (no omitempty) still error if empty.
+		mutator.DropEmptyStrings(),
+
+		// Resolve --select selectors against the materialized resources: normalize
+		// each to its "type.name" form and validate it exists. Runs after all resource
+		// mutations so that dynamically added resources are visible. This does not
+		// filter resources; the direct engine selects against the resolved keys later.
+		mutator.ResolveSelect(),
+
 		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
 		// since they can also set and modify resources.
 		validate.Required(),
@@ -148,12 +178,36 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Validate that no dashboard etags are set. They are purely internal state and should not be set by the user.
 		validate.ValidateDashboardEtags(),
 
+		// Validate that no genie space etags are set. They are purely internal state and should not be set by the user.
+		validate.ValidateGenieSpaceEtags(),
+
+		// Validate that deployment_id / version_id are not set on jobs or pipelines.
+		// They are set by the CLI to track the bundle deployment and must not be set by the user.
+		validate.ValidateDeploymentFields(),
+
+		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
+		validate.ValidateJobRunIdempotencyToken(),
+
+		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
+		mutator.ValidateJobRunTriggers(),
+
+		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
+		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
+		// points to a Terraform-only field with no DABs equivalent.
+		validate.TFOnlyReferences(),
+
 		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)
 		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)
 		// Provides diagnostic recommendations if the current deployment identity isn't explicitly granted CAN_MANAGE permissions
 		permissions.PermissionDiagnostics(),
 
 		mutator.TranslatePaths(),
+
+		// Reads (typed): resources.jobs.*.tasks[*].ai_runtime_task.code_source_path, job git_source
+		// Validates that AI Runtime tasks referencing a local code_source_path point at an existing
+		// directory and are not combined with git_source or immutable-folder deployments, so these
+		// misconfigurations are caught at validate time rather than mid-deploy.
+		aicode.Validate(),
 
 		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Presets.SourceLinkedDeployment (checks Python wheel wrapper and deployment mode settings)
 		// Reads (dynamic): resources.jobs.*.tasks (checks for tasks with local libraries and incompatible DBR versions)

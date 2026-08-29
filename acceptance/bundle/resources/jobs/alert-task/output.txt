@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alert-task-[UNIQUE_NAME]/default/files...
+Created jobs.my_job
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] jobs get [JOB_ID]
+{
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+  "workspace_path": "/Workspace/Users/[USERNAME]/.bundle/alert-task-[UNIQUE_NAME]/default/files/my_alert.dbalert.json"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alert-task-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

@@ -1,0 +1,34 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-recreate-[UNIQUE_NAME]/default/files...
+Created database_instances.my_database
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Rename the instance: name is immutable, so the plan recreates it
+>>> [CLI] bundle plan
+recreate database_instances.my_database
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-recreate-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following Lakebase database instances.
+All data stored in them will be permanently lost:
+  recreate resources.database_instances.my_database
+Recreated database_instances.my_database
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.database_instances.my_database
+
+This action will result in the deletion of the following Lakebase database instances.
+All data stored in them will be permanently lost:
+  delete resources.database_instances.my_database
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-recreate-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

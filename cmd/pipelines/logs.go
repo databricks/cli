@@ -101,7 +101,7 @@ Example usage:
 			return err
 		}
 
-		w := b.WorkspaceClient()
+		w := b.WorkspaceClient(ctx)
 		if updateId == "" {
 			updateId, err = getMostRecentUpdateId(ctx, w, pipelineId)
 			if err != nil {

@@ -9,12 +9,14 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/calladapt"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 )
 
 type (
 	Changes    = deployplan.Changes
 	ChangeDesc = deployplan.ChangeDesc
+	PlanEntry  = deployplan.PlanEntry
 )
 
 // IResource describes core methods for the resource implementation.
@@ -26,6 +28,21 @@ type IResource interface {
 	// The return value must be a pointer to a specific instance of the resource implementation, e.g. *ResourceJob.
 	// Single instance is reused across all instances, so it must not store any resource-specific state.
 	New(client *databricks.WorkspaceClient) any
+
+	// [Optional] Configure passes the resource type this instance is registered under in SupportedResources
+	// (e.g. "jobs.permissions"). One instance is created per resource type, so type-level lookups belong here
+	// rather than in per-node methods, and an unsupported type fails at init instead of at plan time.
+	// Example: func (r *ResourcePermissions) Configure(resourceType string) error
+	Configure(resourceType string) error
+
+	// [Optional] PrepareInputConfig converts the bundle config for a node into the value passed to PrepareState,
+	// plus references that complete it but have no source in the config. resourceKey is the full node,
+	// e.g. "resources.jobs.foo.permissions". Sub-resources use it to reference their parent's id.
+	// Resources that don't implement it receive their config unchanged and contribute no references.
+	// Like the other resource methods, inputConfig is never nil, so it may be declared as a concrete
+	// pointer and dereferenced: nodes are discovered from the config tree, so the key always exists.
+	// Example: func (r *ResourceGrants) PrepareInputConfig(inputConfig *[]catalog.PrivilegeAssignment, resourceKey string) (*structvar.StructVar, error)
+	PrepareInputConfig(inputConfig any, resourceKey string) (*structvar.StructVar, error)
 
 	// PrepareState converts resource's config as defined by bundle schema to the concrete type used by create/update and persisted in the state.
 	// Example: func (*ResourceJob) PrepareState(input *resources.Job) *jobs.JobSettings
@@ -41,9 +58,11 @@ type IResource interface {
 	// Example: func (r *ResourceJob) DoRead(ctx context.Context, id string) (*jobs.Job, error)
 	DoRead(ctx context.Context, id string) (remoteState any, e error)
 
-	// DoDelete deletes the resource.
-	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string) error
-	DoDelete(ctx context.Context, id string) error
+	// DoDelete deletes the resource. The state argument is the last-persisted
+	// state for the resource; resources that don't need it should accept it as
+	// _ to satisfy the interface.
+	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string, _ *jobs.JobSettings) error
+	DoDelete(ctx context.Context, id string, state any) error
 
 	// [Optional] OverrideChangeDesc can implement custom logic to update a given ChangeDesc; it is run last after built-in classifiers and field triggers.
 	OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, changedesc *ChangeDesc, remoteState any) error
@@ -53,27 +72,47 @@ type IResource interface {
 	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
 	DoCreate(ctx context.Context, newState any) (id string, remoteState any, e error)
 
+	// [Optional] IsEmptyState reports that newState describes no resource at all: the planner
+	// omits the node instead of planning a create, and apply drops the state entry instead of
+	// persisting one, so both engines converge on "this node does not exist".
+	// Example: func (*ResourceGrants) IsEmptyState(state *GrantsState) bool
+	IsEmptyState(newState any) bool
+
 	// [Optional] DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
-	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, changes Changes) (*catalog.SchemaInfo, error)
-	DoUpdate(ctx context.Context, id string, newState any, changes Changes) (remoteState any, e error)
+	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, entry *PlanEntry) (*catalog.SchemaInfo, error)
+	DoUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (remoteState any, e error)
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID. Returns new id and optionally remote state.
-	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
+	// Example: func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, newState *catalog.CreateCatalog, entry *PlanEntry) (string, *catalog.CatalogInfo, error)
+	DoUpdateWithID(ctx context.Context, id string, newState any, entry *PlanEntry) (newID string, remoteState any, e error)
 
 	// [Optional] DoResize resizes the resource. Only supported by clusters
-	DoResize(ctx context.Context, id string, newState any) error
+	DoResize(ctx context.Context, id string, newState any, entry *PlanEntry) error
 
 	// [Optional] WaitAfterCreate waits for the resource to become ready after creation. Returns optionally updated remote state.
 	// TODO: wait status should be persisted in the state.
-	WaitAfterCreate(ctx context.Context, newState any) (remoteState any, e error)
+	WaitAfterCreate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update. Returns optionally updated remote state.
-	WaitAfterUpdate(ctx context.Context, newState any) (remoteState any, e error)
+	WaitAfterUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
+
+	// [Optional] WaitAfterDelete waits for the resource to be fully removed after DoDelete returns.
+	// Useful for backends with asynchronous deletion: a follow-up create on the same name (recreate path)
+	// would otherwise race with the in-progress teardown. State is dropped before this is called, so a
+	// timeout here leaves the bundle consistent (resource was requested deleted, retry on next plan).
+	WaitAfterDelete(ctx context.Context, id string) error
 
 	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
 	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
 	KeyedSlices() map[string]any
+
+	// [Optional] IsGone reports whether a remote resource should be treated as
+	// already-deleted when planning a delete. Use for backends whose DELETE is
+	// asynchronous and leaves the resource in a transient terminal-teardown state
+	// (returned by GET, not 404) that rejects a second DELETE.
+	// Example: func (*ResourceApp) IsGone(remote *AppRemote) bool
+	IsGone(remoteState any) bool
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -87,15 +126,20 @@ type Adapter struct {
 	doCreate     *calladapt.BoundCaller
 
 	// Optional:
+	prepareInputConfig *calladapt.BoundCaller
+	isEmptyState       *calladapt.BoundCaller
 	doUpdate           *calladapt.BoundCaller
 	doUpdateWithID     *calladapt.BoundCaller
 	waitAfterCreate    *calladapt.BoundCaller
 	waitAfterUpdate    *calladapt.BoundCaller
+	waitAfterDelete    *calladapt.BoundCaller
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
+	isGone             *calladapt.BoundCaller
 
-	resourceConfig *ResourceLifecycleConfig
-	keyedSlices    map[string]any
+	resourceConfig          *ResourceLifecycleConfig
+	generatedResourceConfig *ResourceLifecycleConfig
+	keyedSlices             map[string]any
 }
 
 func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceClient) (*Adapter, error) {
@@ -111,20 +155,31 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		return nil, fmt.Errorf("internal error: New returned %d values, expected 1", len(outs))
 	}
 	impl := outs[0]
+
+	err = configureImpl(impl, resourceType)
+	if err != nil {
+		return nil, err
+	}
+
 	adapter := &Adapter{
-		prepareState:       nil,
-		remapState:         nil,
-		doRefresh:          nil,
-		doDelete:           nil,
-		doCreate:           nil,
-		doUpdate:           nil,
-		doUpdateWithID:     nil,
-		doResize:           nil,
-		waitAfterCreate:    nil,
-		waitAfterUpdate:    nil,
-		overrideChangeDesc: nil,
-		resourceConfig:     GetResourceConfig(resourceType),
-		keyedSlices:        nil,
+		prepareState:            nil,
+		remapState:              nil,
+		doRefresh:               nil,
+		doDelete:                nil,
+		doCreate:                nil,
+		prepareInputConfig:      nil,
+		isEmptyState:            nil,
+		doUpdate:                nil,
+		doUpdateWithID:          nil,
+		doResize:                nil,
+		waitAfterCreate:         nil,
+		waitAfterUpdate:         nil,
+		waitAfterDelete:         nil,
+		overrideChangeDesc:      nil,
+		isGone:                  nil,
+		resourceConfig:          GetResourceConfig(resourceType),
+		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
+		keyedSlices:             nil,
 	}
 
 	err = adapter.initMethods(impl)
@@ -140,6 +195,19 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 	return adapter, nil
 }
 
+// configureImpl calls the resource's Configure method, if it has one.
+func configureImpl(impl any, resourceType string) error {
+	call, err := calladapt.PrepareCall(impl, reflect.TypeFor[IResource](), "Configure")
+	if err != nil {
+		return err
+	}
+	if call == nil {
+		return nil
+	}
+	_, err = call.Call(resourceType)
+	return err
+}
+
 // loadKeyedSlices validates and calls KeyedSlices method, returning the resulting map.
 func loadKeyedSlices(call *calladapt.BoundCaller) (map[string]any, error) {
 	outs, err := call.Call()
@@ -151,7 +219,7 @@ func loadKeyedSlices(call *calladapt.BoundCaller) (map[string]any, error) {
 }
 
 func (a *Adapter) initMethods(resource any) error {
-	err := calladapt.EnsureNoExtraMethods(resource, calladapt.TypeOf[IResource]())
+	err := calladapt.EnsureNoExtraMethods(resource, reflect.TypeFor[IResource]())
 	if err != nil {
 		return err
 	}
@@ -161,7 +229,7 @@ func (a *Adapter) initMethods(resource any) error {
 	}
 
 	// RemapState is optional when remote type already matches state type.
-	a.remapState, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "RemapState")
+	a.remapState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "RemapState")
 	if err != nil {
 		return err
 	}
@@ -183,37 +251,57 @@ func (a *Adapter) initMethods(resource any) error {
 
 	// Optional methods with varying signatures:
 
-	a.doUpdate, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoUpdate")
+	a.prepareInputConfig, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "PrepareInputConfig")
 	if err != nil {
 		return err
 	}
 
-	a.doUpdateWithID, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoUpdateWithID")
+	a.isEmptyState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "IsEmptyState")
 	if err != nil {
 		return err
 	}
 
-	a.waitAfterCreate, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "WaitAfterCreate")
+	a.doUpdate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoUpdate")
 	if err != nil {
 		return err
 	}
 
-	a.waitAfterUpdate, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "WaitAfterUpdate")
+	a.doUpdateWithID, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoUpdateWithID")
 	if err != nil {
 		return err
 	}
 
-	a.overrideChangeDesc, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "OverrideChangeDesc")
+	a.waitAfterCreate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterCreate")
 	if err != nil {
 		return err
 	}
 
-	a.doResize, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoResize")
+	a.waitAfterUpdate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterUpdate")
 	if err != nil {
 		return err
 	}
 
-	keyedSlicesCall, err := calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "KeyedSlices")
+	a.waitAfterDelete, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterDelete")
+	if err != nil {
+		return err
+	}
+
+	a.overrideChangeDesc, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "OverrideChangeDesc")
+	if err != nil {
+		return err
+	}
+
+	a.doResize, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoResize")
+	if err != nil {
+		return err
+	}
+
+	a.isGone, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "IsGone")
+	if err != nil {
+		return err
+	}
+
+	keyedSlicesCall, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "KeyedSlices")
 	if err != nil {
 		return err
 	}
@@ -261,12 +349,14 @@ func (a *Adapter) validate() error {
 	validations := []any{
 		"PrepareState return", a.prepareState.OutTypes[0], stateType,
 		"DoCreate newState", a.doCreate.InTypes[1], stateType,
+		"DoDelete state", a.doDelete.InTypes[2], stateType,
 	}
 
 	// If RemapState is implemented, validate its signature.
 	// Otherwise require remote type to equal state type so remapping isn't needed.
 	if a.remapState != nil {
-		validations = append(validations,
+		validations = append(
+			validations,
 			"RemapState input", a.remapState.InTypes[0], remoteType,
 			"RemapState return", a.remapState.OutTypes[0], stateType,
 		)
@@ -279,6 +369,10 @@ func (a *Adapter) validate() error {
 		return fmt.Errorf("DoCreate must return (string, remoteType, error), got %d return values", len(a.doCreate.OutTypes))
 	}
 	validations = append(validations, "DoCreate remoteState return", a.doCreate.OutTypes[1], remoteType)
+
+	if a.isEmptyState != nil {
+		validations = append(validations, "IsEmptyState newState", a.isEmptyState.InTypes[0], stateType)
+	}
 
 	// Validate DoUpdate: must return (remoteType, error) if implemented
 	if a.doUpdate != nil {
@@ -293,6 +387,10 @@ func (a *Adapter) validate() error {
 		validations = append(validations, "DoResize newState", a.doResize.InTypes[2], stateType)
 	}
 
+	if a.isGone != nil {
+		validations = append(validations, "IsGone remoteState", a.isGone.InTypes[0], remoteType)
+	}
+
 	if a.doUpdateWithID != nil {
 		validations = append(validations, "DoUpdateWithID newState", a.doUpdateWithID.InTypes[2], stateType)
 		// DoUpdateWithID must return (string, remoteType, error)
@@ -303,7 +401,7 @@ func (a *Adapter) validate() error {
 	}
 
 	if a.waitAfterCreate != nil {
-		validations = append(validations, "WaitAfterCreate newState", a.waitAfterCreate.InTypes[1], stateType)
+		validations = append(validations, "WaitAfterCreate newState", a.waitAfterCreate.InTypes[2], stateType)
 		// WaitAfterCreate must return (remoteType, error)
 		if len(a.waitAfterCreate.OutTypes) != 2 {
 			return fmt.Errorf("WaitAfterCreate must return (remoteType, error), got %d return values", len(a.waitAfterCreate.OutTypes))
@@ -312,7 +410,7 @@ func (a *Adapter) validate() error {
 	}
 
 	if a.waitAfterUpdate != nil {
-		validations = append(validations, "WaitAfterUpdate newState", a.waitAfterUpdate.InTypes[1], stateType)
+		validations = append(validations, "WaitAfterUpdate newState", a.waitAfterUpdate.InTypes[2], stateType)
 		// WaitAfterUpdate must return (remoteType, error)
 		if len(a.waitAfterUpdate.OutTypes) != 2 {
 			return fmt.Errorf("WaitAfterUpdate must return (remoteType, error), got %d return values", len(a.waitAfterUpdate.OutTypes))
@@ -327,12 +425,12 @@ func (a *Adapter) validate() error {
 
 	// Validate resourceConfig consistency with DoUpdateWithID
 	if a.overrideChangeDesc == nil {
-		hasUpdateWithIDTrigger := a.resourceConfig != nil && len(a.resourceConfig.UpdateIDOnChanges) > 0
+		hasUpdateWithIDTrigger := a.resourceConfig != nil && len(a.resourceConfig.UpdatableIDFields) > 0
 		if hasUpdateWithIDTrigger && a.doUpdateWithID == nil {
-			return errors.New("resourceConfig has update_id_on_changes but DoUpdateWithID is not implemented")
+			return errors.New("resourceConfig has updatable_id_fields but DoUpdateWithID is not implemented")
 		}
 		if a.doUpdateWithID != nil && !hasUpdateWithIDTrigger {
-			return errors.New("DoUpdateWithID is implemented but resourceConfig lacks update_id_on_changes")
+			return errors.New("DoUpdateWithID is implemented but resourceConfig lacks updatable_id_fields")
 		}
 	}
 
@@ -353,6 +451,50 @@ func (a *Adapter) RemoteType() reflect.Type {
 
 func (a *Adapter) ResourceConfig() *ResourceLifecycleConfig {
 	return a.resourceConfig
+}
+
+func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
+	return a.generatedResourceConfig
+}
+
+// GetSensitiveFields returns the list of sensitive fields for the resource.
+func (a *Adapter) GetSensitiveFields() []string {
+	var fields []string
+	for _, r := range a.resourceConfig.SensitiveFields {
+		fields = append(fields, r.Field.String())
+	}
+	return fields
+}
+
+// FieldTriggersRecreate reports whether a local change to the field forces a
+// delete + create. Both recreate_on_changes and provided_id_fields do this, so a
+// caller that knows the ID is preserved can conclude the field is unchanged.
+func (a *Adapter) FieldTriggersRecreate(path *structpath.PathNode) bool {
+	for _, p := range a.resourceConfig.RecreateOnChanges {
+		if path.HasPatternPrefix(p.Field) {
+			return true
+		}
+	}
+	for _, p := range a.resourceConfig.ProvidedIDFields {
+		if path.HasPatternPrefix(p.Field) {
+			return true
+		}
+	}
+	return false
+}
+
+// PrepareInputConfig converts the node's bundle config into the input for PrepareState and the
+// references needed to complete it. Resources without PrepareInputConfig pass their config through.
+func (a *Adapter) PrepareInputConfig(inputConfig any, resourceKey string) (*structvar.StructVar, error) {
+	if a.prepareInputConfig == nil {
+		return &structvar.StructVar{Value: inputConfig, Refs: nil}, nil
+	}
+
+	outs, err := a.prepareInputConfig.Call(inputConfig, resourceKey)
+	if err != nil {
+		return nil, err
+	}
+	return outs[0].(*structvar.StructVar), nil
 }
 
 func (a *Adapter) PrepareState(input any) (any, error) {
@@ -383,12 +525,9 @@ func (a *Adapter) DoRead(ctx context.Context, id string) (any, error) {
 	return outs[0], nil
 }
 
-func (a *Adapter) DoDelete(ctx context.Context, id string) error {
-	_, err := a.doDelete.Call(ctx, id)
-	if err != nil {
-		return err
-	}
-	return nil
+func (a *Adapter) DoDelete(ctx context.Context, id string, state any) error {
+	_, err := a.doDelete.Call(ctx, id, state)
+	return err
 }
 
 // normalizeNilPointer converts a nil pointer wrapped in an interface to a nil interface.
@@ -398,7 +537,7 @@ func normalizeNilPointer(v any) any {
 		return nil
 	}
 	rv := reflect.ValueOf(v)
-	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+	if rv.Kind() == reflect.Pointer && rv.IsNil() {
 		return nil
 	}
 	return v
@@ -415,19 +554,32 @@ func (a *Adapter) DoCreate(ctx context.Context, newState any) (string, any, erro
 	return id, remoteState, nil
 }
 
+// IsEmptyState reports whether newState describes no resource; false if not implemented.
+func (a *Adapter) IsEmptyState(newState any) (bool, error) {
+	if a.isEmptyState == nil {
+		return false, nil
+	}
+
+	outs, err := a.isEmptyState.Call(newState)
+	if err != nil {
+		return false, err
+	}
+	return outs[0].(bool), nil
+}
+
 // HasDoUpdate returns true if the resource implements DoUpdate method.
 func (a *Adapter) HasDoUpdate() bool {
 	return a.doUpdate != nil
 }
 
-// DoUpdate updates the resource with information about changes computed during plan.
+// DoUpdate updates the resource with the plan entry computed during plan.
 // Returns remote state if available, otherwise nil.
-func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any, changes Changes) (any, error) {
+func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (any, error) {
 	if a.doUpdate == nil {
 		return nil, errors.New("internal error: DoUpdate not found")
 	}
 
-	outs, err := a.doUpdate.Call(ctx, id, newState, changes)
+	outs, err := a.doUpdate.Call(ctx, id, newState, entry)
 	if err != nil {
 		return nil, err
 	}
@@ -442,12 +594,12 @@ func (a *Adapter) HasDoUpdateWithID() bool {
 }
 
 // DoUpdateWithID updates the resource and may change its ID. Returns newID and remoteState if available.
-func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any) (string, any, error) {
+func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any, entry *PlanEntry) (string, any, error) {
 	if a.doUpdateWithID == nil {
 		return "", nil, errors.New("internal error: DoUpdateWithID not found")
 	}
 
-	outs, err := a.doUpdateWithID.Call(ctx, oldID, newState)
+	outs, err := a.doUpdateWithID.Call(ctx, oldID, newState, entry)
 	if err != nil {
 		return "", nil, err
 	}
@@ -457,24 +609,24 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 	return id, remoteState, nil
 }
 
-func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
+func (a *Adapter) DoResize(ctx context.Context, id string, newState any, entry *PlanEntry) error {
 	if a.doResize == nil {
 		return errors.New("internal error: DoResize not found")
 	}
 
-	_, err := a.doResize.Call(ctx, id, newState)
+	_, err := a.doResize.Call(ctx, id, newState, entry)
 	return err
 }
 
 // WaitAfterCreate waits for the resource to become ready after creation.
 // If the resource doesn't implement this method, this is a no-op.
 // Returns the updated remoteState if available, otherwise returns nil
-func (a *Adapter) WaitAfterCreate(ctx context.Context, newState any) (any, error) {
+func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, newState any) (any, error) {
 	if a.waitAfterCreate == nil {
 		return nil, nil // no-op if not implemented
 	}
 
-	outs, err := a.waitAfterCreate.Call(ctx, newState)
+	outs, err := a.waitAfterCreate.Call(ctx, id, newState)
 	if err != nil {
 		return nil, err
 	}
@@ -486,18 +638,28 @@ func (a *Adapter) WaitAfterCreate(ctx context.Context, newState any) (any, error
 // WaitAfterUpdate waits for the resource to become ready after update.
 // If the resource doesn't implement this method, this is a no-op.
 // Returns the updated remoteState if available, otherwise returns nil.
-func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error) {
+func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, newState any) (any, error) {
 	if a.waitAfterUpdate == nil {
 		return nil, nil // no-op if not implemented
 	}
 
-	outs, err := a.waitAfterUpdate.Call(ctx, newState)
+	outs, err := a.waitAfterUpdate.Call(ctx, id, newState)
 	if err != nil {
 		return nil, err
 	}
 
 	remoteState := normalizeNilPointer(outs[0])
 	return remoteState, nil
+}
+
+// WaitAfterDelete waits for the resource to be fully removed after DoDelete.
+// If the resource doesn't implement this method, this is a no-op.
+func (a *Adapter) WaitAfterDelete(ctx context.Context, id string) error {
+	if a.waitAfterDelete == nil {
+		return nil // no-op if not implemented
+	}
+	_, err := a.waitAfterDelete.Call(ctx, id)
+	return err
 }
 
 // HasOverrideChangeDesc returns true if OverrideChangeDesc is defined for this resource impl
@@ -517,9 +679,22 @@ func (a *Adapter) KeyedSlices() map[string]any {
 	return a.keyedSlices
 }
 
+// IsGone reports whether the remote state represents an already-deleted resource
+// for planning purposes. Resources that don't implement IsGone are never gone.
+func (a *Adapter) IsGone(remoteState any) bool {
+	if a.isGone == nil {
+		return false
+	}
+	outs, err := a.isGone.Call(remoteState)
+	if err != nil {
+		return false
+	}
+	return outs[0].(bool)
+}
+
 // prepareCallRequired prepares a call and ensures the method is found.
 func prepareCallRequired(resource any, methodName string) (*calladapt.BoundCaller, error) {
-	caller, err := calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), methodName)
+	caller, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), methodName)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", methodName, err)
 	}
@@ -534,7 +709,7 @@ func validatePointerToStruct(t reflect.Type, context string) error {
 	if t == nil {
 		return fmt.Errorf("%s not set", context)
 	}
-	if t.Kind() != reflect.Ptr {
+	if t.Kind() != reflect.Pointer {
 		return fmt.Errorf("%s must be a pointer, got %s", context, t.Kind())
 	}
 	if t.Elem().Kind() != reflect.Struct {

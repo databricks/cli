@@ -1,0 +1,126 @@
+# This acceptance test is disabled on Windows runners because
+# the current argument capturing method does not work on windows-latest GitHub Runner.
+GOOS.windows = false
+
+Ignore = [
+    "psql"
+]
+
+# GetProject response
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/my-project"
+Response.Body = '''
+{
+    "name": "projects/my-project",
+    "status": { "display_name": "My Project" }
+}
+'''
+
+# Provisioned instance lookup
+[[Server]]
+Pattern = "GET /api/2.0/database/instances/my-instance"
+Response.Body = '''
+{
+    "state": "AVAILABLE",
+    "pg_version": "14",
+    "read_write_dns": "my-instance.example.com"
+}
+'''
+
+# GetBranch responses
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/my-project/branches/main"
+Response.Body = '''
+{
+    "name": "projects/my-project/branches/main"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/my-project/branches/dev"
+Response.Body = '''
+{
+    "name": "projects/my-project/branches/dev"
+}
+'''
+
+# Full endpoint for supplement tests
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/my-project/branches/main/endpoints/primary"
+Response.Body = '''
+{
+    "name": "projects/my-project/branches/main/endpoints/primary",
+    "status": {
+        "current_state": "ACTIVE",
+        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+        "hosts": {
+            "host": "my-endpoint.postgres.example.com"
+        }
+    }
+}
+'''
+
+# Partial path supplement: project only -> needs branches list
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/my-project/branches"
+Response.Body = '''
+{
+    "branches": [
+        {
+            "name": "projects/my-project/branches/main",
+            "status": { "default": true }
+        }
+    ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/my-project/branches/main/endpoints"
+Response.Body = '''
+{
+    "endpoints": [
+        {
+            "name": "projects/my-project/branches/main/endpoints/primary",
+            "status": {
+                "current_state": "ACTIVE",
+                "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+                "hosts": { "host": "my-endpoint.postgres.example.com" }
+            }
+        }
+    ]
+}
+'''
+
+# Endpoint for supplement test with --endpoint flag
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/my-project/branches/dev/endpoints/custom"
+Response.Body = '''
+{
+    "name": "projects/my-project/branches/dev/endpoints/custom",
+    "status": {
+        "current_state": "ACTIVE",
+        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+        "hosts": {
+            "host": "custom-endpoint.postgres.example.com"
+        }
+    }
+}
+'''
+
+# Credential generation
+[[Server]]
+Pattern = "POST /api/2.0/postgres/credentials"
+Response.Body = '''
+{
+    "token": "postgres-secret-token",
+    "expire_time": "2025-01-01T00:00:00Z"
+}
+'''
+
+[[Server]]
+Pattern = "POST /api/2.0/database/credentials"
+Response.Body = '''
+{
+    "token": "provisioned-secret-token"
+}
+'''

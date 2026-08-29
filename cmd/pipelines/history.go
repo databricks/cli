@@ -52,7 +52,7 @@ func historyCommand() *cobra.Command {
 			return err
 		}
 
-		w := b.WorkspaceClient()
+		w := b.WorkspaceClient(ctx)
 
 		startTimePtr, err := parseTimeToUnixMillis(startTimeStr)
 		if err != nil {

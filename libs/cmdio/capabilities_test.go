@@ -1,7 +1,6 @@
 package cmdio
 
 import (
-	"context"
 	"io"
 	"testing"
 
@@ -137,7 +136,7 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 }
 
 func TestDetectGitBash(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.False(t, detectGitBash(ctx))
 
 	ctx = env.Set(ctx, "MSYSTEM", "MINGW64")
@@ -183,6 +182,81 @@ func TestCapabilities_SupportsColor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := tt.caps.SupportsColor(tt.writer)
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestCapabilities_InteractiveMode(t *testing.T) {
+	tests := []struct {
+		name     string
+		caps     Capabilities
+		expected InteractiveMode
+	}{
+		{
+			name: "full interactive - all TTYs, color, no Git Bash",
+			caps: Capabilities{
+				stdinIsTTY:  true,
+				stderrIsTTY: true,
+				color:       true,
+				isGitBash:   false,
+			},
+			expected: InteractiveModeFull,
+		},
+		{
+			name: "output only - stdin not TTY",
+			caps: Capabilities{
+				stdinIsTTY:  false,
+				stderrIsTTY: true,
+				color:       true,
+				isGitBash:   false,
+			},
+			expected: InteractiveModeOutputOnly,
+		},
+		{
+			name: "output only - Git Bash",
+			caps: Capabilities{
+				stdinIsTTY:  true,
+				stderrIsTTY: true,
+				color:       true,
+				isGitBash:   true,
+			},
+			expected: InteractiveModeOutputOnly,
+		},
+		{
+			name: "none - stderr not TTY",
+			caps: Capabilities{
+				stdinIsTTY:  true,
+				stderrIsTTY: false,
+				color:       true,
+				isGitBash:   false,
+			},
+			expected: InteractiveModeNone,
+		},
+		{
+			name: "none - NO_COLOR set",
+			caps: Capabilities{
+				stdinIsTTY:  true,
+				stderrIsTTY: true,
+				color:       false,
+				isGitBash:   false,
+			},
+			expected: InteractiveModeNone,
+		},
+		{
+			name: "none - no TTY support at all",
+			caps: Capabilities{
+				stdinIsTTY:  false,
+				stderrIsTTY: false,
+				color:       false,
+				isGitBash:   false,
+			},
+			expected: InteractiveModeNone,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.caps.InteractiveMode())
 		})
 	}
 }

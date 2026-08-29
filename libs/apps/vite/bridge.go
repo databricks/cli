@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -75,23 +76,29 @@ type prioritizedMessage struct {
 }
 
 type Bridge struct {
-	ctx                context.Context
-	w                  *databricks.WorkspaceClient
-	appName            string
-	tunnelConn         *websocket.Conn
+	ctx     context.Context
+	w       *databricks.WorkspaceClient
+	appName string
+	// Atomic because reconnects swap the connection while the writer goroutine reads it.
+	tunnelConn         atomic.Pointer[websocket.Conn]
 	hmrConn            *websocket.Conn
 	tunnelID           string
 	tunnelWriteChan    chan prioritizedMessage
 	stopChan           chan struct{}
-	stopOnce           sync.Once
+	stop               func()
 	httpClient         *http.Client
 	connectionRequests chan *BridgeMessage
+	stdinLines         chan string // Lines read by the persistent stdin reader, consumed by connection prompts
 	port               int
 	keepaliveDone      chan struct{} // Signals keepalive goroutine to stop on reconnect
 	keepaliveMu        sync.Mutex    // Protects keepaliveDone
+	autoApprove        bool          // If true, approve every viewer connection without asking
 }
 
-func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName string, port int) *Bridge {
+// NewBridge constructs a development bridge to a remote app. When autoApprove is
+// true, inbound connection requests from viewers are approved without prompting
+// on stdin.
+func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName string, port int, autoApprove bool) *Bridge {
 	// Configure HTTP client optimized for local high-volume requests
 	transport := &http.Transport{
 		MaxIdleConns:        100,
@@ -101,7 +108,7 @@ func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName strin
 		DisableCompression:  false,
 	}
 
-	return &Bridge{
+	b := &Bridge{
 		ctx:     ctx,
 		w:       w,
 		appName: appName,
@@ -112,12 +119,30 @@ func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName strin
 		stopChan:           make(chan struct{}),
 		tunnelWriteChan:    make(chan prioritizedMessage, 100), // Buffered channel for async writes
 		connectionRequests: make(chan *BridgeMessage, 10),
+		stdinLines:         make(chan string),
 		port:               port,
+		autoApprove:        autoApprove,
 	}
+
+	b.stop = sync.OnceFunc(func() {
+		close(b.stopChan)
+
+		if conn := b.tunnelConn.Load(); conn != nil {
+			_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			conn.Close()
+		}
+
+		if b.hmrConn != nil {
+			_ = b.hmrConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			b.hmrConn.Close()
+		}
+	})
+
+	return b
 }
 
 func (vb *Bridge) getAuthHeaders(wsURL string) (http.Header, error) {
-	req, err := http.NewRequestWithContext(vb.ctx, "GET", wsURL, nil)
+	req, err := http.NewRequestWithContext(vb.ctx, http.MethodGet, wsURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -198,7 +223,7 @@ func (vb *Bridge) connectToTunnel(appDomain *url.URL) error {
 		return nil
 	})
 
-	vb.tunnelConn = conn
+	vb.setTunnelConn(conn)
 
 	// Start keepalive ping goroutine (stop existing one first if any)
 	vb.keepaliveMu.Lock()
@@ -212,6 +237,13 @@ func (vb *Bridge) connectToTunnel(appDomain *url.URL) error {
 	go vb.tunnelKeepalive(keepaliveDone)
 
 	return nil
+}
+
+// setTunnelConn installs a new tunnel connection, closing the old one so reconnects don't leak it.
+func (vb *Bridge) setTunnelConn(conn *websocket.Conn) {
+	if old := vb.tunnelConn.Swap(conn); old != nil {
+		old.Close()
+	}
 }
 
 // ConnectToTunnelWithRetry attempts to connect to the tunnel with exponential backoff.
@@ -259,10 +291,7 @@ func (vb *Bridge) ConnectToTunnelWithRetry(appDomain *url.URL) error {
 		}
 
 		// Exponential backoff with cap
-		backoff = time.Duration(float64(backoff) * 1.5)
-		if backoff > tunnelConnectMaxBackoff {
-			backoff = tunnelConnectMaxBackoff
-		}
+		backoff = min(time.Duration(float64(backoff)*1.5), tunnelConnectMaxBackoff)
 	}
 
 	return fmt.Errorf("failed to connect after %d attempts: %w", tunnelConnectMaxRetries, lastErr)
@@ -328,7 +357,8 @@ func (vb *Bridge) tunnelWriter(ctx context.Context) error {
 		case <-vb.stopChan:
 			return nil
 		case msg := <-vb.tunnelWriteChan:
-			if err := vb.tunnelConn.WriteMessage(msg.messageType, msg.data); err != nil {
+			// Load per message so writes follow a reconnect to the new connection.
+			if err := vb.tunnelConn.Load().WriteMessage(msg.messageType, msg.data); err != nil {
 				log.Errorf(vb.ctx, "[vite_bridge] Failed to write message: %v", err)
 				return fmt.Errorf("failed to write to tunnel: %w", err)
 			}
@@ -346,7 +376,7 @@ func (vb *Bridge) handleTunnelMessages(ctx context.Context) error {
 		default:
 		}
 
-		_, message, err := vb.tunnelConn.ReadMessage()
+		_, message, err := vb.tunnelConn.Load().ReadMessage()
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived, websocket.CloseAbnormalClosure) {
 				cmdio.LogString(vb.ctx, "🔄 Tunnel closed, reconnecting...")
@@ -390,8 +420,15 @@ func (vb *Bridge) handleMessage(msg *BridgeMessage) error {
 		return nil
 
 	case "connection:request":
-		vb.connectionRequests <- msg
-		return nil
+		// The consumer may be blocked on a stdin prompt or gone after stop; a bare send could hang the tunnel reader.
+		select {
+		case vb.connectionRequests <- msg:
+			return nil
+		case <-vb.stopChan:
+			return nil
+		case <-time.After(wsWriteTimeout):
+			return errors.New("connection request queue full, dropping request")
+		}
 
 	case "fetch":
 		go func(fetchMsg BridgeMessage) {
@@ -410,6 +447,15 @@ func (vb *Bridge) handleMessage(msg *BridgeMessage) error {
 		}(*msg)
 		return nil
 
+	case "dir:list":
+		// Handle directory list requests in parallel
+		go func(dirListMsg BridgeMessage) {
+			if err := vb.handleDirListRequest(&dirListMsg); err != nil {
+				log.Errorf(vb.ctx, "[vite_bridge] Error handling dir list request for %s: %v", dirListMsg.Path, err)
+			}
+		}(*msg)
+		return nil
+
 	case "hmr:message":
 		return vb.handleHMRMessage(msg)
 
@@ -419,36 +465,50 @@ func (vb *Bridge) handleMessage(msg *BridgeMessage) error {
 	}
 }
 
+// readStdinLines forwards lines from r to stdinLines, closing the channel on read
+// error so prompts fail instead of hanging. A single persistent reader keeps a
+// timed-out prompt from leaking a goroutine that swallows the next prompt's answer.
+func (vb *Bridge) readStdinLines(r io.Reader) {
+	reader := bufio.NewReader(r)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			close(vb.stdinLines)
+			return
+		}
+		select {
+		case vb.stdinLines <- line:
+		case <-vb.stopChan:
+			return
+		}
+	}
+}
+
 func (vb *Bridge) handleConnectionRequest(msg *BridgeMessage) error {
 	cmdio.LogString(vb.ctx, "")
 	cmdio.LogString(vb.ctx, "🔔 Connection Request")
 	cmdio.LogString(vb.ctx, "   User: "+msg.Viewer)
-	cmdio.LogString(vb.ctx, "   Approve this connection? (y/n)")
-
-	// Read from stdin with timeout to prevent indefinite blocking
-	inputChan := make(chan string, 1)
-	errChan := make(chan error, 1)
-
-	go func() {
-		reader := bufio.NewReader(os.Stdin)
-		input, err := reader.ReadString('\n')
-		if err != nil {
-			errChan <- err
-			return
-		}
-		inputChan <- input
-	}()
 
 	var approved bool
-	select {
-	case input := <-inputChan:
-		approved = strings.ToLower(strings.TrimSpace(input)) == "y"
-	case err := <-errChan:
-		return fmt.Errorf("failed to read user input: %w", err)
-	case <-time.After(BridgeConnTimeout):
-		// Default to denying after timeout
-		cmdio.LogString(vb.ctx, "⏱️  Timeout waiting for response, denying connection")
-		approved = false
+	if vb.autoApprove {
+		cmdio.LogString(vb.ctx, "   Auto-approving (--auto-approve)")
+		approved = true
+	} else {
+		cmdio.LogString(vb.ctx, "   Approve this connection? (y/n)")
+
+		select {
+		case input, ok := <-vb.stdinLines:
+			if !ok {
+				return errors.New("failed to read user input: stdin closed")
+			}
+			approved = strings.ToLower(strings.TrimSpace(input)) == "y"
+		case <-vb.stopChan:
+			return nil
+		case <-time.After(BridgeConnTimeout):
+			// Default to denying after timeout
+			cmdio.LogString(vb.ctx, "⏱️  Timeout waiting for response, denying connection")
+			approved = false
+		}
 	}
 
 	response := BridgeMessage{
@@ -596,6 +656,88 @@ func (vb *Bridge) handleFileReadRequest(msg *BridgeMessage) error {
 	return nil
 }
 
+func (vb *Bridge) handleDirListRequest(msg *BridgeMessage) error {
+	log.Debugf(vb.ctx, "[vite_bridge] Dir list request: %s", msg.Path)
+
+	if err := ValidateDirPath(msg.Path); err != nil {
+		log.Warnf(vb.ctx, "[vite_bridge] Dir validation failed for %s: %v", msg.Path, err)
+		return vb.sendDirListError(msg.RequestID, fmt.Sprintf("Invalid directory path: %v", err))
+	}
+
+	entries, err := os.ReadDir(msg.Path)
+
+	response := BridgeMessage{
+		Type:      "dir:list:response",
+		RequestID: msg.RequestID,
+	}
+
+	if err != nil {
+		log.Errorf(vb.ctx, "[vite_bridge] Failed to read directory %s: %v", msg.Path, err)
+		response.Error = err.Error()
+	} else {
+		files := make([]string, 0, len(entries))
+		for _, entry := range entries {
+			if !entry.IsDir() && filepath.Ext(entry.Name()) == allowedExtension {
+				files = append(files, entry.Name())
+			}
+		}
+		log.Debugf(vb.ctx, "[vite_bridge] Listed directory %s (%d SQL files)", msg.Path, len(files))
+		// Client expects files as JSON string in content field
+		filesJSON, err := json.Marshal(files)
+		if err != nil {
+			log.Errorf(vb.ctx, "[vite_bridge] Failed to marshal file list: %v", err)
+			response.Error = fmt.Sprintf("Failed to marshal file list: %v", err)
+		} else {
+			response.Content = string(filesJSON)
+		}
+	}
+
+	responseData, err := json.Marshal(response)
+	if err != nil {
+		return fmt.Errorf("failed to marshal dir list response: %w", err)
+	}
+
+	log.Debugf(vb.ctx, "[vite_bridge] Sending dir list response: %s", string(responseData))
+
+	select {
+	case vb.tunnelWriteChan <- prioritizedMessage{
+		messageType: websocket.TextMessage,
+		data:        responseData,
+		priority:    1,
+	}:
+		log.Debugf(vb.ctx, "[vite_bridge] Dir list response sent successfully")
+	case <-time.After(wsWriteTimeout):
+		return errors.New("timeout sending dir list response")
+	}
+
+	return nil
+}
+
+func (vb *Bridge) sendDirListError(requestID, errMsg string) error {
+	response := BridgeMessage{
+		Type:      "dir:list:response",
+		RequestID: requestID,
+		Error:     errMsg,
+	}
+
+	responseData, err := json.Marshal(response)
+	if err != nil {
+		return fmt.Errorf("failed to marshal dir list error response: %w", err)
+	}
+
+	select {
+	case vb.tunnelWriteChan <- prioritizedMessage{
+		messageType: websocket.TextMessage,
+		data:        responseData,
+		priority:    1,
+	}:
+	case <-time.After(wsWriteTimeout):
+		return errors.New("timeout sending dir list error response")
+	}
+
+	return nil
+}
+
 func ValidateFilePath(requestedPath string) error {
 	// Clean the path to resolve any ../ or ./ components
 	cleanPath := filepath.Clean(requestedPath)
@@ -630,6 +772,50 @@ func ValidateFilePath(requestedPath string) error {
 	// Additional check: no hidden files
 	if strings.HasPrefix(filepath.Base(absPath), ".") {
 		return errors.New("hidden files are not allowed")
+	}
+
+	return nil
+}
+
+// ValidateDirPath validates that a directory path is within the allowed directory.
+func ValidateDirPath(requestedPath string) error {
+	// Clean the path to resolve any ../ or ./ components
+	cleanPath := filepath.Clean(requestedPath)
+
+	// Get absolute path
+	absPath, err := filepath.Abs(cleanPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve absolute path: %w", err)
+	}
+
+	// Get the working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %w", err)
+	}
+
+	// Construct the allowed base directory (absolute path)
+	allowedDir := filepath.Join(cwd, allowedBasePath)
+
+	// Ensure the resolved path is within the allowed directory
+	// Add trailing separator to prevent prefix attacks (e.g., queries-malicious/)
+	allowedDirWithSep := allowedDir + string(filepath.Separator)
+	if absPath != allowedDir && !strings.HasPrefix(absPath, allowedDirWithSep) {
+		return fmt.Errorf("path %s is outside allowed directory %s", absPath, allowedBasePath)
+	}
+
+	// Additional check: no hidden directories
+	if strings.HasPrefix(filepath.Base(absPath), ".") {
+		return errors.New("hidden directories are not allowed")
+	}
+
+	// Verify it's actually a directory
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return fmt.Errorf("failed to stat path: %w", err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("path %s is not a directory", requestedPath)
 	}
 
 	return nil
@@ -748,7 +934,7 @@ func (vb *Bridge) Start() error {
 	readyChan := make(chan error, 1)
 	go func() {
 		for vb.tunnelID == "" {
-			_, message, err := vb.tunnelConn.ReadMessage()
+			_, message, err := vb.tunnelConn.Load().ReadMessage()
 			if err != nil {
 				readyChan <- err
 				return
@@ -794,6 +980,10 @@ func (vb *Bridge) Start() error {
 		return nil
 	})
 
+	if !vb.autoApprove {
+		go vb.readStdinLines(os.Stdin)
+	}
+
 	// Connection request handler - not in errgroup to avoid blocking other handlers
 	go func() {
 		for {
@@ -830,17 +1020,5 @@ func (vb *Bridge) Start() error {
 }
 
 func (vb *Bridge) Stop() {
-	vb.stopOnce.Do(func() {
-		close(vb.stopChan)
-
-		if vb.tunnelConn != nil {
-			_ = vb.tunnelConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			vb.tunnelConn.Close()
-		}
-
-		if vb.hmrConn != nil {
-			_ = vb.hmrConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			vb.hmrConn.Close()
-		}
-	})
+	vb.stop()
 }

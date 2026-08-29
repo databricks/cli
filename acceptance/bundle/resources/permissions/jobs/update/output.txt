@@ -9,11 +9,12 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.job_with_permissions
+Created jobs.job_with_permissions.permissions
+Files: 7 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests
+>>> print_requests.py //jobs/
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -26,47 +27,47 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_VIEW"
+          "inherited": false,
+          "permission_level": "CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
-      "user_name":"viewer@example.com"
+      "display_name": "viewer@example.com",
+      "user_name": "viewer@example.com"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_MANAGE"
+          "inherited": false,
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"data-team"
+      "group_name": "data-team"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     },
     {
       "all_permissions": [
         {
-          "inherited":true,
+          "inherited": true,
           "inherited_from_object": [
             "/jobs/"
           ],
-          "permission_level":"CAN_MANAGE"
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admins"
+      "group_name": "admins"
     }
   ],
-  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
-  "object_type":"job"
+  "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+  "object_type": "job"
 }
 
 === Update one permission and deploy again
@@ -75,11 +76,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated jobs.job_with_permissions.permissions
+Files: 6 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests
+>>> print_requests.py //jobs/
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -90,11 +91,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated jobs.job_with_permissions.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests
+>>> print_requests.py //jobs/
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -105,11 +106,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deleted jobs.job_with_permissions.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
 
->>> print_requests
+>>> print_requests.py //jobs/
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
@@ -127,17 +128,17 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 -          user_name: viewer@example.com # PERMISSIONS
 -        - level: CAN_MANAGE # DELETE_ONE
 -          group_name: data-team # DELETE_ONE
-           # permissions: [] # EXPLICIT_EMPTY
+       # permissions: [] # EXPLICIT_EMPTY
 
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.job_with_permissions.permissions
+Files: 4 uploaded, 1 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
->>> print_requests
+>>> print_requests.py //jobs/
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -145,34 +146,21 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 === Set permissions: []
 
 >>> [CLI] bundle plan -o json
-Warning: unknown field: permissions
-  at resources.jobs.job_with_permissions.permissions[1]
-  in databricks.yml:18:11
-
 
 >>> [CLI] bundle deploy
-Warning: unknown field: permissions
-  at resources.jobs.job_with_permissions.permissions[1]
-  in databricks.yml:18:11
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deleted jobs.job_with_permissions.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
 
->>> print_requests
+>>> print_requests.py //jobs/
 
 >>> [CLI] bundle destroy --auto-approve
-Warning: unknown field: permissions
-  at resources.jobs.job_with_permissions.permissions[1]
-  in databricks.yml:18:11
-
 The following resources will be deleted:
   delete resources.jobs.job_with_permissions
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted
 
->>> print_requests
+>>> print_requests.py //jobs/

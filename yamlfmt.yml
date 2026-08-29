@@ -2,6 +2,8 @@ exclude:
   - libs/dyn/yamlloader/testdata
   - acceptance/selftest/bundleconfig # https://github.com/google/yamlfmt/issues/254
   - acceptance/bundle/artifacts/nil_artifacts/databricks.yml # https://github.com/google/yamlfmt/issues/253
+  - bundle/direct/dresources/apitypes.yml # remove comments
+  - acceptance/bundle/resources/permissions/jobs/update/databricks.yml # comment indentation is significant: it is uncommented into a top-level permissions: [] key
 formatter:
   type: basic
   retain_line_breaks_single: true

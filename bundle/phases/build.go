@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/mutator/aicode"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
@@ -14,9 +15,11 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
+// LibLocationMap maps artifact names to library locations that need uploading.
+// Computed by Build and consumed by Deploy to upload the right files.
 type LibLocationMap map[string][]libraries.LocationToUpdate
 
-// The build phase builds artifacts.
+// Build runs the build phase, which builds artifacts.
 func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 	log.Info(ctx, "Phase: build")
 
@@ -24,6 +27,14 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 		scripts.Execute(config.ScriptPreBuild),
 		artifacts.Build(),
 		scripts.Execute(config.ScriptPostBuild),
+
+		// Package any AI Runtime task code_source_path that points at a local
+		// directory into a content-addressed tarball overlaid on the sync root, and
+		// rewrite the field to the synced workspace path. No requirements.yaml is
+		// synthesized: the runtime installs pip deps from the job's serverless
+		// environment (environments[].spec.dependencies) directly.
+		aicode.PackageCodeSource(),
+
 		mutator.ResolveVariableReferencesWithoutResources(
 			"artifacts",
 		),
@@ -41,16 +52,20 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 		libraries.SwitchToPatchedWheels(),
 	)
 
-	libs, diags := libraries.ReplaceWithRemotePath(ctx, b)
-	for _, diag := range diags {
-		logdiag.LogDiag(ctx, diag)
+	if logdiag.HasError(ctx) {
+		return nil
 	}
 
-	bundle.ApplyContext(ctx, b,
-		// TransformWheelTask must be run after ReplaceWithRemotePath so we can use correct remote path in the
-		// transformed notebook
-		trampoline.TransformWheelTask(),
-	)
+	// For immutable bundles, library remote paths are set in the deploy phase
+	// after snapshot.Upload() provides the content-addressed workspace.artifact_path.
+	if b.IsImmutableFolder() {
+		return nil
+	}
 
+	libs, diags := libraries.ReplaceWithRemotePath(ctx, b)
+	for _, d := range diags {
+		logdiag.LogDiag(ctx, d)
+	}
+	bundle.ApplyContext(ctx, b, trampoline.TransformWheelTask())
 	return libs
 }

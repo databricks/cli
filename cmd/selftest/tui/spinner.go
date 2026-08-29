@@ -7,35 +7,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newSpinner() *cobra.Command {
-	return &cobra.Command{
+func newSpinnerCmd() *cobra.Command {
+	var elapsed bool
+	cmd := &cobra.Command{
 		Use:   "spinner",
-		Short: "Test the cmdio spinner component",
-		Run: func(cmd *cobra.Command, args []string) {
+		Short: "cmdio.NewSpinner (progress indicator)",
+		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			sp := cmdio.NewSpinner(ctx)
-
-			// Test various status messages
-			messages := []struct {
-				text     string
-				duration time.Duration
-			}{
-				{"Initializing...", time.Second},
-				{"Loading configuration", time.Second},
-				{"Connecting to workspace", time.Second},
-				{"Processing files", time.Second},
-				{"Finalizing", time.Second},
+			var opts []cmdio.SpinnerOption
+			if elapsed {
+				opts = append(opts, cmdio.WithElapsedTime())
 			}
+			sp := cmdio.NewSpinner(ctx, opts...)
 
-			for _, msg := range messages {
+			for _, msg := range spinnerMessages {
 				sp.Update(msg.text)
 				time.Sleep(msg.duration)
 			}
 
 			sp.Close()
 
-			cmdio.LogString(ctx, "✓ Spinner test complete")
+			cmdio.LogString(ctx, "Spinner test complete")
+			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&elapsed, "elapsed", false, "show an MM:SS elapsed-time prefix on the spinner")
+	return cmd
 }

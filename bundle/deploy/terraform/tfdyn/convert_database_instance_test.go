@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -28,7 +27,7 @@ func TestConvertDatabaseInstance(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = databaseInstanceConverter{}.Convert(ctx, "my_database_instance", vin, out)
 	require.NoError(t, err)
@@ -55,7 +54,7 @@ func TestConvertDatabaseInstanceWithMinimalConfig(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = databaseInstanceConverter{}.Convert(ctx, "minimal_database_instance", vin, out)
 	require.NoError(t, err)
@@ -74,7 +73,7 @@ func TestConvertDatabaseInstanceWithPermissions(t *testing.T) {
 			Name:     "db-instance-with-permissions",
 			Capacity: "CU_2",
 		},
-		Permissions: []resources.DatabaseInstancePermission{
+		Permissions: []resources.Permission{
 			{
 				Level:    "CAN_USE",
 				UserName: "user@example.com",
@@ -90,7 +89,7 @@ func TestConvertDatabaseInstanceWithPermissions(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = databaseInstanceConverter{}.Convert(ctx, "db_with_permissions", vin, out)
 	require.NoError(t, err)

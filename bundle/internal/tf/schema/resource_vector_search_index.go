@@ -14,6 +14,8 @@ type ResourceVectorSearchIndexDeltaSyncIndexSpecEmbeddingVectorColumns struct {
 }
 
 type ResourceVectorSearchIndexDeltaSyncIndexSpec struct {
+	ColumnsToIndex          []string                                                            `json:"columns_to_index,omitempty"`
+	ColumnsToSync           []string                                                            `json:"columns_to_sync,omitempty"`
 	EmbeddingWritebackTable string                                                              `json:"embedding_writeback_table,omitempty"`
 	PipelineId              string                                                              `json:"pipeline_id,omitempty"`
 	PipelineType            string                                                              `json:"pipeline_type,omitempty"`
@@ -39,14 +41,21 @@ type ResourceVectorSearchIndexDirectAccessIndexSpec struct {
 	EmbeddingVectorColumns []ResourceVectorSearchIndexDirectAccessIndexSpecEmbeddingVectorColumns `json:"embedding_vector_columns,omitempty"`
 }
 
+type ResourceVectorSearchIndexProviderConfig struct {
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
 type ResourceVectorSearchIndex struct {
 	Creator               string                                          `json:"creator,omitempty"`
+	EndpointId            string                                          `json:"endpoint_id,omitempty"`
 	EndpointName          string                                          `json:"endpoint_name"`
 	Id                    string                                          `json:"id,omitempty"`
+	IndexSubtype          string                                          `json:"index_subtype,omitempty"`
 	IndexType             string                                          `json:"index_type"`
 	Name                  string                                          `json:"name"`
 	PrimaryKey            string                                          `json:"primary_key"`
 	Status                []any                                           `json:"status,omitempty"`
 	DeltaSyncIndexSpec    *ResourceVectorSearchIndexDeltaSyncIndexSpec    `json:"delta_sync_index_spec,omitempty"`
 	DirectAccessIndexSpec *ResourceVectorSearchIndexDirectAccessIndexSpec `json:"direct_access_index_spec,omitempty"`
+	ProviderConfig        *ResourceVectorSearchIndexProviderConfig        `json:"provider_config,omitempty"`
 }

@@ -1,0 +1,29 @@
+bundle:
+  name: my-bundle
+
+experimental:
+  immutable_folder: true
+
+sync:
+  exclude:
+    # Test framework files that are not part of the bundle source.
+    - "script"
+    - "*.toml"
+
+resources:
+  jobs:
+    my_job:
+      name: my job
+      tasks:
+        - task_key: my_task
+          existing_cluster_id: "0101-120000-aaaaaaaa"
+          spark_python_task:
+            python_file: ./src/main.py
+        - task_key: my_ai_runtime_task
+          ai_runtime_task:
+            experiment: my-experiment
+            deployments:
+              - command_path: ./src/main.py
+                compute:
+                  accelerator_type: GPU_1xA10
+                  accelerator_count: 1

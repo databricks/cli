@@ -1,0 +1,14 @@
+bundle:
+  name: lifecycle-started-edit-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  sql_warehouses:
+    mywarehouse:
+      name: $UNIQUE_NAME
+      cluster_size: "2X-Small"
+      auto_stop_mins: 10
+      lifecycle:
+        started: false

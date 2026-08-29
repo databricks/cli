@@ -1,0 +1,6 @@
+Cloud = false
+GOOS.darwin = false
+GOOS.linux = true
+GOOS.windows = false
+CloudEnvs.gcp = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
