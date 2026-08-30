@@ -1,0 +1,12 @@
+# Value library for volumes. See ../README.md.
+cloud: true
+
+skip:
+  # An external volume needs a storage location backed by a real external location and
+  # cloud IAM, which this suite does not provision.
+  storage_location: needs an external location
+
+fields:
+  # EXTERNAL is only valid together with storage_location, so only MANAGED is
+  # deployable on its own.
+  volume_type: [MANAGED]

@@ -1,0 +1,3 @@
+# Value library for catalogs. See ../README.md.
+# No explicit values needed; the per-kind defaults cover every field.
+cloud: true
