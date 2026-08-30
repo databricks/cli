@@ -51,9 +51,7 @@ type fieldValues struct {
 	// Keep path-valued fields out of it: it is merged after the mutator pipeline has run,
 	// so nothing here goes through path translation.
 	//
-	// Held as YAML rather than a parsed value because the same $VARS the corpus configs use
-	// are expanded into it, and those are only known once a harness exists.
-	baseYAML []byte
+	base any
 
 	// localOnly is the reason this resource type cannot be driven against a real workspace:
 	// it needs workspace or cloud state the suite does not provision (a storage credential
@@ -142,9 +140,11 @@ var cliManagedFields = map[string]string{
 	"lifecycle.prevent_destroy": "acted on by the bundle, never sent to any API; gates destroy",
 }
 
-// loadFieldValues reads testdata/fields/<resource_type>.yml.
-func loadFieldValues(resourceType string) (*fieldValues, error) {
-	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]any{}, baseYAML: nil, localOnly: ""}
+// loadFieldValues reads testdata/fields/<resource_type>.yml, expanding the same $VARS the
+// corpus configs use so a value can name the workspace's own user rather than a placeholder
+// only the fake server knows.
+func loadFieldValues(resourceType string, vars map[string]string) (*fieldValues, error) {
+	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]any{}, base: nil, localOnly: ""}
 	maps.Copy(fv.skip, cliManagedFields)
 
 	path := filepath.Join(fieldsDir, resourceType+".yml")
@@ -156,24 +156,31 @@ func loadFieldValues(resourceType string) (*fieldValues, error) {
 		return nil, err
 	}
 
+	var missing string
+	expanded := os.Expand(string(data), func(key string) string {
+		value, ok := vars[key]
+		if !ok {
+			missing = key
+		}
+		return value
+	})
+	if missing != "" {
+		return nil, fmt.Errorf("%s uses $%s, which this suite does not provide here", path, missing)
+	}
+
 	var file struct {
 		Skip      map[string]string `yaml:"skip"`
 		Fields    map[string][]any  `yaml:"fields"`
-		Base      yaml.Node         `yaml:"base"`
+		Base      any               `yaml:"base"`
 		LocalOnly string            `yaml:"local_only"`
 	}
-	if err := yaml.Unmarshal(data, &file); err != nil {
+	if err := yaml.Unmarshal([]byte(expanded), &file); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
 	maps.Copy(fv.skip, file.Skip)
 	maps.Copy(fv.fields, file.Fields)
+	fv.base = file.Base
 	fv.localOnly = file.LocalOnly
-	if !file.Base.IsZero() {
-		fv.baseYAML, err = yaml.Marshal(&file.Base)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", path, err)
-		}
-	}
 
 	return fv, nil
 }
@@ -195,12 +202,54 @@ func isContainer(kind reflect.Kind) bool {
 	}
 }
 
-// defaultValues per Go kind. Two values per kind is enough to observe a value->value
-// transition on top of add and remove; more would multiply the matrix without testing a
-// different code path.
+// defaultValues returns the values to try for a leaf field. Two per field is enough to
+// observe a value-to-value transition on top of add and remove; more would multiply the
+// matrix without testing a different code path.
+func defaultValues(typ reflect.Type) []any {
+	if values := enumValues(typ); values != nil {
+		return values
+	}
+	return kindValues(typ.Kind())
+}
+
+// enumValues returns two values of an SDK enum, which declares its own: every generated
+// enum type has a Values() method on its pointer receiver. Without this an enum field gets
+// the generic "x" and "y", which a real backend rejects or silently ignores -- so the field
+// reports nothing about whether the engine handles a change to it.
+//
+// The values are sorted because the SDK documents no order, and the report is a golden.
+func enumValues(typ reflect.Type) []any {
+	if typ.Kind() != reflect.String || typ == reflect.TypeFor[string]() {
+		return nil
+	}
+	method, ok := reflect.PointerTo(typ).MethodByName("Values")
+	if !ok || method.Type.NumIn() != 1 || method.Type.NumOut() != 1 {
+		return nil
+	}
+	result := method.Func.Call([]reflect.Value{reflect.New(typ)})[0]
+	if result.Kind() != reflect.Slice || result.Type().Elem() != typ {
+		return nil
+	}
+
+	all := make([]string, 0, result.Len())
+	for i := range result.Len() {
+		if value := result.Index(i).String(); value != "" {
+			all = append(all, value)
+		}
+	}
+	slices.Sort(all)
+	if len(all) < 2 {
+		// One value cannot show a value-to-value move, and add and remove alone would say
+		// nothing an enum-specific case does not already cover.
+		return nil
+	}
+	return []any{reflect.ValueOf(all[0]).Convert(typ).Interface(), reflect.ValueOf(all[1]).Convert(typ).Interface()}
+}
+
+// kindValues are the fallback values for a plain Go kind.
 //
 //nolint:exhaustive // the default branch covers every kind without a generic value
-func defaultValues(kind reflect.Kind) []any {
+func kindValues(kind reflect.Kind) []any {
 	switch kind {
 	case reflect.Bool:
 		return []any{false, true}
@@ -427,7 +476,7 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 		if !isWildcard {
 			values := fv.fields[path]
 			if values == nil {
-				values = defaultValues(typ.Kind())
+				values = defaultValues(typ)
 			}
 			add(path, typ.Kind(), values)
 			return false
@@ -450,7 +499,7 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 			// Explicit values are keyed by the pattern, since an index is incidental.
 			values := fv.fields[path]
 			if values == nil {
-				values = defaultValues(typ.Kind())
+				values = defaultValues(typ)
 			}
 			add(c, typ.Kind(), values)
 		}
