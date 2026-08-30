@@ -6,6 +6,13 @@ resources:
     foo:
       catalog_name: main
       name: test-schema-$UNIQUE_NAME
+      # Mutations for apply_update / apply_remote_update; see acceptance/bin/apply_mutation.py.
+      # Only SET is usable here. Every field of UpdateSchema is omitempty and DoUpdate
+      # carries just the config's own ForceSendFields, so clearing a field drops it from
+      # the PATCH and the remote keeps its old value. Both targets have to return the
+      # remote to base, which for REMOVE/UNCOMMENT means clearing -- so those never
+      # converge for this resource. Applies to comment and properties alike.
+      comment: base comment            # ACTION: SET "changed comment"
       grants:
         - principal: account users
           privileges:

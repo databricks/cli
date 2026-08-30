@@ -1,0 +1,28 @@
+# Invariant to test: a config change is planned, applied, and leaves no drift.
+# Each "# ACTION:" annotation in the config is one mutation; all of them run
+# against a single deployed resource, converging back to base in between.
+
+EXPECT_KEY=EXPECT_UPDATE
+SHAPE=local
+
+invariant_setup
+
+invariant_deploy LOG.deploy $CLI bundle deploy
+invariant_verify_no_drift
+
+run_mutation() {
+    local name="$1"
+    local expect="$2"
+
+    invariant_render_config "$name"
+    invariant_verify_mutation "$name" "$expect"
+    invariant_deploy_quiet "LOG.deploy.$name"
+    invariant_verify_no_drift
+
+    # Back to base so the next mutation starts from the same remote state.
+    invariant_render_config
+    invariant_deploy_quiet "LOG.deploy.$name.revert"
+    invariant_verify_no_drift
+}
+
+invariant_for_each_mutation run_mutation

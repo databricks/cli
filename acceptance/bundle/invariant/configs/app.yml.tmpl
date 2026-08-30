@@ -6,6 +6,11 @@ resources:
     foo:
       name: app-$UNIQUE_NAME
       source_code_path: ./app
+      # Mutations for apply_update / apply_remote_update; see acceptance/bin/apply_mutation.py.
+      #description: test description    # ACTION: UNCOMMENT
+      # compute_size is a backend_default: with no value in config the backend's own
+      # value must be accepted (skip), but an explicit value must still be applied.
+      #compute_size: LARGE              # ACTION: UNCOMMENT EXPECT_REMOTE_UPDATE: skip
       permissions:
         - level: CAN_USE
           group_name: users
