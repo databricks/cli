@@ -52,3 +52,72 @@ invariant_verify_no_drift() {
     cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
     verify_no_drift.py LOG.planjson
 }
+
+# Asserts the plan reflects one mutation. expect=skip means the engine deliberately
+# ignores this field, which is the strict "nothing planned at all" check. Otherwise the
+# change must be planned for the mutated field, with the shape this target creates:
+# SHAPE=local for a config change, SHAPE=remote for out-of-band remote drift. Checking
+# the shape is what makes the two targets distinguishable -- reverting a config also
+# produces a change, so the action alone proves nothing.
+invariant_verify_mutation() {
+    local name="$1"
+    local expect="$2"
+
+    $CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
+    cat LOG.planjson.err | contains.py '!panic:' '!internal error' > /dev/null
+
+    if [ "$expect" = "skip" ]; then
+        verify_no_drift.py LOG.planjson
+    else
+        verify_no_drift.py LOG.planjson --expect-change "${name%:*}" --shape "$SHAPE"
+    fi
+}
+
+# Deploys without adding anything to output.txt. Unlike invariant_deploy this
+# prints no INPUT_CONFIG_OK marker: config validity is already established by the
+# base deploy that runs before any mutation.
+invariant_deploy_quiet() {
+    local logfile="$1"
+    trace $CLI bundle deploy &> "$logfile"
+    cat "$logfile" | contains.py '!panic:' '!internal error' > /dev/null
+}
+
+# Calls HANDLER <name> <expect> once per "# ACTION:" annotation in the config.
+# EXPECT_KEY selects which expectation the annotations are read for, since an
+# ignored field is skipped by only one of the two targets.
+#
+# On success nothing is printed: mutation names differ per INPUT_CONFIG, and every
+# EnvMatrix variant has to produce the same output.txt. The name is recorded in
+# LOG.mutations and in the per-mutation LOG files, and printed on failure so a
+# broken run says which mutation broke.
+#
+# $MUTATION pins a single mutation for debugging:
+#   MUTATION=description:remove go test ./acceptance -run '...'
+invariant_for_each_mutation() {
+    local handler="$1"
+
+    apply_mutation.py databricks.yml --list --expect-key "$EXPECT_KEY" > LOG.mutations
+
+    while read -r name expect; do
+        if [ -n "${MUTATION:-}" ] && [ "${MUTATION:-}" != "$name" ]; then
+            continue
+        fi
+        "$handler" "$name" "$expect" || {
+            echo "FAILED mutation=$name expect=$expect"
+            exit 1
+        }
+    done < LOG.mutations
+}
+
+# Re-renders databricks.yml from the template, optionally applying one mutation.
+# Re-rendering is what returns the config to base, so a mutation never sees a
+# previous one's edit. Only the envsubst step is repeated: the data files and the
+# per-config init script are already in place from invariant_setup.
+invariant_render_config() {
+    local name="${1:-}"
+    envsubst < "$TESTDIR/../configs/$INPUT_CONFIG" > databricks.yml
+    if [ -n "$name" ]; then
+        apply_mutation.py databricks.yml "$name"
+    fi
+    cp databricks.yml "LOG.config.${name:-base}"
+}

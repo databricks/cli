@@ -1,0 +1,14 @@
+# Both targets assert on the plan's per-field "changes" map, which only the direct
+# engine emits -- a terraform plan carries a resource-level action and nothing else.
+# Pinned here rather than inherited so re-enabling terraform in the parent matrix
+# does not break these two targets.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# Only configs carrying "# ACTION:" annotations are worth running here; without any
+# the target degenerates into a second copy of no_drift. Overrides the parent list.
+EnvMatrix.INPUT_CONFIG = [
+    "app.yml.tmpl",
+    "job.yml.tmpl",
+    "postgres_endpoint.yml.tmpl",
+    "schema.yml.tmpl",
+]
