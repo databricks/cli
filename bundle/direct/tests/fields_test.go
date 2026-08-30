@@ -36,6 +36,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -74,11 +75,17 @@ func TestFields(t *testing.T) {
 			ctx := t.Context()
 
 			rep := &report{resourceType: resourceType} //exhaustruct:ignore
-			for _, cfg := range configs {
-				t.Run(cfg.name, func(t *testing.T) {
-					runConfig(t, ctx, client, user, cfg, fv, rep)
-				})
-			}
+			t.Run("configs", func(t *testing.T) {
+				for _, cfg := range configs {
+					t.Run(cfg.name, func(t *testing.T) {
+						// Each config has its own bundle, state and resources, so they
+						// only share the workspace -- which the fake server guards and a
+						// real one handles anyway. The unique name keeps them apart.
+						t.Parallel()
+						runConfig(t, ctx, client, user, cfg, fv, rep)
+					})
+				}
+			})
 			rep.write(t)
 		})
 	}
@@ -88,35 +95,47 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	adapter, err := dresources.NewAdapter(dresources.SupportedResources[cfg.resourceType], cfg.resourceType, client)
 	require.NoError(t, err)
 
-	fields, wildcard := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv)
-	rep.wildcard = wildcard
-
 	// The base deploy establishes that the config itself is deployable. If it is not,
 	// nothing below can be attributed to a field.
-	h, err := newBaseline(t, ctx, client, user, cfg)
+	h, err := newBaseline(t, ctx, client, user, cfg, fv)
 	if err != nil {
-		rep.add(result{cfg.name, "(base config)", "", "create", verdictBaseError, oneLine(err.Error())})
+		rep.add(result{cfg.name, "(base config)", "", "create", verdictBaseError, oneLine(err.Error()), err.Error()})
 		return
 	}
 
+	// Enumerated from the deployed config, not just the type: which slice and map entries
+	// exist decides which fields inside them can be reached at all.
 	base := h.fieldSnapshot()
+	fields, wildcard := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv, base)
+	rep.addNotCovered(wildcard)
+
+	for path, reason := range fv.skip {
+		rep.add(result{cfg.name, path, "", "", verdictSkipped, reason, ""})
+	}
 
 	for _, f := range fields {
-		if reason, ok := fv.skipReason(f.path); ok {
-			rep.add(result{cfg.name, f.path, "", "", verdictSkipped, reason})
-			continue
-		}
 		t.Run(f.path, func(t *testing.T) {
+			// What the field is currently deployed as, when that is known. Transitions are
+			// generated in runs that share a starting value, so this skips about half of
+			// the setup deploys -- the single biggest cost in the suite.
+			deployed, deployedKnown := dyn.InvalidValue, false
+
 			for _, tr := range f.transitions() {
 				t.Run(tr.label(), func(t *testing.T) {
-					res := runTransition(t, h, cfg.name, f.path, tr)
+					reuse := deployedKnown && valueLabel(deployed) == valueLabel(tr.from)
+					res := runTransition(t, h, cfg.name, f.path, tr, reuse)
 					rep.add(res)
+
+					// Only a clean apply leaves the field provably at "to".
+					deployed, deployedKnown = tr.to, res.verdict == verdictOK || res.verdict == verdictRecreate
+
 					if res.verdict.leavesResourceUsable() {
 						return
 					}
+					deployedKnown = false
 					// The resource is in an unknown state; carrying it into the next
 					// transition would turn one failure into a run of them.
-					rebuilt, err := rebuild(t, ctx, client, user, cfg, h)
+					rebuilt, err := rebuild(t, ctx, client, user, cfg, fv, h)
 					if err != nil {
 						t.Skipf("could not rebuild baseline: %s", err)
 					}
@@ -131,9 +150,9 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 		// what makes that cheap: reusing the old one waits out an asynchronous delete.
 		h.restoreField(base, f.path)
 		if !h.converged() {
-			rebuilt, err := rebuild(t, ctx, client, user, cfg, h)
+			rebuilt, err := rebuild(t, ctx, client, user, cfg, fv, h)
 			if err != nil {
-				rep.add(result{cfg.name, f.path, "", "", verdictBaseError, oneLine(err.Error())})
+				rep.add(result{cfg.name, f.path, "", "", verdictBaseError, oneLine(err.Error()), err.Error()})
 				return
 			}
 			h = rebuilt
@@ -143,7 +162,9 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 }
 
 // runTransition moves one field from one value to another and reports what happened.
-func runTransition(t *testing.T, h *bundleHarness, config, path string, tr transition) result {
+// runTransition moves one field from one value to another and reports what happened.
+// startsDeployed says the field already holds tr.from, so the setup deploy can be skipped.
+func runTransition(t *testing.T, h *bundleHarness, config, path string, tr transition, startsDeployed bool) result {
 	from, to := tr.from, tr.to
 	res := result{config: config, field: path, from: valueLabel(tr.from), to: valueLabel(tr.to)} //exhaustruct:ignore
 
@@ -153,10 +174,13 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		res.detail = err.Error()
 		return res
 	}
-	if _, diags := h.deploy(); diags.HasError() {
-		res.verdict = verdictBaseError
-		res.detail = firstError(diags)
-		return res
+	if !startsDeployed {
+		if _, diags := h.deploy(); diags.HasError() {
+			res.verdict = verdictBaseError
+			res.detail = firstError(diags)
+			res.evidence = allErrors(diags)
+			return res
+		}
 	}
 
 	// Now the change under test.
@@ -188,6 +212,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 			res.verdict = verdictDeployError
 		}
 		res.detail = firstError(diags)
+		res.evidence = allErrors(diags)
 		return res
 	}
 
@@ -199,8 +224,9 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 	}
 	if own, child := driftDetail(after, h.node); own != "" || child != "" {
 		// The plan that still wants a change is the whole evidence for this verdict, so
-		// print it. Subtests never fail here, so -v is how you see it.
-		t.Logf("post-deploy plan still proposes a change:\n%s", planJSON(after))
+		// keep it: -v prints it, and it goes into the full report.
+		res.evidence = planJSON(after)
+		t.Logf("post-deploy plan still proposes a change:\n%s", res.evidence)
 		// Attribute to the field only when the field's own node is still drifted; a
 		// child left behind by a recreate is a different problem with a different fix.
 		res.verdict, res.detail = verdictDrift, own
@@ -218,8 +244,8 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 }
 
 // newBaseline builds a harness and deploys the config as written.
-func newBaseline(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig) (*bundleHarness, error) {
-	h, err := newHarness(t, ctx, client, user, cfg.name, uniqueName())
+func newBaseline(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues) (*bundleHarness, error) {
+	h, err := newHarness(t, ctx, client, user, cfg.name, uniqueName(), fv.base)
 	if err != nil {
 		return nil, err
 	}
@@ -238,9 +264,9 @@ func newBaseline(t *testing.T, ctx context.Context, client *databricks.Workspace
 // rebuild starts over on a fresh resource, leaving the old one to be destroyed at the
 // end of the test. A new name is what makes this cheap: reusing the old one can mean
 // waiting out an asynchronous delete.
-func rebuild(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, old *bundleHarness) (*bundleHarness, error) {
+func rebuild(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, old *bundleHarness) (*bundleHarness, error) {
 	t.Cleanup(func() { _ = old.destroy() })
-	return newBaseline(t, ctx, client, user, cfg)
+	return newBaseline(t, ctx, client, user, cfg, fv)
 }
 
 // explainSkip says why a plan came back with nothing to do for the field under test.
@@ -262,10 +288,17 @@ func explainSkip(plan *deployplan.Plan, node, path string) (verdict, string) {
 	return verdictSuppressed, string(change.Action)
 }
 
-// valueLabel renders a value for the subtest name and the report.
+// valueLabel renders a value for the subtest name and the report. A slice or map is
+// labelled by size, since the point of testing one is how many entries it has.
 func valueLabel(v dyn.Value) string {
 	if !v.IsValid() {
 		return "absent"
+	}
+	if items, ok := v.AsSequence(); ok {
+		return "len" + strconv.Itoa(len(items))
+	}
+	if m, ok := v.AsMap(); ok {
+		return "keys" + strconv.Itoa(m.Len())
 	}
 	switch s := fmt.Sprintf("%v", v.AsAny()); s {
 	case "":
@@ -273,6 +306,18 @@ func valueLabel(v dyn.Value) string {
 	default:
 		return strings.ReplaceAll(s, " ", "_")
 	}
+}
+
+// allErrors returns every error diagnostic in full -- status, code, message, endpoint --
+// the way the CLI would print it. firstError's one-line form is for the report column.
+func allErrors(diags diag.Diagnostics) string {
+	var out []string
+	for _, d := range diags {
+		if d.Severity == diag.Error {
+			out = append(out, idPattern.ReplaceAllString(d.Summary, "[UNIQUE_NAME]"))
+		}
+	}
+	return strings.Join(out, "\n")
 }
 
 func firstError(diags diag.Diagnostics) string {

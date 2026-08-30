@@ -1,4 +1,5 @@
 === dashboard.yml.tmpl
+display_name                                 absent     y          SUPPRESSED  remote_already_set
 display_name                                 x          absent     POST_DEPLOY_DRIFT  display_name
 display_name                                 y          absent     POST_DEPLOY_DRIFT  display_name
 etag                                         absent     x          SUPPRESSED  custom

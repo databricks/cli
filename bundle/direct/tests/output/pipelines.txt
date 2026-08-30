@@ -4,7 +4,6 @@ deployment.version_id                        absent     y          SUPPRESSED  m
 deployment.version_id                        x          y          SUPPRESSED  managed by the deployment metadata service
 deployment.version_id                        y          x          SUPPRESSED  managed by the deployment metadata service
 dry_run                                      absent     true       POST_DEPLOY_DRIFT  dry_run
-dry_run                                      false      absent     SUPPRESSED  remote_already_set
 dry_run                                      false      true       POST_DEPLOY_DRIFT  dry_run
 dry_run                                      true       absent     SUPPRESSED  remote_already_set
 
@@ -14,7 +13,6 @@ deployment.version_id                        absent     y          SUPPRESSED  m
 deployment.version_id                        x          y          SUPPRESSED  managed by the deployment metadata service
 deployment.version_id                        y          x          SUPPRESSED  managed by the deployment metadata service
 dry_run                                      absent     true       POST_DEPLOY_DRIFT  dry_run
-dry_run                                      false      absent     SUPPRESSED  remote_already_set
 dry_run                                      false      true       POST_DEPLOY_DRIFT  dry_run
 dry_run                                      true       absent     SUPPRESSED  remote_already_set
 
@@ -24,6 +22,5 @@ deployment.version_id                        absent     y          SUPPRESSED  m
 deployment.version_id                        x          y          SUPPRESSED  managed by the deployment metadata service
 deployment.version_id                        y          x          SUPPRESSED  managed by the deployment metadata service
 dry_run                                      absent     true       POST_DEPLOY_DRIFT  dry_run
-dry_run                                      false      absent     SUPPRESSED  remote_already_set
 dry_run                                      false      true       POST_DEPLOY_DRIFT  dry_run
 dry_run                                      true       absent     SUPPRESSED  remote_already_set

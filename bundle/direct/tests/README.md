@@ -13,11 +13,23 @@ changing a field's type.
 
 For each config in `acceptance/bundle/invariant/configs` that describes a single
 resource, the suite deploys it once, then walks the resource's input struct the way
-`cmd/bundle/debug` refschema does. For each scalar field it moves the field through
-every ordered pair of a small value set — with `absent` in the set, so adding and
-removing a field are just the pairs with `absent` on one side — and records three
-things per move: did the plan propose anything, did the apply succeed, and was the
-next plan clean.
+`cmd/bundle/debug` refschema does. For each field it moves the field through every
+ordered pair of a small value set — with `absent` in the set, so adding and removing a
+field are just the pairs with `absent` on one side — and records three things per move:
+did the plan propose anything, did the apply succeed, and was the next plan clean.
+
+The pairs are walked as one chain rather than staged one at a time: the values form a
+complete digraph, so a single Eulerian circuit covers every ordered pair exactly once and
+each move starts where the last one ended. That halves the deploys, and
+`TestTransitionsCoverEveryPairInOneChain` is what guarantees nothing is missed.
+
+**Slices and maps** are covered two ways. The container is a field in its own right, whose
+values are the config's own and that value with its last entry dropped — so with `absent`
+in the set, one field covers adding and removing an entry as well as adding and removing
+the whole container, all with data the backend has already accepted. Separately, a pattern
+like `tasks[*].description` is expanded against the deployed config to the indices that
+exist, so fields inside an element are tested like any other. A pattern with nothing
+behind it in the config is reported as not covered rather than silently passing.
 
 Everything runs in-process against the direct engine's own `CalculatePlan` and
 `Apply`. There is no CLI subprocess and no bundle-file upload: at thousands of
@@ -47,8 +59,9 @@ is not a gap; it is the wire format telling the truth.
 
 Two files per resource type: `output/<type>.txt` holds only the results worth looking at,
 one line each, so any diff to it is a change in behaviour. `output/<type>.full.txt` holds
-every result plus the summary and the not-covered list; it is gitignored, because it moves
-whenever a passing row moves.
+every result plus the summary and the not-covered list, and indents the evidence under each
+finding — the post-deploy plan for drift, the whole API error for a rejection. It is
+gitignored, because it moves whenever a passing row moves and is full of generated ids.
 
 The suite deliberately does **not** read `resources.yml`. That file is the engine's
 answer to many of these cases, so consulting it would just restate the implementation.
@@ -60,10 +73,21 @@ The `SUPPRESSED` reason string is the engine explaining itself, which is differe
 guess — enums, ids, anything the backend constrains:
 
 ```yaml
+# Seeded into the resource before the first deploy, so this block's fields become
+# reachable. Some blocks only validate as a whole -- a job's git_source needs a provider,
+# a url and exactly one ref -- and cannot be built up one field at a time from nothing.
+# Keep path-valued fields out: base is merged after the mutator pipeline has run.
+base:
+  git_source:
+    git_provider: gitHub
+    git_url: https://github.com/databricks/cli.test
+    git_commit: abc123
+
 skip:
-  name: rename waits out an asynchronous delete
+  git_source.git_branch: mutually exclusive with the seeded git_commit
+
 fields:
-  compute_size: [MEDIUM, LARGE]
+  git_source.git_commit: [abc123, def456]
 ```
 
 Every resource type runs everywhere — local and cloud alike — so most types need no file

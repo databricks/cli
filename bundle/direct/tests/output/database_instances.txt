@@ -29,7 +29,6 @@ effective_enable_pg_native_login             false      true       POST_DEPLOY_D
 effective_enable_pg_native_login             true       absent     POST_DEPLOY_DRIFT  capacity
 effective_enable_pg_native_login             true       false      POST_DEPLOY_DRIFT  capacity
 effective_enable_readable_secondaries        absent     true       POST_DEPLOY_DRIFT  capacity
-effective_enable_readable_secondaries        false      absent     POST_DEPLOY_DRIFT  capacity
 effective_enable_readable_secondaries        false      true       POST_DEPLOY_DRIFT  capacity
 effective_enable_readable_secondaries        true       absent     POST_DEPLOY_DRIFT  capacity
 effective_enable_readable_secondaries        true       false      POST_DEPLOY_DRIFT  capacity
@@ -62,7 +61,6 @@ enable_pg_native_login                       false      true       POST_DEPLOY_D
 enable_pg_native_login                       true       absent     POST_DEPLOY_DRIFT  capacity
 enable_pg_native_login                       true       false      POST_DEPLOY_DRIFT  capacity
 enable_readable_secondaries                  absent     true       POST_DEPLOY_DRIFT  capacity
-enable_readable_secondaries                  false      absent     POST_DEPLOY_DRIFT  capacity
 enable_readable_secondaries                  false      true       POST_DEPLOY_DRIFT  capacity
 enable_readable_secondaries                  true       absent     POST_DEPLOY_DRIFT  capacity
 enable_readable_secondaries                  true       false      POST_DEPLOY_DRIFT  capacity
@@ -103,7 +101,6 @@ state                                        x          y          POST_DEPLOY_D
 state                                        y          absent     POST_DEPLOY_DRIFT  capacity
 state                                        y          x          POST_DEPLOY_DRIFT  capacity
 stopped                                      absent     true       POST_DEPLOY_DRIFT  capacity
-stopped                                      false      absent     POST_DEPLOY_DRIFT  capacity
 stopped                                      false      true       POST_DEPLOY_DRIFT  capacity
 stopped                                      true       absent     POST_DEPLOY_DRIFT  capacity
 stopped                                      true       false      POST_DEPLOY_DRIFT  capacity
