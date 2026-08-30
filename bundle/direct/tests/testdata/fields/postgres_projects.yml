@@ -1,4 +1,8 @@
 # Value library for postgres projects. See ../../README.md.
+
+# Postgres resources are only available on AWS, and the invariant suite
+# excludes them from every cloud run for that reason.
+local_only: Postgres resources are only available on AWS
 base:
   custom_tags:
     - key: team

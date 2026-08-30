@@ -14,7 +14,7 @@ base:
     - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQtest
   init_scripts:
     - workspace:
-        destination: /Users/tester@databricks.com/init.sh
+        destination: /Users/$CURRENT_USER_NAME/init.sh
     - s3:
         destination: s3://bucket/init.sh
         region: us-east-1
