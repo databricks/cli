@@ -1,0 +1,23 @@
+# Value library for jobs. See ../README.md.
+cloud: true
+
+skip:
+  # git_source only validates as a coherent set: a provider, a url, and exactly one of
+  # branch/tag/commit. Moving one of its fields at a time always produces an invalid
+  # combination, so every value comes back rejected and tells us nothing about field
+  # support. Covered instead by acceptance/bundle/resources/jobs.
+  git_source.git_provider: needs a coherent git_source block
+  git_source.git_url: needs a coherent git_source block
+  git_source.git_branch: needs a coherent git_source block
+  git_source.git_tag: needs a coherent git_source block
+  git_source.git_commit: needs a coherent git_source block
+  git_source.git_snapshot.used_commit: needs a coherent git_source block
+  git_source.job_source.job_config_path: needs a coherent git_source block
+  git_source.job_source.import_from_git_branch: needs a coherent git_source block
+  git_source.job_source.dirty_state: needs a coherent git_source block
+
+fields:
+  format: [SINGLE_TASK, MULTI_TASK]
+  performance_target: [PERFORMANCE_OPTIMIZED, STANDARD]
+  max_concurrent_runs: [1, 5]
+  timeout_seconds: [600, 1200]

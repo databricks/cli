@@ -1,0 +1,155 @@
+=== catalog.yml.tmpl
+comment                                      absent->x          OK
+comment                                      absent->y          OK
+comment                                      x->absent          DRIFT  comment
+comment                                      x->y               OK
+comment                                      y->absent          DRIFT  comment
+comment                                      y->x               OK
+connection_name                              absent->x          OK_RECREATE
+connection_name                              absent->y          OK_RECREATE
+connection_name                              x->absent          OK_RECREATE
+connection_name                              x->y               OK_RECREATE
+connection_name                              y->absent          OK_RECREATE
+connection_name                              y->x               OK_RECREATE
+custom_max_retention_hours                   1->2               OK
+custom_max_retention_hours                   1->absent          DRIFT  custom_max_retention_hours
+custom_max_retention_hours                   2->1               OK
+custom_max_retention_hours                   2->absent          DRIFT  custom_max_retention_hours
+custom_max_retention_hours                   absent->1          OK
+custom_max_retention_hours                   absent->2          OK
+lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
+managed_encryption_settings.azure_encryption_settings.azure_cmk_access_connector_id absent->x          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_access_connector_id absent->y          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_access_connector_id x->absent          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_access_connector_id x->y               OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_access_connector_id y->absent          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_access_connector_id y->x               OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_managed_identity_id absent->x          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_managed_identity_id absent->y          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_managed_identity_id x->absent          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_managed_identity_id x->y               OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_managed_identity_id y->absent          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_managed_identity_id y->x               OK
+managed_encryption_settings.azure_encryption_settings.azure_tenant_id x->y               OK
+managed_encryption_settings.azure_encryption_settings.azure_tenant_id y->x               OK
+managed_encryption_settings.azure_key_vault_key_id absent->x          OK
+managed_encryption_settings.azure_key_vault_key_id absent->y          OK
+managed_encryption_settings.azure_key_vault_key_id x->absent          OK
+managed_encryption_settings.azure_key_vault_key_id x->y               OK
+managed_encryption_settings.azure_key_vault_key_id y->absent          OK
+managed_encryption_settings.azure_key_vault_key_id y->x               OK
+managed_encryption_settings.customer_managed_key_id absent->x          OK
+managed_encryption_settings.customer_managed_key_id absent->y          OK
+managed_encryption_settings.customer_managed_key_id x->absent          OK
+managed_encryption_settings.customer_managed_key_id x->y               OK
+managed_encryption_settings.customer_managed_key_id y->absent          OK
+managed_encryption_settings.customer_managed_key_id y->x               OK
+name                                         x->y               OK
+name                                         y->x               OK
+provider_name                                absent->x          OK_RECREATE
+provider_name                                absent->y          OK_RECREATE
+provider_name                                x->absent          OK_RECREATE
+provider_name                                x->y               OK_RECREATE
+provider_name                                y->absent          OK_RECREATE
+provider_name                                y->x               OK_RECREATE
+share_name                                   absent->x          OK_RECREATE
+share_name                                   absent->y          OK_RECREATE
+share_name                                   x->absent          OK_RECREATE
+share_name                                   x->y               OK_RECREATE
+share_name                                   y->absent          OK_RECREATE
+share_name                                   y->x               OK_RECREATE
+storage_root                                 absent->x          OK_RECREATE
+storage_root                                 absent->y          OK_RECREATE
+storage_root                                 x->absent          OK_RECREATE
+storage_root                                 x->y               OK_RECREATE
+storage_root                                 y->absent          OK_RECREATE
+storage_root                                 y->x               OK_RECREATE
+
+=== catalog_optional_fields.yml.tmpl
+comment                                      absent->x          OK
+comment                                      absent->y          OK
+comment                                      x->absent          DRIFT  comment
+comment                                      x->y               OK
+comment                                      y->absent          DRIFT  comment
+comment                                      y->x               OK
+connection_name                              absent->x          OK_RECREATE
+connection_name                              absent->y          OK_RECREATE
+connection_name                              x->absent          OK_RECREATE
+connection_name                              x->y               OK_RECREATE
+connection_name                              y->absent          OK_RECREATE
+connection_name                              y->x               OK_RECREATE
+custom_max_retention_hours                   1->2               OK
+custom_max_retention_hours                   1->absent          DRIFT  custom_max_retention_hours
+custom_max_retention_hours                   2->1               OK
+custom_max_retention_hours                   2->absent          DRIFT  custom_max_retention_hours
+custom_max_retention_hours                   absent->1          OK
+custom_max_retention_hours                   absent->2          OK
+lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
+managed_encryption_settings.azure_encryption_settings.azure_cmk_access_connector_id absent->x          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_access_connector_id absent->y          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_access_connector_id x->absent          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_access_connector_id x->y               OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_access_connector_id y->absent          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_access_connector_id y->x               OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_managed_identity_id absent->x          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_managed_identity_id absent->y          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_managed_identity_id x->absent          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_managed_identity_id x->y               OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_managed_identity_id y->absent          OK
+managed_encryption_settings.azure_encryption_settings.azure_cmk_managed_identity_id y->x               OK
+managed_encryption_settings.azure_encryption_settings.azure_tenant_id x->y               OK
+managed_encryption_settings.azure_encryption_settings.azure_tenant_id y->x               OK
+managed_encryption_settings.azure_key_vault_key_id absent->x          OK
+managed_encryption_settings.azure_key_vault_key_id absent->y          OK
+managed_encryption_settings.azure_key_vault_key_id x->absent          OK
+managed_encryption_settings.azure_key_vault_key_id x->y               OK
+managed_encryption_settings.azure_key_vault_key_id y->absent          OK
+managed_encryption_settings.azure_key_vault_key_id y->x               OK
+managed_encryption_settings.customer_managed_key_id absent->x          OK
+managed_encryption_settings.customer_managed_key_id absent->y          OK
+managed_encryption_settings.customer_managed_key_id x->absent          OK
+managed_encryption_settings.customer_managed_key_id x->y               OK
+managed_encryption_settings.customer_managed_key_id y->absent          OK
+managed_encryption_settings.customer_managed_key_id y->x               OK
+name                                         x->y               OK
+name                                         y->x               OK
+provider_name                                absent->x          OK_RECREATE
+provider_name                                absent->y          OK_RECREATE
+provider_name                                x->absent          OK_RECREATE
+provider_name                                x->y               OK_RECREATE
+provider_name                                y->absent          OK_RECREATE
+provider_name                                y->x               OK_RECREATE
+share_name                                   absent->x          OK_RECREATE
+share_name                                   absent->y          OK_RECREATE
+share_name                                   x->absent          OK_RECREATE
+share_name                                   x->y               OK_RECREATE
+share_name                                   y->absent          OK_RECREATE
+share_name                                   y->x               OK_RECREATE
+storage_root                                 absent->x          OK_RECREATE
+storage_root                                 absent->y          OK_RECREATE
+storage_root                                 x->absent          OK_RECREATE
+storage_root                                 x->y               OK_RECREATE
+storage_root                                 y->absent          OK_RECREATE
+storage_root                                 y->x               OK_RECREATE
+
+=== summary
+OK             72
+OK_RECREATE    48
+NOT_OBSERVABLE 12
+DRIFT          8
+
+=== not covered: 4 fields under a slice or map
+grants[*].principal
+grants[*].privileges[*]
+options.*
+properties.*

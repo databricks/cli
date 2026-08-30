@@ -8,6 +8,9 @@ vars:
   # .github/workflows/check.yml and python/Taskfile.yml.
   RUFF: uvx ruff@0.15.17
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
+  # Field-support catalog. Covered by TEST_PACKAGES for local/CI runs via ./bundle/...,
+  # but named separately because the cloud tasks below list their packages explicitly.
+  FIELDS_PACKAGE: ./bundle/direct/dresources_test
   ACCEPTANCE_TEST_FILTER: ""
   # Single brace-expansion glob covering every //go:embed target in the repo,
   # computed by grepping `//go:embed` directives. Evaluated lazily by Task so
@@ -582,6 +585,11 @@ tasks:
     cmds:
       - "go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
+  test-update-fields:
+    desc: Update the resource field-support catalog (local)
+    cmds:
+      - "go test {{.FIELDS_PACKAGE}} -run '^TestFields$' -update -timeout=${LOCAL_TIMEOUT:-60m}"
+
   test-update-templates:
     desc: Update acceptance test template output
     sources: *ACC_SOURCES_UPDATE
@@ -593,6 +601,7 @@ tasks:
     desc: Update all acceptance test outputs
     cmds:
       - task: test-update
+      - task: test-update-fields
 
   # Follows upstream HEAD, so its result changes over time: keep it out of
   # `generate-check`, which requires byte-for-byte reproducible output.
@@ -747,7 +756,7 @@ tasks:
           --format github-actions \
           --rerun-fails \
           --jsonfile output.json \
-          --packages "./acceptance ./integration/..." \
+          --packages "./acceptance ./integration/... {{.FIELDS_PACKAGE}}" \
           -- -parallel 4 -timeout=12h
 
   integration-short:
@@ -761,7 +770,7 @@ tasks:
           --format github-actions \
           --rerun-fails \
           --jsonfile output.json \
-          --packages "./acceptance ./integration/..." \
+          --packages "./acceptance ./integration/... {{.FIELDS_PACKAGE}}" \
           -- -parallel 4 -timeout=12h -short
 
   integration-short-skiplocal:
@@ -775,7 +784,7 @@ tasks:
           --format github-actions \
           --rerun-fails \
           --jsonfile output.json \
-          --packages "./acceptance ./integration/..." \
+          --packages "./acceptance ./integration/... {{.FIELDS_PACKAGE}}" \
           -- -parallel 4 -timeout=2h -short
 
   dbr-integration:

@@ -1,0 +1,97 @@
+=== dashboard.yml.tmpl
+create_time                                  absent->x          OK
+create_time                                  absent->y          OK
+create_time                                  x->absent          OK
+create_time                                  x->y               OK
+create_time                                  y->absent          OK
+create_time                                  y->x               OK
+dashboard_id                                 absent->x          OK
+dashboard_id                                 absent->y          OK
+dashboard_id                                 x->absent          OK
+dashboard_id                                 x->y               OK
+dashboard_id                                 y->absent          OK
+dashboard_id                                 y->x               OK
+dataset_catalog                              absent->x          OK
+dataset_catalog                              absent->y          OK
+dataset_catalog                              x->absent          OK
+dataset_catalog                              x->y               OK
+dataset_catalog                              y->absent          OK
+dataset_catalog                              y->x               OK
+dataset_schema                               absent->x          OK
+dataset_schema                               absent->y          OK
+dataset_schema                               x->absent          OK
+dataset_schema                               x->y               OK
+dataset_schema                               y->absent          OK
+dataset_schema                               y->x               OK
+display_name                                 absent->x          OK
+display_name                                 absent->y          OK
+display_name                                 x->absent          DRIFT  display_name
+display_name                                 x->y               OK
+display_name                                 y->absent          DRIFT  display_name
+display_name                                 y->x               OK
+embed_credentials                            absent->false      NOT_OBSERVABLE
+embed_credentials                            absent->true       OK
+embed_credentials                            false->absent      SUPPRESSED  empty
+embed_credentials                            false->true        OK
+embed_credentials                            true->absent       OK
+embed_credentials                            true->false        OK
+etag                                         absent->x          SUPPRESSED  custom
+etag                                         absent->y          SUPPRESSED  custom
+etag                                         x->absent          SUPPRESSED  custom
+etag                                         x->y               SUPPRESSED  custom
+etag                                         y->absent          SUPPRESSED  custom
+etag                                         y->x               SUPPRESSED  custom
+file_path                                    absent->x          NOT_OBSERVABLE
+file_path                                    absent->y          NOT_OBSERVABLE
+file_path                                    x->absent          NOT_OBSERVABLE
+file_path                                    x->y               NOT_OBSERVABLE
+file_path                                    y->absent          NOT_OBSERVABLE
+file_path                                    y->x               NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
+lifecycle_state                              absent->x          OK
+lifecycle_state                              absent->y          OK
+lifecycle_state                              x->absent          OK
+lifecycle_state                              x->y               OK
+lifecycle_state                              y->absent          OK
+lifecycle_state                              y->x               OK
+parent_path                                  absent->x          DRIFT  parent_path
+parent_path                                  absent->y          DRIFT  parent_path
+parent_path                                  x->absent          DRIFT  parent_path
+parent_path                                  x->y               DRIFT  parent_path
+parent_path                                  y->absent          DRIFT  parent_path
+parent_path                                  y->x               DRIFT  parent_path
+path                                         absent->x          OK
+path                                         absent->y          OK
+path                                         x->absent          OK
+path                                         x->y               OK
+path                                         y->absent          OK
+path                                         y->x               OK
+update_time                                  absent->x          OK
+update_time                                  absent->y          OK
+update_time                                  x->absent          OK
+update_time                                  x->y               OK
+update_time                                  y->absent          OK
+update_time                                  y->x               OK
+warehouse_id                                 absent->x          OK
+warehouse_id                                 absent->y          OK
+warehouse_id                                 x->absent          OK
+warehouse_id                                 x->y               OK
+warehouse_id                                 y->absent          OK
+warehouse_id                                 y->x               OK
+
+=== summary
+OK             56
+SUPPRESSED     7
+NOT_OBSERVABLE 13
+DRIFT          8
+
+=== not covered: 4 fields under a slice or map
+permissions[*].group_name
+permissions[*].level
+permissions[*].service_principal_name
+permissions[*].user_name

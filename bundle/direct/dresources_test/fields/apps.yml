@@ -1,0 +1,14 @@
+# Value library for apps. See ../README.md.
+#
+# Cloud is off: an app create provisions compute, so a per-transition rebuild costs
+# minutes rather than milliseconds.
+cloud: false
+
+fields:
+  compute_size: [MEDIUM, LARGE]
+
+skip:
+  # Renaming an app recreates it, and an app delete is asynchronous: the name stays
+  # reserved while the old app sits in DELETING, so every rename waits out the delete.
+  # Recreate-on-rename is covered by acceptance/bundle/resources/apps.
+  name: rename waits out an asynchronous delete

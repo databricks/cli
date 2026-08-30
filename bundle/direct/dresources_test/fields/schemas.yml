@@ -1,0 +1,12 @@
+# Value library for schemas. See ../README.md.
+cloud: true
+
+skip:
+  # storage_root must point at a real external location.
+  storage_root: needs an external location
+
+fields:
+  # A real workspace has no catalog named "x", so the generic string values would only
+  # ever report BACKEND_ERROR. "main" exists everywhere; with one value the field still
+  # gets its add and remove transitions.
+  catalog_name: [main]

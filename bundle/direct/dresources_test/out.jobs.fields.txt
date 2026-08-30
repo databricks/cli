@@ -1,0 +1,2055 @@
+=== job.yml.tmpl
+budget_policy_id                             absent->x          OK
+budget_policy_id                             absent->y          OK
+budget_policy_id                             x->absent          OK
+budget_policy_id                             x->y               OK
+budget_policy_id                             y->absent          OK
+budget_policy_id                             y->x               OK
+continuous.pause_status                      absent->x          OK
+continuous.pause_status                      absent->y          OK
+continuous.pause_status                      x->absent          OK
+continuous.pause_status                      x->y               OK
+continuous.pause_status                      y->absent          OK
+continuous.pause_status                      y->x               OK
+continuous.task_retry_mode                   absent->x          OK
+continuous.task_retry_mode                   absent->y          OK
+continuous.task_retry_mode                   x->absent          OK
+continuous.task_retry_mode                   x->y               OK
+continuous.task_retry_mode                   y->absent          OK
+continuous.task_retry_mode                   y->x               OK
+deployment.deployment_id                     absent->x          OK
+deployment.deployment_id                     absent->y          OK
+deployment.deployment_id                     x->absent          OK
+deployment.deployment_id                     x->y               OK
+deployment.deployment_id                     y->absent          OK
+deployment.deployment_id                     y->x               OK
+deployment.kind                              x->y               OK
+deployment.kind                              y->x               OK
+deployment.metadata_file_path                absent->x          OK
+deployment.metadata_file_path                absent->y          OK
+deployment.metadata_file_path                x->absent          OK
+deployment.metadata_file_path                x->y               OK
+deployment.metadata_file_path                y->absent          OK
+deployment.metadata_file_path                y->x               OK
+deployment.version_id                        absent->x          SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        absent->y          SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        x->absent          NOT_OBSERVABLE
+deployment.version_id                        x->y               SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        y->absent          NOT_OBSERVABLE
+deployment.version_id                        y->x               SUPPRESSED  managed by the deployment metadata service
+description                                  absent->x          OK
+description                                  absent->y          OK
+description                                  x->absent          OK
+description                                  x->y               OK
+description                                  y->absent          OK
+description                                  y->x               OK
+edit_mode                                    absent->x          OK
+edit_mode                                    absent->y          OK
+edit_mode                                    x->absent          OK
+edit_mode                                    x->y               OK
+edit_mode                                    y->absent          OK
+edit_mode                                    y->x               OK
+email_notifications.no_alert_for_skipped_runs absent->false      OK
+email_notifications.no_alert_for_skipped_runs absent->true       OK
+email_notifications.no_alert_for_skipped_runs false->absent      SUPPRESSED  empty
+email_notifications.no_alert_for_skipped_runs false->true        OK
+email_notifications.no_alert_for_skipped_runs true->absent       OK
+email_notifications.no_alert_for_skipped_runs true->false        OK
+format                                       MULTI_TASK->SINGLE_TASK OK
+format                                       MULTI_TASK->absent OK
+format                                       SINGLE_TASK->MULTI_TASK OK
+format                                       SINGLE_TASK->absent OK
+format                                       absent->MULTI_TASK OK
+format                                       absent->SINGLE_TASK OK
+git_source.git_branch                        -                  SKIPPED  needs a coherent git_source block
+git_source.git_commit                        -                  SKIPPED  needs a coherent git_source block
+git_source.git_provider                      -                  SKIPPED  needs a coherent git_source block
+git_source.git_snapshot.used_commit          -                  SKIPPED  needs a coherent git_source block
+git_source.git_tag                           -                  SKIPPED  needs a coherent git_source block
+git_source.git_url                           -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.dirty_state            -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.import_from_git_branch -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.job_config_path        -                  SKIPPED  needs a coherent git_source block
+lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
+max_concurrent_runs                          1->5               OK
+max_concurrent_runs                          1->absent          OK
+max_concurrent_runs                          5->1               OK
+max_concurrent_runs                          5->absent          OK
+max_concurrent_runs                          absent->1          OK
+max_concurrent_runs                          absent->5          OK
+name                                         absent->x          OK
+name                                         absent->y          OK
+name                                         x->absent          OK
+name                                         x->y               OK
+name                                         y->absent          OK
+name                                         y->x               OK
+notification_settings.no_alert_for_canceled_runs absent->false      OK
+notification_settings.no_alert_for_canceled_runs absent->true       OK
+notification_settings.no_alert_for_canceled_runs false->absent      SUPPRESSED  empty
+notification_settings.no_alert_for_canceled_runs false->true        OK
+notification_settings.no_alert_for_canceled_runs true->absent       OK
+notification_settings.no_alert_for_canceled_runs true->false        OK
+notification_settings.no_alert_for_skipped_runs absent->false      SUPPRESSED  empty
+notification_settings.no_alert_for_skipped_runs absent->true       OK
+notification_settings.no_alert_for_skipped_runs false->absent      SUPPRESSED  empty
+notification_settings.no_alert_for_skipped_runs false->true        OK
+notification_settings.no_alert_for_skipped_runs true->absent       OK
+notification_settings.no_alert_for_skipped_runs true->false        OK
+parent_path                                  absent->x          OK
+parent_path                                  absent->y          OK
+parent_path                                  x->absent          OK
+parent_path                                  x->y               OK
+parent_path                                  y->absent          OK
+parent_path                                  y->x               OK
+performance_target                           PERFORMANCE_OPTIMIZED->STANDARD OK
+performance_target                           PERFORMANCE_OPTIMIZED->absent OK
+performance_target                           STANDARD->PERFORMANCE_OPTIMIZED OK
+performance_target                           STANDARD->absent   OK
+performance_target                           absent->PERFORMANCE_OPTIMIZED OK
+performance_target                           absent->STANDARD   OK
+queue.enabled                                false->true        OK
+queue.enabled                                true->false        OK
+run_as.group_name                            absent->x          OK
+run_as.group_name                            absent->y          OK
+run_as.group_name                            x->absent          OK
+run_as.group_name                            x->y               OK
+run_as.group_name                            y->absent          OK
+run_as.group_name                            y->x               OK
+run_as.service_principal_name                absent->x          OK
+run_as.service_principal_name                absent->y          OK
+run_as.service_principal_name                x->absent          OK
+run_as.service_principal_name                x->y               OK
+run_as.service_principal_name                y->absent          OK
+run_as.service_principal_name                y->x               OK
+run_as.user_name                             absent->x          OK
+run_as.user_name                             absent->y          OK
+run_as.user_name                             x->absent          OK
+run_as.user_name                             x->y               OK
+run_as.user_name                             y->absent          OK
+run_as.user_name                             y->x               OK
+schedule.pause_status                        absent->x          OK
+schedule.pause_status                        absent->y          OK
+schedule.pause_status                        x->absent          OK
+schedule.pause_status                        x->y               OK
+schedule.pause_status                        y->absent          OK
+schedule.pause_status                        y->x               OK
+schedule.quartz_cron_expression              x->y               OK
+schedule.quartz_cron_expression              y->x               OK
+schedule.sql_condition.sql_query_id          x->y               OK
+schedule.sql_condition.sql_query_id          y->x               OK
+schedule.sql_condition.trigger_mode          absent->x          OK
+schedule.sql_condition.trigger_mode          absent->y          OK
+schedule.sql_condition.trigger_mode          x->absent          OK
+schedule.sql_condition.trigger_mode          x->y               OK
+schedule.sql_condition.trigger_mode          y->absent          OK
+schedule.sql_condition.trigger_mode          y->x               OK
+schedule.sql_condition.warehouse_id          x->y               OK
+schedule.sql_condition.warehouse_id          y->x               OK
+schedule.timezone_id                         x->y               OK
+schedule.timezone_id                         y->x               OK
+timeout_seconds                              1200->600          OK
+timeout_seconds                              1200->absent       OK
+timeout_seconds                              600->1200          OK
+timeout_seconds                              600->absent        OK
+timeout_seconds                              absent->1200       OK
+timeout_seconds                              absent->600        OK
+trigger.file_arrival.min_time_between_triggers_seconds 1->2               OK
+trigger.file_arrival.min_time_between_triggers_seconds 1->absent          OK
+trigger.file_arrival.min_time_between_triggers_seconds 2->1               OK
+trigger.file_arrival.min_time_between_triggers_seconds 2->absent          OK
+trigger.file_arrival.min_time_between_triggers_seconds absent->1          OK
+trigger.file_arrival.min_time_between_triggers_seconds absent->2          OK
+trigger.file_arrival.url                     x->y               OK
+trigger.file_arrival.url                     y->x               OK
+trigger.file_arrival.wait_after_last_change_seconds 1->2               OK
+trigger.file_arrival.wait_after_last_change_seconds 1->absent          OK
+trigger.file_arrival.wait_after_last_change_seconds 2->1               OK
+trigger.file_arrival.wait_after_last_change_seconds 2->absent          OK
+trigger.file_arrival.wait_after_last_change_seconds absent->1          OK
+trigger.file_arrival.wait_after_last_change_seconds absent->2          OK
+trigger.model.condition                      x->y               OK
+trigger.model.condition                      y->x               OK
+trigger.model.min_time_between_triggers_seconds 1->2               OK
+trigger.model.min_time_between_triggers_seconds 1->absent          OK
+trigger.model.min_time_between_triggers_seconds 2->1               OK
+trigger.model.min_time_between_triggers_seconds 2->absent          OK
+trigger.model.min_time_between_triggers_seconds absent->1          OK
+trigger.model.min_time_between_triggers_seconds absent->2          OK
+trigger.model.securable_name                 absent->x          OK
+trigger.model.securable_name                 absent->y          OK
+trigger.model.securable_name                 x->absent          OK
+trigger.model.securable_name                 x->y               OK
+trigger.model.securable_name                 y->absent          OK
+trigger.model.securable_name                 y->x               OK
+trigger.model.wait_after_last_change_seconds 1->2               OK
+trigger.model.wait_after_last_change_seconds 1->absent          OK
+trigger.model.wait_after_last_change_seconds 2->1               OK
+trigger.model.wait_after_last_change_seconds 2->absent          OK
+trigger.model.wait_after_last_change_seconds absent->1          OK
+trigger.model.wait_after_last_change_seconds absent->2          OK
+trigger.pause_status                         absent->x          OK
+trigger.pause_status                         absent->y          OK
+trigger.pause_status                         x->absent          OK
+trigger.pause_status                         x->y               OK
+trigger.pause_status                         y->absent          OK
+trigger.pause_status                         y->x               OK
+trigger.periodic.interval                    1->2               OK
+trigger.periodic.interval                    2->1               OK
+trigger.periodic.unit                        x->y               OK
+trigger.periodic.unit                        y->x               OK
+trigger.sql_condition.sql_query_id           x->y               OK
+trigger.sql_condition.sql_query_id           y->x               OK
+trigger.sql_condition.trigger_mode           absent->x          OK
+trigger.sql_condition.trigger_mode           absent->y          OK
+trigger.sql_condition.trigger_mode           x->absent          OK
+trigger.sql_condition.trigger_mode           x->y               OK
+trigger.sql_condition.trigger_mode           y->absent          OK
+trigger.sql_condition.trigger_mode           y->x               OK
+trigger.sql_condition.warehouse_id           x->y               OK
+trigger.sql_condition.warehouse_id           y->x               OK
+trigger.table_update.condition               absent->x          OK
+trigger.table_update.condition               absent->y          OK
+trigger.table_update.condition               x->absent          OK
+trigger.table_update.condition               x->y               OK
+trigger.table_update.condition               y->absent          OK
+trigger.table_update.condition               y->x               OK
+trigger.table_update.min_time_between_triggers_seconds 1->2               OK
+trigger.table_update.min_time_between_triggers_seconds 1->absent          OK
+trigger.table_update.min_time_between_triggers_seconds 2->1               OK
+trigger.table_update.min_time_between_triggers_seconds 2->absent          OK
+trigger.table_update.min_time_between_triggers_seconds absent->1          OK
+trigger.table_update.min_time_between_triggers_seconds absent->2          OK
+trigger.table_update.wait_after_last_change_seconds 1->2               OK
+trigger.table_update.wait_after_last_change_seconds 1->absent          OK
+trigger.table_update.wait_after_last_change_seconds 2->1               OK
+trigger.table_update.wait_after_last_change_seconds 2->absent          OK
+trigger.table_update.wait_after_last_change_seconds absent->1          OK
+trigger.table_update.wait_after_last_change_seconds absent->2          OK
+usage_policy_id                              absent->x          OK
+usage_policy_id                              absent->y          OK
+usage_policy_id                              x->absent          OK
+usage_policy_id                              x->y               OK
+usage_policy_id                              y->absent          OK
+usage_policy_id                              y->x               OK
+
+=== job_apply_policy_default_values_for_each_task.yml.tmpl
+budget_policy_id                             absent->x          OK
+budget_policy_id                             absent->y          OK
+budget_policy_id                             x->absent          OK
+budget_policy_id                             x->y               OK
+budget_policy_id                             y->absent          OK
+budget_policy_id                             y->x               OK
+continuous.pause_status                      absent->x          OK
+continuous.pause_status                      absent->y          OK
+continuous.pause_status                      x->absent          OK
+continuous.pause_status                      x->y               OK
+continuous.pause_status                      y->absent          OK
+continuous.pause_status                      y->x               OK
+continuous.task_retry_mode                   absent->x          OK
+continuous.task_retry_mode                   absent->y          OK
+continuous.task_retry_mode                   x->absent          OK
+continuous.task_retry_mode                   x->y               OK
+continuous.task_retry_mode                   y->absent          OK
+continuous.task_retry_mode                   y->x               OK
+deployment.deployment_id                     absent->x          OK
+deployment.deployment_id                     absent->y          OK
+deployment.deployment_id                     x->absent          OK
+deployment.deployment_id                     x->y               OK
+deployment.deployment_id                     y->absent          OK
+deployment.deployment_id                     y->x               OK
+deployment.kind                              x->y               OK
+deployment.kind                              y->x               OK
+deployment.metadata_file_path                absent->x          OK
+deployment.metadata_file_path                absent->y          OK
+deployment.metadata_file_path                x->absent          OK
+deployment.metadata_file_path                x->y               OK
+deployment.metadata_file_path                y->absent          OK
+deployment.metadata_file_path                y->x               OK
+deployment.version_id                        absent->x          SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        absent->y          SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        x->absent          NOT_OBSERVABLE
+deployment.version_id                        x->y               SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        y->absent          NOT_OBSERVABLE
+deployment.version_id                        y->x               SUPPRESSED  managed by the deployment metadata service
+description                                  absent->x          OK
+description                                  absent->y          OK
+description                                  x->absent          OK
+description                                  x->y               OK
+description                                  y->absent          OK
+description                                  y->x               OK
+edit_mode                                    absent->x          OK
+edit_mode                                    absent->y          OK
+edit_mode                                    x->absent          OK
+edit_mode                                    x->y               OK
+edit_mode                                    y->absent          OK
+edit_mode                                    y->x               OK
+email_notifications.no_alert_for_skipped_runs absent->false      OK
+email_notifications.no_alert_for_skipped_runs absent->true       OK
+email_notifications.no_alert_for_skipped_runs false->absent      SUPPRESSED  empty
+email_notifications.no_alert_for_skipped_runs false->true        OK
+email_notifications.no_alert_for_skipped_runs true->absent       OK
+email_notifications.no_alert_for_skipped_runs true->false        OK
+format                                       MULTI_TASK->SINGLE_TASK OK
+format                                       MULTI_TASK->absent OK
+format                                       SINGLE_TASK->MULTI_TASK OK
+format                                       SINGLE_TASK->absent OK
+format                                       absent->MULTI_TASK OK
+format                                       absent->SINGLE_TASK OK
+git_source.git_branch                        -                  SKIPPED  needs a coherent git_source block
+git_source.git_commit                        -                  SKIPPED  needs a coherent git_source block
+git_source.git_provider                      -                  SKIPPED  needs a coherent git_source block
+git_source.git_snapshot.used_commit          -                  SKIPPED  needs a coherent git_source block
+git_source.git_tag                           -                  SKIPPED  needs a coherent git_source block
+git_source.git_url                           -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.dirty_state            -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.import_from_git_branch -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.job_config_path        -                  SKIPPED  needs a coherent git_source block
+lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
+max_concurrent_runs                          1->5               OK
+max_concurrent_runs                          1->absent          OK
+max_concurrent_runs                          5->1               OK
+max_concurrent_runs                          5->absent          OK
+max_concurrent_runs                          absent->1          OK
+max_concurrent_runs                          absent->5          OK
+name                                         absent->x          OK
+name                                         absent->y          OK
+name                                         x->absent          OK
+name                                         x->y               OK
+name                                         y->absent          OK
+name                                         y->x               OK
+notification_settings.no_alert_for_canceled_runs absent->false      OK
+notification_settings.no_alert_for_canceled_runs absent->true       OK
+notification_settings.no_alert_for_canceled_runs false->absent      SUPPRESSED  empty
+notification_settings.no_alert_for_canceled_runs false->true        OK
+notification_settings.no_alert_for_canceled_runs true->absent       OK
+notification_settings.no_alert_for_canceled_runs true->false        OK
+notification_settings.no_alert_for_skipped_runs absent->false      SUPPRESSED  empty
+notification_settings.no_alert_for_skipped_runs absent->true       OK
+notification_settings.no_alert_for_skipped_runs false->absent      SUPPRESSED  empty
+notification_settings.no_alert_for_skipped_runs false->true        OK
+notification_settings.no_alert_for_skipped_runs true->absent       OK
+notification_settings.no_alert_for_skipped_runs true->false        OK
+parent_path                                  absent->x          OK
+parent_path                                  absent->y          OK
+parent_path                                  x->absent          OK
+parent_path                                  x->y               OK
+parent_path                                  y->absent          OK
+parent_path                                  y->x               OK
+performance_target                           PERFORMANCE_OPTIMIZED->STANDARD OK
+performance_target                           PERFORMANCE_OPTIMIZED->absent OK
+performance_target                           STANDARD->PERFORMANCE_OPTIMIZED OK
+performance_target                           STANDARD->absent   OK
+performance_target                           absent->PERFORMANCE_OPTIMIZED OK
+performance_target                           absent->STANDARD   OK
+queue.enabled                                false->true        OK
+queue.enabled                                true->false        OK
+run_as.group_name                            absent->x          OK
+run_as.group_name                            absent->y          OK
+run_as.group_name                            x->absent          OK
+run_as.group_name                            x->y               OK
+run_as.group_name                            y->absent          OK
+run_as.group_name                            y->x               OK
+run_as.service_principal_name                absent->x          OK
+run_as.service_principal_name                absent->y          OK
+run_as.service_principal_name                x->absent          OK
+run_as.service_principal_name                x->y               OK
+run_as.service_principal_name                y->absent          OK
+run_as.service_principal_name                y->x               OK
+run_as.user_name                             absent->x          OK
+run_as.user_name                             absent->y          OK
+run_as.user_name                             x->absent          OK
+run_as.user_name                             x->y               OK
+run_as.user_name                             y->absent          OK
+run_as.user_name                             y->x               OK
+schedule.pause_status                        absent->x          OK
+schedule.pause_status                        absent->y          OK
+schedule.pause_status                        x->absent          OK
+schedule.pause_status                        x->y               OK
+schedule.pause_status                        y->absent          OK
+schedule.pause_status                        y->x               OK
+schedule.quartz_cron_expression              x->y               OK
+schedule.quartz_cron_expression              y->x               OK
+schedule.sql_condition.sql_query_id          x->y               OK
+schedule.sql_condition.sql_query_id          y->x               OK
+schedule.sql_condition.trigger_mode          absent->x          OK
+schedule.sql_condition.trigger_mode          absent->y          OK
+schedule.sql_condition.trigger_mode          x->absent          OK
+schedule.sql_condition.trigger_mode          x->y               OK
+schedule.sql_condition.trigger_mode          y->absent          OK
+schedule.sql_condition.trigger_mode          y->x               OK
+schedule.sql_condition.warehouse_id          x->y               OK
+schedule.sql_condition.warehouse_id          y->x               OK
+schedule.timezone_id                         x->y               OK
+schedule.timezone_id                         y->x               OK
+timeout_seconds                              1200->600          OK
+timeout_seconds                              1200->absent       OK
+timeout_seconds                              600->1200          OK
+timeout_seconds                              600->absent        OK
+timeout_seconds                              absent->1200       OK
+timeout_seconds                              absent->600        OK
+trigger.file_arrival.min_time_between_triggers_seconds 1->2               OK
+trigger.file_arrival.min_time_between_triggers_seconds 1->absent          OK
+trigger.file_arrival.min_time_between_triggers_seconds 2->1               OK
+trigger.file_arrival.min_time_between_triggers_seconds 2->absent          OK
+trigger.file_arrival.min_time_between_triggers_seconds absent->1          OK
+trigger.file_arrival.min_time_between_triggers_seconds absent->2          OK
+trigger.file_arrival.url                     x->y               OK
+trigger.file_arrival.url                     y->x               OK
+trigger.file_arrival.wait_after_last_change_seconds 1->2               OK
+trigger.file_arrival.wait_after_last_change_seconds 1->absent          OK
+trigger.file_arrival.wait_after_last_change_seconds 2->1               OK
+trigger.file_arrival.wait_after_last_change_seconds 2->absent          OK
+trigger.file_arrival.wait_after_last_change_seconds absent->1          OK
+trigger.file_arrival.wait_after_last_change_seconds absent->2          OK
+trigger.model.condition                      x->y               OK
+trigger.model.condition                      y->x               OK
+trigger.model.min_time_between_triggers_seconds 1->2               OK
+trigger.model.min_time_between_triggers_seconds 1->absent          OK
+trigger.model.min_time_between_triggers_seconds 2->1               OK
+trigger.model.min_time_between_triggers_seconds 2->absent          OK
+trigger.model.min_time_between_triggers_seconds absent->1          OK
+trigger.model.min_time_between_triggers_seconds absent->2          OK
+trigger.model.securable_name                 absent->x          OK
+trigger.model.securable_name                 absent->y          OK
+trigger.model.securable_name                 x->absent          OK
+trigger.model.securable_name                 x->y               OK
+trigger.model.securable_name                 y->absent          OK
+trigger.model.securable_name                 y->x               OK
+trigger.model.wait_after_last_change_seconds 1->2               OK
+trigger.model.wait_after_last_change_seconds 1->absent          OK
+trigger.model.wait_after_last_change_seconds 2->1               OK
+trigger.model.wait_after_last_change_seconds 2->absent          OK
+trigger.model.wait_after_last_change_seconds absent->1          OK
+trigger.model.wait_after_last_change_seconds absent->2          OK
+trigger.pause_status                         absent->x          OK
+trigger.pause_status                         absent->y          OK
+trigger.pause_status                         x->absent          OK
+trigger.pause_status                         x->y               OK
+trigger.pause_status                         y->absent          OK
+trigger.pause_status                         y->x               OK
+trigger.periodic.interval                    1->2               OK
+trigger.periodic.interval                    2->1               OK
+trigger.periodic.unit                        x->y               OK
+trigger.periodic.unit                        y->x               OK
+trigger.sql_condition.sql_query_id           x->y               OK
+trigger.sql_condition.sql_query_id           y->x               OK
+trigger.sql_condition.trigger_mode           absent->x          OK
+trigger.sql_condition.trigger_mode           absent->y          OK
+trigger.sql_condition.trigger_mode           x->absent          OK
+trigger.sql_condition.trigger_mode           x->y               OK
+trigger.sql_condition.trigger_mode           y->absent          OK
+trigger.sql_condition.trigger_mode           y->x               OK
+trigger.sql_condition.warehouse_id           x->y               OK
+trigger.sql_condition.warehouse_id           y->x               OK
+trigger.table_update.condition               absent->x          OK
+trigger.table_update.condition               absent->y          OK
+trigger.table_update.condition               x->absent          OK
+trigger.table_update.condition               x->y               OK
+trigger.table_update.condition               y->absent          OK
+trigger.table_update.condition               y->x               OK
+trigger.table_update.min_time_between_triggers_seconds 1->2               OK
+trigger.table_update.min_time_between_triggers_seconds 1->absent          OK
+trigger.table_update.min_time_between_triggers_seconds 2->1               OK
+trigger.table_update.min_time_between_triggers_seconds 2->absent          OK
+trigger.table_update.min_time_between_triggers_seconds absent->1          OK
+trigger.table_update.min_time_between_triggers_seconds absent->2          OK
+trigger.table_update.wait_after_last_change_seconds 1->2               OK
+trigger.table_update.wait_after_last_change_seconds 1->absent          OK
+trigger.table_update.wait_after_last_change_seconds 2->1               OK
+trigger.table_update.wait_after_last_change_seconds 2->absent          OK
+trigger.table_update.wait_after_last_change_seconds absent->1          OK
+trigger.table_update.wait_after_last_change_seconds absent->2          OK
+usage_policy_id                              absent->x          OK
+usage_policy_id                              absent->y          OK
+usage_policy_id                              x->absent          OK
+usage_policy_id                              x->y               OK
+usage_policy_id                              y->absent          OK
+usage_policy_id                              y->x               OK
+
+=== job_apply_policy_default_values_job_cluster.yml.tmpl
+budget_policy_id                             absent->x          OK
+budget_policy_id                             absent->y          OK
+budget_policy_id                             x->absent          OK
+budget_policy_id                             x->y               OK
+budget_policy_id                             y->absent          OK
+budget_policy_id                             y->x               OK
+continuous.pause_status                      absent->x          OK
+continuous.pause_status                      absent->y          OK
+continuous.pause_status                      x->absent          OK
+continuous.pause_status                      x->y               OK
+continuous.pause_status                      y->absent          OK
+continuous.pause_status                      y->x               OK
+continuous.task_retry_mode                   absent->x          OK
+continuous.task_retry_mode                   absent->y          OK
+continuous.task_retry_mode                   x->absent          OK
+continuous.task_retry_mode                   x->y               OK
+continuous.task_retry_mode                   y->absent          OK
+continuous.task_retry_mode                   y->x               OK
+deployment.deployment_id                     absent->x          OK
+deployment.deployment_id                     absent->y          OK
+deployment.deployment_id                     x->absent          OK
+deployment.deployment_id                     x->y               OK
+deployment.deployment_id                     y->absent          OK
+deployment.deployment_id                     y->x               OK
+deployment.kind                              x->y               OK
+deployment.kind                              y->x               OK
+deployment.metadata_file_path                absent->x          OK
+deployment.metadata_file_path                absent->y          OK
+deployment.metadata_file_path                x->absent          OK
+deployment.metadata_file_path                x->y               OK
+deployment.metadata_file_path                y->absent          OK
+deployment.metadata_file_path                y->x               OK
+deployment.version_id                        absent->x          SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        absent->y          SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        x->absent          NOT_OBSERVABLE
+deployment.version_id                        x->y               SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        y->absent          NOT_OBSERVABLE
+deployment.version_id                        y->x               SUPPRESSED  managed by the deployment metadata service
+description                                  absent->x          OK
+description                                  absent->y          OK
+description                                  x->absent          OK
+description                                  x->y               OK
+description                                  y->absent          OK
+description                                  y->x               OK
+edit_mode                                    absent->x          OK
+edit_mode                                    absent->y          OK
+edit_mode                                    x->absent          OK
+edit_mode                                    x->y               OK
+edit_mode                                    y->absent          OK
+edit_mode                                    y->x               OK
+email_notifications.no_alert_for_skipped_runs absent->false      OK
+email_notifications.no_alert_for_skipped_runs absent->true       OK
+email_notifications.no_alert_for_skipped_runs false->absent      SUPPRESSED  empty
+email_notifications.no_alert_for_skipped_runs false->true        OK
+email_notifications.no_alert_for_skipped_runs true->absent       OK
+email_notifications.no_alert_for_skipped_runs true->false        OK
+format                                       MULTI_TASK->SINGLE_TASK OK
+format                                       MULTI_TASK->absent OK
+format                                       SINGLE_TASK->MULTI_TASK OK
+format                                       SINGLE_TASK->absent OK
+format                                       absent->MULTI_TASK OK
+format                                       absent->SINGLE_TASK OK
+git_source.git_branch                        -                  SKIPPED  needs a coherent git_source block
+git_source.git_commit                        -                  SKIPPED  needs a coherent git_source block
+git_source.git_provider                      -                  SKIPPED  needs a coherent git_source block
+git_source.git_snapshot.used_commit          -                  SKIPPED  needs a coherent git_source block
+git_source.git_tag                           -                  SKIPPED  needs a coherent git_source block
+git_source.git_url                           -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.dirty_state            -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.import_from_git_branch -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.job_config_path        -                  SKIPPED  needs a coherent git_source block
+lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
+max_concurrent_runs                          1->5               OK
+max_concurrent_runs                          1->absent          OK
+max_concurrent_runs                          5->1               OK
+max_concurrent_runs                          5->absent          OK
+max_concurrent_runs                          absent->1          OK
+max_concurrent_runs                          absent->5          OK
+name                                         absent->x          OK
+name                                         absent->y          OK
+name                                         x->absent          OK
+name                                         x->y               OK
+name                                         y->absent          OK
+name                                         y->x               OK
+notification_settings.no_alert_for_canceled_runs absent->false      OK
+notification_settings.no_alert_for_canceled_runs absent->true       OK
+notification_settings.no_alert_for_canceled_runs false->absent      SUPPRESSED  empty
+notification_settings.no_alert_for_canceled_runs false->true        OK
+notification_settings.no_alert_for_canceled_runs true->absent       OK
+notification_settings.no_alert_for_canceled_runs true->false        OK
+notification_settings.no_alert_for_skipped_runs absent->false      SUPPRESSED  empty
+notification_settings.no_alert_for_skipped_runs absent->true       OK
+notification_settings.no_alert_for_skipped_runs false->absent      SUPPRESSED  empty
+notification_settings.no_alert_for_skipped_runs false->true        OK
+notification_settings.no_alert_for_skipped_runs true->absent       OK
+notification_settings.no_alert_for_skipped_runs true->false        OK
+parent_path                                  absent->x          OK
+parent_path                                  absent->y          OK
+parent_path                                  x->absent          OK
+parent_path                                  x->y               OK
+parent_path                                  y->absent          OK
+parent_path                                  y->x               OK
+performance_target                           PERFORMANCE_OPTIMIZED->STANDARD OK
+performance_target                           PERFORMANCE_OPTIMIZED->absent OK
+performance_target                           STANDARD->PERFORMANCE_OPTIMIZED OK
+performance_target                           STANDARD->absent   OK
+performance_target                           absent->PERFORMANCE_OPTIMIZED OK
+performance_target                           absent->STANDARD   OK
+queue.enabled                                false->true        OK
+queue.enabled                                true->false        OK
+run_as.group_name                            absent->x          OK
+run_as.group_name                            absent->y          OK
+run_as.group_name                            x->absent          OK
+run_as.group_name                            x->y               OK
+run_as.group_name                            y->absent          OK
+run_as.group_name                            y->x               OK
+run_as.service_principal_name                absent->x          OK
+run_as.service_principal_name                absent->y          OK
+run_as.service_principal_name                x->absent          OK
+run_as.service_principal_name                x->y               OK
+run_as.service_principal_name                y->absent          OK
+run_as.service_principal_name                y->x               OK
+run_as.user_name                             absent->x          OK
+run_as.user_name                             absent->y          OK
+run_as.user_name                             x->absent          OK
+run_as.user_name                             x->y               OK
+run_as.user_name                             y->absent          OK
+run_as.user_name                             y->x               OK
+schedule.pause_status                        absent->x          OK
+schedule.pause_status                        absent->y          OK
+schedule.pause_status                        x->absent          OK
+schedule.pause_status                        x->y               OK
+schedule.pause_status                        y->absent          OK
+schedule.pause_status                        y->x               OK
+schedule.quartz_cron_expression              x->y               OK
+schedule.quartz_cron_expression              y->x               OK
+schedule.sql_condition.sql_query_id          x->y               OK
+schedule.sql_condition.sql_query_id          y->x               OK
+schedule.sql_condition.trigger_mode          absent->x          OK
+schedule.sql_condition.trigger_mode          absent->y          OK
+schedule.sql_condition.trigger_mode          x->absent          OK
+schedule.sql_condition.trigger_mode          x->y               OK
+schedule.sql_condition.trigger_mode          y->absent          OK
+schedule.sql_condition.trigger_mode          y->x               OK
+schedule.sql_condition.warehouse_id          x->y               OK
+schedule.sql_condition.warehouse_id          y->x               OK
+schedule.timezone_id                         x->y               OK
+schedule.timezone_id                         y->x               OK
+timeout_seconds                              1200->600          OK
+timeout_seconds                              1200->absent       OK
+timeout_seconds                              600->1200          OK
+timeout_seconds                              600->absent        OK
+timeout_seconds                              absent->1200       OK
+timeout_seconds                              absent->600        OK
+trigger.file_arrival.min_time_between_triggers_seconds 1->2               OK
+trigger.file_arrival.min_time_between_triggers_seconds 1->absent          OK
+trigger.file_arrival.min_time_between_triggers_seconds 2->1               OK
+trigger.file_arrival.min_time_between_triggers_seconds 2->absent          OK
+trigger.file_arrival.min_time_between_triggers_seconds absent->1          OK
+trigger.file_arrival.min_time_between_triggers_seconds absent->2          OK
+trigger.file_arrival.url                     x->y               OK
+trigger.file_arrival.url                     y->x               OK
+trigger.file_arrival.wait_after_last_change_seconds 1->2               OK
+trigger.file_arrival.wait_after_last_change_seconds 1->absent          OK
+trigger.file_arrival.wait_after_last_change_seconds 2->1               OK
+trigger.file_arrival.wait_after_last_change_seconds 2->absent          OK
+trigger.file_arrival.wait_after_last_change_seconds absent->1          OK
+trigger.file_arrival.wait_after_last_change_seconds absent->2          OK
+trigger.model.condition                      x->y               OK
+trigger.model.condition                      y->x               OK
+trigger.model.min_time_between_triggers_seconds 1->2               OK
+trigger.model.min_time_between_triggers_seconds 1->absent          OK
+trigger.model.min_time_between_triggers_seconds 2->1               OK
+trigger.model.min_time_between_triggers_seconds 2->absent          OK
+trigger.model.min_time_between_triggers_seconds absent->1          OK
+trigger.model.min_time_between_triggers_seconds absent->2          OK
+trigger.model.securable_name                 absent->x          OK
+trigger.model.securable_name                 absent->y          OK
+trigger.model.securable_name                 x->absent          OK
+trigger.model.securable_name                 x->y               OK
+trigger.model.securable_name                 y->absent          OK
+trigger.model.securable_name                 y->x               OK
+trigger.model.wait_after_last_change_seconds 1->2               OK
+trigger.model.wait_after_last_change_seconds 1->absent          OK
+trigger.model.wait_after_last_change_seconds 2->1               OK
+trigger.model.wait_after_last_change_seconds 2->absent          OK
+trigger.model.wait_after_last_change_seconds absent->1          OK
+trigger.model.wait_after_last_change_seconds absent->2          OK
+trigger.pause_status                         absent->x          OK
+trigger.pause_status                         absent->y          OK
+trigger.pause_status                         x->absent          OK
+trigger.pause_status                         x->y               OK
+trigger.pause_status                         y->absent          OK
+trigger.pause_status                         y->x               OK
+trigger.periodic.interval                    1->2               OK
+trigger.periodic.interval                    2->1               OK
+trigger.periodic.unit                        x->y               OK
+trigger.periodic.unit                        y->x               OK
+trigger.sql_condition.sql_query_id           x->y               OK
+trigger.sql_condition.sql_query_id           y->x               OK
+trigger.sql_condition.trigger_mode           absent->x          OK
+trigger.sql_condition.trigger_mode           absent->y          OK
+trigger.sql_condition.trigger_mode           x->absent          OK
+trigger.sql_condition.trigger_mode           x->y               OK
+trigger.sql_condition.trigger_mode           y->absent          OK
+trigger.sql_condition.trigger_mode           y->x               OK
+trigger.sql_condition.warehouse_id           x->y               OK
+trigger.sql_condition.warehouse_id           y->x               OK
+trigger.table_update.condition               absent->x          OK
+trigger.table_update.condition               absent->y          OK
+trigger.table_update.condition               x->absent          OK
+trigger.table_update.condition               x->y               OK
+trigger.table_update.condition               y->absent          OK
+trigger.table_update.condition               y->x               OK
+trigger.table_update.min_time_between_triggers_seconds 1->2               OK
+trigger.table_update.min_time_between_triggers_seconds 1->absent          OK
+trigger.table_update.min_time_between_triggers_seconds 2->1               OK
+trigger.table_update.min_time_between_triggers_seconds 2->absent          OK
+trigger.table_update.min_time_between_triggers_seconds absent->1          OK
+trigger.table_update.min_time_between_triggers_seconds absent->2          OK
+trigger.table_update.wait_after_last_change_seconds 1->2               OK
+trigger.table_update.wait_after_last_change_seconds 1->absent          OK
+trigger.table_update.wait_after_last_change_seconds 2->1               OK
+trigger.table_update.wait_after_last_change_seconds 2->absent          OK
+trigger.table_update.wait_after_last_change_seconds absent->1          OK
+trigger.table_update.wait_after_last_change_seconds absent->2          OK
+usage_policy_id                              absent->x          OK
+usage_policy_id                              absent->y          OK
+usage_policy_id                              x->absent          OK
+usage_policy_id                              x->y               OK
+usage_policy_id                              y->absent          OK
+usage_policy_id                              y->x               OK
+
+=== job_apply_policy_default_values_task_cluster.yml.tmpl
+budget_policy_id                             absent->x          OK
+budget_policy_id                             absent->y          OK
+budget_policy_id                             x->absent          OK
+budget_policy_id                             x->y               OK
+budget_policy_id                             y->absent          OK
+budget_policy_id                             y->x               OK
+continuous.pause_status                      absent->x          OK
+continuous.pause_status                      absent->y          OK
+continuous.pause_status                      x->absent          OK
+continuous.pause_status                      x->y               OK
+continuous.pause_status                      y->absent          OK
+continuous.pause_status                      y->x               OK
+continuous.task_retry_mode                   absent->x          OK
+continuous.task_retry_mode                   absent->y          OK
+continuous.task_retry_mode                   x->absent          OK
+continuous.task_retry_mode                   x->y               OK
+continuous.task_retry_mode                   y->absent          OK
+continuous.task_retry_mode                   y->x               OK
+deployment.deployment_id                     absent->x          OK
+deployment.deployment_id                     absent->y          OK
+deployment.deployment_id                     x->absent          OK
+deployment.deployment_id                     x->y               OK
+deployment.deployment_id                     y->absent          OK
+deployment.deployment_id                     y->x               OK
+deployment.kind                              x->y               OK
+deployment.kind                              y->x               OK
+deployment.metadata_file_path                absent->x          OK
+deployment.metadata_file_path                absent->y          OK
+deployment.metadata_file_path                x->absent          OK
+deployment.metadata_file_path                x->y               OK
+deployment.metadata_file_path                y->absent          OK
+deployment.metadata_file_path                y->x               OK
+deployment.version_id                        absent->x          SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        absent->y          SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        x->absent          NOT_OBSERVABLE
+deployment.version_id                        x->y               SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        y->absent          NOT_OBSERVABLE
+deployment.version_id                        y->x               SUPPRESSED  managed by the deployment metadata service
+description                                  absent->x          OK
+description                                  absent->y          OK
+description                                  x->absent          OK
+description                                  x->y               OK
+description                                  y->absent          OK
+description                                  y->x               OK
+edit_mode                                    absent->x          OK
+edit_mode                                    absent->y          OK
+edit_mode                                    x->absent          OK
+edit_mode                                    x->y               OK
+edit_mode                                    y->absent          OK
+edit_mode                                    y->x               OK
+email_notifications.no_alert_for_skipped_runs absent->false      OK
+email_notifications.no_alert_for_skipped_runs absent->true       OK
+email_notifications.no_alert_for_skipped_runs false->absent      SUPPRESSED  empty
+email_notifications.no_alert_for_skipped_runs false->true        OK
+email_notifications.no_alert_for_skipped_runs true->absent       OK
+email_notifications.no_alert_for_skipped_runs true->false        OK
+format                                       MULTI_TASK->SINGLE_TASK OK
+format                                       MULTI_TASK->absent OK
+format                                       SINGLE_TASK->MULTI_TASK OK
+format                                       SINGLE_TASK->absent OK
+format                                       absent->MULTI_TASK OK
+format                                       absent->SINGLE_TASK OK
+git_source.git_branch                        -                  SKIPPED  needs a coherent git_source block
+git_source.git_commit                        -                  SKIPPED  needs a coherent git_source block
+git_source.git_provider                      -                  SKIPPED  needs a coherent git_source block
+git_source.git_snapshot.used_commit          -                  SKIPPED  needs a coherent git_source block
+git_source.git_tag                           -                  SKIPPED  needs a coherent git_source block
+git_source.git_url                           -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.dirty_state            -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.import_from_git_branch -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.job_config_path        -                  SKIPPED  needs a coherent git_source block
+lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
+max_concurrent_runs                          1->5               OK
+max_concurrent_runs                          1->absent          OK
+max_concurrent_runs                          5->1               OK
+max_concurrent_runs                          5->absent          OK
+max_concurrent_runs                          absent->1          OK
+max_concurrent_runs                          absent->5          OK
+name                                         absent->x          OK
+name                                         absent->y          OK
+name                                         x->absent          OK
+name                                         x->y               OK
+name                                         y->absent          OK
+name                                         y->x               OK
+notification_settings.no_alert_for_canceled_runs absent->false      OK
+notification_settings.no_alert_for_canceled_runs absent->true       OK
+notification_settings.no_alert_for_canceled_runs false->absent      SUPPRESSED  empty
+notification_settings.no_alert_for_canceled_runs false->true        OK
+notification_settings.no_alert_for_canceled_runs true->absent       OK
+notification_settings.no_alert_for_canceled_runs true->false        OK
+notification_settings.no_alert_for_skipped_runs absent->false      SUPPRESSED  empty
+notification_settings.no_alert_for_skipped_runs absent->true       OK
+notification_settings.no_alert_for_skipped_runs false->absent      SUPPRESSED  empty
+notification_settings.no_alert_for_skipped_runs false->true        OK
+notification_settings.no_alert_for_skipped_runs true->absent       OK
+notification_settings.no_alert_for_skipped_runs true->false        OK
+parent_path                                  absent->x          OK
+parent_path                                  absent->y          OK
+parent_path                                  x->absent          OK
+parent_path                                  x->y               OK
+parent_path                                  y->absent          OK
+parent_path                                  y->x               OK
+performance_target                           PERFORMANCE_OPTIMIZED->STANDARD OK
+performance_target                           PERFORMANCE_OPTIMIZED->absent OK
+performance_target                           STANDARD->PERFORMANCE_OPTIMIZED OK
+performance_target                           STANDARD->absent   OK
+performance_target                           absent->PERFORMANCE_OPTIMIZED OK
+performance_target                           absent->STANDARD   OK
+queue.enabled                                false->true        OK
+queue.enabled                                true->false        OK
+run_as.group_name                            absent->x          OK
+run_as.group_name                            absent->y          OK
+run_as.group_name                            x->absent          OK
+run_as.group_name                            x->y               OK
+run_as.group_name                            y->absent          OK
+run_as.group_name                            y->x               OK
+run_as.service_principal_name                absent->x          OK
+run_as.service_principal_name                absent->y          OK
+run_as.service_principal_name                x->absent          OK
+run_as.service_principal_name                x->y               OK
+run_as.service_principal_name                y->absent          OK
+run_as.service_principal_name                y->x               OK
+run_as.user_name                             absent->x          OK
+run_as.user_name                             absent->y          OK
+run_as.user_name                             x->absent          OK
+run_as.user_name                             x->y               OK
+run_as.user_name                             y->absent          OK
+run_as.user_name                             y->x               OK
+schedule.pause_status                        absent->x          OK
+schedule.pause_status                        absent->y          OK
+schedule.pause_status                        x->absent          OK
+schedule.pause_status                        x->y               OK
+schedule.pause_status                        y->absent          OK
+schedule.pause_status                        y->x               OK
+schedule.quartz_cron_expression              x->y               OK
+schedule.quartz_cron_expression              y->x               OK
+schedule.sql_condition.sql_query_id          x->y               OK
+schedule.sql_condition.sql_query_id          y->x               OK
+schedule.sql_condition.trigger_mode          absent->x          OK
+schedule.sql_condition.trigger_mode          absent->y          OK
+schedule.sql_condition.trigger_mode          x->absent          OK
+schedule.sql_condition.trigger_mode          x->y               OK
+schedule.sql_condition.trigger_mode          y->absent          OK
+schedule.sql_condition.trigger_mode          y->x               OK
+schedule.sql_condition.warehouse_id          x->y               OK
+schedule.sql_condition.warehouse_id          y->x               OK
+schedule.timezone_id                         x->y               OK
+schedule.timezone_id                         y->x               OK
+timeout_seconds                              1200->600          OK
+timeout_seconds                              1200->absent       OK
+timeout_seconds                              600->1200          OK
+timeout_seconds                              600->absent        OK
+timeout_seconds                              absent->1200       OK
+timeout_seconds                              absent->600        OK
+trigger.file_arrival.min_time_between_triggers_seconds 1->2               OK
+trigger.file_arrival.min_time_between_triggers_seconds 1->absent          OK
+trigger.file_arrival.min_time_between_triggers_seconds 2->1               OK
+trigger.file_arrival.min_time_between_triggers_seconds 2->absent          OK
+trigger.file_arrival.min_time_between_triggers_seconds absent->1          OK
+trigger.file_arrival.min_time_between_triggers_seconds absent->2          OK
+trigger.file_arrival.url                     x->y               OK
+trigger.file_arrival.url                     y->x               OK
+trigger.file_arrival.wait_after_last_change_seconds 1->2               OK
+trigger.file_arrival.wait_after_last_change_seconds 1->absent          OK
+trigger.file_arrival.wait_after_last_change_seconds 2->1               OK
+trigger.file_arrival.wait_after_last_change_seconds 2->absent          OK
+trigger.file_arrival.wait_after_last_change_seconds absent->1          OK
+trigger.file_arrival.wait_after_last_change_seconds absent->2          OK
+trigger.model.condition                      x->y               OK
+trigger.model.condition                      y->x               OK
+trigger.model.min_time_between_triggers_seconds 1->2               OK
+trigger.model.min_time_between_triggers_seconds 1->absent          OK
+trigger.model.min_time_between_triggers_seconds 2->1               OK
+trigger.model.min_time_between_triggers_seconds 2->absent          OK
+trigger.model.min_time_between_triggers_seconds absent->1          OK
+trigger.model.min_time_between_triggers_seconds absent->2          OK
+trigger.model.securable_name                 absent->x          OK
+trigger.model.securable_name                 absent->y          OK
+trigger.model.securable_name                 x->absent          OK
+trigger.model.securable_name                 x->y               OK
+trigger.model.securable_name                 y->absent          OK
+trigger.model.securable_name                 y->x               OK
+trigger.model.wait_after_last_change_seconds 1->2               OK
+trigger.model.wait_after_last_change_seconds 1->absent          OK
+trigger.model.wait_after_last_change_seconds 2->1               OK
+trigger.model.wait_after_last_change_seconds 2->absent          OK
+trigger.model.wait_after_last_change_seconds absent->1          OK
+trigger.model.wait_after_last_change_seconds absent->2          OK
+trigger.pause_status                         absent->x          OK
+trigger.pause_status                         absent->y          OK
+trigger.pause_status                         x->absent          OK
+trigger.pause_status                         x->y               OK
+trigger.pause_status                         y->absent          OK
+trigger.pause_status                         y->x               OK
+trigger.periodic.interval                    1->2               OK
+trigger.periodic.interval                    2->1               OK
+trigger.periodic.unit                        x->y               OK
+trigger.periodic.unit                        y->x               OK
+trigger.sql_condition.sql_query_id           x->y               OK
+trigger.sql_condition.sql_query_id           y->x               OK
+trigger.sql_condition.trigger_mode           absent->x          OK
+trigger.sql_condition.trigger_mode           absent->y          OK
+trigger.sql_condition.trigger_mode           x->absent          OK
+trigger.sql_condition.trigger_mode           x->y               OK
+trigger.sql_condition.trigger_mode           y->absent          OK
+trigger.sql_condition.trigger_mode           y->x               OK
+trigger.sql_condition.warehouse_id           x->y               OK
+trigger.sql_condition.warehouse_id           y->x               OK
+trigger.table_update.condition               absent->x          OK
+trigger.table_update.condition               absent->y          OK
+trigger.table_update.condition               x->absent          OK
+trigger.table_update.condition               x->y               OK
+trigger.table_update.condition               y->absent          OK
+trigger.table_update.condition               y->x               OK
+trigger.table_update.min_time_between_triggers_seconds 1->2               OK
+trigger.table_update.min_time_between_triggers_seconds 1->absent          OK
+trigger.table_update.min_time_between_triggers_seconds 2->1               OK
+trigger.table_update.min_time_between_triggers_seconds 2->absent          OK
+trigger.table_update.min_time_between_triggers_seconds absent->1          OK
+trigger.table_update.min_time_between_triggers_seconds absent->2          OK
+trigger.table_update.wait_after_last_change_seconds 1->2               OK
+trigger.table_update.wait_after_last_change_seconds 1->absent          OK
+trigger.table_update.wait_after_last_change_seconds 2->1               OK
+trigger.table_update.wait_after_last_change_seconds 2->absent          OK
+trigger.table_update.wait_after_last_change_seconds absent->1          OK
+trigger.table_update.wait_after_last_change_seconds absent->2          OK
+usage_policy_id                              absent->x          OK
+usage_policy_id                              absent->y          OK
+usage_policy_id                              x->absent          OK
+usage_policy_id                              x->y               OK
+usage_policy_id                              y->absent          OK
+usage_policy_id                              y->x               OK
+
+=== job_with_depends_on.yml.tmpl
+budget_policy_id                             absent->x          OK
+budget_policy_id                             absent->y          OK
+budget_policy_id                             x->absent          OK
+budget_policy_id                             x->y               OK
+budget_policy_id                             y->absent          OK
+budget_policy_id                             y->x               OK
+continuous.pause_status                      absent->x          OK
+continuous.pause_status                      absent->y          OK
+continuous.pause_status                      x->absent          OK
+continuous.pause_status                      x->y               OK
+continuous.pause_status                      y->absent          OK
+continuous.pause_status                      y->x               OK
+continuous.task_retry_mode                   absent->x          OK
+continuous.task_retry_mode                   absent->y          OK
+continuous.task_retry_mode                   x->absent          OK
+continuous.task_retry_mode                   x->y               OK
+continuous.task_retry_mode                   y->absent          OK
+continuous.task_retry_mode                   y->x               OK
+deployment.deployment_id                     absent->x          OK
+deployment.deployment_id                     absent->y          OK
+deployment.deployment_id                     x->absent          OK
+deployment.deployment_id                     x->y               OK
+deployment.deployment_id                     y->absent          OK
+deployment.deployment_id                     y->x               OK
+deployment.kind                              x->y               OK
+deployment.kind                              y->x               OK
+deployment.metadata_file_path                absent->x          OK
+deployment.metadata_file_path                absent->y          OK
+deployment.metadata_file_path                x->absent          OK
+deployment.metadata_file_path                x->y               OK
+deployment.metadata_file_path                y->absent          OK
+deployment.metadata_file_path                y->x               OK
+deployment.version_id                        absent->x          SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        absent->y          SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        x->absent          NOT_OBSERVABLE
+deployment.version_id                        x->y               SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        y->absent          NOT_OBSERVABLE
+deployment.version_id                        y->x               SUPPRESSED  managed by the deployment metadata service
+description                                  absent->x          OK
+description                                  absent->y          OK
+description                                  x->absent          OK
+description                                  x->y               OK
+description                                  y->absent          OK
+description                                  y->x               OK
+edit_mode                                    absent->x          OK
+edit_mode                                    absent->y          OK
+edit_mode                                    x->absent          OK
+edit_mode                                    x->y               OK
+edit_mode                                    y->absent          OK
+edit_mode                                    y->x               OK
+email_notifications.no_alert_for_skipped_runs absent->false      OK
+email_notifications.no_alert_for_skipped_runs absent->true       OK
+email_notifications.no_alert_for_skipped_runs false->absent      SUPPRESSED  empty
+email_notifications.no_alert_for_skipped_runs false->true        OK
+email_notifications.no_alert_for_skipped_runs true->absent       OK
+email_notifications.no_alert_for_skipped_runs true->false        OK
+format                                       MULTI_TASK->SINGLE_TASK OK
+format                                       MULTI_TASK->absent OK
+format                                       SINGLE_TASK->MULTI_TASK OK
+format                                       SINGLE_TASK->absent OK
+format                                       absent->MULTI_TASK OK
+format                                       absent->SINGLE_TASK OK
+git_source.git_branch                        -                  SKIPPED  needs a coherent git_source block
+git_source.git_commit                        -                  SKIPPED  needs a coherent git_source block
+git_source.git_provider                      -                  SKIPPED  needs a coherent git_source block
+git_source.git_snapshot.used_commit          -                  SKIPPED  needs a coherent git_source block
+git_source.git_tag                           -                  SKIPPED  needs a coherent git_source block
+git_source.git_url                           -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.dirty_state            -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.import_from_git_branch -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.job_config_path        -                  SKIPPED  needs a coherent git_source block
+lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
+max_concurrent_runs                          1->5               OK
+max_concurrent_runs                          1->absent          OK
+max_concurrent_runs                          5->1               OK
+max_concurrent_runs                          5->absent          OK
+max_concurrent_runs                          absent->1          OK
+max_concurrent_runs                          absent->5          OK
+name                                         absent->x          OK
+name                                         absent->y          OK
+name                                         x->absent          OK
+name                                         x->y               OK
+name                                         y->absent          OK
+name                                         y->x               OK
+notification_settings.no_alert_for_canceled_runs absent->false      OK
+notification_settings.no_alert_for_canceled_runs absent->true       OK
+notification_settings.no_alert_for_canceled_runs false->absent      SUPPRESSED  empty
+notification_settings.no_alert_for_canceled_runs false->true        OK
+notification_settings.no_alert_for_canceled_runs true->absent       OK
+notification_settings.no_alert_for_canceled_runs true->false        OK
+notification_settings.no_alert_for_skipped_runs absent->false      SUPPRESSED  empty
+notification_settings.no_alert_for_skipped_runs absent->true       OK
+notification_settings.no_alert_for_skipped_runs false->absent      SUPPRESSED  empty
+notification_settings.no_alert_for_skipped_runs false->true        OK
+notification_settings.no_alert_for_skipped_runs true->absent       OK
+notification_settings.no_alert_for_skipped_runs true->false        OK
+parent_path                                  absent->x          OK
+parent_path                                  absent->y          OK
+parent_path                                  x->absent          OK
+parent_path                                  x->y               OK
+parent_path                                  y->absent          OK
+parent_path                                  y->x               OK
+performance_target                           PERFORMANCE_OPTIMIZED->STANDARD OK
+performance_target                           PERFORMANCE_OPTIMIZED->absent OK
+performance_target                           STANDARD->PERFORMANCE_OPTIMIZED OK
+performance_target                           STANDARD->absent   OK
+performance_target                           absent->PERFORMANCE_OPTIMIZED OK
+performance_target                           absent->STANDARD   OK
+queue.enabled                                false->true        OK
+queue.enabled                                true->false        OK
+run_as.group_name                            absent->x          OK
+run_as.group_name                            absent->y          OK
+run_as.group_name                            x->absent          OK
+run_as.group_name                            x->y               OK
+run_as.group_name                            y->absent          OK
+run_as.group_name                            y->x               OK
+run_as.service_principal_name                absent->x          OK
+run_as.service_principal_name                absent->y          OK
+run_as.service_principal_name                x->absent          OK
+run_as.service_principal_name                x->y               OK
+run_as.service_principal_name                y->absent          OK
+run_as.service_principal_name                y->x               OK
+run_as.user_name                             absent->x          OK
+run_as.user_name                             absent->y          OK
+run_as.user_name                             x->absent          OK
+run_as.user_name                             x->y               OK
+run_as.user_name                             y->absent          OK
+run_as.user_name                             y->x               OK
+schedule.pause_status                        absent->x          OK
+schedule.pause_status                        absent->y          OK
+schedule.pause_status                        x->absent          OK
+schedule.pause_status                        x->y               OK
+schedule.pause_status                        y->absent          OK
+schedule.pause_status                        y->x               OK
+schedule.quartz_cron_expression              x->y               OK
+schedule.quartz_cron_expression              y->x               OK
+schedule.sql_condition.sql_query_id          x->y               OK
+schedule.sql_condition.sql_query_id          y->x               OK
+schedule.sql_condition.trigger_mode          absent->x          OK
+schedule.sql_condition.trigger_mode          absent->y          OK
+schedule.sql_condition.trigger_mode          x->absent          OK
+schedule.sql_condition.trigger_mode          x->y               OK
+schedule.sql_condition.trigger_mode          y->absent          OK
+schedule.sql_condition.trigger_mode          y->x               OK
+schedule.sql_condition.warehouse_id          x->y               OK
+schedule.sql_condition.warehouse_id          y->x               OK
+schedule.timezone_id                         x->y               OK
+schedule.timezone_id                         y->x               OK
+timeout_seconds                              1200->600          OK
+timeout_seconds                              1200->absent       OK
+timeout_seconds                              600->1200          OK
+timeout_seconds                              600->absent        OK
+timeout_seconds                              absent->1200       OK
+timeout_seconds                              absent->600        OK
+trigger.file_arrival.min_time_between_triggers_seconds 1->2               OK
+trigger.file_arrival.min_time_between_triggers_seconds 1->absent          OK
+trigger.file_arrival.min_time_between_triggers_seconds 2->1               OK
+trigger.file_arrival.min_time_between_triggers_seconds 2->absent          OK
+trigger.file_arrival.min_time_between_triggers_seconds absent->1          OK
+trigger.file_arrival.min_time_between_triggers_seconds absent->2          OK
+trigger.file_arrival.url                     x->y               OK
+trigger.file_arrival.url                     y->x               OK
+trigger.file_arrival.wait_after_last_change_seconds 1->2               OK
+trigger.file_arrival.wait_after_last_change_seconds 1->absent          OK
+trigger.file_arrival.wait_after_last_change_seconds 2->1               OK
+trigger.file_arrival.wait_after_last_change_seconds 2->absent          OK
+trigger.file_arrival.wait_after_last_change_seconds absent->1          OK
+trigger.file_arrival.wait_after_last_change_seconds absent->2          OK
+trigger.model.condition                      x->y               OK
+trigger.model.condition                      y->x               OK
+trigger.model.min_time_between_triggers_seconds 1->2               OK
+trigger.model.min_time_between_triggers_seconds 1->absent          OK
+trigger.model.min_time_between_triggers_seconds 2->1               OK
+trigger.model.min_time_between_triggers_seconds 2->absent          OK
+trigger.model.min_time_between_triggers_seconds absent->1          OK
+trigger.model.min_time_between_triggers_seconds absent->2          OK
+trigger.model.securable_name                 absent->x          OK
+trigger.model.securable_name                 absent->y          OK
+trigger.model.securable_name                 x->absent          OK
+trigger.model.securable_name                 x->y               OK
+trigger.model.securable_name                 y->absent          OK
+trigger.model.securable_name                 y->x               OK
+trigger.model.wait_after_last_change_seconds 1->2               OK
+trigger.model.wait_after_last_change_seconds 1->absent          OK
+trigger.model.wait_after_last_change_seconds 2->1               OK
+trigger.model.wait_after_last_change_seconds 2->absent          OK
+trigger.model.wait_after_last_change_seconds absent->1          OK
+trigger.model.wait_after_last_change_seconds absent->2          OK
+trigger.pause_status                         absent->x          OK
+trigger.pause_status                         absent->y          OK
+trigger.pause_status                         x->absent          OK
+trigger.pause_status                         x->y               OK
+trigger.pause_status                         y->absent          OK
+trigger.pause_status                         y->x               OK
+trigger.periodic.interval                    1->2               OK
+trigger.periodic.interval                    2->1               OK
+trigger.periodic.unit                        x->y               OK
+trigger.periodic.unit                        y->x               OK
+trigger.sql_condition.sql_query_id           x->y               OK
+trigger.sql_condition.sql_query_id           y->x               OK
+trigger.sql_condition.trigger_mode           absent->x          OK
+trigger.sql_condition.trigger_mode           absent->y          OK
+trigger.sql_condition.trigger_mode           x->absent          OK
+trigger.sql_condition.trigger_mode           x->y               OK
+trigger.sql_condition.trigger_mode           y->absent          OK
+trigger.sql_condition.trigger_mode           y->x               OK
+trigger.sql_condition.warehouse_id           x->y               OK
+trigger.sql_condition.warehouse_id           y->x               OK
+trigger.table_update.condition               absent->x          OK
+trigger.table_update.condition               absent->y          OK
+trigger.table_update.condition               x->absent          OK
+trigger.table_update.condition               x->y               OK
+trigger.table_update.condition               y->absent          OK
+trigger.table_update.condition               y->x               OK
+trigger.table_update.min_time_between_triggers_seconds 1->2               OK
+trigger.table_update.min_time_between_triggers_seconds 1->absent          OK
+trigger.table_update.min_time_between_triggers_seconds 2->1               OK
+trigger.table_update.min_time_between_triggers_seconds 2->absent          OK
+trigger.table_update.min_time_between_triggers_seconds absent->1          OK
+trigger.table_update.min_time_between_triggers_seconds absent->2          OK
+trigger.table_update.wait_after_last_change_seconds 1->2               OK
+trigger.table_update.wait_after_last_change_seconds 1->absent          OK
+trigger.table_update.wait_after_last_change_seconds 2->1               OK
+trigger.table_update.wait_after_last_change_seconds 2->absent          OK
+trigger.table_update.wait_after_last_change_seconds absent->1          OK
+trigger.table_update.wait_after_last_change_seconds absent->2          OK
+usage_policy_id                              absent->x          OK
+usage_policy_id                              absent->y          OK
+usage_policy_id                              x->absent          OK
+usage_policy_id                              x->y               OK
+usage_policy_id                              y->absent          OK
+usage_policy_id                              y->x               OK
+
+=== job_with_task.yml.tmpl
+budget_policy_id                             absent->x          OK
+budget_policy_id                             absent->y          OK
+budget_policy_id                             x->absent          OK
+budget_policy_id                             x->y               OK
+budget_policy_id                             y->absent          OK
+budget_policy_id                             y->x               OK
+continuous.pause_status                      absent->x          OK
+continuous.pause_status                      absent->y          OK
+continuous.pause_status                      x->absent          OK
+continuous.pause_status                      x->y               OK
+continuous.pause_status                      y->absent          OK
+continuous.pause_status                      y->x               OK
+continuous.task_retry_mode                   absent->x          OK
+continuous.task_retry_mode                   absent->y          OK
+continuous.task_retry_mode                   x->absent          OK
+continuous.task_retry_mode                   x->y               OK
+continuous.task_retry_mode                   y->absent          OK
+continuous.task_retry_mode                   y->x               OK
+deployment.deployment_id                     absent->x          OK
+deployment.deployment_id                     absent->y          OK
+deployment.deployment_id                     x->absent          OK
+deployment.deployment_id                     x->y               OK
+deployment.deployment_id                     y->absent          OK
+deployment.deployment_id                     y->x               OK
+deployment.kind                              x->y               OK
+deployment.kind                              y->x               OK
+deployment.metadata_file_path                absent->x          OK
+deployment.metadata_file_path                absent->y          OK
+deployment.metadata_file_path                x->absent          OK
+deployment.metadata_file_path                x->y               OK
+deployment.metadata_file_path                y->absent          OK
+deployment.metadata_file_path                y->x               OK
+deployment.version_id                        absent->x          SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        absent->y          SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        x->absent          NOT_OBSERVABLE
+deployment.version_id                        x->y               SUPPRESSED  managed by the deployment metadata service
+deployment.version_id                        y->absent          NOT_OBSERVABLE
+deployment.version_id                        y->x               SUPPRESSED  managed by the deployment metadata service
+description                                  absent->x          OK
+description                                  absent->y          OK
+description                                  x->absent          OK
+description                                  x->y               OK
+description                                  y->absent          OK
+description                                  y->x               OK
+edit_mode                                    absent->x          OK
+edit_mode                                    absent->y          OK
+edit_mode                                    x->absent          OK
+edit_mode                                    x->y               OK
+edit_mode                                    y->absent          OK
+edit_mode                                    y->x               OK
+email_notifications.no_alert_for_skipped_runs absent->false      OK
+email_notifications.no_alert_for_skipped_runs absent->true       OK
+email_notifications.no_alert_for_skipped_runs false->absent      SUPPRESSED  empty
+email_notifications.no_alert_for_skipped_runs false->true        OK
+email_notifications.no_alert_for_skipped_runs true->absent       OK
+email_notifications.no_alert_for_skipped_runs true->false        OK
+format                                       MULTI_TASK->SINGLE_TASK OK
+format                                       MULTI_TASK->absent OK
+format                                       SINGLE_TASK->MULTI_TASK OK
+format                                       SINGLE_TASK->absent OK
+format                                       absent->MULTI_TASK OK
+format                                       absent->SINGLE_TASK OK
+git_source.git_branch                        -                  SKIPPED  needs a coherent git_source block
+git_source.git_commit                        -                  SKIPPED  needs a coherent git_source block
+git_source.git_provider                      -                  SKIPPED  needs a coherent git_source block
+git_source.git_snapshot.used_commit          -                  SKIPPED  needs a coherent git_source block
+git_source.git_tag                           -                  SKIPPED  needs a coherent git_source block
+git_source.git_url                           -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.dirty_state            -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.import_from_git_branch -                  SKIPPED  needs a coherent git_source block
+git_source.job_source.job_config_path        -                  SKIPPED  needs a coherent git_source block
+lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
+max_concurrent_runs                          1->5               OK
+max_concurrent_runs                          1->absent          OK
+max_concurrent_runs                          5->1               OK
+max_concurrent_runs                          5->absent          OK
+max_concurrent_runs                          absent->1          OK
+max_concurrent_runs                          absent->5          OK
+name                                         absent->x          OK
+name                                         absent->y          OK
+name                                         x->absent          OK
+name                                         x->y               OK
+name                                         y->absent          OK
+name                                         y->x               OK
+notification_settings.no_alert_for_canceled_runs absent->false      OK
+notification_settings.no_alert_for_canceled_runs absent->true       OK
+notification_settings.no_alert_for_canceled_runs false->absent      SUPPRESSED  empty
+notification_settings.no_alert_for_canceled_runs false->true        OK
+notification_settings.no_alert_for_canceled_runs true->absent       OK
+notification_settings.no_alert_for_canceled_runs true->false        OK
+notification_settings.no_alert_for_skipped_runs absent->false      SUPPRESSED  empty
+notification_settings.no_alert_for_skipped_runs absent->true       OK
+notification_settings.no_alert_for_skipped_runs false->absent      SUPPRESSED  empty
+notification_settings.no_alert_for_skipped_runs false->true        OK
+notification_settings.no_alert_for_skipped_runs true->absent       OK
+notification_settings.no_alert_for_skipped_runs true->false        OK
+parent_path                                  absent->x          OK
+parent_path                                  absent->y          OK
+parent_path                                  x->absent          OK
+parent_path                                  x->y               OK
+parent_path                                  y->absent          OK
+parent_path                                  y->x               OK
+performance_target                           PERFORMANCE_OPTIMIZED->STANDARD OK
+performance_target                           PERFORMANCE_OPTIMIZED->absent OK
+performance_target                           STANDARD->PERFORMANCE_OPTIMIZED OK
+performance_target                           STANDARD->absent   OK
+performance_target                           absent->PERFORMANCE_OPTIMIZED OK
+performance_target                           absent->STANDARD   OK
+queue.enabled                                false->true        OK
+queue.enabled                                true->false        OK
+run_as.group_name                            absent->x          OK
+run_as.group_name                            absent->y          OK
+run_as.group_name                            x->absent          OK
+run_as.group_name                            x->y               OK
+run_as.group_name                            y->absent          OK
+run_as.group_name                            y->x               OK
+run_as.service_principal_name                absent->x          OK
+run_as.service_principal_name                absent->y          OK
+run_as.service_principal_name                x->absent          OK
+run_as.service_principal_name                x->y               OK
+run_as.service_principal_name                y->absent          OK
+run_as.service_principal_name                y->x               OK
+run_as.user_name                             absent->x          OK
+run_as.user_name                             absent->y          OK
+run_as.user_name                             x->absent          OK
+run_as.user_name                             x->y               OK
+run_as.user_name                             y->absent          OK
+run_as.user_name                             y->x               OK
+schedule.pause_status                        absent->x          OK
+schedule.pause_status                        absent->y          OK
+schedule.pause_status                        x->absent          OK
+schedule.pause_status                        x->y               OK
+schedule.pause_status                        y->absent          OK
+schedule.pause_status                        y->x               OK
+schedule.quartz_cron_expression              x->y               OK
+schedule.quartz_cron_expression              y->x               OK
+schedule.sql_condition.sql_query_id          x->y               OK
+schedule.sql_condition.sql_query_id          y->x               OK
+schedule.sql_condition.trigger_mode          absent->x          OK
+schedule.sql_condition.trigger_mode          absent->y          OK
+schedule.sql_condition.trigger_mode          x->absent          OK
+schedule.sql_condition.trigger_mode          x->y               OK
+schedule.sql_condition.trigger_mode          y->absent          OK
+schedule.sql_condition.trigger_mode          y->x               OK
+schedule.sql_condition.warehouse_id          x->y               OK
+schedule.sql_condition.warehouse_id          y->x               OK
+schedule.timezone_id                         x->y               OK
+schedule.timezone_id                         y->x               OK
+timeout_seconds                              1200->600          OK
+timeout_seconds                              1200->absent       OK
+timeout_seconds                              600->1200          OK
+timeout_seconds                              600->absent        OK
+timeout_seconds                              absent->1200       OK
+timeout_seconds                              absent->600        OK
+trigger.file_arrival.min_time_between_triggers_seconds 1->2               OK
+trigger.file_arrival.min_time_between_triggers_seconds 1->absent          OK
+trigger.file_arrival.min_time_between_triggers_seconds 2->1               OK
+trigger.file_arrival.min_time_between_triggers_seconds 2->absent          OK
+trigger.file_arrival.min_time_between_triggers_seconds absent->1          OK
+trigger.file_arrival.min_time_between_triggers_seconds absent->2          OK
+trigger.file_arrival.url                     x->y               OK
+trigger.file_arrival.url                     y->x               OK
+trigger.file_arrival.wait_after_last_change_seconds 1->2               OK
+trigger.file_arrival.wait_after_last_change_seconds 1->absent          OK
+trigger.file_arrival.wait_after_last_change_seconds 2->1               OK
+trigger.file_arrival.wait_after_last_change_seconds 2->absent          OK
+trigger.file_arrival.wait_after_last_change_seconds absent->1          OK
+trigger.file_arrival.wait_after_last_change_seconds absent->2          OK
+trigger.model.condition                      x->y               OK
+trigger.model.condition                      y->x               OK
+trigger.model.min_time_between_triggers_seconds 1->2               OK
+trigger.model.min_time_between_triggers_seconds 1->absent          OK
+trigger.model.min_time_between_triggers_seconds 2->1               OK
+trigger.model.min_time_between_triggers_seconds 2->absent          OK
+trigger.model.min_time_between_triggers_seconds absent->1          OK
+trigger.model.min_time_between_triggers_seconds absent->2          OK
+trigger.model.securable_name                 absent->x          OK
+trigger.model.securable_name                 absent->y          OK
+trigger.model.securable_name                 x->absent          OK
+trigger.model.securable_name                 x->y               OK
+trigger.model.securable_name                 y->absent          OK
+trigger.model.securable_name                 y->x               OK
+trigger.model.wait_after_last_change_seconds 1->2               OK
+trigger.model.wait_after_last_change_seconds 1->absent          OK
+trigger.model.wait_after_last_change_seconds 2->1               OK
+trigger.model.wait_after_last_change_seconds 2->absent          OK
+trigger.model.wait_after_last_change_seconds absent->1          OK
+trigger.model.wait_after_last_change_seconds absent->2          OK
+trigger.pause_status                         absent->x          OK
+trigger.pause_status                         absent->y          OK
+trigger.pause_status                         x->absent          OK
+trigger.pause_status                         x->y               OK
+trigger.pause_status                         y->absent          OK
+trigger.pause_status                         y->x               OK
+trigger.periodic.interval                    1->2               OK
+trigger.periodic.interval                    2->1               OK
+trigger.periodic.unit                        x->y               OK
+trigger.periodic.unit                        y->x               OK
+trigger.sql_condition.sql_query_id           x->y               OK
+trigger.sql_condition.sql_query_id           y->x               OK
+trigger.sql_condition.trigger_mode           absent->x          OK
+trigger.sql_condition.trigger_mode           absent->y          OK
+trigger.sql_condition.trigger_mode           x->absent          OK
+trigger.sql_condition.trigger_mode           x->y               OK
+trigger.sql_condition.trigger_mode           y->absent          OK
+trigger.sql_condition.trigger_mode           y->x               OK
+trigger.sql_condition.warehouse_id           x->y               OK
+trigger.sql_condition.warehouse_id           y->x               OK
+trigger.table_update.condition               absent->x          OK
+trigger.table_update.condition               absent->y          OK
+trigger.table_update.condition               x->absent          OK
+trigger.table_update.condition               x->y               OK
+trigger.table_update.condition               y->absent          OK
+trigger.table_update.condition               y->x               OK
+trigger.table_update.min_time_between_triggers_seconds 1->2               OK
+trigger.table_update.min_time_between_triggers_seconds 1->absent          OK
+trigger.table_update.min_time_between_triggers_seconds 2->1               OK
+trigger.table_update.min_time_between_triggers_seconds 2->absent          OK
+trigger.table_update.min_time_between_triggers_seconds absent->1          OK
+trigger.table_update.min_time_between_triggers_seconds absent->2          OK
+trigger.table_update.wait_after_last_change_seconds 1->2               OK
+trigger.table_update.wait_after_last_change_seconds 1->absent          OK
+trigger.table_update.wait_after_last_change_seconds 2->1               OK
+trigger.table_update.wait_after_last_change_seconds 2->absent          OK
+trigger.table_update.wait_after_last_change_seconds absent->1          OK
+trigger.table_update.wait_after_last_change_seconds absent->2          OK
+usage_policy_id                              absent->x          OK
+usage_policy_id                              absent->y          OK
+usage_policy_id                              x->absent          OK
+usage_policy_id                              x->y               OK
+usage_policy_id                              y->absent          OK
+usage_policy_id                              y->x               OK
+
+=== summary
+OK             1272
+SUPPRESSED     48
+NOT_OBSERVABLE 48
+SKIPPED        54
+
+=== not covered: 614 fields under a slice or map
+email_notifications.on_duration_warning_threshold_exceeded[*]
+email_notifications.on_failure[*]
+email_notifications.on_start[*]
+email_notifications.on_streaming_backlog_exceeded[*]
+email_notifications.on_success[*]
+environments[*].environment_key
+environments[*].spec.base_environment
+environments[*].spec.client
+environments[*].spec.dependencies[*]
+environments[*].spec.environment_version
+environments[*].spec.java_dependencies[*]
+git_source.sparse_checkout.patterns[*]
+health.rules[*].metric
+health.rules[*].op
+health.rules[*].value
+job_clusters[*].job_cluster_key
+job_clusters[*].new_cluster.apply_policy_default_values
+job_clusters[*].new_cluster.autoscale.max_workers
+job_clusters[*].new_cluster.autoscale.min_workers
+job_clusters[*].new_cluster.autotermination_minutes
+job_clusters[*].new_cluster.aws_attributes.availability
+job_clusters[*].new_cluster.aws_attributes.ebs_volume_count
+job_clusters[*].new_cluster.aws_attributes.ebs_volume_iops
+job_clusters[*].new_cluster.aws_attributes.ebs_volume_size
+job_clusters[*].new_cluster.aws_attributes.ebs_volume_throughput
+job_clusters[*].new_cluster.aws_attributes.ebs_volume_type
+job_clusters[*].new_cluster.aws_attributes.first_on_demand
+job_clusters[*].new_cluster.aws_attributes.instance_profile_arn
+job_clusters[*].new_cluster.aws_attributes.spot_bid_price_percent
+job_clusters[*].new_cluster.aws_attributes.zone_id
+job_clusters[*].new_cluster.azure_attributes.availability
+job_clusters[*].new_cluster.azure_attributes.capacity_reservation_group
+job_clusters[*].new_cluster.azure_attributes.first_on_demand
+job_clusters[*].new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key
+job_clusters[*].new_cluster.azure_attributes.log_analytics_info.log_analytics_workspace_id
+job_clusters[*].new_cluster.azure_attributes.spot_bid_max_price
+job_clusters[*].new_cluster.cluster_log_conf.dbfs.destination
+job_clusters[*].new_cluster.cluster_log_conf.s3.canned_acl
+job_clusters[*].new_cluster.cluster_log_conf.s3.destination
+job_clusters[*].new_cluster.cluster_log_conf.s3.enable_encryption
+job_clusters[*].new_cluster.cluster_log_conf.s3.encryption_type
+job_clusters[*].new_cluster.cluster_log_conf.s3.endpoint
+job_clusters[*].new_cluster.cluster_log_conf.s3.kms_key
+job_clusters[*].new_cluster.cluster_log_conf.s3.region
+job_clusters[*].new_cluster.cluster_log_conf.volumes.destination
+job_clusters[*].new_cluster.cluster_name
+job_clusters[*].new_cluster.custom_tags.*
+job_clusters[*].new_cluster.data_security_mode
+job_clusters[*].new_cluster.dependency_mode
+job_clusters[*].new_cluster.docker_image.basic_auth.password
+job_clusters[*].new_cluster.docker_image.basic_auth.username
+job_clusters[*].new_cluster.docker_image.url
+job_clusters[*].new_cluster.driver_instance_pool_id
+job_clusters[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids[*]
+job_clusters[*].new_cluster.driver_node_type_id
+job_clusters[*].new_cluster.enable_elastic_disk
+job_clusters[*].new_cluster.enable_local_disk_encryption
+job_clusters[*].new_cluster.gcp_attributes.availability
+job_clusters[*].new_cluster.gcp_attributes.boot_disk_size
+job_clusters[*].new_cluster.gcp_attributes.confidential_compute_type
+job_clusters[*].new_cluster.gcp_attributes.first_on_demand
+job_clusters[*].new_cluster.gcp_attributes.google_service_account
+job_clusters[*].new_cluster.gcp_attributes.local_ssd_count
+job_clusters[*].new_cluster.gcp_attributes.use_preemptible_executors
+job_clusters[*].new_cluster.gcp_attributes.zone_id
+job_clusters[*].new_cluster.init_scripts[*].abfss.destination
+job_clusters[*].new_cluster.init_scripts[*].dbfs.destination
+job_clusters[*].new_cluster.init_scripts[*].file.destination
+job_clusters[*].new_cluster.init_scripts[*].gcs.destination
+job_clusters[*].new_cluster.init_scripts[*].s3.canned_acl
+job_clusters[*].new_cluster.init_scripts[*].s3.destination
+job_clusters[*].new_cluster.init_scripts[*].s3.enable_encryption
+job_clusters[*].new_cluster.init_scripts[*].s3.encryption_type
+job_clusters[*].new_cluster.init_scripts[*].s3.endpoint
+job_clusters[*].new_cluster.init_scripts[*].s3.kms_key
+job_clusters[*].new_cluster.init_scripts[*].s3.region
+job_clusters[*].new_cluster.init_scripts[*].volumes.destination
+job_clusters[*].new_cluster.init_scripts[*].workspace.destination
+job_clusters[*].new_cluster.instance_pool_id
+job_clusters[*].new_cluster.is_single_node
+job_clusters[*].new_cluster.kind
+job_clusters[*].new_cluster.node_type_id
+job_clusters[*].new_cluster.num_workers
+job_clusters[*].new_cluster.policy_id
+job_clusters[*].new_cluster.remote_disk_throughput
+job_clusters[*].new_cluster.runtime_engine
+job_clusters[*].new_cluster.single_user_name
+job_clusters[*].new_cluster.spark_conf.*
+job_clusters[*].new_cluster.spark_env_vars.*
+job_clusters[*].new_cluster.spark_version
+job_clusters[*].new_cluster.ssh_public_keys[*]
+job_clusters[*].new_cluster.total_initial_remote_disk_size
+job_clusters[*].new_cluster.use_ml_runtime
+job_clusters[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids[*]
+job_clusters[*].new_cluster.workload_type.clients.jobs
+job_clusters[*].new_cluster.workload_type.clients.notebooks
+job_clusters[*].serverless_compute_id
+parameters[*].default
+parameters[*].name
+permissions[*].group_name
+permissions[*].level
+permissions[*].service_principal_name
+permissions[*].user_name
+tags.*
+tasks[*].ai_runtime_task.code_source_path
+tasks[*].ai_runtime_task.deployments[*].command_path
+tasks[*].ai_runtime_task.deployments[*].compute.accelerator_count
+tasks[*].ai_runtime_task.deployments[*].compute.accelerator_type
+tasks[*].ai_runtime_task.deployments[*].name
+tasks[*].ai_runtime_task.docker_image_url
+tasks[*].ai_runtime_task.experiment
+tasks[*].ai_runtime_task.mlflow_artifact_location
+tasks[*].ai_runtime_task.mlflow_experiment_directory
+tasks[*].ai_runtime_task.mlflow_run
+tasks[*].alert_task.alert_id
+tasks[*].alert_task.subscribers[*].destination_id
+tasks[*].alert_task.subscribers[*].user_name
+tasks[*].alert_task.warehouse_id
+tasks[*].alert_task.workspace_path
+tasks[*].clean_rooms_notebook_task.clean_room_name
+tasks[*].clean_rooms_notebook_task.etag
+tasks[*].clean_rooms_notebook_task.notebook_base_parameters.*
+tasks[*].clean_rooms_notebook_task.notebook_name
+tasks[*].compute.hardware_accelerator
+tasks[*].condition_task.left
+tasks[*].condition_task.op
+tasks[*].condition_task.right
+tasks[*].dashboard_task.dashboard_id
+tasks[*].dashboard_task.filters.*
+tasks[*].dashboard_task.subscription.custom_subject
+tasks[*].dashboard_task.subscription.paused
+tasks[*].dashboard_task.subscription.subscribers[*].destination_id
+tasks[*].dashboard_task.subscription.subscribers[*].user_name
+tasks[*].dashboard_task.warehouse_id
+tasks[*].dbt_cloud_task.connection_resource_name
+tasks[*].dbt_cloud_task.dbt_cloud_job_id
+tasks[*].dbt_platform_task.connection_resource_name
+tasks[*].dbt_platform_task.dbt_platform_job_id
+tasks[*].dbt_task.catalog
+tasks[*].dbt_task.commands[*]
+tasks[*].dbt_task.profiles_directory
+tasks[*].dbt_task.project_directory
+tasks[*].dbt_task.schema
+tasks[*].dbt_task.source
+tasks[*].dbt_task.warehouse_id
+tasks[*].depends_on[*].outcome
+tasks[*].depends_on[*].task_key
+tasks[*].description
+tasks[*].disable_auto_optimization
+tasks[*].disabled
+tasks[*].email_notifications.no_alert_for_skipped_runs
+tasks[*].email_notifications.on_duration_warning_threshold_exceeded[*]
+tasks[*].email_notifications.on_failure[*]
+tasks[*].email_notifications.on_start[*]
+tasks[*].email_notifications.on_streaming_backlog_exceeded[*]
+tasks[*].email_notifications.on_success[*]
+tasks[*].environment_key
+tasks[*].existing_cluster_id
+tasks[*].for_each_task.concurrency
+tasks[*].for_each_task.inputs
+tasks[*].for_each_task.task.ai_runtime_task.code_source_path
+tasks[*].for_each_task.task.ai_runtime_task.deployments[*].command_path
+tasks[*].for_each_task.task.ai_runtime_task.deployments[*].compute.accelerator_count
+tasks[*].for_each_task.task.ai_runtime_task.deployments[*].compute.accelerator_type
+tasks[*].for_each_task.task.ai_runtime_task.deployments[*].name
+tasks[*].for_each_task.task.ai_runtime_task.docker_image_url
+tasks[*].for_each_task.task.ai_runtime_task.experiment
+tasks[*].for_each_task.task.ai_runtime_task.mlflow_artifact_location
+tasks[*].for_each_task.task.ai_runtime_task.mlflow_experiment_directory
+tasks[*].for_each_task.task.ai_runtime_task.mlflow_run
+tasks[*].for_each_task.task.alert_task.alert_id
+tasks[*].for_each_task.task.alert_task.subscribers[*].destination_id
+tasks[*].for_each_task.task.alert_task.subscribers[*].user_name
+tasks[*].for_each_task.task.alert_task.warehouse_id
+tasks[*].for_each_task.task.alert_task.workspace_path
+tasks[*].for_each_task.task.clean_rooms_notebook_task.clean_room_name
+tasks[*].for_each_task.task.clean_rooms_notebook_task.etag
+tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_base_parameters.*
+tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_name
+tasks[*].for_each_task.task.compute.hardware_accelerator
+tasks[*].for_each_task.task.condition_task.left
+tasks[*].for_each_task.task.condition_task.op
+tasks[*].for_each_task.task.condition_task.right
+tasks[*].for_each_task.task.dashboard_task.dashboard_id
+tasks[*].for_each_task.task.dashboard_task.filters.*
+tasks[*].for_each_task.task.dashboard_task.subscription.custom_subject
+tasks[*].for_each_task.task.dashboard_task.subscription.paused
+tasks[*].for_each_task.task.dashboard_task.subscription.subscribers[*].destination_id
+tasks[*].for_each_task.task.dashboard_task.subscription.subscribers[*].user_name
+tasks[*].for_each_task.task.dashboard_task.warehouse_id
+tasks[*].for_each_task.task.dbt_cloud_task.connection_resource_name
+tasks[*].for_each_task.task.dbt_cloud_task.dbt_cloud_job_id
+tasks[*].for_each_task.task.dbt_platform_task.connection_resource_name
+tasks[*].for_each_task.task.dbt_platform_task.dbt_platform_job_id
+tasks[*].for_each_task.task.dbt_task.catalog
+tasks[*].for_each_task.task.dbt_task.commands[*]
+tasks[*].for_each_task.task.dbt_task.profiles_directory
+tasks[*].for_each_task.task.dbt_task.project_directory
+tasks[*].for_each_task.task.dbt_task.schema
+tasks[*].for_each_task.task.dbt_task.source
+tasks[*].for_each_task.task.dbt_task.warehouse_id
+tasks[*].for_each_task.task.depends_on[*].outcome
+tasks[*].for_each_task.task.depends_on[*].task_key
+tasks[*].for_each_task.task.description
+tasks[*].for_each_task.task.disable_auto_optimization
+tasks[*].for_each_task.task.disabled
+tasks[*].for_each_task.task.email_notifications.no_alert_for_skipped_runs
+tasks[*].for_each_task.task.email_notifications.on_duration_warning_threshold_exceeded[*]
+tasks[*].for_each_task.task.email_notifications.on_failure[*]
+tasks[*].for_each_task.task.email_notifications.on_start[*]
+tasks[*].for_each_task.task.email_notifications.on_streaming_backlog_exceeded[*]
+tasks[*].for_each_task.task.email_notifications.on_success[*]
+tasks[*].for_each_task.task.environment_key
+tasks[*].for_each_task.task.existing_cluster_id
+tasks[*].for_each_task.task.for_each_task.concurrency
+tasks[*].for_each_task.task.for_each_task.inputs
+tasks[*].for_each_task.task.gen_ai_compute_task.command
+tasks[*].for_each_task.task.gen_ai_compute_task.compute.gpu_node_pool_id
+tasks[*].for_each_task.task.gen_ai_compute_task.compute.gpu_type
+tasks[*].for_each_task.task.gen_ai_compute_task.compute.num_gpus
+tasks[*].for_each_task.task.gen_ai_compute_task.dl_runtime_image
+tasks[*].for_each_task.task.gen_ai_compute_task.mlflow_experiment_name
+tasks[*].for_each_task.task.gen_ai_compute_task.source
+tasks[*].for_each_task.task.gen_ai_compute_task.training_script_path
+tasks[*].for_each_task.task.gen_ai_compute_task.yaml_parameters
+tasks[*].for_each_task.task.gen_ai_compute_task.yaml_parameters_file_path
+tasks[*].for_each_task.task.health.rules[*].metric
+tasks[*].for_each_task.task.health.rules[*].op
+tasks[*].for_each_task.task.health.rules[*].value
+tasks[*].for_each_task.task.job_cluster_key
+tasks[*].for_each_task.task.libraries[*].cran.package
+tasks[*].for_each_task.task.libraries[*].cran.repo
+tasks[*].for_each_task.task.libraries[*].egg
+tasks[*].for_each_task.task.libraries[*].jar
+tasks[*].for_each_task.task.libraries[*].maven.coordinates
+tasks[*].for_each_task.task.libraries[*].maven.exclusions[*]
+tasks[*].for_each_task.task.libraries[*].maven.repo
+tasks[*].for_each_task.task.libraries[*].pypi.package
+tasks[*].for_each_task.task.libraries[*].pypi.repo
+tasks[*].for_each_task.task.libraries[*].requirements
+tasks[*].for_each_task.task.libraries[*].whl
+tasks[*].for_each_task.task.max_retries
+tasks[*].for_each_task.task.min_retry_interval_millis
+tasks[*].for_each_task.task.new_cluster.apply_policy_default_values
+tasks[*].for_each_task.task.new_cluster.autoscale.max_workers
+tasks[*].for_each_task.task.new_cluster.autoscale.min_workers
+tasks[*].for_each_task.task.new_cluster.autotermination_minutes
+tasks[*].for_each_task.task.new_cluster.aws_attributes.availability
+tasks[*].for_each_task.task.new_cluster.aws_attributes.ebs_volume_count
+tasks[*].for_each_task.task.new_cluster.aws_attributes.ebs_volume_iops
+tasks[*].for_each_task.task.new_cluster.aws_attributes.ebs_volume_size
+tasks[*].for_each_task.task.new_cluster.aws_attributes.ebs_volume_throughput
+tasks[*].for_each_task.task.new_cluster.aws_attributes.ebs_volume_type
+tasks[*].for_each_task.task.new_cluster.aws_attributes.first_on_demand
+tasks[*].for_each_task.task.new_cluster.aws_attributes.instance_profile_arn
+tasks[*].for_each_task.task.new_cluster.aws_attributes.spot_bid_price_percent
+tasks[*].for_each_task.task.new_cluster.aws_attributes.zone_id
+tasks[*].for_each_task.task.new_cluster.azure_attributes.availability
+tasks[*].for_each_task.task.new_cluster.azure_attributes.capacity_reservation_group
+tasks[*].for_each_task.task.new_cluster.azure_attributes.first_on_demand
+tasks[*].for_each_task.task.new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key
+tasks[*].for_each_task.task.new_cluster.azure_attributes.log_analytics_info.log_analytics_workspace_id
+tasks[*].for_each_task.task.new_cluster.azure_attributes.spot_bid_max_price
+tasks[*].for_each_task.task.new_cluster.cluster_log_conf.dbfs.destination
+tasks[*].for_each_task.task.new_cluster.cluster_log_conf.s3.canned_acl
+tasks[*].for_each_task.task.new_cluster.cluster_log_conf.s3.destination
+tasks[*].for_each_task.task.new_cluster.cluster_log_conf.s3.enable_encryption
+tasks[*].for_each_task.task.new_cluster.cluster_log_conf.s3.encryption_type
+tasks[*].for_each_task.task.new_cluster.cluster_log_conf.s3.endpoint
+tasks[*].for_each_task.task.new_cluster.cluster_log_conf.s3.kms_key
+tasks[*].for_each_task.task.new_cluster.cluster_log_conf.s3.region
+tasks[*].for_each_task.task.new_cluster.cluster_log_conf.volumes.destination
+tasks[*].for_each_task.task.new_cluster.cluster_name
+tasks[*].for_each_task.task.new_cluster.custom_tags.*
+tasks[*].for_each_task.task.new_cluster.data_security_mode
+tasks[*].for_each_task.task.new_cluster.dependency_mode
+tasks[*].for_each_task.task.new_cluster.docker_image.basic_auth.password
+tasks[*].for_each_task.task.new_cluster.docker_image.basic_auth.username
+tasks[*].for_each_task.task.new_cluster.docker_image.url
+tasks[*].for_each_task.task.new_cluster.driver_instance_pool_id
+tasks[*].for_each_task.task.new_cluster.driver_node_type_flexibility.alternate_node_type_ids[*]
+tasks[*].for_each_task.task.new_cluster.driver_node_type_id
+tasks[*].for_each_task.task.new_cluster.enable_elastic_disk
+tasks[*].for_each_task.task.new_cluster.enable_local_disk_encryption
+tasks[*].for_each_task.task.new_cluster.gcp_attributes.availability
+tasks[*].for_each_task.task.new_cluster.gcp_attributes.boot_disk_size
+tasks[*].for_each_task.task.new_cluster.gcp_attributes.confidential_compute_type
+tasks[*].for_each_task.task.new_cluster.gcp_attributes.first_on_demand
+tasks[*].for_each_task.task.new_cluster.gcp_attributes.google_service_account
+tasks[*].for_each_task.task.new_cluster.gcp_attributes.local_ssd_count
+tasks[*].for_each_task.task.new_cluster.gcp_attributes.use_preemptible_executors
+tasks[*].for_each_task.task.new_cluster.gcp_attributes.zone_id
+tasks[*].for_each_task.task.new_cluster.init_scripts[*].abfss.destination
+tasks[*].for_each_task.task.new_cluster.init_scripts[*].dbfs.destination
+tasks[*].for_each_task.task.new_cluster.init_scripts[*].file.destination
+tasks[*].for_each_task.task.new_cluster.init_scripts[*].gcs.destination
+tasks[*].for_each_task.task.new_cluster.init_scripts[*].s3.canned_acl
+tasks[*].for_each_task.task.new_cluster.init_scripts[*].s3.destination
+tasks[*].for_each_task.task.new_cluster.init_scripts[*].s3.enable_encryption
+tasks[*].for_each_task.task.new_cluster.init_scripts[*].s3.encryption_type
+tasks[*].for_each_task.task.new_cluster.init_scripts[*].s3.endpoint
+tasks[*].for_each_task.task.new_cluster.init_scripts[*].s3.kms_key
+tasks[*].for_each_task.task.new_cluster.init_scripts[*].s3.region
+tasks[*].for_each_task.task.new_cluster.init_scripts[*].volumes.destination
+tasks[*].for_each_task.task.new_cluster.init_scripts[*].workspace.destination
+tasks[*].for_each_task.task.new_cluster.instance_pool_id
+tasks[*].for_each_task.task.new_cluster.is_single_node
+tasks[*].for_each_task.task.new_cluster.kind
+tasks[*].for_each_task.task.new_cluster.node_type_id
+tasks[*].for_each_task.task.new_cluster.num_workers
+tasks[*].for_each_task.task.new_cluster.policy_id
+tasks[*].for_each_task.task.new_cluster.remote_disk_throughput
+tasks[*].for_each_task.task.new_cluster.runtime_engine
+tasks[*].for_each_task.task.new_cluster.single_user_name
+tasks[*].for_each_task.task.new_cluster.spark_conf.*
+tasks[*].for_each_task.task.new_cluster.spark_env_vars.*
+tasks[*].for_each_task.task.new_cluster.spark_version
+tasks[*].for_each_task.task.new_cluster.ssh_public_keys[*]
+tasks[*].for_each_task.task.new_cluster.total_initial_remote_disk_size
+tasks[*].for_each_task.task.new_cluster.use_ml_runtime
+tasks[*].for_each_task.task.new_cluster.worker_node_type_flexibility.alternate_node_type_ids[*]
+tasks[*].for_each_task.task.new_cluster.workload_type.clients.jobs
+tasks[*].for_each_task.task.new_cluster.workload_type.clients.notebooks
+tasks[*].for_each_task.task.notebook_task.base_parameters.*
+tasks[*].for_each_task.task.notebook_task.notebook_path
+tasks[*].for_each_task.task.notebook_task.source
+tasks[*].for_each_task.task.notebook_task.warehouse_id
+tasks[*].for_each_task.task.notification_settings.alert_on_last_attempt
+tasks[*].for_each_task.task.notification_settings.no_alert_for_canceled_runs
+tasks[*].for_each_task.task.notification_settings.no_alert_for_skipped_runs
+tasks[*].for_each_task.task.pipeline_task.full_refresh
+tasks[*].for_each_task.task.pipeline_task.full_refresh_selection[*]
+tasks[*].for_each_task.task.pipeline_task.parameters.*
+tasks[*].for_each_task.task.pipeline_task.pipeline_id
+tasks[*].for_each_task.task.pipeline_task.refresh_flow_selection[*]
+tasks[*].for_each_task.task.pipeline_task.refresh_selection[*]
+tasks[*].for_each_task.task.pipeline_task.reset_checkpoint_selection[*]
+tasks[*].for_each_task.task.power_bi_task.connection_resource_name
+tasks[*].for_each_task.task.power_bi_task.power_bi_model.authentication_method
+tasks[*].for_each_task.task.power_bi_task.power_bi_model.model_name
+tasks[*].for_each_task.task.power_bi_task.power_bi_model.overwrite_existing
+tasks[*].for_each_task.task.power_bi_task.power_bi_model.storage_mode
+tasks[*].for_each_task.task.power_bi_task.power_bi_model.workspace_name
+tasks[*].for_each_task.task.power_bi_task.refresh_after_update
+tasks[*].for_each_task.task.power_bi_task.tables[*].catalog
+tasks[*].for_each_task.task.power_bi_task.tables[*].name
+tasks[*].for_each_task.task.power_bi_task.tables[*].schema
+tasks[*].for_each_task.task.power_bi_task.tables[*].storage_mode
+tasks[*].for_each_task.task.power_bi_task.warehouse_id
+tasks[*].for_each_task.task.python_operator_task.main
+tasks[*].for_each_task.task.python_operator_task.parameters[*].name
+tasks[*].for_each_task.task.python_operator_task.parameters[*].value
+tasks[*].for_each_task.task.python_wheel_task.entry_point
+tasks[*].for_each_task.task.python_wheel_task.named_parameters.*
+tasks[*].for_each_task.task.python_wheel_task.package_name
+tasks[*].for_each_task.task.python_wheel_task.parameters[*]
+tasks[*].for_each_task.task.retry_on_timeout
+tasks[*].for_each_task.task.run_if
+tasks[*].for_each_task.task.run_job_task.dbt_commands[*]
+tasks[*].for_each_task.task.run_job_task.jar_params[*]
+tasks[*].for_each_task.task.run_job_task.job_id
+tasks[*].for_each_task.task.run_job_task.job_parameters.*
+tasks[*].for_each_task.task.run_job_task.notebook_params.*
+tasks[*].for_each_task.task.run_job_task.pipeline_params.full_refresh
+tasks[*].for_each_task.task.run_job_task.pipeline_params.full_refresh_selection[*]
+tasks[*].for_each_task.task.run_job_task.pipeline_params.refresh_flow_selection[*]
+tasks[*].for_each_task.task.run_job_task.pipeline_params.refresh_selection[*]
+tasks[*].for_each_task.task.run_job_task.pipeline_params.reset_checkpoint_selection[*]
+tasks[*].for_each_task.task.run_job_task.python_named_params.*
+tasks[*].for_each_task.task.run_job_task.python_params[*]
+tasks[*].for_each_task.task.run_job_task.spark_submit_params[*]
+tasks[*].for_each_task.task.run_job_task.sql_params.*
+tasks[*].for_each_task.task.spark_jar_task.jar_uri
+tasks[*].for_each_task.task.spark_jar_task.main_class_name
+tasks[*].for_each_task.task.spark_jar_task.parameters[*]
+tasks[*].for_each_task.task.spark_jar_task.run_as_repl
+tasks[*].for_each_task.task.spark_python_task.parameters[*]
+tasks[*].for_each_task.task.spark_python_task.python_file
+tasks[*].for_each_task.task.spark_python_task.source
+tasks[*].for_each_task.task.spark_submit_task.parameters[*]
+tasks[*].for_each_task.task.sql_task.alert.alert_id
+tasks[*].for_each_task.task.sql_task.alert.pause_subscriptions
+tasks[*].for_each_task.task.sql_task.alert.subscriptions[*].destination_id
+tasks[*].for_each_task.task.sql_task.alert.subscriptions[*].user_name
+tasks[*].for_each_task.task.sql_task.dashboard.custom_subject
+tasks[*].for_each_task.task.sql_task.dashboard.dashboard_id
+tasks[*].for_each_task.task.sql_task.dashboard.pause_subscriptions
+tasks[*].for_each_task.task.sql_task.dashboard.subscriptions[*].destination_id
+tasks[*].for_each_task.task.sql_task.dashboard.subscriptions[*].user_name
+tasks[*].for_each_task.task.sql_task.file.path
+tasks[*].for_each_task.task.sql_task.file.source
+tasks[*].for_each_task.task.sql_task.parameters.*
+tasks[*].for_each_task.task.sql_task.query.query_id
+tasks[*].for_each_task.task.sql_task.warehouse_id
+tasks[*].for_each_task.task.task_key
+tasks[*].for_each_task.task.timeout_seconds
+tasks[*].for_each_task.task.webhook_notifications.on_duration_warning_threshold_exceeded[*].id
+tasks[*].for_each_task.task.webhook_notifications.on_failure[*].id
+tasks[*].for_each_task.task.webhook_notifications.on_start[*].id
+tasks[*].for_each_task.task.webhook_notifications.on_streaming_backlog_exceeded[*].id
+tasks[*].for_each_task.task.webhook_notifications.on_success[*].id
+tasks[*].gen_ai_compute_task.command
+tasks[*].gen_ai_compute_task.compute.gpu_node_pool_id
+tasks[*].gen_ai_compute_task.compute.gpu_type
+tasks[*].gen_ai_compute_task.compute.num_gpus
+tasks[*].gen_ai_compute_task.dl_runtime_image
+tasks[*].gen_ai_compute_task.mlflow_experiment_name
+tasks[*].gen_ai_compute_task.source
+tasks[*].gen_ai_compute_task.training_script_path
+tasks[*].gen_ai_compute_task.yaml_parameters
+tasks[*].gen_ai_compute_task.yaml_parameters_file_path
+tasks[*].health.rules[*].metric
+tasks[*].health.rules[*].op
+tasks[*].health.rules[*].value
+tasks[*].job_cluster_key
+tasks[*].libraries[*].cran.package
+tasks[*].libraries[*].cran.repo
+tasks[*].libraries[*].egg
+tasks[*].libraries[*].jar
+tasks[*].libraries[*].maven.coordinates
+tasks[*].libraries[*].maven.exclusions[*]
+tasks[*].libraries[*].maven.repo
+tasks[*].libraries[*].pypi.package
+tasks[*].libraries[*].pypi.repo
+tasks[*].libraries[*].requirements
+tasks[*].libraries[*].whl
+tasks[*].max_retries
+tasks[*].min_retry_interval_millis
+tasks[*].new_cluster.apply_policy_default_values
+tasks[*].new_cluster.autoscale.max_workers
+tasks[*].new_cluster.autoscale.min_workers
+tasks[*].new_cluster.autotermination_minutes
+tasks[*].new_cluster.aws_attributes.availability
+tasks[*].new_cluster.aws_attributes.ebs_volume_count
+tasks[*].new_cluster.aws_attributes.ebs_volume_iops
+tasks[*].new_cluster.aws_attributes.ebs_volume_size
+tasks[*].new_cluster.aws_attributes.ebs_volume_throughput
+tasks[*].new_cluster.aws_attributes.ebs_volume_type
+tasks[*].new_cluster.aws_attributes.first_on_demand
+tasks[*].new_cluster.aws_attributes.instance_profile_arn
+tasks[*].new_cluster.aws_attributes.spot_bid_price_percent
+tasks[*].new_cluster.aws_attributes.zone_id
+tasks[*].new_cluster.azure_attributes.availability
+tasks[*].new_cluster.azure_attributes.capacity_reservation_group
+tasks[*].new_cluster.azure_attributes.first_on_demand
+tasks[*].new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key
+tasks[*].new_cluster.azure_attributes.log_analytics_info.log_analytics_workspace_id
+tasks[*].new_cluster.azure_attributes.spot_bid_max_price
+tasks[*].new_cluster.cluster_log_conf.dbfs.destination
+tasks[*].new_cluster.cluster_log_conf.s3.canned_acl
+tasks[*].new_cluster.cluster_log_conf.s3.destination
+tasks[*].new_cluster.cluster_log_conf.s3.enable_encryption
+tasks[*].new_cluster.cluster_log_conf.s3.encryption_type
+tasks[*].new_cluster.cluster_log_conf.s3.endpoint
+tasks[*].new_cluster.cluster_log_conf.s3.kms_key
+tasks[*].new_cluster.cluster_log_conf.s3.region
+tasks[*].new_cluster.cluster_log_conf.volumes.destination
+tasks[*].new_cluster.cluster_name
+tasks[*].new_cluster.custom_tags.*
+tasks[*].new_cluster.data_security_mode
+tasks[*].new_cluster.dependency_mode
+tasks[*].new_cluster.docker_image.basic_auth.password
+tasks[*].new_cluster.docker_image.basic_auth.username
+tasks[*].new_cluster.docker_image.url
+tasks[*].new_cluster.driver_instance_pool_id
+tasks[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids[*]
+tasks[*].new_cluster.driver_node_type_id
+tasks[*].new_cluster.enable_elastic_disk
+tasks[*].new_cluster.enable_local_disk_encryption
+tasks[*].new_cluster.gcp_attributes.availability
+tasks[*].new_cluster.gcp_attributes.boot_disk_size
+tasks[*].new_cluster.gcp_attributes.confidential_compute_type
+tasks[*].new_cluster.gcp_attributes.first_on_demand
+tasks[*].new_cluster.gcp_attributes.google_service_account
+tasks[*].new_cluster.gcp_attributes.local_ssd_count
+tasks[*].new_cluster.gcp_attributes.use_preemptible_executors
+tasks[*].new_cluster.gcp_attributes.zone_id
+tasks[*].new_cluster.init_scripts[*].abfss.destination
+tasks[*].new_cluster.init_scripts[*].dbfs.destination
+tasks[*].new_cluster.init_scripts[*].file.destination
+tasks[*].new_cluster.init_scripts[*].gcs.destination
+tasks[*].new_cluster.init_scripts[*].s3.canned_acl
+tasks[*].new_cluster.init_scripts[*].s3.destination
+tasks[*].new_cluster.init_scripts[*].s3.enable_encryption
+tasks[*].new_cluster.init_scripts[*].s3.encryption_type
+tasks[*].new_cluster.init_scripts[*].s3.endpoint
+tasks[*].new_cluster.init_scripts[*].s3.kms_key
+tasks[*].new_cluster.init_scripts[*].s3.region
+tasks[*].new_cluster.init_scripts[*].volumes.destination
+tasks[*].new_cluster.init_scripts[*].workspace.destination
+tasks[*].new_cluster.instance_pool_id
+tasks[*].new_cluster.is_single_node
+tasks[*].new_cluster.kind
+tasks[*].new_cluster.node_type_id
+tasks[*].new_cluster.num_workers
+tasks[*].new_cluster.policy_id
+tasks[*].new_cluster.remote_disk_throughput
+tasks[*].new_cluster.runtime_engine
+tasks[*].new_cluster.single_user_name
+tasks[*].new_cluster.spark_conf.*
+tasks[*].new_cluster.spark_env_vars.*
+tasks[*].new_cluster.spark_version
+tasks[*].new_cluster.ssh_public_keys[*]
+tasks[*].new_cluster.total_initial_remote_disk_size
+tasks[*].new_cluster.use_ml_runtime
+tasks[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids[*]
+tasks[*].new_cluster.workload_type.clients.jobs
+tasks[*].new_cluster.workload_type.clients.notebooks
+tasks[*].notebook_task.base_parameters.*
+tasks[*].notebook_task.notebook_path
+tasks[*].notebook_task.source
+tasks[*].notebook_task.warehouse_id
+tasks[*].notification_settings.alert_on_last_attempt
+tasks[*].notification_settings.no_alert_for_canceled_runs
+tasks[*].notification_settings.no_alert_for_skipped_runs
+tasks[*].pipeline_task.full_refresh
+tasks[*].pipeline_task.full_refresh_selection[*]
+tasks[*].pipeline_task.parameters.*
+tasks[*].pipeline_task.pipeline_id
+tasks[*].pipeline_task.refresh_flow_selection[*]
+tasks[*].pipeline_task.refresh_selection[*]
+tasks[*].pipeline_task.reset_checkpoint_selection[*]
+tasks[*].power_bi_task.connection_resource_name
+tasks[*].power_bi_task.power_bi_model.authentication_method
+tasks[*].power_bi_task.power_bi_model.model_name
+tasks[*].power_bi_task.power_bi_model.overwrite_existing
+tasks[*].power_bi_task.power_bi_model.storage_mode
+tasks[*].power_bi_task.power_bi_model.workspace_name
+tasks[*].power_bi_task.refresh_after_update
+tasks[*].power_bi_task.tables[*].catalog
+tasks[*].power_bi_task.tables[*].name
+tasks[*].power_bi_task.tables[*].schema
+tasks[*].power_bi_task.tables[*].storage_mode
+tasks[*].power_bi_task.warehouse_id
+tasks[*].python_operator_task.main
+tasks[*].python_operator_task.parameters[*].name
+tasks[*].python_operator_task.parameters[*].value
+tasks[*].python_wheel_task.entry_point
+tasks[*].python_wheel_task.named_parameters.*
+tasks[*].python_wheel_task.package_name
+tasks[*].python_wheel_task.parameters[*]
+tasks[*].retry_on_timeout
+tasks[*].run_if
+tasks[*].run_job_task.dbt_commands[*]
+tasks[*].run_job_task.jar_params[*]
+tasks[*].run_job_task.job_id
+tasks[*].run_job_task.job_parameters.*
+tasks[*].run_job_task.notebook_params.*
+tasks[*].run_job_task.pipeline_params.full_refresh
+tasks[*].run_job_task.pipeline_params.full_refresh_selection[*]
+tasks[*].run_job_task.pipeline_params.refresh_flow_selection[*]
+tasks[*].run_job_task.pipeline_params.refresh_selection[*]
+tasks[*].run_job_task.pipeline_params.reset_checkpoint_selection[*]
+tasks[*].run_job_task.python_named_params.*
+tasks[*].run_job_task.python_params[*]
+tasks[*].run_job_task.spark_submit_params[*]
+tasks[*].run_job_task.sql_params.*
+tasks[*].spark_jar_task.jar_uri
+tasks[*].spark_jar_task.main_class_name
+tasks[*].spark_jar_task.parameters[*]
+tasks[*].spark_jar_task.run_as_repl
+tasks[*].spark_python_task.parameters[*]
+tasks[*].spark_python_task.python_file
+tasks[*].spark_python_task.source
+tasks[*].spark_submit_task.parameters[*]
+tasks[*].sql_task.alert.alert_id
+tasks[*].sql_task.alert.pause_subscriptions
+tasks[*].sql_task.alert.subscriptions[*].destination_id
+tasks[*].sql_task.alert.subscriptions[*].user_name
+tasks[*].sql_task.dashboard.custom_subject
+tasks[*].sql_task.dashboard.dashboard_id
+tasks[*].sql_task.dashboard.pause_subscriptions
+tasks[*].sql_task.dashboard.subscriptions[*].destination_id
+tasks[*].sql_task.dashboard.subscriptions[*].user_name
+tasks[*].sql_task.file.path
+tasks[*].sql_task.file.source
+tasks[*].sql_task.parameters.*
+tasks[*].sql_task.query.query_id
+tasks[*].sql_task.warehouse_id
+tasks[*].task_key
+tasks[*].timeout_seconds
+tasks[*].webhook_notifications.on_duration_warning_threshold_exceeded[*].id
+tasks[*].webhook_notifications.on_failure[*].id
+tasks[*].webhook_notifications.on_start[*].id
+tasks[*].webhook_notifications.on_streaming_backlog_exceeded[*].id
+tasks[*].webhook_notifications.on_success[*].id
+trigger.model.aliases[*]
+trigger.table_update.table_names[*]
+triggers[*].continuous.task_retry_mode
+triggers[*].file_arrival.min_time_between_triggers_seconds
+triggers[*].file_arrival.url
+triggers[*].file_arrival.wait_after_last_change_seconds
+triggers[*].model.aliases[*]
+triggers[*].model.condition
+triggers[*].model.min_time_between_triggers_seconds
+triggers[*].model.securable_name
+triggers[*].model.wait_after_last_change_seconds
+triggers[*].pause_status
+triggers[*].periodic.interval
+triggers[*].periodic.unit
+triggers[*].schedule.quartz_cron_expression
+triggers[*].schedule.timezone_id
+triggers[*].sql_condition.sql_query_id
+triggers[*].sql_condition.trigger_mode
+triggers[*].sql_condition.warehouse_id
+triggers[*].table_update.condition
+triggers[*].table_update.min_time_between_triggers_seconds
+triggers[*].table_update.table_names[*]
+triggers[*].table_update.wait_after_last_change_seconds
+webhook_notifications.on_duration_warning_threshold_exceeded[*].id
+webhook_notifications.on_failure[*].id
+webhook_notifications.on_start[*].id
+webhook_notifications.on_streaming_backlog_exceeded[*].id
+webhook_notifications.on_success[*].id
