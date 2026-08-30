@@ -1,19 +1,13 @@
 === genie_space.yml.tmpl
-description                                  x          absent     POST_DEPLOY_DRIFT  description
-description                                  y          absent     POST_DEPLOY_DRIFT  description
-etag                                         absent     x          SUPPRESSED  custom
-etag                                         absent     y          SUPPRESSED  custom
-etag                                         x          absent     SUPPRESSED  custom
-etag                                         x          y          SUPPRESSED  custom
-etag                                         y          absent     SUPPRESSED  custom
-etag                                         y          x          SUPPRESSED  custom
+description                                  x          absent     UPDATE_IGNORED  description
+description                                  y          absent     UPDATE_IGNORED  description
 parent_path                                  absent     x          POST_DEPLOY_DRIFT  parent_path
 parent_path                                  absent     y          POST_DEPLOY_DRIFT  parent_path
-parent_path                                  x          absent     POST_DEPLOY_DRIFT  parent_path
+parent_path                                  x          absent     UPDATE_IGNORED  parent_path
 parent_path                                  x          y          POST_DEPLOY_DRIFT  parent_path
-parent_path                                  y          absent     POST_DEPLOY_DRIFT  parent_path
+parent_path                                  y          absent     UPDATE_IGNORED  parent_path
 parent_path                                  y          x          POST_DEPLOY_DRIFT  parent_path
-title                                        x          absent     POST_DEPLOY_DRIFT  title
-title                                        y          absent     POST_DEPLOY_DRIFT  title
-warehouse_id                                 x          absent     POST_DEPLOY_DRIFT  warehouse_id
-warehouse_id                                 y          absent     POST_DEPLOY_DRIFT  warehouse_id
+title                                        x          absent     UPDATE_IGNORED  title
+title                                        y          absent     UPDATE_IGNORED  title
+warehouse_id                                 x          absent     UPDATE_IGNORED  warehouse_id
+warehouse_id                                 y          absent     UPDATE_IGNORED  warehouse_id

@@ -1,26 +1,33 @@
 === pipeline.yml.tmpl
-deployment.version_id                        absent     x          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        absent     y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        x          y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        y          x          SUPPRESSED  managed by the deployment metadata service
-dry_run                                      absent     true       POST_DEPLOY_DRIFT  dry_run
-dry_run                                      false      true       POST_DEPLOY_DRIFT  dry_run
-dry_run                                      true       absent     SUPPRESSED  remote_already_set
-
-=== pipeline_allow_duplicate_names.yml.tmpl
-deployment.version_id                        absent     x          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        absent     y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        x          y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        y          x          SUPPRESSED  managed by the deployment metadata service
-dry_run                                      absent     true       POST_DEPLOY_DRIFT  dry_run
-dry_run                                      false      true       POST_DEPLOY_DRIFT  dry_run
-dry_run                                      true       absent     SUPPRESSED  remote_already_set
-
-=== pipeline_apply_policy_default_values.yml.tmpl
-deployment.version_id                        absent     x          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        absent     y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        x          y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        y          x          SUPPRESSED  managed by the deployment metadata service
-dry_run                                      absent     true       POST_DEPLOY_DRIFT  dry_run
-dry_run                                      false      true       POST_DEPLOY_DRIFT  dry_run
-dry_run                                      true       absent     SUPPRESSED  remote_already_set
+clusters[0].ssh_public_keys[0]               absent     x          UNSETTABLE  index out of bounds at "resources.pipelines.foo.clusters[0].ssh_public_keys"
+clusters[0].ssh_public_keys[0]               absent     y          UNSETTABLE  index out of bounds at "resources.pipelines.foo.clusters[0].ssh_public_keys"
+clusters[0].ssh_public_keys[0]               y          absent     UNSETTABLE  index out of bounds at "resources.pipelines.foo.clusters[0].ssh_public_keys"
+dry_run                                      absent     true       UPDATE_IGNORED  dry_run
+dry_run                                      false      true       UPDATE_IGNORED  dry_run
+environment.dependencies[0]                  absent     x          UNSETTABLE  index out of bounds at "resources.pipelines.foo.environment.dependencies"
+environment.dependencies[0]                  absent     y          UNSETTABLE  index out of bounds at "resources.pipelines.foo.environment.dependencies"
+environment.dependencies[0]                  x          absent     UNSETTABLE  index out of bounds at "resources.pipelines.foo.environment.dependencies"
+environment.dependencies[0]                  x          y          UNSETTABLE  index out of bounds at "resources.pipelines.foo.environment.dependencies"
+environment.dependencies[0]                  y          absent     UNSETTABLE  index out of bounds at "resources.pipelines.foo.environment.dependencies"
+environment.dependencies[0]                  y          x          UNSETTABLE  index out of bounds at "resources.pipelines.foo.environment.dependencies"
+filters.exclude[0]                           absent     x          UNSETTABLE  index out of bounds at "resources.pipelines.foo.filters.exclude"
+filters.exclude[0]                           absent     y          UNSETTABLE  index out of bounds at "resources.pipelines.foo.filters.exclude"
+filters.exclude[0]                           x          absent     UNSETTABLE  index out of bounds at "resources.pipelines.foo.filters.exclude"
+filters.exclude[0]                           x          y          UNSETTABLE  index out of bounds at "resources.pipelines.foo.filters.exclude"
+filters.exclude[0]                           y          x          UNSETTABLE  index out of bounds at "resources.pipelines.foo.filters.exclude"
+filters.include[0]                           absent     x          UNSETTABLE  index out of bounds at "resources.pipelines.foo.filters.include"
+filters.include[0]                           absent     y          UNSETTABLE  index out of bounds at "resources.pipelines.foo.filters.include"
+filters.include[0]                           x          absent     UNSETTABLE  index out of bounds at "resources.pipelines.foo.filters.include"
+filters.include[0]                           x          y          UNSETTABLE  index out of bounds at "resources.pipelines.foo.filters.include"
+filters.include[0]                           y          absent     UNSETTABLE  index out of bounds at "resources.pipelines.foo.filters.include"
+filters.include[0]                           y          x          UNSETTABLE  index out of bounds at "resources.pipelines.foo.filters.include"
+notifications[0].alerts[0]                   absent     x          UNSETTABLE  index out of bounds at "resources.pipelines.foo.notifications[0].alerts"
+notifications[0].alerts[0]                   absent     y          UNSETTABLE  index out of bounds at "resources.pipelines.foo.notifications[0].alerts"
+notifications[0].alerts[0]                   x          y          UNSETTABLE  index out of bounds at "resources.pipelines.foo.notifications[0].alerts"
+notifications[0].alerts[0]                   y          absent     UNSETTABLE  index out of bounds at "resources.pipelines.foo.notifications[0].alerts"
+notifications[0].alerts[0]                   y          x          UNSETTABLE  index out of bounds at "resources.pipelines.foo.notifications[0].alerts"
+notifications[0].email_recipients[0]         absent     x          UNSETTABLE  index out of bounds at "resources.pipelines.foo.notifications[0].email_recipients"
+notifications[0].email_recipients[0]         absent     y          UNSETTABLE  index out of bounds at "resources.pipelines.foo.notifications[0].email_recipients"
+notifications[0].email_recipients[0]         x          y          UNSETTABLE  index out of bounds at "resources.pipelines.foo.notifications[0].email_recipients"
+notifications[0].email_recipients[0]         y          absent     UNSETTABLE  index out of bounds at "resources.pipelines.foo.notifications[0].email_recipients"
+notifications[0].email_recipients[0]         y          x          UNSETTABLE  index out of bounds at "resources.pipelines.foo.notifications[0].email_recipients"

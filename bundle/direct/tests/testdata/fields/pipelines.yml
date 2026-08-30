@@ -1,0 +1,48 @@
+# Value library for pipelines. See ../../README.md.
+
+# No pipeline config in the corpus declares a clusters block, so its whole spec -- 346
+# fields, including the init_scripts union and the tag maps -- would go untested.
+base:
+  clusters:
+    - label: default
+      node_type_id: i3.xlarge
+      num_workers: 1
+      custom_tags:
+        team: eng
+      spark_conf:
+        spark.speculation: "true"
+      spark_env_vars:
+        MY_VAR: value
+      ssh_public_keys:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQtest
+      init_scripts:
+        - workspace:
+            destination: /Users/tester@databricks.com/init.sh
+        - s3:
+            destination: s3://bucket/init.sh
+            region: us-east-1
+  configuration:
+    my.key: value
+  environment:
+    dependencies:
+      - requests
+  filters:
+    include:
+      - included
+    exclude:
+      - excluded
+  libraries:
+    - notebook:
+        path: /Shared/notebook
+  notifications:
+    - alerts:
+        - on-update-failure
+      email_recipients:
+        - tester@databricks.com
+  restart_window:
+    start_hour: 1
+    time_zone_id: UTC
+  tags:
+    team: eng
+  parameters:
+    table: users

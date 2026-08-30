@@ -1,35 +1,13 @@
 === job.yml.tmpl
-deployment.version_id                        absent     x          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        absent     y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        x          y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        y          x          SUPPRESSED  managed by the deployment metadata service
-
-=== job_apply_policy_default_values_for_each_task.yml.tmpl
-deployment.version_id                        absent     x          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        absent     y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        x          y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        y          x          SUPPRESSED  managed by the deployment metadata service
-
-=== job_apply_policy_default_values_job_cluster.yml.tmpl
-deployment.version_id                        absent     x          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        absent     y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        x          y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        y          x          SUPPRESSED  managed by the deployment metadata service
-
-=== job_apply_policy_default_values_task_cluster.yml.tmpl
-deployment.version_id                        absent     x          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        absent     y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        x          y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        y          x          SUPPRESSED  managed by the deployment metadata service
-
-=== job_with_depends_on.yml.tmpl
-deployment.version_id                        absent     x          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        absent     y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        x          y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        y          x          SUPPRESSED  managed by the deployment metadata service
-
-=== job_with_task.yml.tmpl
-deployment.version_id                        absent     x          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        absent     y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        x          y          SUPPRESSED  managed by the deployment metadata service
-deployment.version_id                        y          x          SUPPRESSED  managed by the deployment metadata service
+email_notifications.on_failure[0]            absent     x          UNSETTABLE  index out of bounds at "resources.jobs.foo.email_notifications.on_failure"
+email_notifications.on_failure[0]            absent     y          UNSETTABLE  index out of bounds at "resources.jobs.foo.email_notifications.on_failure"
+email_notifications.on_failure[0]            x          absent     UNSETTABLE  index out of bounds at "resources.jobs.foo.email_notifications.on_failure"
+email_notifications.on_failure[0]            x          y          UNSETTABLE  index out of bounds at "resources.jobs.foo.email_notifications.on_failure"
+email_notifications.on_failure[0]            y          absent     UNSETTABLE  index out of bounds at "resources.jobs.foo.email_notifications.on_failure"
+email_notifications.on_failure[0]            y          x          UNSETTABLE  index out of bounds at "resources.jobs.foo.email_notifications.on_failure"
+environments[0].spec.dependencies[0]         absent     x          UNSETTABLE  index out of bounds at "resources.jobs.foo.environments[0].spec.dependencies"
+environments[0].spec.dependencies[0]         absent     y          UNSETTABLE  index out of bounds at "resources.jobs.foo.environments[0].spec.dependencies"
+environments[0].spec.dependencies[0]         x          absent     UNSETTABLE  index out of bounds at "resources.jobs.foo.environments[0].spec.dependencies"
+environments[0].spec.dependencies[0]         x          y          UNSETTABLE  index out of bounds at "resources.jobs.foo.environments[0].spec.dependencies"
+environments[0].spec.dependencies[0]         y          absent     UNSETTABLE  index out of bounds at "resources.jobs.foo.environments[0].spec.dependencies"
+environments[0].spec.dependencies[0]         y          x          UNSETTABLE  index out of bounds at "resources.jobs.foo.environments[0].spec.dependencies"

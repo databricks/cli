@@ -1,7 +1,0 @@
-=== alert.yml.tmpl
-id                                           absent     x          SUPPRESSED  spec:output_only
-id                                           absent     y          SUPPRESSED  spec:output_only
-id                                           x          absent     SUPPRESSED  spec:output_only
-id                                           x          y          SUPPRESSED  spec:output_only
-id                                           y          absent     SUPPRESSED  spec:output_only
-id                                           y          x          SUPPRESSED  spec:output_only

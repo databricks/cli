@@ -73,6 +73,21 @@ type Server struct {
 
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
+
+	// settleAsyncImmediately is applied to every workspace this server creates; see
+	// FakeWorkspace.SetSettleAsyncImmediately.
+	settleAsyncImmediately bool
+}
+
+// SettleAsyncImmediately turns off the "not ready yet on the first read" simulation for
+// every workspace this server serves. Call it before the first request.
+func (s *Server) SettleAsyncImmediately() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.settleAsyncImmediately = true
+	for _, workspace := range s.fakeWorkspaces {
+		workspace.SetSettleAsyncImmediately(true)
+	}
 }
 
 type Request struct {
@@ -349,7 +364,9 @@ func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 	defer s.mu.Unlock()
 
 	if _, ok := s.fakeWorkspaces[key]; !ok {
-		s.fakeWorkspaces[key] = NewFakeWorkspace(s.URL, token)
+		workspace := NewFakeWorkspace(s.URL, token)
+		workspace.SettleAsyncImmediately = s.settleAsyncImmediately
+		s.fakeWorkspaces[key] = workspace
 	}
 
 	return s.fakeWorkspaces[key]

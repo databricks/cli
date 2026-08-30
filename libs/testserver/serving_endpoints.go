@@ -299,13 +299,19 @@ func (s *FakeWorkspace) ServingEndpointGet(name string) Response {
 	}
 
 	if endpointUpdating(endpoint) {
-		// This response stays IN_PROGRESS; settle the stored copy for the next read.
 		settled := endpoint
 		settled.State = &serving.EndpointState{
 			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
 			Ready:        endpoint.State.Ready,
 		}
 		s.ServingEndpoints[name] = settled
+
+		// By default this response stays IN_PROGRESS and only the stored copy settles, so
+		// the caller has to poll at least once. SettleAsyncImmediately reports the settled
+		// state right away instead.
+		if s.SettleAsyncImmediately {
+			endpoint = settled
+		}
 	}
 
 	return Response{Body: endpoint}

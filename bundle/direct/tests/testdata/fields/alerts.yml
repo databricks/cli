@@ -1,0 +1,13 @@
+# Value library for alerts. See ../../README.md.
+
+# The invariant config declares neither block, so their fields would only ever be reported
+# as not covered. Seeding one entry each makes both testable: the containers themselves and
+# the fields inside an entry.
+base:
+  evaluation:
+    notification:
+      subscriptions:
+        - user_email: tester@databricks.com
+  parameters:
+    - name: threshold
+      value: "1"

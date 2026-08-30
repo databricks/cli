@@ -1,13 +1,61 @@
 # Value library for jobs. See ../../README.md.
 
 # git_source only validates as a coherent set: a provider, a url, and exactly one of
-# branch/tag/commit. Seeding one makes its fields reachable, so changing the commit or
-# the provider is tested rather than skipped.
+# branch/tag/commit. Seeding one makes its fields reachable, so changing the commit or the
+# provider is tested rather than skipped.
+#
+# job_clusters, triggers and environments are declared by no config in the corpus, so their
+# fields would go untested; seeding one entry each makes them reachable.
 base:
   git_source:
     git_provider: gitHub
     git_url: https://github.com/databricks/cli.test
     git_commit: abc123
+  tasks:
+    - task_key: seeded
+      notebook_task:
+        notebook_path: /Shared/notebook
+      job_cluster_key: seeded
+  job_clusters:
+    - job_cluster_key: seeded
+      new_cluster:
+        spark_version: 13.3.x-scala2.12
+        node_type_id: i3.xlarge
+        num_workers: 1
+        custom_tags:
+          team: eng
+        spark_conf:
+          spark.speculation: "true"
+        init_scripts:
+          - workspace:
+              destination: /Users/tester@databricks.com/init.sh
+  environments:
+    - environment_key: seeded
+      spec:
+        client: "1"
+        dependencies:
+          - requests
+  parameters:
+    - name: table
+      default: users
+  tags:
+    team: eng
+  health:
+    rules:
+      - metric: RUN_DURATION_SECONDS
+        op: GREATER_THAN
+        value: 3600
+  email_notifications:
+    on_failure:
+      - tester@databricks.com
+  webhook_notifications:
+    on_failure:
+      - id: 00000000-0000-0000-0000-000000000000
+  trigger:
+    pause_status: UNPAUSED
+    periodic:
+      interval: 1
+      unit: HOURS
 
 skip:
   # git_branch and git_tag are the other two sides of the same oneof as git_commit, which

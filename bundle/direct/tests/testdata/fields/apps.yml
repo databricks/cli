@@ -1,4 +1,22 @@
-# Value library for apps. See ../README.md.
+# Value library for apps. See ../../README.md.
+
+# The corpus config declares neither block. config carries the app's command and env; the
+# resources list is a union where an entry names one referenced object.
+base:
+  config:
+    command:
+      - python
+      - app.py
+    env:
+      - name: MY_VAR
+        value: value
+  resources:
+    - name: seeded
+      description: seeded resource
+      secret:
+        scope: my-scope
+        key: my-key
+        permission: READ
 
 fields:
   compute_size: [MEDIUM, LARGE]

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -55,6 +56,12 @@ func newClient(t *testing.T) *databricks.WorkspaceClient {
 	}
 	server := testserver.New(tolerantT{t})
 	testserver.AddDefaultHandlers(server)
+	// This suite performs thousands of updates, and an asynchronous resource that reports
+	// itself in-progress once costs a full second of SDK backoff each time -- serving
+	// endpoints alone accounted for more wall time than every other resource type
+	// combined. Waiter behaviour is covered by the acceptance suite, which leaves the
+	// simulation on.
+	server.SettleAsyncImmediately()
 	//exhaustruct:ignore // an SDK config needs only these three fields to reach a fake server
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{
 		Host:               server.URL,
@@ -403,10 +410,15 @@ func copyDir(src, dst string) error {
 // value is absent. Edits go through the dynamic config because that is what the
 // planner reads (config.Root.GetResourceConfig).
 func (h *bundleHarness) setField(path string, value dyn.Value) error {
-	full, err := dyn.NewPathFromString(h.node + "." + path)
+	rel, err := parsePath(path)
 	if err != nil {
 		return err
 	}
+	node, err := dyn.NewPathFromString(h.node)
+	if err != nil {
+		return err
+	}
+	full := append(node, rel...)
 	return h.mutate(func(root dyn.Value) (dyn.Value, error) {
 		if !value.IsValid() {
 			return deletePath(root, full)
@@ -416,6 +428,50 @@ func (h *bundleHarness) setField(path string, value dyn.Value) error {
 		}
 		return dyn.SetByPath(root, full, value)
 	})
+}
+
+// parsePath converts a field path into a dyn.Path. Written by hand rather than handed to
+// dyn.NewPathFromString because that parser treats everything in brackets as an integer
+// index, so a map key -- which the field paths here render as ['key'], the form structpath
+// prints and the form a key containing a dot requires -- is rejected outright.
+func parsePath(path string) (dyn.Path, error) {
+	var out dyn.Path
+	for len(path) > 0 {
+		path = strings.TrimPrefix(path, ".")
+
+		switch {
+		case strings.HasPrefix(path, "['"):
+			end := strings.Index(path, "']")
+			if end < 0 {
+				return nil, fmt.Errorf("unterminated quoted key in %q", path)
+			}
+			// '' is how a literal quote is escaped, matching structpath.
+			out = append(out, dyn.Key(strings.ReplaceAll(path[2:end], "''", "'")))
+			path = path[end+2:]
+
+		case strings.HasPrefix(path, "["):
+			end := strings.Index(path, "]")
+			if end < 0 {
+				return nil, fmt.Errorf("unterminated index in %q", path)
+			}
+			index, err := strconv.Atoi(path[1:end])
+			if err != nil {
+				return nil, fmt.Errorf("bad index in %q: %w", path, err)
+			}
+			out = append(out, dyn.Index(index))
+			path = path[end+1:]
+
+		default:
+			end := strings.IndexAny(path, ".[")
+			if end < 0 {
+				out = append(out, dyn.Key(path))
+				return out, nil
+			}
+			out = append(out, dyn.Key(path[:end]))
+			path = path[end:]
+		}
+	}
+	return out, nil
 }
 
 // fieldSnapshot captures the resource node as deployed, so a field can be put back to
@@ -430,7 +486,7 @@ func (h *bundleHarness) fieldSnapshot() dyn.Value {
 
 // restoreField resets one field to whatever the base config had, including absent.
 func (h *bundleHarness) restoreField(base dyn.Value, path string) {
-	rel, err := dyn.NewPathFromString(path)
+	rel, err := parsePath(path)
 	if err != nil {
 		return
 	}
@@ -519,11 +575,13 @@ func withoutSubResources(v dyn.Value) (dyn.Value, error) {
 // deletePath removes a key from its parent map. dyn has no delete, so the parent is
 // rebuilt without the key, preserving order.
 func deletePath(root dyn.Value, p dyn.Path) (dyn.Value, error) {
+	parentPath := p[:len(p)-1]
 	key := p[len(p)-1].Key()
 	if key == "" {
-		return dyn.InvalidValue, fmt.Errorf("cannot remove %s: not a map key", p)
+		// An index: drop that element from its sequence. Removing the only element of a
+		// scalar list is how "absent" is expressed for a []string entry.
+		return deleteIndex(root, parentPath, p[len(p)-1].Index())
 	}
-	parentPath := p[:len(p)-1]
 
 	parent, err := dyn.GetByPath(root, parentPath)
 	if dyn.IsNoSuchKeyError(err) || dyn.IsCannotTraverseNilError(err) {
@@ -549,6 +607,27 @@ func deletePath(root dyn.Value, p dyn.Path) (dyn.Value, error) {
 		k, _ := pair.Key.AsString()
 		trimmed.SetLoc(k, pair.Key.Locations(), pair.Value)
 	}
+	return dyn.SetByPath(root, parentPath, dyn.NewValue(trimmed, parent.Locations()))
+}
+
+// deleteIndex rebuilds a sequence without one element.
+func deleteIndex(root dyn.Value, parentPath dyn.Path, index int) (dyn.Value, error) {
+	parent, err := dyn.GetByPath(root, parentPath)
+	if dyn.IsNoSuchKeyError(err) || dyn.IsCannotTraverseNilError(err) {
+		return root, nil
+	}
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+	items, ok := parent.AsSequence()
+	if !ok {
+		return dyn.InvalidValue, fmt.Errorf("cannot remove %s[%d]: parent is %s", parentPath, index, parent.Kind())
+	}
+	if index < 0 || index >= len(items) {
+		return root, nil
+	}
+	trimmed := slices.Clone(items[:index])
+	trimmed = append(trimmed, items[index+1:]...)
 	return dyn.SetByPath(root, parentPath, dyn.NewValue(trimmed, parent.Locations()))
 }
 

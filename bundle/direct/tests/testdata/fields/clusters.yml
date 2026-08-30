@@ -1,0 +1,26 @@
+# Value library for clusters. See ../../README.md.
+
+# init_scripts is a union: an entry carries exactly one of workspace, volumes, s3, abfss,
+# gcs, dbfs or file. Two entries make the two most-configured members reachable; the rest
+# stay uncovered for this config, which the report says.
+base:
+  custom_tags:
+    team: eng
+  spark_conf:
+    spark.speculation: "true"
+  spark_env_vars:
+    MY_VAR: value
+  ssh_public_keys:
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQtest
+  init_scripts:
+    - workspace:
+        destination: /Users/tester@databricks.com/init.sh
+    - s3:
+        destination: s3://bucket/init.sh
+        region: us-east-1
+  worker_node_type_flexibility:
+    alternate_node_type_ids:
+      - i3.2xlarge
+  driver_node_type_flexibility:
+    alternate_node_type_ids:
+      - i3.2xlarge

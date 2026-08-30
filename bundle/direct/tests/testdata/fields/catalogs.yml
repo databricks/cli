@@ -1,0 +1,6 @@
+# Value library for catalogs. See ../../README.md.
+base:
+  properties:
+    team: eng
+  options:
+    region: us-east-1

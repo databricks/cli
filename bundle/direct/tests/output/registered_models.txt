@@ -1,9 +1,12 @@
 === registered_model.yml.tmpl
-full_name                                    absent     x          POST_DEPLOY_DRIFT  full_name
-full_name                                    absent     y          POST_DEPLOY_DRIFT  full_name
-full_name                                    x          y          POST_DEPLOY_DRIFT  full_name
-full_name                                    y          x          POST_DEPLOY_DRIFT  full_name
-owner                                        absent     x          POST_DEPLOY_DRIFT  owner
-owner                                        absent     y          POST_DEPLOY_DRIFT  owner
-owner                                        x          y          POST_DEPLOY_DRIFT  owner
-owner                                        y          x          POST_DEPLOY_DRIFT  owner
+aliases                                      absent     len0       UPDATE_IGNORED  aliases
+aliases                                      len0       absent     SUPPRESSED  input_only
+aliases                                      len1       len0       UPDATE_IGNORED  aliases
+full_name                                    absent     x          UPDATE_IGNORED  full_name
+full_name                                    absent     y          UPDATE_IGNORED  full_name
+full_name                                    x          y          UPDATE_IGNORED  full_name
+full_name                                    y          x          UPDATE_IGNORED  full_name
+owner                                        absent     x          UPDATE_IGNORED  owner
+owner                                        absent     y          UPDATE_IGNORED  owner
+owner                                        x          y          UPDATE_IGNORED  owner
+owner                                        y          x          UPDATE_IGNORED  owner
