@@ -15,6 +15,6 @@ r["run_as"] = {"user_name": "changed@example.test"}
 EOF
 
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm out.requests.txt

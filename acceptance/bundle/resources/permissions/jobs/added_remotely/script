@@ -10,7 +10,7 @@ title "Add permissions out of band"
 trace $CLI permissions set jobs "$job_id" --json @remote_add.json
 
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace $CLI bundle plan
 

@@ -8,7 +8,7 @@ Created jobs.job_with_permissions.permissions
 Files: 7 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --nostamp //jobs/
+>>> print_requests.py //jobs/
 
 >>> [CLI] permissions get jobs [JOB_WITH_PERMISSIONS_ID]
 {
@@ -90,7 +90,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "object_type": "job"
 }
 
->>> print_requests.py --nostamp //jobs/
+>>> print_requests.py //jobs/
 {
   "method": "PUT",
   "path": "/api/2.0/permissions/jobs/[JOB_WITH_PERMISSIONS_ID]",
@@ -112,7 +112,7 @@ Updated jobs.job_with_permissions.permissions
 Files: 4 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py --nostamp //jobs/
+>>> print_requests.py //jobs/
 
 >>> [CLI] permissions get jobs [JOB_WITH_PERMISSIONS_ID]
 {

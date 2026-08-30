@@ -10,11 +10,11 @@ trap cleanup EXIT
 # resize, terraform update), so the per-resource line would diverge. The Resources:
 # summary agrees, so it is kept rather than using -qq.
 $CLI bundle plan > out.plan_.$DATABRICKS_BUNDLE_ENGINE.txt
-$CLI bundle plan -o json | nostamp > out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy -q
 
 title "Cluster should exist after bundle deployment:\n"
-CLUSTER_ID=$($CLI bundle summary -o json | nostamp | jq -r '.resources.clusters.test_cluster.id')
+CLUSTER_ID=$($CLI bundle summary -o json | jq -r '.resources.clusters.test_cluster.id')
 add_repl "$CLUSTER_ID" CLUSTER_ID
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers}'
 

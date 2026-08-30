@@ -9,12 +9,12 @@ trap cleanup EXIT
 trace $CLI bundle deploy
 
 title "Assert the pipeline is created"
-PIPELINE_ID=$($CLI bundle summary -o json | nostamp | jq -r '.resources.pipelines.bar.id')
-trace $CLI pipelines get "${PIPELINE_ID}" | nostamp| jq "{spec}"
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.bar.id')
+trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"
 
 title "Assert the job is created"
-JOB_ID=$($CLI bundle summary -o json | nostamp | jq -r '.resources.jobs.foo.id')
-$CLI jobs get "${JOB_ID}" | nostamp| jq '{name: .settings.name}'
+JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.foo.id')
+$CLI jobs get "${JOB_ID}" | jq '{name: .settings.name}'
 
 title "Remove resources from configuration."
 trace rm resources.yml

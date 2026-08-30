@@ -32,7 +32,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 1 not selected
 === Telemetry:
 select_used true
 
->>> print_requests.py --nostamp --sort //jobs
+>>> print_requests.py --sort //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
@@ -106,7 +106,7 @@ Created jobs.baz
 Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 2 unchanged
 
->>> print_requests.py --nostamp --sort //jobs
+>>> print_requests.py --sort //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
