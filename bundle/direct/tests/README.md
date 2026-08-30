@@ -110,6 +110,10 @@ per-config cloud exclusions in `acceptance/bundle/invariant/test.toml`.
 A `skip` key may be a pattern (`aliases[*].id`), matched the way the planner matches its own
 field rules, and naming a block skips everything beneath it.
 
+`base` is expanded with the same `$VARS` the corpus configs use — `$CURRENT_USER_NAME`,
+`$UNIQUE_NAME`, `$NODE_TYPE_ID` and the rest — so a seeded value can name the workspace's
+own user rather than a placeholder only the fake server knows.
+
 `skip` is for a field no single-field edit can exercise — one that only validates as
 part of a set (a job's `git_source`), or whose change is correct but ruinously slow (an
 app rename waits out an asynchronous delete). Each entry needs a reason, and shows up in

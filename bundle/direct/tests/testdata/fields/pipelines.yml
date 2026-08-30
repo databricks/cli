@@ -17,7 +17,7 @@ base:
         - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQtest
       init_scripts:
         - workspace:
-            destination: /Users/tester@databricks.com/init.sh
+            destination: /Users/$CURRENT_USER_NAME/init.sh
         - s3:
             destination: s3://bucket/init.sh
             region: us-east-1
@@ -38,7 +38,7 @@ base:
     - alerts:
         - on-update-failure
       email_recipients:
-        - tester@databricks.com
+        - $CURRENT_USER_NAME
   restart_window:
     start_hour: 1
     time_zone_id: UTC

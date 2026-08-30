@@ -7,7 +7,7 @@ base:
   evaluation:
     notification:
       subscriptions:
-        - user_email: tester@databricks.com
+        - user_email: $CURRENT_USER_NAME
   parameters:
     - name: threshold
       value: "1"

@@ -50,7 +50,10 @@ type fieldValues struct {
 	//
 	// Keep path-valued fields out of it: it is merged after the mutator pipeline has run,
 	// so nothing here goes through path translation.
-	base any
+	//
+	// Held as YAML rather than a parsed value because the same $VARS the corpus configs use
+	// are expanded into it, and those are only known once a harness exists.
+	baseYAML []byte
 
 	// localOnly is the reason this resource type cannot be driven against a real workspace:
 	// it needs workspace or cloud state the suite does not provision (a storage credential
@@ -141,7 +144,7 @@ var cliManagedFields = map[string]string{
 
 // loadFieldValues reads testdata/fields/<resource_type>.yml.
 func loadFieldValues(resourceType string) (*fieldValues, error) {
-	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]any{}, base: nil, localOnly: ""}
+	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]any{}, baseYAML: nil, localOnly: ""}
 	maps.Copy(fv.skip, cliManagedFields)
 
 	path := filepath.Join(fieldsDir, resourceType+".yml")
@@ -156,7 +159,7 @@ func loadFieldValues(resourceType string) (*fieldValues, error) {
 	var file struct {
 		Skip      map[string]string `yaml:"skip"`
 		Fields    map[string][]any  `yaml:"fields"`
-		Base      any               `yaml:"base"`
+		Base      yaml.Node         `yaml:"base"`
 		LocalOnly string            `yaml:"local_only"`
 	}
 	if err := yaml.Unmarshal(data, &file); err != nil {
@@ -164,8 +167,13 @@ func loadFieldValues(resourceType string) (*fieldValues, error) {
 	}
 	maps.Copy(fv.skip, file.Skip)
 	maps.Copy(fv.fields, file.Fields)
-	fv.base = file.Base
 	fv.localOnly = file.LocalOnly
+	if !file.Base.IsZero() {
+		fv.baseYAML, err = yaml.Marshal(&file.Base)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", path, err)
+		}
+	}
 
 	return fv, nil
 }

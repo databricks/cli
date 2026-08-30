@@ -314,7 +314,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 
 // newBaseline builds a harness and deploys the config as written.
 func newBaseline(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues) (*bundleHarness, error) {
-	h, err := newHarness(t, ctx, client, user, cfg.name, uniqueName(), fv.base)
+	h, err := newHarness(t, ctx, client, user, cfg.name, uniqueName(), fv.baseYAML)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +322,9 @@ func newBaseline(t *testing.T, ctx context.Context, client *databricks.Workspace
 
 	action, diags := h.deploy()
 	if diags.HasError() {
-		return nil, errors.New(firstError(diags))
+		// The whole diagnostics, not firstError's one-line form: the caller records this as
+		// evidence in the full report, where the point is to read the backend's own words.
+		return nil, errors.New(allErrors(diags))
 	}
 	if action != deployplan.Create {
 		return nil, fmt.Errorf("expected create, got %s", action)
