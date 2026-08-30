@@ -33,6 +33,7 @@ func TestSkillAgentRegistryPaths(t *testing.T) {
 		{NamePi, "pi", "Pi", filepath.Join(home, ".pi", "agent", "skills"), filepath.Join(cwd, ".pi", "skills")},
 		{NameGemini, "gemini", "Gemini CLI", filepath.Join(home, ".gemini", "skills"), filepath.Join(cwd, ".gemini", "skills")},
 		{NameGoose, "goose", "Goose", gooseGlobalDir, filepath.Join(cwd, ".goose", "skills")},
+		{NameKiro, "kiro", "Kiro", filepath.Join(home, ".kiro", "skills"), filepath.Join(cwd, ".kiro", "skills")},
 	}
 
 	for _, tc := range tests {
@@ -54,7 +55,7 @@ func TestSkillAgentRegistryPaths(t *testing.T) {
 
 func TestDetectProjectInstalled(t *testing.T) {
 	cwd := t.TempDir()
-	for _, name := range []string{NamePi, NameGemini, NameGoose} {
+	for _, name := range []string{NamePi, NameGemini, NameGoose, NameKiro} {
 		dir := filepath.Join(ByName(name).ProjectSkillsDir(cwd), "databricks-core")
 		require.NoError(t, os.MkdirAll(dir, 0o755))
 	}
@@ -65,5 +66,5 @@ func TestDetectProjectInstalled(t *testing.T) {
 	for _, a := range DetectProjectInstalled(cwd) {
 		names = append(names, a.Name)
 	}
-	assert.ElementsMatch(t, []string{NamePi, NameGemini, NameGoose}, names)
+	assert.ElementsMatch(t, []string{NamePi, NameGemini, NameGoose, NameKiro}, names)
 }

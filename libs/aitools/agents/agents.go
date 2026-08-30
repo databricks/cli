@@ -129,6 +129,7 @@ const (
 	NamePi          = "pi"
 	NameGemini      = "gemini"
 	NameGoose       = "goose"
+	NameKiro        = "kiro"
 )
 
 // Databricks plugin identity, shared across the agents that ship a plugin.
@@ -256,6 +257,19 @@ var Registry = []*Agent{
 		Binary:               "goose",
 		// Goose reads agent skills (SKILL.md) but has no databricks plugin, so it is
 		// skills-only (Plugin nil).
+	},
+	{
+		Name:                 NameKiro,
+		DisplayName:          "Kiro",
+		ConfigDir:            homeSubdir(".kiro"),
+		SupportsProjectScope: true,
+		ProjectConfigDir:     ".kiro",
+		Binary:               "kiro",
+		// Kiro reads agent skills (SKILL.md) but has no databricks plugin, so it is
+		// skills-only (Plugin nil). Kiro's own picker text documents both scopes:
+		// "Skills can be added to ~/.kiro/skills/ (user-level) or .kiro/skills/
+		// (workspace-level)". Kiro is IDE-first, so `kiro` is frequently absent from
+		// PATH; detection then falls back to ConfigDir and reports files-only.
 	},
 }
 
