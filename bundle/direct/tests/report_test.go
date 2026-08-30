@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/testdiff"
@@ -104,21 +106,49 @@ type result struct {
 	from, to string
 	verdict  verdict
 	detail   string
+
+	// evidence is the raw material behind the verdict -- the post-deploy plan for drift,
+	// the whole API error for a rejection. Printed only into the full report, indented
+	// under its line: it is what you would otherwise re-run the case to see, and it is
+	// far too long and too full of generated ids to belong in a committed golden.
+	evidence string
 }
 
-// report accumulates results for one resource type.
+// report accumulates results for one resource type. The configs of a type run in
+// parallel, so both fields are guarded.
 type report struct {
 	resourceType string
-	results      []result
-	wildcard     []string
+
+	mu       sync.Mutex
+	results  []result
+	wildcard map[string]bool
 }
 
-func (r *report) add(res result) { r.results = append(r.results, res) }
+func (r *report) add(res result) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.results = append(r.results, res)
+}
+
+// addNotCovered records a field that no config of this type could reach.
+func (r *report) addNotCovered(paths []string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.wildcard == nil {
+		r.wildcard = map[string]bool{}
+	}
+	for _, p := range paths {
+		r.wildcard[p] = true
+	}
+}
 
 // render produces a report body. Problems-only is the committed form: one line per
 // finding and nothing else, so a diff is always a change in behaviour. The full form
 // adds the passing rows, the summary, and what was not covered.
 func (r *report) render(problemsOnly bool) string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	var sb strings.Builder
 
 	slices.SortStableFunc(r.results, func(a, b result) int {
@@ -149,6 +179,12 @@ func (r *report) render(problemsOnly bool) string {
 			line += "  " + res.detail
 		}
 		sb.WriteString(strings.TrimRight(line, " ") + "\n")
+
+		if !problemsOnly && res.evidence != "" {
+			for evidenceLine := range strings.SplitSeq(strings.TrimRight(res.evidence, "\n"), "\n") {
+				sb.WriteString("    | " + evidenceLine + "\n")
+			}
+		}
 	}
 
 	if problemsOnly {
@@ -168,9 +204,9 @@ func (r *report) render(problemsOnly bool) string {
 	}
 
 	if len(r.wildcard) > 0 {
-		slices.Sort(r.wildcard)
-		fmt.Fprintf(&sb, "\n=== not covered: %d fields under a slice or map\n", len(r.wildcard))
-		for _, p := range r.wildcard {
+		paths := slices.Sorted(maps.Keys(r.wildcard))
+		fmt.Fprintf(&sb, "\n=== not covered: %d fields under an absent slice or map\n", len(paths))
+		for _, p := range paths {
 			fmt.Fprintf(&sb, "%s\n", p)
 		}
 	}

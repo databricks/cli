@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/testserver"
@@ -146,7 +147,7 @@ func maxWaitSeconds() string {
 // built is usually the environment (an expired token, a workspace that rejects the
 // config), and the run is more useful if that lands in the report as one bad verdict
 // than if it aborts thousands of pending observations.
-func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, configName, uniqueName string) (*bundleHarness, error) {
+func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, configName, uniqueName string, base dyn.Value) (*bundleHarness, error) {
 	dir := t.TempDir()
 	if err := copyDir(dataDir, dir); err != nil {
 		return nil, err
@@ -235,6 +236,12 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 	node, err := soleResourceNode(&b.Config)
 	if err != nil {
 		return nil, err
+	}
+
+	if base.IsValid() {
+		if err := mergeBase(&b.Config, node, base); err != nil {
+			return nil, err
+		}
 	}
 
 	return &bundleHarness{
@@ -454,6 +461,26 @@ func ensureParents(root *dyn.Value, p dyn.Path) error {
 		*root = updated
 	}
 	return nil
+}
+
+// mergeBase folds the value library's base fragment into the resource, so the fields it
+// declares are present and can be varied.
+func mergeBase(root *bundleconfig.Root, node string, base dyn.Value) error {
+	path, err := dyn.NewPathFromString(node)
+	if err != nil {
+		return err
+	}
+	return root.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		current, err := dyn.GetByPath(v, path)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+		merged, err := merge.Merge(current, base)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+		return dyn.SetByPath(v, path, merged)
+	})
 }
 
 // subResourceKinds are the child plan nodes this suite removes from every config; see
