@@ -317,6 +317,14 @@ func (h *bundleHarness) plan() (*pendingApply, *deployplan.Plan, diag.Diagnostic
 	return &pendingApply{ctx: ctx, cancel: cancel, db: db}, plan, diags
 }
 
+// readPlan is plan for a caller that will not apply: the operation context is released
+// straight away rather than left holding a ten-minute timer until the test ends.
+func (h *bundleHarness) readPlan() (*deployplan.Plan, diag.Diagnostics) {
+	pending, plan, diags := h.plan()
+	pending.cancel()
+	return plan, diags
+}
+
 // pendingApply carries a planned DeploymentBundle together with the context it was
 // planned under, so the apply reports into the same isolated diagnostics sink.
 type pendingApply struct {
@@ -348,6 +356,7 @@ func (h *bundleHarness) apply(p *pendingApply, plan *deployplan.Plan) diag.Diagn
 func (h *bundleHarness) deploy() (deployplan.ActionType, diag.Diagnostics) {
 	pending, plan, diags := h.plan()
 	if diags.HasError() {
+		pending.cancel()
 		return deployplan.Undefined, diags
 	}
 	return nodeAction(plan, h.node), h.apply(pending, plan)
@@ -766,7 +775,7 @@ func (h *bundleHarness) converged() bool {
 	if _, diags := h.deploy(); diags.HasError() {
 		return false
 	}
-	_, plan, diags := h.plan()
+	plan, diags := h.readPlan()
 	return !diags.HasError() && plan != nil && !hasDrift(plan)
 }
 

@@ -235,12 +235,14 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 
 	pending, plan, diags := h.plan()
 	if diags.HasError() {
+		pending.cancel()
 		res.verdict = verdictPlanError
 		res.detail = firstError(diags)
 		return res
 	}
 	action := nodeAction(plan, h.node)
 	if action == deployplan.Skip {
+		pending.cancel()
 		res.verdict, res.detail = explainSkip(plan, h.node, path)
 		return res
 	}
@@ -259,7 +261,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		return res
 	}
 
-	_, after, diags := h.plan()
+	after, diags := h.readPlan()
 	if diags.HasError() {
 		res.verdict = verdictPlanError
 		res.detail = firstError(diags)
@@ -273,7 +275,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 	// one. If the value has appeared by then the write did land and the first read was
 	// behind; if it still has not, the field really was ignored.
 	if !baseline[path] && wasIgnored(plan, after, h.node, path) {
-		_, second, diags := h.plan()
+		second, diags := h.readPlan()
 		if diags.HasError() {
 			res.verdict = verdictPlanError
 			res.detail = firstError(diags)
@@ -471,7 +473,7 @@ func checkDeclaredInert(res result, rules []dresources.FieldRule) result {
 // baselineDrift returns the fields the resource already wants to change with the config
 // exactly as deployed.
 func baselineDrift(h *bundleHarness) map[string]bool {
-	_, plan, diags := h.plan()
+	plan, diags := h.readPlan()
 	if diags.HasError() || plan == nil {
 		return nil
 	}
