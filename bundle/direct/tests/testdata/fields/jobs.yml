@@ -28,7 +28,7 @@ base:
           spark.speculation: "true"
         init_scripts:
           - workspace:
-              destination: /Users/tester@databricks.com/init.sh
+              destination: /Users/$CURRENT_USER_NAME/init.sh
   environments:
     - environment_key: seeded
       spec:
@@ -47,7 +47,7 @@ base:
         value: 3600
   email_notifications:
     on_failure:
-      - tester@databricks.com
+      - $CURRENT_USER_NAME
   webhook_notifications:
     on_failure:
       - id: 00000000-0000-0000-0000-000000000000

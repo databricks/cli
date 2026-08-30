@@ -18,9 +18,9 @@ base:
       renewal_period: minute
   email_notifications:
     on_update_failure:
-      - tester@databricks.com
+      - $CURRENT_USER_NAME
     on_update_success:
-      - tester@databricks.com
+      - $CURRENT_USER_NAME
   tags:
     - key: team
       value: eng
