@@ -175,6 +175,11 @@ type FakeWorkspace struct {
 	url                string
 	isServicePrincipal bool
 
+	// SettleAsyncImmediately turns off the "not ready yet on the first read" simulation
+	// for asynchronous resources. Off by default, so the CLI's waiters stay exercised.
+	// See SetSettleAsyncImmediately for when turning it on is worth it.
+	SettleAsyncImmediately bool
+
 	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
@@ -400,6 +405,20 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 	}
 	delete(collection, key)
 	return Response{}
+}
+
+// SetSettleAsyncImmediately makes asynchronous resources report themselves ready on the
+// first read after a write, instead of reporting in-progress once so the CLI's waiter is
+// exercised.
+//
+// Only turn it on for a suite that performs thousands of updates. The cost is not the
+// extra request, it is the sleep before it: the SDK's poller uses a hardcoded backoff of
+// attempt*1s plus 50-750ms of jitter (retries.backoff in databricks-sdk-go/retries/
+// retries.go), and retries.Poll does not pass a backoff option -- there is no exported way
+// to shorten it. So every update costs at least a second of wall time.
+func (s *FakeWorkspace) SetSettleAsyncImmediately(v bool) {
+	defer s.LockUnlock()()
+	s.SettleAsyncImmediately = v
 }
 
 func NewFakeWorkspace(url, token string) *FakeWorkspace {

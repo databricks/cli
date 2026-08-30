@@ -1,0 +1,8 @@
+# Value library for postgres synced tables. See ../../README.md.
+base:
+  extra_columns:
+    - column_name: ingested_at
+      column_type: TIMESTAMP
+  type_overrides:
+    - column_name: id
+      pg_type: bigint

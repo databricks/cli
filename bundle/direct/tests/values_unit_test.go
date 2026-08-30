@@ -52,3 +52,36 @@ func TestTransitionsSkipAbsentForRequiredField(t *testing.T) {
 		assert.NotEqual(t, "absent", valueLabel(tr.to))
 	}
 }
+
+// A pattern from the type walk has to expand against the deployed config, or the fields
+// inside a container are silently never tested. Map wildcards ("properties.*") and element
+// wildcards ("tasks[*]") take different paths through splitPattern, so both are pinned here.
+func TestExpandPattern(t *testing.T) {
+	base := dyn.V(map[string]dyn.Value{
+		"properties": dyn.V(map[string]dyn.Value{"team": dyn.V("eng")}),
+		"tasks": dyn.V([]dyn.Value{
+			dyn.V(map[string]dyn.Value{"key": dyn.V("a")}),
+			dyn.V(map[string]dyn.Value{"key": dyn.V("b")}),
+		}),
+		"tags": dyn.V(map[string]dyn.Value{
+			"custom": dyn.V([]dyn.Value{dyn.V(map[string]dyn.Value{"key": dyn.V("x")})}),
+		}),
+	})
+
+	for _, tc := range []struct {
+		pattern string
+		want    []string
+	}{
+		{"name", []string{"name"}},
+		{"properties.*", []string{"properties['team']"}},
+		{"tasks[*].key", []string{"tasks[0].key", "tasks[1].key"}},
+		{"tags.custom[*].key", []string{"tags.custom[0].key"}},
+		// Nothing behind it in the config, which is what makes a field "not covered".
+		{"absent[*].key", nil},
+		{"absent.*", nil},
+	} {
+		t.Run(tc.pattern, func(t *testing.T) {
+			assert.Equal(t, tc.want, expandPattern(base, tc.pattern))
+		})
+	}
+}

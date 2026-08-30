@@ -30,10 +30,14 @@
 package tests
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
+	"maps"
+	"os/exec"
 	"regexp"
 	"slices"
 	"strconv"
@@ -52,14 +56,32 @@ import (
 func TestFields(t *testing.T) {
 	usable, skipped := discoverConfigs(t)
 
-	byType := map[string][]testConfig{}
+	// The order fields are tested in, and the order each field's values are visited in,
+	// come from this seed. It is the commit rather than the clock so that a finding cannot
+	// be retried away: one commit always produces one order, and a new commit explores a
+	// different one.
+	runSeed := commitSeed(t)
+
+	// One config per resource type: the simplest one, which is the shortest name -- a
+	// "<type>.yml.tmpl" sorts before its "<type>_<variant>.yml.tmpl" siblings. The variants
+	// exist to exercise specific engine behaviour, not extra fields, and anything a variant
+	// declares that the plain config does not is better seeded through testdata/fields, where
+	// it applies to every run rather than only where a corpus config happens to have it.
+	//
+	// It also removes the per-config workspace problem outright: a field's values are the same
+	// for every config, so two configs of one type would rename their resource to the same
+	// value and delete each other's.
+	byType := map[string]testConfig{}
 	for _, c := range usable {
-		byType[c.resourceType] = append(byType[c.resourceType], c)
+		if existing, ok := byType[c.resourceType]; ok && simplerConfig(existing.name, c.name) {
+			continue
+		}
+		byType[c.resourceType] = c
 	}
 
 	writeCorpusReport(t, usable, skipped)
 
-	for resourceType, configs := range byType {
+	for resourceType, cfg := range byType {
 		t.Run(resourceType, func(t *testing.T) {
 			// One resource type per goroutine: the types are independent, and the
 			// slowest type then sets the wall time instead of their sum.
@@ -71,27 +93,20 @@ func TestFields(t *testing.T) {
 			// state. On cloud this is the same real workspace either way.
 			client := newClient(t)
 			user := workspaceUser(t, client)
+
 			// Outlives the field-level subtests that rebuild harnesses.
 			ctx := t.Context()
 
 			rep := &report{resourceType: resourceType} //exhaustruct:ignore
-			t.Run("configs", func(t *testing.T) {
-				for _, cfg := range configs {
-					t.Run(cfg.name, func(t *testing.T) {
-						// Each config has its own bundle, state and resources, so they
-						// only share the workspace -- which the fake server guards and a
-						// real one handles anyway. The unique name keeps them apart.
-						t.Parallel()
-						runConfig(t, ctx, client, user, cfg, fv, rep)
-					})
-				}
+			t.Run(cfg.name, func(t *testing.T) {
+				runConfig(t, ctx, client, user, cfg, fv, rep, runSeed)
 			})
 			rep.write(t)
 		})
 	}
 }
 
-func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, rep *report) {
+func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, rep *report, runSeed uint64) {
 	adapter, err := dresources.NewAdapter(dresources.SupportedResources[cfg.resourceType], cfg.resourceType, client)
 	require.NoError(t, err)
 
@@ -106,11 +121,31 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	// Enumerated from the deployed config, not just the type: which slice and map entries
 	// exist decides which fields inside them can be reached at all.
 	base := h.fieldSnapshot()
-	fields, wildcard := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv, base)
-	rep.addNotCovered(wildcard)
+	fields, wildcard, inert := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv, base, runSeed, declaredUnsettable(adapter))
+	rep.addCoverage(fields, wildcard)
+
+	// Fields the resource declares a user cannot meaningfully set. Recorded with the
+	// resource's own reason rather than tested: every transition would come back SUPPRESSED
+	// with exactly that reason.
+	for _, path := range slices.Sorted(maps.Keys(inert)) {
+		rep.add(result{cfg.name, path, "", "", verdictSkipped, "backend output: " + inert[path], ""})
+	}
+
+	// Fields the resource says it ignores local changes to. Not skipped: the declaration is
+	// a claim about behaviour, and a transition either bears it out or does not.
+	ignoredLocally := declaredIgnoredLocally(adapter)
 
 	for path, reason := range fv.skip {
 		rep.add(result{cfg.name, path, "", "", verdictSkipped, reason, ""})
+	}
+
+	// Some resources do not converge even with nothing changed: a field the read never
+	// echoes diffs forever. Measure that once, against the field that causes it, and leave
+	// it out of every transition's drift -- otherwise it dirties every post-deploy plan and
+	// gets blamed on whichever field happened to be under test.
+	baseline := baselineDrift(h)
+	for _, path := range slices.Sorted(maps.Keys(baseline)) {
+		rep.add(result{cfg.name, path, "", "", verdictBaselineDrift, "drifts with no config change", ""})
 	}
 
 	for _, f := range fields {
@@ -123,7 +158,8 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 			for _, tr := range f.transitions() {
 				t.Run(tr.label(), func(t *testing.T) {
 					reuse := deployedKnown && valueLabel(deployed) == valueLabel(tr.from)
-					res := runTransition(t, h, cfg.name, f.path, tr, reuse)
+					res := runTransition(t, h, cfg.name, f.path, tr, reuse, baseline)
+					res = checkDeclaredInert(res, ignoredLocally)
 					rep.add(res)
 
 					// Only a clean apply leaves the field provably at "to".
@@ -162,9 +198,8 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 }
 
 // runTransition moves one field from one value to another and reports what happened.
-// runTransition moves one field from one value to another and reports what happened.
 // startsDeployed says the field already holds tr.from, so the setup deploy can be skipped.
-func runTransition(t *testing.T, h *bundleHarness, config, path string, tr transition, startsDeployed bool) result {
+func runTransition(t *testing.T, h *bundleHarness, config, path string, tr transition, startsDeployed bool, baseline map[string]bool) result {
 	from, to := tr.from, tr.to
 	res := result{config: config, field: path, from: valueLabel(tr.from), to: valueLabel(tr.to)} //exhaustruct:ignore
 
@@ -178,7 +213,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		if _, diags := h.deploy(); diags.HasError() {
 			res.verdict = verdictBaseError
 			res.detail = firstError(diags)
-			res.evidence = allErrors(diags)
+			res.evidence = withContext("error from the deploy:", allErrors(diags))
 			return res
 		}
 	}
@@ -212,7 +247,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 			res.verdict = verdictDeployError
 		}
 		res.detail = firstError(diags)
-		res.evidence = allErrors(diags)
+		res.evidence = withContext("error from the deploy:", allErrors(diags))
 		return res
 	}
 
@@ -222,16 +257,48 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		res.detail = firstError(diags)
 		return res
 	}
-	if own, child := driftDetail(after, h.node); own != "" || child != "" {
+	// A write the backend accepted and then ignored leaves the field's remote value exactly
+	// as it was before the apply. That is worth separating from other drift: the engine did
+	// everything right and the request simply had no effect.
+	//
+	// One read cannot tell that apart from a read that was merely stale, so take a second
+	// one. If the value has appeared by then the write did land and the first read was
+	// behind; if it still has not, the field really was ignored.
+	if !baseline[path] && wasIgnored(plan, after, h.node, path) {
+		_, second, diags := h.plan()
+		if diags.HasError() {
+			res.verdict = verdictPlanError
+			res.detail = firstError(diags)
+			return res
+		}
+		if !wasIgnored(plan, second, h.node, path) {
+			res.verdict = verdictStaleRead
+			res.detail = path
+			res.evidence = withContext("plan taken right after the deploy:", planJSON(after))
+			return res
+		}
+		res.verdict = verdictUpdateIgnored
+		res.detail = path
+		res.evidence = withContext("plan taken twice after the deploy, still unchanged:", planJSON(second))
+		t.Logf("the write was accepted but the remote value did not move on two reads:\n%s", res.evidence)
+		return res
+	}
+
+	if own, child := driftDetail(after, h.node, baseline); own != "" || child != "" {
+		// Whether the field under test is among the drifting ones decides who is to blame.
+		drifted := strings.Split(own, ",")
 		// The plan that still wants a change is the whole evidence for this verdict, so
 		// keep it: -v prints it, and it goes into the full report.
-		res.evidence = planJSON(after)
+		res.evidence = withContext("plan taken right after the deploy:", planJSON(after))
 		t.Logf("post-deploy plan still proposes a change:\n%s", res.evidence)
-		// Attribute to the field only when the field's own node is still drifted; a
-		// child left behind by a recreate is a different problem with a different fix.
-		res.verdict, res.detail = verdictDrift, own
-		if own == "" {
+		switch {
+		case own == "":
+			// A child node left behind by a recreate: a different problem, different fix.
 			res.verdict, res.detail = verdictDriftChild, child
+		case slices.Contains(drifted, path):
+			res.verdict, res.detail = verdictDrift, own
+		default:
+			res.verdict, res.detail = verdictCollateral, own
 		}
 		return res
 	}
@@ -363,11 +430,99 @@ func isAPIError(diags diag.Diagnostics) bool {
 	return false
 }
 
+// checkDeclaredInert re-reads a result for a field the resource claims to ignore locally.
+// Suppressed with the declared reason confirms the claim; anything else means a change the
+// resource said it would drop was not dropped.
+func checkDeclaredInert(res result, rules []dresources.FieldRule) result {
+	reason, declared := ruleReason(rules, res.field)
+	if !declared {
+		return res
+	}
+
+	switch res.verdict {
+	case verdictSuppressed, verdictNotObservable:
+		// Both mean the change had no effect, which is what inert claims. Which of the two
+		// appears depends on whether the planner suppresses the change or drops the entry
+		// outright, and that is an implementation detail of the rule, not of the field.
+		res.verdict, res.detail = verdictInertConfirmed, reason
+	case verdictOK, verdictRecreate:
+		// The change took effect, so the field is not inert after all.
+		res.detail = fmt.Sprintf("declared inert (%s) but the change was applied", reason)
+		res.verdict = verdictInertViolated
+	default:
+		// An error or a drift says something more specific than the declaration does; leave
+		// the verdict alone and note that the field was expected to be inert.
+		res.detail = fmt.Sprintf("%s (declared inert: %s)", res.detail, reason)
+	}
+	return res
+}
+
+// baselineDrift returns the fields the resource already wants to change with the config
+// exactly as deployed.
+func baselineDrift(h *bundleHarness) map[string]bool {
+	_, plan, diags := h.plan()
+	if diags.HasError() || plan == nil {
+		return nil
+	}
+	entry, ok := plan.Plan[h.node]
+	if !ok {
+		return nil
+	}
+	out := map[string]bool{}
+	for path, change := range entry.Changes {
+		if change.Action != deployplan.Skip {
+			out[path] = true
+		}
+	}
+	return out
+}
+
+// wasIgnored reports whether the write for one field was accepted and then had no effect:
+// the field is still pending in the post-deploy plan, and its remote value is identical to
+// what the pre-deploy plan saw.
+func wasIgnored(before, after *deployplan.Plan, node, path string) bool {
+	beforeChange, ok := planChange(before, node, path)
+	if !ok {
+		return false
+	}
+	afterChange, ok := planChange(after, node, path)
+	if !ok || afterChange.Action == deployplan.Skip {
+		return false
+	}
+	return jsonEqual(beforeChange.Remote, afterChange.Remote)
+}
+
+func planChange(plan *deployplan.Plan, node, path string) (*deployplan.ChangeDesc, bool) {
+	if plan == nil {
+		return nil, false
+	}
+	entry, ok := plan.Plan[node]
+	if !ok {
+		return nil, false
+	}
+	change, ok := entry.Changes[path]
+	return change, ok
+}
+
+// jsonEqual compares two plan values, which are decoded as any and so cannot be compared
+// directly.
+func jsonEqual(a, b any) bool {
+	left, err := json.Marshal(a)
+	if err != nil {
+		return false
+	}
+	right, err := json.Marshal(b)
+	if err != nil {
+		return false
+	}
+	return bytes.Equal(left, right)
+}
+
 // driftDetail describes what a post-deploy plan still wants to change, split into drift
 // on the node under test (own: the field paths that did not stick) and drift on any
 // other node (child: how a recreate orphaning a permissions or grants node shows up).
 // Both are "" when the deploy converged.
-func driftDetail(plan *deployplan.Plan, node string) (own, child string) {
+func driftDetail(plan *deployplan.Plan, node string, baseline map[string]bool) (own, child string) {
 	var ownPaths, childNodes []string
 	for key, entry := range plan.Plan {
 		if entry.Action == deployplan.Skip {
@@ -378,7 +533,7 @@ func driftDetail(plan *deployplan.Plan, node string) (own, child string) {
 			continue
 		}
 		for p, ch := range entry.Changes {
-			if ch.Action != deployplan.Skip {
+			if ch.Action != deployplan.Skip && !baseline[p] {
 				ownPaths = append(ownPaths, p)
 			}
 		}
@@ -395,6 +550,43 @@ func driftDetail(plan *deployplan.Plan, node string) (own, child string) {
 // suffix is random per run, and error messages quote resource names and ids, so it has
 // to be redacted or the goldens differ on every run.
 var idPattern = regexp.MustCompile(`f[0-9a-f]{20}`)
+
+// simplerConfig reports whether a is the simpler of two config names for one resource type.
+// Shorter wins, so "job.yml.tmpl" beats "job_with_depends_on.yml.tmpl"; length ties break
+// alphabetically so the choice is stable.
+func simplerConfig(a, b string) bool {
+	if len(a) != len(b) {
+		return len(a) < len(b)
+	}
+	return a < b
+}
+
+// commitSeed derives the run seed from HEAD, ignoring the working tree: a dirty checkout
+// still explores the order of the commit it is based on. Falls back to a fixed value where
+// there is no git at all, so the suite still runs.
+//
+// Tying the seed to the commit rather than the clock is deliberate: a finding cannot be
+// made to disappear by running the test again.
+func commitSeed(t *testing.T) uint64 {
+	out, err := exec.Command("git", "rev-parse", "HEAD").Output()
+	if err != nil {
+		t.Logf("no git HEAD (%s); falling back to a fixed order seed", err)
+		return 0
+	}
+
+	commit := strings.TrimSpace(string(out))
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(commit))
+	seed := h.Sum64()
+	t.Logf("field and value order seeded from HEAD %s (seed %d)", commit, seed)
+	return seed
+}
+
+// withContext labels an evidence block, so a reader of the full report knows what they are
+// looking at. The label is its own line, leaving the JSON below it copy-pasteable.
+func withContext(label, body string) string {
+	return label + "\n" + body
+}
 
 // planJSON renders a plan for a -v dump.
 func planJSON(plan *deployplan.Plan) string {

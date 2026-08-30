@@ -1,0 +1,13 @@
+# Value library for cluster policies. See ../../README.md.
+
+# libraries is a union: an entry carries exactly one of jar, egg, whl, pypi, maven or cran.
+# Seeding one entry makes the container and that entry's fields testable; the other members
+# of the union are then reachable from absent, and the ones the API rejects alongside jar are
+# recorded as such rather than left uncovered.
+base:
+  libraries:
+    - jar: dbfs:/FileStore/test.jar
+    - maven:
+        coordinates: com.example:lib:1.0
+        exclusions:
+          - com.other:unwanted

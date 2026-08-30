@@ -1,8 +1,4 @@
 # The full report moves whenever a passing row moves; output/<type>.txt is the one that
-# records findings and is worth diffing.
+# records findings and is worth diffing. Both the fake server and a real workspace are held
+# to that single golden.
 output/*.full.txt
-
-# Cloud runs record what a real backend accepted, which varies by workspace.
-output/*.aws.txt
-output/*.azure.txt
-output/*.gcp.txt

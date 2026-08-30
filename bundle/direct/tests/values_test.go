@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io/fs"
+	"maps"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
@@ -52,11 +54,86 @@ type fieldValues struct {
 // fieldsDir holds the per-resource-type value libraries.
 const fieldsDir = "testdata/fields"
 
+// declaredUnsettable collects the fields the resource declares as backend outputs. A user
+// cannot meaningfully set one at all -- they are in the input schema by accident -- so they
+// are skipped and the resource's own reason recorded instead of spending six deploys per
+// field rediscovering it.
+//
+// This and declaredIgnoredLocally are the only places the suite reads resources.yml.
+func declaredUnsettable(adapter *dresources.Adapter) []dresources.FieldRule {
+	var rules []dresources.FieldRule
+	for _, cfg := range lifecycleConfigs(adapter) {
+		// Only outputs are unsettable. An input_only or managed field is one the backend
+		// owns on read but the user may still legitimately write, so those stay in.
+		for _, rule := range cfg.IgnoreRemoteChanges {
+			if strings.HasSuffix(rule.Reason, "output_only") {
+				rules = append(rules, rule)
+			}
+		}
+	}
+	return rules
+}
+
+// declaredIgnoredLocally collects the fields a resource says it drops local changes to.
+// These are *not* skipped: the declaration is a claim about behaviour, and the suite is in a
+// position to check it. A transition of one should come back suppressed with that same
+// reason; anything else means the field is not actually inert and the declaration is wrong.
+func declaredIgnoredLocally(adapter *dresources.Adapter) []dresources.FieldRule {
+	var rules []dresources.FieldRule
+	for _, cfg := range lifecycleConfigs(adapter) {
+		rules = append(rules, cfg.IgnoreLocalChanges...)
+	}
+	return rules
+}
+
+func lifecycleConfigs(adapter *dresources.Adapter) []*dresources.ResourceLifecycleConfig {
+	var out []*dresources.ResourceLifecycleConfig
+	for _, cfg := range []*dresources.ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
+		if cfg != nil {
+			out = append(out, cfg)
+		}
+	}
+	return out
+}
+
+// ruleReason reports the reason a field matches one of the given rules. Accepts both a
+// concrete path ("tags[0].key") and a pattern ("tags[*].key"): the second form is needed
+// for a field whose container the config does not declare, where no concrete path exists.
+func ruleReason(rules []dresources.FieldRule, path string) (string, bool) {
+	if concrete, err := structpath.ParsePath(path); err == nil {
+		for _, rule := range rules {
+			// The same match the planner makes, so the suite and the engine agree on scope.
+			if concrete.HasPatternPrefix(rule.Field) {
+				return rule.Reason, true
+			}
+		}
+		return "", false
+	}
+
+	// A pattern: compare textually, since one pattern cannot be matched against another.
+	for _, rule := range rules {
+		declared := rule.Field.String()
+		if path == declared || strings.HasPrefix(path, declared+".") || strings.HasPrefix(path, declared+"[") {
+			return rule.Reason, true
+		}
+	}
+	return "", false
+}
+
+// cliManagedFields are fields the bundle acts on itself and never sends to any API, so no
+// transition of one can appear in a plan. Only fields with no API counterpart at all belong
+// here: a field the CLI merely *overwrites* is still worth testing, because the resulting
+// verdict is the evidence that it does.
+var cliManagedFields = map[string]string{
+	"lifecycle.prevent_destroy": "acted on by the bundle, never sent to any API; gates destroy",
+}
+
 // loadFieldValues reads testdata/fields/<resource_type>.yml. Parsing goes through the repo's own
 // yamlloader rather than a yaml package, so the values arrive as dyn.Value -- the same
 // representation the bundle config uses, which is what they are written into.
 func loadFieldValues(resourceType string) (*fieldValues, error) {
 	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]dyn.Value{}, base: dyn.InvalidValue}
+	maps.Copy(fv.skip, cliManagedFields)
 
 	path := filepath.Join(fieldsDir, resourceType+".yml")
 	data, err := os.ReadFile(path)
@@ -98,10 +175,13 @@ func loadFieldValues(resourceType string) (*fieldValues, error) {
 	return fv, nil
 }
 
-// defaultValues per Go kind. Two values per kind is enough to observe a
-// value->value transition on top of add and remove; more would multiply the matrix
-// without testing a different code path.
-//
+// isSubResource reports whether a path belongs to a sub-resource block.
+func isSubResource(path string) bool {
+	name, _, _ := strings.Cut(path, ".")
+	name, _, _ = strings.Cut(name, "[")
+	return slices.Contains(subResourceKinds, name)
+}
+
 // isContainer reports whether a kind has fields or elements to descend into.
 func isContainer(kind reflect.Kind) bool {
 	switch kind {
@@ -112,6 +192,10 @@ func isContainer(kind reflect.Kind) bool {
 	}
 }
 
+// defaultValues per Go kind. Two values per kind is enough to observe a value->value
+// transition on top of add and remove; more would multiply the matrix without testing a
+// different code path.
+//
 //nolint:exhaustive // the default branch covers every kind without a generic value
 func defaultValues(kind reflect.Kind) []dyn.Value {
 	switch kind {
@@ -132,6 +216,11 @@ func defaultValues(kind reflect.Kind) []dyn.Value {
 
 // field is one testable leaf of the resource's input struct.
 type field struct {
+	// seed drives this field's value order and the order its transitions are walked in.
+	// Derived from the run seed and the field path, so it is stable for a given commit
+	// and different for every field.
+	seed uint64
+
 	path   string // structpath/dyn path, e.g. "comment" or "email_notifications.on_failure"
 	kind   reflect.Kind
 	values []dyn.Value
@@ -173,7 +262,8 @@ func (f field) transitions() []transition {
 		return nil
 	}
 
-	rng := rand.New(rand.NewPCG(pathSeed(f.path), 0))
+	rng := rand.New(rand.NewPCG(f.seed, 0))
+	rng.Shuffle(len(values), func(i, j int) { values[i], values[j] = values[j], values[i] })
 	unused := make([][]int, len(values))
 	for from := range values {
 		for to := range values {
@@ -210,10 +300,11 @@ func (f field) transitions() []transition {
 	return out
 }
 
-// pathSeed derives a stable seed from a field path.
-func pathSeed(path string) uint64 {
+// fieldSeed mixes the run seed with a field path, so every field gets its own order while
+// the whole run stays reproducible from the commit alone.
+func fieldSeed(runSeed uint64, path string) uint64 {
 	h := fnv.New64a()
-	_, _ = h.Write([]byte(path))
+	_, _ = fmt.Fprintf(h, "%d/%s", runSeed, path)
 	return h.Sum64()
 }
 
@@ -260,7 +351,8 @@ func isRequired(resourceType, path string) bool {
 // "tasks[*].description" is expanded to the indices that exist, so the fields inside an
 // element get the same treatment as any other. A pattern with nothing behind it in the
 // config is reported as not covered rather than silently tested against nothing.
-func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValues, base dyn.Value) (fields []field, wildcard []string) {
+func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValues, base dyn.Value, runSeed uint64, unsettable []dresources.FieldRule) (fields []field, wildcard []string, inertFields map[string]string) {
+	inertFields = map[string]string{}
 	add := func(path string, kind reflect.Kind, values []dyn.Value) {
 		if values == nil {
 			return
@@ -268,7 +360,12 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 		if _, skipped := fv.skipReason(path); skipped {
 			return
 		}
+		if reason, ok := ruleReason(unsettable, path); ok {
+			inertFields[path] = reason
+			return
+		}
 		fields = append(fields, field{
+			seed:     fieldSeed(runSeed, path),
 			path:     path,
 			kind:     kind,
 			values:   values,
@@ -288,6 +385,12 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 		}
 
 		path := p.String()
+		if isSubResource(path) {
+			// permissions and grants are separate plan nodes with their own adapters, and
+			// this suite strips them from every config. They are out of scope as subjects,
+			// so they are not fields here and not gaps either.
+			return false
+		}
 		isWildcard := strings.Contains(path, "*")
 
 		if isContainer(typ.Kind()) {
@@ -312,7 +415,15 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 
 		concrete := expandPattern(base, path)
 		if len(concrete) == 0 {
-			wildcard = append(wildcard, path)
+			// A field the user cannot set is not a coverage gap. Checked on the pattern here
+			// because there is no concrete path to check: the container is absent.
+			if reason, ok := ruleReason(unsettable, path); ok {
+				inertFields[path] = reason
+				return false
+			}
+			if _, skipped := fv.skipReason(path); !skipped {
+				wildcard = append(wildcard, path)
+			}
 			return false
 		}
 		for _, c := range concrete {
@@ -325,7 +436,14 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 		}
 		return false
 	})
-	return fields, wildcard
+
+	// Shuffle the fields too. Each field restores the config before the next one starts,
+	// so the order costs nothing in requests -- but a field that only passes because of
+	// what ran before it should not keep getting away with it.
+	rng := rand.New(rand.NewPCG(runSeed, 1))
+	rng.Shuffle(len(fields), func(i, j int) { fields[i], fields[j] = fields[j], fields[i] })
+
+	return fields, wildcard, inertFields
 }
 
 // isNotUserSettable reports whether the bundle marks a field as something the user
@@ -422,6 +540,12 @@ func expandPattern(base dyn.Value, pattern string) []string {
 func splitPattern(pattern string) []string {
 	var segs []string
 	for part := range strings.SplitSeq(pattern, ".") {
+		// A dot-separated part is either the map wildcard on its own, or a field name
+		// followed by any number of [*] element wildcards.
+		if part == "*" {
+			segs = append(segs, "*")
+			continue
+		}
 		for {
 			name, rest, found := strings.Cut(part, "[*]")
 			if name != "" {
@@ -432,9 +556,6 @@ func splitPattern(pattern string) []string {
 			}
 			segs = append(segs, "[*]")
 			part = rest
-		}
-		if part == "*" {
-			segs = append(segs, "*")
 		}
 	}
 	return segs
