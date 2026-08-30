@@ -12,7 +12,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/bundle/deployments",
   "body": {
     "display_name": "dms-metadata-before-[UNIQUE_NAME]",
-    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-pinned/state",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-pinned-[UNIQUE_NAME]/state",
     "target_name": "default",
     "workspace_info": {
       "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/default/files",
