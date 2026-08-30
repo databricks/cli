@@ -3,9 +3,9 @@ catalog_name                                 x->y               OK_RECREATE
 catalog_name                                 y->x               OK_RECREATE
 comment                                      absent->x          OK
 comment                                      absent->y          OK
-comment                                      x->absent          DRIFT  comment
+comment                                      x->absent          OK
 comment                                      x->y               OK
-comment                                      y->absent          DRIFT  comment
+comment                                      y->absent          OK
 comment                                      y->x               OK
 lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
 lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
@@ -24,9 +24,9 @@ catalog_name                                 x->y               OK_RECREATE
 catalog_name                                 y->x               OK_RECREATE
 comment                                      absent->x          OK
 comment                                      absent->y          OK
-comment                                      x->absent          DRIFT  comment
+comment                                      x->absent          OK
 comment                                      x->y               OK
-comment                                      y->absent          DRIFT  comment
+comment                                      y->absent          OK
 comment                                      y->x               OK
 lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
 lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
@@ -41,10 +41,9 @@ schema_name                                  y->x               OK_RECREATE
 storage_location                             -                  SKIPPED  needs an external location
 
 === summary
-OK             12
+OK             16
 OK_RECREATE    8
 NOT_OBSERVABLE 12
-DRIFT          4
 SKIPPED        2
 
 === not covered: 2 fields under a slice or map

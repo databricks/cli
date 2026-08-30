@@ -34,7 +34,8 @@ type fieldValues struct {
 	// it completes in reasonable time.
 	cloud bool
 
-	// skip lists field paths to leave out entirely, with a reason.
+	// skip lists field paths to leave out entirely, with a reason. A key ending in ".*"
+	// skips that whole subtree.
 	skip map[string]string
 
 	// fields maps a field path to the values to try.
@@ -167,6 +168,20 @@ func requiredFields(resourceType, parent string) []string {
 		key += "." + parent
 	}
 	return generated.RequiredFields[key]
+}
+
+// skipReason returns why a field is excluded, if it is. A "<prefix>.*" key covers every
+// field beneath it, for a block that only works as a whole.
+func (fv *fieldValues) skipReason(path string) (string, bool) {
+	if reason, ok := fv.skip[path]; ok {
+		return reason, true
+	}
+	for key, reason := range fv.skip {
+		if prefix, ok := strings.CutSuffix(key, ".*"); ok && strings.HasPrefix(path, prefix+".") {
+			return reason, true
+		}
+	}
+	return "", false
 }
 
 func isRequired(resourceType, path string) bool {

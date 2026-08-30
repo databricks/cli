@@ -1,9 +1,9 @@
 === external_location.yml.tmpl
 comment                                      absent->x          OK
 comment                                      absent->y          OK
-comment                                      x->absent          DRIFT  comment
+comment                                      x->absent          OK
 comment                                      x->y               OK
-comment                                      y->absent          DRIFT  comment
+comment                                      y->absent          OK
 comment                                      y->x               OK
 credential_name                              x->y               OK_RECREATE
 credential_name                              y->x               OK_RECREATE
@@ -111,7 +111,7 @@ effective_file_event_queue.provided_sqs.queue_url y->absent          OK
 effective_file_event_queue.provided_sqs.queue_url y->x               OK
 enable_file_events                           absent->false      SUPPRESSED  empty
 enable_file_events                           absent->true       OK
-enable_file_events                           false->absent      SUPPRESSED  remote_already_set
+enable_file_events                           false->absent      SUPPRESSED  empty
 enable_file_events                           false->true        OK
 enable_file_events                           true->absent       OK
 enable_file_events                           true->false        OK
@@ -129,7 +129,7 @@ encryption_details.sse_encryption_details.aws_kms_key_arn y->absent          OK_
 encryption_details.sse_encryption_details.aws_kms_key_arn y->x               OK_RECREATE
 fallback                                     absent->false      SUPPRESSED  empty
 fallback                                     absent->true       OK
-fallback                                     false->absent      SUPPRESSED  remote_already_set
+fallback                                     false->absent      SUPPRESSED  empty
 fallback                                     false->true        OK
 fallback                                     true->absent       OK
 fallback                                     true->false        OK
@@ -239,7 +239,7 @@ name                                         x->y               OK
 name                                         y->x               OK
 read_only                                    absent->false      SUPPRESSED  empty
 read_only                                    absent->true       OK
-read_only                                    false->absent      SUPPRESSED  remote_already_set
+read_only                                    false->absent      SUPPRESSED  empty
 read_only                                    false->true        OK
 read_only                                    true->absent       OK
 read_only                                    true->false        OK
@@ -253,11 +253,10 @@ url                                          x->y               OK
 url                                          y->x               OK
 
 === summary
-OK             124
+OK             126
 OK_RECREATE    110
 SUPPRESSED     10
 NOT_OBSERVABLE 6
-DRIFT          2
 
 === not covered: 2 fields under a slice or map
 grants[*].principal

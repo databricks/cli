@@ -13,9 +13,9 @@ catalog_name                                 y->absent          OK_RECREATE
 catalog_name                                 y->x               OK_RECREATE
 comment                                      absent->x          OK
 comment                                      absent->y          OK
-comment                                      x->absent          DRIFT  comment
+comment                                      x->absent          OK
 comment                                      x->y               OK
-comment                                      y->absent          DRIFT  comment
+comment                                      y->absent          OK
 comment                                      y->x               OK
 created_at                                   1->2               OK
 created_at                                   1->absent          OK
@@ -41,12 +41,12 @@ lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
 lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
 lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
 lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
-metastore_id                                 absent->x          DRIFT  metastore_id
-metastore_id                                 absent->y          DRIFT  metastore_id
+metastore_id                                 absent->x          OK
+metastore_id                                 absent->y          OK
 metastore_id                                 x->absent          OK
-metastore_id                                 x->y               DRIFT  metastore_id
+metastore_id                                 x->y               OK
 metastore_id                                 y->absent          OK
-metastore_id                                 y->x               DRIFT  metastore_id
+metastore_id                                 y->x               OK
 name                                         absent->x          OK_RECREATE
 name                                         absent->y          OK_RECREATE
 name                                         x->absent          OK_RECREATE
@@ -85,11 +85,11 @@ updated_by                                   y->absent          OK
 updated_by                                   y->x               OK
 
 === summary
-OK             38
+OK             44
 OK_RECREATE    24
 SUPPRESSED     2
 NOT_OBSERVABLE 6
-DRIFT          14
+DRIFT          8
 
 === not covered: 8 fields under a slice or map
 aliases[*].alias_name
