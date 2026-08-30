@@ -58,6 +58,20 @@ cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:
   recreate resources.volumes.foo
 
+=== The grants landed on the recreated volume
+>>> [CLI] grants get VOLUME main.schema2-[UNIQUE_NAME].my_volume
+{
+  "privilege_assignments": [
+    {
+      "principal": "account users",
+      "privileges": [
+        "WRITE_VOLUME"
+      ]
+    }
+  ]
+}
+
+=== Plan after recreate
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.schema1
