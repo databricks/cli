@@ -3,7 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-failed-update-[UNIQUE_NAME]/default/files...
 Created schemas.foo
-Files: 5 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === An update that fails before writing any state only marks its operation failed. It names no state, so the deployment keeps describing the schema the last successful version recorded - which is right, because nothing touched it

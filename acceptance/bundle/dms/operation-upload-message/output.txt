@@ -1,14 +1,16 @@
 
 === What a user sees when an operation cannot be recorded
+>>> fault.py PATCH /api/2.0/bundle/* 500 0 1 INTERNAL_ERROR
+
 >>> errcode [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-operation-upload-message/default/files...
-Error: recording operation for resources.jobs.foo with the deployment metadata service: Internal error (500 INTERNAL_ERROR)
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-operation-upload-message-[UNIQUE_NAME]/default/files...
+Error: recording operation for resources.jobs.foo with the deployment metadata service: Fault injected by test. (500 INTERNAL_ERROR)
 
 Endpoint: PATCH [DATABRICKS_URL]/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo?update_mask=state%2Cerror_message%2Cresource_id%2Cstatus
 HTTP Status: 500 Internal Server Error
 API error_code: INTERNAL_ERROR
-API message: Internal error
+API message: Fault injected by test.
 
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 
 Exit code: 1

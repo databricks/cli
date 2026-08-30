@@ -60,7 +60,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === A destructive change without --auto-approve is declined: this console cannot prompt
->>> update_file.py databricks.yml catalog_name: main catalog_name: other
+>>> update_file.py databricks.yml catalog_name: main catalog_name: dms_other_[UNIQUE_NAME]
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy-[UNIQUE_NAME]/default/files...
@@ -71,7 +71,7 @@ Error: the deployment requires destructive actions, but the current console does
 Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
 To proceed, use --auto-approve after reviewing the plan above.
 
-Files: 3 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 
 === Nothing was recorded for the declined deploy - no version, so none to abort
 >>> print_requests.py --dms //api/2.0/bundle

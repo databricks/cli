@@ -1,9 +1,9 @@
 
 === Deploy: the job is recorded
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-failed-delete/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default/files...
 Created jobs.stuck
-Files: 5 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle
@@ -11,12 +11,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
   "body": {
-    "display_name": "dms-failed-delete",
-    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete/default/state",
+    "display_name": "dms-failed-delete-[UNIQUE_NAME]",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default/state",
     "target_name": "default",
     "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete/default"
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default"
     }
   }
 }
@@ -47,7 +47,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "error_message": "",
     "resource_id": "[NUMID]",
     "sequence_id": "0",
-    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"stuck\",\"queue\":{\"enabled\":true}}}",
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"stuck\",\"queue\":{\"enabled\":true}}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -60,18 +60,20 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === A resource that fails to delete is recorded as a failed operation carrying the error, so the history says why rather than showing the resource gone
+>>> fault.py POST /api/2.2/jobs/delete 400 0 1 INVALID_PARAMETER_VALUE
+
 >>> musterr [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.stuck
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-failed-delete/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default
 
-Error: cannot delete resources.jobs.stuck: deleting id=[NUMID]: job is not deletable (400 INVALID_PARAMETER_VALUE)
+Error: cannot delete resources.jobs.stuck: deleting id=[NUMID]: Fault injected by test. (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/delete
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
-API message: job is not deletable
+API message: Fault injected by test.
 
 
 >>> print_requests.py --dms //api/2.0/bundle
@@ -100,10 +102,10 @@ API message: job is not deletable
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
-    "error_message": "deleting id=[NUMID]: job is not deletable (400 INVALID_PARAMETER_VALUE)",
+    "error_message": "deleting id=[NUMID]: Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
     "resource_id": "[NUMID]",
     "sequence_id": "0",
-    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"stuck\",\"queue\":{\"enabled\":true}}}",
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"stuck\",\"queue\":{\"enabled\":true}}}",
     "status": "OPERATION_STATUS_FAILED"
   }
 }
@@ -128,7 +130,7 @@ API message: job is not deletable
     "deployment": {
      "deployment_id": "[NUMID]",
      "kind": "BUNDLE",
-     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete/default/state/metadata.json",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default/state/metadata.json",
      "version_id": "1"
     },
     "edit_mode": "UI_LOCKED",

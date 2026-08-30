@@ -3,13 +3,13 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-upload-fails-once-[UNIQUE_NAME]/default/files...
 Created schemas.foo
-Files: 5 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === A recreate records twice, and the first one fails: the second must still carry the sequence id staging left, because a rejected update earned no new one
 >>> fault.py PATCH /api/2.0/bundle/* 500 0 1
 
->>> update_file.py databricks.yml catalog_name: main catalog_name: other
+>>> update_file.py databricks.yml catalog_name: main catalog_name: dms_other_[UNIQUE_NAME]
 
 >>> musterr [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-upload-fails-once-[UNIQUE_NAME]/default/files...
@@ -23,7 +23,7 @@ HTTP Status: 500 Internal Server Error
 API error_code: INJECTED
 API message: Fault injected by test.
 
-Files: 3 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 
 >>> print_requests.py --dms //api/2.0/bundle
 {
@@ -64,9 +64,9 @@ Files: 3 uploaded, 0 deleted
   },
   "body": {
     "error_message": "",
-    "resource_id": "other.dms_upload_fails_once_schema_[UNIQUE_NAME]",
+    "resource_id": "dms_other_[UNIQUE_NAME].dms_upload_fails_once_schema_[UNIQUE_NAME]",
     "sequence_id": "0",
-    "state": "{\"state\":{\"catalog_name\":\"other\",\"comment\":\"v1\",\"name\":\"dms_upload_fails_once_schema_[UNIQUE_NAME]\"}}",
+    "state": "{\"state\":{\"catalog_name\":\"dms_other_[UNIQUE_NAME]\",\"comment\":\"v1\",\"name\":\"dms_upload_fails_once_schema_[UNIQUE_NAME]\"}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }

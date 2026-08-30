@@ -1,27 +1,29 @@
 
 === A resource that fails to apply is recorded as a failed operation carrying the error, so the deployment history says why rather than omitting the resource
+>>> fault.py POST /api/2.2/jobs/create 400 0 1 INVALID_PARAMETER_VALUE
+
 >>> musterr [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record-failure/default/files...
-Error: cannot create resources.jobs.doomed: cluster spec is invalid (400 INVALID_PARAMETER_VALUE)
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record-failure-[UNIQUE_NAME]/default/files...
+Error: cannot create resources.jobs.doomed: Fault injected by test. (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/create
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
-API message: cluster spec is invalid
+API message: Fault injected by test.
 
-Files: 5 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 
 >>> print_requests.py --dms //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
   "body": {
-    "display_name": "dms-record-failure",
-    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-failure/default/state",
+    "display_name": "dms-record-failure-[UNIQUE_NAME]",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-failure-[UNIQUE_NAME]/default/state",
     "target_name": "default",
     "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-failure/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-failure/default"
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-failure-[UNIQUE_NAME]/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-failure-[UNIQUE_NAME]/default"
     }
   }
 }
@@ -49,7 +51,7 @@ Files: 5 uploaded, 0 deleted
     "update_mask": "error_message,status"
   },
   "body": {
-    "error_message": "cluster spec is invalid (400 INVALID_PARAMETER_VALUE)",
+    "error_message": "Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
     "sequence_id": "0",
     "status": "OPERATION_STATUS_FAILED"
   }

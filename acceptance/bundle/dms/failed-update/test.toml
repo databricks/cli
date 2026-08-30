@@ -1,0 +1,4 @@
+# Local only: this case needs an injected failure - no schema update that Unity Catalog rejects outright - and fault.py registers
+# its rule on the fake, which a cloud run does not have.
+Cloud = false
+

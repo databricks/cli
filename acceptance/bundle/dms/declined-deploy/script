@@ -6,7 +6,11 @@ trace print_requests.py --dms //api/2.0/bundle
 
 title "A destructive change without --auto-approve is declined: this console cannot prompt"
 # Changing the catalog recreates the schema, which needs approval.
-trace update_file.py databricks.yml "catalog_name: main" "catalog_name: other"
+# Unity Catalog has no catalog called "other", so make one to move the schema into.
+other_catalog="dms_other_${UNIQUE_NAME}"
+$CLI catalogs create "$other_catalog" &> LOG.catalog
+trap '$CLI catalogs delete "$other_catalog" --force &>> LOG.catalog' EXIT
+trace update_file.py databricks.yml "catalog_name: main" "catalog_name: ${other_catalog}"
 trace musterr $CLI bundle deploy
 
 title "Nothing was recorded for the declined deploy - no version, so none to abort"

@@ -4,7 +4,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files...
 Created jobs.foo
 Created pipelines.bar
-Files: 5 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
@@ -30,6 +30,13 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
       "version_id": "1"
     },
     "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files/transform.py"
+        }
+      }
+    ],
     "name": "bar",
     "schema": "default",
     "serverless": true

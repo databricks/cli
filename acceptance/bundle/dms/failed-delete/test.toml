@@ -1,10 +1,4 @@
-# The [[Server]] stub below forces a failure the real service will not produce on
-# demand, and the cloud harness ignores stubs, so this case only exists locally.
+# Local only: this case needs an injected failure - no job delete that the Jobs API refuses - and fault.py registers
+# its rule on the fake, which a cloud run does not have.
 Cloud = false
 
-# The job cannot be deleted, so the destroy fails and the operation is recorded as failed
-# rather than left as if the resource were gone.
-[[Server]]
-Pattern = "POST /api/2.2/jobs/delete"
-Response.StatusCode = 400
-Response.Body = '''{"error_code": "INVALID_PARAMETER_VALUE", "message": "job is not deletable"}'''

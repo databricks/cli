@@ -5,7 +5,11 @@ trace $CLI bundle deploy
 rm -f out.requests.txt
 
 title "A recreate deletes and then fails to create. The delete went through, so the resource really is gone: the operation records no state, rather than describing the resource as it was before the deploy"
-trace update_file.py databricks.yml "catalog_name: main" "catalog_name: other"
+# Unity Catalog has no catalog called "other", so make one to move the schema into.
+other_catalog="dms_other_${UNIQUE_NAME}"
+$CLI catalogs create "$other_catalog" &> LOG.catalog
+trap '$CLI catalogs delete "$other_catalog" --force &>> LOG.catalog' EXIT
+trace update_file.py databricks.yml "catalog_name: main" "catalog_name: ${other_catalog}"
 # Fail only the create that follows the delete; the delete itself still goes through.
 trace fault.py "POST /api/2.1/unity-catalog/schemas" 400 0 1 INVALID_PARAMETER_VALUE
 trace musterr $CLI bundle deploy --auto-approve

@@ -1,5 +1,6 @@
-# The [[Server]] stub below forces a failure the real service will not produce on
-# demand, and the cloud harness ignores stubs, so this case only exists locally.
+# Local only: the failure has to land on CreateVersion and not on the CreateDeployment
+# that precedes it, which fault.py's trailing-* pattern cannot express, so this case
+# keeps a [[Server]] stub - and the cloud harness ignores stubs.
 Cloud = false
 
 # The first version fails, so the deployment record is never created - only the
