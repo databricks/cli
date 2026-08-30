@@ -1,6 +1,31 @@
 # Value library for catalogs. See ../../README.md.
+
+# properties is a map the config does not declare, so its entries would be unreachable.
 base:
   properties:
     team: eng
-  options:
-    region: us-east-1
+
+skip:
+  # options only applies to a foreign catalog, which needs a real connection, and
+  # UpdateCatalog rejects the field outright ("UpdateCatalog options can not be
+  # provided") -- so seeding it made every *other* field of the catalog fail its update
+  # too. Worth a look on its own: the engine sends options on update whenever the config
+  # declares them, which a foreign catalog cannot survive.
+  options: rejected by UpdateCatalog; only settable at create on a foreign catalog
+  # A Delta Sharing catalog needs both of these and a share that exists.
+  provider_name: needs a Delta Sharing provider and share
+  share_name: needs a Delta Sharing provider and share
+  # A foreign catalog needs a connection that exists.
+  connection_name: needs a connection
+  # Must point at a real external location.
+  storage_root: needs an external location
+  # Needs a customer-managed key registered with the workspace; every field of the block
+  # is a UUID or key id the backend validates against that registration.
+  managed_encryption_settings: needs a customer-managed key registered with the workspace
+  # A UUID naming the workspace's metastore, which the backend fills in.
+  metastore_id: assigned by the backend
+
+fields:
+  # The backend takes hours but validates them as days: the retention period must be 0 or
+  # between 7 and 30 days, so the generic 1 and 2 are rejected.
+  custom_max_retention_hours: [168, 720]
