@@ -1,0 +1,28 @@
+=== model.yml.tmpl
+description                                  absent->x          OK
+description                                  absent->y          OK
+description                                  x->absent          OK
+description                                  x->y               OK
+description                                  y->absent          OK
+description                                  y->x               OK
+lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
+name                                         x->y               OK_RECREATE
+name                                         y->x               OK_RECREATE
+
+=== summary
+OK             6
+OK_RECREATE    2
+NOT_OBSERVABLE 6
+
+=== not covered: 6 fields under a slice or map
+permissions[*].group_name
+permissions[*].level
+permissions[*].service_principal_name
+permissions[*].user_name
+tags[*].key
+tags[*].value

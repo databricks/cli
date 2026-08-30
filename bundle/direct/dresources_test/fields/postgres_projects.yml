@@ -1,0 +1,9 @@
+# Value library for postgres projects. See ../README.md.
+#
+# Cloud is off: Lakebase is AWS-only and provisioning a project is slow.
+cloud: false
+
+fields:
+  # project_id is part of the resource's hierarchical name, so a change recreates it.
+  project_id: [pgproj1, pgproj2]
+  pg_version: [16, 17]

@@ -1,0 +1,55 @@
+=== genie_space.yml.tmpl
+description                                  absent->x          OK
+description                                  absent->y          OK
+description                                  x->absent          DRIFT  description
+description                                  x->y               OK
+description                                  y->absent          DRIFT  description
+description                                  y->x               OK
+etag                                         absent->x          SUPPRESSED  custom
+etag                                         absent->y          SUPPRESSED  custom
+etag                                         x->absent          SUPPRESSED  custom
+etag                                         x->y               SUPPRESSED  custom
+etag                                         y->absent          SUPPRESSED  custom
+etag                                         y->x               SUPPRESSED  custom
+file_path                                    absent->x          NOT_OBSERVABLE
+file_path                                    absent->y          NOT_OBSERVABLE
+file_path                                    x->absent          NOT_OBSERVABLE
+file_path                                    x->y               NOT_OBSERVABLE
+file_path                                    y->absent          NOT_OBSERVABLE
+file_path                                    y->x               NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
+parent_path                                  absent->x          DRIFT  parent_path
+parent_path                                  absent->y          DRIFT  parent_path
+parent_path                                  x->absent          DRIFT  parent_path
+parent_path                                  x->y               DRIFT  parent_path
+parent_path                                  y->absent          DRIFT  parent_path
+parent_path                                  y->x               DRIFT  parent_path
+title                                        absent->x          OK
+title                                        absent->y          OK
+title                                        x->absent          DRIFT  title
+title                                        x->y               OK
+title                                        y->absent          DRIFT  title
+title                                        y->x               OK
+warehouse_id                                 absent->x          OK
+warehouse_id                                 absent->y          OK
+warehouse_id                                 x->absent          DRIFT  warehouse_id
+warehouse_id                                 x->y               OK
+warehouse_id                                 y->absent          DRIFT  warehouse_id
+warehouse_id                                 y->x               OK
+
+=== summary
+OK             12
+SUPPRESSED     6
+NOT_OBSERVABLE 12
+DRIFT          12
+
+=== not covered: 4 fields under a slice or map
+permissions[*].group_name
+permissions[*].level
+permissions[*].service_principal_name
+permissions[*].user_name
