@@ -23,6 +23,24 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 		}
 	}
 
+	// UC requires all three parts of the name; without this the fake would store a model
+	// under a key like "..name" that no read can address.
+	for _, required := range []struct{ field, value string }{
+		{"catalog_name", createRequest.CatalogName},
+		{"schema_name", createRequest.SchemaName},
+		{"name", createRequest.Name},
+	} {
+		if required.value == "" {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body: map[string]string{
+					"error_code": "INVALID_PARAMETER_VALUE",
+					"message":    "CreateRegisteredModel Missing required field: " + required.field,
+				},
+			}
+		}
+	}
+
 	// Build full name from catalog.schema.name
 	fullName := createRequest.CatalogName + "." + createRequest.SchemaName + "." + createRequest.Name
 
@@ -49,6 +67,21 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 	return Response{
 		Body: registeredModel,
 	}
+}
+
+// RegisteredModelsGet honors include_aliases, which UC defaults to false: an alias belongs
+// to a model version and is managed through its own API, so a plain GET does not echo the
+// aliases a create or update was given. Without this the remote appeared to hold them and a
+// config that sets aliases looked like it converged.
+func (s *FakeWorkspace) RegisteredModelsGet(req Request, fullName string) Response {
+	response := MapGetUC(s, s.RegisteredModels, fullName, "Registered Model")
+	model, ok := response.Body.(catalog.RegisteredModelInfo)
+	if !ok || req.URL.Query().Get("include_aliases") == "true" {
+		return response
+	}
+	model.Aliases = nil
+	response.Body = model
+	return response
 }
 
 func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Response {
