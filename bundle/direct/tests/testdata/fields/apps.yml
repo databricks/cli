@@ -1,13 +1,4 @@
 # Value library for apps. See ../README.md.
-#
-# Every app create provisions compute, so a cloud run costs minutes per rebuild.
-slow: true
-
-skip:
-  # Renaming an app recreates it, and an app delete is asynchronous: the name stays
-  # reserved while the old app sits in DELETING, so every rename waits out the delete.
-  # Recreate-on-rename is covered by acceptance/bundle/resources/apps.
-  name: rename waits out an asynchronous delete
 
 fields:
   compute_size: [MEDIUM, LARGE]

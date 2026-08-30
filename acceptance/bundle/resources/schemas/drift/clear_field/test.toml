@@ -1,0 +1,8 @@
+Badness = "Removing custom_max_retention_hours from the config never clears it: the field is omitempty in UpdateSchema and DoUpdate forwards only the config's own ForceSendFields, so the PATCH body comes out empty and every later plan re-proposes the same update"
+
+Cloud = true
+RecordRequests = true
+
+# Terraform issues a spurious PATCH for enable_predictive_optimization on every deploy,
+# which would mask the drift this test is about.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

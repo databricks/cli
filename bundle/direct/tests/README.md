@@ -32,17 +32,23 @@ permutations, a `bundle deploy` each would be dominated by sync.
 | `SUPPRESSED` | the planner diffed the field and dropped the change; detail is the engine's own reason |
 | `NOT_OBSERVABLE` | the two values are identical in the state sent to the API, so there is nothing to see — an unset bool and an explicit `false` are the usual case |
 | `NO_PLAN` | the field diff exists but no action was planned |
-| `DRIFT` | applied, yet a later plan still wants the same change: deploying never converges |
-| `DRIFT_CHILD` | the field converged but another node of the resource did not; a guard that should stay empty |
+| `POST_DEPLOY_DRIFT` | applied, yet the plan taken straight afterwards still wants the same change: deploying never converges |
+| `POST_DEPLOY_DRIFT_CHILD` | the field converged but another node of the resource did not; a guard that should stay empty |
 | `BACKEND_ERROR` | the API rejected the value — usually the value library needs a valid value for this field |
 | `DEPLOY_ERROR` | apply failed for a non-API reason |
+| `TIMEOUT` | the operation did not finish inside the per-operation deadline |
 | `PLAN_ERROR` | planning failed |
 | `UNSETTABLE` | the value could not be written into the config at all |
 | `BASE_ERROR` | the transition's starting point would not deploy, so nothing was observed |
 | `NOT_IN_STATE` | the field exists in bundle config but not in the state type, so it never reaches the API |
 
-`SUPPRESSED` and `DRIFT` are where the interesting gaps are. `NOT_OBSERVABLE` is not a
-gap; it is the wire format telling the truth.
+`POST_DEPLOY_DRIFT` and `SUPPRESSED` are where the interesting gaps are. `NOT_OBSERVABLE`
+is not a gap; it is the wire format telling the truth.
+
+Two files per resource type: `output/<type>.txt` holds only the results worth looking at,
+one line each, so any diff to it is a change in behaviour. `output/<type>.full.txt` holds
+every result plus the summary and the not-covered list; it is gitignored, because it moves
+whenever a passing row moves.
 
 The suite deliberately does **not** read `resources.yml`. That file is the engine's
 answer to many of these cases, so consulting it would just restate the implementation.
@@ -54,22 +60,15 @@ The `SUPPRESSED` reason string is the engine explaining itself, which is differe
 guess — enums, ids, anything the backend constrains:
 
 ```yaml
-slow: true                        # expensive on cloud; dropped only under -short
 skip:
   name: rename waits out an asynchronous delete
 fields:
   compute_size: [MEDIUM, LARGE]
 ```
 
-Every resource type runs everywhere by default, so most types need no file at all. A
-field with no entry gets two values for its Go kind, which is enough to see a
+Every resource type runs everywhere — local and cloud alike — so most types need no file
+at all. A field with no entry gets two values for its Go kind, which is enough to see a
 value-to-value move on top of add and remove.
-
-`slow: true` marks a type whose cloud run is expensive — one that provisions compute, or
-simply has a large field surface. It still runs on cloud; it is only dropped when
-`-short` is passed, the same way `CloudSlow` narrows acceptance tests. So the PR cloud
-leg (`task integration-short`) skips them and the nightly (`task integration`) covers
-everything.
 
 `skip` is for a field no single-field edit can exercise — one that only validates as
 part of a set (a job's `git_source`), or whose change is correct but ruinously slow (an
@@ -84,10 +83,12 @@ go test ./bundle/direct/tests -run 'TestFields/schemas' -v
 ./task test-update-fields                                    # regenerate the goldens
 ```
 
-One transition is addressable on its own:
+One transition is addressable on its own, and the subtest names carry no shell
+metacharacters so no quoting is needed. `-v` prints the post-deploy plan behind any
+problem verdict:
 
-```
-TestFields/schemas/schema.yml.tmpl/comment/x->absent
+```bash
+go test ./bundle/direct/tests -run TestFields/pipelines/.*/dry_run/absent_to_true -v
 ```
 
 On cloud (`CLOUD_ENV` set) only resource types with `cloud: true` run, and the results

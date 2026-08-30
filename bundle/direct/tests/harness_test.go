@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	bundleconfig "github.com/databricks/cli/bundle/config"
@@ -256,18 +257,29 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 // CalculatePlan short-circuits to a bare "planning failed" whenever that flag is set. A
 // per-operation context is what keeps one failed transition from poisoning every plan
 // after it.
-func (h *bundleHarness) opCtx() context.Context {
+func (h *bundleHarness) opCtx() (context.Context, func()) {
 	ctx := logdiag.IsolatedContext(h.ctx)
 	logdiag.SetCollect(ctx, true)
-	return ctx
+	// A deadline so one operation that cannot finish is recorded as TIMEOUT instead of
+	// stalling the run. Apps are the reason: renaming one recreates it, and the delete
+	// half waits for the old name to leave DELETING, which the API does not cap.
+	return context.WithTimeout(ctx, opTimeout())
+}
+
+func opTimeout() time.Duration {
+	if isCloud() {
+		return 10 * time.Minute
+	}
+	return 20 * time.Second
 }
 
 // plan opens the state fresh each time: dstate.Open panics on an already-open
 // receiver, and Finalize resets it, so one DeploymentBundle serves one operation.
 func (h *bundleHarness) plan() (*pendingApply, *deployplan.Plan, diag.Diagnostics) {
-	ctx := h.opCtx()
+	ctx, cancel := h.opCtx()
 	db := &direct.DeploymentBundle{} //exhaustruct:ignore
 	if err := db.StateDB.Open(ctx, h.statePath, dstate.WithRecovery(false), dstate.WithWrite(false)); err != nil {
+		cancel()
 		return nil, nil, diag.FromErr(err)
 	}
 	plan, err := db.CalculatePlan(ctx, h.client, &h.bundle.Config)
@@ -275,18 +287,20 @@ func (h *bundleHarness) plan() (*pendingApply, *deployplan.Plan, diag.Diagnostic
 	if err != nil && !diags.HasError() {
 		diags = append(diags, diag.FromErr(err)...)
 	}
-	return &pendingApply{ctx: ctx, db: db}, plan, diags
+	return &pendingApply{ctx: ctx, cancel: cancel, db: db}, plan, diags
 }
 
 // pendingApply carries a planned DeploymentBundle together with the context it was
 // planned under, so the apply reports into the same isolated diagnostics sink.
 type pendingApply struct {
-	ctx context.Context
-	db  *direct.DeploymentBundle
+	ctx    context.Context
+	cancel func()
+	db     *direct.DeploymentBundle
 }
 
 // apply consumes the DeploymentBundle returned by plan.
 func (h *bundleHarness) apply(p *pendingApply, plan *deployplan.Plan) diag.Diagnostics {
+	defer p.cancel()
 	ctx, db := p.ctx, p.db
 	if err := db.StateDB.UpgradeToWrite(); err != nil {
 		return diag.FromErr(err)
@@ -315,17 +329,19 @@ func (h *bundleHarness) deploy() (deployplan.ActionType, diag.Diagnostics) {
 // destroy deletes everything in state. A nil configRoot makes the planner treat
 // every state entry as a delete (same call phases.Destroy makes).
 func (h *bundleHarness) destroy() diag.Diagnostics {
-	ctx := h.opCtx()
+	ctx, cancel := h.opCtx()
 	db := &direct.DeploymentBundle{} //exhaustruct:ignore
 	if err := db.StateDB.Open(ctx, h.statePath, dstate.WithRecovery(false), dstate.WithWrite(false)); err != nil {
+		cancel()
 		return diag.FromErr(err)
 	}
 	plan, err := db.CalculatePlan(ctx, h.client, nil)
 	if err != nil {
 		_, _ = db.StateDB.Finalize(ctx)
+		cancel()
 		return diag.FromErr(err)
 	}
-	return h.apply(&pendingApply{ctx: ctx, db: db}, plan)
+	return h.apply(&pendingApply{ctx: ctx, cancel: cancel, db: db}, plan)
 }
 
 func nodeAction(plan *deployplan.Plan, node string) deployplan.ActionType {

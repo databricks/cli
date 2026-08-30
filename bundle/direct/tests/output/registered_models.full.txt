@@ -1,0 +1,102 @@
+=== registered_model.yml.tmpl
+browse_only                                  absent     false      SUPPRESSED  empty
+browse_only                                  absent     true       OK
+browse_only                                  false      absent     SUPPRESSED  empty
+browse_only                                  false      true       OK
+browse_only                                  true       absent     OK
+browse_only                                  true       false      OK
+catalog_name                                 absent     x          OK_RECREATE
+catalog_name                                 absent     y          OK_RECREATE
+catalog_name                                 x          absent     OK_RECREATE
+catalog_name                                 x          y          OK_RECREATE
+catalog_name                                 y          absent     OK_RECREATE
+catalog_name                                 y          x          OK_RECREATE
+comment                                      absent     x          OK
+comment                                      absent     y          OK
+comment                                      x          absent     OK
+comment                                      x          y          OK
+comment                                      y          absent     OK
+comment                                      y          x          OK
+created_at                                   1          2          OK
+created_at                                   1          absent     OK
+created_at                                   2          1          OK
+created_at                                   2          absent     OK
+created_at                                   absent     1          OK
+created_at                                   absent     2          OK
+created_by                                   absent     x          OK
+created_by                                   absent     y          OK
+created_by                                   x          absent     OK
+created_by                                   x          y          OK
+created_by                                   y          absent     OK
+created_by                                   y          x          OK
+full_name                                    absent     x          POST_DEPLOY_DRIFT  full_name
+full_name                                    absent     y          POST_DEPLOY_DRIFT  full_name
+full_name                                    x          absent     OK
+full_name                                    x          y          POST_DEPLOY_DRIFT  full_name
+full_name                                    y          absent     OK
+full_name                                    y          x          POST_DEPLOY_DRIFT  full_name
+lifecycle.prevent_destroy                    absent     false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent     true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false      absent     NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false      true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true       absent     NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true       false      NOT_OBSERVABLE
+metastore_id                                 absent     x          OK
+metastore_id                                 absent     y          OK
+metastore_id                                 x          absent     OK
+metastore_id                                 x          y          OK
+metastore_id                                 y          absent     OK
+metastore_id                                 y          x          OK
+name                                         absent     x          OK_RECREATE
+name                                         absent     y          OK_RECREATE
+name                                         x          absent     OK_RECREATE
+name                                         x          y          OK_RECREATE
+name                                         y          absent     OK_RECREATE
+name                                         y          x          OK_RECREATE
+owner                                        absent     x          POST_DEPLOY_DRIFT  owner
+owner                                        absent     y          POST_DEPLOY_DRIFT  owner
+owner                                        x          absent     OK
+owner                                        x          y          POST_DEPLOY_DRIFT  owner
+owner                                        y          absent     OK
+owner                                        y          x          POST_DEPLOY_DRIFT  owner
+schema_name                                  absent     x          OK_RECREATE
+schema_name                                  absent     y          OK_RECREATE
+schema_name                                  x          absent     OK_RECREATE
+schema_name                                  x          y          OK_RECREATE
+schema_name                                  y          absent     OK_RECREATE
+schema_name                                  y          x          OK_RECREATE
+storage_location                             absent     x          OK_RECREATE
+storage_location                             absent     y          OK_RECREATE
+storage_location                             x          absent     OK_RECREATE
+storage_location                             x          y          OK_RECREATE
+storage_location                             y          absent     OK_RECREATE
+storage_location                             y          x          OK_RECREATE
+updated_at                                   1          2          OK
+updated_at                                   1          absent     OK
+updated_at                                   2          1          OK
+updated_at                                   2          absent     OK
+updated_at                                   absent     1          OK
+updated_at                                   absent     2          OK
+updated_by                                   absent     x          OK
+updated_by                                   absent     y          OK
+updated_by                                   x          absent     OK
+updated_by                                   x          y          OK
+updated_by                                   y          absent     OK
+updated_by                                   y          x          OK
+
+=== summary
+OK             44
+OK_RECREATE    24
+SUPPRESSED     2
+NOT_OBSERVABLE 6
+POST_DEPLOY_DRIFT 8
+
+=== not covered: 8 fields under a slice or map
+aliases[*].alias_name
+aliases[*].catalog_name
+aliases[*].id
+aliases[*].model_name
+aliases[*].schema_name
+aliases[*].version_num
+grants[*].principal
+grants[*].privileges[*]

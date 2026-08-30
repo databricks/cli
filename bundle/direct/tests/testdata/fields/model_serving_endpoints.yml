@@ -1,8 +1,4 @@
 # Value library for model serving endpoints. See ../README.md.
-#
-# Creating an endpoint provisions serving compute.
-slow: true
-
 skip:
   # The telemetry block is only accepted as a coherent whole, against a catalog and
   # schema that exist and are writable, which one-field-at-a-time cannot arrange.
