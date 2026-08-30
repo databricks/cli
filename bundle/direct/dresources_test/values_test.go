@@ -29,10 +29,11 @@ var absent = dyn.InvalidValue
 // constrains (enums, ids, cross-referenced names) need an explicit entry, otherwise
 // every value is rejected and the field reports only BACKEND_ERROR.
 type fieldValues struct {
-	// cloud enables this resource type in cloud runs. Off by default: a cloud run pays
-	// real API latency per transition, so a type opts in once someone has checked that
-	// it completes in reasonable time.
-	cloud bool
+	// slow marks a resource type whose cloud run is expensive -- one that provisions
+	// compute, say. It still runs on cloud; it is only dropped under -short, the same
+	// way CloudSlow narrows acceptance tests, so PR cloud runs stay bounded and the
+	// nightly covers everything.
+	slow bool
 
 	// skip lists field paths to leave out entirely, with a reason. A key ending in ".*"
 	// skips that whole subtree.
@@ -46,7 +47,7 @@ type fieldValues struct {
 // yamlloader rather than a yaml package, so the values arrive as dyn.Value -- the same
 // representation the bundle config uses, which is what they are written into.
 func loadFieldValues(resourceType string) (*fieldValues, error) {
-	fv := &fieldValues{cloud: false, skip: map[string]string{}, fields: map[string][]dyn.Value{}}
+	fv := &fieldValues{slow: false, skip: map[string]string{}, fields: map[string][]dyn.Value{}}
 
 	path := filepath.Join("fields", resourceType+".yml")
 	data, err := os.ReadFile(path)
@@ -62,8 +63,8 @@ func loadFieldValues(resourceType string) (*fieldValues, error) {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
 
-	if v, err := dyn.Get(root, "cloud"); err == nil {
-		fv.cloud, _ = v.AsBool()
+	if v, err := dyn.Get(root, "slow"); err == nil {
+		fv.slow, _ = v.AsBool()
 	}
 	if v, err := dyn.Get(root, "skip"); err == nil {
 		m, _ := v.AsMap()

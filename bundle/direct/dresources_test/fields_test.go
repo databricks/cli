@@ -61,8 +61,8 @@ func TestFields(t *testing.T) {
 
 			fv, err := loadFieldValues(resourceType)
 			require.NoError(t, err)
-			if isCloud() && !fv.cloud {
-				t.Skipf("not enabled for cloud runs; set cloud: true in fields/%s.yml", resourceType)
+			if isCloud() && fv.slow && testing.Short() {
+				t.Skipf("slow on cloud and -short was passed; the nightly run covers it")
 			}
 
 			// A testserver per type keeps the parallel runs from sharing workspace

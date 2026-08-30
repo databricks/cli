@@ -1,4 +1,4 @@
 # Cloud runs record what a real backend accepted, which varies by workspace.
-out.*.fields.aws.txt
-out.*.fields.azure.txt
-out.*.fields.gcp.txt
+output/*.aws.txt
+output/*.azure.txt
+output/*.gcp.txt

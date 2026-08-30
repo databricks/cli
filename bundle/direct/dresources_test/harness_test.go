@@ -173,11 +173,14 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 		return nil, err
 	}
 
-	// The caller's context, not t.Context(): a harness is rebuilt inside a field-level
-	// subtest but goes on being used by later fields, and t.Context() is cancelled the
-	// moment its subtest returns -- which surfaced as "context canceled" from the SDK
-	// rate limiter on whatever ran next.
-	ctx = dbr.MockRuntime(ctx, dbr.Environment{}) //exhaustruct:ignore
+	// WithoutCancel because a harness outlives the scope that created it in two ways,
+	// and t.Context() is cancelled at the end of both: a harness rebuilt inside a
+	// field-level subtest is reused by later fields, and every harness is destroyed from
+	// t.Cleanup, which runs *after* t.Context() is cancelled. Either way the SDK rate
+	// limiter refuses the call with "context canceled" -- silently leaking the resource
+	// in the cleanup case. Values (dbr, logdiag, cmdio, env) still propagate; the test
+	// binary's own -timeout remains the backstop.
+	ctx = dbr.MockRuntime(context.WithoutCancel(ctx), dbr.Environment{}) //exhaustruct:ignore
 	// Thousands of deploys run through here, so cap how long any one of them waits for
 	// a resource to become ready. Without a cap a resource that never reaches its
 	// terminal state stalls the whole suite instead of showing up as one bad verdict.

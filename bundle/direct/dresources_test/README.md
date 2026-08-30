@@ -3,7 +3,7 @@
 This suite answers one question for every field a user can set on a bundle resource:
 **if I change this field, does the direct engine notice, apply it, and converge?**
 
-The answer for every field lands in `out.<resource_type>.fields.txt`. Those files are
+The answer for every field lands in `output/<resource_type>.txt`. Those files are
 the deliverable — a map of where field support is solid and where it is not. A bad
 outcome does not fail the test; a *changed* outcome does, because the goldens are
 committed. That makes the suite a regression detector for things like an SDK bump
@@ -51,24 +51,25 @@ The `SUPPRESSED` reason string is the engine explaining itself, which is differe
 ## Value library
 
 `fields/<resource_type>.yml` supplies values the generic per-kind defaults cannot
-guess — enums, ids, anything the backend constrains — and opts a resource type into
-cloud runs:
+guess — enums, ids, anything the backend constrains:
 
 ```yaml
-cloud: true                       # include in cloud runs; off by default
+slow: true                        # expensive on cloud; dropped only under -short
 skip:
   name: rename waits out an asynchronous delete
 fields:
   compute_size: [MEDIUM, LARGE]
 ```
 
-A field with no entry gets two values for its Go kind, which is enough to see a
-value-to-value move on top of add and remove, so a file that only says `cloud: true` is
-a normal thing to have.
+Every resource type runs everywhere by default, so most types need no file at all. A
+field with no entry gets two values for its Go kind, which is enough to see a
+value-to-value move on top of add and remove.
 
-`cloud` is off by default because a cloud run pays real API latency on every transition:
-`jobs` alone takes ~17 minutes against a live workspace, against 40 seconds for the
-whole suite locally. Turn it on for a resource type once you have checked what it costs.
+`slow: true` marks a type whose cloud run is expensive — one that provisions compute, or
+simply has a large field surface. It still runs on cloud; it is only dropped when
+`-short` is passed, the same way `CloudSlow` narrows acceptance tests. So the PR cloud
+leg (`task integration-short`) skips them and the nightly (`task integration`) covers
+everything.
 
 `skip` is for a field no single-field edit can exercise — one that only validates as
 part of a set (a job's `git_source`), or whose change is correct but ruinously slow (an
@@ -90,7 +91,7 @@ TestFields/schemas/schema.yml.tmpl/comment/x->absent
 ```
 
 On cloud (`CLOUD_ENV` set) only resource types with `cloud: true` run, and the results
-go to `out.<resource_type>.fields.<cloud>.txt`, which is not committed: which values a
+go to `output/<resource_type>.<cloud>.txt`, which is not committed: which values a
 real backend accepts depends on the workspace.
 
 ## Out of scope for now
@@ -99,6 +100,6 @@ real backend accepts depends on the workspace.
 - `permissions` and `grants`, which are stripped from every config before planning: they
   are separate plan nodes describing an ACL, and leaving them in made every recreate
   report a drifted child against whichever field triggered it. Two configs that differ
-  only in those blocks therefore collapse to one, recorded in `out.configs.txt`.
+  only in those blocks therefore collapse to one, recorded in `output/configs.txt`.
 - configs with more than one resource, or with an `-init.sh`
 - fields under a slice or map, listed at the end of each report
