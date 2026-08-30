@@ -45,9 +45,7 @@ retention_window_in_days                     2          1          COLLATERAL_DR
 retention_window_in_days                     2          absent     COLLATERAL_DRIFT  capacity
 retention_window_in_days                     absent     1          COLLATERAL_DRIFT  capacity
 retention_window_in_days                     absent     2          COLLATERAL_DRIFT  capacity
-stopped                                      absent     false      COLLATERAL_DRIFT  capacity
 stopped                                      absent     true       COLLATERAL_DRIFT  capacity
-stopped                                      false      absent     COLLATERAL_DRIFT  capacity
 stopped                                      false      true       COLLATERAL_DRIFT  capacity
 stopped                                      true       absent     COLLATERAL_DRIFT  capacity
 stopped                                      true       false      COLLATERAL_DRIFT  capacity

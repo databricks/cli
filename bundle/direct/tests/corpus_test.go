@@ -3,6 +3,7 @@ package tests
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -12,9 +13,8 @@ import (
 
 	bundleconfig "github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct/dresources"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 )
 
 // The suite reuses the acceptance invariant corpus rather than growing a second set
@@ -97,15 +97,12 @@ func resourceFingerprint(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	stripped, err := withoutSubResources(root)
-	if err != nil {
-		return "", err
+	for _, resource := range declaredResources(root) {
+		for _, kind := range subResourceKinds {
+			delete(resource, kind)
+		}
 	}
-	resources, err := dyn.Get(stripped, "resources")
-	if err != nil {
-		return "", err
-	}
-	encoded, err := json.Marshal(resources.AsAny())
+	encoded, err := json.Marshal(root["resources"])
 	if err != nil {
 		return "", err
 	}
@@ -114,35 +111,56 @@ func resourceFingerprint(path string) (string, error) {
 
 // loadTemplate parses a config template with its variables blanked out; only the shape
 // matters to the callers here.
-func loadTemplate(path string) (dyn.Value, error) {
+func loadTemplate(path string) (map[string]any, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return dyn.InvalidValue, err
+		return nil, err
 	}
 	yml := os.Expand(string(data), func(string) string { return "x" })
-	return yamlloader.LoadYAML(path, strings.NewReader(yml))
+	var root map[string]any
+	if err := yaml.Unmarshal([]byte(yml), &root); err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	return root, nil
 }
 
-// resourceNodes returns the "resources.<type>.<name>" keys declared by a config
-// template, ignoring the permissions and grants sub-blocks.
+// resourceNodes returns the "resources.<type>.<name>" keys declared by a config template.
 func resourceNodes(path string) ([]string, error) {
 	root, err := loadTemplate(path)
 	if err != nil {
 		return nil, err
 	}
-
 	var nodes []string
-	_, err = dyn.MapByPattern(root,
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			nodes = append(nodes, p.String())
-			return v, nil
-		})
-	if err != nil {
-		return nil, err
+	for _, group := range sortedKeys(mapAt(root, "resources")) {
+		for _, name := range sortedKeys(mapAt(mapAt(root, "resources"), group)) {
+			nodes = append(nodes, "resources."+group+"."+name)
+		}
 	}
-	slices.Sort(nodes)
 	return nodes, nil
+}
+
+// declaredResources returns every resource body of a parsed template.
+func declaredResources(root map[string]any) []map[string]any {
+	var out []map[string]any
+	resources := mapAt(root, "resources")
+	for _, group := range sortedKeys(resources) {
+		byName := mapAt(resources, group)
+		for _, name := range sortedKeys(byName) {
+			if body, ok := byName[name].(map[string]any); ok {
+				out = append(out, body)
+			}
+		}
+	}
+	return out
+}
+
+func mapAt(parent map[string]any, key string) map[string]any {
+	value, _ := parent[key].(map[string]any)
+	return value
+}
+
+func sortedKeys(m map[string]any) []string {
+	return slices.Sorted(maps.Keys(m))
 }
 
 // soleResourceNode returns the single resource node of an initialized config.
@@ -159,12 +177,10 @@ func soleResourceNode(root *bundleconfig.Root) (string, error) {
 
 func initializedNodes(root *bundleconfig.Root) ([]string, error) {
 	var nodes []string
-	_, err := dyn.MapByPattern(root.Value(),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			nodes = append(nodes, p.String())
-			return v, nil
-		})
+	err := forEachResource(root, func(node string, _ any) error {
+		nodes = append(nodes, node)
+		return nil
+	})
 	slices.Sort(nodes)
 	return nodes, err
 }

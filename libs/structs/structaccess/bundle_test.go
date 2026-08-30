@@ -97,11 +97,12 @@ func TestGetSet_DoublyEmbeddedField(t *testing.T) {
 	// An explicit empty value is recorded on ProjectSpec, which declares the field.
 	require.NoError(t, SetByString(project, "budget_policy_id", ""))
 	require.Contains(t, project.ProjectSpec.ForceSendFields, "BudgetPolicyId")
-	require.NotContains(t, project.PostgresProjectConfig.ForceSendFields, "BudgetPolicyId")
+	require.NotContains(t, project.ForceSendFields, "BudgetPolicyId")
 
 	value, err = GetByString(project, "budget_policy_id")
 	require.NoError(t, err)
-	require.Equal(t, "", value)
+	// The empty string, not nil: that is what separates an explicit "" from an absent field.
+	require.Equal(t, any(""), value)
 
 	// And dropping it again leaves the field absent.
 	require.NoError(t, SetByString(project, "budget_policy_id", nil))
