@@ -1,6 +1,4 @@
 # Value library for schemas. See ../README.md.
-cloud: true
-
 skip:
   # storage_root must point at a real external location.
   storage_root: needs an external location

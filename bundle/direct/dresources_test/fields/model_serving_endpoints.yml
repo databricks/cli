@@ -1,7 +1,7 @@
 # Value library for model serving endpoints. See ../README.md.
 #
-# Cloud is off: creating an endpoint provisions serving compute.
-cloud: false
+# Creating an endpoint provisions serving compute.
+slow: true
 
 skip:
   # The telemetry block is only accepted as a coherent whole, against a catalog and
