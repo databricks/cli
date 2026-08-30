@@ -26,6 +26,7 @@
 package dresources_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"regexp"
@@ -68,11 +69,13 @@ func TestFields(t *testing.T) {
 			// state. On cloud this is the same real workspace either way.
 			client := newClient(t)
 			user := workspaceUser(t, client)
+			// Outlives the field-level subtests that rebuild harnesses.
+			ctx := t.Context()
 
 			rep := &report{resourceType: resourceType} //exhaustruct:ignore
 			for _, cfg := range configs {
 				t.Run(cfg.name, func(t *testing.T) {
-					runConfig(t, client, user, cfg, fv, rep)
+					runConfig(t, ctx, client, user, cfg, fv, rep)
 				})
 			}
 			rep.write(t)
@@ -80,7 +83,7 @@ func TestFields(t *testing.T) {
 	}
 }
 
-func runConfig(t *testing.T, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, rep *report) {
+func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, rep *report) {
 	adapter, err := dresources.NewAdapter(dresources.SupportedResources[cfg.resourceType], cfg.resourceType, client)
 	require.NoError(t, err)
 
@@ -89,7 +92,7 @@ func runConfig(t *testing.T, client *databricks.WorkspaceClient, user *iam.User,
 
 	// The base deploy establishes that the config itself is deployable. If it is not,
 	// nothing below can be attributed to a field.
-	h, err := newBaseline(t, client, user, cfg)
+	h, err := newBaseline(t, ctx, client, user, cfg)
 	if err != nil {
 		rep.add(result{cfg.name, "(base config)", "create", verdictBaseError, oneLine(err.Error())})
 		return
@@ -98,7 +101,7 @@ func runConfig(t *testing.T, client *databricks.WorkspaceClient, user *iam.User,
 	base := h.fieldSnapshot()
 
 	for _, f := range fields {
-		if reason, ok := fv.skip[f.path]; ok {
+		if reason, ok := fv.skipReason(f.path); ok {
 			rep.add(result{cfg.name, f.path, "-", verdictSkipped, reason})
 			continue
 		}
@@ -112,7 +115,7 @@ func runConfig(t *testing.T, client *databricks.WorkspaceClient, user *iam.User,
 					}
 					// The resource is in an unknown state; carrying it into the next
 					// transition would turn one failure into a run of them.
-					rebuilt, err := rebuild(t, client, user, cfg, h)
+					rebuilt, err := rebuild(t, ctx, client, user, cfg, h)
 					if err != nil {
 						t.Skipf("could not rebuild baseline: %s", err)
 					}
@@ -127,7 +130,7 @@ func runConfig(t *testing.T, client *databricks.WorkspaceClient, user *iam.User,
 		// what makes that cheap: reusing the old one waits out an asynchronous delete.
 		h.restoreField(base, f.path)
 		if !h.converged() {
-			rebuilt, err := rebuild(t, client, user, cfg, h)
+			rebuilt, err := rebuild(t, ctx, client, user, cfg, h)
 			if err != nil {
 				rep.add(result{cfg.name, f.path, "-", verdictBaseError, oneLine(err.Error())})
 				return
@@ -207,8 +210,8 @@ func runTransition(h *bundleHarness, config, path string, tr transition) result 
 }
 
 // newBaseline builds a harness and deploys the config as written.
-func newBaseline(t *testing.T, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig) (*bundleHarness, error) {
-	h, err := newHarness(t, client, user, cfg.name, uniqueName())
+func newBaseline(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig) (*bundleHarness, error) {
+	h, err := newHarness(t, ctx, client, user, cfg.name, uniqueName())
 	if err != nil {
 		return nil, err
 	}
@@ -227,9 +230,9 @@ func newBaseline(t *testing.T, client *databricks.WorkspaceClient, user *iam.Use
 // rebuild starts over on a fresh resource, leaving the old one to be destroyed at the
 // end of the test. A new name is what makes this cheap: reusing the old one can mean
 // waiting out an asynchronous delete.
-func rebuild(t *testing.T, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, old *bundleHarness) (*bundleHarness, error) {
+func rebuild(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, old *bundleHarness) (*bundleHarness, error) {
 	t.Cleanup(func() { _ = old.destroy() })
-	return newBaseline(t, client, user, cfg)
+	return newBaseline(t, ctx, client, user, cfg)
 }
 
 // explainSkip says why a plan came back with nothing to do for the field under test.

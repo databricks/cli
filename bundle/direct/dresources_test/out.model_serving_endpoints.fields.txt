@@ -106,42 +106,12 @@ route_optimized                              false->true        OK_RECREATE
 route_optimized                              true->absent       OK_RECREATE
 route_optimized                              true->false        OK_RECREATE
 telemetry_config.inference_table_config.name -                  SKIPPED  needs a writable catalog and schema
-telemetry_config.inference_table_config.sampling_fraction 1->2               BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.inference_table_config.sampling_fraction 1->absent          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.inference_table_config.sampling_fraction 2->1               BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.inference_table_config.sampling_fraction 2->absent          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.inference_table_config.sampling_fraction absent->1          BACKEND_ERROR  cannot update resources.model_serving_endpoints.foo: updating id=test-endpoint-[UNIQUE_NAME]: failed to update telemetry config: Telemetry c...
-telemetry_config.inference_table_config.sampling_fraction absent->2          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.annotations_table absent->x          BACKEND_ERROR  cannot update resources.model_serving_endpoints.foo: updating id=test-endpoint-[UNIQUE_NAME]: failed to update telemetry config: Telemetry c...
-telemetry_config.table_names.annotations_table absent->y          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.annotations_table x->absent          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.annotations_table x->y               BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.annotations_table y->absent          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.annotations_table y->x               BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.logs_table      absent->x          BACKEND_ERROR  cannot update resources.model_serving_endpoints.foo: updating id=test-endpoint-[UNIQUE_NAME]: failed to update telemetry config: Telemetry c...
-telemetry_config.table_names.logs_table      absent->y          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.logs_table      x->absent          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.logs_table      x->y               BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.logs_table      y->absent          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.logs_table      y->x               BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.metrics_table   absent->x          BACKEND_ERROR  cannot update resources.model_serving_endpoints.foo: updating id=test-endpoint-[UNIQUE_NAME]: failed to update telemetry config: Telemetry c...
-telemetry_config.table_names.metrics_table   absent->y          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.metrics_table   x->absent          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.metrics_table   x->y               BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.metrics_table   y->absent          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.metrics_table   y->x               BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.traces_table    absent->x          BACKEND_ERROR  cannot update resources.model_serving_endpoints.foo: updating id=test-endpoint-[UNIQUE_NAME]: failed to update telemetry config: Telemetry c...
-telemetry_config.table_names.traces_table    absent->y          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.traces_table    x->absent          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.traces_table    x->y               BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.traces_table    y->absent          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.table_names.traces_table    y->x               BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.telemetry_profile_id        absent->x          BACKEND_ERROR  cannot update resources.model_serving_endpoints.foo: updating id=test-endpoint-[UNIQUE_NAME]: failed to update telemetry config: Telemetry c...
-telemetry_config.telemetry_profile_id        absent->y          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.telemetry_profile_id        x->absent          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.telemetry_profile_id        x->y               BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.telemetry_profile_id        y->absent          BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
-telemetry_config.telemetry_profile_id        y->x               BASE_ERROR  cannot create resources.model_serving_endpoints.foo: failed in rate limiter: context canceled
+telemetry_config.inference_table_config.sampling_fraction -                  SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.annotations_table -                  SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.logs_table      -                  SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.metrics_table   -                  SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.traces_table    -                  SKIPPED  needs a writable catalog and schema
+telemetry_config.telemetry_profile_id        -                  SKIPPED  needs a writable catalog and schema
 
 === model_serving_endpoint_telemetry.yml.tmpl
 ai_gateway.fallback_config.enabled           false->true        OK
@@ -251,52 +221,20 @@ route_optimized                              false->true        OK_RECREATE
 route_optimized                              true->absent       OK_RECREATE
 route_optimized                              true->false        OK_RECREATE
 telemetry_config.inference_table_config.name -                  SKIPPED  needs a writable catalog and schema
-telemetry_config.inference_table_config.sampling_fraction 1->2               OK
-telemetry_config.inference_table_config.sampling_fraction 1->absent          OK
-telemetry_config.inference_table_config.sampling_fraction 2->1               OK
-telemetry_config.inference_table_config.sampling_fraction 2->absent          OK
-telemetry_config.inference_table_config.sampling_fraction absent->1          OK
-telemetry_config.inference_table_config.sampling_fraction absent->2          OK
-telemetry_config.table_names.annotations_table absent->x          OK
-telemetry_config.table_names.annotations_table absent->y          OK
-telemetry_config.table_names.annotations_table x->absent          OK
-telemetry_config.table_names.annotations_table x->y               OK
-telemetry_config.table_names.annotations_table y->absent          OK
-telemetry_config.table_names.annotations_table y->x               OK
-telemetry_config.table_names.logs_table      absent->x          OK
-telemetry_config.table_names.logs_table      absent->y          OK
-telemetry_config.table_names.logs_table      x->absent          OK
-telemetry_config.table_names.logs_table      x->y               OK
-telemetry_config.table_names.logs_table      y->absent          OK
-telemetry_config.table_names.logs_table      y->x               OK
-telemetry_config.table_names.metrics_table   absent->x          OK
-telemetry_config.table_names.metrics_table   absent->y          OK
-telemetry_config.table_names.metrics_table   x->absent          OK
-telemetry_config.table_names.metrics_table   x->y               OK
-telemetry_config.table_names.metrics_table   y->absent          OK
-telemetry_config.table_names.metrics_table   y->x               OK
-telemetry_config.table_names.traces_table    absent->x          OK
-telemetry_config.table_names.traces_table    absent->y          OK
-telemetry_config.table_names.traces_table    x->absent          OK
-telemetry_config.table_names.traces_table    x->y               OK
-telemetry_config.table_names.traces_table    y->absent          OK
-telemetry_config.table_names.traces_table    y->x               OK
-telemetry_config.telemetry_profile_id        absent->x          OK
-telemetry_config.telemetry_profile_id        absent->y          OK
-telemetry_config.telemetry_profile_id        x->absent          OK
-telemetry_config.telemetry_profile_id        x->y               OK
-telemetry_config.telemetry_profile_id        y->absent          OK
-telemetry_config.telemetry_profile_id        y->x               OK
+telemetry_config.inference_table_config.sampling_fraction -                  SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.annotations_table -                  SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.logs_table      -                  SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.metrics_table   -                  SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.traces_table    -                  SKIPPED  needs a writable catalog and schema
+telemetry_config.telemetry_profile_id        -                  SKIPPED  needs a writable catalog and schema
 
 === summary
-OK             139
+OK             103
 OK_RECREATE    57
 SUPPRESSED     29
 NOT_OBSERVABLE 16
 DRIFT          7
-BACKEND_ERROR  6
-SKIPPED        2
-BASE_ERROR     30
+SKIPPED        14
 
 === not covered: 95 fields under a slice or map
 ai_gateway.guardrails.input.invalid_keywords[*]
