@@ -5,7 +5,7 @@ resources:
   models:
     mymodel:
       name: test-model
-      description: initial # TO_REMOVE
+      description: initial
       permissions:
         - level: CAN_READ
           user_name: viewer@example.com
