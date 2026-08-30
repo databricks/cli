@@ -5,3 +5,4 @@ custom_max_retention_hours                   2          absent     POST_DEPLOY_D
 === catalog_optional_fields.yml.tmpl
 custom_max_retention_hours                   1          absent     POST_DEPLOY_DRIFT  custom_max_retention_hours
 custom_max_retention_hours                   2          absent     POST_DEPLOY_DRIFT  custom_max_retention_hours
+name                                         y          x          POST_DEPLOY_DRIFT  custom_max_retention_hours,managed_encryption_settings.customer_managed_key_id

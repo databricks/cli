@@ -5,6 +5,7 @@ compute_max_instances                        1          absent     POST_DEPLOY_D
 compute_max_instances                        2          absent     POST_DEPLOY_DRIFT  compute_max_instances
 compute_min_instances                        1          absent     POST_DEPLOY_DRIFT  compute_min_instances
 compute_min_instances                        2          absent     POST_DEPLOY_DRIFT  compute_min_instances
+compute_min_instances                        absent     2          SUPPRESSED  remote_already_set
 compute_size                                 absent     MEDIUM     SUPPRESSED  remote_already_set
 description                                  x          absent     POST_DEPLOY_DRIFT  description
 description                                  y          absent     POST_DEPLOY_DRIFT  description

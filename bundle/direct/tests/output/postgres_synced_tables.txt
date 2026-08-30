@@ -1,0 +1,5 @@
+=== postgres_synced_table.yml.tmpl
+primary_key_columns[0]                       absent     x          UNSETTABLE  cannot remove resources.postgres_synced_tables.foo.primary_key_columns[0]: not a map key
+primary_key_columns[0]                       absent     y          UNSETTABLE  cannot remove resources.postgres_synced_tables.foo.primary_key_columns[0]: not a map key
+primary_key_columns[0]                       x          absent     UNSETTABLE  cannot remove resources.postgres_synced_tables.foo.primary_key_columns[0]: not a map key
+primary_key_columns[0]                       y          absent     UNSETTABLE  cannot remove resources.postgres_synced_tables.foo.primary_key_columns[0]: not a map key

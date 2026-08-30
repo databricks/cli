@@ -1,21 +1,25 @@
-# Value library for jobs. See ../README.md.
+# Value library for jobs. See ../../README.md.
+
+# git_source only validates as a coherent set: a provider, a url, and exactly one of
+# branch/tag/commit. Seeding one makes its fields reachable, so changing the commit or
+# the provider is tested rather than skipped.
+base:
+  git_source:
+    git_provider: gitHub
+    git_url: https://github.com/databricks/cli.test
+    git_commit: abc123
+
 skip:
-  # git_source only validates as a coherent set: a provider, a url, and exactly one of
-  # branch/tag/commit. Moving one of its fields at a time always produces an invalid
-  # combination, so every value comes back rejected and tells us nothing about field
-  # support. Covered instead by acceptance/bundle/resources/jobs.
-  git_source.git_provider: needs a coherent git_source block
-  git_source.git_url: needs a coherent git_source block
-  git_source.git_branch: needs a coherent git_source block
-  git_source.git_tag: needs a coherent git_source block
-  git_source.git_commit: needs a coherent git_source block
-  git_source.git_snapshot.used_commit: needs a coherent git_source block
-  git_source.job_source.job_config_path: needs a coherent git_source block
-  git_source.job_source.import_from_git_branch: needs a coherent git_source block
-  git_source.job_source.dirty_state: needs a coherent git_source block
+  # git_branch and git_tag are the other two sides of the same oneof as git_commit, which
+  # base sets. Adding one alongside it is rejected for being ambiguous, not for anything
+  # this suite measures. Covered by acceptance/bundle/resources/jobs.
+  git_source.git_branch: mutually exclusive with the seeded git_commit
+  git_source.git_tag: mutually exclusive with the seeded git_commit
 
 fields:
   format: [SINGLE_TASK, MULTI_TASK]
   performance_target: [PERFORMANCE_OPTIMIZED, STANDARD]
   max_concurrent_runs: [1, 5]
   timeout_seconds: [600, 1200]
+  git_source.git_provider: [gitHub, gitLab]
+  git_source.git_commit: [abc123, def456]
