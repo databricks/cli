@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -151,21 +152,16 @@ func (r *report) render() string {
 // Cloud runs go to a separate, uncommitted file: which values a real backend accepts
 // depends on the workspace, so those results are for reading, not for diffing.
 func (r *report) write(t testutil.TestingT) {
-	name := "out." + r.resourceType + ".fields.txt"
+	name := reportPath(r.resourceType + ".txt")
 	body := r.render()
 
 	if isCloud() {
-		name = "out." + r.resourceType + ".fields." + cloudName() + ".txt"
-		if err := os.WriteFile(name, []byte(body), 0o644); err != nil {
-			t.Errorf("writing %s: %s", name, err)
-		}
+		writeReport(t, reportPath(r.resourceType+"."+cloudName()+".txt"), body)
 		return
 	}
 
 	if testdiff.OverwriteMode {
-		if err := os.WriteFile(name, []byte(body), 0o644); err != nil {
-			t.Errorf("writing %s: %s", name, err)
-		}
+		writeReport(t, name, body)
 		return
 	}
 
@@ -175,6 +171,16 @@ func (r *report) write(t testutil.TestingT) {
 		return
 	}
 	testdiff.AssertEqualTexts(t, name, name, testdiff.NormalizeNewlines(string(expected)), body)
+}
+
+func writeReport(t testutil.TestingT, name, body string) {
+	if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil {
+		t.Errorf("creating %s: %s", filepath.Dir(name), err)
+		return
+	}
+	if err := os.WriteFile(name, []byte(body), 0o644); err != nil {
+		t.Errorf("writing %s: %s", name, err)
+	}
 }
 
 // writeCorpusReport records which configs the suite drives and why each of the others
@@ -197,15 +203,13 @@ func writeCorpusReport(t testutil.TestingT, usable []testConfig, skipped map[str
 		fmt.Fprintf(&sb, "%-48s %s\n", name, skipped[name])
 	}
 
-	const name = "out.configs.txt"
+	name := reportPath("configs.txt")
 	body := sb.String()
 	if isCloud() {
 		return
 	}
 	if testdiff.OverwriteMode {
-		if err := os.WriteFile(name, []byte(body), 0o644); err != nil {
-			t.Errorf("writing %s: %s", name, err)
-		}
+		writeReport(t, name, body)
 		return
 	}
 	expected, err := os.ReadFile(name)
@@ -214,6 +218,14 @@ func writeCorpusReport(t testutil.TestingT, usable []testConfig, skipped map[str
 		return
 	}
 	testdiff.AssertEqualTexts(t, name, name, testdiff.NormalizeNewlines(string(expected)), body)
+}
+
+// outputDir holds the committed reports. Kept out of the package directory so the Go
+// files stay readable next to two dozen goldens.
+const outputDir = "output"
+
+func reportPath(name string) string {
+	return filepath.Join(outputDir, name)
 }
 
 func cloudName() string {
