@@ -51,6 +51,15 @@ type fieldValues struct {
 	// Keep path-valued fields out of it: it is merged after the mutator pipeline has run,
 	// so nothing here goes through path translation.
 	base any
+
+	// localOnly is the reason this resource type cannot be driven against a real workspace:
+	// it needs workspace or cloud state the suite does not provision (a storage credential
+	// with IAM behind it), or the service is not available in every cloud. Mirrors the
+	// per-config cloud exclusions in acceptance/bundle/invariant/test.toml.
+	//
+	// Such a type is skipped on cloud rather than reported: the local golden stands, and a
+	// cloud run neither confirms nor contradicts it.
+	localOnly string
 }
 
 // fieldsDir holds the per-resource-type value libraries.
@@ -132,7 +141,7 @@ var cliManagedFields = map[string]string{
 
 // loadFieldValues reads testdata/fields/<resource_type>.yml.
 func loadFieldValues(resourceType string) (*fieldValues, error) {
-	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]any{}, base: nil}
+	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]any{}, base: nil, localOnly: ""}
 	maps.Copy(fv.skip, cliManagedFields)
 
 	path := filepath.Join(fieldsDir, resourceType+".yml")
@@ -145,9 +154,10 @@ func loadFieldValues(resourceType string) (*fieldValues, error) {
 	}
 
 	var file struct {
-		Skip   map[string]string `yaml:"skip"`
-		Fields map[string][]any  `yaml:"fields"`
-		Base   any               `yaml:"base"`
+		Skip      map[string]string `yaml:"skip"`
+		Fields    map[string][]any  `yaml:"fields"`
+		Base      any               `yaml:"base"`
+		LocalOnly string            `yaml:"local_only"`
 	}
 	if err := yaml.Unmarshal(data, &file); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
@@ -155,6 +165,7 @@ func loadFieldValues(resourceType string) (*fieldValues, error) {
 	maps.Copy(fv.skip, file.Skip)
 	maps.Copy(fv.fields, file.Fields)
 	fv.base = file.Base
+	fv.localOnly = file.LocalOnly
 
 	return fv, nil
 }
