@@ -1,4 +1,4 @@
-package dresources_test
+package tests
 
 import (
 	"bytes"
@@ -23,7 +23,7 @@ import (
 // with absent on one side.
 var absent = dyn.InvalidValue
 
-// fieldValues is the per-resource-type value library, e.g. fields/schemas.yml.
+// fieldValues is the per-resource-type value library, e.g. testdata/fields/schemas.yml.
 //
 // A field with no entry falls back to defaultValues for its Go kind. Fields the backend
 // constrains (enums, ids, cross-referenced names) need an explicit entry, otherwise
@@ -43,13 +43,16 @@ type fieldValues struct {
 	fields map[string][]dyn.Value
 }
 
-// loadFieldValues reads fields/<resource_type>.yml. Parsing goes through the repo's own
+// fieldsDir holds the per-resource-type value libraries.
+const fieldsDir = "testdata/fields"
+
+// loadFieldValues reads testdata/fields/<resource_type>.yml. Parsing goes through the repo's own
 // yamlloader rather than a yaml package, so the values arrive as dyn.Value -- the same
 // representation the bundle config uses, which is what they are written into.
 func loadFieldValues(resourceType string) (*fieldValues, error) {
 	fv := &fieldValues{slow: false, skip: map[string]string{}, fields: map[string][]dyn.Value{}}
 
-	path := filepath.Join("fields", resourceType+".yml")
+	path := filepath.Join(fieldsDir, resourceType+".yml")
 	data, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		return fv, nil
