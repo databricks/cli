@@ -1,5 +1,9 @@
-// Package dresources_test catalogs how the direct engine handles a change to every
-// field a user can set on a bundle resource.
+// Package tests exercises the direct engine end to end -- plan, apply, and the plan
+// that follows -- rather than any one resource implementation. It lives beside the
+// engine for that reason, not under dresources.
+//
+// TestFields catalogs how the engine handles a change to every field a user can set on
+// a bundle resource.
 //
 // For each resource it deploys a base config once, then walks the resource's input
 // struct and, per field, moves the field through every ordered pair of a small set of
@@ -11,7 +15,7 @@
 // dominated by bundle-file sync, and there are thousands of permutations.
 //
 // A bad outcome does not fail the test. The suite is a catalog: every result lands in
-// out.<resource_type>.fields.txt, and that golden is the report. A regression shows up
+// output/<resource_type>.txt, and that golden is the report. A regression shows up
 // as a diff in it -- for instance after an SDK bump moves a field's type.
 //
 // Permissions and grants are out of scope, and are stripped from every config before
@@ -23,7 +27,7 @@
 //   - remote drift (a change made outside the bundle); this suite only edits config
 //   - configs with more than one resource, or with an -init.sh
 //   - fields under a slice or map (listed at the end of each report)
-package dresources_test
+package tests
 
 import (
 	"context"

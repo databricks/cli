@@ -1,4 +1,4 @@
-package dresources_test
+package tests
 
 import (
 	"encoding/json"
