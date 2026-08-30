@@ -34,7 +34,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"go.yaml.in/yaml/v3"
 )
 
 // bundleHarness drives the direct engine over one bundle config in-process. Nothing
@@ -156,7 +155,7 @@ func maxWaitSeconds() string {
 // built is usually the environment (an expired token, a workspace that rejects the
 // config), and the run is more useful if that lands in the report as one bad verdict
 // than if it aborts thousands of pending observations.
-func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, configName, uniqueName string, baseYAML []byte) (*bundleHarness, error) {
+func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, configName, uniqueName string, base any) (*bundleHarness, error) {
 	dir := t.TempDir()
 	if err := copyDir(dataDir, dir); err != nil {
 		return nil, err
@@ -266,11 +265,7 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 		statePath: filepath.Join(dir, "resources.json"),
 	}
 
-	if len(baseYAML) > 0 {
-		base, err := expandVars(baseYAML, vars)
-		if err != nil {
-			return nil, fmt.Errorf("%s: base: %w", configName, err)
-		}
+	if base != nil {
 		if err := harness.edit(func(resource any) error { return seedBase(resource, base) }); err != nil {
 			return nil, err
 		}
@@ -703,28 +698,6 @@ func (h *bundleHarness) restore(snapshot []byte) {
 		value.Set(reflect.Zero(value.Type()))
 		return json.Unmarshal(snapshot, resource)
 	})
-}
-
-// expandVars renders a value library's base fragment with the same variables the corpus
-// configs use, so a seeded value can name the workspace's own user rather than a local
-// placeholder no real workspace knows.
-func expandVars(body []byte, vars map[string]string) (any, error) {
-	var missing string
-	expanded := os.Expand(string(body), func(key string) string {
-		value, ok := vars[key]
-		if !ok {
-			missing = key
-		}
-		return value
-	})
-	if missing != "" {
-		return nil, fmt.Errorf("uses $%s, which this suite does not provide", missing)
-	}
-	var out any
-	if err := yaml.Unmarshal([]byte(expanded), &out); err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 // seedBase folds the value library's base fragment into the resource, so the fields it

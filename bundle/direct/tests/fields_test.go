@@ -84,15 +84,21 @@ func TestFields(t *testing.T) {
 			// slowest type then sets the wall time instead of their sum.
 			t.Parallel()
 
-			fv, err := loadFieldValues(resourceType)
-			require.NoError(t, err)
-			if fv.localOnly != "" && isCloud() {
-				t.Skipf("local only: %s", fv.localOnly)
-			}
 			// A testserver per type keeps the parallel runs from sharing workspace
 			// state. On cloud this is the same real workspace either way.
 			client := newClient(t)
 			user := workspaceUser(t, client)
+
+			// A value library may name the workspace user or a shared test object, so it is
+			// rendered with the same variables as a corpus config -- minus UNIQUE_NAME, which
+			// belongs to one deploy and would be wrong for a value reused across rebuilds.
+			vars := templateVars("", user.UserName)
+			delete(vars, "UNIQUE_NAME")
+			fv, err := loadFieldValues(resourceType, vars)
+			require.NoError(t, err)
+			if fv.localOnly != "" && isCloud() {
+				t.Skipf("local only: %s", fv.localOnly)
+			}
 
 			// Outlives the field-level subtests that rebuild harnesses.
 			ctx := t.Context()
@@ -314,7 +320,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 
 // newBaseline builds a harness and deploys the config as written.
 func newBaseline(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues) (*bundleHarness, error) {
-	h, err := newHarness(t, ctx, client, user, cfg.name, uniqueName(), fv.baseYAML)
+	h, err := newHarness(t, ctx, client, user, cfg.name, uniqueName(), fv.base)
 	if err != nil {
 		return nil, err
 	}
