@@ -50,7 +50,7 @@ The `SUPPRESSED` reason string is the engine explaining itself, which is differe
 
 ## Value library
 
-`fields/<resource_type>.yml` supplies values the generic per-kind defaults cannot
+`testdata/fields/<resource_type>.yml` supplies values the generic per-kind defaults cannot
 guess — enums, ids, anything the backend constrains:
 
 ```yaml
@@ -79,8 +79,8 @@ the report as `SKIPPED` so it is not mistaken for coverage.
 ## Running it
 
 ```bash
-go test ./bundle/direct/dresources_test                      # against the testserver
-go test ./bundle/direct/dresources_test -run 'TestFields/schemas' -v
+go test ./bundle/direct/tests                      # against the testserver
+go test ./bundle/direct/tests -run 'TestFields/schemas' -v
 ./task test-update-fields                                    # regenerate the goldens
 ```
 

@@ -10,7 +10,7 @@ vars:
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
   # Field-support catalog. Covered by TEST_PACKAGES for local/CI runs via ./bundle/...,
   # but named separately because the cloud tasks below list their packages explicitly.
-  FIELDS_PACKAGE: ./bundle/direct/dresources_test
+  FIELDS_PACKAGE: ./bundle/direct/tests
   ACCEPTANCE_TEST_FILTER: ""
   # Single brace-expansion glob covering every //go:embed target in the repo,
   # computed by grepping `//go:embed` directives. Evaluated lazily by Task so
