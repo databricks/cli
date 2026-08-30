@@ -11,4 +11,3 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 # These tests deploy on terraform and then migrate to direct. Recording is direct-only, so
 # the terraform half is recorded nowhere and the migration reads state the service lacks.
 # Migrating an existing deployment onto the service is its own story.
-EnvMatrix.DMS = [""]

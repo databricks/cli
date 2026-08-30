@@ -1,4 +1,3 @@
 Cloud = true
 RunsOnDbr = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-EnvMatrix.DMS = ["", "true"]
