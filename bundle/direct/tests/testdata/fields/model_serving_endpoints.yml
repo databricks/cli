@@ -30,4 +30,4 @@ skip:
   # is rejected on every later update ("failed to update telemetry config"). The fields are
   # covered by model_serving_endpoint_telemetry.yml.tmpl, which declares the whole block --
   # but that config is not the simplest one, so it is not the one this suite picks.
-  telemetry_config.*: needs the telemetry corpus config, which is not the simplest one
+  telemetry_config: needs the telemetry corpus config, which is not the simplest one

@@ -304,14 +304,32 @@ func requiredFields(resourceType, parent string) []string {
 	return generated.RequiredFields[key]
 }
 
-// skipReason returns why a field is excluded, if it is. A "<prefix>.*" key covers every
-// field beneath it, for a block that only works as a whole.
+// skipReason returns why a field is excluded, if it is. A key may be a pattern, matched the
+// same way the planner matches its own field rules -- so "aliases[*].id" covers
+// "aliases[0].id", and a trailing ".*" or "[*]" covers everything beneath a block that only
+// works as a whole.
 func (fv *fieldValues) skipReason(path string) (string, bool) {
 	if reason, ok := fv.skip[path]; ok {
 		return reason, true
 	}
+
+	concrete, err := structpath.ParsePath(path)
+	if err != nil {
+		// A pattern, which cannot be matched against another pattern: compare textually.
+		for key, reason := range fv.skip {
+			if strings.HasPrefix(path, key+".") || strings.HasPrefix(path, key+"[") {
+				return reason, true
+			}
+		}
+		return "", false
+	}
+
 	for key, reason := range fv.skip {
-		if prefix, ok := strings.CutSuffix(key, ".*"); ok && strings.HasPrefix(path, prefix+".") {
+		pattern, err := structpath.ParsePattern(key)
+		if err != nil {
+			continue
+		}
+		if concrete.HasPatternPrefix(pattern) {
 			return reason, true
 		}
 	}

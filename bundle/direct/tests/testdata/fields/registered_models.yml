@@ -7,3 +7,17 @@ base:
   aliases:
     - alias_name: champion
       version_num: 1
+
+skip:
+  # The backend assigns an alias its id; a value of ours is rejected as a bad UUID.
+  aliases[*].id: assigned by the backend
+  # Same shape: a UUID naming the workspace's metastore, which the backend fills in.
+  metastore_id: assigned by the backend
+  # Accepted by the API and then not honoured, so it drifts forever. Testing it properly
+  # needs a real external location, as with volumes.
+  storage_location: needs an external location
+
+fields:
+  # See the note in volumes.yml: a reference has to name something that exists.
+  catalog_name: [main]
+  schema_name: [default]
