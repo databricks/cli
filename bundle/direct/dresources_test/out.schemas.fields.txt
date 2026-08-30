@@ -1,9 +1,9 @@
 === schema.yml.tmpl
 comment                                      absent->x          OK
 comment                                      absent->y          OK
-comment                                      x->absent          DRIFT  comment
+comment                                      x->absent          OK
 comment                                      x->y               OK
-comment                                      y->absent          DRIFT  comment
+comment                                      y->absent          OK
 comment                                      y->x               OK
 custom_max_retention_hours                   1->2               OK
 custom_max_retention_hours                   1->absent          DRIFT  custom_max_retention_hours
@@ -24,9 +24,9 @@ storage_root                                 -                  SKIPPED  needs a
 === schema_empty_grants.yml.tmpl
 comment                                      absent->x          OK
 comment                                      absent->y          OK
-comment                                      x->absent          DRIFT  comment
+comment                                      x->absent          OK
 comment                                      x->y               OK
-comment                                      y->absent          DRIFT  comment
+comment                                      y->absent          OK
 comment                                      y->x               OK
 custom_max_retention_hours                   1->2               OK
 custom_max_retention_hours                   1->absent          DRIFT  custom_max_retention_hours
@@ -47,9 +47,9 @@ storage_root                                 -                  SKIPPED  needs a
 === schema_uppercase_name.yml.tmpl
 comment                                      absent->x          OK
 comment                                      absent->y          OK
-comment                                      x->absent          DRIFT  comment
+comment                                      x->absent          OK
 comment                                      x->y               OK
-comment                                      y->absent          DRIFT  comment
+comment                                      y->absent          OK
 comment                                      y->x               OK
 custom_max_retention_hours                   1->2               OK
 custom_max_retention_hours                   1->absent          DRIFT  custom_max_retention_hours
@@ -68,10 +68,10 @@ name                                         y->x               OK_RECREATE
 storage_root                                 -                  SKIPPED  needs an external location
 
 === summary
-OK             24
+OK             30
 OK_RECREATE    6
 NOT_OBSERVABLE 18
-DRIFT          12
+DRIFT          6
 SKIPPED        3
 
 === not covered: 3 fields under a slice or map

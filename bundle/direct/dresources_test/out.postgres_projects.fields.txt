@@ -1,45 +1,45 @@
 === postgres_project.yml.tmpl
 budget_policy_id                             absent->x          OK
-budget_policy_id                             absent->y          OK
-budget_policy_id                             x->absent          OK
+budget_policy_id                             absent->y          BASE_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.budget_policy_id' is in updat...
+budget_policy_id                             x->absent          BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.budget_policy_id' is in updat...
 budget_policy_id                             x->y               OK
-budget_policy_id                             y->absent          OK
+budget_policy_id                             y->absent          BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.budget_policy_id' is in updat...
 budget_policy_id                             y->x               OK
 default_branch                               absent->x          OK
-default_branch                               absent->y          OK
-default_branch                               x->absent          OK
+default_branch                               absent->y          BASE_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.default_branch' is in update_...
+default_branch                               x->absent          BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.default_branch' is in update_...
 default_branch                               x->y               OK
-default_branch                               y->absent          OK
+default_branch                               y->absent          BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.default_branch' is in update_...
 default_branch                               y->x               OK
 default_endpoint_settings.autoscaling_limit_max_cu 1->2               OK
-default_endpoint_settings.autoscaling_limit_max_cu 1->absent          OK
+default_endpoint_settings.autoscaling_limit_max_cu 1->absent          BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.default_endpoint_settings.aut...
 default_endpoint_settings.autoscaling_limit_max_cu 2->1               OK
-default_endpoint_settings.autoscaling_limit_max_cu 2->absent          OK
+default_endpoint_settings.autoscaling_limit_max_cu 2->absent          BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.default_endpoint_settings.aut...
 default_endpoint_settings.autoscaling_limit_max_cu absent->1          OK
-default_endpoint_settings.autoscaling_limit_max_cu absent->2          OK
+default_endpoint_settings.autoscaling_limit_max_cu absent->2          BASE_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.default_endpoint_settings.aut...
 default_endpoint_settings.autoscaling_limit_min_cu 1->2               OK
-default_endpoint_settings.autoscaling_limit_min_cu 1->absent          OK
+default_endpoint_settings.autoscaling_limit_min_cu 1->absent          BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.default_endpoint_settings.aut...
 default_endpoint_settings.autoscaling_limit_min_cu 2->1               OK
-default_endpoint_settings.autoscaling_limit_min_cu 2->absent          OK
+default_endpoint_settings.autoscaling_limit_min_cu 2->absent          BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.default_endpoint_settings.aut...
 default_endpoint_settings.autoscaling_limit_min_cu absent->1          OK
-default_endpoint_settings.autoscaling_limit_min_cu absent->2          OK
+default_endpoint_settings.autoscaling_limit_min_cu absent->2          BASE_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.default_endpoint_settings.aut...
 default_endpoint_settings.no_suspension      absent->false      OK
-default_endpoint_settings.no_suspension      absent->true       OK
+default_endpoint_settings.no_suspension      absent->true       BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Unknown field path in update_mask: 'spec....
 default_endpoint_settings.no_suspension      false->absent      OK
-default_endpoint_settings.no_suspension      false->true        OK
-default_endpoint_settings.no_suspension      true->absent       OK
-default_endpoint_settings.no_suspension      true->false        OK
-display_name                                 absent->x          OK
+default_endpoint_settings.no_suspension      false->true        BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Unknown field path in update_mask: 'spec....
+default_endpoint_settings.no_suspension      true->absent       BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Unknown field path in update_mask: 'spec....
+default_endpoint_settings.no_suspension      true->false        BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Unknown field path in update_mask: 'spec....
+display_name                                 absent->x          BASE_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.display_name' is in update_ma...
 display_name                                 absent->y          OK
-display_name                                 x->absent          OK
+display_name                                 x->absent          BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.display_name' is in update_ma...
 display_name                                 x->y               OK
-display_name                                 y->absent          OK
+display_name                                 y->absent          BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.display_name' is in update_ma...
 display_name                                 y->x               OK
 enable_pg_native_login                       absent->false      SUPPRESSED  empty
 enable_pg_native_login                       absent->true       OK
 enable_pg_native_login                       false->absent      SUPPRESSED  empty
 enable_pg_native_login                       false->true        OK
-enable_pg_native_login                       true->absent       OK
+enable_pg_native_login                       true->absent       BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.enable_pg_native_login' is in...
 enable_pg_native_login                       true->false        OK
 lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
 lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
@@ -63,10 +63,12 @@ purge_on_delete                              true->absent       OK
 purge_on_delete                              true->false        OK
 
 === summary
-OK             44
+OK             24
 OK_RECREATE    8
 SUPPRESSED     4
 NOT_OBSERVABLE 6
+BACKEND_ERROR  15
+BASE_ERROR     5
 
 === not covered: 7 fields under a slice or map
 custom_tags[*].key

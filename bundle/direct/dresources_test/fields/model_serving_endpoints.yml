@@ -4,6 +4,6 @@
 cloud: false
 
 skip:
-  # The inference table name is only accepted alongside a catalog and schema that exist
-  # and are writable, which one-field-at-a-time cannot arrange.
-  telemetry_config.inference_table_config.name: needs a writable catalog and schema
+  # The telemetry block is only accepted as a coherent whole, against a catalog and
+  # schema that exist and are writable, which one-field-at-a-time cannot arrange.
+  telemetry_config.*: needs a writable catalog and schema

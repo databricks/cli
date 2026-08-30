@@ -145,7 +145,7 @@ func maxWaitSeconds() string {
 // built is usually the environment (an expired token, a workspace that rejects the
 // config), and the run is more useful if that lands in the report as one bad verdict
 // than if it aborts thousands of pending observations.
-func newHarness(t *testing.T, client *databricks.WorkspaceClient, user *iam.User, configName, uniqueName string) (*bundleHarness, error) {
+func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, configName, uniqueName string) (*bundleHarness, error) {
 	dir := t.TempDir()
 	if err := copyDir(dataDir, dir); err != nil {
 		return nil, err
@@ -173,7 +173,11 @@ func newHarness(t *testing.T, client *databricks.WorkspaceClient, user *iam.User
 		return nil, err
 	}
 
-	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{}) //exhaustruct:ignore
+	// The caller's context, not t.Context(): a harness is rebuilt inside a field-level
+	// subtest but goes on being used by later fields, and t.Context() is cancelled the
+	// moment its subtest returns -- which surfaced as "context canceled" from the SDK
+	// rate limiter on whatever ran next.
+	ctx = dbr.MockRuntime(ctx, dbr.Environment{}) //exhaustruct:ignore
 	// Thousands of deploys run through here, so cap how long any one of them waits for
 	// a resource to become ready. Without a cap a resource that never reaches its
 	// terminal state stalls the whole suite instead of showing up as one bad verdict.
