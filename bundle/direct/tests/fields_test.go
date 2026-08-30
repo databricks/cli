@@ -86,6 +86,9 @@ func TestFields(t *testing.T) {
 
 			fv, err := loadFieldValues(resourceType)
 			require.NoError(t, err)
+			if fv.localOnly != "" && isCloud() {
+				t.Skipf("local only: %s", fv.localOnly)
+			}
 			// A testserver per type keeps the parallel runs from sharing workspace
 			// state. On cloud this is the same real workspace either way.
 			client := newClient(t)
