@@ -23,3 +23,21 @@ trace errcode $CLI bundle deploy --var=schema_name='${resources.schemas.schema2.
 
 title "Successfully recreate the volume with --auto-approve"
 trace $CLI bundle deploy --var=schema_name='${resources.schemas.schema2.name}' --auto-approve -qq
+
+title "The grants landed on the recreated volume"
+NEW_VOLUME_FULL_NAME="${CATALOG_NAME}.schema2-${UNIQUE_NAME}.${VOLUME_NAME}"
+trace $CLI grants get VOLUME "${NEW_VOLUME_FULL_NAME}"
+
+# The engines diverge here, so the plan goes to a per-engine file. Terraform converges.
+#
+# BUG (direct engine): the plan is not clean. Recreating the volume gave it a new id, but
+# the grants node's state entry keeps the old one -- DeploymentUnit.Update saves state
+# under the id it was called with, and neither grants nor permissions implements
+# DoUpdateWithID, so the entry is never re-keyed. DoRead echoes the stale id back as
+# full_name, the planner compares it against the config's new name, and plans the same
+# update again -- every deploy, forever. The grants themselves are correct (asserted
+# above), so this is stale bookkeeping rather than lost access; the deploy just never
+# reports converged. Same shape for permissions on any resource whose id changes on
+# recreate.
+title "Plan after recreate"
+trace $CLI bundle plan --var=schema_name='${resources.schemas.schema2.name}' &> out.plan_after_recreate.$DATABRICKS_BUNDLE_ENGINE.txt

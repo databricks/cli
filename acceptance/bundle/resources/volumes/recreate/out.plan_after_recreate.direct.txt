@@ -1,0 +1,5 @@
+
+>>> [CLI] bundle plan --var=schema_name=${resources.schemas.schema2.name}
+update volumes.foo.grants
+
+Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged

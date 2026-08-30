@@ -1,3 +1,5 @@
+Badness = "Direct engine: recreating a resource re-keys the parent but not its permissions/grants child, whose state entry keeps the old id. DoRead echoes that stale id back, so the child re-proposes the same update on every deploy and never converges. The ACL itself is applied correctly, so this is stale bookkeeping rather than lost access. Terraform converges."
+
 Cloud = true
 RecordRequests = false
 RunsOnDbr = true
