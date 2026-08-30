@@ -8,3 +8,11 @@ base:
 skip:
   # storage_root must point at a real external location.
   storage_root: needs an external location
+
+fields:
+  # See the note in volumes.yml: a reference has to name something that exists.
+  catalog_name: [main]
+
+  # The backend takes hours but validates them as days: the retention period must be 0 or
+  # between 7 and 30 days, so the generic 1 and 2 are rejected.
+  custom_max_retention_hours: [168, 720]
