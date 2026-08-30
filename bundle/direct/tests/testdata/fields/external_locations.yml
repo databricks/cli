@@ -1,0 +1,7 @@
+# Value library for external locations. See ../../README.md.
+
+# An external location points at cloud storage through a storage credential, which needs
+# cloud IAM set up for the workspace. The corpus config names a credential the mock server
+# invents, so the whole type is local-only -- the same reason the invariant suite excludes
+# this config from its cloud run.
+local_only: needs a storage credential with cloud IAM behind it

@@ -102,6 +102,11 @@ Every resource type runs everywhere — local and cloud alike — so most types 
 at all. A field with no entry gets two values for its Go kind, which is enough to see a
 value-to-value move on top of add and remove.
 
+A type that cannot run against a real workspace at all declares `local_only: <reason>` and
+is skipped on cloud — an external location needs a storage credential with cloud IAM behind
+it, and Lakebase and Postgres resources are not available in every cloud. This mirrors the
+per-config cloud exclusions in `acceptance/bundle/invariant/test.toml`.
+
 A `skip` key may be a pattern (`aliases[*].id`), matched the way the planner matches its own
 field rules, and naming a block skips everything beneath it.
 
