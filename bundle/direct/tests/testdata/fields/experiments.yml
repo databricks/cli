@@ -3,7 +3,23 @@
 # The invariant config declares no tags, so tags[*] would expand to nothing and its fields
 # would only be reported as not covered. Seeding one entry makes the whole block testable:
 # the container itself (add and remove an entry) and the fields inside the entry.
+#
+# The UC trace location is the same case as a job's git_source: the backend requires the
+# catalog and the schema together, so neither can be reached one field at a time.
 base:
   tags:
     - key: team
       value: eng
+  trace_location:
+    uc_trace_location:
+      catalog: main
+      schema: default
+
+fields:
+  # An experiment name is an absolute workspace path, so the generic "x" is rejected.
+  name: [/Shared/test-experiment-a, /Shared/test-experiment-b]
+  # The artifact location needs a scheme.
+  artifact_location: [dbfs:/tmp/mlflow-a, dbfs:/tmp/mlflow-b]
+  # See the note in volumes.yml: a reference has to name something that exists.
+  trace_location.uc_trace_location.catalog: [main]
+  trace_location.uc_trace_location.schema: [default]
