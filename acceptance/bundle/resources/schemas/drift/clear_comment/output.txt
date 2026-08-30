@@ -1,0 +1,63 @@
+
+=== Initial deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created schemas.schema1
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Remove the comment from the config
+>>> update_file.py databricks.yml       comment: base comment 
+
+=== Plan proposes clearing it
+>>> [CLI] bundle plan
+update schemas.schema1
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan --output json
+{
+  "comment": {
+    "action": "update",
+    "old": "base comment",
+    "remote": "base comment"
+  }
+}
+
+=== Deploy reports success
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated schemas.schema1
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+=== Still drifting: the same update is proposed again
+>>> [CLI] bundle plan
+update schemas.schema1
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan --output json
+{
+  "comment": {
+    "action": "update",
+    "remote": "base comment"
+  }
+}
+
+=== The update PATCH carried an empty body, which is why nothing changed
+>>> print_requests.py //unity --sort
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema_clear_comment",
+  "body": {}
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "comment": "base comment",
+    "name": "schema_clear_comment"
+  }
+}
