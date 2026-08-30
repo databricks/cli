@@ -1,6 +1,6 @@
 === schema.yml.tmpl
-custom_max_retention_hours                   1          absent     UPDATE_IGNORED  custom_max_retention_hours
-custom_max_retention_hours                   2          absent     UPDATE_IGNORED  custom_max_retention_hours
+custom_max_retention_hours                   168        absent     UPDATE_IGNORED  custom_max_retention_hours
+custom_max_retention_hours                   720        absent     UPDATE_IGNORED  custom_max_retention_hours
 properties                                   absent     keys0      UPDATE_IGNORED  properties
 properties                                   keys0      absent     UPDATE_IGNORED  properties
 properties                                   keys1      absent     UPDATE_IGNORED  properties
