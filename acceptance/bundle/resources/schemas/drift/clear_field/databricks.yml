@@ -4,6 +4,7 @@ bundle:
 resources:
   schemas:
     schema1:
-      name: schema_clear_comment
+      name: schema_clear_field
       catalog_name: main
       comment: base comment
+      custom_max_retention_hours: 24

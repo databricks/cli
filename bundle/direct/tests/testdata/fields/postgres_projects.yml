@@ -1,8 +1,4 @@
 # Value library for postgres projects. See ../README.md.
-#
-# Provisioning a Lakebase project is slow, and it is AWS-only.
-slow: true
-
 fields:
   # project_id is part of the resource's hierarchical name, so a change recreates it.
   project_id: [pgproj1, pgproj2]

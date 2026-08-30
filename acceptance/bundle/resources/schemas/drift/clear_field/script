@@ -1,0 +1,22 @@
+# Removing a field from the config should clear it remotely and converge. comment does.
+# custom_max_retention_hours does not, and this records that difference.
+
+title "Initial deployment"
+trace $CLI bundle deploy
+
+title "Removing comment converges"
+trace update_file.py databricks.yml "      comment: base comment" ""
+trace $CLI bundle deploy
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete"
+
+# BUG: custom_max_retention_hours is omitempty in catalog.UpdateSchema and DoUpdate
+# forwards only the config's own ForceSendFields, so dropping it from the config drops it
+# from the PATCH body too. UC keeps the old value, the deploy reports success, and every
+# later plan re-proposes the same update. See test.toml.
+title "Removing custom_max_retention_hours does not"
+trace update_file.py databricks.yml "      custom_max_retention_hours: 24" ""
+trace $CLI bundle deploy
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 1 to change, 0 to delete"
+
+title "The update PATCH carried an empty body, which is why nothing changed"
+trace print_requests.py //unity --sort

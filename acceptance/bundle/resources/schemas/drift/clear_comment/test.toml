@@ -1,5 +1,0 @@
-Cloud = true
-
-# Terraform issues a spurious PATCH for enable_predictive_optimization on every
-# deploy, which would mask the drift this test is about.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

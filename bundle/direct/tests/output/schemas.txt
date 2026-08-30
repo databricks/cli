@@ -1,80 +1,11 @@
 === schema.yml.tmpl
-comment                                      absent->x          OK
-comment                                      absent->y          OK
-comment                                      x->absent          OK
-comment                                      x->y               OK
-comment                                      y->absent          OK
-comment                                      y->x               OK
-custom_max_retention_hours                   1->2               OK
-custom_max_retention_hours                   1->absent          DRIFT  custom_max_retention_hours
-custom_max_retention_hours                   2->1               OK
-custom_max_retention_hours                   2->absent          DRIFT  custom_max_retention_hours
-custom_max_retention_hours                   absent->1          OK
-custom_max_retention_hours                   absent->2          OK
-lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
-lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
-lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
-lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
-lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
-lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
-name                                         x->y               OK_RECREATE
-name                                         y->x               OK_RECREATE
-storage_root                                 -                  SKIPPED  needs an external location
+custom_max_retention_hours                   1          absent     POST_DEPLOY_DRIFT  custom_max_retention_hours
+custom_max_retention_hours                   2          absent     POST_DEPLOY_DRIFT  custom_max_retention_hours
 
 === schema_empty_grants.yml.tmpl
-comment                                      absent->x          OK
-comment                                      absent->y          OK
-comment                                      x->absent          OK
-comment                                      x->y               OK
-comment                                      y->absent          OK
-comment                                      y->x               OK
-custom_max_retention_hours                   1->2               OK
-custom_max_retention_hours                   1->absent          DRIFT  custom_max_retention_hours
-custom_max_retention_hours                   2->1               OK
-custom_max_retention_hours                   2->absent          DRIFT  custom_max_retention_hours
-custom_max_retention_hours                   absent->1          OK
-custom_max_retention_hours                   absent->2          OK
-lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
-lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
-lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
-lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
-lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
-lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
-name                                         x->y               OK_RECREATE
-name                                         y->x               OK_RECREATE
-storage_root                                 -                  SKIPPED  needs an external location
+custom_max_retention_hours                   1          absent     POST_DEPLOY_DRIFT  custom_max_retention_hours
+custom_max_retention_hours                   2          absent     POST_DEPLOY_DRIFT  custom_max_retention_hours
 
 === schema_uppercase_name.yml.tmpl
-comment                                      absent->x          OK
-comment                                      absent->y          OK
-comment                                      x->absent          OK
-comment                                      x->y               OK
-comment                                      y->absent          OK
-comment                                      y->x               OK
-custom_max_retention_hours                   1->2               OK
-custom_max_retention_hours                   1->absent          DRIFT  custom_max_retention_hours
-custom_max_retention_hours                   2->1               OK
-custom_max_retention_hours                   2->absent          DRIFT  custom_max_retention_hours
-custom_max_retention_hours                   absent->1          OK
-custom_max_retention_hours                   absent->2          OK
-lifecycle.prevent_destroy                    absent->false      NOT_OBSERVABLE
-lifecycle.prevent_destroy                    absent->true       NOT_OBSERVABLE
-lifecycle.prevent_destroy                    false->absent      NOT_OBSERVABLE
-lifecycle.prevent_destroy                    false->true        NOT_OBSERVABLE
-lifecycle.prevent_destroy                    true->absent       NOT_OBSERVABLE
-lifecycle.prevent_destroy                    true->false        NOT_OBSERVABLE
-name                                         x->y               OK_RECREATE
-name                                         y->x               OK_RECREATE
-storage_root                                 -                  SKIPPED  needs an external location
-
-=== summary
-OK             30
-OK_RECREATE    6
-NOT_OBSERVABLE 18
-DRIFT          6
-SKIPPED        3
-
-=== not covered: 3 fields under a slice or map
-grants[*].principal
-grants[*].privileges[*]
-properties.*
+custom_max_retention_hours                   1          absent     POST_DEPLOY_DRIFT  custom_max_retention_hours
+custom_max_retention_hours                   2          absent     POST_DEPLOY_DRIFT  custom_max_retention_hours

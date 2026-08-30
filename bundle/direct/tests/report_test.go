@@ -34,19 +34,22 @@ const (
 	verdictNotObservable verdict = "NOT_OBSERVABLE"
 	// The config changed, the field diff exists, but the plan produced no action at all.
 	verdictNoPlan verdict = "NO_PLAN"
-	// The apply succeeded but a later plan still proposes the same change to this
-	// field, so deploying never converges.
-	verdictDrift verdict = "DRIFT"
-	// The field itself converged, but some other node of the resource is still drifted.
-	// Sub-resources are stripped before planning, so nothing should reach this: it is a
-	// guard against silently blaming a field for drift that is not its own.
-	verdictDriftChild verdict = "DRIFT_CHILD"
+	// The apply succeeded, but the plan taken straight afterwards still proposes the same
+	// change to this field, so deploying never converges.
+	verdictDrift verdict = "POST_DEPLOY_DRIFT"
+	// The field itself converged, but some other node of the resource is still drifted
+	// post-deploy. Sub-resources are stripped before planning, so nothing should reach
+	// this: it guards against blaming a field for drift that is not its own.
+	verdictDriftChild verdict = "POST_DEPLOY_DRIFT_CHILD"
 
 	// The backend rejected the value. Usually the value library needs a valid
 	// value for this field rather than the generic per-kind default.
 	verdictBackendError verdict = "BACKEND_ERROR"
 	// Apply failed for a reason that is not an API rejection.
 	verdictDeployError verdict = "DEPLOY_ERROR"
+	// The operation did not finish inside the per-operation deadline. Recorded rather
+	// than waited out: an app rename, for one, blocks on the old name leaving DELETING.
+	verdictTimeout verdict = "TIMEOUT"
 	// Planning itself failed.
 	verdictPlanError verdict = "PLAN_ERROR"
 
@@ -76,13 +79,31 @@ func (v verdict) leavesResourceUsable() bool {
 	}
 }
 
+// reasonEmpty is the planner's own reason for dropping a change whose old and new values
+// are both empty -- an unset bool against an explicit false, say. Nothing the user
+// expressed is lost, so it reads like OK and belongs in the full report only.
+const reasonEmpty = "empty"
+
+// isProblem reports whether a result is something a person should look at. The committed
+// report lists only these; the .full.txt companion lists everything.
+func (r result) isProblem() bool {
+	switch r.verdict {
+	case verdictOK, verdictRecreate, verdictNotObservable, verdictSkipped:
+		return false
+	case verdictSuppressed:
+		return r.detail != reasonEmpty
+	default:
+		return true
+	}
+}
+
 // result is one line of the report.
 type result struct {
-	config     string
-	field      string
-	transition string
-	verdict    verdict
-	detail     string
+	config   string
+	field    string
+	from, to string
+	verdict  verdict
+	detail   string
 }
 
 // report accumulates results for one resource type.
@@ -94,22 +115,28 @@ type report struct {
 
 func (r *report) add(res result) { r.results = append(r.results, res) }
 
-// render produces the golden body: one line per transition, grouped by config and
-// field, plus a trailing summary of what was not covered.
-func (r *report) render() string {
+// render produces a report body. Problems-only is the committed form: one line per
+// finding and nothing else, so a diff is always a change in behaviour. The full form
+// adds the passing rows, the summary, and what was not covered.
+func (r *report) render(problemsOnly bool) string {
 	var sb strings.Builder
 
 	slices.SortStableFunc(r.results, func(a, b result) int {
 		return cmp.Or(
 			strings.Compare(a.config, b.config),
 			strings.Compare(a.field, b.field),
-			strings.Compare(a.transition, b.transition),
+			strings.Compare(a.from, b.from),
+			strings.Compare(a.to, b.to),
 		)
 	})
 
 	counts := map[verdict]int{}
 	config := ""
 	for _, res := range r.results {
+		counts[res.verdict]++
+		if problemsOnly && !res.isProblem() {
+			continue
+		}
 		if res.config != config {
 			if config != "" {
 				sb.WriteString("\n")
@@ -117,19 +144,22 @@ func (r *report) render() string {
 			fmt.Fprintf(&sb, "=== %s\n", res.config)
 			config = res.config
 		}
-		line := fmt.Sprintf("%-44s %-18s %s", res.field, res.transition, res.verdict)
+		line := fmt.Sprintf("%-44s %-10s %-10s %s", res.field, res.from, res.to, res.verdict)
 		if res.detail != "" {
 			line += "  " + res.detail
 		}
 		sb.WriteString(strings.TrimRight(line, " ") + "\n")
-		counts[res.verdict]++
+	}
+
+	if problemsOnly {
+		return sb.String()
 	}
 
 	sb.WriteString("\n=== summary\n")
 	for _, v := range []verdict{
 		verdictOK, verdictRecreate, verdictSuppressed, verdictNotObservable, verdictNoPlan,
 		verdictDrift, verdictDriftChild,
-		verdictBackendError, verdictDeployError, verdictPlanError,
+		verdictBackendError, verdictDeployError, verdictTimeout, verdictPlanError,
 		verdictUnsettable, verdictSkipped, verdictBaseError,
 	} {
 		if counts[v] > 0 {
@@ -152,11 +182,19 @@ func (r *report) render() string {
 // Cloud runs go to a separate, uncommitted file: which values a real backend accepts
 // depends on the workspace, so those results are for reading, not for diffing.
 func (r *report) write(t testutil.TestingT) {
-	name := reportPath(r.resourceType + ".txt")
-	body := r.render()
+	suffix := ".txt"
+	if isCloud() {
+		suffix = "." + cloudName() + ".txt"
+	}
+	name := reportPath(r.resourceType + suffix)
+	body := r.render(true)
+
+	// The full form is never compared: it is a local aid for reading a run, and it moves
+	// whenever a passing row moves.
+	writeReport(t, reportPath(r.resourceType+strings.TrimSuffix(suffix, ".txt")+".full.txt"), r.render(false))
 
 	if isCloud() {
-		writeReport(t, reportPath(r.resourceType+"."+cloudName()+".txt"), body)
+		writeReport(t, name, body)
 		return
 	}
 

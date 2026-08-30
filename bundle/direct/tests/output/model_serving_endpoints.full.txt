@@ -1,0 +1,334 @@
+=== model_serving_endpoint.yml.tmpl
+ai_gateway.fallback_config.enabled           false      true       OK
+ai_gateway.fallback_config.enabled           true       false      OK
+ai_gateway.guardrails.input.pii.behavior     absent     x          OK
+ai_gateway.guardrails.input.pii.behavior     absent     y          OK
+ai_gateway.guardrails.input.pii.behavior     x          absent     OK
+ai_gateway.guardrails.input.pii.behavior     x          y          OK
+ai_gateway.guardrails.input.pii.behavior     y          absent     OK
+ai_gateway.guardrails.input.pii.behavior     y          x          OK
+ai_gateway.guardrails.input.safety           absent     false      SUPPRESSED  empty
+ai_gateway.guardrails.input.safety           absent     true       OK
+ai_gateway.guardrails.input.safety           false      absent     SUPPRESSED  empty
+ai_gateway.guardrails.input.safety           false      true       OK
+ai_gateway.guardrails.input.safety           true       absent     OK
+ai_gateway.guardrails.input.safety           true       false      OK
+ai_gateway.guardrails.output.pii.behavior    absent     x          OK
+ai_gateway.guardrails.output.pii.behavior    absent     y          OK
+ai_gateway.guardrails.output.pii.behavior    x          absent     OK
+ai_gateway.guardrails.output.pii.behavior    x          y          OK
+ai_gateway.guardrails.output.pii.behavior    y          absent     OK
+ai_gateway.guardrails.output.pii.behavior    y          x          OK
+ai_gateway.guardrails.output.safety          absent     false      SUPPRESSED  empty
+ai_gateway.guardrails.output.safety          absent     true       OK
+ai_gateway.guardrails.output.safety          false      absent     SUPPRESSED  empty
+ai_gateway.guardrails.output.safety          false      true       OK
+ai_gateway.guardrails.output.safety          true       absent     OK
+ai_gateway.guardrails.output.safety          true       false      OK
+ai_gateway.inference_table_config.catalog_name absent     x          OK
+ai_gateway.inference_table_config.catalog_name absent     y          OK
+ai_gateway.inference_table_config.catalog_name x          absent     OK
+ai_gateway.inference_table_config.catalog_name x          y          OK
+ai_gateway.inference_table_config.catalog_name y          absent     OK
+ai_gateway.inference_table_config.catalog_name y          x          OK
+ai_gateway.inference_table_config.enabled    absent     false      SUPPRESSED  empty
+ai_gateway.inference_table_config.enabled    absent     true       OK
+ai_gateway.inference_table_config.enabled    false      absent     SUPPRESSED  empty
+ai_gateway.inference_table_config.enabled    false      true       OK
+ai_gateway.inference_table_config.enabled    true       absent     OK
+ai_gateway.inference_table_config.enabled    true       false      OK
+ai_gateway.inference_table_config.schema_name absent     x          OK
+ai_gateway.inference_table_config.schema_name absent     y          OK
+ai_gateway.inference_table_config.schema_name x          absent     OK
+ai_gateway.inference_table_config.schema_name x          y          OK
+ai_gateway.inference_table_config.schema_name y          absent     OK
+ai_gateway.inference_table_config.schema_name y          x          OK
+ai_gateway.inference_table_config.table_name_prefix absent     x          OK
+ai_gateway.inference_table_config.table_name_prefix absent     y          OK
+ai_gateway.inference_table_config.table_name_prefix x          absent     OK
+ai_gateway.inference_table_config.table_name_prefix x          y          OK
+ai_gateway.inference_table_config.table_name_prefix y          absent     OK
+ai_gateway.inference_table_config.table_name_prefix y          x          OK
+ai_gateway.usage_tracking_config.enabled     absent     false      OK
+ai_gateway.usage_tracking_config.enabled     absent     true       OK
+ai_gateway.usage_tracking_config.enabled     false      absent     SUPPRESSED  empty
+ai_gateway.usage_tracking_config.enabled     false      true       OK
+ai_gateway.usage_tracking_config.enabled     true       absent     OK
+ai_gateway.usage_tracking_config.enabled     true       false      OK
+budget_policy_id                             absent     x          SUPPRESSED  no_update_api
+budget_policy_id                             absent     y          SUPPRESSED  no_update_api
+budget_policy_id                             x          absent     NOT_OBSERVABLE
+budget_policy_id                             x          y          SUPPRESSED  no_update_api
+budget_policy_id                             y          absent     NOT_OBSERVABLE
+budget_policy_id                             y          x          SUPPRESSED  no_update_api
+config.auto_capture_config.catalog_name      absent     x          POST_DEPLOY_DRIFT  config
+config.auto_capture_config.catalog_name      absent     y          OK_RECREATE
+config.auto_capture_config.catalog_name      x          absent     OK_RECREATE
+config.auto_capture_config.catalog_name      x          y          OK_RECREATE
+config.auto_capture_config.catalog_name      y          absent     OK_RECREATE
+config.auto_capture_config.catalog_name      y          x          OK_RECREATE
+config.auto_capture_config.enabled           absent     false      SUPPRESSED  empty
+config.auto_capture_config.enabled           absent     true       POST_DEPLOY_DRIFT  config
+config.auto_capture_config.enabled           false      absent     POST_DEPLOY_DRIFT  config
+config.auto_capture_config.enabled           false      true       POST_DEPLOY_DRIFT  config
+config.auto_capture_config.enabled           true       absent     POST_DEPLOY_DRIFT  config
+config.auto_capture_config.enabled           true       false      POST_DEPLOY_DRIFT  config
+config.auto_capture_config.schema_name       absent     x          POST_DEPLOY_DRIFT  config
+config.auto_capture_config.schema_name       absent     y          OK_RECREATE
+config.auto_capture_config.schema_name       x          absent     OK_RECREATE
+config.auto_capture_config.schema_name       x          y          OK_RECREATE
+config.auto_capture_config.schema_name       y          absent     OK_RECREATE
+config.auto_capture_config.schema_name       y          x          OK_RECREATE
+config.auto_capture_config.table_name_prefix absent     x          OK_RECREATE
+config.auto_capture_config.table_name_prefix absent     y          OK_RECREATE
+config.auto_capture_config.table_name_prefix x          absent     OK_RECREATE
+config.auto_capture_config.table_name_prefix x          y          OK_RECREATE
+config.auto_capture_config.table_name_prefix y          absent     OK_RECREATE
+config.auto_capture_config.table_name_prefix y          x          OK_RECREATE
+description                                  absent     x          OK_RECREATE
+description                                  absent     y          OK_RECREATE
+description                                  x          absent     OK_RECREATE
+description                                  x          y          OK_RECREATE
+description                                  y          absent     OK_RECREATE
+description                                  y          x          OK_RECREATE
+lifecycle.prevent_destroy                    absent     false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent     true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false      absent     NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false      true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true       absent     NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true       false      NOT_OBSERVABLE
+name                                         x          y          OK_RECREATE
+name                                         y          x          OK_RECREATE
+route_optimized                              absent     false      SUPPRESSED  remote_already_set
+route_optimized                              absent     true       OK_RECREATE
+route_optimized                              false      absent     SUPPRESSED  empty
+route_optimized                              false      true       OK_RECREATE
+route_optimized                              true       absent     OK_RECREATE
+route_optimized                              true       false      OK_RECREATE
+telemetry_config.inference_table_config.name                       SKIPPED  needs a writable catalog and schema
+telemetry_config.inference_table_config.sampling_fraction                       SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.annotations_table                       SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.logs_table                            SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.metrics_table                         SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.traces_table                          SKIPPED  needs a writable catalog and schema
+telemetry_config.telemetry_profile_id                              SKIPPED  needs a writable catalog and schema
+
+=== model_serving_endpoint_telemetry.yml.tmpl
+ai_gateway.fallback_config.enabled           false      true       OK
+ai_gateway.fallback_config.enabled           true       false      OK
+ai_gateway.guardrails.input.pii.behavior     absent     x          OK
+ai_gateway.guardrails.input.pii.behavior     absent     y          OK
+ai_gateway.guardrails.input.pii.behavior     x          absent     OK
+ai_gateway.guardrails.input.pii.behavior     x          y          OK
+ai_gateway.guardrails.input.pii.behavior     y          absent     OK
+ai_gateway.guardrails.input.pii.behavior     y          x          OK
+ai_gateway.guardrails.input.safety           absent     false      SUPPRESSED  empty
+ai_gateway.guardrails.input.safety           absent     true       OK
+ai_gateway.guardrails.input.safety           false      absent     SUPPRESSED  empty
+ai_gateway.guardrails.input.safety           false      true       OK
+ai_gateway.guardrails.input.safety           true       absent     OK
+ai_gateway.guardrails.input.safety           true       false      OK
+ai_gateway.guardrails.output.pii.behavior    absent     x          OK
+ai_gateway.guardrails.output.pii.behavior    absent     y          OK
+ai_gateway.guardrails.output.pii.behavior    x          absent     OK
+ai_gateway.guardrails.output.pii.behavior    x          y          OK
+ai_gateway.guardrails.output.pii.behavior    y          absent     OK
+ai_gateway.guardrails.output.pii.behavior    y          x          OK
+ai_gateway.guardrails.output.safety          absent     false      SUPPRESSED  empty
+ai_gateway.guardrails.output.safety          absent     true       OK
+ai_gateway.guardrails.output.safety          false      absent     SUPPRESSED  empty
+ai_gateway.guardrails.output.safety          false      true       OK
+ai_gateway.guardrails.output.safety          true       absent     OK
+ai_gateway.guardrails.output.safety          true       false      OK
+ai_gateway.inference_table_config.catalog_name absent     x          OK
+ai_gateway.inference_table_config.catalog_name absent     y          OK
+ai_gateway.inference_table_config.catalog_name x          absent     OK
+ai_gateway.inference_table_config.catalog_name x          y          OK
+ai_gateway.inference_table_config.catalog_name y          absent     OK
+ai_gateway.inference_table_config.catalog_name y          x          OK
+ai_gateway.inference_table_config.enabled    absent     false      SUPPRESSED  empty
+ai_gateway.inference_table_config.enabled    absent     true       OK
+ai_gateway.inference_table_config.enabled    false      absent     SUPPRESSED  empty
+ai_gateway.inference_table_config.enabled    false      true       OK
+ai_gateway.inference_table_config.enabled    true       absent     OK
+ai_gateway.inference_table_config.enabled    true       false      OK
+ai_gateway.inference_table_config.schema_name absent     x          OK
+ai_gateway.inference_table_config.schema_name absent     y          OK
+ai_gateway.inference_table_config.schema_name x          absent     OK
+ai_gateway.inference_table_config.schema_name x          y          OK
+ai_gateway.inference_table_config.schema_name y          absent     OK
+ai_gateway.inference_table_config.schema_name y          x          OK
+ai_gateway.inference_table_config.table_name_prefix absent     x          OK
+ai_gateway.inference_table_config.table_name_prefix absent     y          OK
+ai_gateway.inference_table_config.table_name_prefix x          absent     OK
+ai_gateway.inference_table_config.table_name_prefix x          y          OK
+ai_gateway.inference_table_config.table_name_prefix y          absent     OK
+ai_gateway.inference_table_config.table_name_prefix y          x          OK
+ai_gateway.usage_tracking_config.enabled     absent     false      OK
+ai_gateway.usage_tracking_config.enabled     absent     true       OK
+ai_gateway.usage_tracking_config.enabled     false      absent     SUPPRESSED  empty
+ai_gateway.usage_tracking_config.enabled     false      true       OK
+ai_gateway.usage_tracking_config.enabled     true       absent     OK
+ai_gateway.usage_tracking_config.enabled     true       false      OK
+budget_policy_id                             absent     x          SUPPRESSED  no_update_api
+budget_policy_id                             absent     y          SUPPRESSED  no_update_api
+budget_policy_id                             x          absent     NOT_OBSERVABLE
+budget_policy_id                             x          y          SUPPRESSED  no_update_api
+budget_policy_id                             y          absent     NOT_OBSERVABLE
+budget_policy_id                             y          x          SUPPRESSED  no_update_api
+config.auto_capture_config.catalog_name      absent     x          OK
+config.auto_capture_config.catalog_name      absent     y          OK_RECREATE
+config.auto_capture_config.catalog_name      x          absent     OK_RECREATE
+config.auto_capture_config.catalog_name      x          y          OK_RECREATE
+config.auto_capture_config.catalog_name      y          absent     OK_RECREATE
+config.auto_capture_config.catalog_name      y          x          OK_RECREATE
+config.auto_capture_config.enabled           absent     false      SUPPRESSED  empty
+config.auto_capture_config.enabled           absent     true       OK
+config.auto_capture_config.enabled           false      absent     SUPPRESSED  empty
+config.auto_capture_config.enabled           false      true       OK
+config.auto_capture_config.enabled           true       absent     OK
+config.auto_capture_config.enabled           true       false      OK
+config.auto_capture_config.schema_name       absent     x          OK_RECREATE
+config.auto_capture_config.schema_name       absent     y          OK_RECREATE
+config.auto_capture_config.schema_name       x          absent     OK_RECREATE
+config.auto_capture_config.schema_name       x          y          OK_RECREATE
+config.auto_capture_config.schema_name       y          absent     OK_RECREATE
+config.auto_capture_config.schema_name       y          x          OK_RECREATE
+config.auto_capture_config.table_name_prefix absent     x          OK_RECREATE
+config.auto_capture_config.table_name_prefix absent     y          OK_RECREATE
+config.auto_capture_config.table_name_prefix x          absent     OK_RECREATE
+config.auto_capture_config.table_name_prefix x          y          OK_RECREATE
+config.auto_capture_config.table_name_prefix y          absent     OK_RECREATE
+config.auto_capture_config.table_name_prefix y          x          OK_RECREATE
+description                                  absent     x          OK_RECREATE
+description                                  absent     y          OK_RECREATE
+description                                  x          absent     OK_RECREATE
+description                                  x          y          OK_RECREATE
+description                                  y          absent     OK_RECREATE
+description                                  y          x          OK_RECREATE
+lifecycle.prevent_destroy                    absent     false      NOT_OBSERVABLE
+lifecycle.prevent_destroy                    absent     true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false      absent     NOT_OBSERVABLE
+lifecycle.prevent_destroy                    false      true       NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true       absent     NOT_OBSERVABLE
+lifecycle.prevent_destroy                    true       false      NOT_OBSERVABLE
+name                                         x          y          OK_RECREATE
+name                                         y          x          OK_RECREATE
+route_optimized                              absent     false      SUPPRESSED  remote_already_set
+route_optimized                              absent     true       OK_RECREATE
+route_optimized                              false      absent     SUPPRESSED  empty
+route_optimized                              false      true       OK_RECREATE
+route_optimized                              true       absent     OK_RECREATE
+route_optimized                              true       false      OK_RECREATE
+telemetry_config.inference_table_config.name                       SKIPPED  needs a writable catalog and schema
+telemetry_config.inference_table_config.sampling_fraction                       SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.annotations_table                       SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.logs_table                            SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.metrics_table                         SKIPPED  needs a writable catalog and schema
+telemetry_config.table_names.traces_table                          SKIPPED  needs a writable catalog and schema
+telemetry_config.telemetry_profile_id                              SKIPPED  needs a writable catalog and schema
+
+=== summary
+OK             103
+OK_RECREATE    57
+SUPPRESSED     29
+NOT_OBSERVABLE 16
+POST_DEPLOY_DRIFT 7
+SKIPPED        14
+
+=== not covered: 95 fields under a slice or map
+ai_gateway.guardrails.input.invalid_keywords[*]
+ai_gateway.guardrails.input.valid_topics[*]
+ai_gateway.guardrails.output.invalid_keywords[*]
+ai_gateway.guardrails.output.valid_topics[*]
+ai_gateway.rate_limits[*].calls
+ai_gateway.rate_limits[*].key
+ai_gateway.rate_limits[*].principal
+ai_gateway.rate_limits[*].renewal_period
+ai_gateway.rate_limits[*].tokens
+config.served_entities[*].burst_scaling_enabled
+config.served_entities[*].entity_name
+config.served_entities[*].entity_version
+config.served_entities[*].environment_vars.*
+config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key
+config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext
+config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id
+config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id_plaintext
+config.served_entities[*].external_model.amazon_bedrock_config.aws_region
+config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key
+config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key_plaintext
+config.served_entities[*].external_model.amazon_bedrock_config.bedrock_provider
+config.served_entities[*].external_model.amazon_bedrock_config.instance_profile_arn
+config.served_entities[*].external_model.anthropic_config.anthropic_api_key
+config.served_entities[*].external_model.anthropic_config.anthropic_api_key_plaintext
+config.served_entities[*].external_model.cohere_config.cohere_api_base
+config.served_entities[*].external_model.cohere_config.cohere_api_key
+config.served_entities[*].external_model.cohere_config.cohere_api_key_plaintext
+config.served_entities[*].external_model.custom_provider_config.api_key_auth.key
+config.served_entities[*].external_model.custom_provider_config.api_key_auth.value
+config.served_entities[*].external_model.custom_provider_config.api_key_auth.value_plaintext
+config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token
+config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token_plaintext
+config.served_entities[*].external_model.custom_provider_config.custom_provider_url
+config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token
+config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token_plaintext
+config.served_entities[*].external_model.databricks_model_serving_config.databricks_workspace_url
+config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key
+config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key_plaintext
+config.served_entities[*].external_model.google_cloud_vertex_ai_config.project_id
+config.served_entities[*].external_model.google_cloud_vertex_ai_config.region
+config.served_entities[*].external_model.name
+config.served_entities[*].external_model.openai_config.microsoft_entra_client_id
+config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret
+config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret_plaintext
+config.served_entities[*].external_model.openai_config.microsoft_entra_tenant_id
+config.served_entities[*].external_model.openai_config.openai_api_base
+config.served_entities[*].external_model.openai_config.openai_api_key
+config.served_entities[*].external_model.openai_config.openai_api_key_plaintext
+config.served_entities[*].external_model.openai_config.openai_api_type
+config.served_entities[*].external_model.openai_config.openai_api_version
+config.served_entities[*].external_model.openai_config.openai_deployment_name
+config.served_entities[*].external_model.openai_config.openai_organization
+config.served_entities[*].external_model.palm_config.palm_api_key
+config.served_entities[*].external_model.palm_config.palm_api_key_plaintext
+config.served_entities[*].external_model.provider
+config.served_entities[*].external_model.task
+config.served_entities[*].instance_profile_arn
+config.served_entities[*].max_provisioned_concurrency
+config.served_entities[*].max_provisioned_throughput
+config.served_entities[*].min_provisioned_concurrency
+config.served_entities[*].min_provisioned_throughput
+config.served_entities[*].name
+config.served_entities[*].provisioned_model_units
+config.served_entities[*].scale_to_zero_enabled
+config.served_entities[*].workload_size
+config.served_entities[*].workload_type
+config.served_models[*].burst_scaling_enabled
+config.served_models[*].environment_vars.*
+config.served_models[*].instance_profile_arn
+config.served_models[*].max_provisioned_concurrency
+config.served_models[*].max_provisioned_throughput
+config.served_models[*].min_provisioned_concurrency
+config.served_models[*].min_provisioned_throughput
+config.served_models[*].model_name
+config.served_models[*].model_version
+config.served_models[*].name
+config.served_models[*].provisioned_model_units
+config.served_models[*].scale_to_zero_enabled
+config.served_models[*].workload_size
+config.served_models[*].workload_type
+config.traffic_config.routes[*].served_entity_name
+config.traffic_config.routes[*].served_model_name
+config.traffic_config.routes[*].traffic_percentage
+email_notifications.on_update_failure[*]
+email_notifications.on_update_success[*]
+permissions[*].group_name
+permissions[*].level
+permissions[*].service_principal_name
+permissions[*].user_name
+rate_limits[*].calls
+rate_limits[*].key
+rate_limits[*].renewal_period
+tags[*].key
+tags[*].value
+telemetry_config.enabled_telemetry_features[*]
