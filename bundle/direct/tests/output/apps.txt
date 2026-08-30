@@ -1,35 +1,82 @@
 === app.yml.tmpl
-budget_policy_id                             x          absent     POST_DEPLOY_DRIFT  budget_policy_id
-budget_policy_id                             y          absent     POST_DEPLOY_DRIFT  budget_policy_id
-compute_max_instances                        1          absent     POST_DEPLOY_DRIFT  compute_max_instances
-compute_max_instances                        2          absent     POST_DEPLOY_DRIFT  compute_max_instances
-compute_min_instances                        1          absent     POST_DEPLOY_DRIFT  compute_min_instances
-compute_min_instances                        2          absent     POST_DEPLOY_DRIFT  compute_min_instances
-compute_min_instances                        absent     2          SUPPRESSED  remote_already_set
-compute_size                                 absent     MEDIUM     SUPPRESSED  remote_already_set
-description                                  x          absent     POST_DEPLOY_DRIFT  description
-description                                  y          absent     POST_DEPLOY_DRIFT  description
-git_repository.auto_deploy                   true       absent     POST_DEPLOY_DRIFT  git_repository.auto_deploy
-git_repository.caller_credential_id          1          absent     POST_DEPLOY_DRIFT  git_repository.caller_credential_id
-git_repository.caller_credential_id          2          absent     POST_DEPLOY_DRIFT  git_repository.caller_credential_id
-id                                           absent     x          SUPPRESSED  spec:output_only
-id                                           absent     y          SUPPRESSED  spec:output_only
-id                                           x          absent     SUPPRESSED  spec:output_only
-id                                           x          y          SUPPRESSED  spec:output_only
-id                                           y          absent     SUPPRESSED  spec:output_only
-id                                           y          x          SUPPRESSED  spec:output_only
-name                                         y          x          DEPLOY_ERROR  cannot recreate resources.apps.foo: timed out: app is deleting, retrying create
+budget_policy_id                             x          absent     UPDATE_IGNORED  budget_policy_id
+budget_policy_id                             y          absent     UPDATE_IGNORED  budget_policy_id
+compute_max_instances                        1          absent     UPDATE_IGNORED  compute_max_instances
+compute_max_instances                        2          absent     UPDATE_IGNORED  compute_max_instances
+compute_min_instances                        1          absent     UPDATE_IGNORED  compute_min_instances
+compute_min_instances                        2          absent     UPDATE_IGNORED  compute_min_instances
+config.command                               absent     len1       SUPPRESSED  no active deployment
+config.command                               len1       absent     SUPPRESSED  no active deployment
+config.command                               len2       absent     SUPPRESSED  no active deployment
+config.command                               len2       len1       SUPPRESSED  no active deployment
+config.command[0]                            absent     y          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
+config.command[0]                            x          y          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
+config.command[0]                            y          absent     UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
+config.command[0]                            y          x          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
+config.command[1]                            absent     x          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
+config.command[1]                            absent     y          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
+config.command[1]                            x          absent     UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
+config.command[1]                            x          y          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
+config.command[1]                            y          absent     UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
+config.command[1]                            y          x          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
+config.env                                   absent     len0       SUPPRESSED  no active deployment
+config.env                                   len0       absent     SUPPRESSED  no active deployment
+config.env                                   len1       absent     SUPPRESSED  no active deployment
+config.env                                   len1       len0       SUPPRESSED  no active deployment
+config.env[0].name                           absent     x          SUPPRESSED  no active deployment
+config.env[0].name                           absent     y          SUPPRESSED  no active deployment
+config.env[0].name                           x          absent     SUPPRESSED  no active deployment
+config.env[0].name                           x          y          SUPPRESSED  no active deployment
+config.env[0].name                           y          absent     SUPPRESSED  no active deployment
+config.env[0].name                           y          x          SUPPRESSED  no active deployment
+config.env[0].value                          absent     x          SUPPRESSED  no active deployment
+config.env[0].value                          absent     y          SUPPRESSED  no active deployment
+config.env[0].value                          x          absent     SUPPRESSED  no active deployment
+config.env[0].value                          x          y          SUPPRESSED  no active deployment
+config.env[0].value                          y          absent     SUPPRESSED  no active deployment
+config.env[0].value                          y          x          SUPPRESSED  no active deployment
+config.env[0].value_from                     absent     x          SUPPRESSED  no active deployment
+config.env[0].value_from                     absent     y          SUPPRESSED  no active deployment
+config.env[0].value_from                     x          y          SUPPRESSED  no active deployment
+config.env[0].value_from                     y          x          SUPPRESSED  no active deployment
+description                                  x          absent     UPDATE_IGNORED  description
+description                                  y          absent     UPDATE_IGNORED  description
+git_repository.auto_deploy                   true       absent     UPDATE_IGNORED  git_repository.auto_deploy
+git_repository.caller_credential_id          1          absent     UPDATE_IGNORED  git_repository.caller_credential_id
+git_repository.caller_credential_id          2          absent     UPDATE_IGNORED  git_repository.caller_credential_id
+git_source.branch                            absent     x          SUPPRESSED  no active deployment
+git_source.branch                            absent     y          SUPPRESSED  no active deployment
+git_source.branch                            x          y          SUPPRESSED  no active deployment
+git_source.branch                            y          x          SUPPRESSED  no active deployment
+git_source.resolved_commit                   absent     x          SUPPRESSED  no active deployment
+git_source.resolved_commit                   absent     y          SUPPRESSED  no active deployment
+git_source.resolved_commit                   x          y          SUPPRESSED  no active deployment
+git_source.resolved_commit                   y          x          SUPPRESSED  no active deployment
+git_source.tag                               absent     x          SUPPRESSED  no active deployment
+git_source.tag                               absent     y          SUPPRESSED  no active deployment
+git_source.tag                               x          y          SUPPRESSED  no active deployment
+git_source.tag                               y          x          SUPPRESSED  no active deployment
+resources                                    absent     len0       UPDATE_IGNORED  resources
+resources                                    len0       absent     UPDATE_IGNORED  resources
+resources                                    len1       absent     UPDATE_IGNORED  resources
+resources                                    len1       len0       UPDATE_IGNORED  resources
+resources[0].app.name                        x          absent     UPDATE_IGNORED  resources[0].app.name
+resources[0].app.name                        y          absent     UPDATE_IGNORED  resources[0].app.name
+resources[0].app.permission                  x          absent     UPDATE_IGNORED  resources[0].app.permission
+resources[0].app.permission                  y          absent     UPDATE_IGNORED  resources[0].app.permission
+resources[0].description                     x          absent     UPDATE_IGNORED  resources[0].description
+resources[0].description                     y          absent     UPDATE_IGNORED  resources[0].description
+resources[0].postgres.branch                 x          absent     UPDATE_IGNORED  resources[0].postgres.branch
+resources[0].postgres.branch                 y          absent     UPDATE_IGNORED  resources[0].postgres.branch
+resources[0].postgres.database               x          absent     UPDATE_IGNORED  resources[0].postgres.database
+resources[0].postgres.database               y          absent     UPDATE_IGNORED  resources[0].postgres.database
+resources[0].postgres.permission             x          absent     UPDATE_IGNORED  resources[0].postgres.permission
+resources[0].postgres.permission             y          absent     UPDATE_IGNORED  resources[0].postgres.permission
 source_code_path                             absent     x          SUPPRESSED  no active deployment
 source_code_path                             absent     y          SUPPRESSED  no active deployment
 source_code_path                             x          absent     SUPPRESSED  no active deployment
 source_code_path                             x          y          SUPPRESSED  no active deployment
 source_code_path                             y          absent     SUPPRESSED  no active deployment
 source_code_path                             y          x          SUPPRESSED  no active deployment
-url                                          absent     x          SUPPRESSED  spec:output_only
-url                                          absent     y          SUPPRESSED  spec:output_only
-url                                          x          absent     SUPPRESSED  spec:output_only
-url                                          x          y          SUPPRESSED  spec:output_only
-url                                          y          absent     SUPPRESSED  spec:output_only
-url                                          y          x          SUPPRESSED  spec:output_only
-usage_policy_id                              x          absent     POST_DEPLOY_DRIFT  usage_policy_id
-usage_policy_id                              y          absent     POST_DEPLOY_DRIFT  usage_policy_id
+usage_policy_id                              x          absent     UPDATE_IGNORED  usage_policy_id
+usage_policy_id                              y          absent     UPDATE_IGNORED  usage_policy_id

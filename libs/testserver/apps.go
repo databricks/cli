@@ -256,6 +256,15 @@ func (s *FakeWorkspace) AppsDelete(name string) Response {
 		return Response{StatusCode: 404}
 	}
 
+	if s.SettleAsyncImmediately {
+		// The real API leaves the app in DELETING for up to ~20 minutes and keeps the name
+		// reserved, so re-creating it blocks. Delete outright instead, which is what a suite
+		// doing thousands of updates needs; the DELETING behaviour is covered by the
+		// acceptance suite, which leaves the simulation on.
+		delete(s.Apps, name)
+		return Response{Body: map[string]string{}}
+	}
+
 	if app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStateDeleting {
 		return Response{
 			StatusCode: http.StatusBadRequest,

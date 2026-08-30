@@ -1,8 +1,15 @@
 === catalog.yml.tmpl
-custom_max_retention_hours                   1          absent     POST_DEPLOY_DRIFT  custom_max_retention_hours
-custom_max_retention_hours                   2          absent     POST_DEPLOY_DRIFT  custom_max_retention_hours
-
-=== catalog_optional_fields.yml.tmpl
-custom_max_retention_hours                   1          absent     POST_DEPLOY_DRIFT  custom_max_retention_hours
-custom_max_retention_hours                   2          absent     POST_DEPLOY_DRIFT  custom_max_retention_hours
-name                                         y          x          POST_DEPLOY_DRIFT  custom_max_retention_hours,managed_encryption_settings.customer_managed_key_id
+custom_max_retention_hours                   1          absent     UPDATE_IGNORED  custom_max_retention_hours
+custom_max_retention_hours                   2          absent     UPDATE_IGNORED  custom_max_retention_hours
+options                                      absent     keys0      UPDATE_IGNORED  options
+options                                      keys0      absent     UPDATE_IGNORED  options
+options                                      keys1      absent     UPDATE_IGNORED  options
+options                                      keys1      keys0      UPDATE_IGNORED  options
+options['region']                            x          absent     UPDATE_IGNORED  options['region']
+options['region']                            y          absent     UPDATE_IGNORED  options['region']
+properties                                   absent     keys0      UPDATE_IGNORED  properties
+properties                                   keys0      absent     UPDATE_IGNORED  properties
+properties                                   keys1      absent     UPDATE_IGNORED  properties
+properties                                   keys1      keys0      UPDATE_IGNORED  properties
+properties['team']                           x          absent     UPDATE_IGNORED  properties['team']
+properties['team']                           y          absent     UPDATE_IGNORED  properties['team']

@@ -1,26 +1,17 @@
 === model_serving_endpoint.yml.tmpl
-budget_policy_id                             absent     x          SUPPRESSED  no_update_api
-budget_policy_id                             absent     y          SUPPRESSED  no_update_api
-budget_policy_id                             x          y          SUPPRESSED  no_update_api
-budget_policy_id                             y          x          SUPPRESSED  no_update_api
-config.auto_capture_config.catalog_name      absent     y          POST_DEPLOY_DRIFT  config
-config.auto_capture_config.enabled           absent     false      POST_DEPLOY_DRIFT  config
-config.auto_capture_config.enabled           absent     true       POST_DEPLOY_DRIFT  config
-config.auto_capture_config.enabled           false      absent     POST_DEPLOY_DRIFT  config
-config.auto_capture_config.enabled           false      true       POST_DEPLOY_DRIFT  config
-config.auto_capture_config.enabled           true       absent     POST_DEPLOY_DRIFT  config
-config.auto_capture_config.enabled           true       false      POST_DEPLOY_DRIFT  config
-config.auto_capture_config.schema_name       absent     y          POST_DEPLOY_DRIFT  config
-config.auto_capture_config.schema_name       y          absent     POST_DEPLOY_DRIFT  config
-
-=== model_serving_endpoint_telemetry.yml.tmpl
-budget_policy_id                             absent     x          SUPPRESSED  no_update_api
-budget_policy_id                             absent     y          SUPPRESSED  no_update_api
-budget_policy_id                             x          y          SUPPRESSED  no_update_api
-budget_policy_id                             y          x          SUPPRESSED  no_update_api
-config.served_entities                       absent     len0       POST_DEPLOY_DRIFT  config
-config.served_entities                       len0       absent     POST_DEPLOY_DRIFT  config
-config.served_entities                       len1       absent     POST_DEPLOY_DRIFT  config
-config.served_entities                       len1       len0       POST_DEPLOY_DRIFT  config
-description                                  absent     x          POST_DEPLOY_DRIFT  telemetry_config
-description                                  x          y          BASE_ERROR  cannot update resources.model_serving_endpoints.foo: updating id=test-endpoint-[UNIQUE_NAME]: failed to update telemetry config: Telemetry c...
+config.auto_capture_config.enabled           absent     false      COLLATERAL_DRIFT  config
+config.auto_capture_config.enabled           absent     true       COLLATERAL_DRIFT  config
+config.auto_capture_config.enabled           false      absent     COLLATERAL_DRIFT  config
+config.auto_capture_config.enabled           false      true       COLLATERAL_DRIFT  config
+config.auto_capture_config.enabled           true       absent     COLLATERAL_DRIFT  config
+config.auto_capture_config.enabled           true       false      COLLATERAL_DRIFT  config
+config.auto_capture_config.table_name_prefix y          absent     COLLATERAL_DRIFT  config
+email_notifications.on_update_failure[0]     absent     x          UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_failure"
+email_notifications.on_update_failure[0]     absent     y          UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_failure"
+email_notifications.on_update_failure[0]     x          absent     UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_failure"
+email_notifications.on_update_success[0]     absent     x          UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_success"
+email_notifications.on_update_success[0]     absent     y          UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_success"
+email_notifications.on_update_success[0]     x          absent     UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_success"
+email_notifications.on_update_success[0]     x          y          UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_success"
+email_notifications.on_update_success[0]     y          absent     UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_success"
+email_notifications.on_update_success[0]     y          x          UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_success"

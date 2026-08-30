@@ -1,0 +1,9 @@
+# Value library for experiments. See ../../README.md.
+
+# The invariant config declares no tags, so tags[*] would expand to nothing and its fields
+# would only be reported as not covered. Seeding one entry makes the whole block testable:
+# the container itself (add and remove an entry) and the fields inside the entry.
+base:
+  tags:
+    - key: team
+      value: eng

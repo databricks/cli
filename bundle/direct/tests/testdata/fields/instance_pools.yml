@@ -1,0 +1,14 @@
+# Value library for instance pools. See ../../README.md.
+base:
+  custom_tags:
+    team: eng
+  preloaded_spark_versions:
+    - 13.3.x-scala2.12
+  preloaded_docker_images:
+    - url: databricksruntime/standard:latest
+      basic_auth:
+        username: user
+        password: pass
+  node_type_flexibility:
+    alternate_node_type_ids:
+      - i3.2xlarge

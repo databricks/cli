@@ -1,0 +1,6 @@
+# Value library for SQL warehouses. See ../../README.md.
+base:
+  tags:
+    custom_tags:
+      - key: team
+        value: eng

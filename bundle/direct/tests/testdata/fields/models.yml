@@ -1,0 +1,5 @@
+# Value library for MLflow models. See ../../README.md.
+base:
+  tags:
+    - key: team
+      value: eng

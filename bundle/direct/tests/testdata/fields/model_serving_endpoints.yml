@@ -1,5 +1,33 @@
-# Value library for model serving endpoints. See ../README.md.
+# Value library for model serving endpoints. See ../../README.md.
+#
+# telemetry_config needs no base: and no skip. model_serving_endpoint_telemetry.yml.tmpl
+# already declares a coherent block -- a catalog, a schema and table names -- so its fields
+# expand and are tested there.
+#
+# ai_gateway, rate_limits and the notification lists are declared by no config, so they are
+# seeded here. served_entities comes from the corpus config.
+base:
+  ai_gateway:
+    rate_limits:
+      - calls: 10
+        renewal_period: minute
+    usage_tracking_config:
+      enabled: true
+  rate_limits:
+    - calls: 10
+      renewal_period: minute
+  email_notifications:
+    on_update_failure:
+      - tester@databricks.com
+    on_update_success:
+      - tester@databricks.com
+  tags:
+    - key: team
+      value: eng
+
 skip:
-  # The telemetry block is only accepted as a coherent whole, against a catalog and
-  # schema that exist and are writable, which one-field-at-a-time cannot arrange.
-  telemetry_config.*: needs a writable catalog and schema
+  # The corpus config for this type declares no telemetry, and seeding a coherent block here
+  # is rejected on every later update ("failed to update telemetry config"). The fields are
+  # covered by model_serving_endpoint_telemetry.yml.tmpl, which declares the whole block --
+  # but that config is not the simplest one, so it is not the one this suite picks.
+  telemetry_config.*: needs the telemetry corpus config, which is not the simplest one

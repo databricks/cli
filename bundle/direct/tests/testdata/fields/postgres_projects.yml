@@ -1,4 +1,12 @@
-# Value library for postgres projects. See ../README.md.
+# Value library for postgres projects. See ../../README.md.
+base:
+  custom_tags:
+    - key: team
+      value: eng
+  default_endpoint_settings:
+    pg_settings:
+      work_mem: 64MB
+
 fields:
   # project_id is part of the resource's hierarchical name, so a change recreates it.
   project_id: [pgproj1, pgproj2]

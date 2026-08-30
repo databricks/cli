@@ -1,2 +1,0 @@
-=== external_location.yml.tmpl
-read_only                                    absent     false      SUPPRESSED  remote_already_set
