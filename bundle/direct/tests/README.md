@@ -35,6 +35,12 @@ Everything runs in-process against the direct engine's own `CalculatePlan` and
 `Apply`. There is no CLI subprocess and no bundle-file upload: at thousands of
 permutations, a `bundle deploy` each would be dominated by sync.
 
+Edits are made to the **typed** resource — `libs/structs/structaccess` over
+`*resources.Schema` and friends — and synced into the dynamic tree the planner reads the
+way any mutator does. That is also what makes "absent" precise: a field is absent when it
+holds the zero value and is not in `ForceSendFields`, which is exactly the distinction the
+API sees.
+
 ## Verdicts
 
 | verdict | meaning |
@@ -70,7 +76,9 @@ The `SUPPRESSED` reason string is the engine explaining itself, which is differe
 ## Value library
 
 `testdata/fields/<resource_type>.yml` supplies values the generic per-kind defaults cannot
-guess — enums, ids, anything the backend constrains:
+guess — enums, ids, anything the backend constrains. A field naming another object needs a
+name that exists: a real workspace rejects the generic `x` outright, so the field would
+report nothing but `BACKEND_ERROR`.
 
 ```yaml
 # Seeded into the resource before the first deploy, so this block's fields become
@@ -115,9 +123,10 @@ problem verdict:
 go test ./bundle/direct/tests -run TestFields/pipelines/.*/dry_run/absent_to_true -v
 ```
 
-On cloud (`CLOUD_ENV` set) only resource types with `cloud: true` run, and the results
-go to `output/<resource_type>.<cloud>.txt`, which is not committed: which values a
-real backend accepts depends on the workspace.
+On cloud (`CLOUD_ENV` set) the same reports are compared against the same committed
+goldens: a divergence means the fake server in `libs/testserver` does not model the API
+faithfully, which is worth failing over. The full report goes to
+`output/<resource_type>.<cloud>.full.txt` so a cloud run can be read next to a local one.
 
 ## Out of scope for now
 

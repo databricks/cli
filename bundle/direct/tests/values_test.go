@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -17,16 +17,17 @@ import (
 
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/internal/validation/generated"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
+	"go.yaml.in/yaml/v3"
 )
 
 // absent is the "field not present in the config" value. Every transition is a move
 // between two values drawn from a field's set, and add/remove are just the moves
-// with absent on one side.
-var absent = dyn.InvalidValue
+// with absent on one side. A Go struct has no absent, so nil stands for it: writing it
+// means the zero value with the field dropped from ForceSendFields.
+var absent any = nil
 
 // fieldValues is the per-resource-type value library, e.g. testdata/fields/schemas.yml.
 //
@@ -38,8 +39,9 @@ type fieldValues struct {
 	// skips that whole subtree.
 	skip map[string]string
 
-	// fields maps a field path to the values to try.
-	fields map[string][]dyn.Value
+	// fields maps a field path to the values to try, as the YAML gave them. They are
+	// converted to the field's own Go type when the field is enumerated.
+	fields map[string][]any
 
 	// base is merged into the resource before the first deploy. It makes a block
 	// reachable that the invariant config does not declare: a coherent git_source, say,
@@ -48,7 +50,7 @@ type fieldValues struct {
 	//
 	// Keep path-valued fields out of it: it is merged after the mutator pipeline has run,
 	// so nothing here goes through path translation.
-	base dyn.Value
+	base any
 }
 
 // fieldsDir holds the per-resource-type value libraries.
@@ -128,11 +130,9 @@ var cliManagedFields = map[string]string{
 	"lifecycle.prevent_destroy": "acted on by the bundle, never sent to any API; gates destroy",
 }
 
-// loadFieldValues reads testdata/fields/<resource_type>.yml. Parsing goes through the repo's own
-// yamlloader rather than a yaml package, so the values arrive as dyn.Value -- the same
-// representation the bundle config uses, which is what they are written into.
+// loadFieldValues reads testdata/fields/<resource_type>.yml.
 func loadFieldValues(resourceType string) (*fieldValues, error) {
-	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]dyn.Value{}, base: dyn.InvalidValue}
+	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]any{}, base: nil}
 	maps.Copy(fv.skip, cliManagedFields)
 
 	path := filepath.Join(fieldsDir, resourceType+".yml")
@@ -144,33 +144,17 @@ func loadFieldValues(resourceType string) (*fieldValues, error) {
 		return nil, err
 	}
 
-	root, err := yamlloader.LoadYAML(path, bytes.NewReader(data))
-	if err != nil {
+	var file struct {
+		Skip   map[string]string `yaml:"skip"`
+		Fields map[string][]any  `yaml:"fields"`
+		Base   any               `yaml:"base"`
+	}
+	if err := yaml.Unmarshal(data, &file); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
-
-	if v, err := dyn.Get(root, "skip"); err == nil {
-		m, _ := v.AsMap()
-		for _, pair := range m.Pairs() {
-			key, _ := pair.Key.AsString()
-			reason, _ := pair.Value.AsString()
-			fv.skip[key] = reason
-		}
-	}
-	if v, err := dyn.Get(root, "base"); err == nil {
-		fv.base = v
-	}
-	if v, err := dyn.Get(root, "fields"); err == nil {
-		m, _ := v.AsMap()
-		for _, pair := range m.Pairs() {
-			key, _ := pair.Key.AsString()
-			values, ok := pair.Value.AsSequence()
-			if !ok {
-				return nil, fmt.Errorf("%s: fields.%s must be a list", path, key)
-			}
-			fv.fields[key] = values
-		}
-	}
+	maps.Copy(fv.skip, file.Skip)
+	maps.Copy(fv.fields, file.Fields)
+	fv.base = file.Base
 
 	return fv, nil
 }
@@ -197,16 +181,16 @@ func isContainer(kind reflect.Kind) bool {
 // different code path.
 //
 //nolint:exhaustive // the default branch covers every kind without a generic value
-func defaultValues(kind reflect.Kind) []dyn.Value {
+func defaultValues(kind reflect.Kind) []any {
 	switch kind {
 	case reflect.Bool:
-		return []dyn.Value{dyn.V(false), dyn.V(true)}
+		return []any{false, true}
 	case reflect.String:
-		return []dyn.Value{dyn.V("x"), dyn.V("y")}
+		return []any{"x", "y"}
 	case reflect.Int, reflect.Int32, reflect.Int64:
-		return []dyn.Value{dyn.V(1), dyn.V(2)}
+		return []any{1, 2}
 	case reflect.Float32, reflect.Float64:
-		return []dyn.Value{dyn.V(1.0), dyn.V(2.0)}
+		return []any{1.0, 2.0}
 	default:
 		// The remaining kinds (interface, unsigned, complex, ...) have no meaningful
 		// generic value; such a field needs an entry in the value library.
@@ -221,9 +205,9 @@ type field struct {
 	// and different for every field.
 	seed uint64
 
-	path   string // structpath/dyn path, e.g. "comment" or "email_notifications.on_failure"
+	path   string // structpath path, e.g. "comment" or "email_notifications.on_failure"
 	kind   reflect.Kind
-	values []dyn.Value
+	values []any
 
 	// required fields do not get an "absent" transition: a config missing one is
 	// rejected by bundle validate, so removing it is not something a user can deploy.
@@ -232,7 +216,7 @@ type field struct {
 
 // transition is one move of a field from one value to another.
 type transition struct {
-	from, to dyn.Value
+	from, to any
 }
 
 // label names the transition for the subtest. Kept free of shell metacharacters so a
@@ -256,7 +240,7 @@ func (t transition) label() string {
 func (f field) transitions() []transition {
 	values := f.values
 	if !f.required {
-		values = append([]dyn.Value{absent}, values...)
+		values = append([]any{absent}, values...)
 	}
 	if len(values) < 2 {
 		return nil
@@ -345,15 +329,14 @@ func isRequired(resourceType, path string) bool {
 // enumerateFields walks the resource's input config type the way cmd/bundle/debug
 // refschema does, and pairs each field with the values to try.
 //
-// base is the resource as the config actually declares it, which is what makes slices and
-// maps testable. A slice or map the config populates becomes a field in its own right,
+// resource is the deployed resource, which is what makes slices and maps testable. A slice or map the config populates becomes a field in its own right,
 // with add-an-entry and remove-an-entry transitions; and a pattern like
 // "tasks[*].description" is expanded to the indices that exist, so the fields inside an
 // element get the same treatment as any other. A pattern with nothing behind it in the
 // config is reported as not covered rather than silently tested against nothing.
-func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValues, base dyn.Value, runSeed uint64, unsettable []dresources.FieldRule) (fields []field, wildcard []string, inertFields map[string]string) {
+func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValues, resource any, runSeed uint64, unsettable []dresources.FieldRule) (fields []field, wildcard []string, inertFields map[string]string) {
 	inertFields = map[string]string{}
-	add := func(path string, kind reflect.Kind, values []dyn.Value) {
+	add := func(path string, kind reflect.Kind, values []any) {
 		if values == nil {
 			return
 		}
@@ -397,8 +380,8 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 			// A struct is only a grouping; a slice or map is also a value the user can
 			// grow and shrink, so test it as a field before descending into it.
 			if typ.Kind() != reflect.Struct {
-				for _, concrete := range expandPattern(base, path) {
-					add(concrete, typ.Kind(), containerValues(base, concrete))
+				for _, concrete := range expandPattern(resource, path) {
+					add(concrete, typ.Kind(), containerValues(resource, concrete))
 				}
 			}
 			return true
@@ -413,7 +396,7 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 			return false
 		}
 
-		concrete := expandPattern(base, path)
+		concrete := expandPattern(resource, path)
 		if len(concrete) == 0 {
 			// A field the user cannot set is not a coverage gap. Checked on the pattern here
 			// because there is no concrete path to check: the container is absent.
@@ -455,77 +438,98 @@ func isNotUserSettable(sf *reflect.StructField) bool {
 		sf.Tag.Get("json") == "-"
 }
 
-// containerValues returns the values to try for a slice or map field that the base config
-// actually populates: the config's own value, and that value with its last entry dropped.
-// Combined with the implicit "absent", one field then covers adding and removing the whole
-// container as well as adding and removing a single entry -- all with data the backend has
-// already accepted, so nothing has to be invented.
-func containerValues(base dyn.Value, path string) []dyn.Value {
-	current, err := dyn.Get(base, path)
-	if err != nil || !current.IsValid() {
+// containerValues returns the values to try for a slice or map field that the deployed
+// resource actually populates: the resource's own value, and that value with one entry
+// dropped. Combined with the implicit "absent", one field then covers adding and removing
+// the whole container as well as adding and removing a single entry -- all with data the
+// backend has already accepted, so nothing has to be invented.
+//
+// Both are deep copies: a later edit rewrites the same map or slice in place, which would
+// otherwise change a value recorded here.
+func containerValues(resource any, path string) []any {
+	current, err := structaccess.GetByString(resource, path)
+	if err != nil || isAbsent(current) {
 		return nil
 	}
 
-	switch current.Kind() {
-	case dyn.KindSequence:
-		items, _ := current.AsSequence()
-		if len(items) == 0 {
+	value := reflect.ValueOf(current)
+	var trimmed reflect.Value
+	switch value.Kind() {
+	case reflect.Slice:
+		if value.Len() == 0 {
 			return nil
 		}
-		return []dyn.Value{current, dyn.V(slices.Clone(items[:len(items)-1]))}
+		trimmed = reflect.MakeSlice(value.Type(), 0, value.Len()-1)
+		trimmed = reflect.AppendSlice(trimmed, value.Slice(0, value.Len()-1))
 
-	case dyn.KindMap:
-		m, _ := current.AsMap()
-		pairs := m.Pairs()
-		if len(pairs) == 0 {
+	case reflect.Map:
+		keys := sortedMapKeys(value)
+		if len(keys) == 0 {
 			return nil
 		}
-		trimmed := dyn.NewMapping()
-		for _, pair := range pairs[:len(pairs)-1] {
-			key, _ := pair.Key.AsString()
-			trimmed.SetLoc(key, pair.Key.Locations(), pair.Value)
+		trimmed = reflect.MakeMap(value.Type())
+		for _, key := range keys[:len(keys)-1] {
+			trimmed.SetMapIndex(key, value.MapIndex(key))
 		}
-		return []dyn.Value{current, dyn.NewValue(trimmed, current.Locations())}
 
 	default:
 		return nil
 	}
+
+	full, err := clone(current)
+	if err != nil {
+		return nil
+	}
+	return []any{full, trimmed.Interface()}
 }
 
-// expandPattern turns a pattern from the type walk into the concrete paths the base config
-// actually has: "tasks[*].description" against a config with one task yields
+// clone deep-copies a value through the JSON representation the API uses, which the SDK
+// types define themselves -- so ForceSendFields survives the copy.
+func clone(value any) (any, error) {
+	body, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	copied := reflect.New(reflect.TypeOf(value))
+	if err := json.Unmarshal(body, copied.Interface()); err != nil {
+		return nil, err
+	}
+	return copied.Elem().Interface(), nil
+}
+
+// sortedMapKeys orders a map's keys so that which entry gets dropped, and which entries a
+// wildcard expands to, is the same on every run. A Go map has no order of its own.
+func sortedMapKeys(value reflect.Value) []reflect.Value {
+	keys := value.MapKeys()
+	slices.SortFunc(keys, func(a, b reflect.Value) int { return strings.Compare(a.String(), b.String()) })
+	return keys
+}
+
+// expandPattern turns a pattern from the type walk into the concrete paths the deployed
+// resource actually has: "tasks[*].description" against a resource with one task yields
 // "tasks[0].description". A pattern with nothing behind it yields nothing, which is how a
 // field under an absent container is reported as not covered.
-func expandPattern(base dyn.Value, pattern string) []string {
+func expandPattern(resource any, pattern string) []string {
 	paths := []string{""}
 	for _, seg := range splitPattern(pattern) {
 		var next []string
 		for _, prefix := range paths {
 			switch seg {
 			case "[*]":
-				value, err := dyn.Get(base, prefix)
-				if err != nil {
+				value, err := valueAt(resource, prefix)
+				if err != nil || value.Kind() != reflect.Slice {
 					continue
 				}
-				items, ok := value.AsSequence()
-				if !ok {
-					continue
-				}
-				for i := range items {
+				for i := range value.Len() {
 					next = append(next, prefix+"["+strconv.Itoa(i)+"]")
 				}
 			case "*":
-				value, err := dyn.Get(base, prefix)
-				if err != nil {
+				value, err := valueAt(resource, prefix)
+				if err != nil || value.Kind() != reflect.Map {
 					continue
 				}
-				m, ok := value.AsMap()
-				if !ok {
-					continue
-				}
-				for _, pair := range m.Pairs() {
-					key, _ := pair.Key.AsString()
-					next = append(next, prefix+"["+quoteKey(key)+"]")
+				for _, key := range sortedMapKeys(value) {
+					next = append(next, prefix+"["+quoteKey(key.String())+"]")
 				}
 			default:
 				next = append(next, joinPath(prefix, seg))
@@ -534,6 +538,21 @@ func expandPattern(base dyn.Value, pattern string) []string {
 		paths = next
 	}
 	return paths
+}
+
+// valueAt reads a path off the resource, with "" meaning the resource itself.
+func valueAt(resource any, path string) (reflect.Value, error) {
+	if path == "" {
+		return reflect.Indirect(reflect.ValueOf(resource)), nil
+	}
+	value, err := structaccess.GetByString(resource, path)
+	if err != nil {
+		return reflect.Value{}, err
+	}
+	if isAbsent(value) {
+		return reflect.Value{}, fmt.Errorf("%s is absent", path)
+	}
+	return reflect.Indirect(reflect.ValueOf(value)), nil
 }
 
 // splitPattern breaks a pattern into field names, "[*]" and "*" segments.
@@ -568,7 +587,7 @@ func joinPath(prefix, name string) string {
 	return prefix + "." + name
 }
 
-// quoteKey renders a map key the way structpath and dyn both parse it back.
+// quoteKey renders a map key the way structpath parses it back.
 func quoteKey(key string) string {
 	return "'" + strings.ReplaceAll(key, "'", "''") + "'"
 }

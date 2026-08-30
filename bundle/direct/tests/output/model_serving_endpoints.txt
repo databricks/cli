@@ -5,13 +5,5 @@ config.auto_capture_config.enabled           false      absent     COLLATERAL_DR
 config.auto_capture_config.enabled           false      true       COLLATERAL_DRIFT  config
 config.auto_capture_config.enabled           true       absent     COLLATERAL_DRIFT  config
 config.auto_capture_config.enabled           true       false      COLLATERAL_DRIFT  config
+config.auto_capture_config.schema_name       x          absent     COLLATERAL_DRIFT  config
 config.auto_capture_config.table_name_prefix y          absent     COLLATERAL_DRIFT  config
-email_notifications.on_update_failure[0]     absent     x          UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_failure"
-email_notifications.on_update_failure[0]     absent     y          UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_failure"
-email_notifications.on_update_failure[0]     x          absent     UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_failure"
-email_notifications.on_update_success[0]     absent     x          UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_success"
-email_notifications.on_update_success[0]     absent     y          UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_success"
-email_notifications.on_update_success[0]     x          absent     UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_success"
-email_notifications.on_update_success[0]     x          y          UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_success"
-email_notifications.on_update_success[0]     y          absent     UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_success"
-email_notifications.on_update_success[0]     y          x          UNSETTABLE  index out of bounds at "resources.model_serving_endpoints.foo.email_notifications.on_update_success"

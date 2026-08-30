@@ -2,13 +2,13 @@ package tests
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
 	"os"
 	"path/filepath"
-	"slices"
-	"strconv"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -24,10 +24,10 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -154,7 +154,7 @@ func maxWaitSeconds() string {
 // built is usually the environment (an expired token, a workspace that rejects the
 // config), and the run is more useful if that lands in the report as one bad verdict
 // than if it aborts thousands of pending observations.
-func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, configName, uniqueName string, base dyn.Value) (*bundleHarness, error) {
+func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, configName, uniqueName string, base any) (*bundleHarness, error) {
 	dir := t.TempDir()
 	if err := copyDir(dataDir, dir); err != nil {
 		return nil, err
@@ -236,7 +236,7 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 	// which would be reported against whichever field happened to trigger the recreate,
 	// once per field. That bug has its own coverage in
 	// acceptance/bundle/resources/volumes/recreate.
-	if err := stripSubResources(&b.Config); err != nil {
+	if err := stripSubResources(&b.Config, ctx); err != nil {
 		return nil, err
 	}
 
@@ -245,20 +245,22 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 		return nil, err
 	}
 
-	if base.IsValid() {
-		if err := mergeBase(&b.Config, node, base); err != nil {
-			return nil, err
-		}
-	}
-
-	return &bundleHarness{
+	harness := &bundleHarness{
 		t:         t,
 		ctx:       ctx,
 		client:    client,
 		bundle:    b,
 		node:      node,
 		statePath: filepath.Join(dir, "resources.json"),
-	}, nil
+	}
+
+	if base != nil {
+		if err := harness.edit(func(resource any) error { return seedBase(resource, base) }); err != nil {
+			return nil, err
+		}
+	}
+
+	return harness, nil
 }
 
 // cachedUser resolves the workspace user once per process: a harness is built per
@@ -379,10 +381,26 @@ func hasDrift(plan *deployplan.Plan) bool {
 	return false
 }
 
-// mutate edits the bundle's dynamic config, which is what GetResourceConfig reads.
-// Editing the typed structs would not be seen by the planner.
-func (h *bundleHarness) mutate(fn func(dyn.Value) (dyn.Value, error)) error {
-	return h.bundle.Config.Mutate(fn)
+// edit runs fn over the typed resource under test and syncs the result back into the
+// dynamic tree, which is what the planner reads (config.Root.GetResourceConfig). Enter
+// and exit around a typed edit is the same contract every bundle mutator follows.
+func (h *bundleHarness) edit(fn func(resource any) error) error {
+	if err := h.bundle.Config.MarkMutatorEntry(h.ctx); err != nil {
+		return err
+	}
+	resource, err := structaccess.GetByString(&h.bundle.Config, h.node)
+	if err == nil {
+		err = fn(resource)
+	}
+	if exitErr := h.bundle.Config.MarkMutatorExit(h.ctx); exitErr != nil {
+		return exitErr
+	}
+	return err
+}
+
+// resource returns the typed resource under test, e.g. *resources.Schema.
+func (h *bundleHarness) resource() (any, error) {
+	return structaccess.GetByString(&h.bundle.Config, h.node)
 }
 
 func copyDir(src, dst string) error {
@@ -407,228 +425,323 @@ func copyDir(src, dst string) error {
 }
 
 // setField writes a value into the resource under test, or removes the field when the
-// value is absent. Edits go through the dynamic config because that is what the
-// planner reads (config.Root.GetResourceConfig).
-func (h *bundleHarness) setField(path string, value dyn.Value) error {
-	rel, err := parsePath(path)
+// value is nil -- which is how "absent" is expressed, since a Go struct has no absent.
+func (h *bundleHarness) setField(path string, value any) error {
+	node, err := structpath.ParsePath(path)
 	if err != nil {
 		return err
 	}
-	node, err := dyn.NewPathFromString(h.node)
-	if err != nil {
-		return err
-	}
-	full := append(node, rel...)
-	return h.mutate(func(root dyn.Value) (dyn.Value, error) {
-		if !value.IsValid() {
-			return deletePath(root, full)
-		}
-		if err := ensureParents(&root, full); err != nil {
-			return dyn.InvalidValue, err
-		}
-		return dyn.SetByPath(root, full, value)
+	return h.edit(func(resource any) error {
+		return setNode(resource, node, value)
 	})
 }
 
-// parsePath converts a field path into a dyn.Path. Written by hand rather than handed to
-// dyn.NewPathFromString because that parser treats everything in brackets as an integer
-// index, so a map key -- which the field paths here render as ['key'], the form structpath
-// prints and the form a key containing a dot requires -- is rejected outright.
-func parsePath(path string) (dyn.Path, error) {
-	var out dyn.Path
-	for len(path) > 0 {
-		path = strings.TrimPrefix(path, ".")
+// setNode is setField without the bundle: the edit itself, for the unit tests.
+func setNode(resource any, node *structpath.PathNode, value any) error {
+	if value == nil {
+		return removeField(resource, node)
+	}
+	if err := ensurePath(resource, node); err != nil {
+		return err
+	}
+	converted, err := coerce(resource, node, value)
+	if err != nil {
+		return err
+	}
+	return structaccess.Set(resource, node, converted)
+}
 
-		switch {
-		case strings.HasPrefix(path, "['"):
-			end := strings.Index(path, "']")
-			if end < 0 {
-				return nil, fmt.Errorf("unterminated quoted key in %q", path)
-			}
-			// '' is how a literal quote is escaped, matching structpath.
-			out = append(out, dyn.Key(strings.ReplaceAll(path[2:end], "''", "'")))
-			path = path[end+2:]
+// removeField makes a field absent. For a struct field that means the zero value with the
+// field dropped from ForceSendFields, which is what structaccess.Set does with nil; a map
+// entry and a slice element have to go instead of being zeroed.
+func removeField(resource any, node *structpath.PathNode) error {
+	parent := node.Parent()
+	// An error here means the path does not lead anywhere in this config -- a nil object on
+	// the way down -- which is the same conclusion as an absent parent: nothing to remove.
+	container, err := structaccess.Get(resource, parent)
+	if err != nil || isAbsent(container) {
+		return nil //nolint:nilerr // an unreachable parent means the field is already absent
+	}
 
-		case strings.HasPrefix(path, "["):
-			end := strings.Index(path, "]")
-			if end < 0 {
-				return nil, fmt.Errorf("unterminated index in %q", path)
-			}
-			index, err := strconv.Atoi(path[1:end])
-			if err != nil {
-				return nil, fmt.Errorf("bad index in %q: %w", path, err)
-			}
-			out = append(out, dyn.Index(index))
-			path = path[end+1:]
-
-		default:
-			end := strings.IndexAny(path, ".[")
-			if end < 0 {
-				out = append(out, dyn.Key(path))
-				return out, nil
-			}
-			out = append(out, dyn.Key(path[:end]))
-			path = path[end:]
+	if index, isIndex := node.Index(); isIndex {
+		return removeIndex(resource, parent, container, index)
+	}
+	if key, hasKey := node.StringKey(); hasKey {
+		if value := reflect.ValueOf(container); value.Kind() == reflect.Map {
+			value.SetMapIndex(reflect.ValueOf(key).Convert(value.Type().Key()), reflect.Value{})
+			return nil
 		}
 	}
-	return out, nil
+	return structaccess.Set(resource, node, nil)
 }
 
-// fieldSnapshot captures the resource node as deployed, so a field can be put back to
-// its base value once its transitions are done.
-func (h *bundleHarness) fieldSnapshot() dyn.Value {
-	node, err := dyn.NewPathFromString(h.node)
-	require.NoError(h.t, err)
-	v, err := dyn.GetByPath(h.bundle.Config.Value(), node)
-	require.NoError(h.t, err)
-	return v
-}
-
-// restoreField resets one field to whatever the base config had, including absent.
-func (h *bundleHarness) restoreField(base dyn.Value, path string) {
-	rel, err := parsePath(path)
-	if err != nil {
-		return
+// removeIndex rebuilds a slice without one element and writes it back, since a slice
+// element cannot be zeroed away.
+func removeIndex(resource any, parent *structpath.PathNode, container any, index int) error {
+	value := reflect.ValueOf(container)
+	if value.Kind() != reflect.Slice {
+		return fmt.Errorf("cannot remove %s[%d]: parent is %s", parent, index, value.Kind())
 	}
-	value, err := dyn.GetByPath(base, rel)
-	if err != nil {
-		value = dyn.InvalidValue
+	if index < 0 || index >= value.Len() {
+		return nil
 	}
-	_ = h.setField(path, value)
+	// A fresh slice, not a re-slice: appending into the original backing array would also
+	// change any copy of the slice the suite is holding on to.
+	trimmed := reflect.MakeSlice(value.Type(), 0, value.Len()-1)
+	trimmed = reflect.AppendSlice(trimmed, value.Slice(0, index))
+	trimmed = reflect.AppendSlice(trimmed, value.Slice(index+1, value.Len()))
+	return structaccess.Set(resource, parent, trimmed.Interface())
 }
 
-// ensureParents creates any missing intermediate maps so a nested field can be set,
-// which is what writing the same nested key into databricks.yml would do.
-func ensureParents(root *dyn.Value, p dyn.Path) error {
-	for i := 1; i < len(p); i++ {
-		prefix := p[:i]
-		if _, err := dyn.GetByPath(*root, prefix); err == nil {
+// ensurePath makes the places a path passes through exist, which is what writing the same
+// nested key into databricks.yml would do: an absent object is allocated, and a list too
+// short for an index is grown. It works top down, so the type of each missing level comes
+// from the level above it, which by then exists.
+func ensurePath(resource any, node *structpath.PathNode) error {
+	nodes := node.AsSlice()
+	for i, prefix := range nodes {
+		if index, isIndex := prefix.Index(); isIndex {
+			if err := growSlice(resource, prefix.Parent(), index); err != nil {
+				return err
+			}
 			continue
 		}
-		if prefix[len(prefix)-1].Key() == "" {
-			// An index component: growing a sequence would invent an element the
-			// config never declared.
-			return fmt.Errorf("cannot create %s: parent is a sequence", prefix)
+		if i == len(nodes)-1 {
+			// The leaf is what the caller is about to write.
+			break
 		}
-		updated, err := dyn.SetByPath(*root, prefix, dyn.V(map[string]dyn.Value{}))
+		if _, nextIsIndex := nodes[i+1].Index(); nextIsIndex {
+			// growSlice creates the list itself, at the length the index needs.
+			continue
+		}
+		if current, err := structaccess.Get(resource, prefix); err == nil && !isAbsent(current) {
+			continue
+		}
+		typ, err := typeAt(resource, prefix)
 		if err != nil {
 			return err
 		}
-		*root = updated
+		empty, err := emptyValue(typ)
+		if err != nil {
+			return fmt.Errorf("cannot create %s: %w", prefix, err)
+		}
+		if err := structaccess.Set(resource, prefix, empty); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-// mergeBase folds the value library's base fragment into the resource, so the fields it
-// declares are present and can be varied.
-func mergeBase(root *bundleconfig.Root, node string, base dyn.Value) error {
-	path, err := dyn.NewPathFromString(node)
+// growSlice extends a list until an index is addressable, appending zero elements. The
+// index is either the one the config already had, or the first of a list this suite is
+// putting back after removing its only entry.
+func growSlice(resource any, parent *structpath.PathNode, index int) error {
+	container, err := structaccess.Get(resource, parent)
 	if err != nil {
 		return err
 	}
-	return root.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		current, err := dyn.GetByPath(v, path)
-		if err != nil {
-			return dyn.InvalidValue, err
+	// An empty list reads back as absent -- omitempty hides it -- so the type comes from the
+	// declaration rather than from the value.
+	typ, err := typeAt(resource, parent)
+	if err != nil {
+		return err
+	}
+	if typ.Kind() != reflect.Slice {
+		return fmt.Errorf("cannot index %s: %s", parent, typ.Kind())
+	}
+
+	grown := reflect.MakeSlice(typ, index+1, index+1)
+	if !isAbsent(container) {
+		value := reflect.ValueOf(container)
+		if value.Len() > index {
+			return nil
 		}
-		merged, err := merge.Merge(current, base)
+		reflect.Copy(grown, value)
+	}
+	return structaccess.Set(resource, parent, grown.Interface())
+}
+
+// typeAt returns the declared type of the field at node. The parent has to exist, which
+// ensurePath guarantees by allocating top down.
+func typeAt(resource any, node *structpath.PathNode) (reflect.Type, error) {
+	parent := node.Parent()
+	typ := reflect.TypeOf(resource)
+	if !parent.IsRoot() {
+		value, err := structaccess.Get(resource, parent)
 		if err != nil {
-			return dyn.InvalidValue, err
+			return nil, err
 		}
-		return dyn.SetByPath(v, path, merged)
+		if isAbsent(value) {
+			return nil, fmt.Errorf("%s is absent", parent)
+		}
+		typ = reflect.TypeOf(value)
+	}
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+
+	if _, isIndex := node.Index(); isIndex {
+		if typ.Kind() != reflect.Slice && typ.Kind() != reflect.Array {
+			return nil, fmt.Errorf("cannot index %s", typ.Kind())
+		}
+		return typ.Elem(), nil
+	}
+	key, ok := node.StringKey()
+	if !ok {
+		return nil, fmt.Errorf("unsupported path %s", node)
+	}
+	switch typ.Kind() {
+	case reflect.Map:
+		return typ.Elem(), nil
+	case reflect.Struct:
+		field, _, ok := structaccess.FindStructFieldByKeyType(typ, key)
+		if !ok {
+			return nil, fmt.Errorf("field %q not found in %s", key, typ)
+		}
+		return field.Type, nil
+	default:
+		return nil, fmt.Errorf("cannot access %q on %s", key, typ.Kind())
+	}
+}
+
+// coerce converts a value from the value library into the field's own type. A scalar is
+// left to structaccess, which converts between the numeric and string kinds; a map or list
+// has to go through the type's own JSON unmarshaller, since []any is assignable to nothing
+// and an SDK struct or enum decodes itself.
+func coerce(resource any, node *structpath.PathNode, value any) (any, error) {
+	switch reflect.ValueOf(value).Kind() {
+	case reflect.Map, reflect.Slice:
+	default:
+		return value, nil
+	}
+
+	typ, err := typeAt(resource, node)
+	if err != nil {
+		return nil, err
+	}
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+	if reflect.TypeOf(value).AssignableTo(typ) {
+		// Already the field's own type: a container value read back off the resource.
+		return value, nil
+	}
+
+	body, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	converted := reflect.New(typ)
+	if err := json.Unmarshal(body, converted.Interface()); err != nil {
+		return nil, fmt.Errorf("cannot use %v as %s: %w", value, typ, err)
+	}
+	return converted.Elem().Interface(), nil
+}
+
+// emptyValue builds the empty container to put at an absent level of a path.
+func emptyValue(typ reflect.Type) (any, error) {
+	switch typ.Kind() {
+	case reflect.Pointer:
+		return reflect.New(typ.Elem()).Interface(), nil
+	case reflect.Map:
+		return reflect.MakeMap(typ).Interface(), nil
+	case reflect.Slice:
+		return reflect.MakeSlice(typ, 0, 0).Interface(), nil
+	case reflect.Struct:
+		return reflect.New(typ).Elem().Interface(), nil
+	default:
+		return nil, fmt.Errorf("%s is not a container", typ)
+	}
+}
+
+// isAbsent reports whether a value read out of the config is not there at all. A nil
+// pointer or map reads back as a typed nil, which is not a nil interface.
+func isAbsent(value any) bool {
+	if value == nil {
+		return true
+	}
+	switch v := reflect.ValueOf(value); v.Kind() {
+	case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Interface:
+		return v.IsNil()
+	default:
+		return false
+	}
+}
+
+// snapshot serializes the resource under test, so a field can be put back to what the
+// base config had once its transitions are done. JSON is the same representation the API
+// uses, and the SDK's own unmarshaller restores ForceSendFields, so an absent field comes
+// back absent rather than as an explicit empty value.
+func (h *bundleHarness) snapshot() []byte {
+	resource, err := h.resource()
+	require.NoError(h.t, err)
+	body, err := json.Marshal(resource)
+	require.NoError(h.t, err)
+	return body
+}
+
+// restore puts the resource back to a snapshot taken earlier.
+func (h *bundleHarness) restore(snapshot []byte) {
+	_ = h.edit(func(resource any) error {
+		value := reflect.ValueOf(resource).Elem()
+		value.Set(reflect.Zero(value.Type()))
+		return json.Unmarshal(snapshot, resource)
 	})
+}
+
+// seedBase folds the value library's base fragment into the resource, so the fields it
+// declares are present and can be varied. Unmarshalling merges: a field the fragment does
+// not mention keeps whatever the config gave it.
+func seedBase(resource, base any) error {
+	body, err := json.Marshal(base)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(body, resource)
 }
 
 // subResourceKinds are the child plan nodes this suite removes from every config; see
 // stripSubResources.
 var subResourceKinds = []string{"permissions", "grants"}
 
-func stripSubResources(root *bundleconfig.Root) error {
-	return root.Mutate(withoutSubResources)
+// stripSubResources drops the permissions and grants blocks from every resource of an
+// initialized config.
+func stripSubResources(root *bundleconfig.Root, ctx context.Context) error {
+	if err := root.MarkMutatorEntry(ctx); err != nil {
+		return err
+	}
+	err := forEachResource(root, func(_ string, resource any) error {
+		typ := reflect.TypeOf(resource)
+		for typ.Kind() == reflect.Pointer {
+			typ = typ.Elem()
+		}
+		for _, kind := range subResourceKinds {
+			if _, _, ok := structaccess.FindStructFieldByKeyType(typ, kind); !ok {
+				continue
+			}
+			if err := structaccess.SetByString(resource, kind, nil); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if exitErr := root.MarkMutatorExit(ctx); exitErr != nil {
+		return exitErr
+	}
+	return err
 }
 
-// withoutSubResources returns the config with every permissions and grants block removed.
-func withoutSubResources(v dyn.Value) (dyn.Value, error) {
-	for _, kind := range subResourceKinds {
-		pattern := dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key(kind))
-
-		// Collect first: deleting during the walk would mutate what it is walking.
-		var paths []dyn.Path
-		_, err := dyn.MapByPattern(v, pattern, func(p dyn.Path, found dyn.Value) (dyn.Value, error) {
-			paths = append(paths, slices.Clone(p))
-			return found, nil
-		})
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
-
-		for _, path := range paths {
-			v, err = deletePath(v, path)
-			if err != nil {
-				return dyn.InvalidValue, err
+// forEachResource visits every declared resource with its config node key.
+func forEachResource(root *bundleconfig.Root, fn func(node string, resource any) error) error {
+	for _, group := range root.Resources.AllResources() {
+		for key, resource := range group.Resources {
+			node := "resources." + group.Description.PluralName + "." + key
+			if err := fn(node, resource); err != nil {
+				return fmt.Errorf("%s: %w", node, err)
 			}
 		}
 	}
-	return v, nil
-}
-
-// deletePath removes a key from its parent map. dyn has no delete, so the parent is
-// rebuilt without the key, preserving order.
-func deletePath(root dyn.Value, p dyn.Path) (dyn.Value, error) {
-	parentPath := p[:len(p)-1]
-	key := p[len(p)-1].Key()
-	if key == "" {
-		// An index: drop that element from its sequence. Removing the only element of a
-		// scalar list is how "absent" is expressed for a []string entry.
-		return deleteIndex(root, parentPath, p[len(p)-1].Index())
-	}
-
-	parent, err := dyn.GetByPath(root, parentPath)
-	if dyn.IsNoSuchKeyError(err) || dyn.IsCannotTraverseNilError(err) {
-		// The parent object is not in this config, so the field is already absent.
-		return root, nil
-	}
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
-	mapping, ok := parent.AsMap()
-	if !ok {
-		return dyn.InvalidValue, fmt.Errorf("cannot remove %s: parent is %s", p, parent.Kind())
-	}
-	if _, found := mapping.GetByString(key); !found {
-		return root, nil
-	}
-
-	trimmed := dyn.NewMapping()
-	for _, pair := range mapping.Pairs() {
-		if k, ok := pair.Key.AsString(); ok && k == key {
-			continue
-		}
-		k, _ := pair.Key.AsString()
-		trimmed.SetLoc(k, pair.Key.Locations(), pair.Value)
-	}
-	return dyn.SetByPath(root, parentPath, dyn.NewValue(trimmed, parent.Locations()))
-}
-
-// deleteIndex rebuilds a sequence without one element.
-func deleteIndex(root dyn.Value, parentPath dyn.Path, index int) (dyn.Value, error) {
-	parent, err := dyn.GetByPath(root, parentPath)
-	if dyn.IsNoSuchKeyError(err) || dyn.IsCannotTraverseNilError(err) {
-		return root, nil
-	}
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
-	items, ok := parent.AsSequence()
-	if !ok {
-		return dyn.InvalidValue, fmt.Errorf("cannot remove %s[%d]: parent is %s", parentPath, index, parent.Kind())
-	}
-	if index < 0 || index >= len(items) {
-		return root, nil
-	}
-	trimmed := slices.Clone(items[:index])
-	trimmed = append(trimmed, items[index+1:]...)
-	return dyn.SetByPath(root, parentPath, dyn.NewValue(trimmed, parent.Locations()))
+	return nil
 }
 
 // uniqueName keeps cloud resources from colliding between runs and between the
