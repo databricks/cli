@@ -31,6 +31,7 @@ package tests
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -65,10 +66,6 @@ func TestFields(t *testing.T) {
 
 			fv, err := loadFieldValues(resourceType)
 			require.NoError(t, err)
-			if isCloud() && fv.slow && testing.Short() {
-				t.Skipf("slow on cloud and -short was passed; the nightly run covers it")
-			}
-
 			// A testserver per type keeps the parallel runs from sharing workspace
 			// state. On cloud this is the same real workspace either way.
 			client := newClient(t)
@@ -98,7 +95,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	// nothing below can be attributed to a field.
 	h, err := newBaseline(t, ctx, client, user, cfg)
 	if err != nil {
-		rep.add(result{cfg.name, "(base config)", "create", verdictBaseError, oneLine(err.Error())})
+		rep.add(result{cfg.name, "(base config)", "", "create", verdictBaseError, oneLine(err.Error())})
 		return
 	}
 
@@ -106,13 +103,13 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 
 	for _, f := range fields {
 		if reason, ok := fv.skipReason(f.path); ok {
-			rep.add(result{cfg.name, f.path, "-", verdictSkipped, reason})
+			rep.add(result{cfg.name, f.path, "", "", verdictSkipped, reason})
 			continue
 		}
 		t.Run(f.path, func(t *testing.T) {
 			for _, tr := range f.transitions() {
 				t.Run(tr.label(), func(t *testing.T) {
-					res := runTransition(h, cfg.name, f.path, tr)
+					res := runTransition(t, h, cfg.name, f.path, tr)
 					rep.add(res)
 					if res.verdict.leavesResourceUsable() {
 						return
@@ -136,7 +133,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 		if !h.converged() {
 			rebuilt, err := rebuild(t, ctx, client, user, cfg, h)
 			if err != nil {
-				rep.add(result{cfg.name, f.path, "-", verdictBaseError, oneLine(err.Error())})
+				rep.add(result{cfg.name, f.path, "", "", verdictBaseError, oneLine(err.Error())})
 				return
 			}
 			h = rebuilt
@@ -146,9 +143,9 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 }
 
 // runTransition moves one field from one value to another and reports what happened.
-func runTransition(h *bundleHarness, config, path string, tr transition) result {
+func runTransition(t *testing.T, h *bundleHarness, config, path string, tr transition) result {
 	from, to := tr.from, tr.to
-	res := result{config: config, field: path, transition: tr.label()} //exhaustruct:ignore
+	res := result{config: config, field: path, from: valueLabel(tr.from), to: valueLabel(tr.to)} //exhaustruct:ignore
 
 	// Reach the starting value.
 	if err := h.setField(path, from); err != nil {
@@ -182,9 +179,13 @@ func runTransition(h *bundleHarness, config, path string, tr transition) result 
 	}
 
 	if diags := h.apply(pending, plan); diags.HasError() {
-		res.verdict = verdictDeployError
-		if isAPIError(diags) {
+		switch {
+		case isTimeout(diags):
+			res.verdict = verdictTimeout
+		case isAPIError(diags):
 			res.verdict = verdictBackendError
+		default:
+			res.verdict = verdictDeployError
 		}
 		res.detail = firstError(diags)
 		return res
@@ -197,6 +198,9 @@ func runTransition(h *bundleHarness, config, path string, tr transition) result 
 		return res
 	}
 	if own, child := driftDetail(after, h.node); own != "" || child != "" {
+		// The plan that still wants a change is the whole evidence for this verdict, so
+		// print it. Subtests never fail here, so -v is how you see it.
+		t.Logf("post-deploy plan still proposes a change:\n%s", planJSON(after))
 		// Attribute to the field only when the field's own node is still drifted; a
 		// child left behind by a recreate is a different problem with a different fix.
 		res.verdict, res.detail = verdictDrift, own
@@ -294,6 +298,15 @@ var apiErrorCodes = []string{
 	"NOT_FOUND",
 }
 
+func isTimeout(diags diag.Diagnostics) bool {
+	for _, d := range diags {
+		if strings.Contains(d.Summary, context.DeadlineExceeded.Error()) {
+			return true
+		}
+	}
+	return false
+}
+
 func isAPIError(diags diag.Diagnostics) bool {
 	for _, d := range diags {
 		for _, code := range apiErrorCodes {
@@ -337,6 +350,15 @@ func driftDetail(plan *deployplan.Plan, node string) (own, child string) {
 // suffix is random per run, and error messages quote resource names and ids, so it has
 // to be redacted or the goldens differ on every run.
 var idPattern = regexp.MustCompile(`f[0-9a-f]{20}`)
+
+// planJSON renders a plan for a -v dump.
+func planJSON(plan *deployplan.Plan) string {
+	body, err := json.MarshalIndent(plan, "", "  ")
+	if err != nil {
+		return err.Error()
+	}
+	return string(body)
+}
 
 func oneLine(s string) string {
 	s = idPattern.ReplaceAllString(s, "[UNIQUE_NAME]")

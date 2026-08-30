@@ -1,7 +1,4 @@
 # Value library for jobs. See ../README.md.
-# jobs is the largest surface here (1300+ observations), so it is slow on cloud.
-slow: true
-
 skip:
   # git_source only validates as a coherent set: a provider, a url, and exactly one of
   # branch/tag/commit. Moving one of its fields at a time always produces an invalid

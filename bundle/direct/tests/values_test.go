@@ -29,12 +29,6 @@ var absent = dyn.InvalidValue
 // constrains (enums, ids, cross-referenced names) need an explicit entry, otherwise
 // every value is rejected and the field reports only BACKEND_ERROR.
 type fieldValues struct {
-	// slow marks a resource type whose cloud run is expensive -- one that provisions
-	// compute, say. It still runs on cloud; it is only dropped under -short, the same
-	// way CloudSlow narrows acceptance tests, so PR cloud runs stay bounded and the
-	// nightly covers everything.
-	slow bool
-
 	// skip lists field paths to leave out entirely, with a reason. A key ending in ".*"
 	// skips that whole subtree.
 	skip map[string]string
@@ -50,7 +44,7 @@ const fieldsDir = "testdata/fields"
 // yamlloader rather than a yaml package, so the values arrive as dyn.Value -- the same
 // representation the bundle config uses, which is what they are written into.
 func loadFieldValues(resourceType string) (*fieldValues, error) {
-	fv := &fieldValues{slow: false, skip: map[string]string{}, fields: map[string][]dyn.Value{}}
+	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]dyn.Value{}}
 
 	path := filepath.Join(fieldsDir, resourceType+".yml")
 	data, err := os.ReadFile(path)
@@ -66,9 +60,6 @@ func loadFieldValues(resourceType string) (*fieldValues, error) {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
 
-	if v, err := dyn.Get(root, "slow"); err == nil {
-		fv.slow, _ = v.AsBool()
-	}
 	if v, err := dyn.Get(root, "skip"); err == nil {
 		m, _ := v.AsMap()
 		for _, pair := range m.Pairs() {
@@ -140,8 +131,12 @@ type transition struct {
 	from, to dyn.Value
 }
 
+// label names the transition for the subtest. Kept free of shell metacharacters so a
+// single case can be re-run without quoting:
+//
+//	go test ./bundle/direct/tests -run TestFields/pipelines/.*/dry_run/absent_to_true -v
 func (t transition) label() string {
-	return valueLabel(t.from) + "->" + valueLabel(t.to)
+	return valueLabel(t.from) + "_to_" + valueLabel(t.to)
 }
 
 // transitions returns every ordered pair of the field's values. absent is one of them,
