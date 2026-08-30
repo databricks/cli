@@ -583,7 +583,7 @@ func AddDefaultHandlers(server *Server) {
 	// Registered Models:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+		return req.Workspace.RegisteredModelsGet(req, req.Vars["full_name"])
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/models", func(req Request) any {
