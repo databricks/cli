@@ -1,0 +1,3 @@
+
+>>> [CLI] bundle plan --var=schema_name=${resources.schemas.schema2.name}
+Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
