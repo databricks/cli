@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 title "Deploy: the deployment is created carrying this bundle's metadata"
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle

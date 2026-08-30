@@ -1,10 +1,10 @@
 
 === Deploy a schema with one grant: the grants node is recorded with its state
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource-[UNIQUE_NAME]/default/files...
 Created schemas.foo
 Created schemas.foo.grants
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle
@@ -12,12 +12,12 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
   "body": {
-    "display_name": "dms-emptied-resource",
-    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource/default/state",
+    "display_name": "dms-emptied-resource-[UNIQUE_NAME]",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource-[UNIQUE_NAME]/default/state",
     "target_name": "default",
     "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource/default"
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource-[UNIQUE_NAME]/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource-[UNIQUE_NAME]/default"
     }
   }
 }
@@ -50,9 +50,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   },
   "body": {
     "error_message": "",
-    "resource_id": "main.dms_emptied_resource",
+    "resource_id": "main.dms_emptied_resource_[UNIQUE_NAME]",
     "sequence_id": "0",
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_emptied_resource\"}}",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_emptied_resource_[UNIQUE_NAME]\"}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -64,9 +64,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   },
   "body": {
     "error_message": "",
-    "resource_id": "schema/main.dms_emptied_resource",
+    "resource_id": "schema/main.dms_emptied_resource_[UNIQUE_NAME]",
     "sequence_id": "0",
-    "state": "{\"state\":{\"securable_type\":\"schema\",\"full_name\":\"main.dms_emptied_resource\",\"__embed__\":[{\"principal\":\"someone@example.com\",\"privileges\":[\"USE_SCHEMA\"]}]},\"depends_on\":[{\"node\":\"resources.schemas.foo\",\"label\":\"${resources.schemas.foo.id}\"}]}",
+    "state": "{\"state\":{\"securable_type\":\"schema\",\"full_name\":\"main.dms_emptied_resource_[UNIQUE_NAME]\",\"__embed__\":[{\"principal\":\"someone@example.com\",\"privileges\":[\"USE_SCHEMA\"]}]},\"depends_on\":[{\"node\":\"resources.schemas.foo\",\"label\":\"${resources.schemas.foo.id}\"}]}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -82,7 +82,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> update_file.py databricks.yml grants: [{principal: someone@example.com, privileges: [USE_SCHEMA]}] grants: []
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource-[UNIQUE_NAME]/default/files...
 Updated schemas.foo.grants
 Files: 3 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
@@ -137,6 +137,6 @@ The following resources will be deleted:
 This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
   delete resources.schemas.foo
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted

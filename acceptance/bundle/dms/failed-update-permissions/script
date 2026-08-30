@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 title "Deploy the job and its permissions"
 trace $CLI bundle deploy
 rm -f out.requests.txt

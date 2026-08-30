@@ -1,12 +1,11 @@
 bundle:
-  name: dms-emptied-resource
-
+  name: dms-emptied-resource-$UNIQUE_NAME
 experimental:
   record_deployment_history: true
 
 resources:
   schemas:
     foo:
-      name: dms_emptied_resource
+      name: dms_emptied_resource_$UNIQUE_NAME
       catalog_name: main
       grants: [{principal: someone@example.com, privileges: [USE_SCHEMA]}]

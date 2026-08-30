@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 title "Deploy, then plan without touching anything: the deployment stamp must not show as drift"
 trace $CLI bundle deploy
 

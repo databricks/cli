@@ -1,3 +1,7 @@
+# The [[Server]] stub below forces a failure the real service will not produce on
+# demand, and the cloud harness ignores stubs, so this case only exists locally.
+Cloud = false
+
 # Which requests are made depends on how far apply got before a background upload
 # failed, so recording them would make the output nondeterministic.
 RecordRequests = false

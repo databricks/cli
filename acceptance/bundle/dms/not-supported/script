@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 title "record_deployment_history is rejected: the service side is not ready for users yet"
 trace musterr $CLI bundle validate
 

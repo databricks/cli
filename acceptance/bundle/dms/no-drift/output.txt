@@ -1,10 +1,10 @@
 
 === Deploy, then plan without touching anything: the deployment stamp must not show as drift
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files...
 Created jobs.foo
 Created pipelines.bar
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
@@ -12,7 +12,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === A second deploy is a no-op too: no update request for either resource
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
@@ -26,7 +26,7 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
     "deployment": {
       "deployment_id": "[NUMID]",
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift/default/state/metadata.json",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
       "version_id": "1"
     },
     "edition": "ADVANCED",
@@ -42,7 +42,7 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
     "deployment": {
       "deployment_id": "[NUMID]",
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift/default/state/metadata.json",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
       "version_id": "1"
     },
     "edit_mode": "UI_LOCKED",

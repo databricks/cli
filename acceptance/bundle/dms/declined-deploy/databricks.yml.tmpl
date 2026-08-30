@@ -1,12 +1,10 @@
 bundle:
-  name: dms-failed-recreate
-
+  name: dms-declined-deploy-$UNIQUE_NAME
 experimental:
   record_deployment_history: true
 
 resources:
   schemas:
     foo:
-      name: dms_failed_recreate_schema
+      name: dms_declined_deploy_schema_$UNIQUE_NAME
       catalog_name: main
-      comment: v1

@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 title "Deploy a schema with one grant: the grants node is recorded with its state"
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle

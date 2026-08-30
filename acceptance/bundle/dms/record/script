@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 # --get so the reads show up too: this file is the whole DMS call budget, so an extra
 # round-trip added to any phase turns up as a diff here.
 title "Deploy: the server assigns the deployment ID, and a version + create operation are recorded"
@@ -7,7 +9,7 @@ trace print_requests.py --get --dms //api/2.0/bundle
 title "The deployment ID is the ID of the workspace node the service registered under initial_parent_path; the CLI stores nothing locally"
 # MSYS_NO_PATHCONV prevents Git Bash from rewriting the leading-/ path on Windows.
 # Set per command rather than test.toml so trace can export it to its subshell.
-trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record/default/state/resources.deployment.json" | jq '{object_type,path}'
+trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record-${UNIQUE_NAME}/default/state/resources.deployment.json" | jq '{object_type,path}'
 trace jq 'has("deployment_id")' .databricks/bundle/default/resources.json
 
 title "Redeploy after deleting the local cache: the deployment ID is resolved from that node, the same deployment is reused, and the version increments (no new CreateDeployment)"
@@ -20,7 +22,7 @@ trace $CLI bundle destroy --auto-approve
 trace print_requests.py --get --dms //api/2.0/bundle
 
 title "Deploy again: the destroy took the node with it, so there is nothing to resolve and a fresh deployment starts at version 1"
-trace MSYS_NO_PATHCONV=1 musterr $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record/default/state/resources.deployment.json"
+trace MSYS_NO_PATHCONV=1 musterr $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record-${UNIQUE_NAME}/default/state/resources.deployment.json"
 trace $CLI bundle deploy
-trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record/default/state/resources.deployment.json" | jq '{object_type,path}'
+trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record-${UNIQUE_NAME}/default/state/resources.deployment.json" | jq '{object_type,path}'
 trace print_requests.py --get --dms //api/2.0/bundle

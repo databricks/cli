@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 title "Summary reports the deployment recorded with the metadata service, so a caller can find the deployment and the version it is on"
 trace $CLI bundle deploy
 trace $CLI bundle summary -o json | jq .bundle.deployment.history

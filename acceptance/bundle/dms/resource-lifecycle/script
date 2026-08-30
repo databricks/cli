@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 title "Deploy: the state write records the resource"
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle

@@ -1,6 +1,5 @@
 bundle:
-  name: dms-metadata-before
-
+  name: dms-metadata-before-$UNIQUE_NAME
 experimental:
   record_deployment_history: true
 
@@ -12,5 +11,5 @@ workspace:
 resources:
   schemas:
     foo:
-      name: dms_metadata_schema
+      name: dms_metadata_schema_$UNIQUE_NAME
       catalog_name: main

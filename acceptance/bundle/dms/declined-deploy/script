@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 title "Deploy a schema, so the deployment and its first version exist"
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle

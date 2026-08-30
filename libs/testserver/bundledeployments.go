@@ -77,7 +77,9 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 	objectID := nextID()
 	s.files[nodePath] = FileEntry{
 		Info: workspace.ObjectInfo{
-			ObjectType: "FILE",
+			// The service registers its own node type, which get-status reports back;
+			// a plain FILE is what the fake used to claim and the real API never returns.
+			ObjectType: "BUNDLE_DEPLOYMENT",
 			Path:       nodePath,
 			ObjectId:   objectID,
 		},

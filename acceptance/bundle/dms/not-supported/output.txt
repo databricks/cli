@@ -3,22 +3,22 @@
 >>> musterr [CLI] bundle validate
 Error: experimental.record_deployment_history is not supported yet; remove this setting from your bundle configuration
   at experimental.record_deployment_history
-  in databricks.yml:5:30
+  in databricks.yml:4:30
 
-Name: dms-not-supported
+Name: dms-not-supported-[UNIQUE_NAME]
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/dms-not-supported/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/dms-not-supported-[UNIQUE_NAME]/default
 
 Found 1 error
 
 === The hidden force-allow variable permits it
 >>> DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY=1 [CLI] bundle validate
-Name: dms-not-supported
+Name: dms-not-supported-[UNIQUE_NAME]
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/dms-not-supported/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/dms-not-supported-[UNIQUE_NAME]/default
 
 Validation OK!

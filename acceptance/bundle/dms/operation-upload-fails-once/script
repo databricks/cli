@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 title "Deploy so there is a recorded resource to recreate"
 trace $CLI bundle deploy
 rm -f out.requests.txt

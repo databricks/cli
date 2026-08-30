@@ -1,13 +1,13 @@
 
 === Deploy several resources: operations are uploaded from background workers, so exactly one is recorded per resource no matter what order the uploads finish in. The serialized state is dropped from the output here; bundle/dms/record covers it.
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/files...
 Created jobs.five
 Created jobs.four
 Created jobs.one
 Created jobs.three
 Created jobs.two
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //versions/1/operations --sort --del-body state --oneline
@@ -19,7 +19,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
 === Redeploy with no changes: nothing is applied, so no operations are recorded and only the version is opened and completed
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
 

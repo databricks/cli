@@ -1,12 +1,11 @@
 bundle:
-  name: dms-resource-lifecycle
-
+  name: dms-resource-lifecycle-$UNIQUE_NAME
 experimental:
   record_deployment_history: true
 
 resources:
   schemas:
     foo:
-      name: dms_resource_lifecycle_schema
+      name: dms_resource_lifecycle_schema_$UNIQUE_NAME
       catalog_name: main
       comment: v1

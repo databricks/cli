@@ -1,9 +1,9 @@
 
 === Deploy: the deployment is created carrying this bundle's metadata
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-before/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/default/files...
 Created schemas.foo
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle
@@ -11,12 +11,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
   "body": {
-    "display_name": "dms-metadata-before",
+    "display_name": "dms-metadata-before-[UNIQUE_NAME]",
     "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-pinned/state",
     "target_name": "default",
     "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-before/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-before/default"
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/default"
     }
   }
 }
@@ -45,9 +45,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   },
   "body": {
     "error_message": "",
-    "resource_id": "main.dms_metadata_schema",
+    "resource_id": "main.dms_metadata_schema_[UNIQUE_NAME]",
     "sequence_id": "0",
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_metadata_schema\"}}",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_metadata_schema_[UNIQUE_NAME]\"}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -63,8 +63,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> update_file.py databricks.yml dms-metadata-before dms-metadata-after
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-after/default/files...
-Files: 4 uploaded, 0 deleted
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/default/files...
+Files: 5 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle
@@ -75,10 +75,10 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
     "update_mask": "display_name,workspace_info"
   },
   "body": {
-    "display_name": "dms-metadata-after",
+    "display_name": "dms-metadata-after-[UNIQUE_NAME]",
     "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-after/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-after/default"
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/default"
     }
   }
 }
@@ -104,7 +104,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 === Deploy again without touching anything: the record already says this, so no deployment update
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-after/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/default/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 

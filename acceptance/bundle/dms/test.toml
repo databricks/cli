@@ -1,4 +1,4 @@
-Cloud = false
+Cloud = true
 
 # Deployment Metadata Service (DMS) recording is only supported by the direct
 # engine; it is a no-op on terraform.
@@ -13,6 +13,7 @@ RecordRequests = true
 
 Ignore = [
     '.databricks',
+    'databricks.yml',
 ]
 
 # experimental.record_deployment_history is normally rejected; these tests force-allow it

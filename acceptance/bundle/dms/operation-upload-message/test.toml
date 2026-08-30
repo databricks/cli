@@ -1,3 +1,7 @@
+# The [[Server]] stub below forces a failure the real service will not produce on
+# demand, and the cloud harness ignores stubs, so this case only exists locally.
+Cloud = false
+
 # One resource, so which operation is refused is fixed and the error a user sees can be
 # asserted. operation-upload-fails covers a deploy of several resources, where which ones
 # were reached before the failure landed is not.

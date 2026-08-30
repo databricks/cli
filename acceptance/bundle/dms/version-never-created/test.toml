@@ -1,3 +1,7 @@
+# The [[Server]] stub below forces a failure the real service will not produce on
+# demand, and the cloud harness ignores stubs, so this case only exists locally.
+Cloud = false
+
 # The first version fails, so the deployment record is never created - only the
 # workspace node CreateDeployment registered. The next deploy resolves the ID from
 # that node and has to cope with a deployment that has no record yet.

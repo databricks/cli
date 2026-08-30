@@ -13,7 +13,7 @@ Files: 5 uploaded, 0 deleted
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/state/resources.deployment.json
 {
-  "object_type": "FILE"
+  "object_type": "BUNDLE_DEPLOYMENT"
 }
 
 === The next deploy reuses the ID that node names and retries version 1, rather than creating a second deployment

@@ -1,9 +1,9 @@
 
 === Deploy: the server assigns the deployment ID, and a version + create operation are recorded
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/files...
 Created jobs.foo
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --get --dms //api/2.0/bundle
@@ -11,12 +11,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
   "body": {
-    "display_name": "dms-record",
-    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state",
+    "display_name": "dms-record-[UNIQUE_NAME]",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/state",
     "target_name": "default",
     "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default"
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default"
     }
   }
 }
@@ -47,7 +47,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "error_message": "",
     "resource_id": "[NUMID]",
     "sequence_id": "0",
-    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}",
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -60,10 +60,10 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The deployment ID is the ID of the workspace node the service registered under initial_parent_path; the CLI stores nothing locally
->>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/state/resources.deployment.json
 {
-  "object_type": "FILE",
-  "path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json"
+  "object_type": "BUNDLE_DEPLOYMENT",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/state/resources.deployment.json"
 }
 
 >>> jq has("deployment_id") .databricks/bundle/default/resources.json
@@ -71,8 +71,8 @@ false
 
 === Redeploy after deleting the local cache: the deployment ID is resolved from that node, the same deployment is reused, and the version increments (no new CreateDeployment)
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record/default/files...
-Files: 4 uploaded, 0 deleted
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/files...
+Files: 5 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py --get --dms //api/2.0/bundle
@@ -109,7 +109,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 The following resources will be deleted:
   delete resources.jobs.foo
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-record/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
 
@@ -165,19 +165,19 @@ Destroy: 1 deleted
 }
 
 === Deploy again: the destroy took the node with it, so there is nothing to resolve and a fresh deployment starts at version 1
->>> MSYS_NO_PATHCONV=1 musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json
-Error: Path (/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json) doesn't exist.
+>>> MSYS_NO_PATHCONV=1 musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/state/resources.deployment.json
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/state/resources.deployment.json) doesn't exist.
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/files...
 Created jobs.foo
-Files: 4 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/state/resources.deployment.json
 {
-  "object_type": "FILE",
-  "path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/resources.deployment.json"
+  "object_type": "BUNDLE_DEPLOYMENT",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/state/resources.deployment.json"
 }
 
 >>> print_requests.py --get --dms //api/2.0/bundle
@@ -185,12 +185,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
   "body": {
-    "display_name": "dms-record",
-    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state",
+    "display_name": "dms-record-[UNIQUE_NAME]",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/state",
     "target_name": "default",
     "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record/default"
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default"
     }
   }
 }
@@ -221,7 +221,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "error_message": "",
     "resource_id": "[NUMID]",
     "sequence_id": "0",
-    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}",
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }

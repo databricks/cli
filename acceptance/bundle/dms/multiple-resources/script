@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 title "Deploy several resources: operations are uploaded from background workers, so exactly one is recorded per resource no matter what order the uploads finish in. The serialized state is dropped from the output here; bundle/dms/record covers it."
 trace $CLI bundle deploy
 trace print_requests.py --dms //versions/1/operations --sort --del-body state --oneline

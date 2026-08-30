@@ -1,3 +1,7 @@
+# The [[Server]] stub below forces a failure the real service will not produce on
+# demand, and the cloud harness ignores stubs, so this case only exists locally.
+Cloud = false
+
 # The job cannot be deleted, so the destroy fails and the operation is recorded as failed
 # rather than left as if the resource were gone.
 [[Server]]
