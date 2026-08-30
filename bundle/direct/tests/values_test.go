@@ -538,35 +538,39 @@ func containerValues(resource any, path string) []any {
 		return nil
 	}
 
-	value := reflect.ValueOf(current)
-	var trimmed reflect.Value
+	// Both values are deep copies. A shallow one would share the pointers inside an
+	// element -- a task's notebook_task, an init script's workspace block -- and a later
+	// edit to a field under that element would reach into a value recorded here.
+	full, err := clone(current)
+	if err != nil {
+		return nil
+	}
+	trimmed, err := clone(current)
+	if err != nil {
+		return nil
+	}
+
+	value := reflect.ValueOf(trimmed)
 	switch value.Kind() {
 	case reflect.Slice:
 		if value.Len() == 0 {
 			return nil
 		}
-		trimmed = reflect.MakeSlice(value.Type(), 0, value.Len()-1)
-		trimmed = reflect.AppendSlice(trimmed, value.Slice(0, value.Len()-1))
+		trimmed = value.Slice(0, value.Len()-1).Interface()
 
 	case reflect.Map:
 		keys := sortedMapKeys(value)
 		if len(keys) == 0 {
 			return nil
 		}
-		trimmed = reflect.MakeMap(value.Type())
-		for _, key := range keys[:len(keys)-1] {
-			trimmed.SetMapIndex(key, value.MapIndex(key))
-		}
+		value.SetMapIndex(keys[len(keys)-1], reflect.Value{})
+		trimmed = value.Interface()
 
 	default:
 		return nil
 	}
 
-	full, err := clone(current)
-	if err != nil {
-		return nil
-	}
-	return []any{full, trimmed.Interface()}
+	return []any{full, trimmed}
 }
 
 // clone deep-copies a value through the JSON representation the API uses, which the SDK
