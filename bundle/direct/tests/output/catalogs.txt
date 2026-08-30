@@ -1,12 +1,6 @@
 === catalog.yml.tmpl
-custom_max_retention_hours                   1          absent     UPDATE_IGNORED  custom_max_retention_hours
-custom_max_retention_hours                   2          absent     UPDATE_IGNORED  custom_max_retention_hours
-options                                      absent     keys0      UPDATE_IGNORED  options
-options                                      keys0      absent     UPDATE_IGNORED  options
-options                                      keys1      absent     UPDATE_IGNORED  options
-options                                      keys1      keys0      UPDATE_IGNORED  options
-options['region']                            x          absent     UPDATE_IGNORED  options['region']
-options['region']                            y          absent     UPDATE_IGNORED  options['region']
+custom_max_retention_hours                   168        absent     UPDATE_IGNORED  custom_max_retention_hours
+custom_max_retention_hours                   720        absent     UPDATE_IGNORED  custom_max_retention_hours
 properties                                   absent     keys0      UPDATE_IGNORED  properties
 properties                                   keys0      absent     UPDATE_IGNORED  properties
 properties                                   keys1      absent     UPDATE_IGNORED  properties
