@@ -11,3 +11,19 @@ base:
   parameters:
     - name: threshold
       value: "1"
+
+skip:
+  # Must name an existing SQL warehouse, and alerts require one, so there is no absent
+  # transition either -- a value-to-value move would need a second warehouse to exist.
+  warehouse_id: needs a second SQL warehouse to exist
+  # Must name an existing workspace folder, and the backend refuses to move an alert
+  # between folders at all ("Updating parent path is not supported").
+  parent_path: needs a second workspace folder; the backend refuses to move an alert
+  # Must be the id of a notification destination registered with the workspace.
+  evaluation.notification.subscriptions[*].destination_id: needs a notification destination
+
+fields:
+  # A subscription, and a run_as, has to name a principal the workspace knows.
+  evaluation.notification.subscriptions[*].user_email: [$CURRENT_USER_NAME]
+  run_as.user_name: [$CURRENT_USER_NAME]
+  run_as_user_name: [$CURRENT_USER_NAME]
