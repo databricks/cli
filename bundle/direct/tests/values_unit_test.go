@@ -134,3 +134,34 @@ func TestSetFieldAbsentAndEmpty(t *testing.T) {
 	require.NoError(t, setValue(job, "email_notifications.on_failure", []any{"a@b.test"}))
 	assert.Equal(t, []string{"a@b.test"}, job.EmailNotifications.OnFailure)
 }
+
+// A skip key may be a pattern, since a field inside a slice has no fixed index and the
+// value library cannot name one. Written as a table because the three key shapes -- exact,
+// element wildcard, subtree -- take different paths through the matcher.
+func TestSkipReasonMatchesPatterns(t *testing.T) {
+	fv := &fieldValues{skip: map[string]string{
+		"storage_root":     "needs an external location",
+		"aliases[*].id":    "assigned by the backend",
+		"telemetry_config": "only accepted as a whole",
+	}} //exhaustruct:ignore
+
+	for _, tc := range []struct {
+		path   string
+		reason string
+	}{
+		{"storage_root", "needs an external location"},
+		{"aliases[0].id", "assigned by the backend"},
+		{"aliases[3].id", "assigned by the backend"},
+		{"telemetry_config.enabled", "only accepted as a whole"},
+		// A pattern of its own, which is what a field under an absent container is.
+		{"telemetry_config.sinks[*].name", "only accepted as a whole"},
+		{"aliases[0].alias_name", ""},
+		{"comment", ""},
+	} {
+		t.Run(tc.path, func(t *testing.T) {
+			reason, skipped := fv.skipReason(tc.path)
+			assert.Equal(t, tc.reason != "", skipped)
+			assert.Equal(t, tc.reason, reason)
+		})
+	}
+}

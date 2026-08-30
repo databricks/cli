@@ -102,6 +102,9 @@ Every resource type runs everywhere — local and cloud alike — so most types 
 at all. A field with no entry gets two values for its Go kind, which is enough to see a
 value-to-value move on top of add and remove.
 
+A `skip` key may be a pattern (`aliases[*].id`), matched the way the planner matches its own
+field rules, and naming a block skips everything beneath it.
+
 `skip` is for a field no single-field edit can exercise — one that only validates as
 part of a set (a job's `git_source`), or whose change is correct but ruinously slow (an
 app rename waits out an asynchronous delete). Each entry needs a reason, and shows up in
