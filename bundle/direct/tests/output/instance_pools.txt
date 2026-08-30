@@ -1,12 +1,3 @@
 === instance_pool.yml.tmpl
 enable_elastic_disk                          absent     true       UPDATE_IGNORED  enable_elastic_disk
 enable_elastic_disk                          false      true       UPDATE_IGNORED  enable_elastic_disk
-node_type_flexibility.alternate_node_type_ids[0] absent     x          UNSETTABLE  index out of bounds at "resources.instance_pools.foo.node_type_flexibility.alternate_node_type_ids"
-node_type_flexibility.alternate_node_type_ids[0] absent     y          UNSETTABLE  index out of bounds at "resources.instance_pools.foo.node_type_flexibility.alternate_node_type_ids"
-node_type_flexibility.alternate_node_type_ids[0] x          y          UNSETTABLE  index out of bounds at "resources.instance_pools.foo.node_type_flexibility.alternate_node_type_ids"
-node_type_flexibility.alternate_node_type_ids[0] y          absent     UNSETTABLE  index out of bounds at "resources.instance_pools.foo.node_type_flexibility.alternate_node_type_ids"
-preloaded_spark_versions[0]                  absent     x          UNSETTABLE  index out of bounds at "resources.instance_pools.foo.preloaded_spark_versions"
-preloaded_spark_versions[0]                  absent     y          UNSETTABLE  index out of bounds at "resources.instance_pools.foo.preloaded_spark_versions"
-preloaded_spark_versions[0]                  x          y          UNSETTABLE  index out of bounds at "resources.instance_pools.foo.preloaded_spark_versions"
-preloaded_spark_versions[0]                  y          absent     UNSETTABLE  index out of bounds at "resources.instance_pools.foo.preloaded_spark_versions"
-preloaded_spark_versions[0]                  y          x          UNSETTABLE  index out of bounds at "resources.instance_pools.foo.preloaded_spark_versions"

@@ -9,16 +9,10 @@ config.command                               absent     len1       SUPPRESSED  n
 config.command                               len1       absent     SUPPRESSED  no active deployment
 config.command                               len2       absent     SUPPRESSED  no active deployment
 config.command                               len2       len1       SUPPRESSED  no active deployment
-config.command[0]                            absent     y          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
-config.command[0]                            x          y          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
-config.command[0]                            y          absent     UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
-config.command[0]                            y          x          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
-config.command[1]                            absent     x          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
-config.command[1]                            absent     y          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
-config.command[1]                            x          absent     UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
-config.command[1]                            x          y          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
-config.command[1]                            y          absent     UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
-config.command[1]                            y          x          UNSETTABLE  index out of bounds at "resources.apps.foo.config.command"
+config.command[1]                            absent     x          SUPPRESSED  no active deployment
+config.command[1]                            absent     y          SUPPRESSED  no active deployment
+config.command[1]                            x          y          SUPPRESSED  no active deployment
+config.command[1]                            y          x          SUPPRESSED  no active deployment
 config.env                                   absent     len0       SUPPRESSED  no active deployment
 config.env                                   len0       absent     SUPPRESSED  no active deployment
 config.env                                   len1       absent     SUPPRESSED  no active deployment
@@ -44,18 +38,6 @@ description                                  y          absent     UPDATE_IGNORE
 git_repository.auto_deploy                   true       absent     UPDATE_IGNORED  git_repository.auto_deploy
 git_repository.caller_credential_id          1          absent     UPDATE_IGNORED  git_repository.caller_credential_id
 git_repository.caller_credential_id          2          absent     UPDATE_IGNORED  git_repository.caller_credential_id
-git_source.branch                            absent     x          SUPPRESSED  no active deployment
-git_source.branch                            absent     y          SUPPRESSED  no active deployment
-git_source.branch                            x          y          SUPPRESSED  no active deployment
-git_source.branch                            y          x          SUPPRESSED  no active deployment
-git_source.resolved_commit                   absent     x          SUPPRESSED  no active deployment
-git_source.resolved_commit                   absent     y          SUPPRESSED  no active deployment
-git_source.resolved_commit                   x          y          SUPPRESSED  no active deployment
-git_source.resolved_commit                   y          x          SUPPRESSED  no active deployment
-git_source.tag                               absent     x          SUPPRESSED  no active deployment
-git_source.tag                               absent     y          SUPPRESSED  no active deployment
-git_source.tag                               x          y          SUPPRESSED  no active deployment
-git_source.tag                               y          x          SUPPRESSED  no active deployment
 resources                                    absent     len0       UPDATE_IGNORED  resources
 resources                                    len0       absent     UPDATE_IGNORED  resources
 resources                                    len1       absent     UPDATE_IGNORED  resources

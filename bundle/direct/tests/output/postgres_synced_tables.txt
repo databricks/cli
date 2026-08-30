@@ -1,6 +1,0 @@
-=== postgres_synced_table.yml.tmpl
-primary_key_columns[0]                       absent     x          UNSETTABLE  index out of bounds at "resources.postgres_synced_tables.foo.primary_key_columns"
-primary_key_columns[0]                       absent     y          UNSETTABLE  index out of bounds at "resources.postgres_synced_tables.foo.primary_key_columns"
-primary_key_columns[0]                       x          y          UNSETTABLE  index out of bounds at "resources.postgres_synced_tables.foo.primary_key_columns"
-primary_key_columns[0]                       y          absent     UNSETTABLE  index out of bounds at "resources.postgres_synced_tables.foo.primary_key_columns"
-primary_key_columns[0]                       y          x          UNSETTABLE  index out of bounds at "resources.postgres_synced_tables.foo.primary_key_columns"

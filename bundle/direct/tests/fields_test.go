@@ -35,9 +35,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash/fnv"
 	"maps"
-	"os/exec"
+	"reflect"
 	"regexp"
 	"slices"
 	"strconv"
@@ -47,7 +46,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/require"
@@ -57,10 +55,9 @@ func TestFields(t *testing.T) {
 	usable, skipped := discoverConfigs(t)
 
 	// The order fields are tested in, and the order each field's values are visited in,
-	// come from this seed. It is the commit rather than the clock so that a finding cannot
-	// be retried away: one commit always produces one order, and a new commit explores a
-	// different one.
-	runSeed := commitSeed(t)
+	// come from this seed.
+	runSeed := orderSeed
+	t.Logf("field and value order seeded from orderSeed %d", runSeed)
 
 	// One config per resource type: the simplest one, which is the shortest name -- a
 	// "<type>.yml.tmpl" sorts before its "<type>_<variant>.yml.tmpl" siblings. The variants
@@ -118,10 +115,12 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 		return
 	}
 
-	// Enumerated from the deployed config, not just the type: which slice and map entries
+	// Enumerated from the deployed resource, not just its type: which slice and map entries
 	// exist decides which fields inside them can be reached at all.
-	base := h.fieldSnapshot()
-	fields, wildcard, inert := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv, base, runSeed, declaredUnsettable(adapter))
+	base := h.snapshot()
+	resource, err := h.resource()
+	require.NoError(t, err)
+	fields, wildcard, inert := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv, resource, runSeed, declaredUnsettable(adapter))
 	rep.addCoverage(fields, wildcard)
 
 	// Fields the resource declares a user cannot meaningfully set. Recorded with the
@@ -153,7 +152,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 			// What the field is currently deployed as, when that is known. Transitions are
 			// generated in runs that share a starting value, so this skips about half of
 			// the setup deploys -- the single biggest cost in the suite.
-			deployed, deployedKnown := dyn.InvalidValue, false
+			deployed, deployedKnown := absent, false
 
 			for _, tr := range f.transitions() {
 				t.Run(tr.label(), func(t *testing.T) {
@@ -176,7 +175,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 						t.Skipf("could not rebuild baseline: %s", err)
 					}
 					h = rebuilt
-					base = h.fieldSnapshot()
+					base = h.snapshot()
 				})
 			}
 		})
@@ -184,7 +183,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 		// clear leaves it drifted for good, which would otherwise be blamed on every
 		// field tested afterwards -- so start over on a fresh resource. A new name is
 		// what makes that cheap: reusing the old one waits out an asynchronous delete.
-		h.restoreField(base, f.path)
+		h.restore(base)
 		if !h.converged() {
 			rebuilt, err := rebuild(t, ctx, client, user, cfg, fv, h)
 			if err != nil {
@@ -192,7 +191,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 				return
 			}
 			h = rebuilt
-			base = h.fieldSnapshot()
+			base = h.snapshot()
 		}
 	}
 }
@@ -357,17 +356,18 @@ func explainSkip(plan *deployplan.Plan, node, path string) (verdict, string) {
 
 // valueLabel renders a value for the subtest name and the report. A slice or map is
 // labelled by size, since the point of testing one is how many entries it has.
-func valueLabel(v dyn.Value) string {
-	if !v.IsValid() {
+func valueLabel(v any) string {
+	if v == nil {
 		return "absent"
 	}
-	if items, ok := v.AsSequence(); ok {
-		return "len" + strconv.Itoa(len(items))
+	switch value := reflect.ValueOf(v); value.Kind() {
+	case reflect.Slice, reflect.Array:
+		return "len" + strconv.Itoa(value.Len())
+	case reflect.Map:
+		return "keys" + strconv.Itoa(value.Len())
+	default:
 	}
-	if m, ok := v.AsMap(); ok {
-		return "keys" + strconv.Itoa(m.Len())
-	}
-	switch s := fmt.Sprintf("%v", v.AsAny()); s {
+	switch s := fmt.Sprintf("%v", v); s {
 	case "":
 		return "empty"
 	default:
@@ -561,26 +561,16 @@ func simplerConfig(a, b string) bool {
 	return a < b
 }
 
-// commitSeed derives the run seed from HEAD, ignoring the working tree: a dirty checkout
-// still explores the order of the commit it is based on. Falls back to a fixed value where
-// there is no git at all, so the suite still runs.
+// orderSeed fixes the order fields are tested in and the order each field's values are
+// visited in. Bump it to explore a different order, and regenerate the reports.
 //
-// Tying the seed to the commit rather than the clock is deliberate: a finding cannot be
-// made to disappear by running the test again.
-func commitSeed(t *testing.T) uint64 {
-	out, err := exec.Command("git", "rev-parse", "HEAD").Output()
-	if err != nil {
-		t.Logf("no git HEAD (%s); falling back to a fixed order seed", err)
-		return 0
-	}
-
-	commit := strings.TrimSpace(string(out))
-	h := fnv.New64a()
-	_, _ = h.Write([]byte(commit))
-	seed := h.Sum64()
-	t.Logf("field and value order seeded from HEAD %s (seed %d)", commit, seed)
-	return seed
-}
+// It is a constant rather than something derived -- HEAD was the first attempt -- because
+// the reports are committed and some verdicts depend on the order. A field the API cannot
+// clear leaves the remote holding an old value, and whether the next transition then reads
+// that as an ignored write or as drift depends on what ran before it. A seed taken from the
+// tree or the clock moves under the golden: committing the report changes HEAD, so the
+// report would never validate at the commit that contains it.
+const orderSeed uint64 = 1
 
 // withContext labels an evidence block, so a reader of the full report knows what they are
 // looking at. The label is its own line, leaving the JSON below it copy-pasteable.
