@@ -1,4 +1,10 @@
 # Value library for instance pools. See ../../README.md.
+
+# Most of a pool's spec is immutable, so most transitions recreate it -- and a real workspace
+# refuses the delete half ("Can't delete pool with id: ..."), which this suite hits on every
+# one of them. A plain deploy and destroy works, which is what the invariant suite does; a
+# thousand recreates in a row does not, so the catalog for this type is the local one.
+local_only: a real workspace refuses to delete a pool, and most fields recreate
 base:
   custom_tags:
     team: eng
