@@ -98,6 +98,19 @@ func declaredIgnoredLocally(adapter *dresources.Adapter) []dresources.FieldRule 
 	return rules
 }
 
+// declaredDeliberate collects every field rule the resource declares about not acting: the ones
+// it ignores local changes to, and the ones whose remote value it does not compare. A plan that
+// skips a field for one of these reasons has done what the resource says it does, so the config's
+// value is as reached as it is ever going to be.
+func declaredDeliberate(adapter *dresources.Adapter) []dresources.FieldRule {
+	var rules []dresources.FieldRule
+	for _, cfg := range lifecycleConfigs(adapter) {
+		rules = append(rules, cfg.IgnoreLocalChanges...)
+		rules = append(rules, cfg.IgnoreRemoteChanges...)
+	}
+	return rules
+}
+
 func lifecycleConfigs(adapter *dresources.Adapter) []*dresources.ResourceLifecycleConfig {
 	var out []*dresources.ResourceLifecycleConfig
 	for _, cfg := range []*dresources.ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
