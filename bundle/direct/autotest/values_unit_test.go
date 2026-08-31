@@ -3,6 +3,8 @@ package autotest
 import (
 	"fmt"
 	"reflect"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -286,4 +288,80 @@ func TestShortLabel(t *testing.T) {
 	assert.NotEqual(t, long, shortLabel(`{"spark_version":{"type":"fixed","value":"14.3"}}`))
 	// And the same value always gets the same one.
 	assert.Equal(t, long, shortLabel(`{"spark_version":{"type":"fixed","value":"13.3"}}`))
+}
+
+// A sampled run is held to the rows of the fields it picked. Section headers, blank lines and
+// the summary have no per-field meaning and are dropped from both sides; a row the harness
+// records against itself is always kept, since it means the type did not run at all.
+func TestSampledRows(t *testing.T) {
+	body := strings.Join([]string{
+		"=== schema.yml.tmpl",
+		"comment                                      x          absent     UPDATE_IGNORED",
+		"properties                                   keys1      absent     UPDATE_IGNORED",
+		"(base config)                                                      BASE_ERROR  boom",
+		"",
+		"=== summary",
+		"OK                 16",
+		"",
+	}, "\n")
+
+	kept := sampledRows(body, map[string]bool{"properties": true})
+	assert.Equal(t, "properties                                   keys1      absent     UPDATE_IGNORED\n"+
+		"(base config)                                                      BASE_ERROR  boom\n", kept)
+
+	// Nothing sampled still keeps the harness's own row.
+	assert.Equal(t, "(base config)                                                      BASE_ERROR  boom\n",
+		sampledRows(body, map[string]bool{}))
+}
+
+// The draw is by seed alone, so the same seed picks the same fields whatever order enumeration
+// produced, and the picks are recorded for the golden comparison.
+func TestSample(t *testing.T) {
+	defer func(previous int) { sampleSize = &previous }(*sampleSize)
+
+	var fields []field
+	for _, path := range []string{"a", "b", "c", "d", "e"} {
+		fields = append(fields, field{path: path}) //exhaustruct:ignore
+	}
+
+	two := 2
+	sampleSize = &two
+	rep := &report{resourceType: "t"} //exhaustruct:ignore
+	got := sample(fields, 7, rep)
+	require.Len(t, got, 2)
+	assert.Len(t, rep.sampled, 2)
+	for _, f := range got {
+		assert.True(t, rep.sampled[f.path], "%s recorded", f.path)
+	}
+
+	// Same seed, reversed input: the same two fields.
+	reversed := slices.Clone(fields)
+	slices.Reverse(reversed)
+	again := sample(reversed, 7, &report{resourceType: "t"}) //exhaustruct:ignore
+	assert.Equal(t, paths(got), paths(again))
+	// The seed is what decides the pick, so some seed picks something else. Scanned rather than
+	// asserted against one other seed: two of five fields collide once in ten, which would make
+	// this test fail on its own about as often as it caught anything.
+	distinct := map[string]bool{}
+	for seed := range uint64(20) {
+		distinct[strings.Join(paths(sample(fields, seed, &report{resourceType: "t"})), ",")] = true //exhaustruct:ignore
+	}
+	assert.Greater(t, len(distinct), 1, "the seed decides the pick")
+
+	// A type with no more fields than the sample size is covered whole, and records nothing:
+	// its report stays comparable in full, summary included.
+	six := 6
+	sampleSize = &six
+	whole := &report{resourceType: "t"} //exhaustruct:ignore
+	assert.Len(t, sample(fields, 7, whole), 5)
+	assert.Nil(t, whole.sampled)
+}
+
+func paths(fields []field) []string {
+	out := make([]string, 0, len(fields))
+	for _, f := range fields {
+		out = append(out, f.path)
+	}
+	slices.Sort(out)
+	return out
 }
