@@ -64,14 +64,16 @@ source_code_path                             y-[UNIQUE_NAME] absent     START_NO
 source_code_path                             y-[UNIQUE_NAME] x-[UNIQUE_NAME] START_NOT_REACHED  source_code_path
 space                                        y          x          START_NOT_REACHED  space
 usage_policy_id                              y          absent     UPDATE_IGNORED  usage_policy_id
+user_api_scopes                              len1       absent     UPDATE_IGNORED  user_api_scopes
+user_api_scopes                              len1       len0       UPDATE_IGNORED  user_api_scopes
 user_api_scopes                              len2       absent     UPDATE_IGNORED  user_api_scopes
 
 === summary
-OK                 114
+OK                 116
 OK_RECREATE        2
-SUPPRESSED         23
-NOT_OBSERVABLE     56
-UPDATE_IGNORED     22
+SUPPRESSED         24
+NOT_OBSERVABLE     57
+UPDATE_IGNORED     24
 UNSETTABLE         2
 SKIPPED            82
 START_NOT_REACHED  23

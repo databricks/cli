@@ -4,9 +4,9 @@ deployment.version_id                        x          y          START_NOT_REA
 deployment.version_id                        y          absent     START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
 
 === summary
-OK                 2607
+OK                 2858
 OK_INERT           3
-SUPPRESSED         12
-NOT_OBSERVABLE     129
+SUPPRESSED         18
+NOT_OBSERVABLE     232
 SKIPPED            3
 START_NOT_REACHED  3

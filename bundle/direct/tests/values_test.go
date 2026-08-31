@@ -221,7 +221,10 @@ func defaultValues(typ reflect.Type) []any {
 		if len(elements) < 2 {
 			return nil
 		}
-		return []any{[]any{elements[0]}, []any{elements[0], elements[1]}}
+		// The empty list is its own value, not the same as absent: it is what a user writing
+		// "on_start: []" produces, and it reaches the API as an explicit empty array through
+		// ForceSendFields -- the only way to clear a list the backend already holds.
+		return []any{[]any{}, []any{elements[0]}, []any{elements[0], elements[1]}}
 	}
 	return kindValues(typ.Kind())
 }
