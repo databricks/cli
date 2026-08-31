@@ -136,7 +136,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	resource, err := h.resource()
 	require.NoError(t, err)
 	fields, uncovered, inert := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv, resource, runSeed,
-		declaredUnsettable(adapter), declaredIdentity(adapter), h.unique)
+		declaredUnsettable(adapter), h.unique)
 	rep.addCoverage(fields, uncovered)
 
 	// Fields the resource declares a user cannot meaningfully set. Recorded with the
