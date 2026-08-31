@@ -209,7 +209,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 							res.evidence = err.Error()
 							broken = err
 						} else {
-							h, base = rebuilt, rebuilt.snapshot()
+							h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline)
 							res = runTransition(t, h, cfg.name, f.path, tr, false, baseline)
 						}
 					}
@@ -231,8 +231,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 						broken = err
 						return
 					}
-					h = rebuilt
-					base = h.snapshot()
+					h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline)
 				})
 			}
 		})
@@ -252,8 +251,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 				rep.add(result{cfg.name, f.path, "", "", verdictBaseError, oneLine(err.Error()), err.Error()})
 				return
 			}
-			h = rebuilt
-			base = h.snapshot()
+			h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline)
 		}
 	}
 }
@@ -329,10 +327,24 @@ func fieldWasDropped(plan *deployplan.Plan, node, path string) bool {
 	return ok && change.Action == deployplan.Skip
 }
 
-// baselineDrifts reports whether the field was already drifting before anything was changed.
-// Matched by relation, the same way a plan's changes are: the baseline may be recorded against
-// an ancestor -- a whole "config" block -- and treating that as this field's failure to reach
-// its starting value would blame the ancestor's drift on every field beneath it.
+// remeasure takes the new resource's own baseline drift. A replacement is a different
+// resource: carrying the old measurement over would either hide drift the new one has or blame
+// it on whichever field is under test. Falls back to the previous measurement if the plan
+// fails, since that is closer than nothing.
+func remeasure(h *bundleHarness, previous map[string]bool) map[string]bool {
+	if measured, err := baselineDrift(h); err == nil {
+		return measured
+	}
+	return previous
+}
+
+// baselineDrifts reports whether the field was already drifting before anything was changed,
+// which is what makes it unable to reach a starting value through no fault of the transition.
+// Matched by relation: the baseline may be recorded against an ancestor -- a whole "config"
+// block -- and treating that as this field's failure would blame the ancestor's drift on every
+// field beneath it.
+//
+// The post-deploy drift filter uses an exact comparison instead; see driftDetail.
 func baselineDrifts(baseline map[string]bool, path string) bool {
 	for drifting := range baseline {
 		if sameField(drifting, path) {
@@ -380,13 +392,19 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		// ignores leaves the old value there, and the transition below would then be reported
 		// under a label that is not what happened -- "absent to 168" while the remote still
 		// holds 720. Cheaper to check than to reason about afterwards.
-		if plan, diags := h.readPlan(); !diags.HasError() {
-			if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change) && !baselineDrifts(baseline, path) {
-				res.verdict = verdictStartNotReached
-				res.detail = path
-				res.evidence = withContext("plan after deploying the starting value:", planJSON(plan))
-				return res
-			}
+		plan, diags := h.readPlan()
+		if diags.HasError() {
+			// Without this plan there is no way to know the field reached "from", and going ahead
+			// would label whatever happens next as a move that may never have started.
+			res.verdict = verdictPlanError
+			res.detail = firstError(diags)
+			return res
+		}
+		if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change) && !baselineDrifts(baseline, path) {
+			res.verdict = verdictStartNotReached
+			res.detail = path
+			res.evidence = withContext("plan after deploying the starting value:", planJSON(plan))
+			return res
 		}
 	}
 
@@ -442,7 +460,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 	// One read cannot tell that apart from a read that was merely stale, so take a second
 	// one. If the value has appeared by then the write did land and the first read was
 	// behind; if it still has not, the field really was ignored.
-	if !baselineDrifts(baseline, path) && wasIgnored(plan, after, h.node, path) {
+	if !baseline[path] && wasIgnored(plan, after, h.node, path) {
 		second, diags := h.readPlan()
 		if diags.HasError() {
 			res.verdict = verdictPlanError
@@ -752,7 +770,10 @@ func driftDetail(plan *deployplan.Plan, node string, baseline map[string]bool) (
 			continue
 		}
 		for p, ch := range entry.Changes {
-			if ch.Action != deployplan.Skip && !baselineDrifts(baseline, p) {
+			// Exact, not by relation: a baseline recorded against an ancestor must not hide new
+			// drift reported against something under it. Over-reporting is the safer error for a
+			// catalog -- a spurious row is visible and can be investigated, a hidden one cannot.
+			if ch.Action != deployplan.Skip && !baseline[p] {
 				ownPaths = append(ownPaths, p)
 			}
 		}

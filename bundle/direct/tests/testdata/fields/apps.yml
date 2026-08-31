@@ -10,13 +10,13 @@ base:
     env:
       - name: MY_VAR
         value: value
+  # An app resource is a union (secret, job, sql_warehouse, ...), and every member names a
+  # workspace object this suite does not provision -- a secret scope, a job, a warehouse. Only
+  # the entry's own fields are seeded, so name, description and the union members stay
+  # uncovered, which the report says.
   resources:
     - name: seeded
       description: seeded resource
-      secret:
-        scope: my-scope
-        key: my-key
-        permission: READ
 
 fields:
   compute_size: [MEDIUM, LARGE]

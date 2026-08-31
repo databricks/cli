@@ -3,8 +3,8 @@ aws_attributes.ebs_volume_count              absent     1          START_NOT_REA
 aws_attributes.spot_bid_price_percent        absent     1          START_NOT_REACHED  aws_attributes.spot_bid_price_percent
 
 === summary
-OK                 447
-SUPPRESSED         24
-NOT_OBSERVABLE     11
-SKIPPED            1
+OK                 427
+SUPPRESSED         22
+NOT_OBSERVABLE     9
+SKIPPED            4
 START_NOT_REACHED  2

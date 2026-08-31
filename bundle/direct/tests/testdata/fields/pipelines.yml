@@ -36,7 +36,7 @@ base:
     - alerts:
         - on-update-failure
       email_recipients:
-        - notify@databricks.invalid
+        - notify@example.com
   restart_window:
     start_hour: 1
     time_zone_id: UTC
@@ -44,3 +44,9 @@ base:
     team: eng
   parameters:
     table: users
+
+fields:
+  # Constrained by the backend but typed as a plain string in the SDK, so nothing derives their
+  # values: the generic "x" is rejected on a real workspace.
+  channel: [CURRENT, PREVIEW]
+  edition: [CORE, PRO]
