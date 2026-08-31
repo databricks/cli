@@ -942,3 +942,18 @@ func TestSet_DiamondEmbedIsAmbiguous(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{}`, string(blob))
 }
+
+// ForceSendFields is decided from the value actually stored, not the one the caller passed:
+// setting an omitempty numeric field from the string "0" stores zero, which has to be forced
+// or the field marshals as absent.
+func TestSet_StringZeroIntoOmitemptyNumberIsForced(t *testing.T) {
+	job := &jobs.JobSettings{Name: "n"} //exhaustruct:ignore
+
+	require.NoError(t, structaccess.SetByString(job, "max_concurrent_runs", "0"))
+	assert.Equal(t, 0, job.MaxConcurrentRuns)
+	assert.Contains(t, job.ForceSendFields, "MaxConcurrentRuns")
+
+	blob, err := json.Marshal(job)
+	require.NoError(t, err)
+	assert.Contains(t, string(blob), `"max_concurrent_runs":0`)
+}
