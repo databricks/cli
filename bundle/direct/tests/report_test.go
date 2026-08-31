@@ -331,7 +331,8 @@ func (r *report) render(problemsOnly bool) string {
 		verdictBaselineDrift, verdictStaleRead, verdictUpdateIgnored, verdictDrift,
 		verdictCollateral, verdictDriftChild,
 		verdictBackendError, verdictDeployError, verdictTimeout, verdictPlanError,
-		verdictUnsettable, verdictSkipped, verdictBaseError, verdictStartNotReached,
+		verdictUnsettable, verdictSkipped, verdictBaseError,
+		verdictStartNotReached,
 	} {
 		if counts[v] > 0 {
 			fmt.Fprintf(&sb, "%-18s %d\n", v, counts[v])
