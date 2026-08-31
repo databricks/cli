@@ -1,0 +1,5 @@
+# Snapshot the typed public API of databricks.bundles.core (see dump_public_api.py, checked in
+# alongside this test and copied into the run dir).
+# --python 3.11 is pinned deliberately: the snapshot must stay reproducible independent of the
+# repo-wide UV_PYTHON minimum, and the dump uses typing.get_overloads (Python 3.11+).
+uv run --python 3.11 -q $UV_ARGS python dump_public_api.py
