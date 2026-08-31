@@ -4,29 +4,38 @@ budget_policy_id                             y          absent     UPDATE_IGNORE
 compute_max_instances                        2          absent     UPDATE_IGNORED  compute_max_instances
 compute_min_instances                        1          absent     UPDATE_IGNORED  compute_min_instances
 compute_min_instances                        2          absent     UPDATE_IGNORED  compute_min_instances
-config.command                               absent     len1       SUPPRESSED  no active deployment
+config.command                               absent     len1       START_NOT_REACHED  config.command
+config.command                               absent     len2       START_NOT_REACHED  config.command
 config.command                               len1       absent     SUPPRESSED  no active deployment
+config.command                               len1       len2       START_NOT_REACHED  config.command
 config.command                               len2       absent     SUPPRESSED  no active deployment
 config.command                               len2       len1       SUPPRESSED  no active deployment
-config.command[1]                            absent     x          SUPPRESSED  no active deployment
-config.command[1]                            absent     y          SUPPRESSED  no active deployment
-config.command[1]                            x          y          SUPPRESSED  no active deployment
-config.command[1]                            y          x          SUPPRESSED  no active deployment
-config.env                                   absent     len0       SUPPRESSED  no active deployment
-config.env                                   len0       absent     SUPPRESSED  no active deployment
+config.command[0]                            absent     x          UNSETTABLE  cannot make config.command[0] absent: config.command[1] would shift into it
+config.command[0]                            absent     y          UNSETTABLE  cannot make config.command[0] absent: config.command[1] would shift into it
+config.command[0]                            x          absent     START_NOT_REACHED  config.command[0]
+config.command[0]                            x          y          SUPPRESSED  no active deployment
+config.command[0]                            y          absent     START_NOT_REACHED  config.command[0]
+config.command[0]                            y          x          SUPPRESSED  no active deployment
+config.command[1]                            y          absent     START_NOT_REACHED  config.command[1]
+config.env                                   absent     len0       START_NOT_REACHED  config.env
+config.env                                   absent     len1       SUPPRESSED  no active deployment
+config.env                                   len0       absent     START_NOT_REACHED  config.env
+config.env                                   len0       len1       START_NOT_REACHED  config.env
 config.env                                   len1       absent     SUPPRESSED  no active deployment
 config.env                                   len1       len0       SUPPRESSED  no active deployment
-config.env[0].name                           x          y          SUPPRESSED  no active deployment
+config.env[0].name                           x          y          START_NOT_REACHED  config.env[0].name
 config.env[0].name                           y          x          SUPPRESSED  no active deployment
 config.env[0].value                          absent     x          SUPPRESSED  no active deployment
 config.env[0].value                          absent     y          SUPPRESSED  no active deployment
-config.env[0].value                          x          absent     SUPPRESSED  no active deployment
-config.env[0].value                          x          y          SUPPRESSED  no active deployment
-config.env[0].value                          y          absent     SUPPRESSED  no active deployment
+config.env[0].value                          x          absent     START_NOT_REACHED  config.env[0].value
+config.env[0].value                          x          y          START_NOT_REACHED  config.env[0].value
+config.env[0].value                          y          absent     START_NOT_REACHED  config.env[0].value
 config.env[0].value                          y          x          SUPPRESSED  no active deployment
 config.env[0].value_from                     absent     x          SUPPRESSED  no active deployment
 config.env[0].value_from                     absent     y          SUPPRESSED  no active deployment
-config.env[0].value_from                     x          y          SUPPRESSED  no active deployment
+config.env[0].value_from                     x          absent     SUPPRESSED  no active deployment
+config.env[0].value_from                     x          y          START_NOT_REACHED  config.env[0].value_from
+config.env[0].value_from                     y          absent     SUPPRESSED  no active deployment
 config.env[0].value_from                     y          x          SUPPRESSED  no active deployment
 description                                  x          absent     UPDATE_IGNORED  description
 git_repository.auto_deploy                   true       absent     UPDATE_IGNORED  git_repository.auto_deploy
@@ -37,8 +46,7 @@ resources                                    len0       len1       START_NOT_REA
 resources                                    len1       absent     UPDATE_IGNORED  resources
 resources                                    len1       len0       UPDATE_IGNORED  resources
 resources[0].app.name                        y          absent     UPDATE_IGNORED  resources[0].app.name
-resources[0].app.permission                  x          absent     UPDATE_IGNORED  resources[0].app.permission
-resources[0].app.permission                  y          absent     UPDATE_IGNORED  resources[0].app.permission
+resources[0].app.permission                  CAN_USE    absent     UPDATE_IGNORED  resources[0].app.permission
 resources[0].description                     absent     x          START_NOT_REACHED  resources[0].description
 resources[0].description                     absent     y          START_NOT_REACHED  resources[0].description
 resources[0].description                     x          absent     UPDATE_IGNORED  resources[0].description
@@ -47,21 +55,23 @@ resources[0].postgres.branch                 x          absent     UPDATE_IGNORE
 resources[0].postgres.branch                 y          absent     UPDATE_IGNORED  resources[0].postgres.branch
 resources[0].postgres.database               x          absent     UPDATE_IGNORED  resources[0].postgres.database
 resources[0].postgres.database               y          absent     UPDATE_IGNORED  resources[0].postgres.database
-resources[0].postgres.permission             x          absent     UPDATE_IGNORED  resources[0].postgres.permission
+resources[0].postgres.permission             CAN_CONNECT_AND_CREATE absent     UPDATE_IGNORED  resources[0].postgres.permission
 source_code_path                             absent     x          SUPPRESSED  no active deployment
 source_code_path                             absent     y          SUPPRESSED  no active deployment
-source_code_path                             x          absent     SUPPRESSED  no active deployment
-source_code_path                             x          y          SUPPRESSED  no active deployment
-source_code_path                             y          absent     SUPPRESSED  no active deployment
-source_code_path                             y          x          SUPPRESSED  no active deployment
+source_code_path                             x          absent     START_NOT_REACHED  source_code_path
+source_code_path                             x          y          START_NOT_REACHED  source_code_path
+source_code_path                             y          absent     START_NOT_REACHED  source_code_path
+source_code_path                             y          x          START_NOT_REACHED  source_code_path
+space                                        y          x          START_NOT_REACHED  space
 usage_policy_id                              y          absent     UPDATE_IGNORED  usage_policy_id
 user_api_scopes                              len2       absent     UPDATE_IGNORED  user_api_scopes
 
 === summary
-OK                 124
+OK                 114
 OK_RECREATE        2
-SUPPRESSED         34
-NOT_OBSERVABLE     65
-UPDATE_IGNORED     23
+SUPPRESSED         23
+NOT_OBSERVABLE     56
+UPDATE_IGNORED     22
+UNSETTABLE         2
 SKIPPED            82
-START_NOT_REACHED  4
+START_NOT_REACHED  23

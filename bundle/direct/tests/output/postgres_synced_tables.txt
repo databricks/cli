@@ -1,6 +1,11 @@
+=== postgres_synced_table.yml.tmpl
+existing_pipeline_id                         x          absent     START_NOT_REACHED  existing_pipeline_id
+primary_key_columns                          len1       absent     START_NOT_REACHED  primary_key_columns
+timeseries_key                               y          absent     START_NOT_REACHED  timeseries_key
 
 === summary
-OK_RECREATE        114
+OK_RECREATE        107
 SUPPRESSED         6
 NOT_OBSERVABLE     4
 SKIPPED            1
+START_NOT_REACHED  3

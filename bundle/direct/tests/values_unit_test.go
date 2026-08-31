@@ -126,8 +126,13 @@ func TestSetFieldAbsentAndEmpty(t *testing.T) {
 	require.NoError(t, setValue(job, "tags['env']", nil))
 	assert.Equal(t, map[string]string{"team": "eng"}, job.Tags)
 
+	// Only the last element can be made absent: removing an earlier one would shift its
+	// successor into the same path, so the field would still be there holding another value.
+	require.ErrorContains(t, setValue(job, "tasks[0]", nil), "would shift into it")
+	require.NoError(t, setValue(job, "tasks[1]", nil))
+	assert.Equal(t, []jobs.Task{{TaskKey: "a"}}, job.Tasks) //exhaustruct:ignore
 	require.NoError(t, setValue(job, "tasks[0]", nil))
-	assert.Equal(t, []jobs.Task{{TaskKey: "b"}}, job.Tasks) //exhaustruct:ignore
+	assert.Empty(t, job.Tasks)
 
 	// A list from the value library arrives as []any and has to be decoded into the
 	// field's own element type.

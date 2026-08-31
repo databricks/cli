@@ -1,14 +1,18 @@
 === dashboard.yml.tmpl
+dataset_catalog                              y          absent     START_NOT_REACHED  dataset_catalog
+dataset_schema                               x          y          START_NOT_REACHED  dataset_schema
+dataset_schema                               y          absent     START_NOT_REACHED  dataset_schema
+dataset_schema                               y          x          START_NOT_REACHED  dataset_schema
 display_name                                 absent     x          START_NOT_REACHED  display_name
 display_name                                 absent     y          START_NOT_REACHED  display_name
 display_name                                 x          absent     UPDATE_IGNORED  display_name
 display_name                                 y          absent     UPDATE_IGNORED  display_name
-etag                                         absent     x          SUPPRESSED  custom
-etag                                         absent     y          SUPPRESSED  custom
-etag                                         x          absent     SUPPRESSED  custom
-etag                                         x          y          SUPPRESSED  custom
-etag                                         y          absent     SUPPRESSED  custom
-etag                                         y          x          SUPPRESSED  custom
+etag                                         absent     x          START_NOT_REACHED  etag
+etag                                         absent     y          START_NOT_REACHED  etag
+etag                                         x          absent     START_NOT_REACHED  etag
+etag                                         x          y          START_NOT_REACHED  etag
+etag                                         y          absent     START_NOT_REACHED  etag
+etag                                         y          x          START_NOT_REACHED  etag
 parent_path                                  absent     x          START_NOT_REACHED  parent_path
 parent_path                                  absent     y          START_NOT_REACHED  parent_path
 parent_path                                  x          absent     START_NOT_REACHED  parent_path
@@ -17,9 +21,9 @@ parent_path                                  y          absent     START_NOT_REA
 parent_path                                  y          x          START_NOT_REACHED  parent_path
 
 === summary
-OK                 24
-SUPPRESSED         8
+OK                 20
+SUPPRESSED         2
 NOT_OBSERVABLE     6
 UPDATE_IGNORED     2
 SKIPPED            6
-START_NOT_REACHED  8
+START_NOT_REACHED  18

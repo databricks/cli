@@ -1,7 +1,12 @@
+=== job.yml.tmpl
+deployment.version_id                        x          absent     START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
+deployment.version_id                        x          y          START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
+deployment.version_id                        y          absent     START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
 
 === summary
-OK                 2621
-OK_INERT           6
+OK                 2607
+OK_INERT           3
 SUPPRESSED         12
 NOT_OBSERVABLE     129
 SKIPPED            3
+START_NOT_REACHED  3
