@@ -165,3 +165,15 @@ func TestSkipReasonMatchesPatterns(t *testing.T) {
 		})
 	}
 }
+
+// The generated required-field data is keyed by pattern, so a concrete index has to be
+// turned back into a wildcard before the lookup -- otherwise a required field inside a
+// slice looks optional and gets an "absent" transition a user cannot deploy.
+func TestIsRequiredInsideSlice(t *testing.T) {
+	assert.True(t, isRequired("jobs", "tasks[0].task_key"))
+	assert.True(t, isRequired("jobs", "tasks[3].task_key"))
+	assert.False(t, isRequired("jobs", "tasks[0].description"))
+
+	assert.True(t, isRequired("alerts", "display_name"))
+	assert.False(t, isRequired("alerts", "custom_summary"))
+}

@@ -405,9 +405,11 @@ func (fv *fieldValues) skipReason(path string) (string, bool) {
 }
 
 func isRequired(resourceType, path string) bool {
-	parent, name := "", path
-	if i := strings.LastIndex(path, "."); i >= 0 {
-		parent, name = path[:i], path[i+1:]
+	// The generated keys are patterns, so an index has to become a wildcard first:
+	// "tasks[0].task_key" is declared under "resources.jobs.*.tasks[*]".
+	parent, name := "", patternOf(path)
+	if i := strings.LastIndex(name, "."); i >= 0 {
+		parent, name = name[:i], name[i+1:]
 	}
 	return slices.Contains(requiredFields(resourceType, parent), name)
 }

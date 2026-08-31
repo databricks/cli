@@ -1,3 +1,5 @@
 === instance_pool.yml.tmpl
 enable_elastic_disk                          absent     true       UPDATE_IGNORED  enable_elastic_disk
 enable_elastic_disk                          false      true       UPDATE_IGNORED  enable_elastic_disk
+enable_elastic_disk                          true       absent     START_NOT_REACHED  enable_elastic_disk
+enable_elastic_disk                          true       false      START_NOT_REACHED  enable_elastic_disk

@@ -1,7 +1,6 @@
 === app.yml.tmpl
 budget_policy_id                             x          absent     UPDATE_IGNORED  budget_policy_id
 budget_policy_id                             y          absent     UPDATE_IGNORED  budget_policy_id
-compute_max_instances                        1          absent     UPDATE_IGNORED  compute_max_instances
 compute_max_instances                        2          absent     UPDATE_IGNORED  compute_max_instances
 compute_min_instances                        1          absent     UPDATE_IGNORED  compute_min_instances
 compute_min_instances                        2          absent     UPDATE_IGNORED  compute_min_instances
@@ -17,11 +16,7 @@ config.env                                   absent     len0       SUPPRESSED  n
 config.env                                   len0       absent     SUPPRESSED  no active deployment
 config.env                                   len1       absent     SUPPRESSED  no active deployment
 config.env                                   len1       len0       SUPPRESSED  no active deployment
-config.env[0].name                           absent     x          SUPPRESSED  no active deployment
-config.env[0].name                           absent     y          SUPPRESSED  no active deployment
-config.env[0].name                           x          absent     SUPPRESSED  no active deployment
 config.env[0].name                           x          y          SUPPRESSED  no active deployment
-config.env[0].name                           y          absent     SUPPRESSED  no active deployment
 config.env[0].name                           y          x          SUPPRESSED  no active deployment
 config.env[0].value                          absent     x          SUPPRESSED  no active deployment
 config.env[0].value                          absent     y          SUPPRESSED  no active deployment
@@ -34,18 +29,18 @@ config.env[0].value_from                     absent     y          SUPPRESSED  n
 config.env[0].value_from                     x          y          SUPPRESSED  no active deployment
 config.env[0].value_from                     y          x          SUPPRESSED  no active deployment
 description                                  x          absent     UPDATE_IGNORED  description
-description                                  y          absent     UPDATE_IGNORED  description
 git_repository.auto_deploy                   true       absent     UPDATE_IGNORED  git_repository.auto_deploy
 git_repository.caller_credential_id          1          absent     UPDATE_IGNORED  git_repository.caller_credential_id
 git_repository.caller_credential_id          2          absent     UPDATE_IGNORED  git_repository.caller_credential_id
-resources                                    absent     len0       UPDATE_IGNORED  resources
-resources                                    len0       absent     UPDATE_IGNORED  resources
+resources                                    absent     len0       START_NOT_REACHED  resources
+resources                                    len0       len1       START_NOT_REACHED  resources
 resources                                    len1       absent     UPDATE_IGNORED  resources
 resources                                    len1       len0       UPDATE_IGNORED  resources
-resources[0].app.name                        x          absent     UPDATE_IGNORED  resources[0].app.name
 resources[0].app.name                        y          absent     UPDATE_IGNORED  resources[0].app.name
 resources[0].app.permission                  x          absent     UPDATE_IGNORED  resources[0].app.permission
 resources[0].app.permission                  y          absent     UPDATE_IGNORED  resources[0].app.permission
+resources[0].description                     absent     x          START_NOT_REACHED  resources[0].description
+resources[0].description                     absent     y          START_NOT_REACHED  resources[0].description
 resources[0].description                     x          absent     UPDATE_IGNORED  resources[0].description
 resources[0].description                     y          absent     UPDATE_IGNORED  resources[0].description
 resources[0].postgres.branch                 x          absent     UPDATE_IGNORED  resources[0].postgres.branch
@@ -53,12 +48,10 @@ resources[0].postgres.branch                 y          absent     UPDATE_IGNORE
 resources[0].postgres.database               x          absent     UPDATE_IGNORED  resources[0].postgres.database
 resources[0].postgres.database               y          absent     UPDATE_IGNORED  resources[0].postgres.database
 resources[0].postgres.permission             x          absent     UPDATE_IGNORED  resources[0].postgres.permission
-resources[0].postgres.permission             y          absent     UPDATE_IGNORED  resources[0].postgres.permission
 source_code_path                             absent     x          SUPPRESSED  no active deployment
 source_code_path                             absent     y          SUPPRESSED  no active deployment
 source_code_path                             x          absent     SUPPRESSED  no active deployment
 source_code_path                             x          y          SUPPRESSED  no active deployment
 source_code_path                             y          absent     SUPPRESSED  no active deployment
 source_code_path                             y          x          SUPPRESSED  no active deployment
-usage_policy_id                              x          absent     UPDATE_IGNORED  usage_policy_id
 usage_policy_id                              y          absent     UPDATE_IGNORED  usage_policy_id

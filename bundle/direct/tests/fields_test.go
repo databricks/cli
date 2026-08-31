@@ -167,6 +167,18 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 				t.Run(tr.label(), func(t *testing.T) {
 					reuse := deployedKnown && valueLabel(deployed) == valueLabel(tr.from)
 					res := runTransition(t, h, cfg.name, f.path, tr, reuse, baseline)
+
+					// A starting value the deployed resource will not take -- typically a
+					// field the API refuses to clear -- is not a dead end: a fresh resource
+					// created without the field genuinely starts absent. Rebuild and try the
+					// transition once more, so it is observed rather than written off.
+					if res.verdict == verdictStartNotReached {
+						if rebuilt, err := rebuild(t, ctx, client, user, cfg, fv, h); err == nil {
+							h, base = rebuilt, rebuilt.snapshot()
+							res = runTransition(t, h, cfg.name, f.path, tr, false, baseline)
+						}
+					}
+
 					res = checkDeclaredInert(res, ignoredLocally)
 					rep.add(res)
 
@@ -223,6 +235,18 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 			res.detail = firstError(diags)
 			res.evidence = withContext("error from the deploy:", allErrors(diags))
 			return res
+		}
+		// A deploy the backend accepted does not mean the field now holds "from": a write it
+		// ignores leaves the old value there, and the transition below would then be reported
+		// under a label that is not what happened -- "absent to 168" while the remote still
+		// holds 720. Cheaper to check than to reason about afterwards.
+		if plan, diags := h.readPlan(); !diags.HasError() {
+			if change, ok := planChange(plan, h.node, path); ok && change.Action != deployplan.Skip && !baseline[path] {
+				res.verdict = verdictStartNotReached
+				res.detail = path
+				res.evidence = withContext("plan after deploying the starting value:", planJSON(plan))
+				return res
+			}
 		}
 	}
 

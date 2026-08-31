@@ -1,9 +1,11 @@
 === schema.yml.tmpl
 custom_max_retention_hours                   168        absent     UPDATE_IGNORED  custom_max_retention_hours
 custom_max_retention_hours                   720        absent     UPDATE_IGNORED  custom_max_retention_hours
-properties                                   absent     keys0      UPDATE_IGNORED  properties
-properties                                   keys0      absent     UPDATE_IGNORED  properties
+properties                                   absent     keys0      START_NOT_REACHED  properties
+properties                                   keys0      absent     START_NOT_REACHED  properties
 properties                                   keys1      absent     UPDATE_IGNORED  properties
-properties                                   keys1      keys0      UPDATE_IGNORED  properties
+properties                                   keys1      keys0      POST_DEPLOY_DRIFT  properties,properties['team']
+properties['team']                           absent     x          START_NOT_REACHED  properties['team']
+properties['team']                           absent     y          START_NOT_REACHED  properties['team']
 properties['team']                           x          absent     UPDATE_IGNORED  properties['team']
 properties['team']                           y          absent     UPDATE_IGNORED  properties['team']

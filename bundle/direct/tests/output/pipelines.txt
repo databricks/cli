@@ -1,3 +1,5 @@
 === pipeline.yml.tmpl
 dry_run                                      absent     true       UPDATE_IGNORED  dry_run
 dry_run                                      false      true       UPDATE_IGNORED  dry_run
+dry_run                                      true       absent     START_NOT_REACHED  dry_run
+dry_run                                      true       false      START_NOT_REACHED  dry_run
