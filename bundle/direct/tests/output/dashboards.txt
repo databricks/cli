@@ -3,22 +3,22 @@ dataset_catalog                              y          absent     START_NOT_REA
 dataset_schema                               x          y          START_NOT_REACHED  dataset_schema
 dataset_schema                               y          absent     START_NOT_REACHED  dataset_schema
 dataset_schema                               y          x          START_NOT_REACHED  dataset_schema
-display_name                                 absent     x-[UNIQUE_NAME] START_NOT_REACHED  display_name
-display_name                                 absent     y-[UNIQUE_NAME] START_NOT_REACHED  display_name
-display_name                                 x-[UNIQUE_NAME] absent     UPDATE_IGNORED  display_name
-display_name                                 y-[UNIQUE_NAME] absent     UPDATE_IGNORED  display_name
+display_name                                 absent     x-_UNIQUE_NAME~89d START_NOT_REACHED  display_name
+display_name                                 absent     y-_UNIQUE_NAME~57d2 START_NOT_REACHED  display_name
+display_name                                 x-_UNIQUE_NAME~89d absent     UPDATE_IGNORED  display_name
+display_name                                 y-_UNIQUE_NAME~57d2 absent     UPDATE_IGNORED  display_name
 etag                                         absent     x          START_NOT_REACHED  etag
 etag                                         absent     y          START_NOT_REACHED  etag
 etag                                         x          absent     START_NOT_REACHED  etag
 etag                                         x          y          START_NOT_REACHED  etag
 etag                                         y          absent     START_NOT_REACHED  etag
 etag                                         y          x          START_NOT_REACHED  etag
-parent_path                                  absent     x-[UNIQUE_NAME] START_NOT_REACHED  parent_path
-parent_path                                  absent     y-[UNIQUE_NAME] START_NOT_REACHED  parent_path
-parent_path                                  x-[UNIQUE_NAME] absent     START_NOT_REACHED  parent_path
-parent_path                                  x-[UNIQUE_NAME] y-[UNIQUE_NAME] START_NOT_REACHED  parent_path
-parent_path                                  y-[UNIQUE_NAME] absent     START_NOT_REACHED  parent_path
-parent_path                                  y-[UNIQUE_NAME] x-[UNIQUE_NAME] START_NOT_REACHED  parent_path
+parent_path                                  absent     x-_UNIQUE_NAME~89d START_NOT_REACHED  parent_path
+parent_path                                  absent     y-_UNIQUE_NAME~57d2 START_NOT_REACHED  parent_path
+parent_path                                  x-_UNIQUE_NAME~89d absent     START_NOT_REACHED  parent_path
+parent_path                                  x-_UNIQUE_NAME~89d y-_UNIQUE_NAME~57d2 START_NOT_REACHED  parent_path
+parent_path                                  y-_UNIQUE_NAME~57d2 absent     START_NOT_REACHED  parent_path
+parent_path                                  y-_UNIQUE_NAME~57d2 x-_UNIQUE_NAME~89d START_NOT_REACHED  parent_path
 
 === summary
 OK                 20

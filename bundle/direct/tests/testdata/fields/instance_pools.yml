@@ -3,12 +3,16 @@ base:
   custom_tags:
     team: eng
   preloaded_spark_versions:
-    - 13.3.x-scala2.12
-  preloaded_docker_images:
-    - url: databricksruntime/standard:latest
-      basic_auth:
-        username: user
-        password: pass
-  node_type_flexibility:
-    alternate_node_type_ids:
-      - i3.2xlarge
+    - $DEFAULT_SPARK_VERSION
+
+skip:
+  # A preloaded image needs custom containers enabled for the workspace, which a test
+  # workspace does not have ("Custom containers is turned off for your deployment").
+  preloaded_docker_images: needs custom containers enabled for the workspace
+  # Naming a second node type, which differs per cloud and the suite has no variable for.
+  node_type_flexibility: needs a second node type, which differs per cloud
+  # Only one of aws_/azure_/gcp_attributes applies, decided by the workspace's cloud, and the
+  # backend fills in defaults for the one that does -- so a value set here cannot be cleared.
+  aws_attributes: cloud-specific; only one of the three attribute blocks applies
+  azure_attributes: cloud-specific; only one of the three attribute blocks applies
+  gcp_attributes: cloud-specific; only one of the three attribute blocks applies

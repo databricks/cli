@@ -1,13 +1,17 @@
 # Value library for cluster policies. See ../../README.md.
 
 # libraries is a union: an entry carries exactly one of jar, egg, whl, pypi, maven or cran.
-# Seeding one entry makes the container and that entry's fields testable; the other members
-# of the union are then reachable from absent, and the ones the API rejects alongside jar are
-# recorded as such rather than left uncovered.
+# One entry, so the container and that member are testable. The other members stay uncovered
+# for this config, which the report says: they can only be reached by putting a second member
+# on this entry, which is not something a user can write -- the backend keeps whichever it
+# prefers and the whole block then reads as drifting.
 base:
   libraries:
     - jar: dbfs:/FileStore/test.jar
-    - maven:
-        coordinates: com.example:lib:1.0
-        exclusions:
-          - com.other:unwanted
+
+fields:
+  # A policy definition is a JSON document the backend parses, and it is required: the API
+  # rejects an update that does not carry one.
+  definition:
+    - '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'
+    - '{"spark_version":{"type":"fixed","value":"14.3.x-scala2.12"}}'

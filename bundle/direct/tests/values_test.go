@@ -451,7 +451,16 @@ func isRequired(resourceType, path string) bool {
 // config is reported as not covered rather than silently tested against nothing.
 func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValues, resource any, runSeed uint64, unsettable []dresources.FieldRule, unique string) (fields []field, uncovered []string, inertFields map[string]string) {
 	inertFields = map[string]string{}
+	// One row per field path. A path can be reached twice -- a cluster policy's definition is
+	// declared both on the bundle struct and on the embedded SDK struct under the same json
+	// name -- and structaccess resolves it to one field, so testing it twice would just print
+	// every result twice.
+	added := map[string]bool{}
 	add := func(path string, kind reflect.Kind, values []any) {
+		if added[path] {
+			return
+		}
+		added[path] = true
 		if _, skipped := fv.skipReason(path); skipped {
 			return
 		}

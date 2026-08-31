@@ -1,27 +1,14 @@
 === instance_pool.yml.tmpl
-aws_attributes.availability                  ON_DEMAND  absent     START_NOT_REACHED  aws_attributes.availability
-aws_attributes.availability                  SPOT       ON_DEMAND  START_NOT_REACHED  aws_attributes.availability
-aws_attributes.instance_profile_arn          x          y          START_NOT_REACHED  aws_attributes.instance_profile_arn
-aws_attributes.instance_profile_arn          y          absent     START_NOT_REACHED  aws_attributes.instance_profile_arn
-aws_attributes.zone_id                       x          absent     START_NOT_REACHED  aws_attributes.zone_id
-azure_attributes.availability                SPOT_AZURE absent     START_NOT_REACHED  azure_attributes.availability
-azure_attributes.capacity_reservation_group  x          y          START_NOT_REACHED  azure_attributes.capacity_reservation_group
-azure_attributes.capacity_reservation_group  y          absent     START_NOT_REACHED  azure_attributes.capacity_reservation_group
-azure_attributes.spot_bid_max_price          1          2          START_NOT_REACHED  azure_attributes.spot_bid_max_price
-azure_attributes.spot_bid_max_price          2          1          START_NOT_REACHED  azure_attributes.spot_bid_max_price
-azure_attributes.spot_bid_max_price          2          absent     START_NOT_REACHED  azure_attributes.spot_bid_max_price
 enable_elastic_disk                          absent     true       UPDATE_IGNORED  enable_elastic_disk
 enable_elastic_disk                          false      true       UPDATE_IGNORED  enable_elastic_disk
 enable_elastic_disk                          true       absent     START_NOT_REACHED  enable_elastic_disk
 enable_elastic_disk                          true       false      START_NOT_REACHED  enable_elastic_disk
-gcp_attributes.gcp_availability              PREEMPTIBLE_GCP absent     START_NOT_REACHED  gcp_attributes.gcp_availability
-gcp_attributes.zone_id                       y          absent     START_NOT_REACHED  gcp_attributes.zone_id
 
 === summary
-OK                 91
-OK_RECREATE        78
-SUPPRESSED         6
-NOT_OBSERVABLE     4
+OK                 44
+OK_RECREATE        46
+SUPPRESSED         4
+NOT_OBSERVABLE     2
 UPDATE_IGNORED     2
-SKIPPED            1
-START_NOT_REACHED  15
+SKIPPED            6
+START_NOT_REACHED  2
