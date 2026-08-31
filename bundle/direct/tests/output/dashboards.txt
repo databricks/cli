@@ -1,4 +1,6 @@
 === dashboard.yml.tmpl
+display_name                                 absent     x          START_NOT_REACHED  display_name
+display_name                                 absent     y          START_NOT_REACHED  display_name
 display_name                                 x          absent     UPDATE_IGNORED  display_name
 display_name                                 y          absent     UPDATE_IGNORED  display_name
 etag                                         absent     x          SUPPRESSED  custom
@@ -7,9 +9,9 @@ etag                                         x          absent     SUPPRESSED  c
 etag                                         x          y          SUPPRESSED  custom
 etag                                         y          absent     SUPPRESSED  custom
 etag                                         y          x          SUPPRESSED  custom
-parent_path                                  absent     x          POST_DEPLOY_DRIFT  parent_path
-parent_path                                  absent     y          POST_DEPLOY_DRIFT  parent_path
-parent_path                                  x          absent     POST_DEPLOY_DRIFT  parent_path
-parent_path                                  x          y          POST_DEPLOY_DRIFT  parent_path
-parent_path                                  y          absent     POST_DEPLOY_DRIFT  parent_path
-parent_path                                  y          x          POST_DEPLOY_DRIFT  parent_path
+parent_path                                  absent     x          START_NOT_REACHED  parent_path
+parent_path                                  absent     y          START_NOT_REACHED  parent_path
+parent_path                                  x          absent     START_NOT_REACHED  parent_path
+parent_path                                  x          y          START_NOT_REACHED  parent_path
+parent_path                                  y          absent     START_NOT_REACHED  parent_path
+parent_path                                  y          x          START_NOT_REACHED  parent_path

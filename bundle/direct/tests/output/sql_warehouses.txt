@@ -1,3 +1,5 @@
 === sql_warehouse.yml.tmpl
+name                                         absent     x          START_NOT_REACHED  name
+name                                         absent     y          START_NOT_REACHED  name
 name                                         x          absent     POST_DEPLOY_DRIFT  name
 name                                         y          absent     POST_DEPLOY_DRIFT  name

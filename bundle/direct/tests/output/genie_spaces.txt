@@ -1,13 +1,16 @@
 === genie_space.yml.tmpl
 description                                  x          absent     UPDATE_IGNORED  description
-description                                  y          absent     UPDATE_IGNORED  description
-parent_path                                  absent     x          POST_DEPLOY_DRIFT  parent_path
-parent_path                                  absent     y          POST_DEPLOY_DRIFT  parent_path
-parent_path                                  x          absent     UPDATE_IGNORED  parent_path
-parent_path                                  x          y          POST_DEPLOY_DRIFT  parent_path
-parent_path                                  y          absent     UPDATE_IGNORED  parent_path
-parent_path                                  y          x          POST_DEPLOY_DRIFT  parent_path
+parent_path                                  absent     x          START_NOT_REACHED  parent_path
+parent_path                                  absent     y          START_NOT_REACHED  parent_path
+parent_path                                  x          absent     START_NOT_REACHED  parent_path
+parent_path                                  x          y          START_NOT_REACHED  parent_path
+parent_path                                  y          absent     START_NOT_REACHED  parent_path
+parent_path                                  y          x          START_NOT_REACHED  parent_path
+title                                        absent     x          START_NOT_REACHED  title
+title                                        absent     y          START_NOT_REACHED  title
 title                                        x          absent     UPDATE_IGNORED  title
 title                                        y          absent     UPDATE_IGNORED  title
+warehouse_id                                 absent     x          START_NOT_REACHED  warehouse_id
+warehouse_id                                 absent     y          START_NOT_REACHED  warehouse_id
 warehouse_id                                 x          absent     UPDATE_IGNORED  warehouse_id
 warehouse_id                                 y          absent     UPDATE_IGNORED  warehouse_id
