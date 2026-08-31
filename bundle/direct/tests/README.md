@@ -58,6 +58,7 @@ API sees.
 | `PLAN_ERROR` | planning failed |
 | `UNSETTABLE` | the value could not be written into the config at all |
 | `BASE_ERROR` | the transition's starting point would not deploy, so nothing was observed |
+| `START_NOT_REACHED` | the starting value deployed without error but the field did not end up holding it, so the move under test could not be set up — a field the API refuses to clear cannot start from `absent`. Retried once on a fresh resource before being recorded |
 | `NOT_IN_STATE` | the field exists in bundle config but not in the state type, so it never reaches the API |
 
 `POST_DEPLOY_DRIFT` and `SUPPRESSED` are where the interesting gaps are. `NOT_OBSERVABLE`

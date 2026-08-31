@@ -90,6 +90,13 @@ const (
 	// The transition's starting value could not be deployed, so the transition
 	// itself was never observed.
 	verdictBaseError verdict = "BASE_ERROR"
+	// The starting value deployed without error but the field did not end up holding it, so
+	// the transition under test could not be set up. A field the API refuses to clear is the
+	// usual case: nothing can start from absent once the field has ever been set, and a fresh
+	// resource whose base config declares the field cannot start from absent either. Reported
+	// rather than tested from the wrong starting point, which would label the result a move
+	// that never happened.
+	verdictStartNotReached verdict = "START_NOT_REACHED"
 )
 
 // leavesResourceUsable reports whether the deployed resource is still in a known-good
@@ -101,9 +108,12 @@ func (v verdict) leavesResourceUsable() bool {
 		verdictSkipped, verdictInertConfirmed, verdictInertViolated:
 		return true
 	case verdictDrift, verdictCollateral, verdictDriftChild, verdictUpdateIgnored,
-		verdictStaleRead, verdictBaselineDrift:
+		verdictStaleRead, verdictBaselineDrift, verdictStartNotReached:
 		// The resource exists and still matches what the engine last sent; only the one
 		// field did not stick. The next transition re-deploys the field anyway.
+		//
+		// START_NOT_REACHED is here for a second reason: the caller has already retried it on
+		// a fresh resource, so rebuilding again would buy nothing.
 		return true
 	default:
 		return false
@@ -288,7 +298,7 @@ func (r *report) render(problemsOnly bool) string {
 		verdictBaselineDrift, verdictStaleRead, verdictUpdateIgnored, verdictDrift,
 		verdictCollateral, verdictDriftChild,
 		verdictBackendError, verdictDeployError, verdictTimeout, verdictPlanError,
-		verdictUnsettable, verdictSkipped, verdictBaseError,
+		verdictUnsettable, verdictSkipped, verdictBaseError, verdictStartNotReached,
 	} {
 		if counts[v] > 0 {
 			fmt.Fprintf(&sb, "%-14s %d\n", v, counts[v])
