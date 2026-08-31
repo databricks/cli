@@ -12,6 +12,7 @@
 # config that declares a served entity, which needs a model in the workspace -- so the report
 # lists their fields as uncovered.
 base:
+  name: test-endpoint-$UNIQUE_NAME
   email_notifications:
     on_update_failure:
       - notify@databricks.invalid

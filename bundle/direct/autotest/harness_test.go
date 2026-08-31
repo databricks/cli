@@ -34,6 +34,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 )
 
 // bundleHarness drives the direct engine over one bundle config in-process. Nothing
@@ -96,9 +97,13 @@ const testUserName = "tester@databricks.com"
 
 // templateVars mirrors the variables acceptance/acceptance_test.go exports to the
 // invariant configs. On cloud the harness that launched us provides the real ids.
+// uniqueNameVar names the run's own suffix. Every fixture uses it for the resource name, and it
+// is the one variable a value library cannot expand for itself.
+const uniqueNameVar = "UNIQUE_NAME"
+
 func templateVars(uniqueName, userName string) map[string]string {
 	vars := map[string]string{
-		"UNIQUE_NAME": uniqueName,
+		uniqueNameVar: uniqueName,
 		// Matches defaultSparkVersion in acceptance/acceptance_test.go.
 		"DEFAULT_SPARK_VERSION":     "13.3.x-snapshot-scala2.12",
 		"NODE_TYPE_ID":              nodeTypeID(),
@@ -112,7 +117,7 @@ func templateVars(uniqueName, userName string) map[string]string {
 	for key := range vars {
 		// UNIQUE_NAME is this run's own, and CURRENT_USER_NAME is already the resolved
 		// workspace user, which is more reliable than an env var that may not be set.
-		if key == "UNIQUE_NAME" || key == "CURRENT_USER_NAME" {
+		if key == uniqueNameVar || key == "CURRENT_USER_NAME" {
 			continue
 		}
 		if value := os.Getenv(key); value != "" {
@@ -159,30 +164,16 @@ func maxWaitSeconds() string {
 // built is usually the environment (an expired token, a workspace that rejects the
 // config), and the run is more useful if that lands in the report as one bad verdict
 // than if it aborts thousands of pending observations.
-func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, configName, uniqueName string, base any) (*bundleHarness, error) {
+func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, resourceType, uniqueName string, base any) (*bundleHarness, error) {
 	dir := t.TempDir()
 	if err := copyDir(dataDir, dir); err != nil {
 		return nil, err
 	}
 
-	src, err := os.ReadFile(filepath.Join(configsDir, configName))
+	rememberWorkspaceUser(user.UserName)
+	yml, err := renderBundle(resourceType, uniqueName, user.UserName, base)
 	if err != nil {
 		return nil, err
-	}
-	rememberWorkspaceUser(user.UserName)
-	vars := templateVars(uniqueName, user.UserName)
-	var missing string
-	yml := os.Expand(string(src), func(key string) string {
-		value, ok := vars[key]
-		if !ok {
-			// Expanding an unknown variable to "" turns a required field into null, and
-			// the failure then surfaces as a confusing validation error much later.
-			missing = key
-		}
-		return value
-	})
-	if missing != "" {
-		return nil, fmt.Errorf("%s uses $%s, which this suite does not provide", configName, missing)
 	}
 	if err := os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte(yml), 0o600); err != nil {
 		return nil, err
@@ -219,7 +210,7 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 
 	phases.LoadDefaultTarget(ctx, b)
 	if diags := logdiag.FlushCollected(ctx); diags.HasError() {
-		return nil, fmt.Errorf("loading %s: %s", configName, firstError(diags))
+		return nil, fmt.Errorf("loading %s: %s", resourceType, firstError(diags))
 	}
 
 	// Pin the user so PopulateCurrentUser makes no API call: a harness is built per
@@ -231,7 +222,7 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 
 	phases.Initialize(ctx, b)
 	if diags := logdiag.FlushCollected(ctx); diags.HasError() {
-		return nil, fmt.Errorf("initializing %s: %s", configName, firstError(diags))
+		return nil, fmt.Errorf("initializing %s: %s", resourceType, firstError(diags))
 	}
 
 	// Drop the sub-resource blocks before anything is planned. They are separate plan
@@ -258,7 +249,7 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 	// any field.
 	bundle.ApplySeq(ctx, b, deploy.ResourcePathMkdir())
 	if diags := logdiag.FlushCollected(ctx); diags.HasError() {
-		return nil, fmt.Errorf("creating the resource path for %s: %s", configName, firstError(diags))
+		return nil, fmt.Errorf("creating the resource path for %s: %s", resourceType, firstError(diags))
 	}
 
 	harness := &bundleHarness{
@@ -269,12 +260,6 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 		node:      node,
 		statePath: filepath.Join(dir, "resources.json"),
 		unique:    uniqueName,
-	}
-
-	if base != nil {
-		if err := harness.edit(func(resource any) error { return seedBase(resource, base) }); err != nil {
-			return nil, err
-		}
 	}
 
 	return harness, nil
@@ -431,6 +416,49 @@ func (h *bundleHarness) edit(fn func(resource any) error) error {
 // resource returns the typed resource under test, e.g. *resources.Schema.
 func (h *bundleHarness) resource() (any, error) {
 	return structaccess.GetByString(&h.bundle.Config, h.node)
+}
+
+// resourceKey is the name every fixture's resource is declared under. One resource per bundle,
+// so the name carries nothing and only has to be stable.
+const resourceKey = "foo"
+
+// renderBundle writes the fixture's base out as a bundle. The value library holds the whole
+// resource, so this is the only place a databricks.yml comes from: the base is marshalled back
+// to YAML, indented under its resource type, and given the bundle block.
+//
+// $UNIQUE_NAME survives loadFieldValues unexpanded and is expanded here, because it belongs to
+// one deploy: a rebuild gets a new name, while a value library is read once for the whole run.
+func renderBundle(resourceType, uniqueName, userName string, base any) (string, error) {
+	body, err := yaml.Marshal(base)
+	if err != nil {
+		return "", err
+	}
+
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "bundle:\n  name: test-bundle-$UNIQUE_NAME\n\nresources:\n  %s:\n    %s:\n", resourceType, resourceKey)
+	for line := range strings.SplitSeq(strings.TrimRight(string(body), "\n"), "\n") {
+		if line == "" {
+			sb.WriteString("\n")
+			continue
+		}
+		sb.WriteString("      " + line + "\n")
+	}
+
+	vars := templateVars(uniqueName, userName)
+	var missing string
+	yml := os.Expand(sb.String(), func(key string) string {
+		value, ok := vars[key]
+		if !ok {
+			// Expanding an unknown variable to "" turns a required field into null, and the
+			// failure then surfaces as a confusing validation error much later.
+			missing = key
+		}
+		return value
+	})
+	if missing != "" {
+		return "", fmt.Errorf("%s.yml uses $%s, which this suite does not provide", resourceType, missing)
+	}
+	return yml, nil
 }
 
 func copyDir(src, dst string) error {
@@ -732,17 +760,6 @@ func (h *bundleHarness) restore(snapshot []byte) {
 		value.Set(reflect.Zero(value.Type()))
 		return json.Unmarshal(snapshot, resource)
 	})
-}
-
-// seedBase folds the value library's base fragment into the resource, so the fields it
-// declares are present and can be varied. Unmarshalling merges: a field the fragment does
-// not mention keeps whatever the config gave it.
-func seedBase(resource, base any) error {
-	body, err := json.Marshal(base)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(body, resource)
 }
 
 // subResourceKinds are the child plan nodes this suite removes from every config; see

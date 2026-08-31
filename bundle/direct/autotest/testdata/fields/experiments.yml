@@ -7,6 +7,7 @@
 # The UC trace location is the same case as a job's git_source: the backend requires the
 # catalog and the schema together, so neither can be reached one field at a time.
 base:
+  name: /Users/$CURRENT_USER_NAME/test-experiment-$UNIQUE_NAME
   tags:
     - key: team
       value: eng

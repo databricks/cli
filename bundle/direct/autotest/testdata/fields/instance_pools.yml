@@ -6,6 +6,8 @@
 # thousand recreates in a row does not, so the catalog for this type is the local one.
 local_only: a real workspace refuses to delete a pool, and most fields recreate
 base:
+  instance_pool_name: test-instance-pool-$UNIQUE_NAME
+  node_type_id: $NODE_TYPE_ID
   custom_tags:
     team: eng
   preloaded_spark_versions:

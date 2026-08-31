@@ -11,8 +11,8 @@ changing a field's type.
 
 ## What it does
 
-For each config in `acceptance/bundle/invariant/configs` that describes a single
-resource, the suite deploys it once, then walks the resource's input struct the way
+For each resource type with a value library in `testdata/fields`, the suite deploys that
+library's `base` as a one-resource bundle, then walks the resource's input struct the way
 `cmd/bundle/debug` refschema does. For each field it moves the field through every
 ordered pair of a small value set — with `absent` in the set, so adding and removing a
 field are just the pairs with `absent` on one side — and records three things per move:
@@ -99,17 +99,21 @@ the engine explaining itself, which is different.
 
 ## Value library
 
-`testdata/fields/<resource_type>.yml` supplies values the generic per-kind defaults cannot
-guess — enums, ids, anything the backend constrains. A field naming another object needs a
-name that exists: a real workspace rejects the generic `x` outright, so the field would
-report nothing but `BACKEND_ERROR`.
+`testdata/fields/<resource_type>.yml` is the whole fixture for a type: the resource to deploy,
+and the values to move its fields through. There is one per type, and it is the only place a
+run reads a resource definition from.
+
+`fields` supplies values the generic per-kind defaults cannot guess — enums, ids, anything the
+backend constrains. A field naming another object needs a name that exists: a real workspace
+rejects the generic `x` outright, so the field would report nothing but `BACKEND_ERROR`.
 
 ```yaml
-# Seeded into the resource before the first deploy, so this block's fields become
-# reachable. Some blocks only validate as a whole -- a job's git_source needs a provider,
-# a url and exactly one ref -- and cannot be built up one field at a time from nothing.
-# Keep path-valued fields out: base is merged after the mutator pipeline has run.
+# The resource, rendered into a one-resource databricks.yml and deployed before anything is
+# measured. What it declares is what can be tested: a block absent here has no entry for its
+# fields to live in, and some blocks only validate as a whole -- a job's git_source needs a
+# provider, a url and exactly one ref -- so they cannot be built up one field at a time.
 base:
+  name: test-job-$UNIQUE_NAME
   git_source:
     git_provider: gitHub
     git_url: https://github.com/databricks/cli.test
@@ -154,14 +158,20 @@ field rules, and naming a block skips everything beneath it.
 
 A field that names the resource gets the run's own unique suffix appended to its values, so
 two runs against one workspace never ask for the same name — the second would get "already
-exists", which says nothing about the engine. Such a field is recognised by the corpus config
-templating its value with `$UNIQUE_NAME`. The suffix is a placeholder until the value is
+exists", which says nothing about the engine. Such a field is recognised by `base` templating
+its value with `$UNIQUE_NAME`. The suffix is a placeholder until the value is
 written, since a rebuilt resource has a new one while the old is still alive, and it is
 redacted in the report so the golden is the same on every run.
 
-`base` is expanded with the same `$VARS` the corpus configs use — `$CURRENT_USER_NAME`,
-`$UNIQUE_NAME`, `$NODE_TYPE_ID` and the rest — so a seeded value can name the workspace's
-own user rather than a placeholder only the fake server knows.
+`base` is the whole resource, and is expanded with the `$VARS` an acceptance config would get —
+`$CURRENT_USER_NAME`, `$NODE_TYPE_ID`, `$TEST_DEFAULT_WAREHOUSE_ID` and the rest — so a value can
+name the workspace's own user rather than a placeholder only the fake server knows.
+`$UNIQUE_NAME` is expanded later, per deploy, because a rebuild gets a new one.
+
+Because `base` becomes the bundle, it can only hold what a bundle can: a field the config format
+rejects is rejected here too. That is deliberate — an alert built from a `.dbalert.json` takes
+everything but `warehouse_id`, `display_name` and `file_path` from that file, and seeding
+`evaluation` in the bundle is a shape the CLI refuses.
 
 `skip` is for a field no single-field edit can exercise — one that only validates as
 part of a set (a job's `git_source`), or whose change is correct but ruinously slow (an
@@ -224,11 +234,11 @@ faithfully, which is worth failing over. The full report goes to
 ## Out of scope for now
 
 - remote drift — a change made outside the bundle; this suite only edits config
-- `permissions` and `grants`, which are stripped from every config before planning: they
+- `permissions` and `grants`, which are stripped from every fixture before planning: they
   are separate plan nodes describing an ACL, and leaving them in made every recreate
-  report a drifted child against whichever field triggered it. Two configs that differ
-  only in those blocks therefore collapse to one, recorded in `output/configs.txt`.
-- configs with more than one resource, or with an `-init.sh`
+  report a drifted child against whichever field triggered it. They are supported resource
+  types in their own right, and `output/configs.txt` leaves them out for the same reason.
+- resource types with no value library yet, listed in `output/configs.txt`
 - fields under a slice or map, listed at the end of each report
 
 Three divergences from a real workspace are known and left as findings rather than modelled,

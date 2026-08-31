@@ -1,4 +1,9 @@
 # Value library for volumes. See ../../README.md.
+base:
+  name: test-volume-$UNIQUE_NAME
+  catalog_name: main
+  schema_name: default
+
 skip:
   # An external volume needs a storage location backed by a real external location and
   # cloud IAM, which this suite does not provision.

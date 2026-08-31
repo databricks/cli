@@ -4,6 +4,7 @@
 # fields, including the init_scripts union and the tag maps -- would go untested. Values
 # that differ per cloud come from the same variables the corpus configs use.
 base:
+  name: test-pipeline-$UNIQUE_NAME
   clusters:
     - label: default
       node_type_id: $NODE_TYPE_ID

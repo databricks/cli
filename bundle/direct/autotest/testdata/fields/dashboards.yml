@@ -1,5 +1,10 @@
 # Value library for dashboards. See ../../README.md.
 
+base:
+  warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+  display_name: test-dashboard-$UNIQUE_NAME
+  file_path: ./dashboard.lvdash.json
+
 skip:
   # Must name a workspace folder that exists, and this suite provisions only the bundle's own.
   # A dashboard also cannot be moved between folders without being recreated, and the recreate
