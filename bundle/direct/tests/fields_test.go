@@ -275,7 +275,7 @@ func sameField(drifting, path string) bool {
 
 // selectorPattern matches the key-value selector the planner uses to name a slice element it
 // can identify -- "tasks[task_key='seeded']" for what this suite calls "tasks[0]".
-var selectorPattern = regexp.MustCompile(`\[(?:[a-z_]+='[^']*'|[0-9]+)\]`)
+var selectorPattern = regexp.MustCompile(`\[(?:[^'=\]]+='[^']*'|[0-9]+)\]`)
 
 // normalizeSelectors reduces both ways of naming a slice element to one form, so a change the
 // planner recorded against "tasks[task_key='seeded'].run_if" is recognised as the same field as
@@ -542,7 +542,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		}
 	}
 
-	if own, child := driftDetail(after, h.node, baseline); own != "" || child != "" {
+	if own, child, bare := driftDetail(after, h.node, baseline); own != "" || child != "" || bare != "" {
 		// Whether the field under test is among the drifting ones decides who is to blame.
 		drifted := strings.Split(own, ",")
 		// The plan that still wants a change is the whole evidence for this verdict, so
@@ -550,6 +550,9 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		res.evidence = withContext("plan taken right after the deploy:", planJSON(after))
 		t.Logf("post-deploy plan still proposes a change:\n%s", res.evidence)
 		switch {
+		case bare != "":
+			// The whole resource is being replaced again, with no field named.
+			res.verdict, res.detail = verdictDrift, bare
 		case own == "":
 			// A child node left behind by a recreate: a different problem, different fix.
 			res.verdict, res.detail = verdictDriftChild, child
@@ -812,7 +815,7 @@ func jsonEqual(a, b any) bool {
 // on the node under test (own: the field paths that did not stick) and drift on any
 // other node (child: how a recreate orphaning a permissions or grants node shows up).
 // Both are "" when the deploy converged.
-func driftDetail(plan *deployplan.Plan, node string, baseline map[string]bool) (own, child string) {
+func driftDetail(plan *deployplan.Plan, node string, baseline map[string]bool) (own, child, bare string) {
 	var ownPaths, childNodes []string
 	for key, entry := range plan.Plan {
 		if entry.Action == deployplan.Skip {
@@ -831,12 +834,15 @@ func driftDetail(plan *deployplan.Plan, node string, baseline map[string]bool) (
 			}
 		}
 		if len(entry.Changes) == 0 {
-			ownPaths = append(ownPaths, string(entry.Action))
+			// A recreate carries no per-field detail, so there is no path to name: the whole
+			// resource is being replaced again. Reported as the field's own non-convergence,
+			// since attributing it to a sibling would name an action where a field belongs.
+			bare = string(entry.Action)
 		}
 	}
 	slices.Sort(ownPaths)
 	slices.Sort(childNodes)
-	return strings.Join(ownPaths, ","), strings.Join(childNodes, " ")
+	return strings.Join(ownPaths, ","), strings.Join(childNodes, " "), bare
 }
 
 // generatedIDs are the shapes of value that differ between runs, all of which turn up inside
