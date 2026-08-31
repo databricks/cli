@@ -1,6 +1,20 @@
+=== experiment.yml.tmpl
+tags                                         absent     len0       START_NOT_REACHED  tags (declared inert: terraform_compat)
+tags                                         absent     len1       START_NOT_REACHED  tags (declared inert: terraform_compat)
+tags                                         len0       absent     START_NOT_REACHED  tags (declared inert: terraform_compat)
+tags                                         len0       len1       START_NOT_REACHED  tags (declared inert: terraform_compat)
+tags                                         len1       absent     START_NOT_REACHED  tags (declared inert: terraform_compat)
+tags                                         len1       len0       START_NOT_REACHED  tags (declared inert: terraform_compat)
+tags[0].key                                  x          absent     START_NOT_REACHED  tags[0].key (declared inert: terraform_compat)
+tags[0].key                                  x          y          START_NOT_REACHED  tags[0].key (declared inert: terraform_compat)
+tags[0].key                                  y          absent     START_NOT_REACHED  tags[0].key (declared inert: terraform_compat)
+tags[0].value                                absent     x          START_NOT_REACHED  tags[0].value (declared inert: terraform_compat)
+tags[0].value                                y          absent     START_NOT_REACHED  tags[0].value (declared inert: terraform_compat)
+tags[0].value                                y          x          START_NOT_REACHED  tags[0].value (declared inert: terraform_compat)
 
 === summary
 OK                 2
 OK_RECREATE        12
-OK_INERT           18
+OK_INERT           6
 SKIPPED            2
+START_NOT_REACHED  12

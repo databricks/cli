@@ -5,9 +5,7 @@ capacity                                     x          absent     START_NOT_REA
 capacity                                     x          y          START_NOT_REACHED  capacity
 capacity                                     y          absent     START_NOT_REACHED  capacity
 capacity                                     y          x          POST_DEPLOY_DRIFT  capacity
-custom_tags                                  absent     len0       COLLATERAL_DRIFT  capacity
 custom_tags                                  absent     len1       COLLATERAL_DRIFT  capacity
-custom_tags                                  len0       absent     COLLATERAL_DRIFT  capacity
 custom_tags                                  len0       len1       COLLATERAL_DRIFT  capacity
 custom_tags                                  len1       absent     COLLATERAL_DRIFT  capacity
 custom_tags                                  len1       len0       COLLATERAL_DRIFT  capacity
@@ -23,47 +21,43 @@ custom_tags[0].value                         x          absent     COLLATERAL_DR
 custom_tags[0].value                         x          y          COLLATERAL_DRIFT  capacity
 custom_tags[0].value                         y          absent     COLLATERAL_DRIFT  capacity
 custom_tags[0].value                         y          x          COLLATERAL_DRIFT  capacity
-enable_pg_native_login                       absent     false      COLLATERAL_DRIFT  capacity
 enable_pg_native_login                       absent     true       COLLATERAL_DRIFT  capacity
-enable_pg_native_login                       false      absent     COLLATERAL_DRIFT  capacity
 enable_pg_native_login                       false      true       COLLATERAL_DRIFT  capacity
-enable_pg_native_login                       true       absent     COLLATERAL_DRIFT  capacity
-enable_pg_native_login                       true       false      COLLATERAL_DRIFT  capacity
-enable_readable_secondaries                  absent     false      COLLATERAL_DRIFT  capacity
+enable_pg_native_login                       true       absent     START_NOT_REACHED  enable_pg_native_login
+enable_pg_native_login                       true       false      START_NOT_REACHED  enable_pg_native_login
 enable_readable_secondaries                  absent     true       COLLATERAL_DRIFT  capacity
-enable_readable_secondaries                  false      absent     COLLATERAL_DRIFT  capacity
 enable_readable_secondaries                  false      true       COLLATERAL_DRIFT  capacity
-enable_readable_secondaries                  true       absent     COLLATERAL_DRIFT  capacity
-enable_readable_secondaries                  true       false      COLLATERAL_DRIFT  capacity
+enable_readable_secondaries                  true       absent     START_NOT_REACHED  enable_readable_secondaries
+enable_readable_secondaries                  true       false      START_NOT_REACHED  enable_readable_secondaries
 node_count                                   1          2          COLLATERAL_DRIFT  capacity
-node_count                                   1          absent     COLLATERAL_DRIFT  capacity
-node_count                                   2          1          COLLATERAL_DRIFT  capacity
-node_count                                   2          absent     COLLATERAL_DRIFT  capacity
+node_count                                   1          absent     START_NOT_REACHED  node_count
+node_count                                   2          1          START_NOT_REACHED  node_count
+node_count                                   2          absent     START_NOT_REACHED  node_count
 node_count                                   absent     1          COLLATERAL_DRIFT  capacity
 node_count                                   absent     2          COLLATERAL_DRIFT  capacity
-retention_window_in_days                     1          2          COLLATERAL_DRIFT  capacity
+retention_window_in_days                     1          2          START_NOT_REACHED  retention_window_in_days
 retention_window_in_days                     1          absent     COLLATERAL_DRIFT  capacity
-retention_window_in_days                     2          1          COLLATERAL_DRIFT  capacity
-retention_window_in_days                     2          absent     COLLATERAL_DRIFT  capacity
+retention_window_in_days                     2          1          START_NOT_REACHED  retention_window_in_days
+retention_window_in_days                     2          absent     START_NOT_REACHED  retention_window_in_days
 retention_window_in_days                     absent     1          COLLATERAL_DRIFT  capacity
 retention_window_in_days                     absent     2          COLLATERAL_DRIFT  capacity
 stopped                                      absent     true       COLLATERAL_DRIFT  capacity
 stopped                                      false      true       COLLATERAL_DRIFT  capacity
-stopped                                      true       absent     COLLATERAL_DRIFT  capacity
-stopped                                      true       false      COLLATERAL_DRIFT  capacity
+stopped                                      true       absent     START_NOT_REACHED  stopped
+stopped                                      true       false      START_NOT_REACHED  stopped
 usage_policy_id                              absent     x          COLLATERAL_DRIFT  capacity
 usage_policy_id                              absent     y          COLLATERAL_DRIFT  capacity
-usage_policy_id                              x          absent     COLLATERAL_DRIFT  capacity
+usage_policy_id                              x          absent     START_NOT_REACHED  usage_policy_id
 usage_policy_id                              x          y          COLLATERAL_DRIFT  capacity
-usage_policy_id                              y          absent     COLLATERAL_DRIFT  capacity
-usage_policy_id                              y          x          COLLATERAL_DRIFT  capacity
+usage_policy_id                              y          absent     START_NOT_REACHED  usage_policy_id
+usage_policy_id                              y          x          START_NOT_REACHED  usage_policy_id
 
 === summary
 OK_RECREATE        32
-SUPPRESSED         1
-NOT_OBSERVABLE     1
+SUPPRESSED         5
+NOT_OBSERVABLE     3
 UPDATE_IGNORED     2
 POST_DEPLOY_DRIFT  1
-COLLATERAL_DRIFT   52
+COLLATERAL_DRIFT   31
 SKIPPED            24
-START_NOT_REACHED  3
+START_NOT_REACHED  18

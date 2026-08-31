@@ -1,6 +1,25 @@
 # Value library for SQL warehouses. See ../../README.md.
-base:
-  tags:
-    custom_tags:
-      - key: team
-        value: eng
+
+skip:
+  # Must be an ARN of an instance profile registered with the workspace.
+  instance_profile_arn: needs an instance profile registered with the workspace
+  # Only accepted on the CUSTOM channel, so the version and the channel name have to move
+  # together; either alone is rejected.
+  channel.dbsql_version: only valid on the CUSTOM channel, so it cannot move alone
+  # Serverless is only offered on a PRO warehouse, and the corpus config is CLASSIC, so
+  # this flag cannot be moved on its own -- the pair would have to change together.
+  enable_serverless_compute: only valid on a PRO warehouse, which the config is not
+
+fields:
+  # The backend validates these as ranges rather than accepting any integer:
+  # auto_stop_mins is 0 (never) or at least 10, and a cluster count is at least 1 --
+  # with max_num_clusters at least 2 once it is being changed at all.
+  auto_stop_mins: [10, 20]
+  min_num_clusters: [1, 2]
+  max_num_clusters: [2, 3]
+
+  # A t-shirt size, not free text.
+  cluster_size: [2X-Small, X-Small]
+
+  # A tag key has to be non-empty, so "" is not one of the values to try.
+  tags.custom_tags[*].key: [team, owner]

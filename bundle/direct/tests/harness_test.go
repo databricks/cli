@@ -306,8 +306,9 @@ func (h *bundleHarness) plan() (*pendingApply, *deployplan.Plan, diag.Diagnostic
 	ctx, cancel := h.opCtx()
 	db := &direct.DeploymentBundle{} //exhaustruct:ignore
 	if err := db.StateDB.Open(ctx, h.statePath, dstate.WithRecovery(false), dstate.WithWrite(false)); err != nil {
-		cancel()
-		return nil, nil, diag.FromErr(err)
+		// A pendingApply even here: every caller cancels what plan hands back, and a nil one
+		// would turn a state-file problem into a panic.
+		return &pendingApply{ctx: ctx, cancel: cancel, db: db}, nil, diag.FromErr(err)
 	}
 	plan, err := db.CalculatePlan(ctx, h.client, &h.bundle.Config)
 	diags := logdiag.FlushCollected(ctx)
@@ -495,8 +496,10 @@ func removeField(resource any, node *structpath.PathNode) error {
 	return structaccess.Set(resource, node, nil)
 }
 
-// removeIndex rebuilds a slice without one element and writes it back, since a slice
-// element cannot be zeroed away.
+// removeIndex drops the last element of a slice, which is the only index that can be made
+// absent: removing any earlier one shifts its successor into the same path, so the field
+// would still be there holding a different value and the transition would be recorded as a
+// move from absent that never happened.
 func removeIndex(resource any, parent *structpath.PathNode, container any, index int) error {
 	value := reflect.ValueOf(container)
 	if value.Kind() != reflect.Slice {
@@ -505,11 +508,13 @@ func removeIndex(resource any, parent *structpath.PathNode, container any, index
 	if index < 0 || index >= value.Len() {
 		return nil
 	}
+	if index != value.Len()-1 {
+		return fmt.Errorf("cannot make %s[%d] absent: %s[%d] would shift into it", parent, index, parent, index+1)
+	}
 	// A fresh slice, not a re-slice: appending into the original backing array would also
 	// change any copy of the slice the suite is holding on to.
-	trimmed := reflect.MakeSlice(value.Type(), 0, value.Len()-1)
+	trimmed := reflect.MakeSlice(value.Type(), 0, index)
 	trimmed = reflect.AppendSlice(trimmed, value.Slice(0, index))
-	trimmed = reflect.AppendSlice(trimmed, value.Slice(index+1, value.Len()))
 	return structaccess.Set(resource, parent, trimmed.Interface())
 }
 
