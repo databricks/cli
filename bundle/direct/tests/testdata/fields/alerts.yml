@@ -22,8 +22,22 @@ skip:
   # Must be the id of a notification destination registered with the workspace.
   evaluation.notification.subscriptions[*].destination_id: needs a notification destination
 
+  # A threshold compares against either a column or a value, and the alert file this config
+  # loads (data/alert.dbalert.json) sets the value -- so the column is the other arm of that
+  # choice and the backend drops it, leaving it drifting forever. The value's own three
+  # members (bool, double, string) are a oneof in the same way.
+  evaluation.threshold: two arms of one choice, and the alert file already picks the value
+  # Also a oneof (user_name or service_principal_name), and which member is valid depends on
+  # whether the identity running the suite is a user or a service principal. run_as_user_name
+  # is the deprecated flat form of the same thing: setting it has no effect when the caller is
+  # a service principal, which is what a cloud run is.
+  run_as: a oneof, and which member is valid depends on the run identity
+  run_as_user_name: only settable when the caller is a user, not a service principal
+  # An alert has to be able to notify somebody, so the backend will not leave a subscription
+  # without a recipient -- but what it keeps instead is not something this suite can predict.
+  evaluation.notification.subscriptions[*].user_email: the backend refuses to leave a subscription without a recipient
+
 fields:
-  # A subscription, and a run_as, has to name a principal the workspace knows.
-  evaluation.notification.subscriptions[*].user_email: [$CURRENT_USER_NAME]
-  run_as.user_name: [$CURRENT_USER_NAME]
-  run_as_user_name: [$CURRENT_USER_NAME]
+  # A real zone, and a real cron expression -- neither is free text.
+  schedule.timezone_id: [UTC, America/New_York]
+  schedule.quartz_cron_schedule: ["0 0 9 10 1 ?", "0 0 10 10 1 ?"]
