@@ -66,10 +66,60 @@ skip:
   git_source.git_branch: mutually exclusive with the seeded git_commit
   git_source.git_tag: mutually exclusive with the seeded git_commit
 
+  # A task's type is a union and base seeds notebook_task, so reaching any other member means
+  # putting two types on one task -- which the API rejects, usually by complaining about the
+  # cluster the seeded task carries ("For each does not need a cluster"). Locally the fake server
+  # accepted it, so ~2200 transitions were exercising configurations no user can write.
+  #
+  # Covering a member needs a corpus config whose task is of that type. Some exist --
+  # job_apply_policy_default_values_for_each_task.yml.tmpl is one -- but this suite drives the
+  # simplest config per resource type, so they are not the one picked. Their fields are listed as
+  # uncovered rather than tested against a task that cannot hold them.
+  tasks[*].ai_runtime_task: another member of the same union as the seeded notebook_task
+  tasks[*].alert_task: another member of the same union as the seeded notebook_task
+  tasks[*].clean_rooms_notebook_task: another member of the same union as the seeded notebook_task
+  tasks[*].condition_task: another member of the same union as the seeded notebook_task
+  tasks[*].dashboard_task: another member of the same union as the seeded notebook_task
+  tasks[*].dbt_cloud_task: another member of the same union as the seeded notebook_task
+  tasks[*].dbt_platform_task: another member of the same union as the seeded notebook_task
+  tasks[*].dbt_task: another member of the same union as the seeded notebook_task
+  tasks[*].for_each_task: another member of the same union as the seeded notebook_task
+  tasks[*].gen_ai_compute_task: another member of the same union as the seeded notebook_task
+  tasks[*].pipeline_task: another member of the same union as the seeded notebook_task
+  tasks[*].power_bi_task: another member of the same union as the seeded notebook_task
+  tasks[*].python_wheel_task: another member of the same union as the seeded notebook_task
+  tasks[*].run_job_task: another member of the same union as the seeded notebook_task
+  tasks[*].spark_jar_task: another member of the same union as the seeded notebook_task
+  tasks[*].spark_python_task: another member of the same union as the seeded notebook_task
+  tasks[*].spark_submit_task: another member of the same union as the seeded notebook_task
+  tasks[*].sql_task: another member of the same union as the seeded notebook_task
+
+  # A task's compute is a union too, and base seeds job_cluster_key.
+  tasks[*].existing_cluster_id: another way to name the task's compute than the seeded job_cluster_key
+  tasks[*].new_cluster: another way to name the task's compute than the seeded job_cluster_key
+  tasks[*].environment_key: only for a task type that runs in a serverless environment
+
+  # Each names a workspace object this suite does not provision.
+  job_clusters[*].serverless_compute_id: needs a serverless compute to exist
+  schedule.sql_condition: needs a saved query and a warehouse to exist
+  trigger.sql_condition: needs a saved query and a warehouse to exist
+  trigger.model.securable_name: needs a registered model to exist
+  git_source.job_source: needs a job whose configuration lives in the repository
+  # run_as must name a principal allowed to run the job, which depends on the identity the
+  # suite runs as -- a service principal on cloud.
+  run_as: depends on the identity the suite runs as
+  # Only one of the three cloud attribute blocks applies, decided by the workspace's cloud.
+  job_clusters[*].new_cluster.azure_attributes: cloud-specific; only one attribute block applies
+  job_clusters[*].new_cluster.gcp_attributes: cloud-specific; only one attribute block applies
+  job_clusters[*].new_cluster.aws_attributes: cloud-specific; only one attribute block applies
+
 fields:
   format: [SINGLE_TASK, MULTI_TASK]
   performance_target: [PERFORMANCE_OPTIMIZED, STANDARD]
   max_concurrent_runs: [1, 5]
   timeout_seconds: [600, 1200]
   git_source.git_provider: [gitHub, gitLab]
+  # A repository URL and a TZ database zone id, neither free text.
+  git_source.git_url: [https://github.com/databricks/cli.test, https://github.com/databricks/dabs.test]
+  schedule.timezone_id: [UTC, America/New_York]
   git_source.git_commit: [abc123, def456]
