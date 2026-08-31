@@ -1,0 +1,7 @@
+# Value library for Genie spaces. See ../../README.md.
+
+skip:
+  # Same two as dashboards: both name workspace objects this suite does not provision a second
+  # of. See dashboards.yml.
+  parent_path: needs a second workspace folder to exist
+  warehouse_id: needs a second SQL warehouse to exist
