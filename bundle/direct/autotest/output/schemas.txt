@@ -1,4 +1,3 @@
-=== schema.yml.tmpl
 custom_max_retention_hours                   168        absent     UPDATE_IGNORED
 custom_max_retention_hours                   720        absent     UPDATE_IGNORED
 properties                                   keys1      absent     UPDATE_IGNORED

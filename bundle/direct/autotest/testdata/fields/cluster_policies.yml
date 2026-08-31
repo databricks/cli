@@ -6,6 +6,8 @@
 # on this entry, which is not something a user can write -- the backend keeps whichever it
 # prefers and the whole block then reads as drifting.
 base:
+  name: test-cluster-policy-$UNIQUE_NAME
+  definition: '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'
   libraries:
     - jar: dbfs:/FileStore/test.jar
 

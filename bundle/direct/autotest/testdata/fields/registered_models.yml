@@ -4,6 +4,9 @@
 # writing the model -- but the OpenAPI spec does not annotate it, so it is not skipped
 # automatically. Seeding one lets the suite record what actually happens.
 base:
+  name: test-model-$UNIQUE_NAME
+  catalog_name: main
+  schema_name: default
   aliases:
     - alias_name: champion
       version_num: 1

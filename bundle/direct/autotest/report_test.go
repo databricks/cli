@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -162,7 +161,6 @@ func (r result) isProblem() bool {
 
 // result is one line of the report.
 type result struct {
-	config   string
 	field    string
 	from, to string
 	verdict  verdict
@@ -306,7 +304,6 @@ func (r *report) render(problemsOnly bool) string {
 
 	slices.SortStableFunc(r.results, func(a, b result) int {
 		return cmp.Or(
-			strings.Compare(a.config, b.config),
 			strings.Compare(a.field, b.field),
 			strings.Compare(a.from, b.from),
 			strings.Compare(a.to, b.to),
@@ -316,7 +313,6 @@ func (r *report) render(problemsOnly bool) string {
 	counts := map[verdict]int{}
 	// The labels the rendered rows actually use, so the legend explains those and no others.
 	used := map[legendKey]bool{}
-	config := ""
 	for _, res := range r.results {
 		counts[res.verdict]++
 		if problemsOnly && !res.isProblem() {
@@ -324,13 +320,6 @@ func (r *report) render(problemsOnly bool) string {
 		}
 		used[legendKey{res.field, res.from}] = true
 		used[legendKey{res.field, res.to}] = true
-		if res.config != config {
-			if config != "" {
-				sb.WriteString("\n")
-			}
-			fmt.Fprintf(&sb, "=== %s\n", res.config)
-			config = res.config
-		}
 		line := fmt.Sprintf("%-44s %-10s %-10s %s", res.field, res.from, res.to, res.verdict)
 		if res.detail != "" {
 			line += "  " + res.detail
@@ -486,26 +475,18 @@ func writeReport(t testutil.TestingT, name, body string) {
 	}
 }
 
-// writeCorpusReport records which configs the suite drives and why each of the others is
-// left out, so the catalog accounts for the whole corpus rather than just the part it
-// happens to cover. Only one config per resource type is driven, so a corpus config that
-// merely lost the pick is listed as not covered too -- naming the one that won.
-func writeCorpusReport(t testutil.TestingT, driven map[string]testConfig, skipped map[string]string) {
-	names := make([]string, 0, len(skipped))
-	for name := range skipped {
-		names = append(names, name)
-	}
-
+// writeCoverageReport records which resource types the suite drives and which supported types
+// it does not, so the catalog accounts for everything the direct engine knows rather than only
+// what it happens to cover.
+func writeCoverageReport(t testutil.TestingT, driven, undriven []string) {
 	var sb strings.Builder
 	sb.WriteString("=== covered\n")
-	for _, resourceType := range slices.Sorted(maps.Keys(driven)) {
-		fmt.Fprintf(&sb, "%-48s %s\n", driven[resourceType].name, resourceType)
+	for _, resourceType := range driven {
+		fmt.Fprintf(&sb, "%s\n", resourceType)
 	}
-
-	slices.Sort(names)
-	fmt.Fprintf(&sb, "\n=== not covered\n")
-	for _, name := range names {
-		fmt.Fprintf(&sb, "%-48s %s\n", name, skipped[name])
+	sb.WriteString("\n=== not covered: no value library in testdata/fields\n")
+	for _, resourceType := range undriven {
+		fmt.Fprintf(&sb, "%s\n", resourceType)
 	}
 
 	name := reportPath("configs.txt")

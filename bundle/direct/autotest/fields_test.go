@@ -63,7 +63,7 @@ import (
 )
 
 func TestFields(t *testing.T) {
-	usable, skipped := discoverConfigs(t)
+	driven, undriven := discoverFixtures(t)
 
 	// -update writes the report as the whole truth for a type, so it cannot come from a run
 	// that tested a few fields: the missing ones would read as removed.
@@ -82,32 +82,9 @@ func TestFields(t *testing.T) {
 		t.Logf("testing %d fields per resource type, seeded from HEAD (%d)", *sampleSize, sampleFields)
 	}
 
-	// One config per resource type: the simplest one, which is the shortest name -- a
-	// "<type>.yml.tmpl" sorts before its "<type>_<variant>.yml.tmpl" siblings. The variants
-	// exist to exercise specific engine behaviour, not extra fields, and anything a variant
-	// declares that the plain config does not is better seeded through testdata/fields, where
-	// it applies to every run rather than only where a corpus config happens to have it.
-	//
-	// It also removes the per-config workspace problem outright: a field's values are the same
-	// for every config, so two configs of one type would rename their resource to the same
-	// value and delete each other's.
-	byType := map[string]testConfig{}
-	for _, c := range usable {
-		if existing, ok := byType[c.resourceType]; ok && simplerConfig(existing.name, c.name) {
-			continue
-		}
-		byType[c.resourceType] = c
-	}
-	// Whatever lost the pick is not covered, and saying so is the point of the report.
-	for _, c := range usable {
-		if winner := byType[c.resourceType]; winner.name != c.name {
-			skipped[c.name] = "a simpler config of this type is driven instead: " + winner.name
-		}
-	}
+	writeCoverageReport(t, driven, undriven)
 
-	writeCorpusReport(t, byType, skipped)
-
-	for resourceType, cfg := range byType {
+	for _, resourceType := range driven {
 		t.Run(resourceType, func(t *testing.T) {
 			// One resource type per goroutine: the types are independent, and the
 			// slowest type then sets the wall time instead of their sum.
@@ -118,12 +95,10 @@ func TestFields(t *testing.T) {
 			client := newClient(t)
 			user := workspaceUser(t, client)
 
-			// A value library may name the workspace user or a shared test object, so it is
-			// rendered with the same variables as a corpus config -- minus UNIQUE_NAME, which
-			// belongs to one deploy and would be wrong for a value reused across rebuilds.
-			vars := templateVars("", user.UserName)
-			delete(vars, "UNIQUE_NAME")
-			fv, err := loadFieldValues(resourceType, vars)
+			// A value library may name the workspace user or a shared test object, so the same
+			// variables a bundle gets are expanded here too. UNIQUE_NAME is the exception and
+			// is left to renderBundle, which knows the deploy it belongs to.
+			fv, err := loadFieldValues(resourceType, templateVars("", user.UserName))
 			require.NoError(t, err)
 			if fv.localOnly != "" && isCloud() {
 				t.Skipf("local only: %s", fv.localOnly)
@@ -136,27 +111,25 @@ func TestFields(t *testing.T) {
 			ctx := t.Context()
 
 			rep := &report{resourceType: resourceType} //exhaustruct:ignore
-			t.Run(cfg.name, func(t *testing.T) {
-				runConfig(t, ctx, client, user, cfg, fv, rep, runSeed, sampleFields)
-			})
+			runType(t, ctx, client, user, resourceType, fv, rep, runSeed, sampleFields)
 			rep.write(t)
 		})
 	}
 }
 
-// runConfig drives one config. Every resource it creates belongs to this test's lifetime,
+// runType drives one resource type. Every resource it creates belongs to this test's lifetime,
 // which is what `owner` below carries into the subtests: a resource a subtest asks for is
 // reused by the transitions after it, so its cleanup cannot be the subtest's.
-func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, rep *report, runSeed, sampleSeedValue uint64) {
+func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, resourceType string, fv *fieldValues, rep *report, runSeed, sampleSeedValue uint64) {
 	owner := t
-	adapter, err := dresources.NewAdapter(dresources.SupportedResources[cfg.resourceType], cfg.resourceType, client)
+	adapter, err := dresources.NewAdapter(dresources.SupportedResources[resourceType], resourceType, client)
 	require.NoError(t, err)
 
 	// The base deploy establishes that the config itself is deployable. If it is not,
 	// nothing below can be attributed to a field.
-	h, err := newBaseline(t, ctx, client, user, cfg, fv)
+	h, err := newBaseline(t, ctx, client, user, resourceType, fv)
 	if err != nil {
-		rep.add(result{cfg.name, "(base config)", "", "create", verdictBaseError, oneLine(err.Error()), err.Error()})
+		rep.add(result{"(base config)", "", "create", verdictBaseError, oneLine(err.Error()), err.Error()})
 		return
 	}
 
@@ -165,7 +138,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	base := h.snapshot()
 	resource, err := h.resource()
 	require.NoError(t, err)
-	fields, uncovered, inert := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv, resource, runSeed,
+	fields, uncovered, inert := enumerateFields(resourceType, adapter.InputConfigType(), fv, resource, runSeed,
 		declaredUnsettable(adapter), h.unique)
 	rep.addCoverage(fields, uncovered)
 	fields = sample(fields, sampleSeedValue, rep)
@@ -184,7 +157,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	// resource's own reason rather than tested: every transition would come back SUPPRESSED
 	// with exactly that reason.
 	for _, path := range slices.Sorted(maps.Keys(inert)) {
-		rep.add(result{cfg.name, path, "", "", verdictSkipped, "backend output: " + inert[path], ""})
+		rep.add(result{path, "", "", verdictSkipped, "backend output: " + inert[path], ""})
 	}
 
 	// Fields the resource says it ignores local changes to. Not skipped: the declaration is
@@ -195,7 +168,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	decl := declarations{deliberate: declaredDeliberate(adapter), idFields: declaredIDFields(adapter)}
 
 	for path, reason := range fv.skip {
-		rep.add(result{cfg.name, path, "", "", verdictSkipped, reason, ""})
+		rep.add(result{path, "", "", verdictSkipped, reason, ""})
 	}
 
 	// Some resources do not converge even with nothing changed: a field the read never
@@ -204,11 +177,11 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	// gets blamed on whichever field happened to be under test.
 	baseline, err := baselineDrift(h)
 	if err != nil {
-		rep.add(result{cfg.name, "(baseline)", "", "", verdictPlanError, oneLine(err.Error()), err.Error()})
+		rep.add(result{"(baseline)", "", "", verdictPlanError, oneLine(err.Error()), err.Error()})
 		return
 	}
 	for _, path := range slices.Sorted(maps.Keys(baseline)) {
-		rep.add(result{cfg.name, path, "", "", verdictBaselineDrift, "drifts with no config change", ""})
+		rep.add(result{path, "", "", verdictBaselineDrift, "drifts with no config change", ""})
 	}
 
 	for _, f := range fields {
@@ -226,12 +199,12 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 			for _, tr := range f.transitions() {
 				t.Run(tr.label(), func(t *testing.T) {
 					if broken != nil {
-						rep.add(result{cfg.name, f.path, valueLabel(tr.from), valueLabel(tr.to), verdictBaseError, oneLine(broken.Error()), broken.Error()})
+						rep.add(result{f.path, valueLabel(tr.from), valueLabel(tr.to), verdictBaseError, oneLine(broken.Error()), broken.Error()})
 						return
 					}
 
 					reuse := deployedKnown && valueLabel(deployed) == valueLabel(tr.from)
-					res := runTransition(t, h, cfg.name, f.path, tr, reuse, baseline, decl)
+					res := runTransition(t, h, f.path, tr, reuse, baseline, decl)
 
 					// A starting value the deployed resource will not take -- typically a
 					// field the API refuses to clear -- is not a dead end: a fresh resource
@@ -241,7 +214,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 						// With the starting value written into the config before the create, so
 						// the new resource is built holding it: a field the API will not move to
 						// a value can still be created with it.
-						rebuilt, err := rebuild(owner, ctx, client, user, cfg, fv, h, preset{f.path, tr.from})
+						rebuilt, err := rebuild(owner, ctx, client, user, resourceType, fv, h, preset{f.path, tr.from})
 						uncreatable := err != nil
 						if uncreatable {
 							// The resource cannot even be created holding that value, which is the
@@ -250,7 +223,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 							// rebuild follows so the remaining transitions have a resource.
 							res.detail = "cannot create the resource holding it: " + oneLine(err.Error())
 							res.evidence = withContext("error creating the resource with the starting value:", err.Error())
-							rebuilt, err = rebuild(owner, ctx, client, user, cfg, fv, h)
+							rebuilt, err = rebuild(owner, ctx, client, user, resourceType, fv, h)
 						}
 						if err != nil {
 							// No resource left to observe anything on, which is a different
@@ -260,9 +233,9 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 							res.evidence = err.Error()
 							broken = err
 						} else {
-							h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, cfg.name, rep)
+							h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, rep)
 							if !uncreatable {
-								res = runTransition(t, h, cfg.name, f.path, tr, false, baseline, decl)
+								res = runTransition(t, h, f.path, tr, false, baseline, decl)
 							}
 						}
 					}
@@ -276,7 +249,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 					if res.verdict == verdictRecreate {
 						// A recreate replaced the resource without going through rebuild, so the
 						// baseline belongs to one that no longer exists.
-						baseline = remeasure(h, baseline, cfg.name, rep)
+						baseline = remeasure(h, baseline, rep)
 					}
 
 					if broken != nil || res.verdict.leavesResourceUsable() {
@@ -285,18 +258,18 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 					deployedKnown = false
 					// The resource is in an unknown state; carrying it into the next
 					// transition would turn one failure into a run of them.
-					rebuilt, err := rebuild(owner, ctx, client, user, cfg, fv, h)
+					rebuilt, err := rebuild(owner, ctx, client, user, resourceType, fv, h)
 					if err != nil {
 						broken = err
 						return
 					}
-					h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, cfg.name, rep)
+					h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, rep)
 				})
 			}
 		})
 		if broken != nil {
 			// The type has no usable resource left, so no later field can be observed either.
-			rep.add(result{cfg.name, "(rebuild)", "", "", verdictBaseError, oneLine(broken.Error()), broken.Error()})
+			rep.add(result{"(rebuild)", "", "", verdictBaseError, oneLine(broken.Error()), broken.Error()})
 			return
 		}
 		// Put the field back and confirm the resource converged. A field the API cannot
@@ -305,12 +278,12 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 		// what makes that cheap: reusing the old one waits out an asynchronous delete.
 		h.restore(base)
 		if !h.converged() {
-			rebuilt, err := rebuild(owner, ctx, client, user, cfg, fv, h)
+			rebuilt, err := rebuild(owner, ctx, client, user, resourceType, fv, h)
 			if err != nil {
-				rep.add(result{cfg.name, f.path, "", "", verdictBaseError, oneLine(err.Error()), err.Error()})
+				rep.add(result{f.path, "", "", verdictBaseError, oneLine(err.Error()), err.Error()})
 				return
 			}
-			h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, cfg.name, rep)
+			h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, rep)
 		}
 	}
 }
@@ -441,14 +414,14 @@ func hasFieldChanges(plan *deployplan.Plan, node string) bool {
 // A plan that fails here leaves the previous measurement in place, which is closer than
 // nothing, and says so: every verdict after it is measured against a baseline that may not be
 // this resource's.
-func remeasure(h *bundleHarness, previous map[string]bool, config string, rep *report) map[string]bool {
+func remeasure(h *bundleHarness, previous map[string]bool, rep *report) map[string]bool {
 	measured, err := baselineDrift(h)
 	if err == nil {
 		return measured
 	}
 	// Recorded, not just logged: every verdict after this is measured against a baseline that
 	// belongs to a resource which no longer exists, and a reader of the report has to know.
-	rep.add(result{config, "(baseline)", "", "", verdictPlanError, oneLine(err.Error()), err.Error()})
+	rep.add(result{"(baseline)", "", "", verdictPlanError, oneLine(err.Error()), err.Error()})
 	return previous
 }
 
@@ -525,9 +498,9 @@ type declarations struct {
 	idFields []dresources.FieldRule
 }
 
-func runTransition(t *testing.T, h *bundleHarness, config, path string, tr transition, startsDeployed bool, baseline map[string]bool, decl declarations) result {
+func runTransition(t *testing.T, h *bundleHarness, path string, tr transition, startsDeployed bool, baseline map[string]bool, decl declarations) result {
 	from, to := tr.from, tr.to
-	res := result{config: config, field: path, from: valueLabel(tr.from), to: valueLabel(tr.to)} //exhaustruct:ignore
+	res := result{field: path, from: valueLabel(tr.from), to: valueLabel(tr.to)} //exhaustruct:ignore
 
 	// Reach the starting value.
 	if err := h.setField(path, from); err != nil {
@@ -682,8 +655,8 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 // config -- not the subtest that happened to ask for the rebuild. Registering the cleanup on
 // the subtest would destroy the resource as soon as that transition ended, and every
 // transition after it would silently be creating a new one.
-func newBaseline(owner *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, presets ...preset) (*bundleHarness, error) {
-	h, err := newHarness(owner, ctx, client, user, cfg.name, uniqueName(), fv.base)
+func newBaseline(owner *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, resourceType string, fv *fieldValues, presets ...preset) (*bundleHarness, error) {
+	h, err := newHarness(owner, ctx, client, user, resourceType, uniqueName(), fv.base)
 	if err != nil {
 		return nil, err
 	}
@@ -719,9 +692,9 @@ type preset struct {
 // rebuild starts over on a fresh resource, leaving the old one to be destroyed at the
 // end of the test. A new name is what makes this cheap: reusing the old one can mean
 // waiting out an asynchronous delete.
-func rebuild(owner *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, old *bundleHarness, presets ...preset) (*bundleHarness, error) {
+func rebuild(owner *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, resourceType string, fv *fieldValues, old *bundleHarness, presets ...preset) (*bundleHarness, error) {
 	owner.Cleanup(func() { _ = old.destroy() })
-	return newBaseline(owner, ctx, client, user, cfg, fv, presets...)
+	return newBaseline(owner, ctx, client, user, resourceType, fv, presets...)
 }
 
 // explainSkip says why a plan came back with nothing to do for the field under test.
@@ -1033,16 +1006,6 @@ func redactIDs(s string) string {
 		s = strings.ReplaceAll(s, user, "[USERNAME]")
 	}
 	return s
-}
-
-// simplerConfig reports whether a is the simpler of two config names for one resource type.
-// Shorter wins, so "job.yml.tmpl" beats "job_with_depends_on.yml.tmpl"; length ties break
-// alphabetically so the choice is stable.
-func simplerConfig(a, b string) bool {
-	if len(a) != len(b) {
-		return len(a) < len(b)
-	}
-	return a < b
 }
 
 // sampleSize limits how many of a type's fields are tested, for a run that has to be cheap

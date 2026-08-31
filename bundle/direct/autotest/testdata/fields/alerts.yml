@@ -4,15 +4,19 @@
 # as not covered. Seeding one entry each makes both testable: the containers themselves and
 # the fields inside an entry.
 base:
-  evaluation:
-    notification:
-      subscriptions:
-        - user_email: $CURRENT_USER_NAME
-  parameters:
-    - name: threshold
-      value: "1"
+  warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+  display_name: test-alert-$UNIQUE_NAME
+  file_path: ./alert.dbalert.json
 
 skip:
+  # An alert built from a .dbalert.json takes everything but warehouse_id, display_name and
+  # file_path from that file: load_dbalert_files rejects any other field in the bundle YAML
+  # ("field X is not allowed in the bundle configuration"). So these are not bundle fields at
+  # all, and the values the suite used to seed reached the resource only by being patched in
+  # after that mutator had run.
+  evaluation: settable only in the .dbalert.json, not in the bundle
+  parameters: settable only in the .dbalert.json, not in the bundle
+
   # Must name an existing SQL warehouse, and alerts require one, so there is no absent
   # transition either -- a value-to-value move would need a second warehouse to exist.
   warehouse_id: needs a second SQL warehouse to exist

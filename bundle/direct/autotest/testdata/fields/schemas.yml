@@ -2,6 +2,9 @@
 
 # properties is a map the config does not declare, so its entries would be unreachable.
 base:
+  catalog_name: main
+  name: test-schema-$UNIQUE_NAME
+  comment: base comment
   properties:
     team: eng
 

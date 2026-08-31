@@ -1,4 +1,3 @@
-=== pipeline.yml.tmpl
 dry_run                                      absent     true       UPDATE_IGNORED
 dry_run                                      false      true       UPDATE_IGNORED
 

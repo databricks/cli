@@ -6,6 +6,9 @@
 # closer precedent, disabling gcp and azure by name.
 clouds: [aws]
 base:
+  project_id: test-pg-project-$UNIQUE_NAME
+  display_name: Test Postgres Project
+  enable_pg_native_login: false
   custom_tags:
     - key: team
       value: eng

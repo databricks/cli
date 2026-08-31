@@ -1,5 +1,6 @@
 # Value library for MLflow models. See ../../README.md.
 base:
+  name: test-model-$UNIQUE_NAME
   tags:
     - key: team
       value: eng

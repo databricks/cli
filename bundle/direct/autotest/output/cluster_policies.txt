@@ -1,4 +1,3 @@
-=== cluster_policy.yml.tmpl
 definition                                   absent     spark_version_:_ty~69b3 BASE_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: 'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
 definition                                   absent     spark_version_:_ty~cbc0 BASE_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: 'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
 definition                                   spark_version_:_ty~69b3 absent     BACKEND_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: 'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
