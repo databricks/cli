@@ -167,7 +167,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	ignoredLocally := declaredIgnoredLocally(adapter)
 	// Every rule the resource declares about deliberately not acting, which is what makes a
 	// skipped change the expected outcome rather than a failure to reach a value.
-	deliberate := declaredDeliberate(adapter)
+	decl := declarations{deliberate: declaredDeliberate(adapter), idFields: declaredIDFields(adapter)}
 
 	for path, reason := range fv.skip {
 		rep.add(result{cfg.name, path, "", "", verdictSkipped, reason, ""})
@@ -206,7 +206,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 					}
 
 					reuse := deployedKnown && valueLabel(deployed) == valueLabel(tr.from)
-					res := runTransition(t, h, cfg.name, f.path, tr, reuse, baseline, deliberate)
+					res := runTransition(t, h, cfg.name, f.path, tr, reuse, baseline, decl)
 
 					// A starting value the deployed resource will not take -- typically a
 					// field the API refuses to clear -- is not a dead end: a fresh resource
@@ -237,7 +237,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 						} else {
 							h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, cfg.name, rep)
 							if !uncreatable {
-								res = runTransition(t, h, cfg.name, f.path, tr, false, baseline, deliberate)
+								res = runTransition(t, h, cfg.name, f.path, tr, false, baseline, decl)
 							}
 						}
 					}
@@ -456,7 +456,17 @@ func reachedValue(change *deployplan.ChangeDesc, path string, deliberate []dreso
 
 // runTransition moves one field from one value to another and reports what happened.
 // startsDeployed says the field already holds tr.from, so the setup deploy can be skipped.
-func runTransition(t *testing.T, h *bundleHarness, config, path string, tr transition, startsDeployed bool, baseline map[string]bool, deliberate []dresources.FieldRule) result {
+// declarations are the resource's own claims about its fields, read from resources.yml. Two
+// slices of the same type as separate parameters would let a caller swap them unnoticed.
+type declarations struct {
+	// deliberate: rules saying the engine does not act on a field, so a skipped change is the
+	// declared behaviour rather than a value that failed to land.
+	deliberate []dresources.FieldRule
+	// idFields: rules naming the fields that compose the resource's ID.
+	idFields []dresources.FieldRule
+}
+
+func runTransition(t *testing.T, h *bundleHarness, config, path string, tr transition, startsDeployed bool, baseline map[string]bool, decl declarations) result {
 	from, to := tr.from, tr.to
 	res := result{config: config, field: path, from: valueLabel(tr.from), to: valueLabel(tr.to)} //exhaustruct:ignore
 
@@ -468,7 +478,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 	}
 	if !startsDeployed {
 		if _, diags := h.deploy(); diags.HasError() {
-			res.verdict = verdictBaseError
+			res.verdict = idFieldRequired(from, path, decl, diags, verdictBaseError)
 			res.detail = firstError(diags)
 			res.evidence = withContext("error from the deploy:", allErrors(diags))
 			return res
@@ -485,7 +495,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 			res.detail = firstError(diags)
 			return res
 		}
-		if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change, path, deliberate) && !baselineCovers(baseline, plan, h.node, path) {
+		if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change, path, decl.deliberate) && !baselineCovers(baseline, plan, h.node, path) {
 			res.verdict = verdictStartNotReached
 			// The planner's own reason for not acting, when it gave one -- "the app has no active
 			// deployment" is the whole explanation. The field is already the row's first column,
@@ -529,7 +539,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		case isTimeout(diags):
 			res.verdict = verdictTimeout
 		case isAPIError(diags):
-			res.verdict = verdictBackendError
+			res.verdict = idFieldRequired(to, path, decl, diags, verdictBackendError)
 		default:
 			res.verdict = verdictDeployError
 		}
@@ -762,6 +772,26 @@ func isTimeout(diags diag.Diagnostics) bool {
 		}
 	}
 	return false
+}
+
+// idFieldRequired downgrades a rejected deploy to OK_ID_FIELD_REQUIRED when the value it was
+// carrying was absent on a field the resource declares as part of its ID. Every input is a
+// declaration or a fact about the run -- the field is named in provided_id_fields, the value is
+// absent, the backend refused -- and none is the error's wording, which cannot be attributed
+// to a single field because a recreate carries the whole resource.
+//
+// The backend having refused still has to hold: an internal CLI failure on the same deploy is a
+// real defect and keeps its own verdict.
+func idFieldRequired(value any, path string, decl declarations, diags diag.Diagnostics, otherwise verdict) verdict {
+	// Same nil test valueLabel uses to print "absent", so the verdict and the row's own column
+	// can never disagree about which value this was.
+	if value != nil || !isAPIError(diags) {
+		return otherwise
+	}
+	if _, isID := ruleReason(decl.idFields, path); !isID {
+		return otherwise
+	}
+	return verdictIDFieldRequired
 }
 
 func isAPIError(diags diag.Diagnostics) bool {

@@ -1,20 +1,11 @@
 === registered_model.yml.tmpl
-catalog_name                                 absent     main       BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: catalog_name (400 INVALID_PARAMETER_VALUE)
-catalog_name                                 main       absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: catalog_name (400 INVALID_PARAMETER_VALUE)
 full_name                                    absent     y          UPDATE_IGNORED
-name                                         absent     x-UNIQUE   BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
-name                                         absent     y-UNIQUE   BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
-name                                         x-UNIQUE   absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
-name                                         y-UNIQUE   absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
-schema_name                                  absent     default    BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: schema_name (400 INVALID_PARAMETER_VALUE)
-schema_name                                  default    absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: schema_name (400 INVALID_PARAMETER_VALUE)
 
 === summary
 OK                 51
 OK_RECREATE        2
+OK_ID_FIELD_REQUIRED 8
 SUPPRESSED         1
 NOT_OBSERVABLE     1
 UPDATE_IGNORED     1
-BACKEND_ERROR      4
 SKIPPED            9
-BASE_ERROR         4

@@ -88,6 +88,13 @@ const (
 
 	// The value could not be written into the config at all: the parent object is
 	// absent from this base config, or the type does not accept the value.
+	// The field composes the resource's ID, and the value under test is absent. There is no
+	// resource to create without its name, so the backend refusing the create states the API's
+	// contract rather than a defect. Read off the resource's own provided_id_fields declaration,
+	// never off the error: which field the message happens to name is not evidence, since a
+	// recreate carries the whole resource.
+	verdictIDFieldRequired verdict = "OK_ID_FIELD_REQUIRED"
+
 	verdictUnsettable verdict = "UNSETTABLE"
 	// Left out on purpose by the resource's value library, with a reason.
 	verdictSkipped verdict = "SKIPPED"
@@ -143,7 +150,8 @@ var benignSuppressions = map[string]bool{
 // report lists only these; the .full.txt companion lists everything.
 func (r result) isProblem() bool {
 	switch r.verdict {
-	case verdictOK, verdictRecreate, verdictNotObservable, verdictSkipped, verdictInertConfirmed:
+	case verdictOK, verdictRecreate, verdictNotObservable, verdictSkipped, verdictInertConfirmed,
+		verdictIDFieldRequired:
 		return false
 	case verdictSuppressed:
 		return !benignSuppressions[r.detail]
@@ -326,7 +334,7 @@ func (r *report) render(problemsOnly bool) string {
 
 	sb.WriteString("\n=== summary\n")
 	for _, v := range []verdict{
-		verdictOK, verdictRecreate, verdictInertConfirmed, verdictSuppressed,
+		verdictOK, verdictRecreate, verdictIDFieldRequired, verdictInertConfirmed, verdictSuppressed,
 		verdictNotObservable, verdictNoPlan, verdictInertViolated,
 		verdictBaselineDrift, verdictStaleRead, verdictUpdateIgnored, verdictDrift,
 		verdictCollateral, verdictDriftChild,
