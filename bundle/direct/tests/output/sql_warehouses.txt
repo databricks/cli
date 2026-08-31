@@ -18,9 +18,9 @@ name                                         absent     y-UNIQUE   START_NOT_REA
 name                                         x-UNIQUE   absent     UPDATE_IGNORED  name
 name                                         y-UNIQUE   absent     UPDATE_IGNORED  name
 spot_instance_policy                         COST_OPTIMIZED absent     UPDATE_IGNORED  spot_instance_policy
-spot_instance_policy                         POLICY_UNSPECIFIED absent     UPDATE_IGNORED  spot_instance_policy
+spot_instance_policy                         RELIABILITY_OPTIMIZED absent     UPDATE_IGNORED  spot_instance_policy
 spot_instance_policy                         absent     COST_OPTIMIZED START_NOT_REACHED  spot_instance_policy
-spot_instance_policy                         absent     POLICY_UNSPECIFIED START_NOT_REACHED  spot_instance_policy
+spot_instance_policy                         absent     RELIABILITY_OPTIMIZED START_NOT_REACHED  spot_instance_policy
 
 === summary
 OK                 32

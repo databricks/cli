@@ -36,7 +36,7 @@ base:
     - alerts:
         - on-update-failure
       email_recipients:
-        - $CURRENT_USER_NAME
+        - notify@databricks.invalid
   restart_window:
     start_hour: 1
     time_zone_id: UTC

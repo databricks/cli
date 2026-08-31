@@ -47,7 +47,7 @@ base:
         value: 3600
   email_notifications:
     on_failure:
-      - $CURRENT_USER_NAME
+      - notify@databricks.invalid
   webhook_notifications:
     on_failure:
       - id: 00000000-0000-0000-0000-000000000000

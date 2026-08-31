@@ -255,9 +255,13 @@ func enumValues(typ reflect.Type) []any {
 
 	all := make([]string, 0, result.Len())
 	for i := range result.Len() {
-		if value := result.Index(i).String(); value != "" {
-			all = append(all, value)
+		value := result.Index(i).String()
+		// A protobuf enum's zero member means "unset", not a choice: the backend normalizes it
+		// to whichever value it defaults to, so asking for it reads as the write being ignored.
+		if value == "" || strings.HasSuffix(value, "_UNSPECIFIED") {
+			continue
 		}
+		all = append(all, value)
 	}
 	slices.Sort(all)
 	if len(all) == 0 {
