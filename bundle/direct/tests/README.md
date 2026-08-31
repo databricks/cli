@@ -131,6 +131,13 @@ say so — a pipeline's `channel` and `edition` are plain strings the backend va
 cluster size is a t-shirt size. The AWS run is what finds these: locally the fake server takes
 anything.
 
+An `OK` that has only ever been seen against the fake server is worth less than one a
+workspace has agreed to, and most of all for a field whose value must name something real. The
+fake server takes any string, so for such a field `OK` says nothing until it has been checked
+against a workspace — see above. That check is impossible for a `local_only` type, whose report
+is a record of what the fake server does: `external_locations` has 62 such rows, all in blocks
+naming cloud storage the suite does not provision.
+
 A type that cannot run against a real workspace at all declares `local_only: <reason>` and
 is skipped on cloud — an external location needs a storage credential with cloud IAM behind
 it, and Lakebase and Postgres resources are not available in every cloud. This mirrors the
