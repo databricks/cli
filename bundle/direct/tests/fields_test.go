@@ -220,6 +220,12 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 					// Only a clean apply leaves the field provably at "to".
 					deployed, deployedKnown = tr.to, res.verdict == verdictOK || res.verdict == verdictRecreate
 
+					if res.verdict == verdictRecreate {
+						// A recreate replaced the resource without going through rebuild, so the
+						// baseline belongs to one that no longer exists.
+						baseline = remeasure(h, baseline)
+					}
+
 					if broken != nil || res.verdict.leavesResourceUsable() {
 						return
 					}
@@ -261,9 +267,22 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 // "config.auto_capture_config.catalog_name" -- and that is still the field's own drift, not
 // some other field's.
 func sameField(drifting, path string) bool {
+	drifting, path = normalizeSelectors(drifting), normalizeSelectors(path)
 	return drifting == path ||
 		strings.HasPrefix(path, drifting+".") || strings.HasPrefix(path, drifting+"[") ||
 		strings.HasPrefix(drifting, path+".") || strings.HasPrefix(drifting, path+"[")
+}
+
+// selectorPattern matches the key-value selector the planner uses to name a slice element it
+// can identify -- "tasks[task_key='seeded']" for what this suite calls "tasks[0]".
+var selectorPattern = regexp.MustCompile(`\[(?:[a-z_]+='[^']*'|[0-9]+)\]`)
+
+// normalizeSelectors reduces both ways of naming a slice element to one form, so a change the
+// planner recorded against "tasks[task_key='seeded'].run_if" is recognised as the same field as
+// "tasks[0].run_if". Which element it is does not need to be resolved: this suite drives one
+// element at a time, so at most one is in play.
+func normalizeSelectors(path string) string {
+	return selectorPattern.ReplaceAllString(path, "[]")
 }
 
 // relatedChange returns the plan's change for the field, or for whatever ancestor or
@@ -322,20 +341,51 @@ func changeAt(plan *deployplan.Plan, node, key string) (*deployplan.ChangeDesc, 
 // the field, an ancestor of it, or something under it counts. A field the plan does not
 // mention at all is not "dropped": there is nothing to conclude from its absence, and the
 // node's own action decides.
-func fieldWasDropped(plan *deployplan.Plan, node, path string) bool {
+func fieldWillChange(plan *deployplan.Plan, node, path string) bool {
+	// A create or a recreate replaces the resource and records no per-field detail, so there is
+	// nothing to consult and the node's own action is the answer.
+	if !hasFieldChanges(plan, node) {
+		return true
+	}
 	change, ok := relatedChange(plan, node, path)
-	return ok && change.Action == deployplan.Skip
+	return ok && change.Action != deployplan.Skip
 }
 
-// remeasure takes the new resource's own baseline drift. A replacement is a different
-// resource: carrying the old measurement over would either hide drift the new one has or blame
-// it on whichever field is under test. Falls back to the previous measurement if the plan
-// fails, since that is closer than nothing.
+// hasFieldChanges reports whether the plan records per-field detail for the node.
+func hasFieldChanges(plan *deployplan.Plan, node string) bool {
+	if plan == nil {
+		return false
+	}
+	entry, ok := plan.Plan[node]
+	return ok && len(entry.Changes) > 0
+}
+
+// remeasure takes the resource's own baseline drift, for a resource that has just replaced the
+// one measured before: carrying the old measurement over would either hide drift the new one
+// has or blame it on whichever field is under test.
+//
+// A plan that fails here leaves the previous measurement in place, which is closer than
+// nothing, and says so: every verdict after it is measured against a baseline that may not be
+// this resource's.
 func remeasure(h *bundleHarness, previous map[string]bool) map[string]bool {
-	if measured, err := baselineDrift(h); err == nil {
+	measured, err := baselineDrift(h)
+	if err == nil {
 		return measured
 	}
+	h.t.Logf("could not measure the new resource's baseline drift, keeping the previous one: %s", err)
 	return previous
+}
+
+// baselineCovers reports whether the drift this field would be blamed for is drift that was
+// already there. The comparison is against the key the plan resolved the field to, not the leaf
+// under test: existing drift at "config" would otherwise be reported as an ignored write to
+// "config.foo".
+func baselineCovers(baseline map[string]bool, plan *deployplan.Plan, node, path string) bool {
+	if baseline[path] {
+		return true
+	}
+	key, _, ok := relatedChangeKey(plan, node, path)
+	return ok && baseline[key]
 }
 
 // baselineDrifts reports whether the field was already drifting before anything was changed,
@@ -427,7 +477,10 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 	// the node at "update", and reading only that would let a change to *this* field be
 	// dropped and still come out as OK once the other field is filtered from the post-deploy
 	// plan.
-	if action == deployplan.Skip || fieldWasDropped(plan, h.node, path) {
+	// A field the plan does not act on, however the node's action reads. Another field already
+	// drifting keeps the node at "update", and going ahead on that would apply nothing for this
+	// field and then report OK once the other field is filtered out as known baseline drift.
+	if action == deployplan.Skip || !fieldWillChange(plan, h.node, path) {
 		pending.cancel()
 		res.verdict, res.detail = explainSkip(plan, h.node, path)
 		return res
@@ -460,7 +513,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 	// One read cannot tell that apart from a read that was merely stale, so take a second
 	// one. If the value has appeared by then the write did land and the first read was
 	// behind; if it still has not, the field really was ignored.
-	if !baseline[path] && wasIgnored(plan, after, h.node, path) {
+	if !baselineCovers(baseline, plan, h.node, path) && wasIgnored(plan, after, h.node, path) {
 		second, diags := h.readPlan()
 		if diags.HasError() {
 			res.verdict = verdictPlanError
