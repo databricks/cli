@@ -37,10 +37,10 @@ full_name                                    x          absent     START_NOT_REA
 full_name                                    x          y          START_NOT_REACHED  full_name
 full_name                                    y          absent     START_NOT_REACHED  full_name
 full_name                                    y          x          START_NOT_REACHED  full_name
-name                                         absent     x-_UNIQUE_NAME~89d BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
-name                                         absent     y-_UNIQUE_NAME~57d2 BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
-name                                         x-_UNIQUE_NAME~89d absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
-name                                         y-_UNIQUE_NAME~57d2 absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
+name                                         absent     x-UNIQUE   BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
+name                                         absent     y-UNIQUE   BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
+name                                         x-UNIQUE   absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
+name                                         y-UNIQUE   absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
 owner                                        absent     x          UPDATE_IGNORED  owner
 owner                                        absent     y          UPDATE_IGNORED  owner
 owner                                        x          absent     START_NOT_REACHED  owner

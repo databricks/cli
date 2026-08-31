@@ -308,9 +308,10 @@ func fieldWasDropped(plan *deployplan.Plan, node, path string) bool {
 	return ok && change.Action == deployplan.Skip
 }
 
-// converged reports whether a plan no longer wants to change the field.
+// converged reports whether a plan no longer wants to change the field, at whatever
+// granularity the planner recorded it.
 func converged(plan *deployplan.Plan, node, path string) bool {
-	change, ok := planChange(plan, node, path)
+	change, ok := relatedChange(plan, node, path)
 	return !ok || change.Action == deployplan.Skip
 }
 
@@ -672,27 +673,19 @@ func baselineDrift(h *bundleHarness) (map[string]bool, error) {
 // the field is still pending in the post-deploy plan, and its remote value is identical to
 // what the pre-deploy plan saw.
 func wasIgnored(before, after *deployplan.Plan, node, path string) bool {
-	beforeChange, ok := planChange(before, node, path)
+	// relatedChange, not an exact lookup: the planner records a change at the granularity it
+	// diffed at, so a write to "libraries[1].pypi.repo" can be reported against
+	// "libraries[1].pypi" -- and comparing the wrong path finds nothing, which turns an
+	// ignored write into drift.
+	beforeChange, ok := relatedChange(before, node, path)
 	if !ok {
 		return false
 	}
-	afterChange, ok := planChange(after, node, path)
+	afterChange, ok := relatedChange(after, node, path)
 	if !ok || afterChange.Action == deployplan.Skip {
 		return false
 	}
 	return jsonEqual(beforeChange.Remote, afterChange.Remote)
-}
-
-func planChange(plan *deployplan.Plan, node, path string) (*deployplan.ChangeDesc, bool) {
-	if plan == nil {
-		return nil, false
-	}
-	entry, ok := plan.Plan[node]
-	if !ok {
-		return nil, false
-	}
-	change, ok := entry.Changes[path]
-	return change, ok
 }
 
 // jsonEqual compares two plan values, which are decoded as any and so cannot be compared
@@ -746,6 +739,10 @@ var generatedIDs = []struct {
 }{
 	// The suffix this suite gives every resource it creates.
 	{regexp.MustCompile(`f[0-9a-f]{20}`), "[UNIQUE_NAME]"},
+	// The placeholder an identity field's values carry. Only ever seen in a label, where it
+	// reads better without brackets -- an error message carries the substituted suffix, which
+	// the rule above catches.
+	{regexp.MustCompile(regexp.QuoteMeta(uniqueMarker)), "UNIQUE"},
 	{regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`), "[UUID]"},
 	// A backend-assigned id, which is a bare number or hex string only ever seen after "id=".
 	{regexp.MustCompile(`id=[0-9A-Fa-f]{6,}`), "id=[ID]"},

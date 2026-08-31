@@ -592,10 +592,18 @@ func uniqueIdentityValues(values []any, path, unique string, resource any) []any
 			// Only a name can carry a suffix; an id field of another type keeps its value.
 			return values
 		}
-		out = append(out, text+"-"+unique)
+		// A placeholder, not the suffix itself: a rebuild gives the resource a new suffix while
+		// the old one is still alive under its old name, so a value fixed at enumeration time
+		// would collide with it. Substituted on the way into the config.
+		out = append(out, text+"-"+uniqueMarker)
 	}
 	return out
 }
+
+// uniqueMarker stands in for the run's unique suffix inside a value. It is substituted for the
+// harness's own suffix when the value is written, and redacted when the value is labelled, so
+// the report is stable across runs.
+const uniqueMarker = "@UNIQUE@"
 
 func namesThisResource(path, unique string, resource any) bool {
 	current, err := structaccess.GetByString(resource, path)

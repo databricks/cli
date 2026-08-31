@@ -9,11 +9,12 @@ properties                                   keys1      absent     UPDATE_IGNORE
 properties                                   keys1      keys0      UPDATE_IGNORED  properties
 properties['team']                           absent     x          START_NOT_REACHED  properties['team']
 properties['team']                           absent     y          START_NOT_REACHED  properties['team']
-properties['team']                           x          absent     UPDATE_IGNORED  properties['team']
-properties['team']                           y          absent     UPDATE_IGNORED  properties['team']
+properties['team']                           x          absent     POST_DEPLOY_DRIFT  properties,properties['team']
+properties['team']                           y          absent     POST_DEPLOY_DRIFT  properties,properties['team']
 
 === summary
 OK                 14
-UPDATE_IGNORED     6
+UPDATE_IGNORED     4
+POST_DEPLOY_DRIFT  2
 SKIPPED            8
 START_NOT_REACHED  6

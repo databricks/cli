@@ -1,16 +1,16 @@
 === genie_space.yml.tmpl
 description                                  x          absent     UPDATE_IGNORED  description
 description                                  y          absent     UPDATE_IGNORED  description
-parent_path                                  absent     x-_UNIQUE_NAME~89d START_NOT_REACHED  parent_path
-parent_path                                  absent     y-_UNIQUE_NAME~57d2 START_NOT_REACHED  parent_path
-parent_path                                  x-_UNIQUE_NAME~89d absent     START_NOT_REACHED  parent_path
-parent_path                                  x-_UNIQUE_NAME~89d y-_UNIQUE_NAME~57d2 START_NOT_REACHED  parent_path
-parent_path                                  y-_UNIQUE_NAME~57d2 absent     START_NOT_REACHED  parent_path
-parent_path                                  y-_UNIQUE_NAME~57d2 x-_UNIQUE_NAME~89d START_NOT_REACHED  parent_path
-title                                        absent     x-_UNIQUE_NAME~89d START_NOT_REACHED  title
-title                                        absent     y-_UNIQUE_NAME~57d2 START_NOT_REACHED  title
-title                                        x-_UNIQUE_NAME~89d absent     UPDATE_IGNORED  title
-title                                        y-_UNIQUE_NAME~57d2 absent     UPDATE_IGNORED  title
+parent_path                                  absent     x-UNIQUE   START_NOT_REACHED  parent_path
+parent_path                                  absent     y-UNIQUE   START_NOT_REACHED  parent_path
+parent_path                                  x-UNIQUE   absent     START_NOT_REACHED  parent_path
+parent_path                                  x-UNIQUE   y-UNIQUE   START_NOT_REACHED  parent_path
+parent_path                                  y-UNIQUE   absent     START_NOT_REACHED  parent_path
+parent_path                                  y-UNIQUE   x-UNIQUE   START_NOT_REACHED  parent_path
+title                                        absent     x-UNIQUE   START_NOT_REACHED  title
+title                                        absent     y-UNIQUE   START_NOT_REACHED  title
+title                                        x-UNIQUE   absent     UPDATE_IGNORED  title
+title                                        y-UNIQUE   absent     UPDATE_IGNORED  title
 warehouse_id                                 absent     x          START_NOT_REACHED  warehouse_id
 warehouse_id                                 absent     y          START_NOT_REACHED  warehouse_id
 warehouse_id                                 x          absent     UPDATE_IGNORED  warehouse_id
