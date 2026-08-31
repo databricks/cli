@@ -122,7 +122,7 @@ class PipelineCluster:
 
     label: VariableOrOptional[str] = None
     """
-    A label for the cluster specification, either `default` to configure the default cluster, or `maintenance` to configure the maintenance cluster. This field is optional. The default value is `default`.
+    A label for the cluster specification, either `default` to configure the default cluster settings applied to both the update and maintenance clusters, `updates` to configure the update cluster, or `maintenance` to configure the maintenance cluster. This field is optional. The default value is `default`.
     """
 
     node_type_id: VariableOrOptional[str] = None
@@ -268,7 +268,7 @@ class PipelineClusterDict(TypedDict, total=False):
 
     label: VariableOrOptional[str]
     """
-    A label for the cluster specification, either `default` to configure the default cluster, or `maintenance` to configure the maintenance cluster. This field is optional. The default value is `default`.
+    A label for the cluster specification, either `default` to configure the default cluster settings applied to both the update and maintenance clusters, `updates` to configure the update cluster, or `maintenance` to configure the maintenance cluster. This field is optional. The default value is `default`.
     """
 
     node_type_id: VariableOrOptional[str]

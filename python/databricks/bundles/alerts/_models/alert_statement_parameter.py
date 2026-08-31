@@ -16,34 +16,31 @@ class AlertStatementParameter:
     """
     :meta private: [EXPERIMENTAL]
 
-    Redash-owned copy of the internal StatementParameter for the external AlertV2 API.
-    The internal `ordinal` and `args` fields are intentionally omitted: the public API
-    supports only flat, named scalar parameters; complex types (ARRAY, MAP, STRUCT) are
-    not supported. This mirrors SEA's public StatementParameter schema, see:
-    cmdexec/sql-exec-api/proto/sql_exec_api_service.proto:763-779
+    A named parameter bound to the alert query. Only flat, named scalar parameters are
+    supported; complex types such as ARRAY, MAP, and STRUCT are not.
     """
 
     name: VariableOr[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The name of the parameter, referenced in the query as `:name`.
+    [Private Preview] The name of the parameter. Reference it in the query text as `:name`. Required, must be
+    non-empty, and must be unique across the alert's parameters.
     """
 
     type: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The SQL data type of the parameter, e.g. STRING, INT, or DATE. Defaults to STRING. This is a
-    string rather than an enum because scalar subtypes such as DECIMAL(10, 4) cannot be enumerated.
-    Complex types such as ARRAY, MAP, and STRUCT are not supported.
+    [Private Preview] The SQL data type of the parameter, for example `STRING`, `INT`, or `DECIMAL(10, 2)`. If no type is given
+    the type is assumed to be `STRING`. Complex types such as `ARRAY`, `MAP`, and `STRUCT` are not supported.
     """
 
     value: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The bound value for the parameter, given as a string. If omitted, the value is interpreted as NULL.
+    [Private Preview] The value bound to the parameter, represented as a string. If omitted, the value is interpreted as NULL.
     """
 
     @classmethod
@@ -61,23 +58,23 @@ class AlertStatementParameterDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The name of the parameter, referenced in the query as `:name`.
+    [Private Preview] The name of the parameter. Reference it in the query text as `:name`. Required, must be
+    non-empty, and must be unique across the alert's parameters.
     """
 
     type: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The SQL data type of the parameter, e.g. STRING, INT, or DATE. Defaults to STRING. This is a
-    string rather than an enum because scalar subtypes such as DECIMAL(10, 4) cannot be enumerated.
-    Complex types such as ARRAY, MAP, and STRUCT are not supported.
+    [Private Preview] The SQL data type of the parameter, for example `STRING`, `INT`, or `DECIMAL(10, 2)`. If no type is given
+    the type is assumed to be `STRING`. Complex types such as `ARRAY`, `MAP`, and `STRUCT` are not supported.
     """
 
     value: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The bound value for the parameter, given as a string. If omitted, the value is interpreted as NULL.
+    [Private Preview] The value bound to the parameter, represented as a string. If omitted, the value is interpreted as NULL.
     """
 
 

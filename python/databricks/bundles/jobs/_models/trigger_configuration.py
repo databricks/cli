@@ -44,9 +44,9 @@ if TYPE_CHECKING:
 class TriggerConfiguration:
     """
     A single trigger attached to a job via `JobSettings.triggers`. Exactly one of the trigger-type fields
-    (`periodic`, `schedule`, `continuous`, `file_arrival`, `table_update`, `model`) must be set; mutual exclusivity
-    is enforced in the API handler rather than via `oneof` so that codegen, validation, and JSON serialization
-    across SDKs and Terraform behave consistently.
+    (`periodic`, `schedule`, `continuous`, `file_arrival`, `table_update`, `model`, `job_completion`) must be set;
+    mutual exclusivity is enforced in the API handler rather than via `oneof` so that codegen, validation, and JSON
+    serialization across SDKs and Terraform behave consistently.
     """
 
     continuous: VariableOrOptional[ContinuousTriggerConfiguration] = None

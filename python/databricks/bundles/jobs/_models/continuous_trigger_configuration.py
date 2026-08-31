@@ -6,6 +6,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.jobs._models.maintenance_window import (
+    MaintenanceWindow,
+    MaintenanceWindowParam,
+)
 from databricks.bundles.jobs._models.task_retry_mode import (
     TaskRetryMode,
     TaskRetryModeParam,
@@ -20,6 +24,14 @@ class ContinuousTriggerConfiguration:
     """
     Continuous trigger. Stripped-down counterpart to `ContinuousSettings`: `pause_status` is owned by the enclosing
     `TriggerConfiguration` and intentionally omitted here.
+    """
+
+    maintenance_window: VariableOrOptional[MaintenanceWindow] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Defines when platform-initiated maintenance may run for this trigger. If unspecified,
+    maintenance may run at any time.
     """
 
     task_retry_mode: VariableOrOptional[TaskRetryMode] = None
@@ -37,6 +49,14 @@ class ContinuousTriggerConfiguration:
 
 class ContinuousTriggerConfigurationDict(TypedDict, total=False):
     """"""
+
+    maintenance_window: VariableOrOptional[MaintenanceWindowParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Defines when platform-initiated maintenance may run for this trigger. If unspecified,
+    maintenance may run at any time.
+    """
 
     task_retry_mode: VariableOrOptional[TaskRetryModeParam]
     """
