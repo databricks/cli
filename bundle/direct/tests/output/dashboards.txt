@@ -1,21 +1,13 @@
 === dashboard.yml.tmpl
-dataset_catalog                              y          absent     START_NOT_REACHED  dataset_catalog
-dataset_schema                               x          y          START_NOT_REACHED  dataset_schema
-dataset_schema                               y          absent     START_NOT_REACHED  dataset_schema
-dataset_schema                               y          x          START_NOT_REACHED  dataset_schema
+display_name                                 absent     x-UNIQUE   START_NOT_REACHED  cannot create the resource holding it: cannot create resources.dashboards.foo: [Request Validation] display name cannot be empty (400 INVALID_PARAMETER_VALUE)
+display_name                                 absent     y-UNIQUE   START_NOT_REACHED  cannot create the resource holding it: cannot create resources.dashboards.foo: [Request Validation] display name cannot be empty (400 INVALID_PARAMETER_VALUE)
 display_name                                 x-UNIQUE   absent     UPDATE_IGNORED  display_name
 display_name                                 y-UNIQUE   absent     UPDATE_IGNORED  display_name
-etag                                         absent     x          START_NOT_REACHED  etag
-etag                                         absent     y          START_NOT_REACHED  etag
-etag                                         x          absent     START_NOT_REACHED  etag
-etag                                         x          y          START_NOT_REACHED  etag
-etag                                         y          absent     START_NOT_REACHED  etag
-etag                                         y          x          START_NOT_REACHED  etag
 
 === summary
-OK                 16
+OK                 6
 SUPPRESSED         2
 NOT_OBSERVABLE     6
 UPDATE_IGNORED     2
-SKIPPED            8
-START_NOT_REACHED  10
+SKIPPED            11
+START_NOT_REACHED  2
