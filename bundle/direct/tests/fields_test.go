@@ -35,6 +35,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"maps"
 	"reflect"
 	"regexp"
@@ -534,8 +535,29 @@ func valueLabel(v any) string {
 	case "":
 		return "empty"
 	default:
-		return strings.ReplaceAll(s, " ", "_")
+		return shortLabel(s)
 	}
+}
+
+// labelSafe matches the characters a label keeps verbatim: everything else would need
+// quoting to pass a label back to `go test -run`.
+var labelSafe = regexp.MustCompile(`[^A-Za-z0-9._@/:=-]+`)
+
+// shortLabel renders a value as a token that is readable, stable, and safe to paste into a
+// -run filter. A value that survives as-is is left alone; anything long or punctuated -- a
+// cluster policy definition is a whole JSON document -- is trimmed and given a short digest,
+// so two values that share a prefix still get different labels.
+func shortLabel(s string) string {
+	const maxLabel = 24
+
+	clean := labelSafe.ReplaceAllString(s, "_")
+	if clean == s && len(clean) <= maxLabel {
+		return clean
+	}
+
+	digest := fnv.New32a()
+	_, _ = digest.Write([]byte(s))
+	return strings.Trim(clean[:min(len(clean), maxLabel-5)], "_") + "~" + strconv.FormatUint(uint64(digest.Sum32())%0x10000, 16)
 }
 
 // allErrors returns every error diagnostic in full -- status, code, message, endpoint --
@@ -544,7 +566,7 @@ func allErrors(diags diag.Diagnostics) string {
 	var out []string
 	for _, d := range diags {
 		if d.Severity == diag.Error {
-			out = append(out, idPattern.ReplaceAllString(d.Summary, "[UNIQUE_NAME]"))
+			out = append(out, redactIDs(d.Summary))
 		}
 	}
 	return strings.Join(out, "\n")
@@ -715,10 +737,27 @@ func driftDetail(plan *deployplan.Plan, node string, baseline map[string]bool) (
 	return strings.Join(ownPaths, ","), strings.Join(childNodes, " ")
 }
 
-// idPattern matches the unique suffix this suite gives every resource it creates. The
-// suffix is random per run, and error messages quote resource names and ids, so it has
-// to be redacted or the goldens differ on every run.
-var idPattern = regexp.MustCompile(`f[0-9a-f]{20}`)
+// generatedIDs are the shapes of value that differ between runs, all of which turn up inside
+// quoted resource names and ids in error messages -- so they have to be redacted or no golden
+// would ever be stable. Ordered: the unique suffix first, since it is the most specific.
+var generatedIDs = []struct {
+	pattern     *regexp.Regexp
+	replacement string
+}{
+	// The suffix this suite gives every resource it creates.
+	{regexp.MustCompile(`f[0-9a-f]{20}`), "[UNIQUE_NAME]"},
+	{regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`), "[UUID]"},
+	// A backend-assigned id, which is a bare number or hex string only ever seen after "id=".
+	{regexp.MustCompile(`id=[0-9A-Fa-f]{6,}`), "id=[ID]"},
+}
+
+// redactIDs replaces every run-specific id in a message with a stable placeholder.
+func redactIDs(s string) string {
+	for _, id := range generatedIDs {
+		s = id.pattern.ReplaceAllString(s, id.replacement)
+	}
+	return s
+}
 
 // simplerConfig reports whether a is the simpler of two config names for one resource type.
 // Shorter wins, so "job.yml.tmpl" beats "job_with_depends_on.yml.tmpl"; length ties break
@@ -757,7 +796,7 @@ func planJSON(plan *deployplan.Plan) string {
 }
 
 func oneLine(s string) string {
-	s = idPattern.ReplaceAllString(s, "[UNIQUE_NAME]")
+	s = redactIDs(s)
 	s = strings.ReplaceAll(s, "\n", " ")
 	s = strings.Join(strings.Fields(s), " ")
 	if len(s) > 140 {
