@@ -269,9 +269,19 @@ func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.Stru
 // the SDK request struct, so its fields sit two levels down.
 // Returns: fieldValue, structField, owner (the struct value declaring the field), found
 func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.StructField, reflect.Value, bool) {
+	t := v.Type()
+
 	// First pass: direct fields
 	if fv, sf, found := findFieldInStruct(v, key); found {
 		return fv, sf, v, true
+	}
+
+	// Ambiguity is a property of the type, not of the value: a name declared at the same
+	// embedding depth by two members is one encoding/json omits, whether or not one of those
+	// members happens to be a nil pointer right now. Asking the type walk first keeps Get, Set
+	// and ValidatePattern agreeing on which names exist.
+	if _, _, ok := FindStructFieldByKeyType(t, key); !ok {
+		return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
 	}
 
 	// Second pass: search embedded anonymous structs (flattening semantics) breadth-first, one
