@@ -61,6 +61,12 @@ type fieldValues struct {
 	// Such a type is skipped on cloud rather than reported: the local golden stands, and a
 	// cloud run neither confirms nor contradicts it.
 	localOnly string
+
+	// clouds names the clouds whose workspaces can host this resource type, for a service that
+	// exists on some and not others. Empty means every cloud. Unlike localOnly this does not
+	// give up on the cloud run: the type is verified where the service exists and skipped
+	// where it does not, which mirrors CloudEnvs in acceptance/bundle/resources/*/test.toml.
+	clouds []string
 }
 
 // fieldsDir holds the per-resource-type value libraries.
@@ -170,7 +176,7 @@ var cliManagedFields = map[string]string{
 // corpus configs use so a value can name the workspace's own user rather than a placeholder
 // only the fake server knows.
 func loadFieldValues(resourceType string, vars map[string]string) (*fieldValues, error) {
-	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]any{}, base: nil, localOnly: ""}
+	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]any{}, base: nil, localOnly: "", clouds: nil}
 	maps.Copy(fv.skip, cliManagedFields)
 
 	path := filepath.Join(fieldsDir, resourceType+".yml")
@@ -199,6 +205,7 @@ func loadFieldValues(resourceType string, vars map[string]string) (*fieldValues,
 		Fields    map[string][]any  `yaml:"fields"`
 		Base      any               `yaml:"base"`
 		LocalOnly string            `yaml:"local_only"`
+		Clouds    []string          `yaml:"clouds"`
 	}
 	if err := yaml.Unmarshal([]byte(expanded), &file); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
@@ -207,6 +214,7 @@ func loadFieldValues(resourceType string, vars map[string]string) (*fieldValues,
 	maps.Copy(fv.fields, file.Fields)
 	fv.base = file.Base
 	fv.localOnly = file.LocalOnly
+	fv.clouds = file.Clouds
 
 	return fv, nil
 }

@@ -41,7 +41,7 @@ import (
 	"hash/fnv"
 	"maps"
 	"math/rand/v2"
-	"os/exec"
+	"os"
 	"reflect"
 	"regexp"
 	"slices"
@@ -53,7 +53,10 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/folders"
+	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/require"
@@ -124,6 +127,9 @@ func TestFields(t *testing.T) {
 			require.NoError(t, err)
 			if fv.localOnly != "" && isCloud() {
 				t.Skipf("local only: %s", fv.localOnly)
+			}
+			if len(fv.clouds) > 0 && isCloud() && !slices.Contains(fv.clouds, cloudName()) {
+				t.Skipf("not available on %s: the service exists on %s", cloudName(), strings.Join(fv.clouds, ", "))
 			}
 
 			// Outlives the field-level subtests that rebuild harnesses.
@@ -1049,11 +1055,18 @@ var sampleSize = flag.Int("sample", 0, "test only N randomly chosen fields per r
 // sampled run compares each field's rows against the same golden as a full run, and never
 // rewrites it, so the seed cannot invalidate anything committed.
 func sampleSeed(t *testing.T) uint64 {
-	out, err := exec.Command("git", "rev-parse", "HEAD").Output()
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+	root, err := folders.FindDirWithLeaf(wd, git.GitDirectoryName)
+	require.NoError(t, err)
+	repo, err := git.NewRepository(t.Context(), vfs.MustNew(root))
+	require.NoError(t, err)
+	commit, err := repo.LatestCommit()
 	// No fallback: a run that cannot name its commit would pick fields no one can reproduce,
 	// which is the one property sampling has to keep.
 	require.NoError(t, err, "sampling needs the commit to seed from")
-	sum := sha256.Sum256(out)
+	require.NotEmpty(t, commit, "sampling needs the commit to seed from")
+	sum := sha256.Sum256([]byte(commit))
 	return binary.BigEndian.Uint64(sum[:8])
 }
 
