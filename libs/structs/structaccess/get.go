@@ -280,6 +280,9 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 	// embed could pick a field three levels down over the same name two levels down in a
 	// later one -- and then reading or writing the field would not be the field serialized
 	// under that name.
+	// A cyclic embedding (a struct embedding a pointer to itself) would otherwise enqueue the
+	// same type forever when the key is not found at all.
+	seen := map[reflect.Type]bool{v.Type(): true}
 	level := embeddedStructs(v)
 	for len(level) > 0 {
 		var next []reflect.Value
@@ -297,7 +300,13 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 				}{out, sf, fv})
 				continue
 			}
-			next = append(next, embeddedStructs(fv)...)
+			for _, deeper := range embeddedStructs(fv) {
+				if seen[deeper.Type()] {
+					continue
+				}
+				seen[deeper.Type()] = true
+				next = append(next, deeper)
+			}
 		}
 		if len(found) == 1 {
 			return found[0].value, found[0].field, found[0].owner, true
