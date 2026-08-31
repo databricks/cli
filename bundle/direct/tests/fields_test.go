@@ -273,14 +273,22 @@ func sameField(drifting, path string) bool {
 // change to "tasks[0].description" can be reported against "tasks". A pending change is
 // preferred over a skipped one, since that is the one that explains what will happen.
 func relatedChange(plan *deployplan.Plan, node, path string) (*deployplan.ChangeDesc, bool) {
+	_, change, ok := relatedChangeKey(plan, node, path)
+	return change, ok
+}
+
+// relatedChangeKey is relatedChange, also returning the key the change was recorded under so
+// a caller comparing two plans can look the same key up in both.
+func relatedChangeKey(plan *deployplan.Plan, node, path string) (string, *deployplan.ChangeDesc, bool) {
 	if plan == nil {
-		return nil, false
+		return "", nil, false
 	}
 	entry, ok := plan.Plan[node]
 	if !ok {
-		return nil, false
+		return "", nil, false
 	}
 
+	var foundKey string
 	var found *deployplan.ChangeDesc
 	for _, key := range slices.Sorted(maps.Keys(entry.Changes)) {
 		change := entry.Changes[key]
@@ -288,13 +296,26 @@ func relatedChange(plan *deployplan.Plan, node, path string) (*deployplan.Change
 			continue
 		}
 		if change.Action != deployplan.Skip {
-			return change, true
+			return key, change, true
 		}
 		if found == nil {
-			found = change
+			foundKey, found = key, change
 		}
 	}
-	return found, found != nil
+	return foundKey, found, found != nil
+}
+
+// changeAt looks a change up by its exact key.
+func changeAt(plan *deployplan.Plan, node, key string) (*deployplan.ChangeDesc, bool) {
+	if plan == nil {
+		return nil, false
+	}
+	entry, ok := plan.Plan[node]
+	if !ok {
+		return nil, false
+	}
+	change, ok := entry.Changes[key]
+	return change, ok
 }
 
 // fieldWasDropped reports whether the plan mentions the field and yet will not act on it.
@@ -306,6 +327,19 @@ func relatedChange(plan *deployplan.Plan, node, path string) (*deployplan.Change
 func fieldWasDropped(plan *deployplan.Plan, node, path string) bool {
 	change, ok := relatedChange(plan, node, path)
 	return ok && change.Action == deployplan.Skip
+}
+
+// baselineDrifts reports whether the field was already drifting before anything was changed.
+// Matched by relation, the same way a plan's changes are: the baseline may be recorded against
+// an ancestor -- a whole "config" block -- and treating that as this field's failure to reach
+// its starting value would blame the ancestor's drift on every field beneath it.
+func baselineDrifts(baseline map[string]bool, path string) bool {
+	for drifting := range baseline {
+		if sameField(drifting, path) {
+			return true
+		}
+	}
+	return false
 }
 
 // converged reports whether a plan no longer wants to change the field, at whatever
@@ -347,7 +381,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		// under a label that is not what happened -- "absent to 168" while the remote still
 		// holds 720. Cheaper to check than to reason about afterwards.
 		if plan, diags := h.readPlan(); !diags.HasError() {
-			if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change) && !baseline[path] {
+			if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change) && !baselineDrifts(baseline, path) {
 				res.verdict = verdictStartNotReached
 				res.detail = path
 				res.evidence = withContext("plan after deploying the starting value:", planJSON(plan))
@@ -408,7 +442,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 	// One read cannot tell that apart from a read that was merely stale, so take a second
 	// one. If the value has appeared by then the write did land and the first read was
 	// behind; if it still has not, the field really was ignored.
-	if !baseline[path] && wasIgnored(plan, after, h.node, path) {
+	if !baselineDrifts(baseline, path) && wasIgnored(plan, after, h.node, path) {
 		second, diags := h.readPlan()
 		if diags.HasError() {
 			res.verdict = verdictPlanError
@@ -673,15 +707,16 @@ func baselineDrift(h *bundleHarness) (map[string]bool, error) {
 // the field is still pending in the post-deploy plan, and its remote value is identical to
 // what the pre-deploy plan saw.
 func wasIgnored(before, after *deployplan.Plan, node, path string) bool {
-	// relatedChange, not an exact lookup: the planner records a change at the granularity it
-	// diffed at, so a write to "libraries[1].pypi.repo" can be reported against
-	// "libraries[1].pypi" -- and comparing the wrong path finds nothing, which turns an
-	// ignored write into drift.
-	beforeChange, ok := relatedChange(before, node, path)
+	// Matched by relation, since the planner records a change at the granularity it diffed at:
+	// a write to "libraries[1].pypi.repo" can be reported against "libraries[1].pypi". But the
+	// two reads must be compared at the *same* key -- the granularity can differ between them,
+	// and comparing a leaf's value against its parent object never matches, which would turn
+	// every ignored write into drift.
+	beforeKey, beforeChange, ok := relatedChangeKey(before, node, path)
 	if !ok {
 		return false
 	}
-	afterChange, ok := relatedChange(after, node, path)
+	afterChange, ok := changeAt(after, node, beforeKey)
 	if !ok || afterChange.Action == deployplan.Skip {
 		return false
 	}
@@ -717,7 +752,7 @@ func driftDetail(plan *deployplan.Plan, node string, baseline map[string]bool) (
 			continue
 		}
 		for p, ch := range entry.Changes {
-			if ch.Action != deployplan.Skip && !baseline[p] {
+			if ch.Action != deployplan.Skip && !baselineDrifts(baseline, p) {
 				ownPaths = append(ownPaths, p)
 			}
 		}

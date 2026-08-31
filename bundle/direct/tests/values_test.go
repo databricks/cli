@@ -218,8 +218,13 @@ func defaultValues(typ reflect.Type) []any {
 	// nothing: with absent in the set, that is add, grow, shrink and remove.
 	if typ.Kind() == reflect.Slice {
 		elements := defaultValues(typ.Elem())
-		if len(elements) < 2 {
+		if len(elements) == 0 {
 			return nil
+		}
+		if len(elements) == 1 {
+			// One element is all the type offers -- a list of an enum with a single valid value.
+			// The empty list and that one still cover adding, clearing and removing.
+			return []any{[]any{}, []any{elements[0]}}
 		}
 		// The empty list is its own value, not the same as absent: it is what a user writing
 		// "on_start: []" produces, and it reaches the API as an explicit empty array through
