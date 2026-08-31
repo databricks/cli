@@ -13,17 +13,11 @@ etag                                         x          absent     START_NOT_REA
 etag                                         x          y          START_NOT_REACHED  etag
 etag                                         y          absent     START_NOT_REACHED  etag
 etag                                         y          x          START_NOT_REACHED  etag
-parent_path                                  absent     x-UNIQUE   START_NOT_REACHED  parent_path
-parent_path                                  absent     y-UNIQUE   START_NOT_REACHED  parent_path
-parent_path                                  x-UNIQUE   absent     START_NOT_REACHED  parent_path
-parent_path                                  x-UNIQUE   y-UNIQUE   START_NOT_REACHED  parent_path
-parent_path                                  y-UNIQUE   absent     START_NOT_REACHED  parent_path
-parent_path                                  y-UNIQUE   x-UNIQUE   START_NOT_REACHED  parent_path
 
 === summary
-OK                 20
+OK                 14
 SUPPRESSED         2
 NOT_OBSERVABLE     6
 UPDATE_IGNORED     2
-SKIPPED            6
-START_NOT_REACHED  18
+SKIPPED            8
+START_NOT_REACHED  12

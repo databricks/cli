@@ -1,0 +1,10 @@
+# Value library for dashboards. See ../../README.md.
+
+skip:
+  # Must name a workspace folder that exists, and this suite provisions only the bundle's own.
+  # A dashboard also cannot be moved between folders without being recreated, and the recreate
+  # then fails against a folder that is not there.
+  parent_path: needs a second workspace folder to exist
+  # Must name an existing SQL warehouse, and dashboards need one, so a value-to-value move
+  # would need a second warehouse.
+  warehouse_id: needs a second SQL warehouse to exist
