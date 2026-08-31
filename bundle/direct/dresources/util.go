@@ -52,9 +52,22 @@ func collectUpdatePathsWithPrefix(changes Changes, prefix string) []string {
 			}
 		}
 		if !hasChild {
-			paths = append(paths, prefix+path)
+			paths = append(paths, prefix+maskPath(path))
 		}
 	}
 	slices.Sort(paths)
-	return paths
+	// Truncating subscripts can map two changed entries of the same map onto one path.
+	return slices.Compact(paths)
+}
+
+// maskPath converts a change path into the path the API accepts in update_mask. A map or
+// repeated field is addressable only as a whole, so everything from the first subscript
+// onwards is dropped: settings.pg_settings['work_mem'] is masked as settings.pg_settings.
+// Verified against a real workspace on 2026-08-31, which answers the indexed form with
+// "Unknown field path in update_mask: 'spec.settings.pg_settings['work_mem']'".
+func maskPath(path string) string {
+	if before, _, ok := strings.Cut(path, "["); ok {
+		return before
+	}
+	return path
 }

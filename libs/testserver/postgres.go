@@ -692,7 +692,13 @@ var endpointUpdateMaskPaths = []string{
 	"spec.group.enable_readable_secondaries",
 	"spec.group.max",
 	"spec.group.min",
+
+	// A message is maskable on its own, which is how a bundle that adds a whole
+	// settings block reaches the API. Probed on a real endpoint 2026-08-31: both
+	// spec.settings and spec.settings.pg_settings get past mask validation.
+	"spec.settings",
 	"spec.settings.pg_settings",
+
 	"spec.suspension",
 }
 
