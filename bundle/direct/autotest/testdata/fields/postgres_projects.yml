@@ -1,10 +1,11 @@
 # Value library for postgres projects. See ../../README.md.
 
-# Postgres is an AWS-only service, so an aws workspace is the one place the cloud run can
-# confirm this type. The invariant suite drops these configs from every cloud run rather than
-# just the ones without the service; acceptance/bundle/resources/postgres_*/test.toml is the
-# closer precedent, disabling gcp and azure by name.
-clouds: [aws]
+# A recreate reuses the project name, and a deleted project holds its name until the soft delete
+# is purged: "A soft-deleted project currently has this resource name." So on a real workspace
+# every recreating field fails the create half, the same shape as instance_pools. A plain deploy
+# and destroy works -- the invariant suite does that on aws -- but a run of recreates does not,
+# so the catalog for this type is the local one.
+local_only: a recreate cannot reuse the project name until the soft delete is purged
 base:
   project_id: test-pg-project-$UNIQUE_NAME
   display_name: Test Postgres Project
@@ -14,6 +15,11 @@ base:
       value: eng
 
 skip:
+  # A branch reference, not a name: the API answers a bare string with "Field 'default_branch'
+  # expects 'projects/<project>/branches/<branch>'". Naming one needs a branch that exists, and
+  # this fixture creates only the project.
+  default_branch: names a branch resource the fixture does not create
+
   # The real API refuses a pg_setting on the create it is sent with: "setting cannot be changed;
   # setting: work_mem" (aws, 2026-08). Seeding one made the whole type undeployable there, and the
   # 12 rows it bought were all engine errors already -- every transition of this map was rejected
