@@ -70,9 +70,19 @@ resources:
         reason: not_returned_by_api
 
       # The Jobs API accepts trigger.table_update.condition but never returns it
-      # in GET responses, so without this every plan after a successful deploy
-      # reports an update. https://github.com/databricks/cli/issues/6315
+      # in GET responses (verified for both ANY_UPDATED and ALL_UPDATED), so
+      # without this every plan after a successful deploy reports an update.
+      # https://github.com/databricks/cli/issues/6315
       - field: trigger.table_update.condition
+        reason: input_only
+
+      # Same field via the multi-trigger list. Untested: creating a job with
+      # "triggers" fails with 404 FEATURE_DISABLED ("The 'triggers' field is in
+      # private preview and is not enabled for this workspace"), so there is no
+      # invariant config for it. Both shapes carry the same
+      # TableUpdateTriggerConfiguration message and the backend builds it from
+      # the same expression on read, so the field is dropped here too.
+      - field: triggers[*].table_update.condition
         reason: input_only
 
     backend_defaults:
