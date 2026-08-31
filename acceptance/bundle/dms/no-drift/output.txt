@@ -37,7 +37,7 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
         }
       }
     ],
-    "name": "bar",
+    "name": "bar-[UNIQUE_NAME]",
     "schema": "default",
     "serverless": true
   }

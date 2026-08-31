@@ -1,4 +1,3 @@
 # Local only: this case needs an injected failure - no job delete that the Jobs API refuses - and fault.py registers
 # its rule on the fake, which a cloud run does not have.
 Cloud = false
-

@@ -9,7 +9,9 @@ resources:
       name: foo
   pipelines:
     bar:
-      name: bar
+      # Unique: the Pipelines API refuses a duplicate name, so two overlapping runs on the
+      # same workspace would collide. Jobs allow duplicates, which is why foo above does not.
+      name: bar-$UNIQUE_NAME
       catalog: main
       schema: default
       serverless: true
