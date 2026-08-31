@@ -1,0 +1,13 @@
+bundle:
+  name: cluster-libraries-remove-all
+
+resources:
+  clusters:
+    mycluster:
+      cluster_name: mycluster
+      spark_version: 15.4.x-scala2.12
+      node_type_id: i3.xlarge
+      num_workers: 1
+      libraries:
+        - pypi:
+            package: requests

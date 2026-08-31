@@ -1,0 +1,17 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy libraries on a stopped cluster (started=false): install is queued, no restart"
+trace $CLI bundle deploy
+
+title "Change the libraries and redeploy: cluster is stopped, so no restart is issued"
+update_file.py databricks.yml "        - pypi:
+            package: requests" "        - pypi:
+            package: requests
+        - pypi:
+            package: numpy"
+trace $CLI bundle deploy
+trace print_requests.py //libraries //clusters/restart
