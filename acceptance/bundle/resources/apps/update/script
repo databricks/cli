@@ -1,6 +1,6 @@
 print_requests() {
     # url is output-only field that terraform adds but that is ignored by the backend
-    print_requests.py //apps --del-body url
+    print_requests.py //apps '^//api/2.0/bundle' --del-body url
 }
 
 trace $CLI bundle plan
