@@ -265,11 +265,6 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 	return harness, nil
 }
 
-// cachedUser resolves the workspace user once per process: a harness is built per
-// config and again on every rebuild, so on cloud this would otherwise be thousands of
-// identical requests. Locally the name is pinned, which also keeps workspace paths
-// stable between runs.
-
 // opCtx returns a context with a fresh diagnostics sink. logdiag's error flag is sticky
 // -- FlushCollected empties the collected diagnostics but leaves HasError true -- and
 // CalculatePlan short-circuits to a bare "planning failed" whenever that flag is set. A
@@ -429,24 +424,19 @@ const resourceKey = "foo"
 // $UNIQUE_NAME survives loadFieldValues unexpanded and is expanded here, because it belongs to
 // one deploy: a rebuild gets a new name, while a value library is read once for the whole run.
 func renderBundle(resourceType, uniqueName, userName string, base any) (string, error) {
-	body, err := yaml.Marshal(base)
+	// Marshalled as one document rather than spliced together as indented text: re-indenting
+	// someone else's YAML has to reason about block scalars, where a blank line is content.
+	document, err := yaml.Marshal(map[string]any{
+		"bundle":    map[string]any{"name": "test-bundle-$UNIQUE_NAME"},
+		"resources": map[string]any{resourceType: map[string]any{resourceKey: base}},
+	})
 	if err != nil {
 		return "", err
 	}
 
-	var sb strings.Builder
-	fmt.Fprintf(&sb, "bundle:\n  name: test-bundle-$UNIQUE_NAME\n\nresources:\n  %s:\n    %s:\n", resourceType, resourceKey)
-	for line := range strings.SplitSeq(strings.TrimRight(string(body), "\n"), "\n") {
-		if line == "" {
-			sb.WriteString("\n")
-			continue
-		}
-		sb.WriteString("      " + line + "\n")
-	}
-
 	vars := templateVars(uniqueName, userName)
 	var missing string
-	yml := os.Expand(sb.String(), func(key string) string {
+	yml := os.Expand(string(document), func(key string) string {
 		value, ok := vars[key]
 		if !ok {
 			// Expanding an unknown variable to "" turns a required field into null, and the
