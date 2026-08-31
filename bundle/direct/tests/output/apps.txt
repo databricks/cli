@@ -1,6 +1,4 @@
 === app.yml.tmpl
-budget_policy_id                             x          absent     UPDATE_IGNORED  budget_policy_id
-budget_policy_id                             y          absent     UPDATE_IGNORED  budget_policy_id
 compute_max_instances                        1          absent     UPDATE_IGNORED  compute_max_instances
 compute_max_instances                        2          absent     UPDATE_IGNORED  compute_max_instances
 compute_min_instances                        1          absent     UPDATE_IGNORED  compute_min_instances
@@ -94,24 +92,6 @@ git_source.tag                               x          absent     START_NOT_REA
 git_source.tag                               x          y          START_NOT_REACHED  git_source.tag
 git_source.tag                               y          absent     START_NOT_REACHED  git_source.tag
 git_source.tag                               y          x          START_NOT_REACHED  git_source.tag
-resources                                    absent     len0       START_NOT_REACHED  resources
-resources                                    absent     len1       START_NOT_REACHED  resources
-resources                                    len0       absent     START_NOT_REACHED  resources
-resources                                    len0       len1       START_NOT_REACHED  resources
-resources                                    len1       absent     UPDATE_IGNORED  resources
-resources                                    len1       len0       UPDATE_IGNORED  resources
-resources[0].app.name                        x          absent     UPDATE_IGNORED  resources[0].app.name
-resources[0].app.name                        y          absent     UPDATE_IGNORED  resources[0].app.name
-resources[0].app.permission                  CAN_USE    absent     UPDATE_IGNORED  resources[0].app.permission
-resources[0].description                     absent     x          START_NOT_REACHED  resources[0].description
-resources[0].description                     absent     y          START_NOT_REACHED  resources[0].description
-resources[0].description                     x          absent     UPDATE_IGNORED  resources[0].description
-resources[0].description                     y          absent     UPDATE_IGNORED  resources[0].description
-resources[0].postgres.branch                 x          absent     UPDATE_IGNORED  resources[0].postgres.branch
-resources[0].postgres.branch                 y          absent     UPDATE_IGNORED  resources[0].postgres.branch
-resources[0].postgres.database               x          absent     UPDATE_IGNORED  resources[0].postgres.database
-resources[0].postgres.database               y          absent     UPDATE_IGNORED  resources[0].postgres.database
-resources[0].postgres.permission             CAN_CONNECT_AND_CREATE absent     UPDATE_IGNORED  resources[0].postgres.permission
 source_code_path                             absent     x-UNIQUE   START_NOT_REACHED  source_code_path
 source_code_path                             absent     y-UNIQUE   START_NOT_REACHED  source_code_path
 source_code_path                             x-UNIQUE   absent     START_NOT_REACHED  source_code_path
@@ -121,19 +101,17 @@ source_code_path                             y-UNIQUE   x-UNIQUE   START_NOT_REA
 space                                        x          y          START_NOT_REACHED  space
 space                                        y          absent     START_NOT_REACHED  space
 space                                        y          x          START_NOT_REACHED  space
-usage_policy_id                              x          absent     UPDATE_IGNORED  usage_policy_id
-usage_policy_id                              y          absent     UPDATE_IGNORED  usage_policy_id
 user_api_scopes                              len1       absent     UPDATE_IGNORED  user_api_scopes
 user_api_scopes                              len1       len0       UPDATE_IGNORED  user_api_scopes
 user_api_scopes                              len2       absent     UPDATE_IGNORED  user_api_scopes
 user_api_scopes                              len2       len0       UPDATE_IGNORED  user_api_scopes
 
 === summary
-OK                 108
+OK                 44
 OK_RECREATE        2
 SUPPRESSED         21
 NOT_OBSERVABLE     3
-UPDATE_IGNORED     29
+UPDATE_IGNORED     13
 UNSETTABLE         2
-SKIPPED            82
-START_NOT_REACHED  83
+SKIPPED            84
+START_NOT_REACHED  77

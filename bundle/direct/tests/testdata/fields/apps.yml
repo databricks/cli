@@ -1,4 +1,9 @@
 # Value library for apps. See ../../README.md.
+#
+# resources is deliberately not seeded. An entry is a union (secret, job, sql_warehouse, ...)
+# and the API rejects one carrying no member at all -- "Invalid resource provided" -- while
+# every member names a workspace object this suite does not provision: a secret scope, a job, a
+# warehouse. So the block's fields stay uncovered, which the report says.
 
 # The corpus config declares neither block. config carries the app's command and env; the
 # resources list is a union where an entry names one referenced object.
@@ -10,13 +15,12 @@ base:
     env:
       - name: MY_VAR
         value: value
-  # An app resource is a union (secret, job, sql_warehouse, ...), and every member names a
-  # workspace object this suite does not provision -- a secret scope, a job, a warehouse. Only
-  # the entry's own fields are seeded, so name, description and the union members stay
-  # uncovered, which the report says.
-  resources:
-    - name: seeded
-      description: seeded resource
 
 fields:
   compute_size: [MEDIUM, LARGE]
+
+skip:
+  # Both name an account-level policy: "Invalid resource: accounts/<id>/budgetPolicies/x". A
+  # test workspace has none to reference, and creating one is an account-level operation.
+  budget_policy_id: needs an account-level budget policy to exist
+  usage_policy_id: needs an account-level usage policy to exist
