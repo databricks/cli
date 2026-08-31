@@ -208,3 +208,21 @@ faithfully, which is worth failing over. The full report goes to
   only in those blocks therefore collapse to one, recorded in `output/configs.txt`.
 - configs with more than one resource, or with an `-init.sh`
 - fields under a slice or map, listed at the end of each report
+
+Three divergences from a real workspace are known and left as findings rather than modelled,
+because each needs a behavioural change the acceptance suite currently asserts otherwise:
+
+- A SQL warehouse reads back `STARTING`, not `RUNNING`, right after create, so a config asking
+  for `started: false` is already satisfied there. Modelling it means the fake server also has
+  to move the warehouse to `RUNNING` on a later read, which the engine's waiter depends on.
+- A model serving endpoint's `email_notifications` do not take effect from a create; they are
+  configured through their own endpoint.
+- A Genie space's title cannot be cleared, and the chain then reaches a different value than it
+  does locally in one transition.
+
+Two types cannot be driven against the workspace this was verified on, for reasons that are its
+capacity rather than the engine's behaviour: a cluster never reaches `RUNNING` because the
+instance pool `$TEST_INSTANCE_POOL_ID` names cannot provision instances, and an instance pool
+cannot be deleted (which is why that type is `local_only` — every field that recreates hits it).
+`clusters` is deliberately *not* marked `local_only`: one workspace's capacity is not a property
+of the suite.
