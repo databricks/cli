@@ -3,3 +3,13 @@ dry_run                                      absent     true       UPDATE_IGNORE
 dry_run                                      false      true       UPDATE_IGNORED  dry_run
 dry_run                                      true       absent     START_NOT_REACHED  dry_run
 dry_run                                      true       false      START_NOT_REACHED  dry_run
+
+=== summary
+OK                 766
+OK_RECREATE        33
+OK_INERT           12
+SUPPRESSED         39
+NOT_OBSERVABLE     20
+UPDATE_IGNORED     2
+SKIPPED            2
+START_NOT_REACHED  2

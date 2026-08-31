@@ -15,3 +15,11 @@ parent_path                                  x          absent     START_NOT_REA
 parent_path                                  x          y          START_NOT_REACHED  parent_path
 parent_path                                  y          absent     START_NOT_REACHED  parent_path
 parent_path                                  y          x          START_NOT_REACHED  parent_path
+
+=== summary
+OK                 24
+SUPPRESSED         8
+NOT_OBSERVABLE     6
+UPDATE_IGNORED     2
+SKIPPED            6
+START_NOT_REACHED  8

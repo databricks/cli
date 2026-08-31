@@ -1,0 +1,6 @@
+
+=== summary
+OK                 2
+OK_RECREATE        12
+OK_INERT           18
+SKIPPED            2

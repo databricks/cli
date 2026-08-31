@@ -240,9 +240,12 @@ func (r *report) uncoveredPaths() []string {
 	return out
 }
 
-// render produces a report body. Problems-only is the committed form: one line per
-// finding and nothing else, so a diff is always a change in behaviour. The full form
-// adds the passing rows, the summary, and what was not covered.
+// render produces a report body. Problems-only is the committed form: one line per finding,
+// plus the count of every verdict -- including the passing ones, which no line names. Those
+// counts are what makes a change in *passing* behaviour visible: a field that starts being
+// recreated instead of updated moves one OK to OK_RECREATE and nothing else would show it,
+// on either the fake server or a real workspace. The full form adds every row, the evidence
+// behind each finding, and what was not covered.
 func (r *report) render(problemsOnly bool) string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -287,10 +290,6 @@ func (r *report) render(problemsOnly bool) string {
 		}
 	}
 
-	if problemsOnly {
-		return sb.String()
-	}
-
 	sb.WriteString("\n=== summary\n")
 	for _, v := range []verdict{
 		verdictOK, verdictRecreate, verdictInertConfirmed, verdictSuppressed,
@@ -301,8 +300,12 @@ func (r *report) render(problemsOnly bool) string {
 		verdictUnsettable, verdictSkipped, verdictBaseError, verdictStartNotReached,
 	} {
 		if counts[v] > 0 {
-			fmt.Fprintf(&sb, "%-14s %d\n", v, counts[v])
+			fmt.Fprintf(&sb, "%-18s %d\n", v, counts[v])
 		}
+	}
+
+	if problemsOnly {
+		return sb.String()
 	}
 
 	if gaps := r.uncoveredPaths(); len(gaps) > 0 {
@@ -343,9 +346,11 @@ func (r *report) write(t testutil.TestingT) {
 		return
 	}
 
+	// Not tolerated as missing: a report with no golden would silently pass, so adding a
+	// resource type without generating its report, or deleting one, would go unnoticed.
 	expected, err := os.ReadFile(name)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("reading %s: %s", name, err)
+	if err != nil {
+		t.Errorf("reading %s: %s (run ./task test-update-fields)", name, err)
 		return
 	}
 	testdiff.AssertEqualTexts(t, name, name, testdiff.NormalizeNewlines(string(expected)), body)

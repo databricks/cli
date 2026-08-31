@@ -57,3 +57,13 @@ usage_policy_id                              x          absent     COLLATERAL_DR
 usage_policy_id                              x          y          COLLATERAL_DRIFT  capacity
 usage_policy_id                              y          absent     COLLATERAL_DRIFT  capacity
 usage_policy_id                              y          x          COLLATERAL_DRIFT  capacity
+
+=== summary
+OK_RECREATE        32
+SUPPRESSED         1
+NOT_OBSERVABLE     1
+UPDATE_IGNORED     2
+POST_DEPLOY_DRIFT  1
+COLLATERAL_DRIFT   52
+SKIPPED            22
+START_NOT_REACHED  3
