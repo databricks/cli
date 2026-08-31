@@ -1,4 +1,6 @@
 === model_serving_endpoint.yml.tmpl
+config.auto_capture_config.catalog_name      absent     y          COLLATERAL_DRIFT  config
+config.auto_capture_config.catalog_name      y          absent     COLLATERAL_DRIFT  config
 config.auto_capture_config.enabled           absent     false      COLLATERAL_DRIFT  config
 config.auto_capture_config.enabled           absent     true       COLLATERAL_DRIFT  config
 config.auto_capture_config.enabled           false      absent     COLLATERAL_DRIFT  config
@@ -9,10 +11,10 @@ config.auto_capture_config.schema_name       x          absent     COLLATERAL_DR
 config.auto_capture_config.table_name_prefix y          absent     COLLATERAL_DRIFT  config
 
 === summary
-OK                 112
-OK_RECREATE        28
+OK                 136
+OK_RECREATE        26
 OK_INERT           22
 SUPPRESSED         10
 NOT_OBSERVABLE     6
-COLLATERAL_DRIFT   8
+COLLATERAL_DRIFT   10
 SKIPPED            2

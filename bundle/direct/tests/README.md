@@ -23,8 +23,13 @@ complete digraph, so a single Eulerian circuit covers every ordered pair exactly
 each move starts where the last one ended. That halves the deploys, and
 `TestTransitionsCoverEveryPairInOneChain` is what guarantees nothing is missed.
 
+A field whose type has no generic value at all — an `any` like `serialized_dashboard` — and a
+required field the library gives a single value are reported as not covered rather than
+quietly skipped: there is no second value to move to and no absent to move from.
+
 **Slices and maps** are covered two ways. The container is a field in its own right, whose
-values are the config's own and that value with its last entry dropped — so with `absent`
+values are the config's own and that value with one entry dropped — or, for a list of
+scalars the config leaves empty, one and two elements of the element's own type — so with `absent`
 in the set, one field covers adding and removing an entry as well as adding and removing
 the whole container, all with data the backend has already accepted. Separately, a pattern
 like `tasks[*].description` is expanded against the deployed config to the indices that

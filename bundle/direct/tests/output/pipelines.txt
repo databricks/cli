@@ -5,7 +5,7 @@ dry_run                                      true       absent     START_NOT_REA
 dry_run                                      true       false      START_NOT_REACHED  dry_run
 
 === summary
-OK                 766
+OK                 820
 OK_RECREATE        33
 OK_INERT           12
 SUPPRESSED         39
