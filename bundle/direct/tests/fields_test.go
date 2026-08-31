@@ -157,6 +157,11 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	}
 
 	for _, f := range fields {
+		// Set once the resource is in an unknown state and could not be replaced. Every
+		// remaining transition would be observing that rather than the field, and so would
+		// every later field, so they are recorded as such instead of run.
+		var broken error
+
 		t.Run(f.path, func(t *testing.T) {
 			// What the field is currently deployed as, when that is known. Transitions are
 			// generated in runs that share a starting value, so this skips about half of
@@ -165,6 +170,11 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 
 			for _, tr := range f.transitions() {
 				t.Run(tr.label(), func(t *testing.T) {
+					if broken != nil {
+						rep.add(result{cfg.name, f.path, valueLabel(tr.from), valueLabel(tr.to), verdictBaseError, oneLine(broken.Error()), broken.Error()})
+						return
+					}
+
 					reuse := deployedKnown && valueLabel(deployed) == valueLabel(tr.from)
 					res := runTransition(t, h, cfg.name, f.path, tr, reuse, baseline)
 
@@ -173,7 +183,16 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 					// created without the field genuinely starts absent. Rebuild and try the
 					// transition once more, so it is observed rather than written off.
 					if res.verdict == verdictStartNotReached {
-						if rebuilt, err := rebuild(t, ctx, client, user, cfg, fv, h); err == nil {
+						rebuilt, err := rebuild(t, ctx, client, user, cfg, fv, h)
+						if err != nil {
+							// Nothing was observed and there is no resource left to observe
+							// it on, which is a different statement from the field refusing
+							// its starting value.
+							res.verdict = verdictBaseError
+							res.detail = oneLine(err.Error())
+							res.evidence = err.Error()
+							broken = err
+						} else {
 							h, base = rebuilt, rebuilt.snapshot()
 							res = runTransition(t, h, cfg.name, f.path, tr, false, baseline)
 						}
@@ -185,7 +204,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 					// Only a clean apply leaves the field provably at "to".
 					deployed, deployedKnown = tr.to, res.verdict == verdictOK || res.verdict == verdictRecreate
 
-					if res.verdict.leavesResourceUsable() {
+					if broken != nil || res.verdict.leavesResourceUsable() {
 						return
 					}
 					deployedKnown = false
@@ -193,13 +212,19 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 					// transition would turn one failure into a run of them.
 					rebuilt, err := rebuild(t, ctx, client, user, cfg, fv, h)
 					if err != nil {
-						t.Skipf("could not rebuild baseline: %s", err)
+						broken = err
+						return
 					}
 					h = rebuilt
 					base = h.snapshot()
 				})
 			}
 		})
+		if broken != nil {
+			// The type has no usable resource left, so no later field can be observed either.
+			rep.add(result{cfg.name, "(rebuild)", "", "", verdictBaseError, oneLine(broken.Error()), broken.Error()})
+			return
+		}
 		// Put the field back and confirm the resource converged. A field the API cannot
 		// clear leaves it drifted for good, which would otherwise be blamed on every
 		// field tested afterwards -- so start over on a fresh resource. A new name is
@@ -215,6 +240,20 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 			base = h.snapshot()
 		}
 	}
+}
+
+// converged reports whether a plan no longer wants to change the field.
+func converged(plan *deployplan.Plan, node, path string) bool {
+	change, ok := planChange(plan, node, path)
+	return !ok || change.Action == deployplan.Skip
+}
+
+// reachedValue reports whether a plan entry for the field means the remote now holds what
+// the config asked for. A pending change means it does not; so does a change the planner
+// dropped for a reason other than the value already being there -- an app whose compute is
+// stopped suppresses a command with "no active deployment", and the command never landed.
+func reachedValue(change *deployplan.ChangeDesc) bool {
+	return change.Action == deployplan.Skip && benignSuppressions[change.Reason]
 }
 
 // runTransition moves one field from one value to another and reports what happened.
@@ -241,7 +280,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		// under a label that is not what happened -- "absent to 168" while the remote still
 		// holds 720. Cheaper to check than to reason about afterwards.
 		if plan, diags := h.readPlan(); !diags.HasError() {
-			if change, ok := planChange(plan, h.node, path); ok && change.Action != deployplan.Skip && !baseline[path] {
+			if change, ok := planChange(plan, h.node, path); ok && !reachedValue(change) && !baseline[path] {
 				res.verdict = verdictStartNotReached
 				res.detail = path
 				res.evidence = withContext("plan after deploying the starting value:", planJSON(plan))
@@ -305,17 +344,26 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 			res.detail = firstError(diags)
 			return res
 		}
-		if !wasIgnored(plan, second, h.node, path) {
+		switch {
+		case wasIgnored(plan, second, h.node, path):
+			res.verdict = verdictUpdateIgnored
+			res.detail = path
+			res.evidence = withContext("plan taken twice after the deploy, still unchanged:", planJSON(second))
+			t.Logf("the write was accepted but the remote value did not move on two reads:\n%s", res.evidence)
+			return res
+
+		case converged(second, h.node, path):
+			// The remote moved and the plan is now clean, so the first read was behind.
 			res.verdict = verdictStaleRead
 			res.detail = path
 			res.evidence = withContext("plan taken right after the deploy:", planJSON(after))
 			return res
+
+		default:
+			// The remote moved, but to something other than what was asked for, so this is
+			// drift rather than a stale read. Classified below, against the later plan.
+			after = second
 		}
-		res.verdict = verdictUpdateIgnored
-		res.detail = path
-		res.evidence = withContext("plan taken twice after the deploy, still unchanged:", planJSON(second))
-		t.Logf("the write was accepted but the remote value did not move on two reads:\n%s", res.evidence)
-		return res
 	}
 
 	if own, child := driftDetail(after, h.node, baseline); own != "" || child != "" {

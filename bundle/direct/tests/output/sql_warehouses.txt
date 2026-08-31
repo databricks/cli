@@ -5,9 +5,9 @@ name                                         x          absent     POST_DEPLOY_D
 name                                         y          absent     POST_DEPLOY_DRIFT  name
 
 === summary
-OK                 85
-SUPPRESSED         5
-NOT_OBSERVABLE     2
+OK                 53
+SUPPRESSED         2
+NOT_OBSERVABLE     1
 POST_DEPLOY_DRIFT  2
-SKIPPED            2
+SKIPPED            5
 START_NOT_REACHED  2

@@ -252,12 +252,19 @@ func enumValues(typ reflect.Type) []any {
 		}
 	}
 	slices.Sort(all)
-	if len(all) < 2 {
-		// One value cannot show a value-to-value move, and add and remove alone would say
-		// nothing an enum-specific case does not already cover.
+	if len(all) == 0 {
 		return nil
 	}
-	return []any{reflect.ValueOf(all[0]).Convert(typ).Interface(), reflect.ValueOf(all[1]).Convert(typ).Interface()}
+	// One is enough: with absent in the set, the field still gets an add and a remove. There
+	// is no valid second value to invent, and falling back to the generic "x" and "y" would
+	// test values the backend rejects -- a pipeline's deployment.kind only permits BUNDLE.
+	all = all[:min(2, len(all))]
+
+	values := make([]any, 0, len(all))
+	for _, value := range all {
+		values = append(values, reflect.ValueOf(value).Convert(typ).Interface())
+	}
+	return values
 }
 
 // kindValues are the fallback values for a plain Go kind.
