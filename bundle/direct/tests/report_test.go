@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -369,20 +370,22 @@ func writeReport(t testutil.TestingT, name, body string) {
 	}
 }
 
-// writeCorpusReport records which configs the suite drives and why each of the others
-// is left out, so the catalog accounts for the whole corpus rather than just the part
-// it happens to cover.
-func writeCorpusReport(t testutil.TestingT, usable []testConfig, skipped map[string]string) {
-	var sb strings.Builder
-	sb.WriteString("=== covered\n")
-	for _, c := range usable {
-		fmt.Fprintf(&sb, "%-48s %s\n", c.name, c.resourceType)
-	}
-
+// writeCorpusReport records which configs the suite drives and why each of the others is
+// left out, so the catalog accounts for the whole corpus rather than just the part it
+// happens to cover. Only one config per resource type is driven, so a corpus config that
+// merely lost the pick is listed as not covered too -- naming the one that won.
+func writeCorpusReport(t testutil.TestingT, driven map[string]testConfig, skipped map[string]string) {
 	names := make([]string, 0, len(skipped))
 	for name := range skipped {
 		names = append(names, name)
 	}
+
+	var sb strings.Builder
+	sb.WriteString("=== covered\n")
+	for _, resourceType := range slices.Sorted(maps.Keys(driven)) {
+		fmt.Fprintf(&sb, "%-48s %s\n", driven[resourceType].name, resourceType)
+	}
+
 	slices.Sort(names)
 	fmt.Fprintf(&sb, "\n=== not covered\n")
 	for _, name := range names {

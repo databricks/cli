@@ -2,10 +2,8 @@
 alert.yml.tmpl                                   alerts
 app.yml.tmpl                                     apps
 catalog.yml.tmpl                                 catalogs
-catalog_optional_fields.yml.tmpl                 catalogs
-cluster.yml.tmpl                                 clusters
-cluster_apply_policy_default_values.yml.tmpl     clusters
 cluster_policy.yml.tmpl                          cluster_policies
+cluster.yml.tmpl                                 clusters
 dashboard.yml.tmpl                               dashboards
 database_instance.yml.tmpl                       database_instances
 experiment.yml.tmpl                              experiments
@@ -13,48 +11,50 @@ external_location.yml.tmpl                       external_locations
 genie_space.yml.tmpl                             genie_spaces
 instance_pool.yml.tmpl                           instance_pools
 job.yml.tmpl                                     jobs
-job_apply_policy_default_values_for_each_task.yml.tmpl jobs
-job_apply_policy_default_values_job_cluster.yml.tmpl jobs
-job_apply_policy_default_values_task_cluster.yml.tmpl jobs
-job_with_depends_on.yml.tmpl                     jobs
-job_with_task.yml.tmpl                           jobs
-model.yml.tmpl                                   models
 model_serving_endpoint.yml.tmpl                  model_serving_endpoints
-model_serving_endpoint_telemetry.yml.tmpl        model_serving_endpoints
+model.yml.tmpl                                   models
 pipeline.yml.tmpl                                pipelines
-pipeline_allow_duplicate_names.yml.tmpl          pipelines
-pipeline_apply_policy_default_values.yml.tmpl    pipelines
 postgres_project.yml.tmpl                        postgres_projects
 postgres_synced_table.yml.tmpl                   postgres_synced_tables
 registered_model.yml.tmpl                        registered_models
 schema.yml.tmpl                                  schemas
-schema_empty_grants.yml.tmpl                     schemas
-schema_uppercase_name.yml.tmpl                   schemas
 secret_scope.yml.tmpl                            secret_scopes
-secret_scope_default_backend_type.yml.tmpl       secret_scopes
 sql_warehouse.yml.tmpl                           sql_warehouses
 volume.yml.tmpl                                  volumes
-volume_external.yml.tmpl                         volumes
 
 === not covered
 app_lifecycle_ref.yml.tmpl                       has 2 resources
+catalog_optional_fields.yml.tmpl                 a simpler config of this type is driven instead: catalog.yml.tmpl
+cluster_apply_policy_default_values.yml.tmpl     a simpler config of this type is driven instead: cluster.yml.tmpl
 database_catalog.yml.tmpl                        has 2 resources
+job_apply_policy_default_values_for_each_task.yml.tmpl a simpler config of this type is driven instead: job.yml.tmpl
+job_apply_policy_default_values_job_cluster.yml.tmpl a simpler config of this type is driven instead: job.yml.tmpl
+job_apply_policy_default_values_task_cluster.yml.tmpl a simpler config of this type is driven instead: job.yml.tmpl
 job_cross_resource_ref.yml.tmpl                  has 3 resources
 job_permission_ref.yml.tmpl                      has 2 resources
 job_pydabs_1000_tasks.yml.tmpl                   has -init.sh
 job_pydabs_10_tasks.yml.tmpl                     has -init.sh
 job_run.yml.tmpl                                 has 2 resources
 job_run_job_ref.yml.tmpl                         has 2 resources
+job_with_depends_on.yml.tmpl                     a simpler config of this type is driven instead: job.yml.tmpl
+job_with_task.yml.tmpl                           a simpler config of this type is driven instead: job.yml.tmpl
+model_serving_endpoint_telemetry.yml.tmpl        a simpler config of this type is driven instead: model_serving_endpoint.yml.tmpl
+pipeline_allow_duplicate_names.yml.tmpl          a simpler config of this type is driven instead: pipeline.yml.tmpl
+pipeline_apply_policy_default_values.yml.tmpl    a simpler config of this type is driven instead: pipeline.yml.tmpl
 pipeline_config_dots.yml.tmpl                    has 2 resources
 postgres_branch.yml.tmpl                         has 2 resources
 postgres_catalog.yml.tmpl                        has 2 resources
 postgres_database.yml.tmpl                       has 4 resources
 postgres_endpoint.yml.tmpl                       has 3 resources
 postgres_role.yml.tmpl                           has 3 resources
+schema_empty_grants.yml.tmpl                     a simpler config of this type is driven instead: schema.yml.tmpl
 schema_grant_ref.yml.tmpl                        has 2 resources
+schema_uppercase_name.yml.tmpl                   a simpler config of this type is driven instead: schema.yml.tmpl
 secret.yml.tmpl                                  has -init.sh
+secret_scope_default_backend_type.yml.tmpl       a simpler config of this type is driven instead: secret_scope.yml.tmpl
 synced_database_table.yml.tmpl                   has -init.sh
 vector_search_endpoint.yml.tmpl                  has 2 resources
 vector_search_index.yml.tmpl                     has -init.sh
+volume_external.yml.tmpl                         a simpler config of this type is driven instead: volume.yml.tmpl
 volume_path_job_ref.yml.tmpl                     has 3 resources
 volume_uppercase_name.yml.tmpl                   has 2 resources
