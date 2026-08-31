@@ -923,6 +923,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.ClustersStart(req)
 	})
 
+	server.Handle("POST", "/api/2.1/clusters/restart", func(req Request) any {
+		return req.Workspace.ClustersRestart(req)
+	})
+
 	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req Request) any {
 		return req.Workspace.ClustersPermanentDelete(req)
 	})

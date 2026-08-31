@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -1031,7 +1032,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	newState, err := adapter.PrepareState(inputConfig)
 	require.NoError(t, err, "PrepareState failed")
 
-	ctx := t.Context()
+	ctx := cmdio.MockDiscard(t.Context())
 
 	// initial DoRead() cannot find the resource
 	remote, err := adapter.DoRead(ctx, "1234")
@@ -1147,6 +1148,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
+	// permissions/grants have no-op deletes; libraries' DoDelete uninstalls but leaves the parent
+	// cluster, so DoRead still succeeds and reports the (now empty) set rather than erroring.
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || strings.HasSuffix(group, "libraries")
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.

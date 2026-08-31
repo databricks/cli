@@ -6,9 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
@@ -156,10 +158,24 @@ func (r *ResourceLibraries) DoUpdate(ctx context.Context, id string, state *Libr
 	return nil, nil
 }
 
-// DoDelete is a no-op: removing individual libraries is handled by DoUpdate's uninstall diff, and
-// DoDelete only fires when the parent cluster is deleted, at which point uninstalling is moot.
-func (r *ResourceLibraries) DoDelete(ctx context.Context, id string, _ *LibrariesState) error {
-	return nil
+// DoDelete uninstalls the libraries recorded in state. It fires both when the whole libraries
+// block is removed from config (the cluster is kept) and during bundle destroy (the cluster is
+// deleted too). WaitAfterDelete then restarts the cluster so the uninstall takes effect, since the
+// Libraries API defers uninstalls until the next restart.
+//
+// TODO: during `bundle destroy` this restart is wasteful, since the cluster is permanently deleted
+// right after. The delete path only receives the cluster id, so it cannot tell "block removed,
+// cluster kept" from "cluster destroyed" and the restart fires in both. Worth revisiting if the
+// framework can signal that the parent is also being deleted.
+func (r *ResourceLibraries) DoDelete(ctx context.Context, id string, state *LibrariesState) error {
+	if len(state.EmbeddedSlice) == 0 {
+		return nil
+	}
+	// A 404 here means the parent cluster is already gone; the framework treats that as success.
+	return r.client.Libraries.Uninstall(ctx, compute.UninstallLibraries{
+		ClusterId: id,
+		Libraries: state.EmbeddedSlice,
+	})
 }
 
 // removedLibraries returns libraries present in the remote state but absent from the desired set.
@@ -197,7 +213,45 @@ func (r *ResourceLibraries) WaitAfterCreate(ctx context.Context, id string, stat
 }
 
 func (r *ResourceLibraries) WaitAfterUpdate(ctx context.Context, id string, state *LibrariesState) (*LibrariesState, error) {
+	// Restart so the change is live: newly installed libraries are invisible to attached notebooks
+	// until restart, and the Libraries API defers uninstalls to the next restart.
+	if err := r.restartIfRunning(ctx, id); err != nil {
+		return nil, err
+	}
 	return nil, r.waitForInstall(ctx, id, state.EmbeddedSlice)
+}
+
+// WaitAfterDelete restarts the cluster so libraries uninstalled by DoDelete are actually evicted
+// (the Libraries API defers uninstalls until restart).
+func (r *ResourceLibraries) WaitAfterDelete(ctx context.Context, id string) error {
+	err := r.restartIfRunning(ctx, id)
+	if apierr.IsMissing(err) {
+		// Parent cluster already deleted; nothing to restart.
+		return nil
+	}
+	return err
+}
+
+// restartIfRunning restarts the cluster so library changes take effect, but only when it is
+// running: a stopped cluster applies pending install/uninstall on its next start. It waits for the
+// cluster to return to RUNNING before returning.
+func (r *ResourceLibraries) restartIfRunning(ctx context.Context, id string) error {
+	details, err := r.client.Clusters.GetByClusterId(ctx, id)
+	if err != nil {
+		return err
+	}
+	if details.State != compute.StateRunning {
+		log.Debugf(ctx, "cluster %s is not running (%s); skipping restart for library change", id, details.State)
+		return nil
+	}
+
+	cmdio.LogString(ctx, fmt.Sprintf("Restarting cluster %s because its libraries changed", id))
+	wait, err := r.client.Clusters.Restart(ctx, compute.RestartCluster{ClusterId: id})
+	if err != nil {
+		return err
+	}
+	_, err = wait.GetWithTimeout(clusterWaitTimeout)
+	return err
 }
 
 // waitForInstall polls until every desired library reaches a terminal installed state. It returns
