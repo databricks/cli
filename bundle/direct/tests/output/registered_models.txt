@@ -1,5 +1,35 @@
 === registered_model.yml.tmpl
-catalog_name                                 absent     main       BASE_ERROR  cannot create resources.registered_models.foo: CreateRegisteredModel Missing required field: catalog_name (400 INVALID_PARAMETER_VALUE)
+aliases[0].alias_name                        absent     x          START_NOT_REACHED  aliases[0].alias_name
+aliases[0].alias_name                        absent     y          START_NOT_REACHED  aliases[0].alias_name
+aliases[0].alias_name                        x          absent     START_NOT_REACHED  aliases[0].alias_name
+aliases[0].alias_name                        x          y          START_NOT_REACHED  aliases[0].alias_name
+aliases[0].alias_name                        y          absent     START_NOT_REACHED  aliases[0].alias_name
+aliases[0].alias_name                        y          x          START_NOT_REACHED  aliases[0].alias_name
+aliases[0].catalog_name                      absent     x          START_NOT_REACHED  aliases[0].catalog_name
+aliases[0].catalog_name                      absent     y          START_NOT_REACHED  aliases[0].catalog_name
+aliases[0].catalog_name                      x          absent     START_NOT_REACHED  aliases[0].catalog_name
+aliases[0].catalog_name                      x          y          START_NOT_REACHED  aliases[0].catalog_name
+aliases[0].catalog_name                      y          absent     START_NOT_REACHED  aliases[0].catalog_name
+aliases[0].catalog_name                      y          x          START_NOT_REACHED  aliases[0].catalog_name
+aliases[0].model_name                        absent     x          START_NOT_REACHED  aliases[0].model_name
+aliases[0].model_name                        absent     y          START_NOT_REACHED  aliases[0].model_name
+aliases[0].model_name                        x          absent     START_NOT_REACHED  aliases[0].model_name
+aliases[0].model_name                        x          y          START_NOT_REACHED  aliases[0].model_name
+aliases[0].model_name                        y          absent     START_NOT_REACHED  aliases[0].model_name
+aliases[0].model_name                        y          x          START_NOT_REACHED  aliases[0].model_name
+aliases[0].schema_name                       absent     x          START_NOT_REACHED  aliases[0].schema_name
+aliases[0].schema_name                       absent     y          START_NOT_REACHED  aliases[0].schema_name
+aliases[0].schema_name                       x          absent     START_NOT_REACHED  aliases[0].schema_name
+aliases[0].schema_name                       x          y          START_NOT_REACHED  aliases[0].schema_name
+aliases[0].schema_name                       y          absent     START_NOT_REACHED  aliases[0].schema_name
+aliases[0].schema_name                       y          x          START_NOT_REACHED  aliases[0].schema_name
+aliases[0].version_num                       1          2          START_NOT_REACHED  aliases[0].version_num
+aliases[0].version_num                       1          absent     START_NOT_REACHED  aliases[0].version_num
+aliases[0].version_num                       2          1          START_NOT_REACHED  aliases[0].version_num
+aliases[0].version_num                       2          absent     START_NOT_REACHED  aliases[0].version_num
+aliases[0].version_num                       absent     1          START_NOT_REACHED  aliases[0].version_num
+aliases[0].version_num                       absent     2          START_NOT_REACHED  aliases[0].version_num
+catalog_name                                 absent     main       BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: catalog_name (400 INVALID_PARAMETER_VALUE)
 catalog_name                                 main       absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: catalog_name (400 INVALID_PARAMETER_VALUE)
 full_name                                    absent     x          UPDATE_IGNORED  full_name
 full_name                                    absent     y          UPDATE_IGNORED  full_name
@@ -7,8 +37,8 @@ full_name                                    x          absent     START_NOT_REA
 full_name                                    x          y          START_NOT_REACHED  full_name
 full_name                                    y          absent     START_NOT_REACHED  full_name
 full_name                                    y          x          START_NOT_REACHED  full_name
-name                                         absent     x-[UNIQUE_NAME] BASE_ERROR  cannot create resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
-name                                         absent     y-[UNIQUE_NAME] BASE_ERROR  cannot create resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
+name                                         absent     x-[UNIQUE_NAME] BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
+name                                         absent     y-[UNIQUE_NAME] BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
 name                                         x-[UNIQUE_NAME] absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
 name                                         y-[UNIQUE_NAME] absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
 owner                                        absent     x          UPDATE_IGNORED  owner
@@ -17,11 +47,11 @@ owner                                        x          absent     START_NOT_REA
 owner                                        x          y          START_NOT_REACHED  owner
 owner                                        y          absent     START_NOT_REACHED  owner
 owner                                        y          x          START_NOT_REACHED  owner
-schema_name                                  absent     default    BASE_ERROR  cannot create resources.registered_models.foo: CreateRegisteredModel Missing required field: schema_name (400 INVALID_PARAMETER_VALUE)
+schema_name                                  absent     default    BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: schema_name (400 INVALID_PARAMETER_VALUE)
 schema_name                                  default    absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: schema_name (400 INVALID_PARAMETER_VALUE)
 
 === summary
-OK                 40
+OK                 10
 OK_RECREATE        2
 SUPPRESSED         1
 NOT_OBSERVABLE     1
@@ -29,4 +59,4 @@ UPDATE_IGNORED     4
 BACKEND_ERROR      4
 SKIPPED            9
 BASE_ERROR         4
-START_NOT_REACHED  8
+START_NOT_REACHED  38

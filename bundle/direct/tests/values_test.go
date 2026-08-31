@@ -407,9 +407,12 @@ func (fv *fieldValues) skipReason(path string) (string, bool) {
 
 	concrete, err := structpath.ParsePath(path)
 	if err != nil {
-		// A pattern, which cannot be matched against another pattern: compare textually.
+		// A pattern, which cannot be matched against another pattern: compare textually. A key
+		// naming a whole subtree may itself end in a wildcard, so trim that first -- otherwise
+		// "a.b.*" would not cover the pattern "a.b.c".
 		for key, reason := range fv.skip {
-			if strings.HasPrefix(path, key+".") || strings.HasPrefix(path, key+"[") {
+			prefix := strings.TrimSuffix(strings.TrimSuffix(key, "[*]"), ".*")
+			if strings.HasPrefix(path, prefix+".") || strings.HasPrefix(path, prefix+"[") {
 				return reason, true
 			}
 		}

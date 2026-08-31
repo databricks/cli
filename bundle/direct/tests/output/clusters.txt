@@ -1,6 +1,10 @@
+=== cluster.yml.tmpl
+aws_attributes.ebs_volume_count              absent     1          START_NOT_REACHED  aws_attributes.ebs_volume_count
+aws_attributes.spot_bid_price_percent        absent     1          START_NOT_REACHED  aws_attributes.spot_bid_price_percent
 
 === summary
-OK                 449
-SUPPRESSED         23
-NOT_OBSERVABLE     12
+OK                 447
+SUPPRESSED         24
+NOT_OBSERVABLE     11
 SKIPPED            1
+START_NOT_REACHED  2

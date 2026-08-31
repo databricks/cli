@@ -2,11 +2,12 @@
 deployment.version_id                        x          absent     START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
 deployment.version_id                        x          y          START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
 deployment.version_id                        y          absent     START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
+deployment.version_id                        y          x          START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
 
 === summary
 OK                 2858
-OK_INERT           3
+OK_INERT           2
 SUPPRESSED         18
 NOT_OBSERVABLE     232
 SKIPPED            3
-START_NOT_REACHED  3
+START_NOT_REACHED  4

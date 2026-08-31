@@ -1,30 +1,45 @@
 === model_serving_endpoint.yml.tmpl
 budget_policy_id                             x          absent     START_NOT_REACHED  budget_policy_id (declared inert: no_update_api)
 budget_policy_id                             x          y          START_NOT_REACHED  budget_policy_id (declared inert: no_update_api)
+budget_policy_id                             y          absent     START_NOT_REACHED  budget_policy_id (declared inert: no_update_api)
+budget_policy_id                             y          x          START_NOT_REACHED  budget_policy_id (declared inert: no_update_api)
+config.auto_capture_config.catalog_name      absent     x          POST_DEPLOY_DRIFT  config
 config.auto_capture_config.catalog_name      absent     y          POST_DEPLOY_DRIFT  config
-config.auto_capture_config.catalog_name      y          absent     POST_DEPLOY_DRIFT  config
+config.auto_capture_config.catalog_name      x          y          START_NOT_REACHED  config.auto_capture_config.catalog_name
+config.auto_capture_config.catalog_name      y          absent     START_NOT_REACHED  config.auto_capture_config.catalog_name
 config.auto_capture_config.enabled           absent     false      POST_DEPLOY_DRIFT  config
 config.auto_capture_config.enabled           absent     true       POST_DEPLOY_DRIFT  config
-config.auto_capture_config.enabled           false      absent     POST_DEPLOY_DRIFT  config
-config.auto_capture_config.enabled           false      true       POST_DEPLOY_DRIFT  config
-config.auto_capture_config.enabled           true       absent     POST_DEPLOY_DRIFT  config
-config.auto_capture_config.enabled           true       false      POST_DEPLOY_DRIFT  config
-config.auto_capture_config.schema_name       x          absent     POST_DEPLOY_DRIFT  config
-config.auto_capture_config.table_name_prefix y          absent     POST_DEPLOY_DRIFT  config
+config.auto_capture_config.enabled           false      absent     START_NOT_REACHED  config.auto_capture_config.enabled
+config.auto_capture_config.enabled           false      true       START_NOT_REACHED  config.auto_capture_config.enabled
+config.auto_capture_config.enabled           true       absent     START_NOT_REACHED  config.auto_capture_config.enabled
+config.auto_capture_config.enabled           true       false      START_NOT_REACHED  config.auto_capture_config.enabled
+config.auto_capture_config.schema_name       absent     x          POST_DEPLOY_DRIFT  config
+config.auto_capture_config.schema_name       x          absent     START_NOT_REACHED  config.auto_capture_config.schema_name
+config.auto_capture_config.schema_name       x          y          START_NOT_REACHED  config.auto_capture_config.schema_name
+config.auto_capture_config.table_name_prefix absent     x          POST_DEPLOY_DRIFT  config
+config.auto_capture_config.table_name_prefix x          y          START_NOT_REACHED  config.auto_capture_config.table_name_prefix
+config.auto_capture_config.table_name_prefix y          absent     START_NOT_REACHED  config.auto_capture_config.table_name_prefix
+rate_limits                                  absent     len0       START_NOT_REACHED  rate_limits (declared inert: not_implemented)
+rate_limits                                  absent     len1       START_NOT_REACHED  rate_limits (declared inert: not_implemented)
 rate_limits                                  len0       absent     START_NOT_REACHED  rate_limits (declared inert: not_implemented)
+rate_limits                                  len0       len1       START_NOT_REACHED  rate_limits (declared inert: not_implemented)
 rate_limits                                  len1       absent     START_NOT_REACHED  rate_limits (declared inert: not_implemented)
 rate_limits                                  len1       len0       START_NOT_REACHED  rate_limits (declared inert: not_implemented)
 rate_limits[0].calls                         1          2          START_NOT_REACHED  rate_limits[0].calls (declared inert: not_implemented)
+rate_limits[0].calls                         2          1          START_NOT_REACHED  rate_limits[0].calls (declared inert: not_implemented)
+rate_limits[0].key                           absent     endpoint   START_NOT_REACHED  rate_limits[0].key (declared inert: not_implemented)
+rate_limits[0].key                           absent     user       START_NOT_REACHED  rate_limits[0].key (declared inert: not_implemented)
 rate_limits[0].key                           endpoint   absent     START_NOT_REACHED  rate_limits[0].key (declared inert: not_implemented)
+rate_limits[0].key                           endpoint   user       START_NOT_REACHED  rate_limits[0].key (declared inert: not_implemented)
 rate_limits[0].key                           user       absent     START_NOT_REACHED  rate_limits[0].key (declared inert: not_implemented)
 rate_limits[0].key                           user       endpoint   START_NOT_REACHED  rate_limits[0].key (declared inert: not_implemented)
 
 === summary
 OK                 150
-OK_RECREATE        26
-OK_INERT           11
+OK_RECREATE        20
+OK_INERT           2
 SUPPRESSED         14
 NOT_OBSERVABLE     10
-POST_DEPLOY_DRIFT  10
+POST_DEPLOY_DRIFT  6
 SKIPPED            2
-START_NOT_REACHED  9
+START_NOT_REACHED  28
