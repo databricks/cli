@@ -856,3 +856,39 @@ func TestSet_ShallowerEmbedWins(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"value":"set"}`, string(blob))
 }
+
+// Two embedded structs declaring one name at the same depth: encoding/json calls that
+// ambiguous and omits the field, so there is nothing to read or write either.
+type ambiguousA struct {
+	Value string `json:"value"`
+}
+
+type ambiguousB struct {
+	Value string `json:"value"`
+}
+
+type ambiguousEmbeds struct {
+	ambiguousA
+	ambiguousB
+}
+
+func TestSet_AmbiguousEmbedIsNotFound(t *testing.T) {
+	target := &ambiguousEmbeds{}
+
+	require.Error(t, structaccess.SetByString(target, "value", "set"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
+
+	// Which is what json does with it: the name resolves to no field at all.
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{}`, string(blob))
+}
+
+// A value that cannot be converted must leave the struct untouched, ForceSendFields included.
+func TestSet_FailedConversionLeavesForceSendFields(t *testing.T) {
+	job := &jobs.JobSettings{Name: "n"} //exhaustruct:ignore
+
+	require.Error(t, structaccess.SetByString(job, "max_concurrent_runs", "not-a-number"))
+	assert.Empty(t, job.ForceSendFields)
+	assert.Equal(t, "n", job.Name)
+}
