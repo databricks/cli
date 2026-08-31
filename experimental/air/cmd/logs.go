@@ -105,7 +105,17 @@ func newLogsCommand() *cobra.Command {
 			tailLines = lines
 		}
 
-		err = runLogs(ctx, cmd, logRequest{
+		// Only the streaming path prints resume guidance, so only it catches the
+		// interrupt: without this a Ctrl-C kills the process before
+		// handleWatchResult runs. Download and JSON keep the default handling.
+		streamCtx := ctx
+		if downloadTo == "" && root.OutputType(cmd) != flags.OutputJSON {
+			var stop context.CancelFunc
+			streamCtx, stop = notifyInterrupt(ctx)
+			defer stop()
+		}
+
+		err = runLogs(streamCtx, cmd, logRequest{
 			runID:         runID,
 			node:          node,
 			nodeSet:       cmd.Flags().Changed("node"),
