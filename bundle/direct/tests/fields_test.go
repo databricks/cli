@@ -42,6 +42,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
@@ -143,6 +144,16 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	fields, uncovered, inert := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv, resource, runSeed,
 		declaredUnsettable(adapter), h.unique)
 	rep.addCoverage(fields, uncovered)
+
+	// A container's label says only how many entries it has, so record what each one stands for.
+	for _, f := range fields {
+		if !isContainer(f.kind) {
+			continue
+		}
+		for _, value := range f.values {
+			rep.addLegend(f.path, valueLabel(value), value)
+		}
+	}
 
 	// Fields the resource declares a user cannot meaningfully set. Recorded with the
 	// resource's own reason rather than tested: every transition would come back SUPPRESSED
@@ -476,12 +487,10 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		}
 		if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change, path, deliberate) && !baselineCovers(baseline, plan, h.node, path) {
 			res.verdict = verdictStartNotReached
-			// The planner's own reason for not acting, when it gave one: without it the row says
-			// only which field, and "the app has no active deployment" is the whole explanation.
-			res.detail = path
-			if change.Reason != "" {
-				res.detail = path + ": " + change.Reason
-			}
+			// The planner's own reason for not acting, when it gave one -- "the app has no active
+			// deployment" is the whole explanation. The field is already the row's first column,
+			// so the detail carries only what that column cannot say.
+			res.detail = change.Reason
 			res.evidence = withContext("plan after deploying the starting value:", planJSON(plan))
 			return res
 		}
@@ -552,7 +561,6 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		switch {
 		case wasIgnored(plan, second, h.node, path):
 			res.verdict = verdictUpdateIgnored
-			res.detail = path
 			res.evidence = withContext("plan taken twice after the deploy, still unchanged:", planJSON(second))
 			t.Logf("the write was accepted but the remote value did not move on two reads:\n%s", res.evidence)
 			return res
@@ -560,7 +568,6 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		case converged(second, h.node, path):
 			// The remote moved and the plan is now clean, so the first read was behind.
 			res.verdict = verdictStaleRead
-			res.detail = path
 			res.evidence = withContext("plan taken right after the deploy:", planJSON(after))
 			return res
 
@@ -909,10 +916,32 @@ var generatedIDs = []struct {
 	{regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`), "[UUID]"},
 }
 
+// workspaceUserName holds the identity this run deploys as, so it can be redacted: it is
+// tester@databricks.com against the fake server and a service principal's UUID on a real
+// workspace, and it turns up inside seeded values and error messages alike. Written once with
+// the same value by every harness, so the mutex only guards the race, not a decision.
+var (
+	workspaceUserMu   sync.Mutex
+	workspaceUserName string
+)
+
+func rememberWorkspaceUser(name string) {
+	workspaceUserMu.Lock()
+	defer workspaceUserMu.Unlock()
+	workspaceUserName = name
+}
+
 // redactIDs replaces every run-specific id in a message with a stable placeholder.
 func redactIDs(s string) string {
 	for _, id := range generatedIDs {
 		s = id.pattern.ReplaceAllString(s, id.replacement)
+	}
+
+	workspaceUserMu.Lock()
+	user := workspaceUserName
+	workspaceUserMu.Unlock()
+	if user != "" {
+		s = strings.ReplaceAll(s, user, "[USERNAME]")
 	}
 	return s
 }

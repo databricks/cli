@@ -1,5 +1,5 @@
 === pipeline.yml.tmpl
-dry_run                                      absent     true       UPDATE_IGNORED  dry_run
+dry_run                                      absent     true       UPDATE_IGNORED
 
 === summary
 OK                 743

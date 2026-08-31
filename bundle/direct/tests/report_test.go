@@ -2,6 +2,7 @@ package tests
 
 import (
 	"cmp"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -176,6 +177,32 @@ type report struct {
 	results  []result
 	wildcard map[string]bool
 	covered  map[string]bool
+
+	// legend maps a size label back to the value it stands for, keyed by field: "keys1" means
+	// a different map for properties than it does for options, so the field is part of the key.
+	legend map[legendKey]string
+}
+
+// legendKey identifies one size label of one field.
+type legendKey struct {
+	field, label string
+}
+
+// addLegend records what a size label stands for. Only containers get one: a scalar's label is
+// the value, so there is nothing to explain.
+func (r *report) addLegend(field, label string, value any) {
+	rendered, err := json.Marshal(value)
+	if err != nil {
+		return
+	}
+	// Redacted like everything else in the report: a seeded value can name the workspace user or
+	// carry this run's unique suffix, both of which differ between a fake server and a real one.
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.legend == nil {
+		r.legend = map[legendKey]string{}
+	}
+	r.legend[legendKey{field, label}] = redactIDs(string(rendered))
 }
 
 func (r *report) add(res result) {
@@ -265,12 +292,16 @@ func (r *report) render(problemsOnly bool) string {
 	})
 
 	counts := map[verdict]int{}
+	// The labels the rendered rows actually use, so the legend explains those and no others.
+	used := map[legendKey]bool{}
 	config := ""
 	for _, res := range r.results {
 		counts[res.verdict]++
 		if problemsOnly && !res.isProblem() {
 			continue
 		}
+		used[legendKey{res.field, res.from}] = true
+		used[legendKey{res.field, res.to}] = true
 		if res.config != config {
 			if config != "" {
 				sb.WriteString("\n")
@@ -311,6 +342,14 @@ func (r *report) render(problemsOnly bool) string {
 		return sb.String()
 	}
 
+	// The legend goes here and not into the committed report: it is JSON, so it would churn
+	// whenever an SDK type gains a field, and a reader decoding a label is already looking at
+	// this file for the evidence behind the row.
+	if legend := r.renderLegend(used); legend != "" {
+		sb.WriteString("\n=== values\n")
+		sb.WriteString(legend)
+	}
+
 	if gaps := r.uncoveredPaths(); len(gaps) > 0 {
 		fmt.Fprintf(&sb, "\n=== not covered: %d fields with nothing to test\n", len(gaps))
 		fmt.Fprintf(&sb, "# either no config of this type declares the slice or map they sit in,\n")
@@ -320,6 +359,25 @@ func (r *report) render(problemsOnly bool) string {
 		}
 	}
 
+	return sb.String()
+}
+
+// renderLegend spells out the size labels the rows used. Caller holds the lock.
+func (r *report) renderLegend(used map[legendKey]bool) string {
+	keys := make([]legendKey, 0, len(used))
+	for key := range used {
+		if _, ok := r.legend[key]; ok {
+			keys = append(keys, key)
+		}
+	}
+	slices.SortFunc(keys, func(a, b legendKey) int {
+		return cmp.Or(strings.Compare(a.field, b.field), strings.Compare(a.label, b.label))
+	})
+
+	var sb strings.Builder
+	for _, key := range keys {
+		fmt.Fprintf(&sb, "%-44s %-10s %s\n", key.field, key.label, r.legend[key])
+	}
 	return sb.String()
 }
 
