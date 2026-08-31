@@ -20,5 +20,8 @@ base:
     - column_name: ingested_at
       column_type: TIMESTAMP
   type_overrides:
+    # pg_type is an enum, not a Postgres type name: only PG_SPECIFIC_TYPE_HALFVEC, _VARCHAR and
+    # _VECTOR. "bigint" parsed to the unspecified zero value, which the real API rejects as a
+    # missing required field while the fake server stored it verbatim.
     - column_name: id
-      pg_type: bigint
+      pg_type: PG_SPECIFIC_TYPE_VARCHAR

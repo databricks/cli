@@ -12,9 +12,13 @@ base:
   custom_tags:
     - key: team
       value: eng
-  default_endpoint_settings:
-    pg_settings:
-      work_mem: 64MB
+
+skip:
+  # The real API refuses a pg_setting on the create it is sent with: "setting cannot be changed;
+  # setting: work_mem" (aws, 2026-08). Seeding one made the whole type undeployable there, and the
+  # 12 rows it bought were all engine errors already -- every transition of this map was rejected
+  # for naming spec.default_endpoint_settings.pg_settings in update_mask without providing it.
+  default_endpoint_settings.pg_settings: the API rejects a setting on the create that carries it
 
 fields:
   # project_id is part of the resource's hierarchical name, so a change recreates it.
