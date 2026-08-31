@@ -7,10 +7,8 @@ EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
 # direct cell still runs each test once; a local run covers both.
 EnvMatrix.DMS = ["", "true"]
 
-# DMS is only supported by the direct engine, and only against the local testserver:
-# the service runs in dev and staging, so a cloud run has nothing to record to.
+# DMS recording is only supported by the direct engine; it is a no-op on terraform.
 EnvMatrixExclude.dms_needs_direct = ["DMS=true", "DATABRICKS_BUNDLE_ENGINE=terraform"]
-EnvMatrixExclude.dms_local_only = ["DMS=true", "CONFIG_Cloud=true"]
 
 # Saved plans don't carry the deployment stamp. A first plan writes the deployment record,
 # so `deploy --plan` creates resources without it and reports drift on the next plan.
