@@ -1148,8 +1148,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
-	// permissions/grants have no-op deletes; libraries' DoDelete uninstalls but leaves the parent
-	// cluster, so DoRead still succeeds and reports the (now empty) set rather than erroring.
+	// this lists all the sub-resources that do not delete the parent resource when they
+	// are deleted.
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || strings.HasSuffix(group, "libraries")
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.
