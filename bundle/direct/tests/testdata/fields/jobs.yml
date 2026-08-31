@@ -108,6 +108,28 @@ skip:
   # run_as must name a principal allowed to run the job, which depends on the identity the
   # suite runs as -- a service principal on cloud.
   run_as: depends on the identity the suite runs as
+  # A job cluster key has to name an entry in job_clusters, and this suite drives one field at a
+  # time -- so renaming the key on the task and on the definition cannot happen together.
+  tasks[*].job_cluster_key: has to name a job_clusters entry, which cannot change with it
+  job_clusters[*].job_cluster_key: has to match the key the task names, which cannot change with it
+  # A node type is cloud-specific and the suite has one variable for it, so there is no second
+  # value to move to: "Node type x is not supported. Supported node types: r3.xlarge, ...".
+  job_clusters[*].new_cluster.node_type_id: cloud-specific; the suite has one node type
+  job_clusters[*].new_cluster.driver_node_type_id: cloud-specific; the suite has one node type
+  # An account-level policy, as with apps.
+  usage_policy_id: needs an account-level usage policy to exist
+  # The backend assigns a job cluster its name: "Cluster name should not be provided".
+  job_clusters[*].new_cluster.cluster_name: assigned by the backend for a job cluster
+  # Each names a workspace object this suite does not provision.
+  job_clusters[*].new_cluster.policy_id: needs a cluster policy to exist
+  job_clusters[*].new_cluster.instance_pool_id: needs an instance pool to exist
+  job_clusters[*].new_cluster.driver_instance_pool_id: needs an instance pool to exist
+  job_clusters[*].new_cluster.init_scripts[*].s3.kms_key: needs a KMS key registered for the workspace
+  job_clusters[*].new_cluster.cluster_log_conf.s3.kms_key: needs a KMS key registered for the workspace
+  tasks[*].notebook_task.warehouse_id: needs a second SQL warehouse to exist
+  # A trigger, a schedule and a continuous block are three arms of one choice, so a schedule
+  # field cannot move on a job the corpus config gives no schedule.
+  schedule: one of schedule, trigger or continuous, and the config declares none
   # Only one of the three cloud attribute blocks applies, decided by the workspace's cloud.
   job_clusters[*].new_cluster.azure_attributes: cloud-specific; only one attribute block applies
   job_clusters[*].new_cluster.gcp_attributes: cloud-specific; only one attribute block applies
@@ -121,5 +143,4 @@ fields:
   git_source.git_provider: [gitHub, gitLab]
   # A repository URL and a TZ database zone id, neither free text.
   git_source.git_url: [https://github.com/databricks/cli.test, https://github.com/databricks/dabs.test]
-  schedule.timezone_id: [UTC, America/New_York]
   git_source.git_commit: [abc123, def456]
