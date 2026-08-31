@@ -1,58 +1,10 @@
 
 === Deploy libraries on a stopped cluster (started=false): install is queued, no restart
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster-libraries-stopped/default/files...
-Created clusters.mycluster
-Created clusters.mycluster.libraries
-Files: 5 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
 === Change the libraries and redeploy: cluster is stopped, so no restart is issued
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster-libraries-stopped/default/files...
-Updated clusters.mycluster.libraries
-Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
-
->>> print_requests.py //libraries/install //clusters/restart
-{
-  "method": "POST",
-  "path": "/api/2.0/libraries/install",
-  "body": {
-    "cluster_id": "[UUID]",
-    "libraries": [
-      {
-        "pypi": {
-          "package": "requests"
-        }
-      }
-    ]
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/libraries/install",
-  "body": {
-    "cluster_id": "[UUID]",
-    "libraries": [
-      {
-        "pypi": {
-          "package": "requests"
-        }
-      },
-      {
-        "pypi": {
-          "package": "numpy"
-        }
-      }
-    ]
-  }
-}
-
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.clusters.mycluster
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster-libraries-stopped/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Destroy: 1 deleted

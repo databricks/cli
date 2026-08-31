@@ -1,2 +1,3 @@
-Cloud = false
+Cloud = true
+CloudSlow = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

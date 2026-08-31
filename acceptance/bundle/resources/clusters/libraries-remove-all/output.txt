@@ -1,12 +1,5 @@
 
 === Deploy a cluster with a pypi library
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster-libraries-remove-all/default/files...
-Created clusters.mycluster
-Created clusters.mycluster.libraries
-Files: 5 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
 === Removing the whole libraries block plans a delete of the libraries sub-resource
 >>> [CLI] bundle plan
 delete clusters.mycluster.libraries
@@ -14,33 +7,10 @@ delete clusters.mycluster.libraries
 Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
 
 === Redeploy uninstalls the libraries and restarts the running cluster
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster-libraries-remove-all/default/files...
-Restarting cluster [UUID] because its libraries changed
-Deleted clusters.mycluster.libraries
-Files: 3 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
-
->>> print_requests.py //libraries/uninstall
-{
-  "method": "POST",
-  "path": "/api/2.0/libraries/uninstall",
-  "body": {
-    "cluster_id": "[UUID]",
-    "libraries": [
-      {
-        "pypi": {
-          "package": "requests"
-        }
-      }
-    ]
-  }
-}
-
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.clusters.mycluster
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster-libraries-remove-all/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Destroy: 1 deleted

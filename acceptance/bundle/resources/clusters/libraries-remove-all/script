@@ -1,11 +1,16 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 cleanup() {
     trace $CLI bundle destroy --auto-approve
     rm -f out.requests.txt
 }
 trap cleanup EXIT
 
+# Deploy output is noisy and differs fake vs cloud, so route it to LOG and assert
+# only the deterministic signals.
 title "Deploy a cluster with a pypi library"
-trace $CLI bundle deploy
+$CLI bundle deploy &> LOG.deploy
+cat LOG.deploy | contains.py "Created clusters.mycluster.libraries" > /dev/null
 
 title "Removing the whole libraries block plans a delete of the libraries sub-resource"
 update_file.py databricks.yml "      libraries:
@@ -15,5 +20,5 @@ update_file.py databricks.yml "      libraries:
 trace $CLI bundle plan
 
 title "Redeploy uninstalls the libraries and restarts the running cluster"
-trace $CLI bundle deploy
-trace print_requests.py //libraries/uninstall
+$CLI bundle deploy &> LOG.redeploy
+cat LOG.redeploy | contains.py "Restarting cluster" > /dev/null

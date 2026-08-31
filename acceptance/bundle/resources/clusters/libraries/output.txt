@@ -1,13 +1,5 @@
 
 === Deploy a cluster with a pypi and a local wheel library
->>> [CLI] bundle deploy
-Uploading dist/my_package-0.0.1-py3-none-any.whl...
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster-libraries/default/files...
-Created clusters.mycluster
-Created clusters.mycluster.libraries
-Files: 6 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
 === Libraries installed via the Libraries API (wheel rewritten to its uploaded path)
 >>> print_requests.py //libraries/install
 {
@@ -22,20 +14,13 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         }
       },
       {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/cluster-libraries/default/artifacts/.internal/my_package-0.0.1-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
       }
     ]
   }
 }
 
-=== Removing the wheel and redeploying uninstalls it
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cluster-libraries/default/files...
-Restarting cluster [UUID] because its libraries changed
-Updated clusters.mycluster.libraries
-Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
-
+=== Removing the wheel and redeploying uninstalls it and restarts the running cluster
 >>> print_requests.py //libraries/uninstall
 {
   "method": "POST",
@@ -44,7 +29,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
     "cluster_id": "[UUID]",
     "libraries": [
       {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/cluster-libraries/default/artifacts/.internal/my_package-0.0.1-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
       }
     ]
   }
@@ -54,7 +39,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 The following resources will be deleted:
   delete resources.clusters.mycluster
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/cluster-libraries/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Restarting cluster [UUID] because its libraries changed
 Destroy: 1 deleted
