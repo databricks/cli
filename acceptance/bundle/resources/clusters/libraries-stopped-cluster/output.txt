@@ -14,7 +14,7 @@ Updated clusters.mycluster.libraries
 Files: 3 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py //libraries //clusters/restart
+>>> print_requests.py //libraries/install //clusters/restart
 {
   "method": "POST",
   "path": "/api/2.0/libraries/install",

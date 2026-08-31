@@ -14,4 +14,4 @@ update_file.py databricks.yml "        - pypi:
         - pypi:
             package: numpy"
 trace $CLI bundle deploy
-trace print_requests.py //libraries //clusters/restart
+trace print_requests.py //libraries/install //clusters/restart
