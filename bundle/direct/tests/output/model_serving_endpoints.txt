@@ -1,14 +1,8 @@
-=== model_serving_endpoint.yml.tmpl
-budget_policy_id                             x          absent     START_NOT_REACHED  budget_policy_id (declared inert: no_update_api)
-budget_policy_id                             x          y          START_NOT_REACHED  budget_policy_id (declared inert: no_update_api)
-budget_policy_id                             y          absent     START_NOT_REACHED  budget_policy_id (declared inert: no_update_api)
-budget_policy_id                             y          x          START_NOT_REACHED  budget_policy_id (declared inert: no_update_api)
 
 === summary
 OK                 32
 OK_RECREATE        12
-OK_INERT           2
+OK_INERT           6
 SUPPRESSED         5
 NOT_OBSERVABLE     3
 SKIPPED            4
-START_NOT_REACHED  4

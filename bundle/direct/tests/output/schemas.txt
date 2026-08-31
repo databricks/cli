@@ -1,20 +1,15 @@
 === schema.yml.tmpl
 custom_max_retention_hours                   168        absent     UPDATE_IGNORED  custom_max_retention_hours
 custom_max_retention_hours                   720        absent     UPDATE_IGNORED  custom_max_retention_hours
-properties                                   absent     keys0      START_NOT_REACHED  properties
-properties                                   absent     keys1      START_NOT_REACHED  properties
-properties                                   keys0      absent     START_NOT_REACHED  properties
-properties                                   keys0      keys1      START_NOT_REACHED  properties
 properties                                   keys1      absent     UPDATE_IGNORED  properties
 properties                                   keys1      keys0      UPDATE_IGNORED  properties
-properties['team']                           absent     x          START_NOT_REACHED  properties['team']
-properties['team']                           absent     y          START_NOT_REACHED  properties['team']
 properties['team']                           x          absent     UPDATE_IGNORED  properties['team']
 properties['team']                           y          absent     UPDATE_IGNORED  properties['team']
 
 === summary
-OK                 12
+OK                 16
 OK_RECREATE        2
+SUPPRESSED         1
+NOT_OBSERVABLE     1
 UPDATE_IGNORED     6
 SKIPPED            2
-START_NOT_REACHED  6

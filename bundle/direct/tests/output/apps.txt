@@ -92,26 +92,25 @@ git_source.tag                               x          absent     START_NOT_REA
 git_source.tag                               x          y          START_NOT_REACHED  git_source.tag
 git_source.tag                               y          absent     START_NOT_REACHED  git_source.tag
 git_source.tag                               y          x          START_NOT_REACHED  git_source.tag
-source_code_path                             absent     x-UNIQUE   START_NOT_REACHED  source_code_path
-source_code_path                             absent     y-UNIQUE   START_NOT_REACHED  source_code_path
+lifecycle.started                            false      true       COLLATERAL_DRIFT  git_source.git_repository
+source_code_path                             absent     x-UNIQUE   SUPPRESSED  no active deployment
+source_code_path                             absent     y-UNIQUE   SUPPRESSED  no active deployment
 source_code_path                             x-UNIQUE   absent     START_NOT_REACHED  source_code_path
 source_code_path                             x-UNIQUE   y-UNIQUE   START_NOT_REACHED  source_code_path
 source_code_path                             y-UNIQUE   absent     START_NOT_REACHED  source_code_path
 source_code_path                             y-UNIQUE   x-UNIQUE   START_NOT_REACHED  source_code_path
-space                                        x          y          START_NOT_REACHED  space
-space                                        y          absent     START_NOT_REACHED  space
-space                                        y          x          START_NOT_REACHED  space
 user_api_scopes                              len1       absent     UPDATE_IGNORED  user_api_scopes
 user_api_scopes                              len1       len0       UPDATE_IGNORED  user_api_scopes
 user_api_scopes                              len2       absent     UPDATE_IGNORED  user_api_scopes
 user_api_scopes                              len2       len0       UPDATE_IGNORED  user_api_scopes
 
 === summary
-OK                 44
+OK                 46
 OK_RECREATE        2
-SUPPRESSED         21
+SUPPRESSED         23
 NOT_OBSERVABLE     3
 UPDATE_IGNORED     13
+COLLATERAL_DRIFT   1
 UNSETTABLE         2
 SKIPPED            84
-START_NOT_REACHED  77
+START_NOT_REACHED  72
