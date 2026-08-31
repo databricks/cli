@@ -64,11 +64,14 @@ API sees.
 `POST_DEPLOY_DRIFT` and `SUPPRESSED` are where the interesting gaps are. `NOT_OBSERVABLE`
 is not a gap; it is the wire format telling the truth.
 
-Two files per resource type: `output/<type>.txt` holds only the results worth looking at,
-one line each, so any diff to it is a change in behaviour. `output/<type>.full.txt` holds
-every result plus the summary and the not-covered list, and indents the evidence under each
-finding — the post-deploy plan for drift, the whole API error for a rejection. It is
-gitignored, because it moves whenever a passing row moves and is full of generated ids.
+Two files per resource type. `output/<type>.txt` is committed: one line per finding, then
+the count of every verdict — including the passing ones, which no line names. Those counts
+are what makes a change in *passing* behaviour visible, since a field that starts being
+recreated instead of updated moves one `OK` to `OK_RECREATE` and nothing else would show it.
+
+`output/<type>.full.txt` holds every row, the not-covered list, and the evidence indented
+under each finding — the post-deploy plan for drift, the whole API error for a rejection. It
+is gitignored, because it is full of generated ids and moves whenever any row moves.
 
 The suite deliberately does **not** read `resources.yml`. That file is the engine's
 answer to many of these cases, so consulting it would just restate the implementation.

@@ -1,0 +1,6 @@
+
+=== summary
+OK                 503
+SUPPRESSED         23
+NOT_OBSERVABLE     12
+SKIPPED            1

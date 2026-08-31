@@ -1,0 +1,7 @@
+
+=== summary
+OK                 26
+OK_RECREATE        110
+SUPPRESSED         5
+NOT_OBSERVABLE     3
+SKIPPED            18
