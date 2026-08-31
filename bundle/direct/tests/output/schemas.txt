@@ -1,10 +1,10 @@
 === schema.yml.tmpl
-custom_max_retention_hours                   168        absent     UPDATE_IGNORED  custom_max_retention_hours
-custom_max_retention_hours                   720        absent     UPDATE_IGNORED  custom_max_retention_hours
-properties                                   keys1      absent     UPDATE_IGNORED  properties
-properties                                   keys1      keys0      UPDATE_IGNORED  properties
-properties['team']                           x          absent     UPDATE_IGNORED  properties['team']
-properties['team']                           y          absent     UPDATE_IGNORED  properties['team']
+custom_max_retention_hours                   168        absent     UPDATE_IGNORED
+custom_max_retention_hours                   720        absent     UPDATE_IGNORED
+properties                                   keys1      absent     UPDATE_IGNORED
+properties                                   keys1      keys0      UPDATE_IGNORED
+properties['team']                           x          absent     UPDATE_IGNORED
+properties['team']                           y          absent     UPDATE_IGNORED
 
 === summary
 OK                 16

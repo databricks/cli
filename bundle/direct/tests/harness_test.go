@@ -169,6 +169,7 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 	if err != nil {
 		return nil, err
 	}
+	rememberWorkspaceUser(user.UserName)
 	vars := templateVars(uniqueName, user.UserName)
 	var missing string
 	yml := os.Expand(string(src), func(key string) string {

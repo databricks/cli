@@ -1,6 +1,6 @@
 === database_instance.yml.tmpl
-capacity                                     absent     x          UPDATE_IGNORED  capacity
-capacity                                     absent     y          UPDATE_IGNORED  capacity
+capacity                                     absent     x          UPDATE_IGNORED
+capacity                                     absent     y          UPDATE_IGNORED
 capacity                                     x          y          POST_DEPLOY_DRIFT  capacity
 capacity                                     y          x          POST_DEPLOY_DRIFT  capacity
 custom_tags                                  absent     len1       COLLATERAL_DRIFT  capacity
