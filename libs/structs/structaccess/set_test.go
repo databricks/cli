@@ -1,6 +1,7 @@
 package structaccess_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -790,4 +791,41 @@ func TestSet_MixedForceSendFields(t *testing.T) {
 		assert.Equal(t, []string{"OuterFieldOmit"}, obj.ForceSendFields)
 		assert.Equal(t, []string{"SecondFieldOmit"}, obj.Second.ForceSendFields) // no duplicates
 	})
+}
+
+// encoding/json resolves a name declared at two embedding depths in favour of the shallower
+// one. Get and Set have to agree with it, so the embedded search goes level by level: a
+// depth-first search would find Deep.Value first, since its embed is declared first.
+type deepValue struct {
+	Value string `json:"value"`
+}
+
+type deepEmbed struct {
+	deepValue
+}
+
+type shallowEmbed struct {
+	Value string `json:"value"`
+}
+
+type embedDepths struct {
+	deepEmbed
+	shallowEmbed
+}
+
+func TestSet_ShallowerEmbedWins(t *testing.T) {
+	target := &embedDepths{}
+
+	require.NoError(t, structaccess.SetByString(target, "value", "set"))
+	assert.Equal(t, "set", target.Value)
+	assert.Empty(t, target.deepEmbed.Value)
+
+	got, err := structaccess.GetByString(target, "value")
+	require.NoError(t, err)
+	assert.Equal(t, "set", got)
+
+	// The same field json.Marshal picks, which is the contract being matched.
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"value":"set"}`, string(blob))
 }
