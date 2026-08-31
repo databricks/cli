@@ -4,28 +4,26 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"runtime"
 	"testing"
-	"time"
 
-	"github.com/databricks/cli/libs/fileset"
-	"github.com/databricks/cli/libs/vfs"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// readTar returns entry name -> content, mode bits, and modtime.
-func readTar(t *testing.T, b []byte) (map[string]string, map[string]int64, map[string]time.Time) {
+// tarEntries reads a gzipped tarball and returns entry name -> content.
+func tarEntries(t *testing.T, b []byte) map[string]string {
 	t.Helper()
 	gzr, err := gzip.NewReader(bytes.NewReader(b))
 	require.NoError(t, err)
 	tr := tar.NewReader(gzr)
-	content := map[string]string{}
-	modes := map[string]int64{}
-	mtimes := map[string]time.Time{}
+	out := map[string]string{}
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -34,78 +32,45 @@ func readTar(t *testing.T, b []byte) (map[string]string, map[string]int64, map[s
 		require.NoError(t, err)
 		body, err := io.ReadAll(tr)
 		require.NoError(t, err)
-		content[hdr.Name] = string(body)
-		modes[hdr.Name] = hdr.Mode
-		mtimes[hdr.Name] = hdr.ModTime
+		out[hdr.Name] = string(body)
 	}
-	return content, modes, mtimes
+	return out
 }
 
-func TestAddFileToTarball(t *testing.T) {
-	dir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "src", "train.py"), []byte("print('x')\n"), 0o644))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "run.sh"), []byte("echo hi\n"), 0o755))
-
-	root := vfs.MustNew(dir)
-	list, err := fileset.New(root).Files()
-	require.NoError(t, err)
-
-	var buf bytes.Buffer
-	gzw := gzip.NewWriter(&buf)
-	tw := tar.NewWriter(gzw)
-	for _, f := range list {
-		require.NoError(t, addFileToTarball(tw, root, f))
-	}
-	require.NoError(t, tw.Close())
-	require.NoError(t, gzw.Close())
-
-	content, modes, mtimes := readTar(t, buf.Bytes())
-
-	// Entries keep their sync-root-relative slash paths.
-	assert.Equal(t, "print('x')\n", content["src/train.py"])
-	assert.Equal(t, "echo hi\n", content["run.sh"])
-
-	// Reproducible: every entry is stamped with the fixed epoch.
-	assert.True(t, mtimes["src/train.py"].Equal(tarballEpoch))
-
-	// Owner execute bit preserved; other files normalized to 0644. Windows has no
-	// execute bit so skip the mode assertions there.
-	if runtime.GOOS != "windows" {
-		assert.Equal(t, int64(0o755), modes["run.sh"])
-		assert.Equal(t, int64(0o644), modes["src/train.py"])
-	}
+func runGit(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "git %v: %s", args, out)
 }
 
-// TestTarballComposesFilesAcrossDirs is the packing-layer proof of the `include`
-// semantics: a tgz composed from a code directory and a sibling file outside it
-// (e.g. a local env file not under code_source) keeps both, with bundle-root-relative
-// entry names. This is what distinguishes DABs `include` from the air CLI's
-// code-source-root-relative include. Full include-selection behavior (which paths the
-// sync walker yields) is covered by acceptance tests, since it needs a WorkspaceClient.
-func TestTarballComposesFilesAcrossDirs(t *testing.T) {
-	dir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o755))
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, "config"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "src", "train.py"), []byte("print('x')\n"), 0o644))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "config", "train.env"), []byte("KEY=1\n"), 0o644))
+// TestTarballFromGitPrefixesEntries verifies git mode nests every entry under the
+// code-source dir name (the load-bearing top-level the runtime extracts to
+// /databricks/code_source/<dir>), matching aicode and the air CLI.
+func TestTarballFromGitPrefixesEntries(t *testing.T) {
+	repo := t.TempDir()
+	runGit(t, repo, "init", "-q")
+	runGit(t, repo, "config", "user.email", "t@example.com")
+	runGit(t, repo, "config", "user.name", "t")
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "train.py"), []byte("print('x')\n"), 0o644))
+	runGit(t, repo, "add", "-A")
+	runGit(t, repo, "commit", "-qm", "init")
 
-	root := vfs.MustNew(dir)
-	list, err := fileset.New(root).Files()
-	require.NoError(t, err)
+	b := &bundle.Bundle{SyncRootPath: repo}
+	a := &config.Artifact{Path: repo, Git: &config.ArtifactGit{Commit: "HEAD"}}
 
 	var buf bytes.Buffer
-	gzw := gzip.NewWriter(&buf)
-	tw := tar.NewWriter(gzw)
-	for _, f := range list {
-		require.NoError(t, addFileToTarball(tw, root, f))
-	}
-	require.NoError(t, tw.Close())
-	require.NoError(t, gzw.Close())
+	require.NoError(t, tarballFromGit(context.Background(), b, a, &buf))
 
-	content, _, _ := readTar(t, buf.Bytes())
-	// The code file and the sibling config file both land, each under its own
-	// bundle-root-relative path — not collapsed to a single code-source root.
-	assert.Equal(t, "print('x')\n", content["src/train.py"])
-	assert.Equal(t, "KEY=1\n", content["config/train.env"])
+	dir := filepath.Base(repo)
+	entries := tarEntries(t, buf.Bytes())
+	assert.Equal(t, "print('x')\n", entries[dir+"/train.py"])
+}
+
+func TestTarballFromGitRequiresRef(t *testing.T) {
+	b := &bundle.Bundle{SyncRootPath: t.TempDir()}
+	a := &config.Artifact{Path: b.SyncRootPath, Git: &config.ArtifactGit{}}
+	err := tarballFromGit(context.Background(), b, a, io.Discard)
+	require.ErrorContains(t, err, "git.commit or git.branch")
 }

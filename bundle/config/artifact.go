@@ -61,11 +61,11 @@ type Artifact struct {
 
 	DynamicVersion bool `json:"dynamic_version,omitempty"`
 
-	// Include lists bundle-root-relative paths to pack into a `tgz` artifact,
-	// filtered like bundle file sync (.gitignore-honored). It composes files from
-	// anywhere in the bundle (e.g. a code dir plus a sibling env file), so entries
-	// stay bundle-root-relative — broader than the air CLI's code-source-root
-	// include. Mutually exclusive with `build`.
+	// Include narrows a `tgz` artifact to these subpaths of its code-source root
+	// (`path`), relative to that root; empty packs the whole root. Filtered like
+	// bundle file sync (.gitignore-honored). Entries nest under the root's directory
+	// name, matching the air CLI's include_paths and the runtime's
+	// /databricks/code_source/<dir> layout. Mutually exclusive with `build`.
 	Include []string `json:"include,omitempty"`
 
 	// Git, when set on a `tgz` artifact, snapshots the given ref instead of the

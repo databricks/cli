@@ -158,7 +158,7 @@ func packageOne(ctx context.Context, b *bundle.Bundle, cs codeSource) (string, [
 	// Build the archive in memory so its content hash can name the file; the hash is
 	// computed while gzipping, so this adds no extra pass over the files.
 	var buf bytes.Buffer
-	sha, err := buildCodeSnapshot(b.SyncRoot, relBase, files, dirName, &buf)
+	sha, err := BuildCodeSnapshot(b.SyncRoot, relBase, files, dirName, &buf)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to package code_source_path %q: %w", cs.value, err)
 	}

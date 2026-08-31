@@ -1,37 +1,31 @@
 package artifacts
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/mutator/aicode"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/libs/fileset"
 	libsync "github.com/databricks/cli/libs/sync"
-	"github.com/databricks/cli/libs/vfs"
 )
 
-// tarballEpoch stamps every entry so the archive is reproducible: identical
-// contents produce identical bytes regardless of file mtimes. Mirrors
-// aicode.buildCodeSnapshot (the two packers could later share one implementation).
-var tarballEpoch = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
-
 // buildTarballArtifact produces the gzipped tarball for a `type: tgz` artifact that
-// DABs builds itself (no user `build` command). When `git` is set the tarball is a
-// snapshot of that ref; otherwise it packs the working tree scoped to `include`
-// paths (gitignore-honored). The result is written to the artifact's single output
-// file, which the normal artifact upload path then uploads and references.
+// DABs builds itself (no user `build` command). Every entry nests under a single
+// top-level directory named for the artifact's code-source root (`path`), matching the
+// AI Runtime's /databricks/code_source/<dir> extraction contract — the same layout
+// aicode (for a directory code_source_path) and the air CLI produce. With `git` set the
+// tarball snapshots that ref; otherwise it packs the working tree scoped to `include`.
 func buildTarballArtifact(ctx context.Context, b *bundle.Bundle, name string, a *config.Artifact) error {
 	if len(a.Files) != 1 {
 		return fmt.Errorf("artifact %q: a tgz artifact needs exactly one `files` entry naming the output path", name)
@@ -74,42 +68,73 @@ func buildTarballArtifact(ctx context.Context, b *bundle.Bundle, name string, a 
 	return nil
 }
 
-// tarballFromInclude packs the working tree, scoped to a.Include, using the bundle's
-// sync walker so filtering matches bundle file sync (.gitignore + sync.include/exclude).
-func tarballFromInclude(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w io.Writer) error {
-	opts, err := files.GetSyncOptions(ctx, b)
+// codeRoot returns the artifact's code-source root as a sync-root-relative path plus
+// its directory name. dirName is the load-bearing top-level entry the runtime extracts
+// to /databricks/code_source/<dir>.
+func codeRoot(b *bundle.Bundle, a *config.Artifact) (relBase, dirName string, err error) {
+	rel, err := filepath.Rel(b.SyncRootPath, a.Path)
 	if err != nil {
-		return err
+		return "", "", fmt.Errorf("artifact path %q: %w", a.Path, err)
 	}
-	// a.Include is non-empty here: build.go only reaches include mode when len > 0.
-	fl, err := libsync.NewFileList(ctx, opts.WorktreeRoot, opts.LocalRoot, a.Include, opts.Include, opts.Exclude)
-	if err != nil {
-		return err
-	}
-	list, err := fl.Files(ctx)
-	if err != nil {
-		return err
-	}
-	// Sort so the archive byte stream doesn't depend on walk order.
-	slices.SortFunc(list, func(x, y fileset.File) int {
-		return strings.Compare(x.Relative, y.Relative)
-	})
-
-	gzw := gzip.NewWriter(w)
-	tw := tar.NewWriter(gzw)
-	for _, file := range list {
-		if err := addFileToTarball(tw, b.SyncRoot, file); err != nil {
-			return err
-		}
-	}
-	if err := tw.Close(); err != nil {
-		return err
-	}
-	return gzw.Close()
+	return filepath.ToSlash(rel), filepath.Base(a.Path), nil
 }
 
-// tarballFromGit snapshots a git ref via `git archive`, so the archive reflects the
-// committed tree at that ref rather than the working tree. Commit wins over Branch.
+// tarballFromInclude packs the working tree under the artifact's code-source root,
+// optionally narrowed to `include` subpaths, using the bundle sync walker (filtering
+// matches bundle file sync: .gitignore + sync.include/exclude). Entries are re-based
+// under the code-source dir name via the shared aicode.BuildCodeSnapshot packer.
+func tarballFromInclude(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w io.Writer) error {
+	relBase, dirName, err := codeRoot(b, a)
+	if err != nil {
+		return err
+	}
+	list, err := includeFiles(ctx, b, relBase, a.Include)
+	if err != nil {
+		return err
+	}
+	if len(list) == 0 {
+		return fmt.Errorf("artifact tgz: no files to pack under %q (all excluded by .gitignore/sync.exclude, or empty)", a.Path)
+	}
+	_, err = aicode.BuildCodeSnapshot(b.SyncRoot, relBase, list, dirName, w)
+	return err
+}
+
+// includeFiles lists the files to pack: the whole code-source root (relBase) when
+// include is empty, else only the given subpaths (relative to relBase). The result is
+// scoped to relBase so a force-added sync.include stray outside it is dropped.
+func includeFiles(ctx context.Context, b *bundle.Bundle, relBase string, include []string) ([]fileset.File, error) {
+	opts, err := files.GetSyncOptions(ctx, b)
+	if err != nil {
+		return nil, err
+	}
+	var paths []string
+	if len(include) == 0 {
+		paths = []string{relBase}
+	} else {
+		for _, p := range include {
+			paths = append(paths, path.Join(relBase, p))
+		}
+	}
+	fl, err := libsync.NewFileList(ctx, opts.WorktreeRoot, opts.LocalRoot, paths, opts.Include, opts.Exclude)
+	if err != nil {
+		return nil, err
+	}
+	all, err := fl.Files(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if relBase == "." {
+		return all, nil
+	}
+	prefix := relBase + "/"
+	return slices.DeleteFunc(all, func(f fileset.File) bool {
+		return !strings.HasPrefix(f.Relative, prefix)
+	}), nil
+}
+
+// tarballFromGit snapshots a git ref via `git archive`, nesting every entry under the
+// code-source dir name (--prefix) so the archive matches the include/aicode layout.
+// Commit wins over Branch. `include`, when set, scopes the archived pathspecs.
 func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w io.Writer) error {
 	ref := a.Git.Commit
 	if ref == "" {
@@ -118,7 +143,8 @@ func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w
 	if ref == "" {
 		return errors.New("git artifact: specify git.commit or git.branch")
 	}
-	args := []string{"-C", b.SyncRootPath, "archive", "--format=tar.gz", ref}
+	dirName := filepath.Base(a.Path)
+	args := []string{"-C", b.SyncRootPath, "archive", "--format=tar.gz", "--prefix=" + dirName + "/", ref}
 	if len(a.Include) > 0 {
 		args = append(args, "--")
 		args = append(args, a.Include...)
@@ -129,44 +155,6 @@ func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("git archive %s: %w: %s", ref, err, stderr.String())
-	}
-	return nil
-}
-
-func addFileToTarball(tw *tar.Writer, root vfs.Path, f fileset.File) error {
-	rc, err := root.Open(f.Relative)
-	if err != nil {
-		return fmt.Errorf("open %s: %w", f.Relative, err)
-	}
-	defer rc.Close()
-
-	info, err := rc.Stat()
-	if err != nil {
-		return fmt.Errorf("stat %s: %w", f.Relative, err)
-	}
-	// Only regular files; the walker never yields directories and symlinks are out
-	// of scope for a code snapshot.
-	if !info.Mode().IsRegular() {
-		return nil
-	}
-
-	// Preserve the owner execute bit; normalize the rest.
-	mode := int64(0o644)
-	if info.Mode().Perm()&0o100 != 0 {
-		mode = 0o755
-	}
-	hdr := &tar.Header{
-		Typeflag: tar.TypeReg,
-		Name:     f.Relative,
-		Size:     info.Size(),
-		Mode:     mode,
-		ModTime:  tarballEpoch,
-	}
-	if err := tw.WriteHeader(hdr); err != nil {
-		return fmt.Errorf("tar header for %s: %w", f.Relative, err)
-	}
-	if _, err := io.Copy(tw, rc); err != nil {
-		return fmt.Errorf("write %s: %w", f.Relative, err)
 	}
 	return nil
 }

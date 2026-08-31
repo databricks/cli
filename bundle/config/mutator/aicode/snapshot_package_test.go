@@ -87,7 +87,7 @@ func TestBuildCodeSnapshotPreservesExecuteBit(t *testing.T) {
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
-	_, err = buildCodeSnapshot(root, ".", files, "code", &buf)
+	_, err = BuildCodeSnapshot(root, ".", files, "code", &buf)
 	require.NoError(t, err)
 
 	modes := tarModes(t, buf.Bytes())
@@ -103,7 +103,7 @@ func TestBuildCodeSnapshotPrefixesEntries(t *testing.T) {
 	})
 
 	var buf bytes.Buffer
-	sha, err := buildCodeSnapshot(root, ".", files, "mycode", &buf)
+	sha, err := BuildCodeSnapshot(root, ".", files, "mycode", &buf)
 	require.NoError(t, err)
 	require.NotEmpty(t, sha)
 
@@ -125,7 +125,7 @@ func TestBuildCodeSnapshotRebasesUnderRelBase(t *testing.T) {
 	})
 
 	var buf bytes.Buffer
-	_, err := buildCodeSnapshot(root, "src", files, "src", &buf)
+	_, err := BuildCodeSnapshot(root, "src", files, "src", &buf)
 	require.NoError(t, err)
 
 	entries := tarEntries(t, buf.Bytes())
@@ -142,9 +142,9 @@ func TestBuildCodeSnapshotIsReproducible(t *testing.T) {
 	root2, fs2 := writeTree(t, files)
 
 	var buf1, buf2 bytes.Buffer
-	sha1, err := buildCodeSnapshot(root1, ".", fs1, "code", &buf1)
+	sha1, err := BuildCodeSnapshot(root1, ".", fs1, "code", &buf1)
 	require.NoError(t, err)
-	sha2, err := buildCodeSnapshot(root2, ".", fs2, "code", &buf2)
+	sha2, err := BuildCodeSnapshot(root2, ".", fs2, "code", &buf2)
 	require.NoError(t, err)
 
 	assert.Equal(t, sha1, sha2, "identical content must produce an identical hash")
@@ -156,9 +156,9 @@ func TestBuildCodeSnapshotHashChangesWithContent(t *testing.T) {
 	root2, fs2 := writeTree(t, map[string]string{"main.py": "v2"})
 
 	var buf1, buf2 bytes.Buffer
-	sha1, err := buildCodeSnapshot(root1, ".", fs1, "code", &buf1)
+	sha1, err := BuildCodeSnapshot(root1, ".", fs1, "code", &buf1)
 	require.NoError(t, err)
-	sha2, err := buildCodeSnapshot(root2, ".", fs2, "code", &buf2)
+	sha2, err := BuildCodeSnapshot(root2, ".", fs2, "code", &buf2)
 	require.NoError(t, err)
 
 	assert.NotEqual(t, sha1, sha2)

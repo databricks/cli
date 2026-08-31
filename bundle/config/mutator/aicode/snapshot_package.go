@@ -29,7 +29,7 @@ var tarEpoch = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 // The AIR CLI excludes these; we match it so macOS archives carry no extra entries.
 const appleDoublePrefix = "._"
 
-// buildCodeSnapshot writes a reproducible gzipped tarball of the given files to out
+// BuildCodeSnapshot writes a reproducible gzipped tarball of the given files to out
 // and returns its SHA-256 hex digest. syncRoot is the root the files' Relative paths
 // are against (the bundle sync root); relBase is the code directory relative to that
 // root; prefix is the archive's top-level directory name. Each file at
@@ -40,7 +40,7 @@ const appleDoublePrefix = "._"
 // The file list is produced by the bundle's sync walker, so it honors .gitignore
 // (including nested files) and the top-level sync.include/exclude globs — the same
 // filtering as bundle file sync.
-func buildCodeSnapshot(syncRoot vfs.Path, relBase string, files []fileset.File, prefix string, out io.Writer) (string, error) {
+func BuildCodeSnapshot(syncRoot vfs.Path, relBase string, files []fileset.File, prefix string, out io.Writer) (string, error) {
 	// Sort by relative path so the archive byte stream (and thus its hash) does not
 	// depend on iteration order.
 	slices.SortFunc(files, func(a, b fileset.File) int {

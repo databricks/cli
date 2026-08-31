@@ -65,7 +65,7 @@ artifacts:
             The git commit to snapshot. Takes precedence over `branch` when both are set.
     "include":
       "description": |-
-        For a `tgz` artifact, bundle-root-relative paths to pack into the tarball, filtered like bundle file sync (`.gitignore`-honored). Composes files from anywhere in the bundle (e.g. a code directory plus a sibling env file), so entries are bundle-root-relative. Mutually exclusive with `build`.
+        For a `tgz` artifact, subpaths of the code-source root (`path`) to pack, relative to that root; empty packs the whole root. Filtered like bundle file sync (`.gitignore`-honored). Entries nest under the root's directory name (matching the runtime's `/databricks/code_source/<dir>` layout). Mutually exclusive with `build`.
     "path":
       "description": |-
         The local path of the directory for the artifact.
