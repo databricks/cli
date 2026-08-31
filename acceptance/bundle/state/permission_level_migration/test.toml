@@ -1,6 +1,7 @@
 # Recording needs a bundle it has seen from the start. This test seeds a state file,
 # so recording refuses it. TODO(DMS): drop this once existing state can be
 # handed over to the service (see the TODO in dstate.Open).
+EnvMatrix.DMS = [""]
 
 Ignore = [".databricks"]
 
