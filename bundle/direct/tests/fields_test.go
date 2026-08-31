@@ -419,6 +419,19 @@ func baselineCovers(baseline map[string]bool, plan *deployplan.Plan, node, path 
 	return ok && baseline[key]
 }
 
+// baselineCoversOther reports whether the drift this field would be blamed for was already
+// there *and* belongs to something else. The planner records a change against the key it
+// diffed at, which can be an ancestor several fields share, so existing drift at that ancestor
+// says nothing about whether this field's write landed.
+//
+// Drift at the field's own key is a different matter: that is this field not holding its value,
+// which is the very thing the transition set out to observe. Excusing it turned an ignored
+// write into OK -- and silently, since a baseline re-measured after a rebuild is not reported.
+func baselineCoversOther(baseline map[string]bool, plan *deployplan.Plan, node, path string) bool {
+	key, _, ok := relatedChangeKey(plan, node, path)
+	return ok && key != path && baseline[key]
+}
+
 // converged reports whether a plan no longer wants to change the field, at whatever
 // granularity the planner recorded it.
 func converged(plan *deployplan.Plan, node, path string) bool {
@@ -561,7 +574,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 	// One read cannot tell that apart from a read that was merely stale, so take a second
 	// one. If the value has appeared by then the write did land and the first read was
 	// behind; if it still has not, the field really was ignored.
-	if !baselineCovers(baseline, plan, h.node, path) && wasIgnored(plan, after, h.node, path) {
+	if !baselineCoversOther(baseline, plan, h.node, path) && wasIgnored(plan, after, h.node, path) {
 		second, diags := h.readPlan()
 		if diags.HasError() {
 			res.verdict = verdictPlanError
