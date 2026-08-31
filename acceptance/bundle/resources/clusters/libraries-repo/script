@@ -8,7 +8,7 @@ trap cleanup EXIT
 
 # Deploy output is noisy and differs fake vs cloud; assert only the plan signals below.
 $CLI bundle deploy &> LOG.deploy
-cat LOG.deploy | contains.py "Created clusters.mycluster.libraries" > /dev/null
+cat LOG.deploy | contains.py "Created clusters.mycluster" > /dev/null
 
 title "Plan is a no-op after deploy: the repo round-trips"
 trace $CLI bundle plan

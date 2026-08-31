@@ -455,24 +455,6 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"clusters.libraries": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		wait, err := client.Clusters.Create(ctx, compute.CreateCluster{
-			ClusterName:  "libraries-cluster",
-			SparkVersion: "13.3.x-scala2.12",
-			NodeTypeId:   "m5.large",
-			NumWorkers:   1,
-		})
-		if err != nil {
-			return nil, err
-		}
-		return &LibrariesState{
-			ClusterId: wait.ClusterId,
-			EmbeddedSlice: []compute.Library{
-				{Whl: "/Workspace/Users/test/lib.whl"},
-			},
-		}, nil
-	},
-
 	"cluster_policies.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/cluster-policies/cluster-policy-permissions",
@@ -1150,7 +1132,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	// this lists all the sub-resources that do not delete the parent resource when they
 	// are deleted.
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || strings.HasSuffix(group, "libraries")
+	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.
 	// A GET on the DELETING app returns the app, not 404 -- the testserver

@@ -411,9 +411,9 @@ func TestSplitResourcePath(t *testing.T) {
 		{"resources.jobs.foo.name", "resources.jobs.foo", "name"},
 		{"resources.jobs.foo.permissions[0].level", "resources.jobs.foo.permissions", "[0].level"},
 		{"resources.schemas.foo.grants[0].principal", "resources.schemas.foo.grants", "[0].principal"},
-		// libraries is a sub-resource only for clusters.
-		{"resources.clusters.foo.libraries[0].whl", "resources.clusters.foo.libraries", "[0].whl"},
-		// pipelines have a native top-level libraries field, so it must not split as a sub-resource.
+		// libraries is a plain field on the cluster (managed as part of the cluster), not a sub-resource.
+		{"resources.clusters.foo.libraries[0].whl", "resources.clusters.foo", "libraries[0].whl"},
+		// pipelines have a native top-level libraries field, likewise not a sub-resource.
 		{"resources.pipelines.foo.libraries[0].notebook.path", "resources.pipelines.foo", "libraries[0].notebook.path"},
 	}
 	for _, tt := range tests {

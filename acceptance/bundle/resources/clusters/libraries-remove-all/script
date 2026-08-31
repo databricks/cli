@@ -10,9 +10,9 @@ trap cleanup EXIT
 # only the deterministic signals.
 title "Deploy a cluster with a pypi library"
 $CLI bundle deploy &> LOG.deploy
-cat LOG.deploy | contains.py "Created clusters.mycluster.libraries" > /dev/null
+cat LOG.deploy | contains.py "Created clusters.mycluster" > /dev/null
 
-title "Removing the whole libraries block plans a delete of the libraries sub-resource"
+title "Removing all libraries plans an update of the cluster"
 update_file.py databricks.yml "      libraries:
         - pypi:
             package: requests

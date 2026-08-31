@@ -9,11 +9,12 @@ trap cleanup EXIT
 
 # Deploy builds the wheel from setup.py, uploads it, and rewrites the whl entry to
 # its workspace path. Deploy output is noisy and differs fake vs cloud, so route it
-# to LOG and assert only the deterministic signals: the created sub-resource and the
-# install request (which shows the rewritten wheel path).
+# to LOG and assert only the deterministic signals: the created cluster and the
+# install request (which shows the rewritten wheel path). Libraries are part of the
+# cluster, so they show up under the cluster, not a separate resource.
 title "Deploy a cluster with a pypi and a local wheel library"
 $CLI bundle deploy &> LOG.deploy
-cat LOG.deploy | contains.py "Created clusters.mycluster.libraries" > /dev/null
+cat LOG.deploy | contains.py "Created clusters.mycluster" > /dev/null
 
 title "Libraries installed via the Libraries API (wheel rewritten to its uploaded path)"
 trace print_requests.py //libraries/install
@@ -21,5 +22,5 @@ trace print_requests.py //libraries/install
 title "Removing the wheel and redeploying uninstalls it and restarts the running cluster"
 update_file.py databricks.yml "        - whl: ./dist/*.whl" ""
 $CLI bundle deploy &> LOG.redeploy
-cat LOG.redeploy | contains.py "Updated clusters.mycluster.libraries" "Restarting cluster" > /dev/null
+cat LOG.redeploy | contains.py "Updated clusters.mycluster" "Restarting cluster" > /dev/null
 trace print_requests.py //libraries/uninstall

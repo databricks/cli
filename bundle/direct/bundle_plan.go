@@ -717,14 +717,11 @@ func isEmptyStruct(rv reflect.Value) bool {
 // For regular resources like "resources.jobs.foo.name", returns ("resources.jobs.foo", "name").
 // For sub-resources like "resources.jobs.foo.permissions[0].level", returns ("resources.jobs.foo.permissions", "[0].level").
 func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode) {
-	// permissions and grants are sub-resources for every group; libraries is a sub-resource
-	// only for clusters (pipelines have a native top-level libraries field), so scope it to
-	// clusters, matching the pattern in makePlan.
+	// permissions and grants are sub-resources for every group.
 	if path.Len() > 4 {
 		first := path.SkipPrefix(3).Prefix(1)
 		if key, ok := first.StringKey(); ok {
-			group, _ := path.SkipPrefix(1).Prefix(1).StringKey()
-			if key == "permissions" || key == "grants" || (key == "libraries" && group == "clusters") {
+			if key == "permissions" || key == "grants" {
 				return path.Prefix(4).String(), path.SkipPrefix(4)
 			}
 		}
@@ -942,8 +939,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
-		// libraries is a sub-resource only for clusters; other resource types have a native libraries field.
-		dyn.NewPattern(dyn.Key("resources"), dyn.Key("clusters"), dyn.AnyKey(), dyn.Key("libraries")),
 	}
 
 	// Walk?

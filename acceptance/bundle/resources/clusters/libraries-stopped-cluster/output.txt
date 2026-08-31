@@ -1,5 +1,5 @@
 
-=== Deploy libraries on a stopped cluster (started=false): install is queued, no restart
+=== Deploy libraries on a started=false cluster: no restart
 === Change the libraries and redeploy: cluster is stopped, so no restart is issued
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -45,13 +45,6 @@ var ResourcesTypes = func() map[string]reflect.Type {
 				res[grantsKey] = resourceField.Type
 				continue
 			}
-			// libraries is a child resource only for clusters. Pipelines and
-			// cluster_policies have a native Libraries field that is a plain
-			// field, not a child resource.
-			if resourceField.Name == "Libraries" && name == "clusters" {
-				librariesKey := name + ".libraries"
-				res[librariesKey] = resourceField.Type
-			}
 		}
 	}
 

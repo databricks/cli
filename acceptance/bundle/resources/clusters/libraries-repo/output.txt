@@ -1,13 +1,13 @@
 
 === Plan is a no-op after deploy: the repo round-trips
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Changing only the repo is planned as an update
 >>> [CLI] bundle plan
-update clusters.mycluster.libraries
+update clusters.mycluster
 
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -15,5 +15,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Restarting cluster [UUID] because its libraries changed
 Destroy: 1 deleted

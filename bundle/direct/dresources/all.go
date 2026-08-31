@@ -61,9 +61,6 @@ var SupportedResources = map[string]any{
 	"vector_search_endpoints.permissions": (*ResourcePermissions)(nil),
 	"instance_pools.permissions":          (*ResourcePermissions)(nil),
 
-	// Libraries
-	"clusters.libraries": (*ResourceLibraries)(nil),
-
 	// Grants
 	"catalogs.grants":              (*ResourceGrants)(nil),
 	"schemas.grants":               (*ResourceGrants)(nil),
