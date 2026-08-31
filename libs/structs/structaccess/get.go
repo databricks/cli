@@ -269,24 +269,43 @@ func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.Stru
 // the SDK request struct, so its fields sit two levels down.
 // Returns: fieldValue, structField, owner (the struct value declaring the field), found
 func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.StructField, reflect.Value, bool) {
-	t := v.Type()
-
 	// First pass: direct fields
 	if fv, sf, found := findFieldInStruct(v, key); found {
 		return fv, sf, v, true
 	}
 
-	// Second pass: search embedded anonymous structs (flattening semantics)
+	// Second pass: search embedded anonymous structs (flattening semantics), one level of
+	// embedding at a time. Breadth-first, not depth-first: encoding/json resolves a name
+	// declared at two embedding depths in favour of the shallower one, so a search that
+	// descended fully into the first embed could pick a deeper field than the one that is
+	// actually serialized under that name.
+	for _, fv := range embeddedStructs(v) {
+		if out, sf, found := findFieldInStruct(fv, key); found {
+			return out, sf, fv, true
+		}
+	}
+	for _, fv := range embeddedStructs(v) {
+		if out, sf, owner, found := findStructFieldByKey(fv, key); found {
+			return out, sf, owner, true
+		}
+	}
+
+	return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
+}
+
+// embeddedStructs returns the anonymous struct fields of v, dereferenced, skipping any that
+// cannot be descended into.
+func embeddedStructs(v reflect.Value) []reflect.Value {
+	var out []reflect.Value
+	t := v.Type()
 	for i := range t.NumField() {
-		sf := t.Field(i)
-		if !sf.Anonymous {
+		if !t.Field(i).Anonymous {
 			continue
 		}
 		fv := v.Field(i)
-		// Dereference pointer anonymous structs
 		for fv.Kind() == reflect.Pointer {
 			if fv.IsNil() {
-				// Not initialized; can't descend
+				// Not initialized; can't descend.
 				break
 			}
 			fv = fv.Elem()
@@ -294,12 +313,9 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 		if fv.Kind() != reflect.Struct {
 			continue
 		}
-		if out, osf, owner, found := findStructFieldByKey(fv, key); found {
-			return out, osf, owner, true
-		}
+		out = append(out, fv)
 	}
-
-	return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
+	return out
 }
 
 // forceSendFields returns the ForceSendFields slice a struct declares itself. A struct that

@@ -157,7 +157,7 @@ func setStructField(parentVal reflect.Value, fieldName string, valueVal reflect.
 		// value. Pass the invalid value through so it is removed from ForceSendFields.
 		return updateForceSendFields(owner, sf.Name, valueVal, sf)
 	}
-	return updateForceSendFields(parentVal, sf.Name, embeddedIndex, converted, sf)
+	return updateForceSendFields(owner, sf.Name, converted, sf)
 }
 
 // setMapValue sets a value in a map
