@@ -66,6 +66,7 @@ func validateConfigRequest(cfg *runConfig, commandPath string) map[string]any {
 	if cfg.Compute != nil {
 		compute["accelerator_type"] = cfg.Compute.AcceleratorType
 		compute["accelerator_count"] = cfg.Compute.NumAccelerators
+		putOpt(compute, "provisioned_capacity_id", cfg.Compute.ProvisionedCapacityID)
 	}
 	task := map[string]any{
 		"experiment":  cfg.ExperimentName,
@@ -73,6 +74,10 @@ func validateConfigRequest(cfg *runConfig, commandPath string) map[string]any {
 	}
 	putOpt(task, "mlflow_run", cfg.MLflowRunName)
 	putOpt(task, "mlflow_experiment_directory", cfg.MLflowExperimentDirectory)
+	putOpt(task, "mlflow_artifact_location", cfg.MLflowArtifactLocation)
+	if dockerImageURL := cfg.dockerImageURL(); dockerImageURL != "" {
+		task["docker_image_url"] = dockerImageURL
+	}
 
 	req := map[string]any{"task": task}
 	if runOptions := validateConfigRunOptions(cfg); len(runOptions) > 0 {

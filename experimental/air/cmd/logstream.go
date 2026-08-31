@@ -30,6 +30,9 @@ const (
 	// statusMessageRefreshEveryNPolls throttles the status_message fetch so the
 	// waiting spinner doesn't issue a get-output on every poll tick.
 	statusMessageRefreshEveryNPolls = 5
+	// bricklensEmptyMLflowProbeEveryNPolls throttles the active-run MLflow
+	// existence probe while Bricklens has returned no records.
+	bricklensEmptyMLflowProbeEveryNPolls = 10
 )
 
 // statusMessageType tags a client-facing message packed into
@@ -114,7 +117,7 @@ type logRunStatus struct {
 // set (result states only appear on terminal runs).
 var (
 	terminalLifeCycleStates = map[string]bool{"TERMINATED": true, "SKIPPED": true, "INTERNAL_ERROR": true}
-	terminalResultStates    = map[string]bool{"SUCCESS": true, "FAILED": true, "CANCELED": true}
+	terminalResultStates    = map[string]bool{"SUCCESS": true, "FAILED": true, "TIMEDOUT": true, "CANCELED": true}
 )
 
 func (s logRunStatus) terminal() bool {
@@ -324,6 +327,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 	// server status_message fetch to every Nth poll, and lastSpinnerText avoids
 	// redundant spinner updates.
 	statusRefreshCounter := 0
+	emptyStreamPolls := 0
 	lastSpinnerText := ""
 	for {
 		if !firstIteration {
@@ -387,6 +391,13 @@ func (st *bricklensStreamer) run() (bool, error) {
 			}
 			log.Infof(st.ctx, "air logs: run %d finished in state %s", st.req.runID, st.status.displayState())
 			return st.status.succeeded(), nil
+		}
+		if !st.firstLogSeen {
+			emptyStreamPolls++
+			if emptyStreamPolls%bricklensEmptyMLflowProbeEveryNPolls == 0 && mlflowLogsExist(st.ctx, st.w, st.req) {
+				log.Debugf(st.ctx, "air logs: MLflow artifacts exist for run %d; falling back to MLflow log stream", st.req.runID)
+				return false, errBricklensFeatureDisabled
+			}
 		}
 
 		firstIteration = false

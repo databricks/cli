@@ -1,0 +1,8 @@
+Cloud = false # introspects the typed API in-process; never touches an API
+
+# The public API is only meaningful for the wheel built from this commit.
+EnvMatrix.PYDAB_VERSION = ["current"]
+
+# This test never invokes $CLI, so the deployment engine is irrelevant; pin a single
+# engine so we don't run two identical variants.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
