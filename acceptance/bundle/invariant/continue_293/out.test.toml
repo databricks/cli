@@ -7,7 +7,6 @@ EnvMatrix.INPUT_CONFIG = [
   "catalog_optional_fields.yml.tmpl",
   "cluster.yml.tmpl",
   "cluster_apply_policy_default_values.yml.tmpl",
-  "cluster_libraries.yml.tmpl",
   "dashboard.yml.tmpl",
   "job_apply_policy_default_values_job_cluster.yml.tmpl",
   "job_apply_policy_default_values_task_cluster.yml.tmpl",
