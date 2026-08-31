@@ -19,3 +19,14 @@ owner                                        y          absent     START_NOT_REA
 owner                                        y          x          START_NOT_REACHED  owner
 schema_name                                  absent     default    BASE_ERROR  cannot create resources.registered_models.foo: CreateRegisteredModel Missing required field: schema_name (400 INVALID_PARAMETER_VALUE)
 schema_name                                  default    absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: schema_name (400 INVALID_PARAMETER_VALUE)
+
+=== summary
+OK                 40
+OK_RECREATE        2
+SUPPRESSED         1
+NOT_OBSERVABLE     1
+UPDATE_IGNORED     4
+BACKEND_ERROR      4
+SKIPPED            9
+BASE_ERROR         4
+START_NOT_REACHED  8

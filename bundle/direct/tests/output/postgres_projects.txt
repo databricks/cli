@@ -38,3 +38,13 @@ display_name                                 absent     y          BASE_ERROR  c
 display_name                                 x          absent     BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.display_name' is in update_ma...
 display_name                                 y          absent     BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.display_name' is in update_ma...
 enable_pg_native_login                       true       absent     BACKEND_ERROR  cannot update resources.postgres_projects.foo: updating id=projects/test-pg-project-[UNIQUE_NAME]: Field 'spec.enable_pg_native_login' is in...
+
+=== summary
+OK                 32
+OK_RECREATE        8
+SUPPRESSED         4
+NOT_OBSERVABLE     3
+COLLATERAL_DRIFT   1
+BACKEND_ERROR      32
+SKIPPED            1
+BASE_ERROR         6

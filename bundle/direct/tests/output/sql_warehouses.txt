@@ -3,3 +3,11 @@ name                                         absent     x          START_NOT_REA
 name                                         absent     y          START_NOT_REACHED  name
 name                                         x          absent     POST_DEPLOY_DRIFT  name
 name                                         y          absent     POST_DEPLOY_DRIFT  name
+
+=== summary
+OK                 85
+SUPPRESSED         5
+NOT_OBSERVABLE     2
+POST_DEPLOY_DRIFT  2
+SKIPPED            2
+START_NOT_REACHED  2

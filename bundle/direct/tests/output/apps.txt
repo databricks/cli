@@ -55,3 +55,12 @@ source_code_path                             x          y          SUPPRESSED  n
 source_code_path                             y          absent     SUPPRESSED  no active deployment
 source_code_path                             y          x          SUPPRESSED  no active deployment
 usage_policy_id                              y          absent     UPDATE_IGNORED  usage_policy_id
+
+=== summary
+OK                 119
+OK_RECREATE        2
+SUPPRESSED         34
+NOT_OBSERVABLE     65
+UPDATE_IGNORED     22
+SKIPPED            77
+START_NOT_REACHED  4

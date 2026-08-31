@@ -9,3 +9,10 @@ properties['team']                           absent     x          START_NOT_REA
 properties['team']                           absent     y          START_NOT_REACHED  properties['team']
 properties['team']                           x          absent     UPDATE_IGNORED  properties['team']
 properties['team']                           y          absent     UPDATE_IGNORED  properties['team']
+
+=== summary
+OK                 16
+UPDATE_IGNORED     5
+POST_DEPLOY_DRIFT  1
+SKIPPED            8
+START_NOT_REACHED  4

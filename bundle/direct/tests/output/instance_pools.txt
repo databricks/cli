@@ -3,3 +3,12 @@ enable_elastic_disk                          absent     true       UPDATE_IGNORE
 enable_elastic_disk                          false      true       UPDATE_IGNORED  enable_elastic_disk
 enable_elastic_disk                          true       absent     START_NOT_REACHED  enable_elastic_disk
 enable_elastic_disk                          true       false      START_NOT_REACHED  enable_elastic_disk
+
+=== summary
+OK                 104
+OK_RECREATE        78
+SUPPRESSED         6
+NOT_OBSERVABLE     4
+UPDATE_IGNORED     2
+SKIPPED            1
+START_NOT_REACHED  2
