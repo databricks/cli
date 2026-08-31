@@ -175,13 +175,17 @@ func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClie
 	// echoes diffs forever. Measure that once, against the field that causes it, and leave
 	// it out of every transition's drift -- otherwise it dirties every post-deploy plan and
 	// gets blamed on whichever field happened to be under test.
-	baseline, err := baselineDrift(h)
+	baseline, basePlan, err := baselineDrift(h)
 	if err != nil {
 		rep.add(result{"(baseline)", "", "", verdictPlanError, oneLine(err.Error()), err.Error()})
 		return
 	}
 	for _, path := range slices.Sorted(maps.Keys(baseline)) {
-		rep.add(result{path, "", "", verdictBaselineDrift, "drifts with no config change", ""})
+		// The plan is the whole diagnosis: a field drifting straight after the create is usually
+		// one the backend did not apply, and only its remote_state says so. Without it the row
+		// states the symptom and nothing else, which is not enough to tell a write the API
+		// ignored from a read that does not echo the field.
+		rep.add(result{path, "", "", verdictBaselineDrift, "drifts with no config change", withContext("plan right after the base deploy:", basePlan)})
 	}
 
 	for _, f := range fields {
@@ -415,7 +419,7 @@ func hasFieldChanges(plan *deployplan.Plan, node string) bool {
 // nothing, and says so: every verdict after it is measured against a baseline that may not be
 // this resource's.
 func remeasure(h *bundleHarness, previous map[string]bool, rep *report) map[string]bool {
-	measured, err := baselineDrift(h)
+	measured, _, err := baselineDrift(h)
 	if err == nil {
 		return measured
 	}
@@ -868,20 +872,20 @@ func checkDeclaredInert(res result, rules []dresources.FieldRule) result {
 
 // baselineDrift returns the fields the resource already wants to change with the config
 // exactly as deployed.
-func baselineDrift(h *bundleHarness) (map[string]bool, error) {
+func baselineDrift(h *bundleHarness) (map[string]bool, string, error) {
 	plan, diags := h.readPlan()
 	if diags.HasError() {
 		// Returning no drift would leave every later verdict measured against an unknown
 		// baseline: a field that was already drifting would be blamed on whichever
 		// transition happened to run.
-		return nil, errors.New(firstError(diags))
+		return nil, "", errors.New(firstError(diags))
 	}
 	if plan == nil {
-		return nil, errors.New("no plan")
+		return nil, "", errors.New("no plan")
 	}
 	entry, ok := plan.Plan[h.node]
 	if !ok {
-		return nil, nil
+		return nil, "", nil
 	}
 	out := map[string]bool{}
 	for path, change := range entry.Changes {
@@ -889,7 +893,7 @@ func baselineDrift(h *bundleHarness) (map[string]bool, error) {
 			out[path] = true
 		}
 	}
-	return out, nil
+	return out, planJSON(plan), nil
 }
 
 // wasIgnored reports whether the write for one field was accepted and then had no effect:
