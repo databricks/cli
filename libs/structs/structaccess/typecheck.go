@@ -154,6 +154,8 @@ func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 	// Second pass: search embedded anonymous structs breadth-first, mirroring findStructFieldByKey
 	// (get.go) so a path validates against the same field Get and Set resolve it to, which is
 	// the one encoding/json serializes: the shallower of two same-named fields.
+	// See findStructFieldByKey: a cyclic embedding must not be walked twice.
+	seen := map[reflect.Type]bool{t: true}
 	level := embeddedStructTypes(t)
 	for len(level) > 0 {
 		var next []reflect.Type
@@ -169,7 +171,13 @@ func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 				}{sf, ft})
 				continue
 			}
-			next = append(next, embeddedStructTypes(ft)...)
+			for _, deeper := range embeddedStructTypes(ft) {
+				if seen[deeper] {
+					continue
+				}
+				seen[deeper] = true
+				next = append(next, deeper)
+			}
 		}
 		if len(found) == 1 {
 			return found[0].field, found[0].owner, true

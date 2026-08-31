@@ -892,3 +892,23 @@ func TestSet_FailedConversionLeavesForceSendFields(t *testing.T) {
 	assert.Empty(t, job.ForceSendFields)
 	assert.Equal(t, "n", job.Name)
 }
+
+// A struct embedding a pointer to itself: the search must not walk the same type twice, or a
+// key it never finds sends it round forever.
+type cyclicEmbed struct {
+	*cyclicEmbed
+	Name string `json:"name"`
+}
+
+func TestGet_CyclicEmbedTerminates(t *testing.T) {
+	target := &cyclicEmbed{Name: "n"} //exhaustruct:ignore
+	target.cyclicEmbed = target
+
+	got, err := structaccess.GetByString(target, "name")
+	require.NoError(t, err)
+	assert.Equal(t, "n", got)
+
+	_, err = structaccess.GetByString(target, "nope")
+	require.Error(t, err)
+	require.Error(t, structaccess.ValidateByString(reflect.TypeOf(target), "nope"))
+}
