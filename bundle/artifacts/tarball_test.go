@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -52,6 +53,9 @@ func TestTarballFromGitPrefixesEntries(t *testing.T) {
 	runGit(t, repo, "init", "-q")
 	runGit(t, repo, "config", "user.email", "t@example.com")
 	runGit(t, repo, "config", "user.name", "t")
+	// Keep line endings verbatim so the content check doesn't depend on the runner's
+	// core.autocrlf (true by default on the Windows CI image).
+	runGit(t, repo, "config", "core.autocrlf", "false")
 	require.NoError(t, os.WriteFile(filepath.Join(repo, "train.py"), []byte("print('x')\n"), 0o644))
 	runGit(t, repo, "add", "-A")
 	runGit(t, repo, "commit", "-qm", "init")
@@ -62,9 +66,11 @@ func TestTarballFromGitPrefixesEntries(t *testing.T) {
 	var buf bytes.Buffer
 	require.NoError(t, tarballFromGit(t.Context(), b, a, &buf))
 
+	// The entry nests under the code-source dir name (the load-bearing top-level).
 	dir := filepath.Base(repo)
 	entries := tarEntries(t, buf.Bytes())
-	assert.Equal(t, "print('x')\n", entries[dir+"/train.py"])
+	require.Contains(t, entries, dir+"/train.py")
+	assert.Equal(t, "print('x')", strings.TrimSpace(entries[dir+"/train.py"]))
 }
 
 func TestTarballFromGitRequiresRef(t *testing.T) {
