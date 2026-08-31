@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/experimental/ssh/internal/client"
+	"github.com/databricks/cli/cmd/ssh/internal/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

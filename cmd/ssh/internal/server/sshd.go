@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/databricks/cli/experimental/ssh/internal/keys"
+	"github.com/databricks/cli/cmd/ssh/internal/keys"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"

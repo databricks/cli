@@ -7,7 +7,7 @@ vars:
   # Pinned ruff (linter + formatter). Keep in sync with the version in
   # .github/workflows/check.yml and python/Taskfile.yml.
   RUFF: uvx ruff@0.15.17
-  TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
+  TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... .
   ACCEPTANCE_TEST_FILTER: ""
   # Single brace-expansion glob covering every //go:embed target in the repo,
   # computed by grepping `//go:embed` directives. Evaluated lazily by Task so
@@ -677,10 +677,10 @@ tasks:
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/(apps|experimental/aitools)"
 
-  test-exp-ssh:
-    desc: Run experimental SSH unit and acceptance tests
+  test-ssh:
+    desc: Run SSH unit and acceptance tests
     sources:
-      - experimental/ssh/**
+      - cmd/ssh/**
       - acceptance/ssh/**
       - "{{.EMBED_SOURCES}}"
     cmds:
@@ -688,7 +688,7 @@ tasks:
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --packages ./experimental/ssh/... \
+          --packages ./cmd/ssh/... \
           -- -timeout=${LOCAL_TIMEOUT:-60m}
       - |
         {{.GO_TOOL}} gotestsum \

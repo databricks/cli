@@ -6,9 +6,8 @@ import (
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "ssh",
-		Short:  "Connect to your Databricks compute and workspace via SSH",
-		Hidden: true,
+		Use:   "ssh",
+		Short: "Connect to your Databricks compute and workspace via SSH",
 		Long: `Connect to your Databricks compute and workspace via SSH.
 
 Common workflows:

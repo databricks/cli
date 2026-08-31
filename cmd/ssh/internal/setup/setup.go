@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	sshclient "github.com/databricks/cli/experimental/ssh/internal/client"
-	"github.com/databricks/cli/experimental/ssh/internal/keys"
-	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
+	sshclient "github.com/databricks/cli/cmd/ssh/internal/client"
+	"github.com/databricks/cli/cmd/ssh/internal/keys"
+	"github.com/databricks/cli/cmd/ssh/internal/sshconfig"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"

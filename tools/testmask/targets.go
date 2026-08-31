@@ -14,7 +14,7 @@ import (
 // trigger set for their corresponding CI job of the same name.
 var ciTargets = []string{
 	"test-exp-aitools",
-	"test-exp-ssh",
+	"test-ssh",
 	"test-pipelines",
 	"test-sandbox",
 }
