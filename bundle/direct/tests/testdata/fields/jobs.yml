@@ -14,7 +14,9 @@ base:
   tasks:
     - task_key: seeded
       notebook_task:
-        notebook_path: /Shared/notebook
+        # Relative, because the seeded git_source makes the task read from the repository:
+        # "Only relative paths are currently supported for remote repositories."
+        notebook_path: notebook
       job_cluster_key: seeded
   job_clusters:
     - job_cluster_key: seeded
