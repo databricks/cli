@@ -3,11 +3,12 @@ deployment.version_id                        x          absent     START_NOT_REA
 deployment.version_id                        x          y          START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
 deployment.version_id                        y          absent     START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
 deployment.version_id                        y          x          START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
+tasks[0].for_each_task.task.new_cluster.apply_policy_default_values true       absent     START_NOT_REACHED  tasks[0].for_each_task.task.new_cluster.apply_policy_default_values
 
 === summary
-OK                 2858
+OK                 2857
 OK_INERT           2
-SUPPRESSED         18
-NOT_OBSERVABLE     232
+SUPPRESSED         150
+NOT_OBSERVABLE     100
 SKIPPED            3
-START_NOT_REACHED  4
+START_NOT_REACHED  5

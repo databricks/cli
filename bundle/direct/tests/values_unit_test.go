@@ -199,3 +199,24 @@ func TestRedactIDs(t *testing.T) {
 		assert.Equal(t, tc.want, redactIDs(tc.in))
 	}
 }
+
+// The planner names a slice element by a key-value selector where this suite names it by index,
+// so the two forms have to be recognised as the same field -- otherwise a change recorded
+// against "tasks[task_key='seeded'].run_if" looks unrelated to "tasks[0].run_if".
+func TestSameField(t *testing.T) {
+	for _, tc := range []struct {
+		drifting, path string
+		want           bool
+	}{
+		{"comment", "comment", true},
+		{"tasks", "tasks[0].run_if", true},
+		{"tasks[task_key='seeded'].run_if", "tasks[0].run_if", true},
+		{"tasks[task_key='seeded']", "tasks[0].run_if", true},
+		{"tasks[task_key='seeded'].notebook_task.source", "tasks[0].notebook_task", true},
+		{"config", "config.auto_capture_config.enabled", true},
+		{"comment", "name", false},
+		{"tasks[task_key='seeded'].run_if", "tasks[0].timeout_seconds", false},
+	} {
+		assert.Equal(t, tc.want, sameField(tc.drifting, tc.path), "%s vs %s", tc.drifting, tc.path)
+	}
+}

@@ -6,7 +6,6 @@ capacity                                     x          y          START_NOT_REA
 capacity                                     y          absent     START_NOT_REACHED  capacity
 capacity                                     y          x          START_NOT_REACHED  capacity
 custom_tags                                  absent     len1       COLLATERAL_DRIFT  capacity
-custom_tags                                  len0       absent     COLLATERAL_DRIFT  capacity
 custom_tags                                  len0       len1       COLLATERAL_DRIFT  capacity
 custom_tags                                  len1       absent     COLLATERAL_DRIFT  capacity
 custom_tags                                  len1       len0       COLLATERAL_DRIFT  capacity
@@ -56,8 +55,8 @@ usage_policy_id                              y          x          START_NOT_REA
 === summary
 OK_RECREATE        32
 SUPPRESSED         6
-NOT_OBSERVABLE     1
+NOT_OBSERVABLE     2
 UPDATE_IGNORED     2
-COLLATERAL_DRIFT   17
+COLLATERAL_DRIFT   16
 SKIPPED            24
 START_NOT_REACHED  34
