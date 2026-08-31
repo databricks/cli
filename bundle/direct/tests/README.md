@@ -53,7 +53,7 @@ API sees.
 | `OK` | planned, applied, next plan clean |
 | `OK_RECREATE` | same, but the engine replaced the resource |
 | `SUPPRESSED` | the planner diffed the field and dropped the change; detail is the engine's own reason |
-| `NOT_OBSERVABLE` | the two values are identical in the state sent to the API, so there is nothing to see — an unset bool and an explicit `false` are the usual case |
+| `NOT_OBSERVABLE` | the two values are identical in the state sent to the API, so there is nothing to see — an unset bool and an explicit `false` are the usual case, as is a field the engine consumes before planning (an alert's `file_path`) |
 | `NO_PLAN` | the field diff exists but no action was planned |
 | `POST_DEPLOY_DRIFT` | applied, yet the plan taken straight afterwards still wants the same change: deploying never converges |
 | `POST_DEPLOY_DRIFT_CHILD` | the field converged but another node of the resource did not; a guard that should stay empty |
@@ -64,7 +64,6 @@ API sees.
 | `UNSETTABLE` | the value could not be written into the config at all |
 | `BASE_ERROR` | the transition's starting point would not deploy, so nothing was observed |
 | `START_NOT_REACHED` | the starting value deployed without error but the field did not end up holding it, so the move under test could not be set up — a field the API refuses to clear cannot start from `absent`. Retried once on a fresh resource before being recorded |
-| `NOT_IN_STATE` | the field exists in bundle config but not in the state type, so it never reaches the API |
 
 `POST_DEPLOY_DRIFT` and `SUPPRESSED` are where the interesting gaps are. `NOT_OBSERVABLE`
 is not a gap; it is the wire format telling the truth.

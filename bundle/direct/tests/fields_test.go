@@ -129,8 +129,8 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	base := h.snapshot()
 	resource, err := h.resource()
 	require.NoError(t, err)
-	fields, wildcard, inert := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv, resource, runSeed, declaredUnsettable(adapter))
-	rep.addCoverage(fields, wildcard)
+	fields, uncovered, inert := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv, resource, runSeed, declaredUnsettable(adapter))
+	rep.addCoverage(fields, uncovered)
 
 	// Fields the resource declares a user cannot meaningfully set. Recorded with the
 	// resource's own reason rather than tested: every transition would come back SUPPRESSED

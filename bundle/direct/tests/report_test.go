@@ -31,7 +31,9 @@ const (
 	verdictSuppressed verdict = "SUPPRESSED"
 	// The plan has no entry for the field at all: the two values are indistinguishable
 	// in the state the engine sends, so there is nothing to observe. An unset bool and
-	// an explicit false are the common case.
+	// an explicit false are the common case. A field the engine consumes before it plans
+	// anything also lands here -- an alert's file_path is read during initialize and its
+	// contents become other fields, so the path itself is not in the state at all.
 	verdictNotObservable verdict = "NOT_OBSERVABLE"
 	// The config changed, the field diff exists, but the plan produced no action at all.
 	verdictNoPlan verdict = "NO_PLAN"
