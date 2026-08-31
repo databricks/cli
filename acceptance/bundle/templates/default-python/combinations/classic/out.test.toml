@@ -1,7 +1,7 @@
 Cloud = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 EnvMatrix.DLT = ["yes", "no"]
-EnvMatrix.DMS = ["", "true"]
+EnvMatrix.DMS = [""]
 EnvMatrix.NBOOK = ["yes", "no"]
 EnvMatrix.PY = ["yes", "no"]
 EnvMatrix.READPLAN = ["", "1"]
