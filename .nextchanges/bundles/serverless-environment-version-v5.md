@@ -1,0 +1,1 @@
+Bundle templates now use serverless [environment version 5](https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/five), which offers better performance, and `databricks-connect` 16.4.

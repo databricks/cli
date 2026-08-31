@@ -130,32 +130,42 @@ func TestCreatePlainTarball_IncludePaths(t *testing.T) {
 	assert.NotContains(t, entries, dirName+"/a.txt")
 }
 
-func TestParseGitignore(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, ".gitignore")
-	content := "# comment\n" +
-		"\n" +
-		"*.log\n" +
-		"!keep.log\n" + // negation: skipped
-		"build/\n" + // trailing slash stripped
-		"**/node_modules\n" + // **/foo -> foo
-		"dist/**\n" + // foo/** -> foo
-		"a/**/b\n" + // mid ** : skipped
-		"src/config\n" // path-relative kept as-is
-	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
+func TestCreatePlainTarball_HonorsNestedGitignoreAndNegation(t *testing.T) {
+	repo := t.TempDir()
+	writeRepoFile(t, repo, ".gitignore", "*.log\n!keep.log\n/root-only.txt\n")
+	writeRepoFile(t, repo, "drop.log", "drop")
+	writeRepoFile(t, repo, "keep.log", "keep")
+	writeRepoFile(t, repo, "root-only.txt", "drop")
+	writeRepoFile(t, repo, "nested/root-only.txt", "keep")
+	writeRepoFile(t, repo, "nested/.gitignore", "*.tmp\n!keep.tmp\n")
+	writeRepoFile(t, repo, "nested/drop.tmp", "drop")
+	writeRepoFile(t, repo, "nested/keep.tmp", "keep")
 
-	patterns, err := parseGitignore(path)
-	require.NoError(t, err)
-	assert.Equal(t, []string{
-		"*.log",
-		"build",
-		"node_modules",
-		"dist",
-		"src/config",
-	}, patterns)
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	require.NoError(t, createPlainTarball(t.Context(), repo, out, nil))
+
+	dirName := filepath.Base(repo)
+	entries := tarballEntries(t, out)
+	assert.NotContains(t, entries, dirName+"/drop.log")
+	assert.Contains(t, entries, dirName+"/keep.log")
+	assert.NotContains(t, entries, dirName+"/root-only.txt")
+	assert.Contains(t, entries, dirName+"/nested/root-only.txt")
+	assert.NotContains(t, entries, dirName+"/nested/drop.tmp")
+	assert.Contains(t, entries, dirName+"/nested/keep.tmp")
 }
 
-func TestParseGitignore_Missing(t *testing.T) {
-	_, err := parseGitignore(filepath.Join(t.TempDir(), "nope"))
-	require.Error(t, err)
+func TestCreatePlainTarball_SkipsDeletedTrackedFiles(t *testing.T) {
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "keep.txt", "keep")
+	writeRepoFile(t, repo, "deleted.txt", "deleted")
+	commitAll(t, repo, "init")
+	require.NoError(t, os.Remove(filepath.Join(repo, "deleted.txt")))
+
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	require.NoError(t, createPlainTarball(t.Context(), repo, out, nil))
+
+	dirName := filepath.Base(repo)
+	entries := tarballEntries(t, out)
+	assert.Contains(t, entries, dirName+"/keep.txt")
+	assert.NotContains(t, entries, dirName+"/deleted.txt")
 }

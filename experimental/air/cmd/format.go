@@ -102,6 +102,66 @@ func runStatus(state *jobs.RunState) string {
 	return statusWord(string(state.LifeCycleState), string(state.ResultState))
 }
 
+func displayRunStatus(run *jobs.Run) string {
+	status := runStatus(run.State)
+	if runWaitingForCompute(run) {
+		return "PENDING"
+	}
+	return status
+}
+
+func runWaitingForCompute(run *jobs.Run) bool {
+	if run.State == nil || run.State.ResultState != "" {
+		return false
+	}
+	if run.State.LifeCycleState == jobs.RunLifeCycleStatePending {
+		return true
+	}
+	if run.State.LifeCycleState != jobs.RunLifeCycleStateRunning || len(run.Tasks) == 0 || run.Tasks[0].State == nil {
+		return false
+	}
+	switch run.Tasks[0].State.LifeCycleState {
+	case jobs.RunLifeCycleStatePending, jobs.RunLifeCycleStateQueued,
+		jobs.RunLifeCycleStateWaitingForRetry, jobs.RunLifeCycleStateBlocked:
+		return true
+	default:
+		return false
+	}
+}
+
+func detailedDisplayRunStatus(run *jobs.Run, statusMessage string) string {
+	if run.State != nil && run.State.ResultState == "" && statusMessage != "" {
+		return statusMessage
+	}
+	if runWaitingForCompute(run) {
+		return waitingForComputeStatus
+	}
+	return displayRunStatus(run)
+}
+
+func terminationReason(run *jobs.Run) *string {
+	status := runStatus(run.State)
+	if status != "FAILED" && status != "TIMEDOUT" && status != "INTERNAL_ERROR" {
+		return nil
+	}
+	if run.Status != nil && run.Status.TerminationDetails != nil {
+		if message := strings.TrimSpace(run.Status.TerminationDetails.Message); message != "" {
+			return &message
+		}
+	}
+	if run.State != nil {
+		if message := strings.TrimSpace(run.State.StateMessage); message != "" {
+			return &message
+		}
+	}
+	if len(run.Tasks) > 0 && run.Tasks[0].State != nil {
+		if message := strings.TrimSpace(run.Tasks[0].State.StateMessage); message != "" {
+			return &message
+		}
+	}
+	return nil
+}
+
 // statusWord picks the status word to show from a run's lifecycle and result
 // states: the result state is the more meaningful one, so it wins when set.
 func statusWord(lifeCycle, result string) string {

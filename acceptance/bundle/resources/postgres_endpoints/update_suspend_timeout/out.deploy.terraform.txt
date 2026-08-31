@@ -1,5 +1,3 @@
-
->>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-suspend-[UNIQUE_NAME]/default/files...
 Updated postgres_endpoints.my_endpoint
 Files: 0 uploaded, 0 deleted

@@ -15,3 +15,7 @@ Ignore = [
 # experimental.record_deployment_history is normally rejected; these tests force-allow it
 # to exercise the feature. bundle/dms/not-supported covers the rejection path.
 Env.DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY = "1"
+
+# These tests enable recording through experimental.record_deployment_history, so the
+# DMS=true variant the rest of the suite adds would just duplicate them.
+EnvMatrix.DMS = [""]
