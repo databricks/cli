@@ -185,3 +185,17 @@ func TestIsRequiredInsideSlice(t *testing.T) {
 	assert.True(t, isRequired("alerts", "display_name"))
 	assert.False(t, isRequired("alerts", "custom_summary"))
 }
+
+// Every id in a message has to redact to the same placeholder on both sides, or a report from
+// a real workspace could never match one from the fake server: the fake hands out UUIDs where
+// a workspace hands out hex.
+func TestRedactIDs(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"updating id=79f5e1f2-de43-03a0-79f5-e1f2de4303a1: nope", "updating id=[ID]: nope"},
+		{"updating id=00145E75FBD6DCBB: nope", "updating id=[ID]: nope"},
+		{"Catalog 'test-schema-f0ad2bd52de6e45119d42' missing", "Catalog 'test-schema-[UNIQUE_NAME]' missing"},
+		{"principal 79f5e1f2-de43-03a0-79f5-e1f2de4303a1 denied", "principal [UUID] denied"},
+	} {
+		assert.Equal(t, tc.want, redactIDs(tc.in))
+	}
+}
