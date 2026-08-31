@@ -36,12 +36,25 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 	defer s.LockUnlock()()
 
 	if warehouseId != "" {
-		_, ok := s.SqlWarehouses[warehouseId]
+		existing, ok := s.SqlWarehouses[warehouseId]
 		if !ok {
 			return Response{
 				StatusCode: 404,
 			}
 		}
+		// An edit applies only the fields the request body carries. The client sends its whole
+		// desired state, but every field is omitempty, so a field the config cleared is absent
+		// from the body and the backend keeps the value it had -- which is why clearing one
+		// never converges. Unmarshalling into a fresh struct instead would apply the zero
+		// value, and the suite would report the field as freely clearable.
+		merged, err := mergeInto(existing, req.Body)
+		if err != nil {
+			return Response{
+				Body:       fmt.Sprintf("internal error: %s", err),
+				StatusCode: http.StatusInternalServerError,
+			}
+		}
+		warehouse = merged
 	} else {
 		warehouseId = nextUUID()
 	}
