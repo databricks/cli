@@ -58,9 +58,9 @@ artifacts:
         The local path of the directory for the artifact.
     "type":
       "description": |-
-        Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
+        Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl`, `jar`, and `tgz`.
       "markdown_description": |-
-        Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
+        Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl`, `jar`, and `tgz`.
 bundle:
   "description": |-
     The bundle attributes when deploying to this target.

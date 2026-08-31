@@ -12,11 +12,18 @@ const ArtifactPythonWheel ArtifactType = `whl`
 
 const ArtifactJar ArtifactType = `jar`
 
+// ArtifactTarball is a gzipped tar of source files. Unlike `whl`/`jar` it carries
+// no language-specific build defaults or wheel/jar semantics: the user's `build`
+// command produces the tarball, which is then uploaded and referenced like any
+// other artifact file (e.g. as an AI Runtime task's code_source_path).
+const ArtifactTarball ArtifactType = `tgz`
+
 // Values returns all valid ArtifactType values
 func (ArtifactType) Values() []ArtifactType {
 	return []ArtifactType{
 		ArtifactPythonWheel,
 		ArtifactJar,
+		ArtifactTarball,
 	}
 }
 

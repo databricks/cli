@@ -3172,9 +3172,9 @@
                       "$ref": "#/$defs/string"
                     },
                     "type": {
-                      "description": "Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.",
+                      "description": "Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl`, `jar`, and `tgz`.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.ArtifactType",
-                      "markdownDescription": "Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`."
+                      "markdownDescription": "Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl`, `jar`, and `tgz`."
                     }
                   },
                   "additionalProperties": false
