@@ -43,13 +43,11 @@ type fieldValues struct {
 	// converted to the field's own Go type when the field is enumerated.
 	fields map[string][]any
 
-	// base is merged into the resource before the first deploy. It makes a block
-	// reachable that the invariant config does not declare: a coherent git_source, say,
-	// whose fields cannot be tested one at a time from nothing because the API only
-	// accepts the set as a whole. Once seeded, each of its fields varies normally.
-	//
-	// Keep path-valued fields out of it: it is merged after the mutator pipeline has run,
-	// so nothing here goes through path translation.
+	// base is the resource itself, rendered into a one-resource databricks.yml and deployed
+	// before anything is measured. What it declares is what can be tested: a block it omits has
+	// no entry for its fields to live in, and a block the API only accepts whole -- a coherent
+	// git_source -- cannot be built up one field at a time. Once declared, each field varies
+	// normally.
 	//
 	base any
 

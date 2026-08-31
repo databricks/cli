@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/testdiff"
@@ -173,13 +172,12 @@ type result struct {
 	evidence string
 }
 
-// report accumulates results for one resource type. Resource types run in parallel but
-// each has its own report, and a type's configs run in sequence, so the lock only guards
-// against a future change to that.
+// report accumulates results for one resource type. Resource types run in parallel, but each
+// owns its report and everything within a type runs in sequence, so nothing here synchronizes.
+// Parallelizing the field subtests would need that to change.
 type report struct {
 	resourceType string
 
-	mu       sync.Mutex
 	results  []result
 	wildcard map[string]bool
 	covered  map[string]bool
@@ -195,13 +193,15 @@ type report struct {
 
 // addSampled records that this field is one of the sampled ones.
 func (r *report) addSampled(path string) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
 	if r.sampled == nil {
 		r.sampled = map[string]bool{}
 	}
 	r.sampled[path] = true
 }
+
+// fieldColumnWidth is how wide the field column is in a rendered row. Named because sampledRows
+// reads the field back out of the text by it.
+const fieldColumnWidth = 44
 
 // legendKey identifies one size label of one field.
 type legendKey struct {
@@ -217,8 +217,6 @@ func (r *report) addLegend(field, label string, value any) {
 	}
 	// Redacted like everything else in the report: a seeded value can name the workspace user or
 	// carry this run's unique suffix, both of which differ between a fake server and a real one.
-	r.mu.Lock()
-	defer r.mu.Unlock()
 	if r.legend == nil {
 		r.legend = map[legendKey]string{}
 	}
@@ -226,8 +224,6 @@ func (r *report) addLegend(field, label string, value any) {
 }
 
 func (r *report) add(res result) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
 	r.results = append(r.results, res)
 }
 
@@ -236,8 +232,6 @@ func (r *report) add(res result) {
 // resource declare different blocks, so a union of the per-config gaps would list fields
 // that are in fact tested -- jobs has eight configs and only some declare tasks.
 func (r *report) addCoverage(covered []field, uncovered []string) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
 	if r.wildcard == nil {
 		r.wildcard = map[string]bool{}
 	}
@@ -297,9 +291,6 @@ func (r *report) uncoveredPaths() []string {
 // on either the fake server or a real workspace. The full form adds every row, the evidence
 // behind each finding, and what was not covered.
 func (r *report) render(problemsOnly bool) string {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	var sb strings.Builder
 
 	slices.SortStableFunc(r.results, func(a, b result) int {
@@ -320,7 +311,7 @@ func (r *report) render(problemsOnly bool) string {
 		}
 		used[legendKey{res.field, res.from}] = true
 		used[legendKey{res.field, res.to}] = true
-		line := fmt.Sprintf("%-44s %-10s %-10s %s", res.field, res.from, res.to, res.verdict)
+		line := fmt.Sprintf("%-*s %-10s %-10s %s", fieldColumnWidth, res.field, res.from, res.to, res.verdict)
 		if res.detail != "" {
 			line += "  " + res.detail
 		}
@@ -393,9 +384,6 @@ func (r *report) renderLegend(used map[legendKey]bool) string {
 	return sb.String()
 }
 
-// write compares the report against its golden file, or rewrites it under -update.
-// Cloud runs go to a separate, uncommitted file: which values a real backend accepts
-// depends on the workspace, so those results are for reading, not for diffing.
 // write compares the findings against the committed golden. There is one golden, and both
 // the fake server and a real workspace are held to it: a divergence means the fake server
 // does not model the API faithfully, which is worth failing over rather than filing away in
@@ -421,8 +409,9 @@ func (r *report) write(t testutil.TestingT) {
 	}
 
 	// A sampled run knows about a few of the type's fields, so its report is held to those
-	// fields' rows and nothing else. Their verdicts must read exactly as the golden records
-	// them; the summary counts every field and has no meaningful subset, so both sides drop it.
+	// fields' rows and nothing else. The rows this run produced are filtered structurally, and
+	// the golden -- which is only text -- by the field column. The summary counts every field
+	// and has no meaningful subset, so both sides drop it.
 	if r.sampled != nil {
 		expected, err := os.ReadFile(name)
 		if err != nil {
@@ -444,20 +433,29 @@ func (r *report) write(t testutil.TestingT) {
 	testdiff.AssertEqualTexts(t, name, name, testdiff.NormalizeNewlines(string(expected)), body)
 }
 
-// sampledRows keeps the report rows belonging to the sampled fields, dropping section headers,
-// blank lines and the summary. Rows the harness records against itself rather than a field --
-// "(base config)", "(rebuild)" -- are always kept: they mean the run for that type did not
-// happen, which no sample should be allowed to hide.
+// sampledRows keeps the report rows belonging to the sampled fields, dropping the summary and
+// blank lines. Rows the harness records against itself rather than a field -- "(base config)",
+// "(rebuild)", "(baseline)" -- are always kept: they mean the run for that type did not happen,
+// which no sample should be allowed to hide.
+//
+// The field is read off by column width rather than by cutting at the first space: a map key can
+// contain one ("tags['my team']"), and cutting there would compare half a path.
 func sampledRows(body string, sampled map[string]bool) string {
 	var sb strings.Builder
 	for line := range strings.SplitSeq(body, "\n") {
 		if strings.HasPrefix(line, "=== summary") {
 			break
 		}
-		if line == "" || strings.HasPrefix(line, "=== ") {
+		if line == "" {
 			continue
 		}
-		field, _, _ := strings.Cut(line, " ")
+		// A verdict whose cause is another field cannot be reproduced by a run that did not
+		// sample that field: COLLATERAL_DRIFT is drift the plan attributes to something else,
+		// and its detail names what. Dropped from both sides rather than compared.
+		if strings.Contains(line, string(verdictCollateral)) {
+			continue
+		}
+		field := strings.TrimRight(line[:min(fieldColumnWidth, len(line))], " ")
 		if sampled[field] || strings.HasPrefix(field, "(") {
 			sb.WriteString(line + "\n")
 		}
