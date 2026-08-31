@@ -743,9 +743,11 @@ var generatedIDs = []struct {
 	// reads better without brackets -- an error message carries the substituted suffix, which
 	// the rule above catches.
 	{regexp.MustCompile(regexp.QuoteMeta(uniqueMarker)), "UNIQUE"},
+	// A backend-assigned id. Before the UUID rule, and covering both shapes: the fake server
+	// hands out UUIDs where a real workspace hands out hex, and the two have to redact to the
+	// same placeholder or every error message naming one would differ between them.
+	{regexp.MustCompile("id=[0-9A-Fa-f-]{6,}"), "id=[ID]"},
 	{regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`), "[UUID]"},
-	// A backend-assigned id, which is a bare number or hex string only ever seen after "id=".
-	{regexp.MustCompile(`id=[0-9A-Fa-f]{6,}`), "id=[ID]"},
 }
 
 // redactIDs replaces every run-specific id in a message with a stable placeholder.
