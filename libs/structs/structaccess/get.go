@@ -274,20 +274,22 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 		return fv, sf, v, true
 	}
 
-	// Second pass: search embedded anonymous structs (flattening semantics), one level of
-	// embedding at a time. Breadth-first, not depth-first: encoding/json resolves a name
-	// declared at two embedding depths in favour of the shallower one, so a search that
-	// descended fully into the first embed could pick a deeper field than the one that is
-	// actually serialized under that name.
-	for _, fv := range embeddedStructs(v) {
-		if out, sf, found := findFieldInStruct(fv, key); found {
-			return out, sf, fv, true
+	// Second pass: search embedded anonymous structs (flattening semantics) breadth-first, one
+	// level of embedding at a time. Not depth-first: encoding/json resolves a name declared at
+	// two embedding depths in favour of the shallower one, so descending fully into the first
+	// embed could pick a field three levels down over the same name two levels down in a
+	// later one -- and then reading or writing the field would not be the field serialized
+	// under that name.
+	level := embeddedStructs(v)
+	for len(level) > 0 {
+		var next []reflect.Value
+		for _, fv := range level {
+			if out, sf, found := findFieldInStruct(fv, key); found {
+				return out, sf, fv, true
+			}
+			next = append(next, embeddedStructs(fv)...)
 		}
-	}
-	for _, fv := range embeddedStructs(v) {
-		if out, sf, owner, found := findStructFieldByKey(fv, key); found {
-			return out, sf, owner, true
-		}
+		level = next
 	}
 
 	return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false

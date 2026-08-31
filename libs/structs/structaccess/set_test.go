@@ -2,6 +2,7 @@ package structaccess_test
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -832,9 +833,35 @@ type shallowEmbed struct {
 	Value string `json:"value"`
 }
 
+type deeperEmbed struct {
+	deepEmbed
+}
+
 type embedDepths struct {
 	deepEmbed
 	shallowEmbed
+}
+
+// The same name three levels down in the first member, against two levels down in a later
+// one. json picks the shallower, so the search has to be breadth-first across the whole tree
+// rather than depth-first per member.
+type embedDepthsAcrossMembers struct {
+	deeperEmbed
+	deepEmbed
+}
+
+func TestSet_ShallowerEmbedWinsAcrossMembers(t *testing.T) {
+	target := &embedDepthsAcrossMembers{}
+
+	require.NoError(t, structaccess.SetByString(target, "value", "set"))
+	assert.Equal(t, "set", target.Value)
+	assert.Empty(t, target.deeperEmbed.Value)
+
+	require.NoError(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"value":"set"}`, string(blob))
 }
 
 func TestSet_ShallowerEmbedWins(t *testing.T) {
