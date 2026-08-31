@@ -76,3 +76,36 @@ func TestAddFileToTarball(t *testing.T) {
 		assert.Equal(t, int64(0o644), modes["src/train.py"])
 	}
 }
+
+// TestTarballComposesFilesAcrossDirs is the packing-layer proof of the `include`
+// semantics: a tgz composed from a code directory and a sibling file outside it
+// (e.g. a local env file not under code_source) keeps both, with bundle-root-relative
+// entry names. This is what distinguishes DABs `include` from the air CLI's
+// code-source-root-relative include. Full include-selection behavior (which paths the
+// sync walker yields) is covered by acceptance tests, since it needs a WorkspaceClient.
+func TestTarballComposesFilesAcrossDirs(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "config"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "src", "train.py"), []byte("print('x')\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "config", "train.env"), []byte("KEY=1\n"), 0o644))
+
+	root := vfs.MustNew(dir)
+	list, err := fileset.New(root).Files()
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	gzw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gzw)
+	for _, f := range list {
+		require.NoError(t, addFileToTarball(tw, root, f))
+	}
+	require.NoError(t, tw.Close())
+	require.NoError(t, gzw.Close())
+
+	content, _, _ := readTar(t, buf.Bytes())
+	// The code file and the sibling config file both land, each under its own
+	// bundle-root-relative path — not collapsed to a single code-source root.
+	assert.Equal(t, "print('x')\n", content["src/train.py"])
+	assert.Equal(t, "KEY=1\n", content["config/train.env"])
+}

@@ -65,7 +65,7 @@ artifacts:
             The git commit to snapshot. Takes precedence over `branch` when both are set.
     "include":
       "description": |-
-        For a `tgz` artifact, the paths (relative to the bundle root) to pack into the tarball, filtered like bundle file sync (`.gitignore`-honored). Mutually exclusive with `build`.
+        For a `tgz` artifact, bundle-root-relative paths to pack into the tarball, filtered like bundle file sync (`.gitignore`-honored). Composes files from anywhere in the bundle (e.g. a code directory plus a sibling env file), so entries are bundle-root-relative. Mutually exclusive with `build`.
     "path":
       "description": |-
         The local path of the directory for the artifact.
