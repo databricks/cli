@@ -24,8 +24,7 @@ spot_instance_policy                         absent     POLICY_UNSPECIFIED START
 
 === summary
 OK                 32
-SUPPRESSED         1
-NOT_OBSERVABLE     1
+SUPPRESSED         2
 UPDATE_IGNORED     11
 SKIPPED            5
 START_NOT_REACHED  11

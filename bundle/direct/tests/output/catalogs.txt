@@ -2,17 +2,18 @@
 custom_max_retention_hours                   168        absent     UPDATE_IGNORED  custom_max_retention_hours
 custom_max_retention_hours                   720        absent     UPDATE_IGNORED  custom_max_retention_hours
 properties                                   absent     keys0      START_NOT_REACHED  properties
+properties                                   absent     keys1      START_NOT_REACHED  properties
 properties                                   keys0      absent     START_NOT_REACHED  properties
+properties                                   keys0      keys1      START_NOT_REACHED  properties
 properties                                   keys1      absent     UPDATE_IGNORED  properties
-properties                                   keys1      keys0      POST_DEPLOY_DRIFT  properties,properties['team']
+properties                                   keys1      keys0      UPDATE_IGNORED  properties
 properties['team']                           absent     x          START_NOT_REACHED  properties['team']
 properties['team']                           absent     y          START_NOT_REACHED  properties['team']
 properties['team']                           x          absent     UPDATE_IGNORED  properties['team']
 properties['team']                           y          absent     UPDATE_IGNORED  properties['team']
 
 === summary
-OK                 16
-UPDATE_IGNORED     5
-POST_DEPLOY_DRIFT  1
+OK                 14
+UPDATE_IGNORED     6
 SKIPPED            8
-START_NOT_REACHED  4
+START_NOT_REACHED  6
