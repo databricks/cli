@@ -13,7 +13,7 @@ import (
 // MergeManaged refuses to merge rather than risk corrupting the file. The caller
 // surfaces both as E_MERGE.
 var (
-	errMultilineString = errors.New("pyproject.toml uses a TOML multi-line string, which the formatting-preserving merge cannot safely edit; edit requires-python / [tool.uv] manually")
+	errMultilineString = errors.New("pyproject.toml has an unterminated TOML multi-line string")
 	errNoProjectTable  = errors.New("pyproject.toml has no [project] table to hold requires-python")
 )
 
@@ -76,18 +76,20 @@ type dbconnectPlan struct {
 
 // planDBConnect returns the databricks-connect edits merging target would make, or
 // the zero plan in constraints-only mode (empty pin) where databricks-connect is left
-// untouched. It mirrors MergeManaged's preprocessing (CRLF normalization, multi-line
-// string bail) and runs both databricks-connect passes on a clone, in the same order
-// as MergeManaged, so replacedDevPin and removed match what the real merge does.
+// untouched. It mirrors MergeManaged's preprocessing (CRLF normalization and
+// multi-line string protection) and runs both databricks-connect passes on a clone,
+// in the same order as MergeManaged, so replacedDevPin and removed match what the
+// real merge does.
 func planDBConnect(target []byte, c Constraints) dbconnectPlan {
 	if c.DatabricksConnect == "" {
 		return dbconnectPlan{}
 	}
 	// Mirror MergeManaged's own preprocessing so the same lines are inspected.
-	lines := strings.Split(strings.ReplaceAll(string(target), "\r\n", "\n"), "\n")
-	if containsMultilineString(lines) {
+	protected, _, err := protectMultilineStrings(strings.ReplaceAll(string(target), "\r\n", "\n"))
+	if err != nil {
 		return dbconnectPlan{}
 	}
+	lines := strings.Split(protected, "\n")
 	// mergeDatabricksConnect rewrites element lines in place, so hand it a copy: this
 	// probe must not disturb the caller's view of the pre-merge file. The consolidation
 	// pass then runs on its output, so removed reflects the post-dev-merge state where
@@ -115,17 +117,11 @@ func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string
 		s = strings.ReplaceAll(s, "\r\n", "\n")
 	}
 
-	lines := strings.Split(s, "\n")
-
-	// The merge is line-based and does not track TOML multi-line string state
-	// ("""...""" / '''...''') across lines. A line inside such a string can look
-	// like a table header, a key assignment, or a bracket, which would mis-scope
-	// the managed-region edits and silently corrupt the file. Rather than risk
-	// that, bail out: this is the guarantee the merge exists to uphold. Multi-line
-	// strings are rare in a pyproject.toml, and the caller surfaces this as E_MERGE.
-	if containsMultilineString(lines) {
-		return nil, nil, errMultilineString
+	protected, restore, err := protectMultilineStrings(s)
+	if err != nil {
+		return nil, nil, err
 	}
+	lines := strings.Split(protected, "\n")
 
 	// requires-python is a managed value; if there is no [project] table to hold
 	// it, this is not a file we can faithfully merge (greenfield goes through
@@ -163,7 +159,7 @@ func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string
 		regions = append(regions, regionToolUv)
 	}
 
-	out := strings.Join(lines, "\n")
+	out := restore(strings.Join(lines, "\n"))
 	if crlf {
 		out = strings.ReplaceAll(out, "\n", "\r\n")
 	}
@@ -934,23 +930,96 @@ func markerAttachedToToolUv(lines []string, start int) bool {
 // [tool.uv] table, capturing its leading whitespace.
 var constraintDepsRe = regexp.MustCompile(`^\s*constraint-dependencies\s*=`)
 
-// containsMultilineString reports whether the input contains a TOML multi-line
-// string delimiter (""" or ”'), taking a line-outside-comment view. The
-// line-based merge cannot track such a string's body across lines, so its
-// presence anywhere is treated as unmergeable rather than risking corruption.
-// This is conservative: a single-line """x""" is also refused, but those are
-// vanishingly rare in a pyproject.toml and refusing is safe.
-func containsMultilineString(lines []string) bool {
-	for _, line := range lines {
-		// Ignore a delimiter that appears only within a "#" comment.
-		if i := commentStart(line); i >= 0 {
-			line = line[:i]
-		}
-		if strings.Contains(line, `"""`) || strings.Contains(line, "'''") {
-			return true
+// protectMultilineStrings replaces TOML multi-line strings with unique ordinary
+// string values while the line-based merge runs. This prevents string contents
+// that resemble tables, assignments, brackets, comments, or managed markers
+// from affecting the merge. The returned restore function puts each original
+// string back byte-for-byte after the managed edits are complete.
+func protectMultilineStrings(s string) (protected string, restore func(string) string, err error) {
+	type replacement struct {
+		placeholder string
+		original    string
+	}
+
+	prefix := "__databricks_setup_local_multiline_"
+	for strings.Contains(s, prefix) {
+		prefix += "_"
+	}
+
+	var replacements []replacement
+	var out strings.Builder
+	for i := 0; i < len(s); {
+		switch {
+		case s[i] == '#':
+			end := strings.IndexByte(s[i:], '\n')
+			if end < 0 {
+				out.WriteString(s[i:])
+				i = len(s)
+				continue
+			}
+			end += i
+			out.WriteString(s[i:end])
+			i = end
+		case strings.HasPrefix(s[i:], `"""`) || strings.HasPrefix(s[i:], "'''"):
+			delimiter := s[i : i+3]
+			end, ok := multilineStringEnd(s, i+3, delimiter)
+			if !ok {
+				return "", nil, errMultilineString
+			}
+			placeholder := fmt.Sprintf(`"%s%d__"`, prefix, len(replacements))
+			replacements = append(replacements, replacement{placeholder: placeholder, original: s[i:end]})
+			out.WriteString(placeholder)
+			i = end
+		case s[i] == '"' || s[i] == '\'':
+			quote := s[i]
+			start := i
+			i++
+			for i < len(s) {
+				if quote == '"' && s[i] == '\\' {
+					i += min(2, len(s)-i)
+					continue
+				}
+				i++
+				if s[i-1] == quote {
+					break
+				}
+			}
+			out.WriteString(s[start:i])
+		default:
+			out.WriteByte(s[i])
+			i++
 		}
 	}
-	return false
+
+	restore = func(merged string) string {
+		for _, r := range replacements {
+			merged = strings.ReplaceAll(merged, r.placeholder, r.original)
+		}
+		return merged
+	}
+	return out.String(), restore, nil
+}
+
+// multilineStringEnd returns the byte immediately after a multi-line string's
+// closing delimiter. Backslash escapes apply only to basic (double-quoted)
+// strings. Runs of four or five quotes include one or two quotes in the value,
+// followed by the closing three-quote delimiter.
+func multilineStringEnd(s string, start int, delimiter string) (int, bool) {
+	for i := start; i < len(s); {
+		if delimiter == `"""` && s[i] == '\\' {
+			i += min(2, len(s)-i)
+			continue
+		}
+		if strings.HasPrefix(s[i:], delimiter) {
+			run := 3
+			for run < 5 && i+run < len(s) && s[i+run] == delimiter[0] {
+				run++
+			}
+			return i + run, true
+		}
+		i++
+	}
+	return 0, false
 }
 
 // commentStart returns the index of the "#" that begins an inline comment on
