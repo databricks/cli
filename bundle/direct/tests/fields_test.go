@@ -253,6 +253,43 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	}
 }
 
+// sameField reports whether a drifting path is the field under test. The planner may report
+// a change against an ancestor rather than the leaf -- a whole "config" block instead of
+// "config.auto_capture_config.catalog_name" -- and that is still the field's own drift, not
+// some other field's.
+func sameField(drifting, path string) bool {
+	return drifting == path ||
+		strings.HasPrefix(path, drifting+".") || strings.HasPrefix(path, drifting+"[") ||
+		strings.HasPrefix(drifting, path+".") || strings.HasPrefix(drifting, path+"[")
+}
+
+// fieldWasDropped reports whether the plan mentions the field and yet will not act on it.
+// The planner records a change at whatever granularity it diffed, which is not always the
+// leaf -- a whole "tasks" entry rather than "tasks[0].description" -- so every entry naming
+// the field, an ancestor of it, or something under it counts. A field the plan does not
+// mention at all is not "dropped": there is nothing to conclude from its absence, and the
+// node's own action decides.
+func fieldWasDropped(plan *deployplan.Plan, node, path string) bool {
+	if plan == nil {
+		return false
+	}
+	entry, ok := plan.Plan[node]
+	if !ok {
+		return false
+	}
+	mentioned := false
+	for key, change := range entry.Changes {
+		if !sameField(key, path) {
+			continue
+		}
+		if change.Action != deployplan.Skip {
+			return false
+		}
+		mentioned = true
+	}
+	return mentioned
+}
+
 // converged reports whether a plan no longer wants to change the field.
 func converged(plan *deployplan.Plan, node, path string) bool {
 	change, ok := planChange(plan, node, path)
@@ -315,7 +352,11 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		return res
 	}
 	action := nodeAction(plan, h.node)
-	if action == deployplan.Skip {
+	// The field's own entries, not just the node's action: another field already drifting keeps
+	// the node at "update", and reading only that would let a change to *this* field be
+	// dropped and still come out as OK once the other field is filtered from the post-deploy
+	// plan.
+	if action == deployplan.Skip || fieldWasDropped(plan, h.node, path) {
 		pending.cancel()
 		res.verdict, res.detail = explainSkip(plan, h.node, path)
 		return res
@@ -388,7 +429,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		case own == "":
 			// A child node left behind by a recreate: a different problem, different fix.
 			res.verdict, res.detail = verdictDriftChild, child
-		case slices.Contains(drifted, path):
+		case slices.ContainsFunc(drifted, func(p string) bool { return sameField(p, path) }):
 			res.verdict, res.detail = verdictDrift, own
 		default:
 			res.verdict, res.detail = verdictCollateral, own
