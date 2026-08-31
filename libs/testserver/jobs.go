@@ -146,6 +146,19 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 		request.NewSettings.RunAs = prevjob.Settings.RunAs
 	}
 
+	// parent_path is the same shape and verified the same way: the folder a job lives in is
+	// fixed when the job is created, and a reset naming a different one is accepted and
+	// ignored. The engine plans an update for it anyway, which is why a config that changes it
+	// never converges -- recorded in bundle/direct/tests/output/jobs.txt.
+	request.NewSettings.ParentPath = prevjob.Settings.ParentPath
+	if request.NewSettings.ParentPath == "" {
+		// And a job with no parent folder omits the field on read rather than reporting it
+		// empty, so drop any ForceSendFields entry the request carried for it.
+		request.NewSettings.ForceSendFields = slices.DeleteFunc(request.NewSettings.ForceSendFields, func(name string) bool {
+			return name == "ParentPath"
+		})
+	}
+
 	s.Jobs[jobId] = jobs.Job{
 		JobId:           jobId,
 		CreatorUserName: prevjob.CreatorUserName,
