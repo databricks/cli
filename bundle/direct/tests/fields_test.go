@@ -192,7 +192,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 					}
 
 					reuse := deployedKnown && valueLabel(deployed) == valueLabel(tr.from)
-					res := runTransition(t, h, cfg.name, f.path, tr, reuse, baseline)
+					res := runTransition(t, h, cfg.name, f.path, tr, reuse, baseline, ignoredLocally)
 
 					// A starting value the deployed resource will not take -- typically a
 					// field the API refuses to clear -- is not a dead end: a fresh resource
@@ -223,7 +223,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 						} else {
 							h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, cfg.name, rep)
 							if !uncreatable {
-								res = runTransition(t, h, cfg.name, f.path, tr, false, baseline)
+								res = runTransition(t, h, cfg.name, f.path, tr, false, baseline, ignoredLocally)
 							}
 						}
 					}
@@ -416,13 +416,24 @@ func converged(plan *deployplan.Plan, node, path string) bool {
 // the config asked for. A pending change means it does not; so does a change the planner
 // dropped for a reason other than the value already being there -- an app whose compute is
 // stopped suppresses a command with "no active deployment", and the command never landed.
-func reachedValue(change *deployplan.ChangeDesc) bool {
-	return change.Action == deployplan.Skip && benignSuppressions[change.Reason]
+func reachedValue(change *deployplan.ChangeDesc, path string, inert []dresources.FieldRule) bool {
+	if change.Action != deployplan.Skip {
+		return false
+	}
+	if benignSuppressions[change.Reason] {
+		return true
+	}
+	// A field the resource declares it ignores local changes to never holds what the config
+	// asks for -- that is the whole point of the declaration. Asking whether its starting value
+	// landed has no answer, and treating "no" as a failure buried the useful verdict: whether
+	// the change was dropped for exactly the declared reason, which is OK_INERT.
+	reason, declared := ruleReason(inert, path)
+	return declared && reason == change.Reason
 }
 
 // runTransition moves one field from one value to another and reports what happened.
 // startsDeployed says the field already holds tr.from, so the setup deploy can be skipped.
-func runTransition(t *testing.T, h *bundleHarness, config, path string, tr transition, startsDeployed bool, baseline map[string]bool) result {
+func runTransition(t *testing.T, h *bundleHarness, config, path string, tr transition, startsDeployed bool, baseline map[string]bool, inert []dresources.FieldRule) result {
 	from, to := tr.from, tr.to
 	res := result{config: config, field: path, from: valueLabel(tr.from), to: valueLabel(tr.to)} //exhaustruct:ignore
 
@@ -451,7 +462,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 			res.detail = firstError(diags)
 			return res
 		}
-		if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change) && !baselineCovers(baseline, plan, h.node, path) {
+		if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change, path, inert) && !baselineCovers(baseline, plan, h.node, path) {
 			res.verdict = verdictStartNotReached
 			res.detail = path
 			res.evidence = withContext("plan after deploying the starting value:", planJSON(plan))
