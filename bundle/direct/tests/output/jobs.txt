@@ -1,20 +1,15 @@
 === job.yml.tmpl
-deployment.version_id                        x          absent     START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
-deployment.version_id                        x          y          START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
-deployment.version_id                        y          absent     START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
-deployment.version_id                        y          x          START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
 parent_path                                  absent     x          UPDATE_IGNORED  parent_path
 parent_path                                  absent     y          UPDATE_IGNORED  parent_path
-parent_path                                  x          absent     START_NOT_REACHED  parent_path
-parent_path                                  x          y          START_NOT_REACHED  parent_path
-parent_path                                  y          absent     START_NOT_REACHED  parent_path
-parent_path                                  y          x          START_NOT_REACHED  parent_path
+parent_path                                  x          absent     UPDATE_IGNORED  parent_path
+parent_path                                  x          y          UPDATE_IGNORED  parent_path
+parent_path                                  y          absent     UPDATE_IGNORED  parent_path
+parent_path                                  y          x          UPDATE_IGNORED  parent_path
 
 === summary
 OK                 693
-OK_INERT           2
+OK_INERT           6
 SUPPRESSED         53
 NOT_OBSERVABLE     40
-UPDATE_IGNORED     2
+UPDATE_IGNORED     6
 SKIPPED            46
-START_NOT_REACHED  8

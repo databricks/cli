@@ -1,14 +1,11 @@
 === genie_space.yml.tmpl
 description                                  x          absent     UPDATE_IGNORED  description
 description                                  y          absent     UPDATE_IGNORED  description
-title                                        absent     x-UNIQUE   START_NOT_REACHED  title
-title                                        absent     y-UNIQUE   START_NOT_REACHED  title
 title                                        x-UNIQUE   absent     UPDATE_IGNORED  title
 title                                        y-UNIQUE   absent     UPDATE_IGNORED  title
 
 === summary
-OK                 6
+OK                 8
 NOT_OBSERVABLE     6
 UPDATE_IGNORED     4
 SKIPPED            4
-START_NOT_REACHED  2
