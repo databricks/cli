@@ -1109,6 +1109,35 @@ unterminated
 	require.ErrorIs(t, err, errMultilineString)
 }
 
+func TestMergePreservesMultilineStringDelimiterEdgeCases(t *testing.T) {
+	tests := []struct {
+		name  string
+		value string
+	}{
+		{name: "basic escaped quote with odd backslash", value: `"""one \""" two"""`},
+		{name: "basic delimiter after even backslashes", value: `"""one \\"""`},
+		{name: "basic four quote ending", value: `"""value""""`},
+		{name: "basic five quote ending", value: `"""value"""""`},
+		{name: "literal four quote ending", value: `'''value''''`},
+		{name: "literal five quote ending", value: `'''value'''''`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			in := []byte("[project]\nrequires-python = \">=3.10\"\ndescription = " + tt.value + "\n\n[dependency-groups]\ndev = [\"databricks-connect~=16.0.0\"]\n")
+			requireValidTOML(t, in)
+
+			out, _, err := MergeManaged(in, testConstraints())
+			require.NoError(t, err)
+			requireValidTOML(t, out)
+			assert.Contains(t, string(out), "description = "+tt.value)
+
+			twice, _, err := MergeManaged(out, testConstraints())
+			require.NoError(t, err)
+			assert.Equal(t, out, twice)
+		})
+	}
+}
+
 func TestMergeBailsWhenNoProjectTable(t *testing.T) {
 	// A partial existing file with no [project] table can't receive requires-python;
 	// merging it would silently skip the pin, so it must error instead.
