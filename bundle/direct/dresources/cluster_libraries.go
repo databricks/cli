@@ -22,8 +22,7 @@ import (
 const librariesWaitTimeout = 15 * time.Minute
 
 // LibrariesState is the state for a cluster's libraries sub-resource. Libraries are installed
-// via the Libraries API against the parent cluster identified by ClusterId, not through the
-// cluster spec.
+// via the Libraries API against the parent cluster identified by ClusterId.
 type LibrariesState struct {
 	ClusterId string `json:"cluster_id"`
 	// By convention EmbeddedSlice fields have the __embed__ json tag, see permissions.go.
@@ -132,8 +131,7 @@ func (r *ResourceLibraries) DoCreate(ctx context.Context, state *LibrariesState)
 }
 
 // DoUpdate uninstalls libraries removed from config and installs the desired set. This is two API
-// calls because the Libraries API exposes install and uninstall as separate endpoints, unlike the
-// single-call model most resources follow.
+// calls because the Libraries API exposes install and uninstall as separate endpoints
 func (r *ResourceLibraries) DoUpdate(ctx context.Context, id string, state *LibrariesState, entry *PlanEntry) (*LibrariesState, error) {
 	removed := removedLibraries(state.EmbeddedSlice, entry)
 	if len(removed) > 0 {
@@ -163,10 +161,8 @@ func (r *ResourceLibraries) DoUpdate(ctx context.Context, id string, state *Libr
 // deleted too). WaitAfterDelete then restarts the cluster so the uninstall takes effect, since the
 // Libraries API defers uninstalls until the next restart.
 //
-// TODO: during `bundle destroy` this restart is wasteful, since the cluster is permanently deleted
-// right after. The delete path only receives the cluster id, so it cannot tell "block removed,
-// cluster kept" from "cluster destroyed" and the restart fires in both. Worth revisiting if the
-// framework can signal that the parent is also being deleted.
+// During `bundle destroy` this restart is wasteful, but it is not possible to differentitate
+// between the two cases, without adding additional logic to the framework.
 func (r *ResourceLibraries) DoDelete(ctx context.Context, id string, state *LibrariesState) error {
 	if len(state.EmbeddedSlice) == 0 {
 		return nil
