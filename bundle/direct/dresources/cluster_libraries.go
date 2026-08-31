@@ -64,9 +64,8 @@ func (*ResourceLibraries) IsEmptyState(state *LibrariesState) bool {
 	return len(state.EmbeddedSlice) == 0
 }
 
-// libraryKey identifies a library by its type-specific field so slices compare by identity
-// rather than by index (see KeyedSlices).
-func libraryKey(l compute.Library) (string, string) {
+// libraryWaitKey identifies a library by its primary field only, used to match install-status reports.
+func libraryWaitKey(l compute.Library) (string, string) {
 	switch {
 	case l.Whl != "":
 		return "whl", l.Whl
@@ -84,6 +83,20 @@ func libraryKey(l compute.Library) (string, string) {
 		return "cran", l.Cran.Package
 	}
 	return "", ""
+}
+
+// libraryKey extends libraryWaitKey with repo/exclusions so a repo-only change is detected (see KeyedSlices).
+func libraryKey(l compute.Library) (string, string) {
+	typ, id := libraryWaitKey(l)
+	switch {
+	case l.Pypi != nil:
+		return typ, id + ";" + l.Pypi.Repo
+	case l.Maven != nil:
+		return typ, id + ";" + l.Maven.Repo + ";" + strings.Join(l.Maven.Exclusions, ",")
+	case l.Cran != nil:
+		return typ, id + ";" + l.Cran.Repo
+	}
+	return typ, id
 }
 
 func (*ResourceLibraries) KeyedSlices() map[string]any {
@@ -204,6 +217,12 @@ func libraryMapKey(l compute.Library) string {
 	return f + "=" + v
 }
 
+// libraryWaitMapKey flattens libraryWaitKey into a single string for map lookups.
+func libraryWaitMapKey(l compute.Library) string {
+	f, v := libraryWaitKey(l)
+	return f + "=" + v
+}
+
 func (r *ResourceLibraries) WaitAfterCreate(ctx context.Context, id string, state *LibrariesState) (*LibrariesState, error) {
 	return nil, r.waitForInstall(ctx, id, state.EmbeddedSlice)
 }
@@ -273,7 +292,12 @@ func (r *ResourceLibraries) waitForInstall(ctx context.Context, id string, desir
 
 	desiredKeys := make(map[string]struct{}, len(desired))
 	for _, l := range desired {
-		desiredKeys[libraryMapKey(l)] = struct{}{}
+		typ, id := libraryWaitKey(l)
+		if typ == "" {
+			// Unknown library type: it can't be matched in cluster-status, so don't wait for it.
+			continue
+		}
+		desiredKeys[typ+"="+id] = struct{}{}
 	}
 
 	_, err = retries.Poll(ctx, librariesWaitTimeout, func() (*struct{}, *retries.Err) {
@@ -287,12 +311,12 @@ func (r *ResourceLibraries) waitForInstall(ctx context.Context, id string, desir
 			if s.Library == nil {
 				continue
 			}
-			if _, ok := desiredKeys[libraryMapKey(*s.Library)]; !ok {
+			if _, ok := desiredKeys[libraryWaitMapKey(*s.Library)]; !ok {
 				continue
 			}
 			switch s.Status {
 			case compute.LibraryInstallStatusFailed:
-				return nil, retries.Halt(fmt.Errorf("library %s failed to install: %s", libraryMapKey(*s.Library), strings.Join(s.Messages, "; ")))
+				return nil, retries.Halt(fmt.Errorf("library %s failed to install: %s", libraryWaitMapKey(*s.Library), strings.Join(s.Messages, "; ")))
 			case compute.LibraryInstallStatusInstalled, compute.LibraryInstallStatusSkipped, compute.LibraryInstallStatusRestored:
 				pending--
 			case compute.LibraryInstallStatusPending, compute.LibraryInstallStatusResolving, compute.LibraryInstallStatusInstalling, compute.LibraryInstallStatusUninstallOnRestart:
