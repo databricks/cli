@@ -438,19 +438,6 @@ func baselineCovers(baseline map[string]bool, plan *deployplan.Plan, node, path 
 	return ok && baseline[key]
 }
 
-// baselineCoversOther reports whether the drift this field would be blamed for was already
-// there *and* belongs to something else. The planner records a change against the key it
-// diffed at, which can be an ancestor several fields share, so existing drift at that ancestor
-// says nothing about whether this field's write landed.
-//
-// Drift at the field's own key is a different matter: that is this field not holding its value,
-// which is the very thing the transition set out to observe. Excusing it turned an ignored
-// write into OK -- and silently, since a baseline re-measured after a rebuild is not reported.
-func baselineCoversOther(baseline map[string]bool, plan *deployplan.Plan, node, path string) bool {
-	key, _, ok := relatedChangeKey(plan, node, path)
-	return ok && key != path && baseline[key]
-}
-
 // converged reports whether a plan no longer wants to change the field, at whatever
 // granularity the planner recorded it.
 func converged(plan *deployplan.Plan, node, path string) bool {
@@ -593,7 +580,7 @@ func runTransition(t *testing.T, h *bundleHarness, path string, tr transition, s
 	// One read cannot tell that apart from a read that was merely stale, so take a second
 	// one. If the value has appeared by then the write did land and the first read was
 	// behind; if it still has not, the field really was ignored.
-	if !baselineCoversOther(baseline, plan, h.node, path) && wasIgnored(plan, after, h.node, path) {
+	if wasIgnored(plan, after, h.node, path) {
 		second, diags := h.readPlan()
 		if diags.HasError() {
 			res.verdict = verdictPlanError
@@ -786,6 +773,13 @@ func firstError(diags diag.Diagnostics) string {
 // apiErrorCodes are the error codes that mean the backend rejected the request rather
 // than the CLI failing. Diagnostics carry a rendered message, not the error value, so
 // there is nothing to match with errors.As by the time we see them.
+// invalidRequestCodes are the subset of apiErrorCodes that say the request itself was wrong, as
+// opposed to the caller lacking permission or asking too often.
+var invalidRequestCodes = []string{
+	"INVALID_PARAMETER_VALUE",
+	"BAD_REQUEST",
+}
+
 var apiErrorCodes = []string{
 	"INVALID_PARAMETER_VALUE",
 	"BAD_REQUEST",
@@ -817,7 +811,11 @@ func isTimeout(diags diag.Diagnostics) bool {
 func idFieldRequired(value any, path string, decl declarations, diags diag.Diagnostics, otherwise verdict) verdict {
 	// Same nil test valueLabel uses to print "absent", so the verdict and the row's own column
 	// can never disagree about which value this was.
-	if value != nil || !isAPIError(diags) {
+	//
+	// Not any API error: a rejection is only evidence about the request when it says the request
+	// was malformed. PERMISSION_DENIED and REQUEST_LIMIT_EXCEEDED are answers about the caller
+	// and the moment, and would have come back whatever the field held.
+	if value != nil || !hasErrorCode(diags, invalidRequestCodes) {
 		return otherwise
 	}
 	if _, isID := ruleReason(decl.idFields, path); !isID {
@@ -827,8 +825,12 @@ func idFieldRequired(value any, path string, decl declarations, diags diag.Diagn
 }
 
 func isAPIError(diags diag.Diagnostics) bool {
+	return hasErrorCode(diags, apiErrorCodes)
+}
+
+func hasErrorCode(diags diag.Diagnostics, codes []string) bool {
 	for _, d := range diags {
-		for _, code := range apiErrorCodes {
+		for _, code := range codes {
 			if strings.Contains(d.Summary, code) {
 				return true
 			}
