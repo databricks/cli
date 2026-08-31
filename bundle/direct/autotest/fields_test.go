@@ -1,4 +1,4 @@
-// Package tests exercises the direct engine end to end -- plan, apply, and the plan
+// Package autotest exercises the direct engine end to end -- plan, apply, and the plan
 // that follows -- rather than any one resource implementation. It lives beside the
 // engine for that reason, not under dresources.
 //
@@ -27,16 +27,21 @@
 //   - remote drift (a change made outside the bundle); this suite only edits config
 //   - configs with more than one resource, or with an -init.sh
 //   - fields under a slice or map (listed at the end of each report)
-package tests
+package autotest
 
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"hash/fnv"
 	"maps"
+	"math/rand/v2"
+	"os/exec"
 	"reflect"
 	"regexp"
 	"slices"
@@ -48,6 +53,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/require"
@@ -56,10 +62,22 @@ import (
 func TestFields(t *testing.T) {
 	usable, skipped := discoverConfigs(t)
 
+	// -update writes the report as the whole truth for a type, so it cannot come from a run
+	// that tested a few fields: the missing ones would read as removed.
+	if *sampleSize > 0 && testdiff.OverwriteMode {
+		t.Fatal("-sample cannot be combined with -update: a sampled run would truncate the reports")
+	}
+
 	// The order fields are tested in, and the order each field's values are visited in,
 	// come from this seed.
 	runSeed := orderSeed
 	t.Logf("field and value order seeded from orderSeed %d", runSeed)
+
+	var sampleFields uint64
+	if *sampleSize > 0 {
+		sampleFields = sampleSeed(t)
+		t.Logf("testing %d fields per resource type, seeded from HEAD (%d)", *sampleSize, sampleFields)
+	}
 
 	// One config per resource type: the simplest one, which is the shortest name -- a
 	// "<type>.yml.tmpl" sorts before its "<type>_<variant>.yml.tmpl" siblings. The variants
@@ -113,7 +131,7 @@ func TestFields(t *testing.T) {
 
 			rep := &report{resourceType: resourceType} //exhaustruct:ignore
 			t.Run(cfg.name, func(t *testing.T) {
-				runConfig(t, ctx, client, user, cfg, fv, rep, runSeed)
+				runConfig(t, ctx, client, user, cfg, fv, rep, runSeed, sampleFields)
 			})
 			rep.write(t)
 		})
@@ -123,7 +141,7 @@ func TestFields(t *testing.T) {
 // runConfig drives one config. Every resource it creates belongs to this test's lifetime,
 // which is what `owner` below carries into the subtests: a resource a subtest asks for is
 // reused by the transitions after it, so its cleanup cannot be the subtest's.
-func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, rep *report, runSeed uint64) {
+func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, rep *report, runSeed, sampleSeedValue uint64) {
 	owner := t
 	adapter, err := dresources.NewAdapter(dresources.SupportedResources[cfg.resourceType], cfg.resourceType, client)
 	require.NoError(t, err)
@@ -144,6 +162,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	fields, uncovered, inert := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv, resource, runSeed,
 		declaredUnsettable(adapter), h.unique)
 	rep.addCoverage(fields, uncovered)
+	fields = sample(fields, sampleSeedValue, rep)
 
 	// A container's label says only how many entries it has, so record what each one stands for.
 	for _, f := range fields {
@@ -288,6 +307,27 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 			h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, cfg.name, rep)
 		}
 	}
+}
+
+// sample cuts the field list down to -sample entries, drawn without replacement. Sorting first
+// makes the draw depend only on the seed, not on the order enumeration happened to produce.
+// The chosen paths go to the report, which needs them to compare a partial run against a
+// golden written by a full one.
+func sample(fields []field, seed uint64, rep *report) []field {
+	// A type with no more fields than the sample size is covered in full, so its report stays
+	// comparable whole -- rep.sampled is left nil.
+	if *sampleSize <= 0 || len(fields) <= *sampleSize {
+		return fields
+	}
+	ordered := slices.Clone(fields)
+	slices.SortFunc(ordered, func(a, b field) int { return strings.Compare(a.path, b.path) })
+	rng := rand.New(rand.NewPCG(seed, 2))
+	rng.Shuffle(len(ordered), func(i, j int) { ordered[i], ordered[j] = ordered[j], ordered[i] })
+	ordered = ordered[:*sampleSize]
+	for _, f := range ordered {
+		rep.addSampled(f.path)
+	}
+	return ordered
 }
 
 // sameField reports whether a drifting path is the field under test. The planner may report
@@ -997,6 +1037,24 @@ func simplerConfig(a, b string) bool {
 		return len(a) < len(b)
 	}
 	return a < b
+}
+
+// sampleSize limits how many of a type's fields are tested, for a run that has to be cheap
+// rather than exhaustive -- a PR check against a real workspace. Which fields are picked comes
+// from the commit, so successive commits cover different ground, and a whole run's picks are
+// reproducible from its SHA alone.
+var sampleSize = flag.Int("sample", 0, "test only N randomly chosen fields per resource type (0 tests every field)")
+
+// sampleSeed derives the sample's seed from HEAD. Unlike orderSeed it may move freely: a
+// sampled run compares each field's rows against the same golden as a full run, and never
+// rewrites it, so the seed cannot invalidate anything committed.
+func sampleSeed(t *testing.T) uint64 {
+	out, err := exec.Command("git", "rev-parse", "HEAD").Output()
+	// No fallback: a run that cannot name its commit would pick fields no one can reproduce,
+	// which is the one property sampling has to keep.
+	require.NoError(t, err, "sampling needs the commit to seed from")
+	sum := sha256.Sum256(out)
+	return binary.BigEndian.Uint64(sum[:8])
 }
 
 // orderSeed fixes the order fields are tested in and the order each field's values are

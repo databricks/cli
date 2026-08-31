@@ -1,4 +1,4 @@
-package tests
+package autotest
 
 import (
 	"encoding/json"
@@ -349,7 +349,7 @@ type transition struct {
 // label names the transition for the subtest. Kept free of shell metacharacters so a
 // single case can be re-run without quoting:
 //
-//	go test ./bundle/direct/tests -run TestFields/pipelines/.*/dry_run/absent_to_true -v
+//	go test ./bundle/direct/autotest -run TestFields/pipelines/.*/dry_run/absent_to_true -v
 func (t transition) label() string {
 	return valueLabel(t.from) + "_to_" + valueLabel(t.to)
 }
