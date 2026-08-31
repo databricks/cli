@@ -44,6 +44,7 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 	// Build full name from catalog.schema.name
 	fullName := createRequest.CatalogName + "." + createRequest.SchemaName + "." + createRequest.Name
 
+	// Aliases are not settable here; see the note in RegisteredModelsUpdate.
 	registeredModel := catalog.RegisteredModelInfo{
 		CatalogName:     createRequest.CatalogName,
 		Comment:         createRequest.Comment,
@@ -67,21 +68,6 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 	return Response{
 		Body: registeredModel,
 	}
-}
-
-// RegisteredModelsGet honors include_aliases, which UC defaults to false: an alias belongs
-// to a model version and is managed through its own API, so a plain GET does not echo the
-// aliases a create or update was given. Without this the remote appeared to hold them and a
-// config that sets aliases looked like it converged.
-func (s *FakeWorkspace) RegisteredModelsGet(req Request, fullName string) Response {
-	response := MapGetUC(s, s.RegisteredModels, fullName, "Registered Model")
-	model, ok := response.Body.(catalog.RegisteredModelInfo)
-	if !ok || req.URL.Query().Get("include_aliases") == "true" {
-		return response
-	}
-	model.Aliases = nil
-	response.Body = model
-	return response
 }
 
 func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Response {
@@ -117,6 +103,12 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 		delete(s.RegisteredModels, fullName)
 		fullName = existing.CatalogName + "." + existing.SchemaName + "." + updateRequest.NewName
 	}
+
+	// An alias belongs to a model version and is created through its own API, so neither
+	// create nor UpdateRegisteredModel sets one -- the request field exists but the backend
+	// does not honour it. Keeping whatever the model already had (nothing, since create does
+	// not set aliases either) is what makes a config that sets aliases report the truth.
+	existing.Aliases = nil
 
 	existing.UpdatedAt = nowMilli()
 	s.RegisteredModels[fullName] = existing
