@@ -154,6 +154,9 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	// Fields the resource says it ignores local changes to. Not skipped: the declaration is
 	// a claim about behaviour, and a transition either bears it out or does not.
 	ignoredLocally := declaredIgnoredLocally(adapter)
+	// Every rule the resource declares about deliberately not acting, which is what makes a
+	// skipped change the expected outcome rather than a failure to reach a value.
+	deliberate := declaredDeliberate(adapter)
 
 	for path, reason := range fv.skip {
 		rep.add(result{cfg.name, path, "", "", verdictSkipped, reason, ""})
@@ -192,7 +195,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 					}
 
 					reuse := deployedKnown && valueLabel(deployed) == valueLabel(tr.from)
-					res := runTransition(t, h, cfg.name, f.path, tr, reuse, baseline, ignoredLocally)
+					res := runTransition(t, h, cfg.name, f.path, tr, reuse, baseline, deliberate)
 
 					// A starting value the deployed resource will not take -- typically a
 					// field the API refuses to clear -- is not a dead end: a fresh resource
@@ -223,7 +226,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 						} else {
 							h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, cfg.name, rep)
 							if !uncreatable {
-								res = runTransition(t, h, cfg.name, f.path, tr, false, baseline, ignoredLocally)
+								res = runTransition(t, h, cfg.name, f.path, tr, false, baseline, deliberate)
 							}
 						}
 					}
@@ -416,24 +419,26 @@ func converged(plan *deployplan.Plan, node, path string) bool {
 // the config asked for. A pending change means it does not; so does a change the planner
 // dropped for a reason other than the value already being there -- an app whose compute is
 // stopped suppresses a command with "no active deployment", and the command never landed.
-func reachedValue(change *deployplan.ChangeDesc, path string, inert []dresources.FieldRule) bool {
+func reachedValue(change *deployplan.ChangeDesc, path string, deliberate []dresources.FieldRule) bool {
 	if change.Action != deployplan.Skip {
 		return false
 	}
 	if benignSuppressions[change.Reason] {
 		return true
 	}
-	// A field the resource declares it ignores local changes to never holds what the config
-	// asks for -- that is the whole point of the declaration. Asking whether its starting value
-	// landed has no answer, and treating "no" as a failure buried the useful verdict: whether
-	// the change was dropped for exactly the declared reason, which is OK_INERT.
-	reason, declared := ruleReason(inert, path)
+	// A skip for a reason the resource declares about this field is the engine doing what it
+	// says it does, so the config's value is as reached as it will ever be. Two shapes: a field
+	// whose local changes are dropped never holds what the config asks for (asking whether the
+	// starting value landed has no answer, and treating "no" as failure buried the useful
+	// OK_INERT verdict), and a field whose remote value is not compared -- an input_only alias --
+	// has the value in state and on the wire, just not visible on a read.
+	reason, declared := ruleReason(deliberate, path)
 	return declared && reason == change.Reason
 }
 
 // runTransition moves one field from one value to another and reports what happened.
 // startsDeployed says the field already holds tr.from, so the setup deploy can be skipped.
-func runTransition(t *testing.T, h *bundleHarness, config, path string, tr transition, startsDeployed bool, baseline map[string]bool, inert []dresources.FieldRule) result {
+func runTransition(t *testing.T, h *bundleHarness, config, path string, tr transition, startsDeployed bool, baseline map[string]bool, deliberate []dresources.FieldRule) result {
 	from, to := tr.from, tr.to
 	res := result{config: config, field: path, from: valueLabel(tr.from), to: valueLabel(tr.to)} //exhaustruct:ignore
 
@@ -462,9 +467,14 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 			res.detail = firstError(diags)
 			return res
 		}
-		if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change, path, inert) && !baselineCovers(baseline, plan, h.node, path) {
+		if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change, path, deliberate) && !baselineCovers(baseline, plan, h.node, path) {
 			res.verdict = verdictStartNotReached
+			// The planner's own reason for not acting, when it gave one: without it the row says
+			// only which field, and "the app has no active deployment" is the whole explanation.
 			res.detail = path
+			if change.Reason != "" {
+				res.detail = path + ": " + change.Reason
+			}
 			res.evidence = withContext("plan after deploying the starting value:", planJSON(plan))
 			return res
 		}
