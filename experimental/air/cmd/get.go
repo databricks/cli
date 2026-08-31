@@ -21,14 +21,15 @@ import (
 // the machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable text view.
 type getData struct {
-	RunID           string  `json:"run_id"`
-	Status          string  `json:"status"`
-	StartedAt       *string `json:"started_at"`
-	DurationSeconds *int64  `json:"duration_seconds"`
-	AttemptNumber   int     `json:"attempt_number"`
-	ExperimentName  *string `json:"experiment_name"`
-	DashboardURL    string  `json:"dashboard_url"`
-	MLflowURL       *string `json:"mlflow_url"`
+	RunID             string  `json:"run_id"`
+	Status            string  `json:"status"`
+	StartedAt         *string `json:"started_at"`
+	DurationSeconds   *int64  `json:"duration_seconds"`
+	AttemptNumber     int     `json:"attempt_number"`
+	ExperimentName    *string `json:"experiment_name"`
+	DashboardURL      string  `json:"dashboard_url"`
+	MLflowURL         *string `json:"mlflow_url"`
+	TerminationReason *string `json:"termination_reason,omitempty"`
 	// ESTRemainingSeconds and ESTPercentComplete are a best-effort progress
 	// estimate for a running run, or null when one can't be made (see
 	// estimateTrainingETA).
@@ -50,6 +51,7 @@ type getData struct {
 	// ProgressDisplay is the pre-rendered "Progress" cell ("45% · ~2h 15m left"),
 	// set only for a running run with an estimable remaining time.
 	ProgressDisplay string `json:"-"`
+	DisplayStatus   string `json:"-"`
 	// TrainingConfigPath is the run's config file, downloaded for the config box.
 	TrainingConfigPath string `json:"-"`
 	// Sweep replaces the single-run view for foreach runs.
@@ -61,7 +63,7 @@ type getData struct {
 // used only when .Data.Sweep is set. It reads from the JSON envelope, so every
 // field is reached through ".Data".
 const getTemplate = `Sweep Run ID: {{.Data.RunID}}
-Status:       {{.Data.Status}}
+Status:       {{if .Data.DisplayStatus}}{{.Data.DisplayStatus}}{{else}}{{.Data.Status}}{{end}}
 Total:        {{.Data.Sweep.Total}}
 Completed:    {{.Data.Sweep.Completed}}
 Succeeded:    {{.Data.Sweep.Succeeded}}
@@ -237,12 +239,14 @@ func aiRuntimeTaskOf(run *jobs.Run) *jobs.AiRuntimeTask {
 // hyperlinks and colors once the dashboard and MLflow identifiers are known.
 func buildGetData(run *jobs.Run) getData {
 	data := getData{
-		RunID:           strconv.FormatInt(run.RunId, 10),
-		Status:          runStatus(run.State),
-		StartedAt:       startedAt(run),
-		DurationSeconds: durationSeconds(run),
-		AttemptNumber:   latestAttemptNumber(run),
-		ExperimentName:  experimentName(run),
+		RunID:             strconv.FormatInt(run.RunId, 10),
+		Status:            runStatus(run.State),
+		DisplayStatus:     displayRunStatus(run),
+		TerminationReason: terminationReason(run),
+		StartedAt:         startedAt(run),
+		DurationSeconds:   durationSeconds(run),
+		AttemptNumber:     latestAttemptNumber(run),
+		ExperimentName:    experimentName(run),
 	}
 	data.SubmittedDisplay = submittedDisplay(run)
 	data.DurationDisplay = na

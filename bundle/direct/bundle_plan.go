@@ -691,6 +691,13 @@ func isEmptyStruct(rv reflect.Value) bool {
 	}
 
 	rt := rv.Type()
+
+	// Opaque structs (duration.Duration, types/time.Time) have no exported
+	// fields to inspect, so the loop below would call every value empty.
+	if structdiff.IsOpaqueStruct(rt) {
+		return false
+	}
+
 	for i := range rt.NumField() {
 		field := rt.Field(i)
 
