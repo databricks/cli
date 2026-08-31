@@ -45,8 +45,32 @@ base:
   parameters:
     table: users
 
+skip:
+  # Each names a workspace or account object this suite does not provision: an account-level
+  # budget policy, an instance pool, a cluster policy, a KMS key, a UC connection, an ingestion
+  # gateway pipeline.
+  budget_policy_id: needs an account-level budget policy to exist
+  clusters[*].instance_pool_id: needs a second instance pool to exist
+  clusters[*].driver_instance_pool_id: needs a second instance pool to exist
+  clusters[*].policy_id: needs a cluster policy to exist
+  clusters[*].init_scripts[*].s3.kms_key: needs a KMS key registered for the workspace
+  gateway_definition: needs a UC connection to a source database
+  ingestion_definition.connection_name: needs a UC connection to a source database
+  ingestion_definition.ingestion_gateway_id: needs an ingestion gateway pipeline to exist
+  # run_as must name a principal allowed to run the pipeline, which depends on the identity the
+  # suite runs as -- a service principal on cloud.
+  run_as: depends on the identity the suite runs as
+  # A cron trigger is validated as a pair: "Invalid cron expression '' or timezone ...", so the
+  # timezone cannot move without an expression beside it. The config declares no trigger, so
+  # there is none to move it with.
+  trigger.cron: validated as a pair with the cron expression, which the config does not declare
+
 fields:
   # Constrained by the backend but typed as a plain string in the SDK, so nothing derives their
   # values: the generic "x" is rejected on a real workspace.
   channel: [CURRENT, PREVIEW]
+
+  # A root path is a workspace path, and a time zone is a TZ database id, not free text.
+  root_path: [/Shared/pipeline-a, /Shared/pipeline-b]
+  restart_window.time_zone_id: [UTC, America/New_York]
   edition: [CORE, PRO]
