@@ -40,16 +40,38 @@ func buildTarballArtifact(ctx context.Context, b *bundle.Bundle, name string, a 
 	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
 		return err
 	}
-	f, err := os.Create(out)
+
+	// Write to a temp file and rename on success, so a failed build never leaves a
+	// partial tarball at `out`.
+	tmp, err := os.CreateTemp(filepath.Dir(out), filepath.Base(out)+".*.tmp")
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	tmpName := tmp.Name()
+	renamed := false
+	defer func() {
+		tmp.Close() // harmless double-close after the success path; closes fd on error paths
+		if !renamed {
+			os.Remove(tmpName)
+		}
+	}()
 
 	if a.Git != nil {
-		return tarballFromGit(ctx, b, a, f)
+		err = tarballFromGit(ctx, b, a, tmp)
+	} else {
+		err = tarballFromInclude(ctx, b, a, tmp)
 	}
-	return tarballFromInclude(ctx, b, a, f)
+	if err != nil {
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpName, out); err != nil {
+		return err
+	}
+	renamed = true
+	return nil
 }
 
 // tarballFromInclude packs the working tree, scoped to a.Include, using the bundle's
@@ -59,11 +81,8 @@ func tarballFromInclude(ctx context.Context, b *bundle.Bundle, a *config.Artifac
 	if err != nil {
 		return err
 	}
-	paths := a.Include
-	if len(paths) == 0 {
-		paths = []string{"."}
-	}
-	fl, err := libsync.NewFileList(ctx, opts.WorktreeRoot, opts.LocalRoot, paths, opts.Include, opts.Exclude)
+	// a.Include is non-empty here: build.go only reaches include mode when len > 0.
+	fl, err := libsync.NewFileList(ctx, opts.WorktreeRoot, opts.LocalRoot, a.Include, opts.Include, opts.Exclude)
 	if err != nil {
 		return err
 	}
