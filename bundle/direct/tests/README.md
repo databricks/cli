@@ -64,9 +64,19 @@ API sees.
 | `UNSETTABLE` | the value could not be written into the config at all |
 | `BASE_ERROR` | the transition's starting point would not deploy, so nothing was observed |
 | `START_NOT_REACHED` | the starting value deployed without error but the field did not end up holding it, so the move under test could not be set up — a field the API refuses to clear cannot start from `absent`. Retried once on a fresh resource before being recorded |
+| `UPDATE_IGNORED` | the apply succeeded and the engine sent the write, but the field's remote value is unchanged on two consecutive reads: the backend accepted the request and ignored this field |
+| `STALE_READ` | the write did land, but the read straight after the apply did not show it and the next one did — not a support gap, yet a user planning right after a deploy is shown a change that does not exist |
+| `BASELINE_DRIFT` | the field drifts with no config change at all, measured once per resource so it is not blamed on every field tested afterwards |
+| `COLLATERAL_DRIFT` | the field under test converged, but updating it left some *other* field drifting; the detail names that field, which is where the fix belongs |
+| `OK_INERT` | the resource declares that it ignores local changes to this field, and it does — the claim verified rather than assumed |
+| `INERT_NOT_HONOURED` | the resource declares the field inert and the change was applied anyway |
+| `SKIPPED` | left out by the value library, with a reason |
 
-`POST_DEPLOY_DRIFT` and `SUPPRESSED` are where the interesting gaps are. `NOT_OBSERVABLE`
-is not a gap; it is the wire format telling the truth.
+`START_NOT_REACHED` and `UPDATE_IGNORED` are two views of the largest class this suite finds:
+a field the backend will not clear. The engine sends the write, the backend keeps what it had,
+and nothing can then start from `absent`. `SUPPRESSED` with a non-benign reason and
+`COLLATERAL_DRIFT` are the next most interesting. `NOT_OBSERVABLE` is not a gap; it is the wire
+format telling the truth.
 
 Two files per resource type. `output/<type>.txt` is committed: one line per finding, then
 the count of every verdict — including the passing ones, which no line names. Those counts
@@ -77,9 +87,15 @@ recreated instead of updated moves one `OK` to `OK_RECREATE` and nothing else wo
 under each finding — the post-deploy plan for drift, the whole API error for a rejection. It
 is gitignored, because it is full of generated ids and moves whenever any row moves.
 
-The suite deliberately does **not** read `resources.yml`. That file is the engine's
-answer to many of these cases, so consulting it would just restate the implementation.
-The `SUPPRESSED` reason string is the engine explaining itself, which is different.
+The suite reads `resources.yml` for two things only. A field the resource declares an
+`output_only` backend output is skipped rather than tested, since a user cannot meaningfully
+set one at all. And a field the resource declares it ignores local changes to is tested
+anyway, so the claim is checked: it should come back suppressed with exactly that reason,
+which is `OK_INERT`, and anything else is `INERT_NOT_HONOURED`.
+
+Nothing else is consulted. `resources.yml` is the engine's answer to most of these cases, so
+reading it further would just restate the implementation; the `SUPPRESSED` reason string is
+the engine explaining itself, which is different.
 
 ## Value library
 
@@ -106,9 +122,14 @@ fields:
   git_source.git_commit: [abc123, def456]
 ```
 
-Every resource type runs everywhere — local and cloud alike — so most types need no file
-at all. A field with no entry gets two values for its Go kind, which is enough to see a
-value-to-value move on top of add and remove.
+A field with no entry gets two values derived from its type: the first two members of an SDK
+enum (excluding the `*_UNSPECIFIED` sentinel, which means "unset" and is normalized away), or
+two of its Go kind. That is enough to see a value-to-value move on top of add and remove.
+
+Values that a real workspace constrains have to be written down even when the Go type does not
+say so — a pipeline's `channel` and `edition` are plain strings the backend validates, and a
+cluster size is a t-shirt size. The AWS run is what finds these: locally the fake server takes
+anything.
 
 A type that cannot run against a real workspace at all declares `local_only: <reason>` and
 is skipped on cloud — an external location needs a storage credential with cloud IAM behind
@@ -120,9 +141,10 @@ field rules, and naming a block skips everything beneath it.
 
 A field that names the resource gets the run's own unique suffix appended to its values, so
 two runs against one workspace never ask for the same name — the second would get "already
-exists", which says nothing about the engine. Such a field is either declared as part of the
-resource's id, or the corpus config's own value for it carries the run's suffix. The suffix is
-redacted in the report, so the golden is the same on every run.
+exists", which says nothing about the engine. Such a field is recognised by the corpus config
+templating its value with `$UNIQUE_NAME`. The suffix is a placeholder until the value is
+written, since a rebuilt resource has a new one while the old is still alive, and it is
+redacted in the report so the golden is the same on every run.
 
 `base` is expanded with the same `$VARS` the corpus configs use — `$CURRENT_USER_NAME`,
 `$UNIQUE_NAME`, `$NODE_TYPE_ID` and the rest — so a seeded value can name the workspace's
