@@ -666,14 +666,16 @@ func containerValues(resource any, path string) []any {
 	switch value.Kind() {
 	case reflect.Slice:
 		if value.Len() == 0 {
-			return nil
+			// The config declares it empty, which is a value in its own right: with absent in the
+			// set that still covers adding the empty container and taking it away.
+			return []any{full}
 		}
 		trimmed = value.Slice(0, value.Len()-1).Interface()
 
 	case reflect.Map:
 		keys := sortedMapKeys(value)
 		if len(keys) == 0 {
-			return nil
+			return []any{full}
 		}
 		value.SetMapIndex(keys[len(keys)-1], reflect.Value{})
 		trimmed = value.Interface()
