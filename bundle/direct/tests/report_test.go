@@ -185,7 +185,7 @@ func (r *report) add(res result) {
 // reported as not covered when *no* config of the type reached it: several configs of one
 // resource declare different blocks, so a union of the per-config gaps would list fields
 // that are in fact tested -- jobs has eight configs and only some declare tasks.
-func (r *report) addCoverage(covered []field, notCovered []string) {
+func (r *report) addCoverage(covered []field, uncovered []string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.wildcard == nil {
@@ -194,7 +194,7 @@ func (r *report) addCoverage(covered []field, notCovered []string) {
 	if r.covered == nil {
 		r.covered = map[string]bool{}
 	}
-	for _, p := range notCovered {
+	for _, p := range uncovered {
 		r.wildcard[p] = true
 	}
 	for _, f := range covered {
@@ -309,9 +309,10 @@ func (r *report) render(problemsOnly bool) string {
 	}
 
 	if gaps := r.uncoveredPaths(); len(gaps) > 0 {
-		paths := gaps
-		fmt.Fprintf(&sb, "\n=== not covered: %d fields no config of this type declares\n", len(paths))
-		for _, p := range paths {
+		fmt.Fprintf(&sb, "\n=== not covered: %d fields with nothing to test\n", len(gaps))
+		fmt.Fprintf(&sb, "# either no config of this type declares the slice or map they sit in,\n")
+		fmt.Fprintf(&sb, "# or their type has no generic value and the value library gives them none\n")
+		for _, p := range gaps {
 			fmt.Fprintf(&sb, "%s\n", p)
 		}
 	}

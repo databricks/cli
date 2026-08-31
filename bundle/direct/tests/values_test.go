@@ -206,8 +206,22 @@ func isContainer(kind reflect.Kind) bool {
 // observe a value-to-value transition on top of add and remove; more would multiply the
 // matrix without testing a different code path.
 func defaultValues(typ reflect.Type) []any {
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
 	if values := enumValues(typ); values != nil {
 		return values
+	}
+	// A list of scalars is a value in its own right, and the config often leaves it empty --
+	// a job's email_notifications.on_start, say -- so containerValues has nothing to trim and
+	// the fields inside it do not exist. One and two elements give the same coverage from
+	// nothing: with absent in the set, that is add, grow, shrink and remove.
+	if typ.Kind() == reflect.Slice {
+		elements := defaultValues(typ.Elem())
+		if len(elements) < 2 {
+			return nil
+		}
+		return []any{[]any{elements[0]}, []any{elements[0], elements[1]}}
 	}
 	return kindValues(typ.Kind())
 }
@@ -422,12 +436,9 @@ func isRequired(resourceType, path string) bool {
 // "tasks[*].description" is expanded to the indices that exist, so the fields inside an
 // element get the same treatment as any other. A pattern with nothing behind it in the
 // config is reported as not covered rather than silently tested against nothing.
-func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValues, resource any, runSeed uint64, unsettable []dresources.FieldRule) (fields []field, wildcard []string, inertFields map[string]string) {
+func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValues, resource any, runSeed uint64, unsettable []dresources.FieldRule) (fields []field, uncovered []string, inertFields map[string]string) {
 	inertFields = map[string]string{}
 	add := func(path string, kind reflect.Kind, values []any) {
-		if values == nil {
-			return
-		}
 		if _, skipped := fv.skipReason(path); skipped {
 			return
 		}
@@ -435,13 +446,22 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 			inertFields[path] = reason
 			return
 		}
-		fields = append(fields, field{
+		f := field{
 			seed:     fieldSeed(runSeed, path),
 			path:     path,
 			kind:     kind,
 			values:   values,
 			required: isRequired(resourceType, path),
-		})
+		}
+		// A field with nothing to walk is a gap, not something to drop on the floor: no
+		// generic value exists for its type (an `any` field like serialized_dashboard), or
+		// it is required and the library gives it one value, so there is no second value to
+		// move to and no absent to move from.
+		if len(f.transitions()) == 0 {
+			uncovered = append(uncovered, patternOf(path))
+			return
+		}
+		fields = append(fields, f)
 	}
 
 	_ = structwalk.WalkType(inputType, func(p *structpath.PatternNode, typ reflect.Type, sf *reflect.StructField) bool {
@@ -469,7 +489,17 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 			// grow and shrink, so test it as a field before descending into it.
 			if typ.Kind() != reflect.Struct {
 				for _, concrete := range expandPattern(resource, path) {
-					add(concrete, typ.Kind(), containerValues(resource, concrete))
+					values := fv.fields[path]
+					if values == nil {
+						values = containerValues(resource, concrete)
+					}
+					if values == nil {
+						// The config leaves it empty, so there is nothing to trim -- but a
+						// list of scalars needs no invention: two of its element type cover
+						// adding, growing, shrinking and removing.
+						values = defaultValues(typ)
+					}
+					add(concrete, typ.Kind(), values)
 				}
 			}
 			return true
@@ -493,7 +523,7 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 				return false
 			}
 			if _, skipped := fv.skipReason(path); !skipped {
-				wildcard = append(wildcard, path)
+				uncovered = append(uncovered, path)
 			}
 			return false
 		}
@@ -514,7 +544,8 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 	rng := rand.New(rand.NewPCG(runSeed, 1))
 	rng.Shuffle(len(fields), func(i, j int) { fields[i], fields[j] = fields[j], fields[i] })
 
-	return fields, wildcard, inertFields
+	slices.Sort(uncovered)
+	return fields, slices.Compact(uncovered), inertFields
 }
 
 // isNotUserSettable reports whether the bundle marks a field as something the user

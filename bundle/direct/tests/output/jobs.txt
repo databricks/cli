@@ -1,6 +1,6 @@
 
 === summary
-OK                 2267
+OK                 2621
 OK_INERT           6
 SUPPRESSED         12
 NOT_OBSERVABLE     129
