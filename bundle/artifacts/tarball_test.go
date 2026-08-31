@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"context"
 	"io"
 	"os"
 	"os/exec"
@@ -61,7 +60,7 @@ func TestTarballFromGitPrefixesEntries(t *testing.T) {
 	a := &config.Artifact{Path: repo, Git: &config.ArtifactGit{Commit: "HEAD"}}
 
 	var buf bytes.Buffer
-	require.NoError(t, tarballFromGit(context.Background(), b, a, &buf))
+	require.NoError(t, tarballFromGit(t.Context(), b, a, &buf))
 
 	dir := filepath.Base(repo)
 	entries := tarEntries(t, buf.Bytes())
@@ -71,6 +70,6 @@ func TestTarballFromGitPrefixesEntries(t *testing.T) {
 func TestTarballFromGitRequiresRef(t *testing.T) {
 	b := &bundle.Bundle{SyncRootPath: t.TempDir()}
 	a := &config.Artifact{Path: b.SyncRootPath, Git: &config.ArtifactGit{}}
-	err := tarballFromGit(context.Background(), b, a, io.Discard)
+	err := tarballFromGit(t.Context(), b, a, io.Discard)
 	require.ErrorContains(t, err, "git.commit or git.branch")
 }
