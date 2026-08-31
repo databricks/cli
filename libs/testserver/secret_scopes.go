@@ -32,6 +32,18 @@ func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 		backendType = workspace.ScopeBackendTypeDatabricks
 	}
 
+	// An Azure Key Vault scope is backed by a real vault, so the API requires its metadata
+	// and rejects the scope without it.
+	if backendType == workspace.ScopeBackendTypeAzureKeyvault && request.BackendAzureKeyvault == nil {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "Scope with Azure KeyVault must have AzureKeyVaultSecretScopeMetadata defined!",
+			},
+		}
+	}
+
 	scope := workspace.SecretScope{
 		Name:             request.Scope,
 		BackendType:      backendType,
