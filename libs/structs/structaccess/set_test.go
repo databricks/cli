@@ -957,3 +957,28 @@ func TestSet_DiamondEmbedIsAmbiguous(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{}`, string(blob))
 }
+
+// Whether a name is ambiguous is a property of the type: two embedded pointers declaring it at
+// the same depth make it one encoding/json omits, and that must not change with whether one of
+// them happens to be nil right now.
+type ambiguousPtrEmbeds struct {
+	*ambiguousA
+	*ambiguousB //nolint:govet // the repeated json tag is the point: both embeds declare "value"
+}
+
+func TestSet_AmbiguousPointerEmbedsIgnoreNilness(t *testing.T) {
+	// One embed present, the other nil: the name is still ambiguous.
+	target := &ambiguousPtrEmbeds{ambiguousA: &ambiguousA{}} //exhaustruct:ignore
+	require.Error(t, structaccess.SetByString(target, "value", "set"))
+	_, err := structaccess.GetByString(target, "value")
+	require.Error(t, err)
+
+	// And with both present, unchanged.
+	target = &ambiguousPtrEmbeds{ambiguousA: &ambiguousA{}, ambiguousB: &ambiguousB{}}
+	require.Error(t, structaccess.SetByString(target, "value", "set"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{}`, string(blob))
+}
