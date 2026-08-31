@@ -912,3 +912,33 @@ func TestGet_CyclicEmbedTerminates(t *testing.T) {
 	require.Error(t, err)
 	require.Error(t, structaccess.ValidateByString(reflect.TypeOf(target), "nope"))
 }
+
+// A diamond: two embeds reaching one type, so the name sits at the same depth twice.
+// encoding/json omits it, and the search has to see both paths to notice.
+type diamondLeaf struct {
+	Value string `json:"value"`
+}
+
+type diamondLeft struct {
+	diamondLeaf
+}
+
+type diamondRight struct {
+	diamondLeaf
+}
+
+type diamondEmbeds struct {
+	diamondLeft
+	diamondRight
+}
+
+func TestSet_DiamondEmbedIsAmbiguous(t *testing.T) {
+	target := &diamondEmbeds{}
+
+	require.Error(t, structaccess.SetByString(target, "value", "set"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{}`, string(blob))
+}
