@@ -1,24 +1,14 @@
 === genie_space.yml.tmpl
 description                                  x          absent     UPDATE_IGNORED  description
 description                                  y          absent     UPDATE_IGNORED  description
-parent_path                                  absent     x-UNIQUE   START_NOT_REACHED  parent_path
-parent_path                                  absent     y-UNIQUE   START_NOT_REACHED  parent_path
-parent_path                                  x-UNIQUE   absent     START_NOT_REACHED  parent_path
-parent_path                                  x-UNIQUE   y-UNIQUE   START_NOT_REACHED  parent_path
-parent_path                                  y-UNIQUE   absent     START_NOT_REACHED  parent_path
-parent_path                                  y-UNIQUE   x-UNIQUE   START_NOT_REACHED  parent_path
 title                                        absent     x-UNIQUE   START_NOT_REACHED  title
 title                                        absent     y-UNIQUE   START_NOT_REACHED  title
 title                                        x-UNIQUE   absent     UPDATE_IGNORED  title
 title                                        y-UNIQUE   absent     UPDATE_IGNORED  title
-warehouse_id                                 absent     x          START_NOT_REACHED  warehouse_id
-warehouse_id                                 absent     y          START_NOT_REACHED  warehouse_id
-warehouse_id                                 x          absent     UPDATE_IGNORED  warehouse_id
-warehouse_id                                 y          absent     UPDATE_IGNORED  warehouse_id
 
 === summary
-OK                 8
+OK                 6
 NOT_OBSERVABLE     6
-UPDATE_IGNORED     6
-SKIPPED            2
-START_NOT_REACHED  10
+UPDATE_IGNORED     4
+SKIPPED            4
+START_NOT_REACHED  2
