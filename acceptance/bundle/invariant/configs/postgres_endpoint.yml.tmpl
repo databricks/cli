@@ -19,10 +19,13 @@ resources:
       endpoint_id: test-endpoint-$UNIQUE_NAME
       endpoint_type: ENDPOINT_TYPE_READ_WRITE
       # Mutations for apply_update / apply_remote_update; see acceptance/bin/apply_mutation.py.
-      # BUG: the change is detected (old "300s", new "600s") but then suppressed with
-      # reason "empty". isEmptyStruct in bundle/direct/bundle_plan.go only looks at
-      # exported fields, and SDK duration.Duration wraps a single unexported
-      # *durationpb.Duration -- so every value of it looks like an empty struct and
-      # allEmpty(old, new) is always true. Expecting "skip" locks in the broken
-      # behaviour; flip to non-skip once isEmptyStruct handles these SDK types.
-      suspend_timeout_duration: 300s   # ACTION: SET 600s EXPECT: skip
+      # The mutation apply_update and apply_remote_update would run, if they could: the
+      # engine puts this field's own name in update_mask, but it is a oneof member and the
+      # API only accepts the group name ("spec.suspension"), so the update is rejected with
+      # "Unknown field path in update_mask". Both targets therefore exclude this config; see
+      # their test.toml.
+      #
+      # The planning half does work: an SDK duration used to look like an empty struct to
+      # isEmptyStruct, so every change to one was suppressed with reason "empty", until #6377.
+      # A remote change is still dropped on purpose, the field being declared spec:input_only.
+      suspend_timeout_duration: 300s   # ACTION: SET 600s EXPECT_REMOTE_UPDATE: skip
