@@ -8,4 +8,4 @@ trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 
 
 title "Redeploy is a no-op (no update call)"
 trace $CLI bundle deploy
-trace print_requests.py --nostamp //api/2.0/pipelines | gron.py | contains.py '!json.method = "PUT"'
+trace print_requests.py //api/2.0/pipelines | gron.py | contains.py '!json.method = "PUT"'

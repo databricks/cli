@@ -3,4 +3,4 @@ CloudEnvs.aws = false
 CloudEnvs.azure = false
 CloudEnvs.gcp = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-EnvMatrix.DMS = ["", "true"]
+EnvMatrix.DMS = ["false", "true"]

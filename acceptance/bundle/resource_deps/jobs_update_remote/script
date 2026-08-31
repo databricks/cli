@@ -1,7 +1,7 @@
 echo "*" > .gitignore
-$CLI bundle plan -o json | nostamp > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py --nostamp //jobs
+trace print_requests.py //jobs
 
 trace $CLI bundle plan
 
@@ -13,7 +13,7 @@ bar_id=`read_id.py bar`
 title "Update trigger.periodic.unit remotely and re-deploy; jobs.bar is unchanged"
 trace envsubst < job_update.json > tmp.json && mv tmp.json job_update.json
 trace $CLI jobs reset --json @job_update.json
-$CLI bundle plan -o json | nostamp > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle destroy --auto-approve
-trace print_requests.py --nostamp //jobs
+trace print_requests.py //jobs

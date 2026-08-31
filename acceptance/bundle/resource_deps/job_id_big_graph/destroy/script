@@ -2,7 +2,7 @@ cp $TESTDIR/../databricks.yml .
 echo "*" > .gitignore
 
 trace $CLI bundle deploy
-trace print_requests.py --nostamp --sort //jobs
+trace print_requests.py --sort //jobs
 
 replace_ids.py
 

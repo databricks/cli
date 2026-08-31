@@ -8,16 +8,16 @@ if [ -n "$CLOUD_ENV" ]; then
 fi
 rm -f out.requests.txt
 
-trace $CLI bundle plan -o json | nostamp > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 
 cleanup() {
     trace errcode $CLI bundle destroy --auto-approve
-    print_requests.py --nostamp //jobs/ > out.requests_destroy.$DATABRICKS_BUNDLE_ENGINE.json
+    print_requests.py //jobs/ > out.requests_destroy.$DATABRICKS_BUNDLE_ENGINE.json
 }
 trap cleanup EXIT
 
 trace $CLI bundle deploy
-print_requests.py --nostamp //jobs/ | gron.py --sort-arrays access_control_list > out.requests_create.txt
+print_requests.py //jobs/ | gron.py --sort-arrays access_control_list > out.requests_create.txt
 
 trace $CLI bundle plan
 
@@ -29,7 +29,7 @@ rm -f out.requests.txt
 title "Delete one permission and deploy again\n"
 grep -v DELETE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
 trace $CLI bundle deploy
-print_requests.py --nostamp //jobs/ | gron.py --sort-arrays access_control_list > out.requests_update.txt
+print_requests.py //jobs/ | gron.py --sort-arrays access_control_list > out.requests_update.txt
 
 $CLI permissions get jobs "$job_id" | gron.py --sort-arrays access_control_list | grep -v display_name > out.permissions_update.txt
 rm -f out.requests.txt

@@ -1,3 +1,5 @@
+
+>>> errcode jq -s .[] | select(.method == "POST" and (.path | contains("/pipelines"))) out.requests.txt
 {
   "method": "POST",
   "path": "/api/2.0/pipelines",

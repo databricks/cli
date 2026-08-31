@@ -1,10 +1,6 @@
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 
-# Telemetry reports the byte size of the serialized state, which the deployment stamp
-# legitimately grows. The number is the assertion here, so there is nothing to normalize.
-EnvMatrix.DMS = [""]
-
 Env.DATABRICKS_CACHE_ENABLED = 'false'
 
 [[Repls]]

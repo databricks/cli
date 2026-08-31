@@ -1,7 +1,3 @@
-# The seed deploy runs an old CLI unaware of DMS, so resources aren't recorded.
-# Reading state from the service finds nothing; adopting pre-DMS resources is a separate story.
-EnvMatrix.DMS = [""]
-
 # $resources references to permissions and grants are not supported on v0.293.0
 EnvMatrixExclude.no_permission_ref = ["INPUT_CONFIG=job_permission_ref.yml.tmpl"]
 EnvMatrixExclude.no_cross_resource_ref = ["INPUT_CONFIG=job_cross_resource_ref.yml.tmpl"]

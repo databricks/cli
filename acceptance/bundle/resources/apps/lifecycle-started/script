@@ -15,7 +15,7 @@ rm -f out.requests.txt
 title "Re-deploy with description change: code deployed again"
 trace update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
 trace errcode $CLI bundle deploy
-trace print_requests.py //deployments ^//api/2.0/bundle
+trace print_requests.py //deployments
 rm -f out.requests.txt
 
 title "Stop app externally while config says started=true: plan detects drift"

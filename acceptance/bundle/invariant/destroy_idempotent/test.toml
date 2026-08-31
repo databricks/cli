@@ -1,7 +1,3 @@
-# Recording needs a bundle from the start. This test rewinds state and wipes the
-# deployment record path, so recording refuses it.
-EnvMatrix.DMS = [""]
-
 EnvMatrix.READPLAN = ["", "1"]
 
 # Snapshot of pre-destroy state used to re-run destroy on state that still

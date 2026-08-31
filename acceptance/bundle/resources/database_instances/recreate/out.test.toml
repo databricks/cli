@@ -1,4 +1,4 @@
 Cloud = false
 CloudEnvs.gcp = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-EnvMatrix.DMS = ["", "true"]
+EnvMatrix.DMS = ["false", "true"]

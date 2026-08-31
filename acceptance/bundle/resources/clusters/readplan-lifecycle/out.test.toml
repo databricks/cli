@@ -1,4 +1,4 @@
 Cloud = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-EnvMatrix.DMS = ["", "true"]
+EnvMatrix.DMS = ["false", "true"]
 EnvMatrix.READPLAN = ["", "1"]

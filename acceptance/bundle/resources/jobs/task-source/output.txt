@@ -10,9 +10,9 @@ Created jobs.workspace_job
 Files: 8 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="git_job") | .body | del(.deployment.deployment_id, .deployment.version_id) out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="git_job") | .body out.requests.txt
 
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="workspace_job") | .body | del(.deployment.deployment_id, .deployment.version_id) out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="workspace_job") | .body out.requests.txt
 
 >>> [CLI] bundle plan
 update jobs.git_job
@@ -25,6 +25,6 @@ Updated jobs.git_job
 Files: 5 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="git_job") | .body | del(.new_settings.deployment.deployment_id, .new_settings.deployment.version_id) out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="git_job") | .body out.requests.txt
 
->>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="workspace_job") | .body | del(.new_settings.deployment.deployment_id, .new_settings.deployment.version_id) out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="workspace_job") | .body out.requests.txt

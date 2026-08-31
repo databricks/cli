@@ -4,14 +4,14 @@ trace $CLI bundle deploy
 pol_id=`read_id.py pol`
 
 title "Deploy requests in dependency order: policy create precedes job create, job carries resolved policy id"
-trace print_requests.py //policies/clusters //jobs --nostamp
+trace print_requests.py //policies/clusters //jobs
 
 title "Update both the policy and the job"
 trace update_file.py databricks.yml my_policy my_policy_2
 trace update_file.py databricks.yml my_job my_job_2
 trace $CLI bundle deploy
-trace print_requests.py //policies/clusters //jobs --nostamp
+trace print_requests.py //policies/clusters //jobs
 
 title "Destroy: job delete precedes policy delete"
 trace $CLI bundle destroy --auto-approve
-trace print_requests.py //policies/clusters //jobs --nostamp
+trace print_requests.py //policies/clusters //jobs

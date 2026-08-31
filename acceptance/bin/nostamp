@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# Reads JSON on stdin, writes it back with deployment_id and version_id removed.
+# Deployment history recording stamps every job and pipeline, breaking tests that
+# compare output byte for byte.
+# The stamp appears in three shapes: nested in deployment block, flat in plan changes,
+# and as plan changes that exist only for the stamp. Intentionally keeps deployment_id
+# elsewhere and "version_id": "" (terraform state from unstamped resources).
+
+jq "$@" '((.. | objects | select(has("kind") and has("metadata_file_path")))
+     |= with_entries(select((.key | IN("deployment_id", "version_id")) == false or .value == "")))
+    | ((.. | objects | .changes? | objects)
+       |= with_entries(select(.key | IN("deployment.deployment_id", "deployment.version_id") | not)))
+    | del(.. | objects | select(.changes == {}) | .changes)'
