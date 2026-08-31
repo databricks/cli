@@ -114,7 +114,9 @@ def render_signature(func) -> str:
 
 
 def _bases(cls) -> str:
-    names = [b.__name__ for b in cls.__bases__ if b is not object]
+    # Skip object and private (underscore) bases, mirroring _members(): a generated private
+    # base like _GeneratedResources is an implementation detail, not the public contract.
+    names = [b.__name__ for b in cls.__bases__ if b is not object and not b.__name__.startswith("_")]
     return "(" + ", ".join(names) + ")" if names else ""
 
 
