@@ -103,6 +103,18 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		}
 	}
 
+	// A dashboard is addressed by its display name, which becomes its file name, so the API
+	// refuses to create one without it.
+	if dashboard.DisplayName == "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "[Request Validation] display name cannot be empty",
+			},
+		}
+	}
+
 	// Default to user's home directory if parent_path is not provided (matches cloud behavior)
 	if dashboard.ParentPath == "" {
 		dashboard.ParentPath = "/Users/" + s.CurrentUser().UserName

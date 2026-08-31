@@ -203,17 +203,28 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 						// the new resource is built holding it: a field the API will not move to
 						// a value can still be created with it.
 						rebuilt, err := rebuild(owner, ctx, client, user, cfg, fv, h, preset{f.path, tr.from})
+						uncreatable := err != nil
+						if uncreatable {
+							// The resource cannot even be created holding that value, which is the
+							// answer for this transition: a dashboard has to have a display name,
+							// so nothing starts from it being absent. Recorded, and a plain
+							// rebuild follows so the remaining transitions have a resource.
+							res.detail = "cannot create the resource holding it: " + oneLine(err.Error())
+							res.evidence = withContext("error creating the resource with the starting value:", err.Error())
+							rebuilt, err = rebuild(owner, ctx, client, user, cfg, fv, h)
+						}
 						if err != nil {
-							// Nothing was observed and there is no resource left to observe
-							// it on, which is a different statement from the field refusing
-							// its starting value.
+							// No resource left to observe anything on, which is a different
+							// statement from the field refusing its starting value.
 							res.verdict = verdictBaseError
 							res.detail = oneLine(err.Error())
 							res.evidence = err.Error()
 							broken = err
 						} else {
 							h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, cfg.name, rep)
-							res = runTransition(t, h, cfg.name, f.path, tr, false, baseline)
+							if !uncreatable {
+								res = runTransition(t, h, cfg.name, f.path, tr, false, baseline)
+							}
 						}
 					}
 
