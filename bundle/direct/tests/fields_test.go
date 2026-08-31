@@ -426,6 +426,13 @@ func reachedValue(change *deployplan.ChangeDesc, path string, deliberate []dreso
 	if benignSuppressions[change.Reason] {
 		return true
 	}
+	// A field the remote type has no place for -- a write-only input like purge_on_delete, which
+	// the bundle acts on at destroy and the API never returns. The engine's own definition of the
+	// reason is that the remote is always nil, so there is nothing for the value to be reached
+	// in; it is in state and that is all there is.
+	if change.Reason == deployplan.ReasonMissingInRemote {
+		return true
+	}
 	// A skip for a reason the resource declares about this field is the engine doing what it
 	// says it does, so the config's value is as reached as it will ever be. Two shapes: a field
 	// whose local changes are dropped never holds what the config asks for (asking whether the
