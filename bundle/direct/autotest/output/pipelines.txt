@@ -1,11 +1,19 @@
+catalog                                      absent     x          BACKEND_ERROR  cannot update resources.pipelines.foo: updating id=[ID]: Cannot add catalog to an existing pipeline with defined storage location, if you wa...
+catalog                                      absent     y          BACKEND_ERROR  cannot update resources.pipelines.foo: updating id=[ID]: Cannot add catalog to an existing pipeline with defined storage location, if you wa...
+catalog                                      x          absent     BASE_ERROR  cannot update resources.pipelines.foo: updating id=[ID]: Cannot add catalog to an existing pipeline with defined storage location, if you wa...
+catalog                                      x          y          BASE_ERROR  cannot update resources.pipelines.foo: updating id=[ID]: Cannot add catalog to an existing pipeline with defined storage location, if you wa...
+catalog                                      y          absent     BASE_ERROR  cannot update resources.pipelines.foo: updating id=[ID]: Cannot add catalog to an existing pipeline with defined storage location, if you wa...
+catalog                                      y          x          BASE_ERROR  cannot update resources.pipelines.foo: updating id=[ID]: Cannot add catalog to an existing pipeline with defined storage location, if you wa...
 dry_run                                      absent     true       UPDATE_IGNORED
 dry_run                                      false      true       UPDATE_IGNORED
 
 === summary
-OK                 742
+OK                 736
 OK_RECREATE        9
 OK_INERT           12
 SUPPRESSED         46
 NOT_OBSERVABLE     29
 UPDATE_IGNORED     2
+BACKEND_ERROR      2
 SKIPPED            12
+BASE_ERROR         4
