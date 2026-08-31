@@ -8,7 +8,7 @@ trace $CLI auth login --host $DATABRICKS_HOST --profile fingerprint-test --scope
 cp "./home/.databricks/token-cache.json" "./token-cache.before.json"
 
 # Editing any parsed profile value must block cached-token reuse.
-sed -i 's/scopes       = jobs/scopes       = all-apis,sql/' "./home/.databrickscfg"
+sed -i.bak 's/scopes       = jobs/scopes       = all-apis,sql/' "./home/.databrickscfg"
 trace musterr $CLI auth token --profile fingerprint-test
 
 if cmp -s "./token-cache.before.json" "./home/.databricks/token-cache.json"; then
