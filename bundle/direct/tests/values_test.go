@@ -339,9 +339,13 @@ func (t transition) label() string {
 // fixed for a given field, so the report stays byte-stable, but different between fields,
 // so the suite is not always walking the same shape of path.
 func (f field) transitions() []transition {
-	values := f.values
-	if !f.required {
-		values = append([]any{absent}, values...)
+	// A fresh slice either way, since the shuffle below is in place: transitions() is called
+	// twice per field -- once to decide whether the field has anything to test, once to run it
+	// -- and shuffling the field's own values would make the second call walk a different chain
+	// than the first agreed to.
+	values := append([]any{absent}, f.values...)
+	if f.required {
+		values = slices.Clone(f.values)
 	}
 	if len(values) < 2 {
 		return nil
