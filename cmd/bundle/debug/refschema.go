@@ -73,6 +73,11 @@ func dumpRemoteSchemas(out io.Writer) error {
 					p == "grants" || strings.HasPrefix(p, "grants.") || strings.HasPrefix(p, "grants[") {
 					return false
 				}
+				// libraries is a sub-resource adapter for clusters only (pipelines have a native
+				// top-level libraries field), so skip it here just for clusters.
+				if resourceName == "clusters" && (p == "libraries" || strings.HasPrefix(p, "libraries.") || strings.HasPrefix(p, "libraries[")) {
+					return false
+				}
 				t := strings.ReplaceAll(fmt.Sprint(typ), "interface {}", "any")
 				byType, ok := pathTypes[p]
 				if !ok {

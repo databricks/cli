@@ -460,23 +460,6 @@ resources.clusters.*.jdbc_port	int	REMOTE
 resources.clusters.*.kind	compute.Kind	ALL
 resources.clusters.*.last_restarted_time	int64	REMOTE
 resources.clusters.*.last_state_loss_time	int64	REMOTE
-resources.clusters.*.libraries	[]compute.Library	INPUT
-resources.clusters.*.libraries[*]	compute.Library	INPUT
-resources.clusters.*.libraries[*].cran	*compute.RCranLibrary	INPUT
-resources.clusters.*.libraries[*].cran.package	string	INPUT
-resources.clusters.*.libraries[*].cran.repo	string	INPUT
-resources.clusters.*.libraries[*].egg	string	INPUT
-resources.clusters.*.libraries[*].jar	string	INPUT
-resources.clusters.*.libraries[*].maven	*compute.MavenLibrary	INPUT
-resources.clusters.*.libraries[*].maven.coordinates	string	INPUT
-resources.clusters.*.libraries[*].maven.exclusions	[]string	INPUT
-resources.clusters.*.libraries[*].maven.exclusions[*]	string	INPUT
-resources.clusters.*.libraries[*].maven.repo	string	INPUT
-resources.clusters.*.libraries[*].pypi	*compute.PythonPyPiLibrary	INPUT
-resources.clusters.*.libraries[*].pypi.package	string	INPUT
-resources.clusters.*.libraries[*].pypi.repo	string	INPUT
-resources.clusters.*.libraries[*].requirements	string	INPUT
-resources.clusters.*.libraries[*].whl	string	INPUT
 resources.clusters.*.lifecycle	*dresources.StateLifecycle	REMOTE	STATE
 resources.clusters.*.lifecycle	*resources.LifecycleWithStarted	INPUT
 resources.clusters.*.lifecycle	resources.Lifecycle	INPUT
