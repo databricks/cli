@@ -1,8 +1,10 @@
 # Value library for postgres synced tables. See ../../README.md.
 
-# Postgres resources are only available on AWS, and the invariant suite
-# excludes them from every cloud run for that reason.
-local_only: Postgres resources are only available on AWS
+# Postgres is an AWS-only service, so an aws workspace is the one place the cloud run can
+# confirm this type. The invariant suite drops these configs from every cloud run rather than
+# just the ones without the service; acceptance/bundle/resources/postgres_*/test.toml is the
+# closer precedent, disabling gcp and azure by name.
+clouds: [aws]
 base:
   extra_columns:
     - column_name: ingested_at
