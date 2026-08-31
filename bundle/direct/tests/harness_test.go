@@ -47,6 +47,10 @@ type bundleHarness struct {
 	bundle    *bundle.Bundle
 	node      string // "resources.schemas.foo"
 	statePath string
+
+	// unique is the suffix this harness gave its resource, reused for the values of identity
+	// fields so no two runs against one workspace ask for the same name.
+	unique string
 }
 
 func newClient(t *testing.T) *databricks.WorkspaceClient {
@@ -263,6 +267,7 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 		bundle:    b,
 		node:      node,
 		statePath: filepath.Join(dir, "resources.json"),
+		unique:    uniqueName,
 	}
 
 	if base != nil {

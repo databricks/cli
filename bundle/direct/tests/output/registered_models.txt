@@ -1,24 +1,24 @@
 === registered_model.yml.tmpl
-catalog_name                                 absent     main       BASE_ERROR  cannot create resources.registered_models.foo: CreateRegisteredModel Missing required field: catalog_name (400 INVALID_PARAMETER_VALUE)
-catalog_name                                 main       absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: catalog_name (400 INVALID_PARAMETER_VALUE)
+catalog_name                                 absent     main-[UNIQUE_NAME] BASE_ERROR  cannot create resources.registered_models.foo: CreateRegisteredModel Missing required field: catalog_name (400 INVALID_PARAMETER_VALUE)
+catalog_name                                 main-[UNIQUE_NAME] absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: catalog_name (400 INVALID_PARAMETER_VALUE)
 full_name                                    absent     x          UPDATE_IGNORED  full_name
 full_name                                    absent     y          UPDATE_IGNORED  full_name
 full_name                                    x          absent     START_NOT_REACHED  full_name
 full_name                                    x          y          START_NOT_REACHED  full_name
 full_name                                    y          absent     START_NOT_REACHED  full_name
 full_name                                    y          x          START_NOT_REACHED  full_name
-name                                         absent     x          BASE_ERROR  cannot create resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
-name                                         absent     y          BASE_ERROR  cannot create resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
-name                                         x          absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
-name                                         y          absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
+name                                         absent     x-[UNIQUE_NAME] BASE_ERROR  cannot create resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
+name                                         absent     y-[UNIQUE_NAME] BASE_ERROR  cannot create resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
+name                                         x-[UNIQUE_NAME] absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
+name                                         y-[UNIQUE_NAME] absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
 owner                                        absent     x          UPDATE_IGNORED  owner
 owner                                        absent     y          UPDATE_IGNORED  owner
 owner                                        x          absent     START_NOT_REACHED  owner
 owner                                        x          y          START_NOT_REACHED  owner
 owner                                        y          absent     START_NOT_REACHED  owner
 owner                                        y          x          START_NOT_REACHED  owner
-schema_name                                  absent     default    BASE_ERROR  cannot create resources.registered_models.foo: CreateRegisteredModel Missing required field: schema_name (400 INVALID_PARAMETER_VALUE)
-schema_name                                  default    absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: schema_name (400 INVALID_PARAMETER_VALUE)
+schema_name                                  absent     default-[UNIQUE_NAME] BASE_ERROR  cannot create resources.registered_models.foo: CreateRegisteredModel Missing required field: schema_name (400 INVALID_PARAMETER_VALUE)
+schema_name                                  default-[UNIQUE_NAME] absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: schema_name (400 INVALID_PARAMETER_VALUE)
 
 === summary
 OK                 40

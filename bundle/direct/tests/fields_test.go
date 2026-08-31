@@ -75,8 +75,14 @@ func TestFields(t *testing.T) {
 		}
 		byType[c.resourceType] = c
 	}
+	// Whatever lost the pick is not covered, and saying so is the point of the report.
+	for _, c := range usable {
+		if winner := byType[c.resourceType]; winner.name != c.name {
+			skipped[c.name] = "a simpler config of this type is driven instead: " + winner.name
+		}
+	}
 
-	writeCorpusReport(t, usable, skipped)
+	writeCorpusReport(t, byType, skipped)
 
 	for resourceType, cfg := range byType {
 		t.Run(resourceType, func(t *testing.T) {
@@ -129,7 +135,8 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	base := h.snapshot()
 	resource, err := h.resource()
 	require.NoError(t, err)
-	fields, uncovered, inert := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv, resource, runSeed, declaredUnsettable(adapter))
+	fields, uncovered, inert := enumerateFields(cfg.resourceType, adapter.InputConfigType(), fv, resource, runSeed,
+		declaredUnsettable(adapter), declaredIdentity(adapter), h.unique)
 	rep.addCoverage(fields, uncovered)
 
 	// Fields the resource declares a user cannot meaningfully set. Recorded with the
@@ -151,7 +158,11 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 	// echoes diffs forever. Measure that once, against the field that causes it, and leave
 	// it out of every transition's drift -- otherwise it dirties every post-deploy plan and
 	// gets blamed on whichever field happened to be under test.
-	baseline := baselineDrift(h)
+	baseline, err := baselineDrift(h)
+	if err != nil {
+		rep.add(result{cfg.name, "(baseline)", "", "", verdictPlanError, oneLine(err.Error()), err.Error()})
+		return
+	}
 	for _, path := range slices.Sorted(maps.Keys(baseline)) {
 		rep.add(result{cfg.name, path, "", "", verdictBaselineDrift, "drifts with no config change", ""})
 	}
@@ -440,7 +451,9 @@ func explainSkip(plan *deployplan.Plan, node, path string) (verdict, string) {
 }
 
 // valueLabel renders a value for the subtest name and the report. A slice or map is
-// labelled by size, since the point of testing one is how many entries it has.
+// labelled by size, since the point of testing one is how many entries it has. An identity
+// field's value carries the run's own suffix, which is redacted here so the label -- and so
+// the golden -- is the same on every run.
 func valueLabel(v any) string {
 	if v == nil {
 		return "absent"
@@ -452,7 +465,7 @@ func valueLabel(v any) string {
 		return "keys" + strconv.Itoa(value.Len())
 	default:
 	}
-	switch s := fmt.Sprintf("%v", v); s {
+	switch s := oneLine(fmt.Sprintf("%v", v)); s {
 	case "":
 		return "empty"
 	default:
@@ -544,14 +557,20 @@ func checkDeclaredInert(res result, rules []dresources.FieldRule) result {
 
 // baselineDrift returns the fields the resource already wants to change with the config
 // exactly as deployed.
-func baselineDrift(h *bundleHarness) map[string]bool {
+func baselineDrift(h *bundleHarness) (map[string]bool, error) {
 	plan, diags := h.readPlan()
-	if diags.HasError() || plan == nil {
-		return nil
+	if diags.HasError() {
+		// Returning no drift would leave every later verdict measured against an unknown
+		// baseline: a field that was already drifting would be blamed on whichever
+		// transition happened to run.
+		return nil, errors.New(firstError(diags))
+	}
+	if plan == nil {
+		return nil, errors.New("no plan")
 	}
 	entry, ok := plan.Plan[h.node]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	out := map[string]bool{}
 	for path, change := range entry.Changes {
@@ -559,7 +578,7 @@ func baselineDrift(h *bundleHarness) map[string]bool {
 			out[path] = true
 		}
 	}
-	return out
+	return out, nil
 }
 
 // wasIgnored reports whether the write for one field was accepted and then had no effect:

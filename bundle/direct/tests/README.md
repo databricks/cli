@@ -118,6 +118,12 @@ per-config cloud exclusions in `acceptance/bundle/invariant/test.toml`.
 A `skip` key may be a pattern (`aliases[*].id`), matched the way the planner matches its own
 field rules, and naming a block skips everything beneath it.
 
+A field that names the resource gets the run's own unique suffix appended to its values, so
+two runs against one workspace never ask for the same name — the second would get "already
+exists", which says nothing about the engine. Such a field is either declared as part of the
+resource's id, or the corpus config's own value for it carries the run's suffix. The suffix is
+redacted in the report, so the golden is the same on every run.
+
 `base` is expanded with the same `$VARS` the corpus configs use — `$CURRENT_USER_NAME`,
 `$UNIQUE_NAME`, `$NODE_TYPE_ID` and the rest — so a seeded value can name the workspace's
 own user rather than a placeholder only the fake server knows.

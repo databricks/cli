@@ -1,11 +1,12 @@
 # Value library for pipelines. See ../../README.md.
 
 # No pipeline config in the corpus declares a clusters block, so its whole spec -- 346
-# fields, including the init_scripts union and the tag maps -- would go untested.
+# fields, including the init_scripts union and the tag maps -- would go untested. Values
+# that differ per cloud come from the same variables the corpus configs use.
 base:
   clusters:
     - label: default
-      node_type_id: i3.xlarge
+      node_type_id: $NODE_TYPE_ID
       num_workers: 1
       custom_tags:
         team: eng
@@ -18,9 +19,6 @@ base:
       init_scripts:
         - workspace:
             destination: /Users/$CURRENT_USER_NAME/init.sh
-        - s3:
-            destination: s3://bucket/init.sh
-            region: us-east-1
   configuration:
     my.key: value
   environment:
