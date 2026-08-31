@@ -246,7 +246,11 @@ func (r *ResourceLibraries) restartIfRunning(ctx context.Context, id string) err
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Restarting cluster %s because its libraries changed", id))
-	wait, err := r.client.Clusters.Restart(ctx, compute.RestartCluster{ClusterId: id})
+	wait, err := r.client.Clusters.Restart(ctx, compute.RestartCluster{
+		ClusterId:       id,
+		RestartUser:     "",
+		ForceSendFields: nil,
+	})
 	if err != nil {
 		return err
 	}
