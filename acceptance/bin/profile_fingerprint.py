@@ -11,10 +11,7 @@ def append_uvarint(data, value):
     data.append(value)
 
 
-values = {
-    "auth_type": "databricks-cli",
-    "host": sys.argv[1],
-}
+values = dict(argument.split("=", maxsplit=1) for argument in sys.argv[1:])
 serialized = bytearray()
 for key in sorted(values):
     value = values[key]

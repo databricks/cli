@@ -16,7 +16,9 @@ ENDCFG
 setup_test_token_cache() {
     mkdir -p "./home/.databricks"
     # Match the cache metadata that login writes for the two-field test profile.
-    profile_fingerprint=$(profile_fingerprint.py "$DATABRICKS_HOST_ORIG")
+    profile_fingerprint=$(profile_fingerprint.py \
+        "auth_type=databricks-cli" \
+        "host=$DATABRICKS_HOST_ORIG")
     cat > "./home/.databricks/token-cache.json" <<ENDCACHE
 {
   "version": 1,
