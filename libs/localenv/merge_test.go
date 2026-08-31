@@ -1016,26 +1016,97 @@ url = "https://packages.example/simple"
 	assert.Equal(t, s, string(twice))
 }
 
-func TestMergeBailsOnMultilineString(t *testing.T) {
-	// A TOML multi-line string can contain lines that look like headers/keys/
-	// brackets; the line-based merge can't track it, so it must refuse rather than
-	// risk corrupting the file. The body here contains a fake table header and a
-	// fake constraint-dependencies line.
+func TestMergePreservesMultilineProjectDescription(t *testing.T) {
 	in := []byte(`[project]
+name = "my-databricks-project"
 requires-python = ">=3.10"
+description = """
+A multi-line project description.
+"""
 
 [tool.uv]
-note = """
-[project]
-constraint-dependencies = ["not really"]
-"""
+constraint-dependencies = []
 
 [dependency-groups]
 dev = ["databricks-connect~=16.0.0"]
 `)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	requireValidTOML(t, out)
+	assert.Contains(t, string(out), "description = \"\"\"\nA multi-line project description.\n\"\"\"")
+	assert.Contains(t, string(out), `requires-python = "==3.12.*"`)
+
+	twice, _, err := MergeManaged(out, testConstraints())
+	require.NoError(t, err)
+	assert.Equal(t, out, twice)
+}
+
+func TestMergeIgnoresStructureInsideMultilineStrings(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+description = """
+[tool.uv]
+constraint-dependencies = ["not really"]
+# managed by databricks environments setup-local — do not edit
+"""
+literal-description = '''
+[dependency-groups]
+dev = ["databricks-connect==1.0.0"]
+'''
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.uv]
+constraint-dependencies = []
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	requireValidTOML(t, out)
+	s := string(out)
+	assert.Contains(t, s, "description = \"\"\"\n[tool.uv]\nconstraint-dependencies = [\"not really\"]\n# managed by databricks environments setup-local — do not edit\n\"\"\"")
+	assert.Contains(t, s, "literal-description = '''\n[dependency-groups]\ndev = [\"databricks-connect==1.0.0\"]\n'''")
+	assert.Contains(t, s, `dev = ["databricks-connect~=17.2.0"]`)
+}
+
+func TestMergeRecognizesMultilineDelimitersOnlyInTOMLCode(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+literal = '""" is ordinary string content'
+basic = "''' is ordinary string content"
+# """ is comment content
+description = """same-line value"""
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	requireValidTOML(t, out)
+	s := string(out)
+	assert.Contains(t, s, `literal = '""" is ordinary string content'`)
+	assert.Contains(t, s, `basic = "''' is ordinary string content"`)
+	assert.Contains(t, s, `# """ is comment content`)
+	assert.Contains(t, s, `description = """same-line value"""`)
+}
+
+func TestMergePreservesCRLFInsideMultilineString(t *testing.T) {
+	in := []byte("[project]\r\nrequires-python = \">=3.10\"\r\ndescription = \"\"\"\r\ncontinued\r\n\"\"\"\r\n\r\n[dependency-groups]\r\ndev = [\"databricks-connect~=16.0.0\"]\r\n")
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	requireValidTOML(t, out)
+	assert.NotContains(t, strings.ReplaceAll(string(out), "\r\n", ""), "\n")
+	assert.Contains(t, string(out), "description = \"\"\"\r\ncontinued\r\n\"\"\"")
+}
+
+func TestMergeBailsOnUnterminatedMultilineString(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+description = """
+unterminated
+`)
 	_, _, err := MergeManaged(in, testConstraints())
-	require.Error(t, err)
-	assert.ErrorIs(t, err, errMultilineString)
+	require.ErrorIs(t, err, errMultilineString)
 }
 
 func TestMergeBailsWhenNoProjectTable(t *testing.T) {
