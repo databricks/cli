@@ -1,12 +1,15 @@
 package tests
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structpath"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -219,4 +222,68 @@ func TestSameField(t *testing.T) {
 	} {
 		assert.Equal(t, tc.want, sameField(tc.drifting, tc.path), "%s vs %s", tc.drifting, tc.path)
 	}
+}
+
+// An SDK enum declares its own values, and the *_UNSPECIFIED member is a protobuf sentinel for
+// "unset" rather than a choice: asking for it reads as the write being ignored, since the
+// backend normalizes it away.
+func TestEnumValues(t *testing.T) {
+	// AlertOperator has no UNSPECIFIED member, so the two alphabetically-first values come back.
+	got := enumValues(reflect.TypeFor[sql.AlertOperator]())
+	require.Len(t, got, 2)
+	for _, value := range got {
+		assert.IsType(t, sql.AlertOperator(""), value)
+		assert.NotContains(t, value, "UNSPECIFIED")
+	}
+
+	// SpotInstancePolicy does have one, and it must not be offered.
+	got = enumValues(reflect.TypeFor[sql.SpotInstancePolicy]())
+	require.NotEmpty(t, got)
+	for _, value := range got {
+		assert.NotContains(t, fmt.Sprint(value), "UNSPECIFIED")
+	}
+
+	// A plain string is not an enum, whatever the backend constrains it to.
+	assert.Nil(t, enumValues(reflect.TypeFor[string]()))
+}
+
+// A container's values are the resource's own and that value with one entry dropped, both deep
+// copies -- a shallow one would share the pointers inside an element with the live resource, so
+// a later edit would reach into a value recorded here.
+func TestContainerValuesAreIndependent(t *testing.T) {
+	//exhaustruct:ignore
+	job := &resources.Job{JobSettings: jobs.JobSettings{
+		Tasks: []jobs.Task{
+			{TaskKey: "a", NotebookTask: &jobs.NotebookTask{NotebookPath: "one"}}, //exhaustruct:ignore
+			{TaskKey: "b"}, //exhaustruct:ignore
+		},
+	}}
+
+	values := containerValues(job, "tasks")
+	require.Len(t, values, 2)
+	full := values[0].([]jobs.Task)
+	trimmed := values[1].([]jobs.Task)
+	require.Len(t, full, 2)
+	require.Len(t, trimmed, 1)
+
+	// Editing the live resource through the pointer inside an element must not be visible in
+	// either recorded value.
+	require.NoError(t, setValue(job, "tasks[0].notebook_task.notebook_path", "two"))
+	assert.Equal(t, "one", full[0].NotebookTask.NotebookPath)
+	assert.Equal(t, "one", trimmed[0].NotebookTask.NotebookPath)
+}
+
+// A value long enough or punctuated enough to be unreadable as a subtest name gets a trimmed,
+// digest-suffixed label -- stable, and safe to paste back into a test filter.
+func TestShortLabel(t *testing.T) {
+	assert.Equal(t, "x", shortLabel("x"))
+	assert.Equal(t, "dbfs:/FileStore/a.jar", shortLabel("dbfs:/FileStore/a.jar"))
+
+	long := shortLabel(`{"spark_version":{"type":"fixed","value":"13.3"}}`)
+	assert.NotContains(t, long, `"`)
+	assert.LessOrEqual(t, len(long), 24)
+	// Two values sharing a prefix still get different labels.
+	assert.NotEqual(t, long, shortLabel(`{"spark_version":{"type":"fixed","value":"14.3"}}`))
+	// And the same value always gets the same one.
+	assert.Equal(t, long, shortLabel(`{"spark_version":{"type":"fixed","value":"13.3"}}`))
 }
