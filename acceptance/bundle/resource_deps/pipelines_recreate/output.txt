@@ -12,7 +12,7 @@ Created pipelines.foo
 Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //jobs //pipelines
+>>> print_requests.py --nostamp //jobs //pipelines ^//api/2.0/bundle
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -39,7 +39,7 @@ Recreated pipelines.foo
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 
->>> print_requests.py //jobs //pipelines
+>>> print_requests.py --nostamp //jobs //pipelines ^//api/2.0/bundle
 
 === Fetch resource IDs and verify remote state
 >>> musterr [CLI] pipelines get [FOO_ID]
@@ -101,7 +101,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
->>> print_requests.py //jobs //pipelines
+>>> print_requests.py --nostamp //jobs //pipelines ^//api/2.0/bundle
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -116,7 +116,7 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 2 deleted
 
->>> print_requests.py //jobs //pipelines
+>>> print_requests.py --nostamp //jobs //pipelines ^//api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
