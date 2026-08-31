@@ -60,6 +60,9 @@ type runConfig struct {
 	Permissions               []permission   `yaml:"permissions" help:"Who may view or manage the run, as a list of principal plus level grants."`
 	UsagePolicyName           *string        `yaml:"usage_policy_name" help:"Usage policy to bill the run to, by name. Max 127 characters. Mutually exclusive with usage_policy_id."`
 	UsagePolicyID             *string        `yaml:"usage_policy_id" help:"Usage policy to bill the run to, by id. Mutually exclusive with usage_policy_name."`
+	// Schedule turns the workload into a recurring, persistent job: `air run`
+	// creates (or updates) a scheduled job instead of a one-time run (see run.go).
+	Schedule *scheduleConfig `yaml:"schedule" help:"Run the workload on a recurring cron schedule as a persistent job, instead of a one-time run."`
 }
 
 // validate runs structural validation over the whole config, returning the first
@@ -193,6 +196,12 @@ func (c *runConfig) validate() error {
 		}
 		if !uuidRe.MatchString(v) {
 			return fmt.Errorf("usage_policy_id must be a UUID (for example, '12345678-90ab-cdef-1234-567890abcdef'), got: %s. To assign a policy by name instead, use usage_policy_name", v)
+		}
+	}
+
+	if c.Schedule != nil {
+		if err := c.Schedule.validate(); err != nil {
+			return err
 		}
 	}
 
@@ -419,6 +428,30 @@ func (s *snapshotSourceConfig) validate() error {
 
 	if s.Git != nil {
 		return s.Git.validate()
+	}
+	return nil
+}
+
+// scheduleConfig mirrors the Jobs CronSchedule proto so it maps 1:1 onto the
+// bundle job's schedule block (see convert_to_dabs.go). pause_status is optional
+// and defaults to UNPAUSED, matching the Jobs default.
+type scheduleConfig struct {
+	QuartzCronExpression string `yaml:"quartz_cron_expression" help:"Quartz cron expression for the schedule, e.g. '0 0 9 * * ?' (daily at 9am)." required:"yes"`
+	TimezoneID           string `yaml:"timezone_id" help:"Timezone the cron expression is evaluated in, e.g. 'America/Los_Angeles' or 'UTC'." required:"yes"`
+	PauseStatus          string `yaml:"pause_status" help:"Whether the schedule starts PAUSED or UNPAUSED. Optional; defaults to UNPAUSED."`
+}
+
+func (s *scheduleConfig) validate() error {
+	if strings.TrimSpace(s.QuartzCronExpression) == "" {
+		return errors.New("schedule.quartz_cron_expression is required")
+	}
+	if strings.TrimSpace(s.TimezoneID) == "" {
+		return errors.New("schedule.timezone_id is required (for example, 'America/Los_Angeles' or 'UTC')")
+	}
+	switch s.PauseStatus {
+	case "", "PAUSED", "UNPAUSED":
+	default:
+		return fmt.Errorf("schedule.pause_status must be PAUSED or UNPAUSED, got %q", s.PauseStatus)
 	}
 	return nil
 }

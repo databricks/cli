@@ -54,6 +54,7 @@ config
     permissions                  Who may view or manage the run, as a list of principal plus level grants.
     usage_policy_name            Usage policy to bill the run to, by name.
     usage_policy_id              Usage policy to bill the run to, by id.
+    schedule                     Run the workload on a recurring cron schedule as a persistent job, instead of a one-time run.
 
 Use "-h config.<field>" for details on a field.
 

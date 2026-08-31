@@ -300,6 +300,19 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	if perms := buildPermissionsValue(cfg.Permissions); perms.Kind() != dyn.KindInvalid {
 		job["permissions"] = nv(perms.MustSequence(), 5)
 	}
+	// schedule maps 1:1 onto the job's CronSchedule. `air run` can't honor it (it
+	// submits a one-time run); it exists so a converted bundle deploys as a recurring
+	// job. pause_status is omitted when unset so the Jobs default (UNPAUSED) applies.
+	if cfg.Schedule != nil {
+		sched := map[string]dyn.Value{
+			"quartz_cron_expression": nv(cfg.Schedule.QuartzCronExpression, 1),
+			"timezone_id":            nv(cfg.Schedule.TimezoneID, 2),
+		}
+		if cfg.Schedule.PauseStatus != "" {
+			sched["pause_status"] = nv(cfg.Schedule.PauseStatus, 3)
+		}
+		job["schedule"] = nv(sched, 6)
+	}
 
 	rootValue := map[string]dyn.Value{
 		"bundle": nv(map[string]dyn.Value{

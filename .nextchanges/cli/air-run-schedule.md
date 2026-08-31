@@ -1,0 +1,1 @@
+Added `schedule` support to `air run`: a run YAML with a `schedule` block (quartz_cron_expression, timezone_id, optional pause_status) creates or updates a persistent, scheduled job instead of submitting a one-time run.

@@ -21,6 +21,7 @@ type runResult struct {
 	Status       string `json:"status"`
 	DryRun       bool   `json:"dry_run,omitempty"`
 	RunID        string `json:"run_id,omitempty"`
+	JobID        string `json:"job_id,omitempty"`
 	DashboardURL string `json:"dashboard_url,omitempty"`
 }
 
@@ -101,6 +102,13 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			return renderEnvelope(ctx, runResult{Status: "DRY_RUN_OK", DryRun: true})
 		}
 
+		// A schedule turns the workload into a persistent, scheduled job instead of a
+		// one-time run: create (or update) the job and return, since there is no
+		// immediate run to submit or stream.
+		if cfg.Schedule != nil {
+			return runScheduled(ctx, cmd, cfg, file)
+		}
+
 		jsonOut := root.OutputType(cmd) == flags.OutputJSON
 
 		// Announce the experiment before uploading; skipped in JSON mode to keep
@@ -174,6 +182,39 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 	}
 
 	return cmd
+}
+
+// runScheduled creates (or updates) a persistent, scheduled job for a workload
+// whose config carries a `schedule`. Unlike a submit, there is no immediate run
+// to stream, so --watch does not apply here.
+func runScheduled(ctx context.Context, cmd *cobra.Command, cfg *runConfig, configPath string) error {
+	jsonOut := root.OutputType(cmd) == flags.OutputJSON
+	w := cmdctx.WorkspaceClient(ctx)
+	jobID, jobURL, created, err := createScheduledJob(ctx, w, cfg, configPath, !jsonOut)
+	if err != nil {
+		return err
+	}
+	jobIDStr := strconv.FormatInt(jobID, 10)
+
+	if jsonOut {
+		status := "SCHEDULED_UPDATED"
+		if created {
+			status = "SCHEDULED_CREATED"
+		}
+		return renderEnvelope(ctx, runResult{Status: status, JobID: jobIDStr, DashboardURL: jobURL})
+	}
+
+	verb := "Updated"
+	if created {
+		verb = "Created"
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("%s scheduled job %s", verb, jobIDStr))
+	cmdio.LogString(ctx, "View at: "+jobURL)
+	cmdio.LogString(ctx, fmt.Sprintf("Runs on schedule: %s (%s)", cfg.Schedule.QuartzCronExpression, cfg.Schedule.TimezoneID))
+	if cfg.Schedule.PauseStatus == "PAUSED" {
+		cmdio.LogString(ctx, "The schedule is PAUSED; set pause_status: UNPAUSED (or unpause it in the Jobs UI) to activate it.")
+	}
+	return nil
 }
 
 // printSubmitResult writes the green success line and Job Run link. These don't
