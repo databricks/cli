@@ -8,6 +8,21 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
+// maxWarehouseClusters is the ceiling the API puts on max_num_clusters.
+const maxWarehouseClusters = 40
+
+// sqlWarehouseError returns a rejection in the API's shape: a 400 whose message the suite
+// records verbatim.
+func sqlWarehouseError(message string) Response {
+	return Response{
+		StatusCode: 400,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    message,
+		},
+	}
+}
+
 func sqlWarehouseFixUps(warehouse *sql.GetWarehouseResponse, userName string) {
 	if warehouse.CreatorName == "" {
 		warehouse.CreatorName = userName
@@ -35,7 +50,8 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 
 	defer s.LockUnlock()()
 
-	if warehouseId != "" {
+	isCreate := warehouseId == ""
+	if !isCreate {
 		existing, ok := s.SqlWarehouses[warehouseId]
 		if !ok {
 			return Response{
@@ -58,10 +74,25 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 	} else {
 		warehouseId = nextUUID()
 	}
-	warehouse.Id = warehouseId
-	if warehouse.Name == "" {
-		warehouse.Name = warehouseId
+
+	// The create validations the real API applies, in the words it uses (observed on aws,
+	// 2026-08). An edit is exempt: it merges onto a stored warehouse that already passed them,
+	// and the body carries only what changed.
+	if isCreate {
+		if warehouse.Name == "" {
+			return sqlWarehouseError("Invalid value for SQL Endpoint name, it cannot be empty.")
+		}
+		if warehouse.ClusterSize == "" {
+			return sqlWarehouseError("Required field 'cluster_size' is missing.")
+		}
+		// The CLI defaults this to 1 (see resourcemutator's defaults table), so a bundle only
+		// reaches 0 by clearing it deliberately.
+		if warehouse.MaxNumClusters < 1 || warehouse.MaxNumClusters > maxWarehouseClusters {
+			return sqlWarehouseError(fmt.Sprintf("%d is not a valid value for max_num_clusters. The value must be greater than or equal to 1, and less than or equal to %d.", warehouse.MaxNumClusters, maxWarehouseClusters))
+		}
 	}
+
+	warehouse.Id = warehouseId
 	warehouse.State = sql.StateRunning
 	sqlWarehouseFixUps(&warehouse, s.CurrentUser().UserName)
 	s.SqlWarehouses[warehouseId] = warehouse
