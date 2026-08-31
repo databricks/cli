@@ -344,6 +344,9 @@ func (h *bundleHarness) apply(p *pendingApply, plan *deployplan.Plan) diag.Diagn
 	defer p.cancel()
 	ctx, db := p.ctx, p.db
 	if err := db.StateDB.UpgradeToWrite(); err != nil {
+		// Finalize even here: the upgrade can fail with a WAL already created, and leaving it
+		// behind makes every later operation fail with an unexpected-WAL error instead.
+		_, _ = db.StateDB.Finalize(ctx)
 		return diag.FromErr(err)
 	}
 	if err := db.InitForApply(ctx, h.client, plan); err != nil {

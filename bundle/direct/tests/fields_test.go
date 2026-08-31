@@ -209,7 +209,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 							res.evidence = err.Error()
 							broken = err
 						} else {
-							h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline)
+							h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, cfg.name, rep)
 							res = runTransition(t, h, cfg.name, f.path, tr, false, baseline)
 						}
 					}
@@ -223,7 +223,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 					if res.verdict == verdictRecreate {
 						// A recreate replaced the resource without going through rebuild, so the
 						// baseline belongs to one that no longer exists.
-						baseline = remeasure(h, baseline)
+						baseline = remeasure(h, baseline, cfg.name, rep)
 					}
 
 					if broken != nil || res.verdict.leavesResourceUsable() {
@@ -237,7 +237,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 						broken = err
 						return
 					}
-					h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline)
+					h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, cfg.name, rep)
 				})
 			}
 		})
@@ -257,7 +257,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 				rep.add(result{cfg.name, f.path, "", "", verdictBaseError, oneLine(err.Error()), err.Error()})
 				return
 			}
-			h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline)
+			h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, cfg.name, rep)
 		}
 	}
 }
@@ -367,41 +367,28 @@ func hasFieldChanges(plan *deployplan.Plan, node string) bool {
 // A plan that fails here leaves the previous measurement in place, which is closer than
 // nothing, and says so: every verdict after it is measured against a baseline that may not be
 // this resource's.
-func remeasure(h *bundleHarness, previous map[string]bool) map[string]bool {
+func remeasure(h *bundleHarness, previous map[string]bool, config string, rep *report) map[string]bool {
 	measured, err := baselineDrift(h)
 	if err == nil {
 		return measured
 	}
-	h.t.Logf("could not measure the new resource's baseline drift, keeping the previous one: %s", err)
+	// Recorded, not just logged: every verdict after this is measured against a baseline that
+	// belongs to a resource which no longer exists, and a reader of the report has to know.
+	rep.add(result{config, "(baseline)", "", "", verdictPlanError, oneLine(err.Error()), err.Error()})
 	return previous
 }
 
 // baselineCovers reports whether the drift this field would be blamed for is drift that was
 // already there. The comparison is against the key the plan resolved the field to, not the leaf
-// under test: existing drift at "config" would otherwise be reported as an ignored write to
-// "config.foo".
+// under test and not any relation of it: existing drift at "config" explains a change recorded
+// against "config", but says nothing about whether a write to "config.foo" landed, and treating
+// it as an excuse would let an ignored write pass unnoticed.
 func baselineCovers(baseline map[string]bool, plan *deployplan.Plan, node, path string) bool {
 	if baseline[path] {
 		return true
 	}
 	key, _, ok := relatedChangeKey(plan, node, path)
 	return ok && baseline[key]
-}
-
-// baselineDrifts reports whether the field was already drifting before anything was changed,
-// which is what makes it unable to reach a starting value through no fault of the transition.
-// Matched by relation: the baseline may be recorded against an ancestor -- a whole "config"
-// block -- and treating that as this field's failure would blame the ancestor's drift on every
-// field beneath it.
-//
-// The post-deploy drift filter uses an exact comparison instead; see driftDetail.
-func baselineDrifts(baseline map[string]bool, path string) bool {
-	for drifting := range baseline {
-		if sameField(drifting, path) {
-			return true
-		}
-	}
-	return false
 }
 
 // converged reports whether a plan no longer wants to change the field, at whatever
@@ -450,7 +437,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 			res.detail = firstError(diags)
 			return res
 		}
-		if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change) && !baselineDrifts(baseline, path) {
+		if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change) && !baselineCovers(baseline, plan, h.node, path) {
 			res.verdict = verdictStartNotReached
 			res.detail = path
 			res.evidence = withContext("plan after deploying the starting value:", planJSON(plan))
