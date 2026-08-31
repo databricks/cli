@@ -9,11 +9,11 @@ dry_run                                      true       absent     START_NOT_REA
 dry_run                                      true       false      START_NOT_REACHED  dry_run
 
 === summary
-OK                 807
-OK_RECREATE        33
+OK                 741
+OK_RECREATE        9
 OK_INERT           8
 SUPPRESSED         45
 NOT_OBSERVABLE     29
 UPDATE_IGNORED     2
-SKIPPED            2
+SKIPPED            12
 START_NOT_REACHED  6
