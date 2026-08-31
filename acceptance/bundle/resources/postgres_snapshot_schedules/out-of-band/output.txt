@@ -1,0 +1,80 @@
+
+=== Deploy with a snapshot schedule
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-pg-ss-oob-[UNIQUE_NAME]/default/files...
+Created postgres_branches.main
+Created postgres_projects.my_project
+Created postgres_snapshot_schedules.main_schedule
+Files: 0 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] postgres get-snapshot-schedule projects/test-pg-proj-[UNIQUE_NAME]/branches/main/snapshot-schedule
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/snapshot-schedule",
+  "schedule": [
+    {
+      "daily_schedule": {
+        "hour": 3
+      },
+      "retention": "604800s"
+    }
+  ]
+}
+
+=== Change the schedule out of band via a direct API call
+>>> [CLI] postgres update-snapshot-schedule projects/test-pg-proj-[UNIQUE_NAME]/branches/main/snapshot-schedule schedule --json {"schedule":[{"daily_schedule":{"hour":9},"retention":"604800s"}]}
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/snapshot-schedule",
+  "schedule": [
+    {
+      "daily_schedule": {
+        "hour": 9
+      },
+      "retention": "604800s"
+    }
+  ]
+}
+
+=== Plan detects the drift
+>>> [CLI] bundle plan
+update postgres_snapshot_schedules.main_schedule
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+=== Deploy reconciles the schedule back to the configured cadence
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-pg-ss-oob-[UNIQUE_NAME]/default/files...
+Updated postgres_snapshot_schedules.main_schedule
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
+
+>>> [CLI] postgres get-snapshot-schedule projects/test-pg-proj-[UNIQUE_NAME]/branches/main/snapshot-schedule
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/snapshot-schedule",
+  "schedule": [
+    {
+      "daily_schedule": {
+        "hour": 3
+      },
+      "retention": "604800s"
+    }
+  ]
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_projects.my_project
+  delete resources.postgres_snapshot_schedules.main_schedule
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-pg-ss-oob-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted

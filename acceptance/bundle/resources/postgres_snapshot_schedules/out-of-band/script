@@ -1,0 +1,22 @@
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+schedule_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/main/snapshot-schedule"
+
+title "Deploy with a snapshot schedule"
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+trace $CLI postgres get-snapshot-schedule "${schedule_name}" | snapshot_schedule_fields
+
+title "Change the schedule out of band via a direct API call"
+trace $CLI postgres update-snapshot-schedule "${schedule_name}" schedule --json '{"schedule":[{"daily_schedule":{"hour":9},"retention":"604800s"}]}' | snapshot_schedule_fields
+
+title "Plan detects the drift"
+trace $CLI bundle plan
+
+title "Deploy reconciles the schedule back to the configured cadence"
+trace $CLI bundle deploy --auto-approve
+trace $CLI postgres get-snapshot-schedule "${schedule_name}" | snapshot_schedule_fields

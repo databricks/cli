@@ -792,6 +792,38 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"postgres_snapshot_schedules": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-snapshot-schedule",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Snapshot Schedule",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create parent branch
+		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+			Parent:   "projects/test-project-for-snapshot-schedule",
+			BranchId: "test-branch-for-snapshot-schedule",
+			Branch:   postgres.Branch{},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresSnapshotSchedule{
+			PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+				Branch: "projects/test-project-for-snapshot-schedule/branches/test-branch-for-snapshot-schedule",
+			},
+		}, nil
+	},
+
 	"postgres_endpoints": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		// Create parent project first
 		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
@@ -1129,7 +1161,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
+	// postgres_snapshot_schedules has no delete endpoint: DoDelete disables the
+	// schedule by setting an empty cadence set, and the schedule remains readable
+	// (it is intrinsic to the branch), so DoRead still succeeds afterwards.
+	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || group == "postgres_snapshot_schedules"
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.
 	// A GET on the DELETING app returns the app, not 404 -- the testserver

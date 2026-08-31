@@ -1,0 +1,46 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/snapshot-schedule"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/snapshot-schedule",
+  "q": {
+    "update_mask": "schedule"
+  },
+  "body": {
+    "schedule": [
+      {
+        "daily_schedule": {
+          "hour": 3
+        },
+        "retention": "604800s"
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj-[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Project for Snapshot Schedules",
+      "pg_version": 16
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
+  "q": {
+    "branch_id": "main"
+  },
+  "body": {
+    "spec": {
+      "no_expiry": true
+    }
+  }
+}

@@ -1,0 +1,28 @@
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+schedule_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/main/snapshot-schedule"
+
+title "Deploy project + branch without a snapshot schedule"
+envsubst < databricks.yml.tmpl | sed '/postgres_snapshot_schedules:/,$d' > databricks.yml
+trace cat databricks.yml
+rm -f out.requests.txt
+trace $CLI bundle deploy
+trace $CLI postgres get-snapshot-schedule "${schedule_name}" | snapshot_schedule_fields
+
+title "Add the snapshot schedule resource to the existing branch"
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+trace $CLI postgres get-snapshot-schedule "${schedule_name}" | snapshot_schedule_fields
+print_requests.py --del-body parent,project_id,branch_id --sort --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.add.txt
+
+title "Remove the snapshot schedule resource from the existing branch"
+sed '/postgres_snapshot_schedules:/,$d' databricks.yml > databricks.yml.new && mv databricks.yml.new databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+trace $CLI postgres get-snapshot-schedule "${schedule_name}" | snapshot_schedule_fields
+print_requests.py --del-body parent,project_id,branch_id --sort --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.remove.txt
