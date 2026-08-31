@@ -458,8 +458,19 @@ func (h *bundleHarness) setField(path string, value any) error {
 		return err
 	}
 	return h.edit(func(resource any) error {
-		return setNode(resource, node, value)
+		return setNode(resource, node, substituteUnique(value, h.unique))
 	})
+}
+
+// substituteUnique resolves the placeholder in an identity field's value against the suffix
+// this harness's resource actually carries. A rebuild changes that suffix, and the resource it
+// replaced is still alive under the old one until the test ends.
+func substituteUnique(value any, unique string) any {
+	text, ok := value.(string)
+	if !ok || !strings.Contains(text, uniqueMarker) {
+		return value
+	}
+	return strings.ReplaceAll(text, uniqueMarker, unique)
 }
 
 // setNode is setField without the bundle: the edit itself, for the unit tests.

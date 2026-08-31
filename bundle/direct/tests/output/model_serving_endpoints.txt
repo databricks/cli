@@ -3,20 +3,20 @@ budget_policy_id                             x          absent     START_NOT_REA
 budget_policy_id                             x          y          START_NOT_REACHED  budget_policy_id (declared inert: no_update_api)
 budget_policy_id                             y          absent     START_NOT_REACHED  budget_policy_id (declared inert: no_update_api)
 budget_policy_id                             y          x          START_NOT_REACHED  budget_policy_id (declared inert: no_update_api)
-config.auto_capture_config.catalog_name      absent     x          POST_DEPLOY_DRIFT  config
-config.auto_capture_config.catalog_name      absent     y          POST_DEPLOY_DRIFT  config
+config.auto_capture_config.catalog_name      absent     x          UPDATE_IGNORED  config.auto_capture_config.catalog_name
+config.auto_capture_config.catalog_name      absent     y          UPDATE_IGNORED  config.auto_capture_config.catalog_name
 config.auto_capture_config.catalog_name      x          y          START_NOT_REACHED  config.auto_capture_config.catalog_name
 config.auto_capture_config.catalog_name      y          absent     START_NOT_REACHED  config.auto_capture_config.catalog_name
-config.auto_capture_config.enabled           absent     false      POST_DEPLOY_DRIFT  config
-config.auto_capture_config.enabled           absent     true       POST_DEPLOY_DRIFT  config
+config.auto_capture_config.enabled           absent     false      UPDATE_IGNORED  config.auto_capture_config.enabled
+config.auto_capture_config.enabled           absent     true       UPDATE_IGNORED  config.auto_capture_config.enabled
 config.auto_capture_config.enabled           false      absent     START_NOT_REACHED  config.auto_capture_config.enabled
 config.auto_capture_config.enabled           false      true       START_NOT_REACHED  config.auto_capture_config.enabled
 config.auto_capture_config.enabled           true       absent     START_NOT_REACHED  config.auto_capture_config.enabled
 config.auto_capture_config.enabled           true       false      START_NOT_REACHED  config.auto_capture_config.enabled
-config.auto_capture_config.schema_name       absent     x          POST_DEPLOY_DRIFT  config
+config.auto_capture_config.schema_name       absent     x          UPDATE_IGNORED  config.auto_capture_config.schema_name
 config.auto_capture_config.schema_name       x          absent     START_NOT_REACHED  config.auto_capture_config.schema_name
 config.auto_capture_config.schema_name       x          y          START_NOT_REACHED  config.auto_capture_config.schema_name
-config.auto_capture_config.table_name_prefix absent     x          POST_DEPLOY_DRIFT  config
+config.auto_capture_config.table_name_prefix absent     x          UPDATE_IGNORED  config.auto_capture_config.table_name_prefix
 config.auto_capture_config.table_name_prefix x          y          START_NOT_REACHED  config.auto_capture_config.table_name_prefix
 config.auto_capture_config.table_name_prefix y          absent     START_NOT_REACHED  config.auto_capture_config.table_name_prefix
 rate_limits                                  absent     len0       START_NOT_REACHED  rate_limits (declared inert: not_implemented)
@@ -40,6 +40,6 @@ OK_RECREATE        20
 OK_INERT           2
 SUPPRESSED         14
 NOT_OBSERVABLE     10
-POST_DEPLOY_DRIFT  6
+UPDATE_IGNORED     6
 SKIPPED            2
 START_NOT_REACHED  28
