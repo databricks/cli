@@ -893,7 +893,7 @@ type ambiguousB struct {
 
 type ambiguousEmbeds struct {
 	ambiguousA
-	ambiguousB
+	ambiguousB //nolint:govet // the repeated json tag is the point: both embeds declare "value"
 }
 
 func TestSet_AmbiguousEmbedIsNotFound(t *testing.T) {
