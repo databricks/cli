@@ -4,30 +4,42 @@
 # already declares a coherent block -- a catalog, a schema and table names -- so its fields
 # expand and are tested there.
 #
-# ai_gateway, rate_limits and the notification lists are declared by no config, so they are
-# seeded here. served_entities comes from the corpus config.
+# The notification lists and tags are declared by no config, so they are seeded here.
+#
+# ai_gateway and the top-level rate_limits are deliberately not seeded: the API rejects both on
+# an endpoint created without a config block ("Cannot specify ai_gateway when creating endpoints
+# without a config"), and the corpus config declares no config block. Covering them needs a
+# config that declares a served entity, which needs a model in the workspace -- so the report
+# lists their fields as uncovered.
 base:
-  ai_gateway:
-    rate_limits:
-      - calls: 10
-        renewal_period: minute
-    usage_tracking_config:
-      enabled: true
-  rate_limits:
-    - calls: 10
-      renewal_period: minute
   email_notifications:
     on_update_failure:
-      - $CURRENT_USER_NAME
+      - notify@databricks.invalid
     on_update_success:
-      - $CURRENT_USER_NAME
+      - notify@databricks.invalid
   tags:
     - key: team
       value: eng
 
 skip:
+  # An AI gateway only applies to an endpoint serving an external model, provisioned
+  # throughput, or a custom or agent model -- "AI Gateway is currently only supported for
+  # External Models, Provisioned Throughput and Custom or Agent Model". The corpus config
+  # serves none of those, and the API also refuses the whole block on an endpoint created
+  # without a config. Covering it needs a config that declares such a served entity.
+  ai_gateway: needs an endpoint serving an external, provisioned-throughput or custom model
+  # Same shape: "Config needs to be set" -- there is no config block on this endpoint to
+  # attach an auto-capture destination to.
+  config: needs a config block, which the corpus config for this type does not declare
+
   # The corpus config for this type declares no telemetry, and seeding a coherent block here
   # is rejected on every later update ("failed to update telemetry config"). The fields are
   # covered by model_serving_endpoint_telemetry.yml.tmpl, which declares the whole block --
   # but that config is not the simplest one, so it is not the one this suite picks.
   telemetry_config: needs the telemetry corpus config, which is not the simplest one
+
+fields:
+  # A recipient is validated by format, so the generic "x" is rejected. Reserved
+  # non-resolving addresses, per RFC 2606.
+  email_notifications.on_update_failure[*]: [notify@databricks.invalid, alerts@databricks.invalid]
+  email_notifications.on_update_success[*]: [notify@databricks.invalid, alerts@databricks.invalid]

@@ -224,6 +224,28 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		}
 	}
 
+	// An endpoint created without a config block has nothing for these to apply to, so the API
+	// rejects them outright rather than storing them.
+	if createReq.Config == nil {
+		for _, rejected := range []struct {
+			field string
+			set   bool
+		}{
+			{"ai_gateway", createReq.AiGateway != nil},
+			{"rate_limits", len(createReq.RateLimits) > 0},
+		} {
+			if rejected.set {
+				return Response{
+					StatusCode: 400,
+					Body: map[string]string{
+						"error_code": "INVALID_PARAMETER_VALUE",
+						"message":    "Cannot specify " + rejected.field + " when creating endpoints without a config.",
+					},
+				}
+			}
+		}
+	}
+
 	// Convert config to output format
 	var config *serving.EndpointCoreConfigOutput
 	if createReq.Config != nil {
