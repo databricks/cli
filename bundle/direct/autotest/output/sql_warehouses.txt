@@ -1,4 +1,3 @@
-=== sql_warehouse.yml.tmpl
 auto_stop_mins                               10         absent     UPDATE_IGNORED
 auto_stop_mins                               20         absent     UPDATE_IGNORED
 cluster_size                                 2X-Small   absent     UPDATE_IGNORED

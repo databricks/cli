@@ -190,6 +190,12 @@ func loadFieldValues(resourceType string, vars map[string]string) (*fieldValues,
 
 	var missing string
 	expanded := os.Expand(string(data), func(key string) string {
+		// UNIQUE_NAME belongs to one deploy, and a library is read once for the whole run: the
+		// base is rendered into a bundle per harness, and a rebuild gets a new name. Passing it
+		// through keeps it for renderBundle to expand there.
+		if key == uniqueNameVar {
+			return "$" + uniqueNameVar
+		}
 		value, ok := vars[key]
 		if !ok {
 			missing = key

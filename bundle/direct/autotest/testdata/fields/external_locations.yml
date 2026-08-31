@@ -4,4 +4,10 @@
 # cloud IAM set up for the workspace. The corpus config names a credential the mock server
 # invents, so the whole type is local-only -- the same reason the invariant suite excludes
 # this config from its cloud run.
+base:
+  name: test_location_$UNIQUE_NAME
+  url: s3://test-bucket/path
+  credential_name: test_storage_credential
+  comment: "Test external location from DABs"
+
 local_only: needs a storage credential with cloud IAM behind it

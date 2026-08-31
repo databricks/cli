@@ -1,4 +1,3 @@
-=== job.yml.tmpl
 parent_path                                  absent     x          UPDATE_IGNORED
 parent_path                                  absent     y          UPDATE_IGNORED
 parent_path                                  x          absent     UPDATE_IGNORED

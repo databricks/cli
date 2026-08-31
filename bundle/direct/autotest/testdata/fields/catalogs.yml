@@ -2,6 +2,8 @@
 
 # properties is a map the config does not declare, so its entries would be unreachable.
 base:
+  name: test-catalog-$UNIQUE_NAME
+  comment: This is a test catalog
   properties:
     team: eng
 

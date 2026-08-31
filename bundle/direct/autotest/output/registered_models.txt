@@ -1,4 +1,3 @@
-=== registered_model.yml.tmpl
 full_name                                    absent     x          UPDATE_IGNORED
 full_name                                    absent     y          UPDATE_IGNORED
 full_name                                    x          y          UPDATE_IGNORED

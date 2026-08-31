@@ -1,4 +1,3 @@
-=== genie_space.yml.tmpl
 description                                  x          absent     UPDATE_IGNORED
 description                                  y          absent     UPDATE_IGNORED
 title                                        x-UNIQUE   absent     UPDATE_IGNORED

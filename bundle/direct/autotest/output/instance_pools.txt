@@ -1,4 +1,3 @@
-=== instance_pool.yml.tmpl
 enable_elastic_disk                          false      true       UPDATE_IGNORED
 enable_elastic_disk                          true       false      UPDATE_IGNORED
 

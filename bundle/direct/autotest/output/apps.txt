@@ -1,4 +1,3 @@
-=== app.yml.tmpl
 compute_max_instances                        1          absent     UPDATE_IGNORED
 compute_max_instances                        2          absent     UPDATE_IGNORED
 compute_min_instances                        1          absent     UPDATE_IGNORED
