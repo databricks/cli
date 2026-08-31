@@ -1,11 +1,57 @@
 === postgres_synced_table.yml.tmpl
 existing_pipeline_id                         x          absent     START_NOT_REACHED  existing_pipeline_id
+extra_columns[0].column_name                 x          y          START_NOT_REACHED  extra_columns[0].column_name
+extra_columns[0].column_name                 y          x          START_NOT_REACHED  extra_columns[0].column_name
+extra_columns[0].column_type                 x          y          START_NOT_REACHED  extra_columns[0].column_type
+extra_columns[0].column_type                 y          x          START_NOT_REACHED  extra_columns[0].column_type
+extra_columns[0].compute                     absent     x          START_NOT_REACHED  extra_columns[0].compute
+extra_columns[0].compute                     absent     y          START_NOT_REACHED  extra_columns[0].compute
+extra_columns[0].compute                     x          absent     START_NOT_REACHED  extra_columns[0].compute
+extra_columns[0].compute                     x          y          START_NOT_REACHED  extra_columns[0].compute
+extra_columns[0].compute                     y          absent     START_NOT_REACHED  extra_columns[0].compute
+extra_columns[0].compute                     y          x          START_NOT_REACHED  extra_columns[0].compute
+extra_columns[0].maintenance                 STORED_GENERATED absent     START_NOT_REACHED  extra_columns[0].maintenance
+extra_columns[0].maintenance                 absent     STORED_GENERATED START_NOT_REACHED  extra_columns[0].maintenance
+new_pipeline_spec.budget_policy_id           absent     x          START_NOT_REACHED  new_pipeline_spec.budget_policy_id
+new_pipeline_spec.budget_policy_id           absent     y          START_NOT_REACHED  new_pipeline_spec.budget_policy_id
+new_pipeline_spec.budget_policy_id           x          absent     START_NOT_REACHED  new_pipeline_spec.budget_policy_id
+new_pipeline_spec.budget_policy_id           x          y          START_NOT_REACHED  new_pipeline_spec.budget_policy_id
+new_pipeline_spec.budget_policy_id           y          absent     START_NOT_REACHED  new_pipeline_spec.budget_policy_id
+new_pipeline_spec.budget_policy_id           y          x          START_NOT_REACHED  new_pipeline_spec.budget_policy_id
+new_pipeline_spec.pipeline_channel           CURRENT    PREVIEW    START_NOT_REACHED  new_pipeline_spec.pipeline_channel
+new_pipeline_spec.pipeline_channel           CURRENT    absent     START_NOT_REACHED  new_pipeline_spec.pipeline_channel
+new_pipeline_spec.pipeline_channel           PREVIEW    CURRENT    START_NOT_REACHED  new_pipeline_spec.pipeline_channel
+new_pipeline_spec.pipeline_channel           PREVIEW    absent     START_NOT_REACHED  new_pipeline_spec.pipeline_channel
+new_pipeline_spec.pipeline_channel           absent     CURRENT    START_NOT_REACHED  new_pipeline_spec.pipeline_channel
+new_pipeline_spec.pipeline_channel           absent     PREVIEW    START_NOT_REACHED  new_pipeline_spec.pipeline_channel
+new_pipeline_spec.storage_catalog            absent     x          START_NOT_REACHED  new_pipeline_spec.storage_catalog
+new_pipeline_spec.storage_catalog            absent     y          START_NOT_REACHED  new_pipeline_spec.storage_catalog
+new_pipeline_spec.storage_catalog            x          absent     START_NOT_REACHED  new_pipeline_spec.storage_catalog
+new_pipeline_spec.storage_catalog            x          y          START_NOT_REACHED  new_pipeline_spec.storage_catalog
+new_pipeline_spec.storage_catalog            y          absent     START_NOT_REACHED  new_pipeline_spec.storage_catalog
+new_pipeline_spec.storage_catalog            y          x          START_NOT_REACHED  new_pipeline_spec.storage_catalog
+new_pipeline_spec.storage_schema             absent     x          START_NOT_REACHED  new_pipeline_spec.storage_schema
+new_pipeline_spec.storage_schema             absent     y          START_NOT_REACHED  new_pipeline_spec.storage_schema
+new_pipeline_spec.storage_schema             x          absent     START_NOT_REACHED  new_pipeline_spec.storage_schema
+new_pipeline_spec.storage_schema             x          y          START_NOT_REACHED  new_pipeline_spec.storage_schema
+new_pipeline_spec.storage_schema             y          absent     START_NOT_REACHED  new_pipeline_spec.storage_schema
+new_pipeline_spec.storage_schema             y          x          START_NOT_REACHED  new_pipeline_spec.storage_schema
 primary_key_columns                          len1       absent     START_NOT_REACHED  primary_key_columns
 timeseries_key                               y          absent     START_NOT_REACHED  timeseries_key
+type_overrides[0].column_name                x          y          START_NOT_REACHED  type_overrides[0].column_name
+type_overrides[0].column_name                y          x          START_NOT_REACHED  type_overrides[0].column_name
+type_overrides[0].pg_type                    PG_SPECIFIC_TYPE_HALFVEC PG_SPECIFIC_TYPE_VARCHAR START_NOT_REACHED  type_overrides[0].pg_type
+type_overrides[0].pg_type                    PG_SPECIFIC_TYPE_VARCHAR PG_SPECIFIC_TYPE_HALFVEC START_NOT_REACHED  type_overrides[0].pg_type
+type_overrides[0].size                       1          2          START_NOT_REACHED  type_overrides[0].size
+type_overrides[0].size                       1          absent     START_NOT_REACHED  type_overrides[0].size
+type_overrides[0].size                       2          1          START_NOT_REACHED  type_overrides[0].size
+type_overrides[0].size                       2          absent     START_NOT_REACHED  type_overrides[0].size
+type_overrides[0].size                       absent     1          START_NOT_REACHED  type_overrides[0].size
+type_overrides[0].size                       absent     2          START_NOT_REACHED  type_overrides[0].size
 
 === summary
-OK_RECREATE        107
+OK_RECREATE        61
 SUPPRESSED         6
 NOT_OBSERVABLE     4
 SKIPPED            1
-START_NOT_REACHED  3
+START_NOT_REACHED  49

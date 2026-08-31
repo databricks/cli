@@ -118,7 +118,11 @@ func TestFields(t *testing.T) {
 	}
 }
 
+// runConfig drives one config. Every resource it creates belongs to this test's lifetime,
+// which is what `owner` below carries into the subtests: a resource a subtest asks for is
+// reused by the transitions after it, so its cleanup cannot be the subtest's.
 func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, rep *report, runSeed uint64) {
+	owner := t
 	adapter, err := dresources.NewAdapter(dresources.SupportedResources[cfg.resourceType], cfg.resourceType, client)
 	require.NoError(t, err)
 
@@ -194,7 +198,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 					// created without the field genuinely starts absent. Rebuild and try the
 					// transition once more, so it is observed rather than written off.
 					if res.verdict == verdictStartNotReached {
-						rebuilt, err := rebuild(t, ctx, client, user, cfg, fv, h)
+						rebuilt, err := rebuild(owner, ctx, client, user, cfg, fv, h)
 						if err != nil {
 							// Nothing was observed and there is no resource left to observe
 							// it on, which is a different statement from the field refusing
@@ -221,7 +225,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 					deployedKnown = false
 					// The resource is in an unknown state; carrying it into the next
 					// transition would turn one failure into a run of them.
-					rebuilt, err := rebuild(t, ctx, client, user, cfg, fv, h)
+					rebuilt, err := rebuild(owner, ctx, client, user, cfg, fv, h)
 					if err != nil {
 						broken = err
 						return
@@ -242,7 +246,7 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 		// what makes that cheap: reusing the old one waits out an asynchronous delete.
 		h.restore(base)
 		if !h.converged() {
-			rebuilt, err := rebuild(t, ctx, client, user, cfg, fv, h)
+			rebuilt, err := rebuild(owner, ctx, client, user, cfg, fv, h)
 			if err != nil {
 				rep.add(result{cfg.name, f.path, "", "", verdictBaseError, oneLine(err.Error()), err.Error()})
 				return
@@ -263,6 +267,35 @@ func sameField(drifting, path string) bool {
 		strings.HasPrefix(drifting, path+".") || strings.HasPrefix(drifting, path+"[")
 }
 
+// relatedChange returns the plan's change for the field, or for whatever ancestor or
+// descendant of it the planner actually recorded -- it diffs at its own granularity, so a
+// change to "tasks[0].description" can be reported against "tasks". A pending change is
+// preferred over a skipped one, since that is the one that explains what will happen.
+func relatedChange(plan *deployplan.Plan, node, path string) (*deployplan.ChangeDesc, bool) {
+	if plan == nil {
+		return nil, false
+	}
+	entry, ok := plan.Plan[node]
+	if !ok {
+		return nil, false
+	}
+
+	var found *deployplan.ChangeDesc
+	for _, key := range slices.Sorted(maps.Keys(entry.Changes)) {
+		change := entry.Changes[key]
+		if !sameField(key, path) {
+			continue
+		}
+		if change.Action != deployplan.Skip {
+			return change, true
+		}
+		if found == nil {
+			found = change
+		}
+	}
+	return found, found != nil
+}
+
 // fieldWasDropped reports whether the plan mentions the field and yet will not act on it.
 // The planner records a change at whatever granularity it diffed, which is not always the
 // leaf -- a whole "tasks" entry rather than "tasks[0].description" -- so every entry naming
@@ -270,24 +303,8 @@ func sameField(drifting, path string) bool {
 // mention at all is not "dropped": there is nothing to conclude from its absence, and the
 // node's own action decides.
 func fieldWasDropped(plan *deployplan.Plan, node, path string) bool {
-	if plan == nil {
-		return false
-	}
-	entry, ok := plan.Plan[node]
-	if !ok {
-		return false
-	}
-	mentioned := false
-	for key, change := range entry.Changes {
-		if !sameField(key, path) {
-			continue
-		}
-		if change.Action != deployplan.Skip {
-			return false
-		}
-		mentioned = true
-	}
-	return mentioned
+	change, ok := relatedChange(plan, node, path)
+	return ok && change.Action == deployplan.Skip
 }
 
 // converged reports whether a plan no longer wants to change the field.
@@ -328,7 +345,7 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 		// under a label that is not what happened -- "absent to 168" while the remote still
 		// holds 720. Cheaper to check than to reason about afterwards.
 		if plan, diags := h.readPlan(); !diags.HasError() {
-			if change, ok := planChange(plan, h.node, path); ok && !reachedValue(change) && !baseline[path] {
+			if change, ok := relatedChange(plan, h.node, path); ok && !reachedValue(change) && !baseline[path] {
 				res.verdict = verdictStartNotReached
 				res.detail = path
 				res.evidence = withContext("plan after deploying the starting value:", planJSON(plan))
@@ -445,12 +462,17 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 }
 
 // newBaseline builds a harness and deploys the config as written.
-func newBaseline(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues) (*bundleHarness, error) {
-	h, err := newHarness(t, ctx, client, user, cfg.name, uniqueName(), fv.base)
+//
+// owner is the test whose lifetime the resource belongs to, which is the one running the
+// config -- not the subtest that happened to ask for the rebuild. Registering the cleanup on
+// the subtest would destroy the resource as soon as that transition ended, and every
+// transition after it would silently be creating a new one.
+func newBaseline(owner *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues) (*bundleHarness, error) {
+	h, err := newHarness(owner, ctx, client, user, cfg.name, uniqueName(), fv.base)
 	if err != nil {
 		return nil, err
 	}
-	t.Cleanup(func() { _ = h.destroy() })
+	owner.Cleanup(func() { _ = h.destroy() })
 
 	action, diags := h.deploy()
 	if diags.HasError() {
@@ -467,9 +489,9 @@ func newBaseline(t *testing.T, ctx context.Context, client *databricks.Workspace
 // rebuild starts over on a fresh resource, leaving the old one to be destroyed at the
 // end of the test. A new name is what makes this cheap: reusing the old one can mean
 // waiting out an asynchronous delete.
-func rebuild(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, old *bundleHarness) (*bundleHarness, error) {
-	t.Cleanup(func() { _ = old.destroy() })
-	return newBaseline(t, ctx, client, user, cfg, fv)
+func rebuild(owner *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, old *bundleHarness) (*bundleHarness, error) {
+	owner.Cleanup(func() { _ = old.destroy() })
+	return newBaseline(owner, ctx, client, user, cfg, fv)
 }
 
 // explainSkip says why a plan came back with nothing to do for the field under test.
@@ -477,11 +499,13 @@ func rebuild(t *testing.T, ctx context.Context, client *databricks.WorkspaceClie
 // bool and an explicit false are the same on the wire), whereas a field it diffed and
 // then dropped is, and the engine records its own reason for that.
 func explainSkip(plan *deployplan.Plan, node, path string) (verdict, string) {
-	entry, ok := plan.Plan[node]
-	if !ok {
+	if _, ok := plan.Plan[node]; !ok {
 		return verdictNoPlan, "no plan entry"
 	}
-	change, ok := entry.Changes[path]
+	// Whichever entry names the field, which is not always the leaf: the planner records a
+	// change at the granularity it diffed at, so the reason for dropping "tasks[0].foo" may
+	// be attached to "tasks".
+	change, ok := relatedChange(plan, node, path)
 	if !ok {
 		return verdictNotObservable, ""
 	}

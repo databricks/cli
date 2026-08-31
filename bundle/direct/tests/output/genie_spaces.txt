@@ -1,5 +1,6 @@
 === genie_space.yml.tmpl
 description                                  x          absent     UPDATE_IGNORED  description
+description                                  y          absent     UPDATE_IGNORED  description
 parent_path                                  absent     x-[UNIQUE_NAME] START_NOT_REACHED  parent_path
 parent_path                                  absent     y-[UNIQUE_NAME] START_NOT_REACHED  parent_path
 parent_path                                  x-[UNIQUE_NAME] absent     START_NOT_REACHED  parent_path
@@ -16,8 +17,8 @@ warehouse_id                                 x          absent     UPDATE_IGNORE
 warehouse_id                                 y          absent     UPDATE_IGNORED  warehouse_id
 
 === summary
-OK                 9
+OK                 8
 NOT_OBSERVABLE     6
-UPDATE_IGNORED     5
+UPDATE_IGNORED     6
 SKIPPED            2
 START_NOT_REACHED  10

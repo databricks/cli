@@ -145,9 +145,9 @@ func TestSetFieldAbsentAndEmpty(t *testing.T) {
 // element wildcard, subtree -- take different paths through the matcher.
 func TestSkipReasonMatchesPatterns(t *testing.T) {
 	fv := &fieldValues{skip: map[string]string{
-		"storage_root":     "needs an external location",
-		"aliases[*].id":    "assigned by the backend",
-		"telemetry_config": "only accepted as a whole",
+		"storage_root":       "needs an external location",
+		"aliases[*].id":      "assigned by the backend",
+		"telemetry_config.*": "only accepted as a whole",
 	}} //exhaustruct:ignore
 
 	for _, tc := range []struct {
@@ -162,6 +162,9 @@ func TestSkipReasonMatchesPatterns(t *testing.T) {
 		{"telemetry_config.sinks[*].name", "only accepted as a whole"},
 		{"aliases[0].alias_name", ""},
 		{"comment", ""},
+		// A key naming a whole subtree, written with the trailing wildcard, still covers a
+		// pattern beneath it -- which is the form a field under an absent container takes.
+		{"telemetry_config.sinks[*].endpoint", "only accepted as a whole"},
 	} {
 		t.Run(tc.path, func(t *testing.T) {
 			reason, skipped := fv.skipReason(tc.path)
