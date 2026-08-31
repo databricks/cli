@@ -171,6 +171,22 @@ problem verdict:
 go test ./bundle/direct/tests -run TestFields/pipelines/.*/dry_run/absent_to_true -v
 ```
 
+### Checking one field against a real workspace
+
+A whole resource type on cloud is slow (jobs is half an hour) and the interesting question is
+usually about a handful of fields. Every field is a subtest, so a few can be driven on their
+own:
+
+    CLOUD_ENV=aws go test ./bundle/direct/tests \
+      -run 'TestFields/^apps$/[^/]*/^(budget_policy_id|usage_policy_id)$'
+
+The golden comparison fails on a partial run, which is expected: read the rows in
+`output/<type>.<cloud>.full.txt` instead. This is how to check a field the local report calls
+`OK` when its value looks like it must name something real, a `*_id` or an ARN or a path. The
+fake server takes any string, so `OK` there means nothing until a workspace has agreed: both
+`budget_policy_id` and `usage_policy_id` on apps read `OK` locally and are rejected outright on
+a real workspace, which names an account-level policy neither has.
+
 On cloud (`CLOUD_ENV` set) the same reports are compared against the same committed
 goldens: a divergence means the fake server in `libs/testserver` does not model the API
 faithfully, which is worth failing over. The full report goes to
