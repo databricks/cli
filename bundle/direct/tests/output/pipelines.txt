@@ -1,11 +1,12 @@
 === pipeline.yml.tmpl
 dry_run                                      absent     true       UPDATE_IGNORED
+dry_run                                      false      true       UPDATE_IGNORED
 
 === summary
-OK                 743
+OK                 742
 OK_RECREATE        9
 OK_INERT           12
 SUPPRESSED         46
 NOT_OBSERVABLE     29
-UPDATE_IGNORED     1
+UPDATE_IGNORED     2
 SKIPPED            12
