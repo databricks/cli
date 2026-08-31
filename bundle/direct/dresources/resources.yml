@@ -69,6 +69,12 @@ resources:
       - field: job_clusters[*].new_cluster.apply_policy_default_values
         reason: not_returned_by_api
 
+      # The Jobs API accepts trigger.table_update.condition but never returns it
+      # in GET responses, so without this every plan after a successful deploy
+      # reports an update. https://github.com/databricks/cli/issues/6315
+      - field: trigger.table_update.condition
+        reason: input_only
+
     backend_defaults:
       # Same as clusters.enable_elastic_disk — see clusters/resource_cluster.go#L331
       # s.SchemaPath("enable_elastic_disk").SetComputed()

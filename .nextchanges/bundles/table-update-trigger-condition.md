@@ -1,0 +1,1 @@
+Fixed a job with a `table_update` trigger never converging on the direct engine: `condition` is accepted by the Jobs API but never returned, so every `bundle plan` after a successful deploy reported `1 to change`.
