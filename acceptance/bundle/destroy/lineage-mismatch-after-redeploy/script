@@ -1,36 +1,35 @@
-# Reproduces the lineage mismatch a user hits when one machine destroys a bundle
-# and another machine (with no local state) redeploys it under the same name.
+# A user destroys a bundle on one machine and redeploys it (under the same name)
+# from another machine that has no local state. Local state is scoped by target
+# only (.databricks/bundle/<target>), while remote state lives under
+# ~/.bundle/<bundle name>/<target>/state, so the two can diverge.
 #
-# Local state is scoped by target only (.databricks/bundle/<target>), while remote
-# state lives under ~/.bundle/<bundle name>/<target>/state. Destroy deletes the
-# remote state but leaves the local file (with its lineage) behind, so the next
-# fresh deploy elsewhere mints a brand-new lineage that no longer matches the
-# lingering local one.
+# Destroy removes the local state file, so no stale lineage is left behind: when
+# machine A comes back after machine B's fresh deploy, it cleanly adopts the
+# remote state instead of failing with a lineage mismatch.
 
-title "Machine A: deploy, then destroy (leaves local state with lineage L1 behind)\n"
+title "Machine A: deploy, then destroy\n"
 trace $CLI bundle deploy
 trace $CLI bundle destroy --auto-approve
 
-# Mask machine A's (local) lineage so the golden output is stable.
-LINEAGE_A=$(print_state.py | jq -r .lineage)
-add_repl "$LINEAGE_A" LINEAGE_A
+title "Destroy removed the local state file:\n"
+trace find.py '^.databricks/bundle/default/(resources.json|terraform/terraform.tfstate)$' --expect 0
 
-# Stash A's local state and wipe it so the next deploy behaves like a fresh machine.
+# Stash machine A's post-destroy local state and wipe it so the next deploy
+# behaves like a fresh machine with no local state.
 cp -r .databricks .databricks.machineA
 rm -rf .databricks
 
-title "Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)\n"
+title "Machine B: fresh deploy of the same bundle (mints a new lineage remotely)\n"
 trace $CLI bundle deploy
 
-# Mask machine B's (remote) lineage.
+# Mask machine B's (remote) lineage so the golden output is stable.
 LINEAGE_B=$(print_state.py | jq -r .lineage)
 add_repl "$LINEAGE_B" LINEAGE_B
 
-# Back on machine A: restore the stale local state that still carries L1.
+# Back on machine A: restore the stashed local state.
 rm -rf .databricks
 mv .databricks.machineA .databricks
 
-title "Machine A: any command that pulls remote state now fails\n"
-trace musterr $CLI bundle plan
-trace musterr $CLI bundle deploy
-trace musterr $CLI bundle destroy --auto-approve
+title "Machine A: commands succeed, adopting machine B's remote state\n"
+trace $CLI bundle plan
+trace $CLI bundle deploy

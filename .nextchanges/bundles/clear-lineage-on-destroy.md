@@ -1,0 +1,1 @@
+Fixed a "lineage mismatch in state files" error that could occur after destroying a bundle and redeploying it from another machine. `bundle destroy` now removes the local state file so no stale lineage is left behind.
