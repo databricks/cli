@@ -78,7 +78,14 @@ invariant_verify_mutation() {
 # base deploy that runs before any mutation.
 invariant_deploy_quiet() {
     local logfile="$1"
-    trace $CLI bundle deploy &> "$logfile"
+    # Not just no panic: a deploy that fails here would otherwise pass silently and surface
+    # later as unexplained drift, since the remote never moved. On failure the log is the
+    # only record of why, so print it.
+    if ! trace $CLI bundle deploy &> "$logfile"; then
+        echo "deploy failed:"
+        cat "$logfile"
+        return 1
+    fi
     cat "$logfile" | contains.py '!panic:' '!internal error' > /dev/null
 }
 
