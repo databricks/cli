@@ -111,6 +111,19 @@ func declaredDeliberate(adapter *dresources.Adapter) []dresources.FieldRule {
 	return rules
 }
 
+// declaredIDFields collects the fields the resource declares as composing its ID -- its name,
+// as opposed to a server-generated id. A resource cannot exist without one: the engine fetches
+// it by that ID, and a local change to one recreates rather than updates (see adapter.go's
+// recreateOnChange). So an absent ID field has no resource to create, and the backend refusing
+// to create it is the API contract, not a finding.
+func declaredIDFields(adapter *dresources.Adapter) []dresources.FieldRule {
+	var rules []dresources.FieldRule
+	for _, cfg := range lifecycleConfigs(adapter) {
+		rules = append(rules, cfg.ProvidedIDFields...)
+	}
+	return rules
+}
+
 func lifecycleConfigs(adapter *dresources.Adapter) []*dresources.ResourceLifecycleConfig {
 	var out []*dresources.ResourceLifecycleConfig
 	for _, cfg := range []*dresources.ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
