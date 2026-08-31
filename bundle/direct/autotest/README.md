@@ -139,9 +139,15 @@ is a record of what the fake server does: `external_locations` has 62 such rows,
 naming cloud storage the suite does not provision.
 
 A type that cannot run against a real workspace at all declares `local_only: <reason>` and
-is skipped on cloud — an external location needs a storage credential with cloud IAM behind
-it, and Lakebase and Postgres resources are not available in every cloud. This mirrors the
-per-config cloud exclusions in `acceptance/bundle/invariant/test.toml`.
+is skipped on cloud — an external location needs a storage credential with cloud IAM behind it,
+and an instance pool cannot be deleted again afterwards.
+
+A service that exists on some clouds and not others is a different case, and declares where it
+does: `clouds: [aws]` runs the type on an aws workspace and skips it elsewhere, so a cloud-specific
+service is still confirmed somewhere rather than nowhere. This mirrors `CloudEnvs.gcp = false` in
+`acceptance/bundle/resources/postgres_*/test.toml`; the blanket exclusions in
+`acceptance/bundle/invariant/test.toml` drop those configs from every cloud, including the one
+that has the service.
 
 A `skip` key may be a pattern (`aliases[*].id`), matched the way the planner matches its own
 field rules, and naming a block skips everything beneath it.
