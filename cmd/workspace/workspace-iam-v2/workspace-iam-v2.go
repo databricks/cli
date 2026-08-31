@@ -50,6 +50,9 @@ These APIs are used to manage identities and the workspace access of these
 	cmd.AddCommand(newDeleteWorkspaceAssignmentDetailProxy())
 	cmd.AddCommand(newDeleteWorkspaceAssignmentProxy())
 	cmd.AddCommand(newGetDirectGroupMemberProxy())
+	cmd.AddCommand(newGetExternalGroupProxy())
+	cmd.AddCommand(newGetExternalServicePrincipalProxy())
+	cmd.AddCommand(newGetExternalUserProxy())
 	cmd.AddCommand(newGetGroupProxy())
 	cmd.AddCommand(newGetServicePrincipalProxy())
 	cmd.AddCommand(newGetUserProxy())
@@ -101,8 +104,10 @@ func newCreateDirectGroupMemberProxy() *cobra.Command {
 	cmd.Flags().Var(&createDirectGroupMemberProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create-direct-group-member-proxy GROUP_ID PRINCIPAL_ID"
-	cmd.Short = `Create a direct group membership.`
-	cmd.Long = `Create a direct group membership.
+	cmd.Short = `*Beta* Create a direct group membership.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a direct group membership.
 
   Creates a group membership (assigns a principal to a group).
 
@@ -110,12 +115,9 @@ func newCreateDirectGroupMemberProxy() *cobra.Command {
     GROUP_ID: Required. Internal ID of the group in Databricks.
     PRINCIPAL_ID: Internal ID of the principal in Databricks.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -201,8 +203,10 @@ func newCreateGroupProxy() *cobra.Command {
 	cmd.Flags().StringVar(&createGroupProxyReq.Group.GroupName, "group-name", createGroupProxyReq.Group.GroupName, `Display name of the group.`)
 
 	cmd.Use = "create-group-proxy"
-	cmd.Short = `Create a group in the account.`
-	cmd.Long = `Create a group in the account.
+	cmd.Short = `*Beta* Create a group in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a group in the account.
 
   Creates a local group in the Databricks account that parents the calling
   workspace and returns the created group. A local group is one that is not
@@ -214,12 +218,9 @@ func newCreateGroupProxy() *cobra.Command {
   ResolveGroup; to read an existing external identity, use the ExternalGroup
   resource.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -285,8 +286,10 @@ func newCreateServicePrincipalProxy() *cobra.Command {
 	cmd.Flags().StringVar(&createServicePrincipalProxyReq.ServicePrincipal.ExternalId, "external-id", createServicePrincipalProxyReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
 
 	cmd.Use = "create-service-principal-proxy DISPLAY_NAME ACCOUNT_SP_STATUS"
-	cmd.Short = `Create a service principal in the account.`
-	cmd.Long = `Create a service principal in the account.
+	cmd.Short = `*Beta* Create a service principal in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a service principal in the account.
 
   Creates a local service principal in the Databricks account that parents the
   calling workspace and returns the created service principal. A local service
@@ -303,12 +306,9 @@ func newCreateServicePrincipalProxy() *cobra.Command {
     ACCOUNT_SP_STATUS: The activity status of a service principal in a Databricks account.
       Supported values: [ACTIVE, INACTIVE]`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -391,8 +391,10 @@ func newCreateUserProxy() *cobra.Command {
 	cmd.Flags().StringVar(&createUserProxyReq.User.ExternalId, "external-id", createUserProxyReq.User.ExternalId, `ExternalId of the user in the customer's IdP.`)
 
 	cmd.Use = "create-user-proxy USERNAME FULL_NAME ACCOUNT_USER_STATUS"
-	cmd.Short = `Create a user in the account.`
-	cmd.Long = `Create a user in the account.
+	cmd.Short = `*Beta* Create a user in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a user in the account.
 
   Creates a local user in the Databricks account that parents the calling
   workspace and returns the created user. A local user is one that is not synced
@@ -410,12 +412,9 @@ func newCreateUserProxy() *cobra.Command {
     ACCOUNT_USER_STATUS: The activity status of a user in a Databricks account.
       Supported values: [ACTIVE, INACTIVE]`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -510,10 +509,7 @@ func newCreateWorkspaceAssignmentDetailProxy() *cobra.Command {
 	cmd.Long = `Create a workspace assignment detail for a workspace.
 
   Creates a workspace assignment detail for a principal in the calling
-  workspace. Entitlements are granted one at a time rather than atomically. If
-  the request fails partway through, the principal stays assigned to the
-  workspace with only some of the requested entitlements. Get the assignment
-  detail afterwards to confirm which entitlements were granted.
+  workspace.
 
   Arguments:
     PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks.`
@@ -604,8 +600,10 @@ func newCreateWorkspaceAssignmentProxy() *cobra.Command {
 	// TODO: array: entitlements
 
 	cmd.Use = "create-workspace-assignment-proxy PRINCIPAL_ID"
-	cmd.Short = `Create a workspace assignment for a workspace.`
-	cmd.Long = `Create a workspace assignment for a workspace.
+	cmd.Short = `*Beta* Create a workspace assignment for a workspace.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a workspace assignment for a workspace.
 
   Creates a workspace assignment for a principal in the calling workspace.
   Entitlements are granted one at a time rather than atomically. If the request
@@ -616,12 +614,9 @@ func newCreateWorkspaceAssignmentProxy() *cobra.Command {
   Arguments:
     PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -695,8 +690,10 @@ func newDeleteDirectGroupMemberProxy() *cobra.Command {
 	var deleteDirectGroupMemberProxyReq iamv2.DeleteDirectGroupMemberProxyRequest
 
 	cmd.Use = "delete-direct-group-member-proxy GROUP_ID PRINCIPAL_ID"
-	cmd.Short = `Delete a direct group membership.`
-	cmd.Long = `Delete a direct group membership.
+	cmd.Short = `*Beta* Delete a direct group membership.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a direct group membership.
 
   Deletes a group membership (unassigns a principal from a group).
 
@@ -704,12 +701,9 @@ func newDeleteDirectGroupMemberProxy() *cobra.Command {
     GROUP_ID: Required. Internal ID of the group in Databricks.
     PRINCIPAL_ID: Required. Internal ID of the principal to be unassigned from the group.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -765,8 +759,10 @@ func newDeleteGroupProxy() *cobra.Command {
 	var deleteGroupProxyReq iamv2.DeleteGroupProxyRequest
 
 	cmd.Use = "delete-group-proxy GROUP_ID"
-	cmd.Short = `Delete a group in the account.`
-	cmd.Long = `Delete a group in the account.
+	cmd.Short = `*Beta* Delete a group in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a group in the account.
 
   Deletes a group by its internal ID from the Databricks account that parents
   the calling workspace.
@@ -774,12 +770,9 @@ func newDeleteGroupProxy() *cobra.Command {
   Arguments:
     GROUP_ID: Required. Internal ID of the group in Databricks.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -827,8 +820,10 @@ func newDeleteServicePrincipalProxy() *cobra.Command {
 	var deleteServicePrincipalProxyReq iamv2.DeleteServicePrincipalProxyRequest
 
 	cmd.Use = "delete-service-principal-proxy SERVICE_PRINCIPAL_ID"
-	cmd.Short = `Delete a service principal in the account.`
-	cmd.Long = `Delete a service principal in the account.
+	cmd.Short = `*Beta* Delete a service principal in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a service principal in the account.
 
   Deletes a service principal by its internal ID from the Databricks account
   that parents the calling workspace.
@@ -836,12 +831,9 @@ func newDeleteServicePrincipalProxy() *cobra.Command {
   Arguments:
     SERVICE_PRINCIPAL_ID: Required. Internal ID of the service principal in Databricks.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -889,8 +881,10 @@ func newDeleteUserProxy() *cobra.Command {
 	var deleteUserProxyReq iamv2.DeleteUserProxyRequest
 
 	cmd.Use = "delete-user-proxy USER_ID"
-	cmd.Short = `Delete a user in the account.`
-	cmd.Long = `Delete a user in the account.
+	cmd.Short = `*Beta* Delete a user in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a user in the account.
 
   Deletes a user by its internal ID from the Databricks account that parents the
   calling workspace.
@@ -898,12 +892,9 @@ func newDeleteUserProxy() *cobra.Command {
   Arguments:
     USER_ID: Required. Internal ID of the user in Databricks.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1020,8 +1011,10 @@ func newDeleteWorkspaceAssignmentProxy() *cobra.Command {
 	var deleteWorkspaceAssignmentProxyReq iamv2.DeleteWorkspaceAssignmentProxyRequest
 
 	cmd.Use = "delete-workspace-assignment-proxy PRINCIPAL_ID"
-	cmd.Short = `Delete a workspace assignment for a workspace.`
-	cmd.Long = `Delete a workspace assignment for a workspace.
+	cmd.Short = `*Beta* Delete a workspace assignment for a workspace.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a workspace assignment for a workspace.
 
   Deletes a workspace assignment for a principal in the calling workspace,
   revoking all of its entitlements. Entitlements are revoked one at a time
@@ -1032,12 +1025,9 @@ func newDeleteWorkspaceAssignmentProxy() *cobra.Command {
     PRINCIPAL_ID: Required. ID of the principal in Databricks to delete workspace assignment
       for.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1088,8 +1078,10 @@ func newGetDirectGroupMemberProxy() *cobra.Command {
 	var getDirectGroupMemberProxyReq iamv2.GetDirectGroupMemberProxyRequest
 
 	cmd.Use = "get-direct-group-member-proxy GROUP_ID PRINCIPAL_ID"
-	cmd.Short = `Get a direct group member.`
-	cmd.Long = `Get a direct group member.
+	cmd.Short = `*Beta* Get a direct group member.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a direct group member.
 
   Gets a provisioned direct member of a group.
 
@@ -1098,12 +1090,9 @@ func newGetDirectGroupMemberProxy() *cobra.Command {
     PRINCIPAL_ID: Required. Internal ID of the principal belonging to the group in
       Databricks.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -1145,6 +1134,202 @@ func newGetDirectGroupMemberProxy() *cobra.Command {
 	return cmd
 }
 
+// start get-external-group-proxy command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getExternalGroupProxyOverrides []func(
+	*cobra.Command,
+	*iamv2.GetExternalGroupProxyRequest,
+)
+
+func newGetExternalGroupProxy() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getExternalGroupProxyReq iamv2.GetExternalGroupProxyRequest
+
+	cmd.Use = "get-external-group-proxy NAME"
+	cmd.Short = `*Beta* Get an external group in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get an external group in the account.
+
+  Retrieves an external group with the given external ID from the customer's
+  IdP. If the group does not exist, it will be created in the account. If the
+  customer is not onboarded onto Automatic Identity Management (AIM), this will
+  return an error. Workspace-scoped variant for workspace-authenticated callers.
+
+  Arguments:
+    NAME: Required. The resource name of the external group. Format:
+      external-groups/{external_group_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getExternalGroupProxyReq.Name = args[0]
+
+		response, err := w.WorkspaceIamV2.GetExternalGroupProxy(ctx, getExternalGroupProxyReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getExternalGroupProxyOverrides {
+		fn(cmd, &getExternalGroupProxyReq)
+	}
+
+	return cmd
+}
+
+// start get-external-service-principal-proxy command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getExternalServicePrincipalProxyOverrides []func(
+	*cobra.Command,
+	*iamv2.GetExternalServicePrincipalProxyRequest,
+)
+
+func newGetExternalServicePrincipalProxy() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getExternalServicePrincipalProxyReq iamv2.GetExternalServicePrincipalProxyRequest
+
+	cmd.Use = "get-external-service-principal-proxy NAME"
+	cmd.Short = `*Beta* Get an external service principal in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get an external service principal in the account.
+
+  Retrieves an external service principal with the given external ID from the
+  customer's IdP. If the service principal does not exist, it will be created.
+  If the customer is not onboarded onto Automatic Identity Management (AIM),
+  this will return an error. Workspace-scoped variant for
+  workspace-authenticated callers.
+
+  Arguments:
+    NAME: Required. The resource name of the external service principal. Format:
+      external-service-principals/{external_service_principal_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getExternalServicePrincipalProxyReq.Name = args[0]
+
+		response, err := w.WorkspaceIamV2.GetExternalServicePrincipalProxy(ctx, getExternalServicePrincipalProxyReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getExternalServicePrincipalProxyOverrides {
+		fn(cmd, &getExternalServicePrincipalProxyReq)
+	}
+
+	return cmd
+}
+
+// start get-external-user-proxy command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getExternalUserProxyOverrides []func(
+	*cobra.Command,
+	*iamv2.GetExternalUserProxyRequest,
+)
+
+func newGetExternalUserProxy() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getExternalUserProxyReq iamv2.GetExternalUserProxyRequest
+
+	cmd.Use = "get-external-user-proxy NAME"
+	cmd.Short = `*Beta* Get an external user in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get an external user in the account.
+
+  Retrieves an external user with the given external ID from the customer's IdP.
+  If the user does not exist, it will be created. If the customer is not
+  onboarded onto Automatic Identity Management (AIM), this will return an error.
+  Workspace-scoped variant for workspace-authenticated callers.
+
+  Arguments:
+    NAME: Required. The resource name of the external user. Format:
+      external-users/{external_user_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getExternalUserProxyReq.Name = args[0]
+
+		response, err := w.WorkspaceIamV2.GetExternalUserProxy(ctx, getExternalUserProxyReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getExternalUserProxyOverrides {
+		fn(cmd, &getExternalUserProxyReq)
+	}
+
+	return cmd
+}
+
 // start get-group-proxy command
 
 // Slice with functions to override default command behavior.
@@ -1160,8 +1345,10 @@ func newGetGroupProxy() *cobra.Command {
 	var getGroupProxyReq iamv2.GetGroupProxyRequest
 
 	cmd.Use = "get-group-proxy GROUP_ID"
-	cmd.Short = `Get a group in the account.`
-	cmd.Long = `Get a group in the account.
+	cmd.Short = `*Beta* Get a group in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a group in the account.
 
   Fetches a group by its internal ID from the Databricks account that parents
   the calling workspace.
@@ -1169,12 +1356,9 @@ func newGetGroupProxy() *cobra.Command {
   Arguments:
     GROUP_ID: Required. Internal ID of the group in Databricks.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1223,8 +1407,10 @@ func newGetServicePrincipalProxy() *cobra.Command {
 	var getServicePrincipalProxyReq iamv2.GetServicePrincipalProxyRequest
 
 	cmd.Use = "get-service-principal-proxy SERVICE_PRINCIPAL_ID"
-	cmd.Short = `Get a service principal in the account.`
-	cmd.Long = `Get a service principal in the account.
+	cmd.Short = `*Beta* Get a service principal in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a service principal in the account.
 
   Fetches a service principal by its internal ID from the Databricks account
   that parents the calling workspace.
@@ -1232,12 +1418,9 @@ func newGetServicePrincipalProxy() *cobra.Command {
   Arguments:
     SERVICE_PRINCIPAL_ID: Required. Internal ID of the service principal in Databricks.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1286,8 +1469,10 @@ func newGetUserProxy() *cobra.Command {
 	var getUserProxyReq iamv2.GetUserProxyRequest
 
 	cmd.Use = "get-user-proxy USER_ID"
-	cmd.Short = `Get a user in the account.`
-	cmd.Long = `Get a user in the account.
+	cmd.Short = `*Beta* Get a user in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a user in the account.
 
   Fetches a user by its internal ID from the Databricks account that parents the
   calling workspace.
@@ -1295,12 +1480,9 @@ func newGetUserProxy() *cobra.Command {
   Arguments:
     USER_ID: Required. Internal ID of the user in Databricks.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1487,8 +1669,10 @@ func newGetWorkspaceAssignmentProxy() *cobra.Command {
 	var getWorkspaceAssignmentProxyReq iamv2.GetWorkspaceAssignmentProxyRequest
 
 	cmd.Use = "get-workspace-assignment-proxy PRINCIPAL_ID"
-	cmd.Short = `Get a workspace assignment for a principal.`
-	cmd.Long = `Get a workspace assignment for a principal.
+	cmd.Short = `*Beta* Get a workspace assignment for a principal.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a workspace assignment for a principal.
 
   Returns the assignment for a principal in the calling workspace.
 
@@ -1496,12 +1680,9 @@ func newGetWorkspaceAssignmentProxy() *cobra.Command {
     PRINCIPAL_ID: Required. The internal ID of the principal (user/sp/group) for which the
       assignment is being requested.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1553,8 +1734,10 @@ func newGetWorkspaceIdentityDetail() *cobra.Command {
 	var getWorkspaceIdentityDetailReq iamv2.GetWorkspaceIdentityDetailRequest
 
 	cmd.Use = "get-workspace-identity-detail PRINCIPAL_ID"
-	cmd.Short = `Get workspace identity details for a principal.`
-	cmd.Long = `Get workspace identity details for a principal.
+	cmd.Short = `*Beta* Get workspace identity details for a principal.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get workspace identity details for a principal.
 
   Returns the identity details for a principal in a workspace.
 
@@ -1562,12 +1745,9 @@ func newGetWorkspaceIdentityDetail() *cobra.Command {
     PRINCIPAL_ID: Required. The internal ID of the principal (user/sp/group) for which the
       identity details are being requested.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1632,8 +1812,10 @@ func newListDirectGroupMembersProxy() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-direct-group-members-proxy GROUP_ID"
-	cmd.Short = `List direct group members.`
-	cmd.Long = `List direct group members.
+	cmd.Short = `*Beta* List direct group members.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List direct group members.
 
   Lists provisioned direct members of a group with their membership source
   (internal or from identity provider).
@@ -1642,12 +1824,9 @@ func newListDirectGroupMembersProxy() *cobra.Command {
     GROUP_ID: Required. Internal ID of the group in Databricks whose direct members are
       being listed.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1716,18 +1895,17 @@ func newListGroupsProxy() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-groups-proxy"
-	cmd.Short = `List groups in the account.`
-	cmd.Long = `List groups in the account.
+	cmd.Short = `*Beta* List groups in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List groups in the account.
 
   Lists the groups in the Databricks account that parents the calling workspace,
   returning one page per call. Supports filtering by group name or external ID.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1791,19 +1969,18 @@ func newListServicePrincipalsProxy() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-service-principals-proxy"
-	cmd.Short = `List service principals in the account.`
-	cmd.Long = `List service principals in the account.
+	cmd.Short = `*Beta* List service principals in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List service principals in the account.
 
   Lists the service principals in the Databricks account that parents the
   calling workspace, returning one page per call. Supports filtering by
   application ID or external ID.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1856,8 +2033,10 @@ func newListTransitiveParentGroupsProxy() *cobra.Command {
 	cmd.Flags().StringVar(&listTransitiveParentGroupsProxyReq.PageToken, "page-token", listTransitiveParentGroupsProxyReq.PageToken, `A page token, received from a previous ListTransitiveParentGroups call.`)
 
 	cmd.Use = "list-transitive-parent-groups-proxy PRINCIPAL_ID"
-	cmd.Short = `List all transitive parent groups of a principal.`
-	cmd.Long = `List all transitive parent groups of a principal.
+	cmd.Short = `*Beta* List all transitive parent groups of a principal.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List all transitive parent groups of a principal.
 
   Lists all transitive parent groups of a principal.
 
@@ -1865,12 +2044,9 @@ func newListTransitiveParentGroupsProxy() *cobra.Command {
     PRINCIPAL_ID: Required. Internal ID of the principal in Databricks whose transitive
       parent groups are being listed.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1936,18 +2112,17 @@ func newListUsersProxy() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-users-proxy"
-	cmd.Short = `List users in the account.`
-	cmd.Long = `List users in the account.
+	cmd.Short = `*Beta* List users in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List users in the account.
 
   Lists the users in the Databricks account that parents the calling workspace,
   returning one page per call. Supports filtering by username or external ID.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -2086,20 +2261,19 @@ func newListWorkspaceAssignmentsProxy() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-workspace-assignments-proxy"
-	cmd.Short = `List workspace assignments for a workspace.`
-	cmd.Long = `List workspace assignments for a workspace.
+	cmd.Short = `*Beta* List workspace assignments for a workspace.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List workspace assignments for a workspace.
 
   Lists workspace assignments for the calling workspace. The response omits the
   per-principal entitlement fields (entitlements and
   effective_entitlements). To read the entitlements for a single principal,
   get that principal's assignment.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -2419,8 +2593,10 @@ func newUpdateGroupProxy() *cobra.Command {
 	cmd.Flags().StringVar(&updateGroupProxyReq.Group.GroupName, "group-name", updateGroupProxyReq.Group.GroupName, `Display name of the group.`)
 
 	cmd.Use = "update-group-proxy GROUP_ID UPDATE_MASK"
-	cmd.Short = `Update a group in the account.`
-	cmd.Long = `Update a group in the account.
+	cmd.Short = `*Beta* Update a group in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a group in the account.
 
   Updates an existing group in the Databricks account that parents the calling
   workspace. Only the fields named in the update mask are modified. Returns the
@@ -2434,12 +2610,9 @@ func newUpdateGroupProxy() *cobra.Command {
     GROUP_ID: Required. Internal ID of the group in Databricks.
     UPDATE_MASK: Optional. The list of fields to update.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -2507,8 +2680,10 @@ func newUpdateServicePrincipalProxy() *cobra.Command {
 	cmd.Flags().StringVar(&updateServicePrincipalProxyReq.ServicePrincipal.ExternalId, "external-id", updateServicePrincipalProxyReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
 
 	cmd.Use = "update-service-principal-proxy SERVICE_PRINCIPAL_ID UPDATE_MASK DISPLAY_NAME ACCOUNT_SP_STATUS"
-	cmd.Short = `Update a service principal in the account.`
-	cmd.Long = `Update a service principal in the account.
+	cmd.Short = `*Beta* Update a service principal in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a service principal in the account.
 
   Updates an existing service principal in the Databricks account that parents
   the calling workspace. Only the fields named in the update mask are modified.
@@ -2525,12 +2700,9 @@ func newUpdateServicePrincipalProxy() *cobra.Command {
     ACCOUNT_SP_STATUS: The activity status of a service principal in a Databricks account.
       Supported values: [ACTIVE, INACTIVE]`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -2615,8 +2787,10 @@ func newUpdateUserProxy() *cobra.Command {
 	cmd.Flags().StringVar(&updateUserProxyReq.User.ExternalId, "external-id", updateUserProxyReq.User.ExternalId, `ExternalId of the user in the customer's IdP.`)
 
 	cmd.Use = "update-user-proxy USER_ID UPDATE_MASK USERNAME FULL_NAME ACCOUNT_USER_STATUS"
-	cmd.Short = `Update a user in the account.`
-	cmd.Long = `Update a user in the account.
+	cmd.Short = `*Beta* Update a user in the account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a user in the account.
 
   Updates an existing user in the Databricks account that parents the calling
   workspace and returns the updated user. Only the fields named in the update
@@ -2635,12 +2809,9 @@ func newUpdateUserProxy() *cobra.Command {
     ACCOUNT_USER_STATUS: The activity status of a user in a Databricks account.
       Supported values: [ACTIVE, INACTIVE]`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -2841,8 +3012,10 @@ func newUpdateWorkspaceAssignmentProxy() *cobra.Command {
 	// TODO: array: entitlements
 
 	cmd.Use = "update-workspace-assignment-proxy PRINCIPAL_ID UPDATE_MASK PRINCIPAL_ID"
-	cmd.Short = `Update a workspace assignment for a workspace.`
-	cmd.Long = `Update a workspace assignment for a workspace.
+	cmd.Short = `*Beta* Update a workspace assignment for a workspace.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a workspace assignment for a workspace.
 
   Updates the entitlements of a directly assigned principal in the calling
   workspace. Changes are applied one at a time rather than atomically. If the
@@ -2854,12 +3027,9 @@ func newUpdateWorkspaceAssignmentProxy() *cobra.Command {
     UPDATE_MASK: Required. The list of fields to update.
     PRINCIPAL_ID: The internal ID of the principal (user/sp/group) in Databricks.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -2948,8 +3118,10 @@ func newUpdateWorkspaceIdentityDetail() *cobra.Command {
 	cmd.Flags().Var(&updateWorkspaceIdentityDetailReq.WorkspaceIdentityDetail.WorkspaceIdentityStatus, "workspace-identity-status", `The activity status of an identity in a Databricks workspace. Supported values: [ACTIVE, INACTIVE]`)
 
 	cmd.Use = "update-workspace-identity-detail PRINCIPAL_ID UPDATE_MASK"
-	cmd.Short = `Update workspace identity details for a principal.`
-	cmd.Long = `Update workspace identity details for a principal.
+	cmd.Short = `*Beta* Update workspace identity details for a principal.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update workspace identity details for a principal.
 
   Updates a workspace identity detail for a principal.
 
@@ -2957,12 +3129,9 @@ func newUpdateWorkspaceIdentityDetail() *cobra.Command {
     PRINCIPAL_ID: Required. ID of the principal in Databricks.
     UPDATE_MASK: Required. The list of fields to update.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

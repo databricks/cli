@@ -6,6 +6,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.jobs._models.maintenance_window import (
+    MaintenanceWindow,
+    MaintenanceWindowParam,
+)
 from databricks.bundles.jobs._models.pause_status import PauseStatus, PauseStatusParam
 from databricks.bundles.jobs._models.task_retry_mode import (
     TaskRetryMode,
@@ -19,6 +23,13 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class Continuous:
     """"""
+
+    maintenance_window: VariableOrOptional[MaintenanceWindow] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Defines when platform-initiated maintenance may run for this job. If unspecified, maintenance may run at any time.
+    """
 
     pause_status: VariableOrOptional[PauseStatus] = None
     """
@@ -40,6 +51,13 @@ class Continuous:
 
 class ContinuousDict(TypedDict, total=False):
     """"""
+
+    maintenance_window: VariableOrOptional[MaintenanceWindowParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Defines when platform-initiated maintenance may run for this job. If unspecified, maintenance may run at any time.
+    """
 
     pause_status: VariableOrOptional[PauseStatusParam]
     """
