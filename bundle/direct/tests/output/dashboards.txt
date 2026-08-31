@@ -3,8 +3,6 @@ dataset_catalog                              y          absent     START_NOT_REA
 dataset_schema                               x          y          START_NOT_REACHED  dataset_schema
 dataset_schema                               y          absent     START_NOT_REACHED  dataset_schema
 dataset_schema                               y          x          START_NOT_REACHED  dataset_schema
-display_name                                 absent     x-UNIQUE   START_NOT_REACHED  display_name
-display_name                                 absent     y-UNIQUE   START_NOT_REACHED  display_name
 display_name                                 x-UNIQUE   absent     UPDATE_IGNORED  display_name
 display_name                                 y-UNIQUE   absent     UPDATE_IGNORED  display_name
 etag                                         absent     x          START_NOT_REACHED  etag
@@ -15,9 +13,9 @@ etag                                         y          absent     START_NOT_REA
 etag                                         y          x          START_NOT_REACHED  etag
 
 === summary
-OK                 14
+OK                 16
 SUPPRESSED         2
 NOT_OBSERVABLE     6
 UPDATE_IGNORED     2
 SKIPPED            8
-START_NOT_REACHED  12
+START_NOT_REACHED  10

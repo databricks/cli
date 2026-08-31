@@ -199,7 +199,10 @@ func runConfig(t *testing.T, ctx context.Context, client *databricks.WorkspaceCl
 					// created without the field genuinely starts absent. Rebuild and try the
 					// transition once more, so it is observed rather than written off.
 					if res.verdict == verdictStartNotReached {
-						rebuilt, err := rebuild(owner, ctx, client, user, cfg, fv, h)
+						// With the starting value written into the config before the create, so
+						// the new resource is built holding it: a field the API will not move to
+						// a value can still be created with it.
+						rebuilt, err := rebuild(owner, ctx, client, user, cfg, fv, h, preset{f.path, tr.from})
 						if err != nil {
 							// Nothing was observed and there is no resource left to observe
 							// it on, which is a different statement from the field refusing
@@ -564,12 +567,21 @@ func runTransition(t *testing.T, h *bundleHarness, config, path string, tr trans
 // config -- not the subtest that happened to ask for the rebuild. Registering the cleanup on
 // the subtest would destroy the resource as soon as that transition ended, and every
 // transition after it would silently be creating a new one.
-func newBaseline(owner *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues) (*bundleHarness, error) {
+func newBaseline(owner *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, presets ...preset) (*bundleHarness, error) {
 	h, err := newHarness(owner, ctx, client, user, cfg.name, uniqueName(), fv.base)
 	if err != nil {
 		return nil, err
 	}
 	owner.Cleanup(func() { _ = h.destroy() })
+
+	// Applied before the first deploy, so the create carries the value rather than an update
+	// having to reach it. That is the only way to start from a value the API will not move a
+	// field to -- most often absent, for a field it refuses to clear.
+	for _, p := range presets {
+		if err := h.setField(p.path, p.value); err != nil {
+			return nil, fmt.Errorf("presetting %s: %w", p.path, err)
+		}
+	}
 
 	action, diags := h.deploy()
 	if diags.HasError() {
@@ -583,12 +595,18 @@ func newBaseline(owner *testing.T, ctx context.Context, client *databricks.Works
 	return h, nil
 }
 
+// preset is a field value to write into the config before the resource is first deployed.
+type preset struct {
+	path  string
+	value any
+}
+
 // rebuild starts over on a fresh resource, leaving the old one to be destroyed at the
 // end of the test. A new name is what makes this cheap: reusing the old one can mean
 // waiting out an asynchronous delete.
-func rebuild(owner *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, old *bundleHarness) (*bundleHarness, error) {
+func rebuild(owner *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, cfg testConfig, fv *fieldValues, old *bundleHarness, presets ...preset) (*bundleHarness, error) {
 	owner.Cleanup(func() { _ = old.destroy() })
-	return newBaseline(owner, ctx, client, user, cfg, fv)
+	return newBaseline(owner, ctx, client, user, cfg, fv, presets...)
 }
 
 // explainSkip says why a plan came back with nothing to do for the field under test.

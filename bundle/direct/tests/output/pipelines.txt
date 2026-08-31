@@ -1,19 +1,11 @@
 === pipeline.yml.tmpl
-deployment.version_id                        x          absent     START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
-deployment.version_id                        x          y          START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
-deployment.version_id                        y          absent     START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
-deployment.version_id                        y          x          START_NOT_REACHED  deployment.version_id (declared inert: managed by the deployment metadata service)
 dry_run                                      absent     true       UPDATE_IGNORED  dry_run
-dry_run                                      false      true       UPDATE_IGNORED  dry_run
-dry_run                                      true       absent     START_NOT_REACHED  dry_run
-dry_run                                      true       false      START_NOT_REACHED  dry_run
 
 === summary
-OK                 741
+OK                 743
 OK_RECREATE        9
-OK_INERT           8
-SUPPRESSED         45
+OK_INERT           12
+SUPPRESSED         46
 NOT_OBSERVABLE     29
-UPDATE_IGNORED     2
+UPDATE_IGNORED     1
 SKIPPED            12
-START_NOT_REACHED  6
