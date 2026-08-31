@@ -165,17 +165,33 @@ the report as `SKIPPED` so it is not mistaken for coverage.
 ## Running it
 
 ```bash
-go test ./bundle/direct/tests                      # against the testserver
-go test ./bundle/direct/tests -run 'TestFields/schemas' -v
-./task test-update-fields                                    # regenerate the goldens
+go test ./bundle/direct/autotest                      # against the testserver
+go test ./bundle/direct/autotest -run 'TestFields/schemas' -v
+./task test-update-fields                             # regenerate the goldens
 ```
+
+The local run is part of `./task test`, so it needs no task of its own. The real-workspace runs
+do, since they need `CLOUD_ENV` and credentials:
+
+```bash
+./task autotest-cloud       # every field; nightly
+./task autotest-cloud-pr    # -sample 2; PRs
+```
+
+`-sample N` tests N of each type's fields instead of all of them, picked from HEAD so that
+successive commits cover different ground and one run's picks follow from its SHA. The reports
+stay the same committed goldens: a sampled run is held to the rows belonging to the fields it
+picked, plus any row the harness records against itself, which is what catches a type that no
+longer deploys at all. The summary counts every field and has no meaningful subset, so it is
+not compared -- a change between two *passing* verdicts shows up only in the full run.
+`-sample` refuses to run with `-update`, which would truncate the goldens to the sample.
 
 One transition is addressable on its own, and the subtest names carry no shell
 metacharacters so no quoting is needed. `-v` prints the post-deploy plan behind any
 problem verdict:
 
 ```bash
-go test ./bundle/direct/tests -run TestFields/pipelines/.*/dry_run/absent_to_true -v
+go test ./bundle/direct/autotest -run TestFields/pipelines/.*/dry_run/absent_to_true -v
 ```
 
 ### Checking one field against a real workspace
@@ -184,7 +200,7 @@ A whole resource type on cloud is slow (jobs is half an hour) and the interestin
 usually about a handful of fields. Every field is a subtest, so a few can be driven on their
 own:
 
-    CLOUD_ENV=aws go test ./bundle/direct/tests \
+    CLOUD_ENV=aws go test ./bundle/direct/autotest \
       -run 'TestFields/^apps$/[^/]*/^(budget_policy_id|usage_policy_id)$'
 
 The golden comparison fails on a partial run, which is expected: read the rows in

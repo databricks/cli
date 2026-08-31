@@ -1,4 +1,4 @@
-package tests
+package autotest
 
 import (
 	"cmp"
@@ -189,6 +189,20 @@ type report struct {
 	// legend maps a size label back to the value it stands for, keyed by field: "keys1" means
 	// a different map for properties than it does for options, so the field is part of the key.
 	legend map[legendKey]string
+
+	// sampled holds the fields a -sample run tested, and is nil when every field was tested.
+	// The report is then compared against the same subset of its golden rather than whole.
+	sampled map[string]bool
+}
+
+// addSampled records that this field is one of the sampled ones.
+func (r *report) addSampled(path string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.sampled == nil {
+		r.sampled = map[string]bool{}
+	}
+	r.sampled[path] = true
 }
 
 // legendKey identifies one size label of one field.
@@ -417,6 +431,20 @@ func (r *report) write(t testutil.TestingT) {
 		return
 	}
 
+	// A sampled run knows about a few of the type's fields, so its report is held to those
+	// fields' rows and nothing else. Their verdicts must read exactly as the golden records
+	// them; the summary counts every field and has no meaningful subset, so both sides drop it.
+	if r.sampled != nil {
+		expected, err := os.ReadFile(name)
+		if err != nil {
+			t.Errorf("reading %s: %s (run ./task test-update-fields)", name, err)
+			return
+		}
+		want := sampledRows(testdiff.NormalizeNewlines(string(expected)), r.sampled)
+		testdiff.AssertEqualTexts(t, name, name, want, sampledRows(body, r.sampled))
+		return
+	}
+
 	// Not tolerated as missing: a report with no golden would silently pass, so adding a
 	// resource type without generating its report, or deleting one, would go unnoticed.
 	expected, err := os.ReadFile(name)
@@ -425,6 +453,27 @@ func (r *report) write(t testutil.TestingT) {
 		return
 	}
 	testdiff.AssertEqualTexts(t, name, name, testdiff.NormalizeNewlines(string(expected)), body)
+}
+
+// sampledRows keeps the report rows belonging to the sampled fields, dropping section headers,
+// blank lines and the summary. Rows the harness records against itself rather than a field --
+// "(base config)", "(rebuild)" -- are always kept: they mean the run for that type did not
+// happen, which no sample should be allowed to hide.
+func sampledRows(body string, sampled map[string]bool) string {
+	var sb strings.Builder
+	for line := range strings.SplitSeq(body, "\n") {
+		if strings.HasPrefix(line, "=== summary") {
+			break
+		}
+		if line == "" || strings.HasPrefix(line, "=== ") {
+			continue
+		}
+		field, _, _ := strings.Cut(line, " ")
+		if sampled[field] || strings.HasPrefix(field, "(") {
+			sb.WriteString(line + "\n")
+		}
+	}
+	return sb.String()
 }
 
 func writeReport(t testutil.TestingT, name, body string) {
