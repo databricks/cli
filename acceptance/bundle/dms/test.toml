@@ -4,6 +4,10 @@ Cloud = true
 # engine; it is a no-op on terraform.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
+# These tests enable recording through experimental.record_deployment_history, so the
+# DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY variant the rest of the suite adds would
+# just duplicate them.
+EnvMatrix.DMS = [""]
 
 RecordRequests = true
 

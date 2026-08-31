@@ -1,0 +1,41 @@
+nostamp() {
+    # Reads JSON on stdin, writes it back with the deployment stamp removed.
+    #
+    # Deployment history recording adds deployment_id and version_id to every job and
+    # pipeline. Acceptance tests compare output byte for byte, so those two extra fields
+    # would fail every test in the DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true run
+    # (see bundle/test.toml).
+    # Pipe a plan, a state dump, or a resource payload through this and the test asserts one
+    # golden file either way. Tests under bundle/dms assert the stamp itself and must not.
+    #
+    # Three passes, because the stamp shows up in three shapes:
+    #
+    #   1. Nested in a deployment block, as printed by `jobs get` / `pipelines get`:
+    #        "deployment": {"deployment_id": "87..", "kind": "BUNDLE",
+    #                       "metadata_file_path": "/x", "version_id": "1"}
+    #      -> both keys dropped, "kind" and "metadata_file_path" kept.
+    #
+    #   2. Flat in a plan's "changes", keyed by field path:
+    #        "changes": {"deployment.version_id": {"action": "skip", ...}, "name": {...}}
+    #      -> the stamp entries dropped, real changes kept.
+    #
+    #   3. A "changes" object that pass 2 emptied to {} - it existed only because of
+    #      recording, so the key goes too.
+    #
+    # Two things it deliberately keeps:
+    #
+    #   - A deployment_id anywhere else. Pass 1 requires "kind" and "metadata_file_path" as
+    #     neighbours, a pair unique to the deployment block, so an unrelated field of the
+    #     same name is untouched.
+    #   - "version_id": "". A terraform state dump carries that for a job it never stamped,
+    #     and it is the test's own expected output, so `.value == ""` keeps it.
+    #
+    # Arguments are passed to jq, for callers whose input is not formatted the way jq
+    # formats by default: a state dump is printed verbatim from disk, so it needs
+    # --indent 1 to come back out unchanged.
+    jq "$@" '((.. | objects | select(has("kind") and has("metadata_file_path")))
+         |= with_entries(select((.key | IN("deployment_id", "version_id")) == false or .value == "")))
+        | ((.. | objects | .changes? | objects)
+           |= with_entries(select(.key | IN("deployment.deployment_id", "deployment.version_id") | not)))
+        | del(.. | objects | select(.changes == {}) | .changes)'
+}

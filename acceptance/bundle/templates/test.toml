@@ -2,6 +2,7 @@
 
 # Template tests materialize and deploy full projects, taking tens of seconds each.
 # Recording adds minutes without new coverage the rest of the suite provides.
+EnvMatrix.DMS = [""]
 
 [[Server]]
 Pattern = "POST /telemetry-ext"

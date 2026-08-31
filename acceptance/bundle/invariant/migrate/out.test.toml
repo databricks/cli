@@ -1,5 +1,6 @@
 Cloud = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DMS = [""]
 EnvMatrix.INPUT_CONFIG = [
   "alert.yml.tmpl",
   "app.yml.tmpl",

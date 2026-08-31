@@ -8,7 +8,7 @@ Created pipelines.foo.permissions
 Files: 7 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //pipeline
+>>> print_requests.py --nostamp //pipeline ^//api/2.0/bundle
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -60,7 +60,7 @@ Updated pipelines.foo.permissions
 Files: 5 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py //pipeline
+>>> print_requests.py --nostamp //pipeline ^//api/2.0/bundle
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -75,7 +75,7 @@ Updated pipelines.foo.permissions
 Files: 5 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py //pipeline
+>>> print_requests.py --nostamp //pipeline ^//api/2.0/bundle
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -99,7 +99,7 @@ Deleted pipelines.foo.permissions
 Files: 5 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
 
->>> print_requests.py //pipeline --sort
+>>> print_requests.py --nostamp //pipeline ^//api/2.0/bundle --sort
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
@@ -114,7 +114,7 @@ Created pipelines.foo.permissions
 Files: 4 uploaded, 1 deleted
 Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py //pipeline
+>>> print_requests.py --nostamp //pipeline ^//api/2.0/bundle
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
