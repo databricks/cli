@@ -1,8 +1,8 @@
 === genie_space.yml.tmpl
-description                                  x          absent     UPDATE_IGNORED  description
-description                                  y          absent     UPDATE_IGNORED  description
-title                                        x-UNIQUE   absent     UPDATE_IGNORED  title
-title                                        y-UNIQUE   absent     UPDATE_IGNORED  title
+description                                  x          absent     UPDATE_IGNORED
+description                                  y          absent     UPDATE_IGNORED
+title                                        x-UNIQUE   absent     UPDATE_IGNORED
+title                                        y-UNIQUE   absent     UPDATE_IGNORED
 
 === summary
 OK                 8

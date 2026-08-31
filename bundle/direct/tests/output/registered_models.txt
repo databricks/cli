@@ -1,7 +1,7 @@
 === registered_model.yml.tmpl
 catalog_name                                 absent     main       BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: catalog_name (400 INVALID_PARAMETER_VALUE)
 catalog_name                                 main       absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: catalog_name (400 INVALID_PARAMETER_VALUE)
-full_name                                    absent     y          UPDATE_IGNORED  full_name
+full_name                                    absent     y          UPDATE_IGNORED
 name                                         absent     x-UNIQUE   BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
 name                                         absent     y-UNIQUE   BASE_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)
 name                                         x-UNIQUE   absent     BACKEND_ERROR  cannot recreate resources.registered_models.foo: CreateRegisteredModel Missing required field: name (400 INVALID_PARAMETER_VALUE)

@@ -1,10 +1,10 @@
 === job.yml.tmpl
-parent_path                                  absent     x          UPDATE_IGNORED  parent_path
-parent_path                                  absent     y          UPDATE_IGNORED  parent_path
-parent_path                                  x          absent     UPDATE_IGNORED  parent_path
-parent_path                                  x          y          UPDATE_IGNORED  parent_path
-parent_path                                  y          absent     UPDATE_IGNORED  parent_path
-parent_path                                  y          x          UPDATE_IGNORED  parent_path
+parent_path                                  absent     x          UPDATE_IGNORED
+parent_path                                  absent     y          UPDATE_IGNORED
+parent_path                                  x          absent     UPDATE_IGNORED
+parent_path                                  x          y          UPDATE_IGNORED
+parent_path                                  y          absent     UPDATE_IGNORED
+parent_path                                  y          x          UPDATE_IGNORED
 
 === summary
 OK                 693
