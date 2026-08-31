@@ -1,13 +1,31 @@
 === sql_warehouse.yml.tmpl
-name                                         absent     x          START_NOT_REACHED  name
-name                                         absent     y          START_NOT_REACHED  name
-name                                         x          absent     POST_DEPLOY_DRIFT  name
-name                                         y          absent     POST_DEPLOY_DRIFT  name
+auto_stop_mins                               10         absent     UPDATE_IGNORED  auto_stop_mins
+auto_stop_mins                               20         absent     UPDATE_IGNORED  auto_stop_mins
+auto_stop_mins                               absent     10         START_NOT_REACHED  auto_stop_mins
+auto_stop_mins                               absent     20         START_NOT_REACHED  auto_stop_mins
+cluster_size                                 2X-Small   absent     UPDATE_IGNORED  cluster_size
+cluster_size                                 X-Small    absent     UPDATE_IGNORED  cluster_size
+cluster_size                                 absent     2X-Small   START_NOT_REACHED  cluster_size
+cluster_size                                 absent     X-Small    START_NOT_REACHED  cluster_size
+enable_photon                                absent     false      START_NOT_REACHED  enable_photon
+enable_photon                                true       absent     UPDATE_IGNORED  enable_photon
+max_num_clusters                             2          absent     UPDATE_IGNORED  max_num_clusters
+max_num_clusters                             3          absent     UPDATE_IGNORED  max_num_clusters
+max_num_clusters                             absent     2          START_NOT_REACHED  max_num_clusters
+max_num_clusters                             absent     3          START_NOT_REACHED  max_num_clusters
+name                                         absent     x-[UNIQUE_NAME] START_NOT_REACHED  name
+name                                         absent     y-[UNIQUE_NAME] START_NOT_REACHED  name
+name                                         x-[UNIQUE_NAME] absent     UPDATE_IGNORED  name
+name                                         y-[UNIQUE_NAME] absent     UPDATE_IGNORED  name
+spot_instance_policy                         COST_OPTIMIZED absent     UPDATE_IGNORED  spot_instance_policy
+spot_instance_policy                         POLICY_UNSPECIFIED absent     UPDATE_IGNORED  spot_instance_policy
+spot_instance_policy                         absent     COST_OPTIMIZED START_NOT_REACHED  spot_instance_policy
+spot_instance_policy                         absent     POLICY_UNSPECIFIED START_NOT_REACHED  spot_instance_policy
 
 === summary
-OK                 53
-SUPPRESSED         2
+OK                 32
+SUPPRESSED         1
 NOT_OBSERVABLE     1
-POST_DEPLOY_DRIFT  2
+UPDATE_IGNORED     11
 SKIPPED            5
-START_NOT_REACHED  2
+START_NOT_REACHED  11

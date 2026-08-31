@@ -56,12 +56,12 @@ resources[0].postgres.branch                 y          absent     UPDATE_IGNORE
 resources[0].postgres.database               x          absent     UPDATE_IGNORED  resources[0].postgres.database
 resources[0].postgres.database               y          absent     UPDATE_IGNORED  resources[0].postgres.database
 resources[0].postgres.permission             CAN_CONNECT_AND_CREATE absent     UPDATE_IGNORED  resources[0].postgres.permission
-source_code_path                             absent     x          SUPPRESSED  no active deployment
-source_code_path                             absent     y          SUPPRESSED  no active deployment
-source_code_path                             x          absent     START_NOT_REACHED  source_code_path
-source_code_path                             x          y          START_NOT_REACHED  source_code_path
-source_code_path                             y          absent     START_NOT_REACHED  source_code_path
-source_code_path                             y          x          START_NOT_REACHED  source_code_path
+source_code_path                             absent     x-[UNIQUE_NAME] SUPPRESSED  no active deployment
+source_code_path                             absent     y-[UNIQUE_NAME] SUPPRESSED  no active deployment
+source_code_path                             x-[UNIQUE_NAME] absent     START_NOT_REACHED  source_code_path
+source_code_path                             x-[UNIQUE_NAME] y-[UNIQUE_NAME] START_NOT_REACHED  source_code_path
+source_code_path                             y-[UNIQUE_NAME] absent     START_NOT_REACHED  source_code_path
+source_code_path                             y-[UNIQUE_NAME] x-[UNIQUE_NAME] START_NOT_REACHED  source_code_path
 space                                        y          x          START_NOT_REACHED  space
 usage_policy_id                              y          absent     UPDATE_IGNORED  usage_policy_id
 user_api_scopes                              len2       absent     UPDATE_IGNORED  user_api_scopes

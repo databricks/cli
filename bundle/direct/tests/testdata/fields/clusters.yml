@@ -1,8 +1,9 @@
 # Value library for clusters. See ../../README.md.
 
 # init_scripts is a union: an entry carries exactly one of workspace, volumes, s3, abfss,
-# gcs, dbfs or file. Two entries make the two most-configured members reachable; the rest
-# stay uncovered for this config, which the report says.
+# gcs, dbfs or file. Only the workspace member is seeded -- every other one names
+# cloud-specific storage, and the suite runs against all three clouds -- so the rest stay
+# uncovered for this config, which the report says.
 base:
   custom_tags:
     team: eng
@@ -15,9 +16,6 @@ base:
   init_scripts:
     - workspace:
         destination: /Users/$CURRENT_USER_NAME/init.sh
-    - s3:
-        destination: s3://bucket/init.sh
-        region: us-east-1
   worker_node_type_flexibility:
     alternate_node_type_ids:
       - i3.2xlarge

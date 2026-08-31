@@ -12,14 +12,20 @@ skip:
 
 fields:
   # The backend validates these as ranges rather than accepting any integer:
-  # auto_stop_mins is 0 (never) or at least 10, and a cluster count is at least 1 --
-  # with max_num_clusters at least 2 once it is being changed at all.
+  # auto_stop_mins is 0 (never) or at least 10, and max_num_clusters is at least 2 once it
+  # is being changed at all. min_num_clusters cannot exceed max_num_clusters, which the
+  # corpus config sets to 1, so 1 is its only deployable value -- with absent in the set
+  # that is still an add and a remove.
   auto_stop_mins: [10, 20]
-  min_num_clusters: [1, 2]
+  min_num_clusters: [1]
   max_num_clusters: [2, 3]
 
   # A t-shirt size, not free text.
   cluster_size: [2X-Small, X-Small]
+
+  # CHANNEL_NAME_CUSTOM is only accepted together with a dbsql_version, so the two would
+  # have to move together; the other names stand alone.
+  channel.name: [CHANNEL_NAME_CURRENT, CHANNEL_NAME_PREVIEW]
 
   # A tag key has to be non-empty, so "" is not one of the values to try.
   tags.custom_tags[*].key: [team, owner]

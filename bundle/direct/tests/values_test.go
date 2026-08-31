@@ -86,6 +86,20 @@ func declaredUnsettable(adapter *dresources.Adapter) []dresources.FieldRule {
 	return rules
 }
 
+// declaredIdentity collects the fields that compose the resource's name-based id, whether a
+// change to one recreates it or renames it in place. A value for such a field has to be
+// unique to the run: two runs against the same workspace, or a run whose earlier resources
+// have not been cleaned up yet, would otherwise both ask for the same name and the second
+// gets "already exists" -- a finding about this suite rather than about the engine.
+func declaredIdentity(adapter *dresources.Adapter) []dresources.FieldRule {
+	var rules []dresources.FieldRule
+	for _, cfg := range lifecycleConfigs(adapter) {
+		rules = append(rules, cfg.ProvidedIDFields...)
+		rules = append(rules, cfg.UpdatableIDFields...)
+	}
+	return rules
+}
+
 // declaredIgnoredLocally collects the fields a resource says it drops local changes to.
 // These are *not* skipped: the declaration is a claim about behaviour, and the suite is in a
 // position to check it. A transition of one should come back suppressed with that same
@@ -443,7 +457,7 @@ func isRequired(resourceType, path string) bool {
 // "tasks[*].description" is expanded to the indices that exist, so the fields inside an
 // element get the same treatment as any other. A pattern with nothing behind it in the
 // config is reported as not covered rather than silently tested against nothing.
-func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValues, resource any, runSeed uint64, unsettable []dresources.FieldRule) (fields []field, uncovered []string, inertFields map[string]string) {
+func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValues, resource any, runSeed uint64, unsettable, identity []dresources.FieldRule, unique string) (fields []field, uncovered []string, inertFields map[string]string) {
 	inertFields = map[string]string{}
 	add := func(path string, kind reflect.Kind, values []any) {
 		if _, skipped := fv.skipReason(path); skipped {
@@ -517,7 +531,7 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 			if values == nil {
 				values = defaultValues(typ)
 			}
-			add(path, typ.Kind(), values)
+			add(path, typ.Kind(), uniqueIdentityValues(values, path, identity, unique, resource))
 			return false
 		}
 
@@ -540,7 +554,7 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 			if values == nil {
 				values = defaultValues(typ)
 			}
-			add(c, typ.Kind(), values)
+			add(c, typ.Kind(), uniqueIdentityValues(values, path, identity, unique, resource))
 		}
 		return false
 	})
@@ -553,6 +567,44 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 
 	slices.Sort(uncovered)
 	return fields, slices.Compact(uncovered), inertFields
+}
+
+// uniqueIdentityValues appends the run's own suffix to a string value of a field that names
+// the resource, so no two runs against one workspace ask for the same name: the second would
+// get "already exists", which says nothing about the engine.
+//
+// Two things mark such a field. The resource may declare it as part of its id. Failing that,
+// the corpus config's own value for it carries the run's unique suffix -- which is the config
+// author saying the value has to be unique, whether or not it is the id. A warehouse name is
+// the second kind: the id is a generated uuid, yet the name still has to be free.
+//
+// The report stays stable because the suffix is redacted the way every other generated id is.
+func uniqueIdentityValues(values []any, path string, identity []dresources.FieldRule, unique string, resource any) []any {
+	if !isIdentityField(path, identity, unique, resource) {
+		return values
+	}
+	out := make([]any, 0, len(values))
+	for _, value := range values {
+		text, ok := value.(string)
+		if !ok || text == "" {
+			// Only a name can carry a suffix; an id field of another type keeps its value.
+			return values
+		}
+		out = append(out, text+"-"+unique)
+	}
+	return out
+}
+
+func isIdentityField(path string, identity []dresources.FieldRule, unique string, resource any) bool {
+	if _, ok := ruleReason(identity, path); ok {
+		return true
+	}
+	current, err := structaccess.GetByString(resource, path)
+	if err != nil {
+		return false
+	}
+	text, ok := current.(string)
+	return ok && strings.Contains(text, unique)
 }
 
 // isNotUserSettable reports whether the bundle marks a field as something the user
