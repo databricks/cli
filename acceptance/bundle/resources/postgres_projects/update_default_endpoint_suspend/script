@@ -1,3 +1,8 @@
+# default_endpoint_settings.no_suspension and .suspend_timeout_duration are two sides of one
+# oneof, and the API accepts them in update_mask only under the group name
+# spec.default_endpoint_settings.suspension. Same oneof as
+# postgres_endpoints/update_suspend_timeout, one level of nesting down.
+
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
