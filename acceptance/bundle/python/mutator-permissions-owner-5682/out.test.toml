@@ -1,4 +1,4 @@
 Cloud = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-EnvMatrix.DMS = ["false", "true"]
+EnvMatrix.DMS = ["", "true"]
 EnvMatrix.PYDAB_VERSION = ["0.266.0", "current"]

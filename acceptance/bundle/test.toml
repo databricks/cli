@@ -5,7 +5,7 @@ EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
 # service (DMS) is exercised by every test rather than only the handful under bundle/dms. Empty
 # is the default pair of engine runs. CI gives this variant its own cell ("directdms"), so the
 # direct cell still runs each test once; a local run covers both.
-EnvMatrix.DMS = ["false", "true"]
+EnvMatrix.DMS = ["", "true"]
 
 # DMS recording is only supported by the direct engine; it is a no-op on terraform.
 EnvMatrixExclude.dms_needs_direct = ["DMS=true", "DATABRICKS_BUNDLE_ENGINE=terraform"]

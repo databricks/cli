@@ -118,7 +118,7 @@ jobs:
           - name: "terraform"
             envfilter: "DATABRICKS_BUNDLE_ENGINE=terraform"
           - name: "direct"
-            envfilter: "DATABRICKS_BUNDLE_ENGINE=direct,DMS=false"
+            envfilter: "DATABRICKS_BUNDLE_ENGINE=direct,DMS="
           - name: "directdms"
             envfilter: "DATABRICKS_BUNDLE_ENGINE=direct,DMS=true"
 

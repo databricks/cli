@@ -1,4 +1,4 @@
 Cloud = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-EnvMatrix.DMS = ["false", "true"]
+EnvMatrix.DMS = ["", "true"]
 EnvMatrix.VARIANT = ["empty_resources.yml", "no_resources.yml"]

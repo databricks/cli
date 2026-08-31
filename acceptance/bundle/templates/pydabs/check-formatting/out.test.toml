@@ -1,6 +1,6 @@
 Cloud = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-EnvMatrix.DMS = ["false", "true"]
+EnvMatrix.DMS = ["", "true"]
 EnvMatrix.INCLUDE_JOB = ["yes", "no"]
 EnvMatrix.INCLUDE_PIPELINE = ["yes", "no"]
 EnvMatrix.INCLUDE_PYTHON = ["yes", "no"]
