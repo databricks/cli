@@ -16,9 +16,11 @@ base:
   init_scripts:
     - workspace:
         destination: /Users/$CURRENT_USER_NAME/init.sh
-  worker_node_type_flexibility:
-    alternate_node_type_ids:
-      - i3.2xlarge
-  driver_node_type_flexibility:
-    alternate_node_type_ids:
-      - i3.2xlarge
+
+skip:
+  # "The field 'worker_node_type_flexibility' cannot be supplied when an instance pool ID is
+  # provided", and the corpus config provides one. The alternates would also have to name a
+  # second node type, which differs per cloud.
+  worker_node_type_flexibility: incompatible with the instance pool the config sets
+  driver_node_type_flexibility: incompatible with the instance pool the config sets
+  node_type_flexibility: incompatible with the instance pool the config sets
