@@ -486,7 +486,7 @@ func fillNonZero(v reflect.Value, depth int) {
 			if !sf.IsExported() || sf.Name == "ForceSendFields" {
 				continue
 			}
-			if structtag.JSONTag(sf.Tag.Get("json")).Name() == "-" {
+			if structaccess.IsSkippedField(sf) {
 				continue
 			}
 			fillNonZero(v.Field(i), depth+1)

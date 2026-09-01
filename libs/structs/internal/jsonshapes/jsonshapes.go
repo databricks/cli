@@ -167,10 +167,12 @@ type OptionOnlyEmbed struct {
 	Own string `json:"own,omitempty"`
 }
 
-// SkippedField declares a field encoding/json never serializes.
+// SkippedField declares a field encoding/json never serializes, alongside one whose tag names
+// it "-": only the exact tag json:"-" is a skip.
 type SkippedField struct {
-	Kept    string `json:"kept,omitempty"`
-	Skipped string `json:"-"`
+	Kept      string `json:"kept,omitempty"`
+	Skipped   string `json:"-"`
+	DashNamed string `json:"-,omitempty"` //nolint:staticcheck // the odd tag is the point
 
 	unexported string //nolint:unused // present to prove it is ignored
 }
@@ -273,10 +275,9 @@ func Shapes() []Shape {
 			JSONFields: []string{"value", "own"},
 		},
 		{
-			Name:        "skipped field",
-			Value:       &SkippedField{Kept: "k", Skipped: "s"}, //exhaustruct:ignore
-			JSONFields:  []string{"kept"},
-			Unreachable: []string{"-"},
+			Name:       "skipped and dash-named fields",
+			Value:      &SkippedField{Kept: "k", Skipped: "s", DashNamed: "d"}, //exhaustruct:ignore
+			JSONFields: []string{"kept", "-"},
 		},
 	}
 }
