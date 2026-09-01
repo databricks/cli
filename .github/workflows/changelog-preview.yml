@@ -42,16 +42,16 @@ jobs:
           version: "0.8.9"
 
       # Fail the check on a misplaced/unexpected file under .nextchanges/ so it
-      # can't slip through as a silently-skipped (unrendered) fragment.
-      #
-      # --strict fails closed: require the trailing PR link on every fragment and
-      # check it names the right PR (never fall open to best-effort detection).
-      # Both triggers are associated with a PR: on pull_request we pass the PR
-      # number (a fragment added by the PR is not yet on main, so it can't be
-      # inferred from a squash-merge commit); on push to main each fragment's PR
-      # is inferred from the commit that added it.
+      # can't slip through as a silently-skipped (unrendered) fragment. Running in
+      # CI (GITHUB_ACTIONS) makes the trailing PR link mandatory and checks it
+      # names the right PR. PR_NUMBER is the authoritative event PR (empty on push
+      # to main, where each fragment's PR is inferred from its squash-merge
+      # commit); it must have full history to attribute fragments, hence the
+      # fetch-depth: 0 checkout above.
       - name: Validate .nextchanges placement
-        run: uv run tools/validate_nextchanges.py --strict ${{ github.event_name == 'pull_request' && format('--pr-number {0}', github.event.pull_request.number) || '' }}
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: uv run tools/validate_nextchanges.py
 
       - name: Render changelog preview
         run: |-

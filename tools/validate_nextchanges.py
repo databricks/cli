@@ -13,6 +13,7 @@ renders ``.nextchanges/`` into ``CHANGELOG.md`` (see
 
 import argparse
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -260,14 +261,22 @@ def find_problems(changelog_dir, sections, require_pr_link=False, fallback_pr=No
     return problems
 
 
+def in_ci():
+    """Whether we're running in GitHub Actions (where the link is required).
+
+    GitHub Actions sets ``GITHUB_ACTIONS`` for every step; see
+    https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables"""
+    return os.environ.get("GITHUB_ACTIONS") == "true"
+
+
 def current_branch_pr(root):
     """Best-effort PR number for the current branch (via ``gh``), or ``None``.
 
-    Used locally to associate the branch with a PR: its presence means the link
-    is required, and its value is the fallback PR for not-yet-merged fragments.
-    ``gh`` runs in ``root`` so it resolves the repo being validated. Any failure —
-    ``gh`` missing, offline, unauthenticated, or no PR for the branch — returns
-    ``None`` so local runs never hard-fail on tooling."""
+    A local convenience only; the branch is ambiguous when its name maps to
+    several PRs, so CI uses the authoritative event number instead (see
+    ``detect_current_pr``). ``gh`` runs in ``root`` so it resolves the repo being
+    validated. Any failure — ``gh`` missing, offline, unauthenticated, or no PR
+    for the branch — returns ``None`` so local runs never hard-fail on tooling."""
     try:
         result = subprocess.run(
             ["gh", "pr", "view", "--json", "number", "-q", ".number"],
@@ -282,6 +291,22 @@ def current_branch_pr(root):
     return out if result.returncode == 0 and out.isdigit() else None
 
 
+def detect_current_pr(root):
+    """PR number to expect for not-yet-merged fragments, or ``None``.
+
+    In CI, use the authoritative event PR number (``PR_NUMBER``, set from
+    ``github.event.number``) — never the branch, which is ambiguous when a name
+    maps to several PRs. It is empty on a CI push (e.g. to main), where each
+    fragment's PR is inferred from its own squash-merge commit instead. Locally,
+    fall back to a best-effort ``gh`` lookup of the branch's PR."""
+    pr = os.environ.get("PR_NUMBER", "").strip()
+    if pr:
+        return pr
+    if in_ci():
+        return None
+    return current_branch_pr(root)
+
+
 def has_fragments(changelog_dir):
     """Whether any *.md fragment (excluding README.md) exists under a section."""
     return any(p.name != README for p in changelog_dir.glob("*/*.md"))
@@ -290,16 +315,6 @@ def has_fragments(changelog_dir):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--root", type=pathlib.Path, default=pathlib.Path.cwd(), help="repository root")
-    parser.add_argument(
-        "--strict",
-        action="store_true",
-        help="fail closed: require every fragment's trailing PR link even when the branch's PR can't be auto-detected (set in CI)",
-    )
-    parser.add_argument(
-        "--pr-number",
-        default=None,
-        help="the PR under review; used as the expected link for not-yet-merged fragments (CI passes it for pull requests)",
-    )
     args = parser.parse_args(argv)
 
     changelog_dir = args.root / CHANGELOG_DIR
@@ -308,18 +323,16 @@ def main(argv=None):
 
     sections = load_sections(args.root)
 
-    # A trailing PR link is required whenever the change can be associated with a
-    # PR, and must name that PR. CI passes --strict (pull requests and pushes to
-    # main) so enforcement never fails open there, plus --pr-number for pull
-    # requests. Locally we best-effort detect the branch's open PR — but only
-    # when there are fragments to check, to avoid a `gh` call on unrelated runs.
-    require_pr_link = args.strict
-    fallback_pr = args.pr_number
-    if not require_pr_link and has_fragments(changelog_dir):
-        branch_pr = current_branch_pr(args.root)
-        if branch_pr is not None:
-            require_pr_link = True
-            fallback_pr = fallback_pr or branch_pr
+    # A trailing PR link is required whenever the change is associated with a PR:
+    # always in CI (fail closed), and locally when the branch has an open PR.
+    # ``fallback_pr`` is the PR to expect for not-yet-merged fragments — the
+    # authoritative event number in CI, else the branch's PR locally. Detected
+    # only when there are fragments, to avoid a `gh` call on unrelated runs.
+    require_pr_link = False
+    fallback_pr = None
+    if has_fragments(changelog_dir):
+        fallback_pr = detect_current_pr(args.root)
+        require_pr_link = in_ci() or fallback_pr is not None
 
     problems = find_problems(changelog_dir, sections, require_pr_link, fallback_pr, args.root)
     if problems:
