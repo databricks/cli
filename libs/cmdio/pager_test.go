@@ -45,7 +45,7 @@ func unwrapCmds(t *testing.T, msg tea.Msg) []tea.Cmd {
 	require.Equal(t, reflect.Slice, rv.Kind(), "expected a slice-of-cmds msg, got %T", msg)
 	cmds := make([]tea.Cmd, rv.Len())
 	for i := range cmds {
-		c, ok := rv.Index(i).Interface().(tea.Cmd)
+		c, ok := reflect.TypeAssert[tea.Cmd](rv.Index(i))
 		require.True(t, ok, "slice element %d is not a tea.Cmd", i)
 		cmds[i] = c
 	}
