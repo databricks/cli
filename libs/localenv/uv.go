@@ -28,12 +28,11 @@ const EnvAutoInstallUv = "DATABRICKS_LOCALENV_AUTO_INSTALL_UV"
 // uvManager implements PackageManager using the uv tool.
 // https://docs.astral.sh/uv/
 type uvManager struct {
-	bin   string
-	runFn uvRunFn
+	bin string
 }
 
-type uvRunFn func(ctx context.Context, args []string, dir string) (string, error)
-
+// uvPython is the subset of uv's JSON-formatted Python installation record
+// needed to choose an executable.
 type uvPython struct {
 	VersionParts struct {
 		Major int `json:"major"`
@@ -43,11 +42,15 @@ type uvPython struct {
 	Path string `json:"path"`
 }
 
+// installedPython associates a uv installation record with its source so an
+// equal-version tie can prefer a uv-managed interpreter.
 type installedPython struct {
 	uvPython
 	managed bool
 }
 
+// selectInstalledPython returns the highest compatible patch from uv's managed
+// and system installation lists. A managed interpreter wins an exact tie.
 func selectInstalledPython(managedJSON, systemJSON []byte) (string, error) {
 	var managed, system []uvPython
 	if err := json.Unmarshal(managedJSON, &managed); err != nil {
@@ -61,11 +64,11 @@ func selectInstalledPython(managedJSON, systemJSON []byte) (string, error) {
 	for _, group := range []struct {
 		pythons []uvPython
 		managed bool
-	}{{managed, true}, {system, false}} {
+	}{{system, false}, {managed, true}} {
 		for _, python := range group.pythons {
 			candidate := installedPython{uvPython: python, managed: group.managed}
 			if python.Path == "" {
-				return "", errors.New("installed Python entry has no executable path")
+				continue
 			}
 			if best == nil || newerInstalledPython(candidate, *best) {
 				best = &candidate
@@ -78,6 +81,8 @@ func selectInstalledPython(managedJSON, systemJSON []byte) (string, error) {
 	return best.Path, nil
 }
 
+// newerInstalledPython reports whether candidate should replace current. Patch
+// version is the primary product preference; uv-managed wins only an exact tie.
 func newerInstalledPython(candidate, current installedPython) bool {
 	c := candidate.VersionParts
 	b := current.VersionParts
@@ -147,10 +152,9 @@ func (m *uvManager) runUv(ctx context.Context, args []string, dir string) error 
 	return err
 }
 
+// runUvOutput runs uv with the same directory, index-url bridge, and process
+// group behavior as runUv, returning stdout for commands with structured output.
 func (m *uvManager) runUvOutput(ctx context.Context, args []string, dir string) (string, error) {
-	if m.runFn != nil {
-		return m.runFn(ctx, args, dir)
-	}
 	if indexURL := m.resolveIndexURL(ctx); indexURL != "" {
 		return process.Background(ctx, args, process.WithDir(dir), process.WithEnv("UV_INDEX_URL", indexURL), process.WithProcessGroup())
 	}
@@ -164,7 +168,10 @@ func (m *uvManager) EnsurePython(ctx context.Context, minor, constraint string) 
 	if installErr == nil {
 		return PythonSelection{Executable: minor, Resolution: PythonResolutionUVInstallSucceeded}, nil
 	}
-	fallbackConstraint := constraint + ",==" + minor + ".*"
+	if ctx.Err() != nil {
+		return PythonSelection{}, uvFailure(ErrPythonInstall, installErr, "uv python install "+minor)
+	}
+	fallbackConstraint := fallbackPythonConstraint(constraint, minor)
 
 	managed, err := m.listInstalledPython(ctx, fallbackConstraint, true)
 	if err != nil {
@@ -178,9 +185,37 @@ func (m *uvManager) EnsurePython(ctx context.Context, minor, constraint string) 
 	if err != nil {
 		return PythonSelection{}, uvFailure(ErrPythonInstall, errors.Join(installErr, err), "uv python install "+minor)
 	}
+	log.Debugf(ctx, "uv: selected compatible installed Python at %s", executable)
 	return PythonSelection{Executable: executable, Resolution: PythonResolutionInstalledFallback}, nil
 }
 
+// fallbackPythonConstraint converts the accepted shorthand forms of
+// requires-python to specifiers uv can parse, then pins discovery to the target
+// minor. See https://docs.astral.sh/uv/concepts/python-versions/#requesting-a-version
+func fallbackPythonConstraint(constraint, minor string) string {
+	clauses := make([]string, 0, strings.Count(constraint, ",")+2)
+	minorPin := "==" + minor + ".*"
+	hasMinorPin := false
+	for clause := range strings.SplitSeq(constraint, ",") {
+		clause = strings.TrimSpace(clause)
+		if clause == "" {
+			continue
+		}
+		match := clauseRe.FindStringSubmatch(clause)
+		if match != nil && match[1] == "" {
+			clause = ">=" + clause
+		}
+		hasMinorPin = hasMinorPin || clause == minorPin
+		clauses = append(clauses, clause)
+	}
+	if !hasMinorPin {
+		clauses = append(clauses, minorPin)
+	}
+	return strings.Join(clauses, ",")
+}
+
+// listInstalledPython asks uv for compatible installed interpreters from one
+// source and returns its JSON response unchanged for selection.
 func (m *uvManager) listInstalledPython(ctx context.Context, constraint string, managed bool) ([]byte, error) {
 	args := append([]string{m.bin}, m.pythonListArgs(constraint, managed)...)
 	out, err := m.runUvOutput(ctx, args, "")
@@ -191,9 +226,11 @@ func (m *uvManager) listInstalledPython(ctx context.Context, constraint string, 
 }
 
 // Provision runs `uv sync` inside projectDir to install project dependencies,
-// pinning the interpreter to python. Without --python, `uv sync` can select a
-// newer interpreter than the target; the explicit request is either the minor
-// just installed or the exact compatible path selected by fallback discovery.
+// pinning the interpreter to python. Without --python, `uv sync` selects the
+// newest installed interpreter satisfying requires-python (e.g. 3.13 for a
+// ">=3.12" floor), which then fails pipeline validation against the 3.12 target.
+// The explicit request is either the minor just installed or the exact
+// compatible path selected by fallback discovery.
 func (m *uvManager) Provision(ctx context.Context, projectDir, python string) error {
 	args := append([]string{m.bin}, m.syncArgs(python)...)
 	if err := m.runUv(ctx, args, projectDir); err != nil {
@@ -309,7 +346,7 @@ func lineWithPrefix(out, prefix string) (string, bool) {
 }
 
 // syncArgs returns the argument slice for `uv sync` (without the binary),
-// pinning the interpreter to pyMinor via --python.
+// pinning the interpreter to python via --python.
 func (m *uvManager) syncArgs(python string) []string {
 	return []string{"sync", "--python", python}
 }
@@ -322,6 +359,7 @@ func (m *uvManager) pythonInstallArgs(minor string) []string {
 // pythonListArgs returns the arguments for listing compatible interpreters
 // already present on this machine. Splitting managed and system installations
 // lets selection prefer a uv-managed interpreter only when versions tie.
+// https://docs.astral.sh/uv/reference/cli/#uv-python-list
 func (m *uvManager) pythonListArgs(constraint string, managed bool) []string {
 	preference := "--no-managed-python"
 	if managed {
@@ -445,10 +483,37 @@ func redactURLCredentials(raw string) string {
 // "Connection refused") rather than just the exit code.
 func uvFailure(code ErrorCode, err error, action string) *PipelineError {
 	msg := action + " failed"
-	if perr, ok := errors.AsType[*process.ProcessError](err); ok && strings.TrimSpace(perr.Stderr) != "" {
-		msg = msg + ": " + strings.TrimSpace(perr.Stderr)
+	if stderr := processStderr(err); stderr != "" {
+		msg = msg + ": " + stderr
 	}
 	return NewError(code, err, "%s", msg)
+}
+
+// processStderr collects diagnostics from every process failure in an error
+// tree, including errors.Join trees produced by fallback attempts.
+func processStderr(err error) string {
+	return strings.Join(appendProcessStderr(nil, err), "\n")
+}
+
+// appendProcessStderr recursively appends process diagnostics from err while
+// preserving the order of errors.Join children.
+func appendProcessStderr(messages []string, err error) []string {
+	if err == nil {
+		return messages
+	}
+	if joined, ok := err.(interface{ Unwrap() []error }); ok {
+		for _, child := range joined.Unwrap() {
+			messages = appendProcessStderr(messages, child)
+		}
+		return messages
+	}
+	if perr, ok := err.(*process.ProcessError); ok {
+		if stderr := strings.TrimSpace(perr.Stderr); stderr != "" {
+			messages = append(messages, stderr)
+		}
+		return messages
+	}
+	return appendProcessStderr(messages, errors.Unwrap(err))
 }
 
 // confirmUvInstall reports whether the caller has consented to installUv running

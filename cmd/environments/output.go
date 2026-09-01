@@ -62,6 +62,7 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libslocalenv.Res
 				cmdio.LogString(ctx, indent(res.Error.Error(), "  "))
 			}
 		}
+		renderInstalledPythonFallback(ctx, res)
 		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, "Re-run with --debug for details, or --output json for a structured report.")
 		// The failing message is already surfaced above; ErrAlreadyPrinted exits
@@ -111,15 +112,21 @@ func renderSuccess(ctx context.Context, res *libslocalenv.Result) {
 		pyprojectDetail = "updated (backup: " + res.BackupPath + ")"
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "pyproject.toml", pyprojectDetail))
-	if res.PythonResolution == libslocalenv.PythonResolutionInstalledFallback {
-		cmdio.LogString(ctx, "")
-		cmdio.LogString(ctx, "Python download failed; used a compatible installed Python instead.")
-	}
+	renderInstalledPythonFallback(ctx, res)
 
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "Next steps:")
 	cmdio.LogString(ctx, "  • Activate it:  "+activateHint(res.VenvPath))
 	cmdio.LogString(ctx, "  • Or select "+res.VenvPath+" as the Python interpreter in VS Code / Cursor")
+}
+
+// renderInstalledPythonFallback explains the non-default resolution path on
+// both success and failure, so a later provisioning error is diagnosable.
+func renderInstalledPythonFallback(ctx context.Context, res *libslocalenv.Result) {
+	if res.PythonResolution == libslocalenv.PythonResolutionInstalledFallback {
+		cmdio.LogString(ctx, "")
+		cmdio.LogString(ctx, "Python download failed; used a compatible installed Python instead.")
+	}
 }
 
 // activateHint returns the shell command to activate the virtual environment,

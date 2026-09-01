@@ -40,6 +40,7 @@ type PackageManager interface {
 type PythonResolution string
 
 const (
+	PythonResolutionUnspecified        PythonResolution = ""
 	PythonResolutionUVInstallSucceeded PythonResolution = "uv_install_succeeded"
 	PythonResolutionInstalledFallback  PythonResolution = "installed_fallback"
 )

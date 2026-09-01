@@ -93,6 +93,21 @@ func TestRenderFailure(t *testing.T) {
 	assert.Contains(t, out, "--debug")
 }
 
+func TestRenderFailureExplainsInstalledPythonFallback(t *testing.T) {
+	res := libslocalenv.NewResult()
+	res.PythonResolution = libslocalenv.PythonResolutionInstalledFallback
+	res.Error = &libslocalenv.PipelineError{
+		Code:         libslocalenv.ErrProvision,
+		FailurePhase: libslocalenv.PhaseProvision,
+		Msg:          "sync failed",
+	}
+
+	out := renderText(t, res, res.Error)
+
+	assert.Contains(t, out, "Python download failed")
+	assert.Contains(t, out, "compatible installed Python")
+}
+
 func TestRenderCanceled(t *testing.T) {
 	res := libslocalenv.NewResult()
 	res.Error = &libslocalenv.PipelineError{Code: libslocalenv.ErrCanceled, FailurePhase: libslocalenv.PhaseProvision, Msg: "interrupted"}

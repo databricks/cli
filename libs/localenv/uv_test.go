@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -14,6 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const uvPythonInstall312Pattern = `^uv(?:\.exe)? python install 3\.12$`
 
 // writePipConf writes conf to the primary OS-specific pip config path under a
 // fresh temp home and returns a context rooted at that home. On Windows the
@@ -33,6 +36,16 @@ func writePipConf(t *testing.T, conf string) context.Context {
 	require.NoError(t, os.MkdirAll(filepath.Dir(primary), 0o755))
 	require.NoError(t, os.WriteFile(primary, []byte(conf), 0o644))
 	return ctx
+}
+
+// uvStubCommand returns the normalized command spelling produced by
+// processStub.Commands on the current platform.
+func uvStubCommand(args string) string {
+	bin := "uv"
+	if runtime.GOOS == "windows" {
+		bin = "uv.exe"
+	}
+	return bin + " " + args
 }
 
 func TestUvArgs(t *testing.T) {
@@ -76,6 +89,12 @@ func TestSelectInstalledPython(t *testing.T) {
 			system:  `[]`,
 			want:    "/managed/3.12.12",
 		},
+		{
+			name:    "entry without a path is skipped",
+			managed: `[{"version_parts":{"major":3,"minor":12,"patch":12},"path":""},{"version_parts":{"major":3,"minor":12,"patch":10},"path":"/managed/3.12.10"}]`,
+			system:  `[]`,
+			want:    "/managed/3.12.10",
+		},
 		{name: "no candidates", managed: `[]`, system: `[]`, wantErr: true},
 		{name: "malformed JSON", managed: `{`, system: `[]`, wantErr: true},
 	}
@@ -94,73 +113,104 @@ func TestSelectInstalledPython(t *testing.T) {
 	}
 }
 
-func TestEnsurePythonStopsAfterSuccessfulInstall(t *testing.T) {
-	var calls [][]string
-	m := &uvManager{bin: "uv", runFn: func(_ context.Context, args []string, _ string) (string, error) {
-		calls = append(calls, args)
-		return "", nil
-	}}
+func TestFallbackPythonConstraint(t *testing.T) {
+	tests := []struct {
+		name       string
+		constraint string
+		want       string
+	}{
+		{"trims clauses", " >=3.12 , <3.13 ", ">=3.12,<3.13,==3.12.*"},
+		{"normalizes bare floor", "3.12", ">=3.12,==3.12.*"},
+		{"normalizes bare floor among exclusions", "!=3.11,3.12", "!=3.11,>=3.12,==3.12.*"},
+		{"preserves exact minor", "==3.12", "==3.12,==3.12.*"},
+		{"preserves arbitrary equality", "===3.12", "===3.12,==3.12.*"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, fallbackPythonConstraint(tt.constraint, "3.12"))
+		})
+	}
+}
 
-	selection, err := m.EnsurePython(t.Context(), "3.12", "==3.12.*")
+func TestEnsurePythonStopsAfterSuccessfulInstall(t *testing.T) {
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(_ *exec.Cmd) error { return nil })
+	m := &uvManager{bin: "uv"}
+
+	selection, err := m.EnsurePython(ctx, "3.12", "==3.12.*")
 
 	require.NoError(t, err)
 	assert.Equal(t, PythonSelection{
 		Executable: "3.12",
 		Resolution: PythonResolutionUVInstallSucceeded,
 	}, selection)
-	assert.Equal(t, [][]string{{"uv", "python", "install", "3.12"}}, calls)
+	assert.Equal(t, []string{uvStubCommand("python install 3.12")}, stub.Commands())
 }
 
 func TestEnsurePythonFallsBackToInstalledInterpreter(t *testing.T) {
-	var calls [][]string
-	m := &uvManager{bin: "uv", runFn: func(_ context.Context, args []string, _ string) (string, error) {
-		calls = append(calls, args)
-		switch len(calls) {
-		case 1:
-			return "", errors.New("download blocked")
-		case 2:
-			return `[{"version_parts":{"major":3,"minor":12,"patch":10},"path":"/managed/python3.12"}]`, nil
-		case 3:
-			return `[{"version_parts":{"major":3,"minor":12,"patch":11},"path":"/system/python3.12"}]`, nil
-		default:
-			t.Fatalf("unexpected extra uv call: %v", args)
-			return "", nil
-		}
-	}}
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("download blocked"))
+	stub.WithStdoutFor(`--managed-python`, `[{"version_parts":{"major":3,"minor":12,"patch":10},"path":"/managed/python3.12"}]`)
+	stub.WithStdoutFor(`--no-managed-python`, `[{"version_parts":{"major":3,"minor":12,"patch":11},"path":"/system/python3.12"}]`)
+	m := &uvManager{bin: "uv"}
 
-	selection, err := m.EnsurePython(t.Context(), "3.12", ">=3.12,<3.15")
+	selection, err := m.EnsurePython(ctx, "3.12", ">=3.12,<3.15")
 
 	require.NoError(t, err)
 	assert.Equal(t, PythonSelection{
 		Executable: "/system/python3.12",
 		Resolution: PythonResolutionInstalledFallback,
 	}, selection)
-	require.Len(t, calls, 3)
 	assert.Equal(t, []string{
-		"uv", "python", "list", "--only-installed", "--all-versions",
-		"--output-format", "json", "--managed-python", "cpython@>=3.12,<3.15,==3.12.*",
-	}, calls[1])
-	assert.Equal(t, []string{
-		"uv", "python", "list", "--only-installed", "--all-versions",
-		"--output-format", "json", "--no-managed-python", "cpython@>=3.12,<3.15,==3.12.*",
-	}, calls[2])
+		uvStubCommand("python install 3.12"),
+		uvStubCommand("python list --only-installed --all-versions --output-format json --managed-python cpython@>=3.12,<3.15,==3.12.*"),
+		uvStubCommand("python list --only-installed --all-versions --output-format json --no-managed-python cpython@>=3.12,<3.15,==3.12.*"),
+	}, stub.Commands())
+}
+
+func TestEnsurePythonFallbackPreservesIndexURLBridge(t *testing.T) {
+	// CI sets UV_INDEX_URL. Remove it so this test exercises pip.conf bridging;
+	// t.Setenv registers cleanup that restores the original value.
+	t.Setenv("UV_INDEX_URL", "")
+	os.Unsetenv("UV_INDEX_URL")
+	ctx := writePipConf(t, "[global]\nindex-url = https://proxy.example/simple\n")
+	ctx, stub := process.WithStub(ctx)
+	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("download blocked"))
+	stub.WithStdoutFor(`--managed-python`, `[]`)
+	stub.WithStdoutFor(`--no-managed-python`, `[{"version_parts":{"major":3,"minor":12,"patch":11},"path":"/system/python3.12"}]`)
+
+	selection, err := (&uvManager{bin: "uv"}).EnsurePython(ctx, "3.12", ">=3.12")
+
+	require.NoError(t, err)
+	assert.Equal(t, "/system/python3.12", selection.Executable)
+	assert.Equal(t, "https://proxy.example/simple", stub.LookupEnv("UV_INDEX_URL"))
+}
+
+func TestEnsurePythonStopsFallbackWhenContextIsCanceled(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	ctx, stub := process.WithStub(ctx)
+	stub.WithCallback(func(_ *exec.Cmd) error {
+		cancel()
+		return context.Canceled
+	})
+
+	_, err := (&uvManager{bin: "uv"}).EnsurePython(ctx, "3.12", ">=3.12")
+
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Equal(t, []string{uvStubCommand("python install 3.12")}, stub.Commands())
 }
 
 func TestEnsurePythonDoesNotRetryWhenFallbackFails(t *testing.T) {
-	installCalls := 0
-	m := &uvManager{bin: "uv", runFn: func(_ context.Context, args []string, _ string) (string, error) {
-		if len(args) >= 3 && args[1] == "python" && args[2] == "install" {
-			installCalls++
-			return "", errors.New("download blocked")
-		}
-		return `[]`, nil
-	}}
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("download blocked"))
+	stub.WithStdoutFor(`python list`, `[]`)
+	m := &uvManager{bin: "uv"}
 
-	selection, err := m.EnsurePython(t.Context(), "3.12", "==3.12.*")
+	selection, err := m.EnsurePython(ctx, "3.12", "==3.12.*")
 
 	require.Error(t, err)
 	assert.Empty(t, selection)
-	assert.Equal(t, 1, installCalls)
+	assert.Equal(t, 3, stub.Len())
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrPythonInstall, pe.Code)
@@ -357,6 +407,14 @@ func TestUvFailureIncludesStderr(t *testing.T) {
 		pe := uvFailure(ErrProvision, errors.New("some other error"), "uv sync")
 		assert.Equal(t, ErrProvision, pe.Code)
 		assert.Equal(t, "uv sync failed", pe.Msg)
+	})
+
+	t.Run("includes_stderr_from_joined_fallback_failure", func(t *testing.T) {
+		installErr := &process.ProcessError{Err: errors.New("exit status 1"), Stderr: "download blocked"}
+		listErr := &process.ProcessError{Err: errors.New("exit status 2"), Stderr: "unexpected argument '--managed-python'"}
+		pe := uvFailure(ErrPythonInstall, errors.Join(installErr, listErr), "uv python install 3.12")
+		assert.Contains(t, pe.Msg, "download blocked")
+		assert.Contains(t, pe.Msg, "unexpected argument '--managed-python'")
 	})
 }
 

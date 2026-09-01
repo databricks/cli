@@ -45,18 +45,27 @@ func TestNewResultEmitsEmptyArraysNotNull(t *testing.T) {
 }
 
 func TestResultEmitsPythonResolutionCategorically(t *testing.T) {
-	result := NewResult()
-	result.PythonResolution = PythonResolutionInstalledFallback
+	for _, resolution := range []PythonResolution{
+		PythonResolutionUVInstallSucceeded,
+		PythonResolutionInstalledFallback,
+	} {
+		t.Run(string(resolution), func(t *testing.T) {
+			result := NewResult()
+			result.PythonResolution = resolution
 
-	b, err := json.Marshal(result)
+			b, err := json.Marshal(result)
 
-	require.NoError(t, err)
-	assert.Contains(t, string(b), `"pythonResolution":"installed_fallback"`)
-	assert.NotContains(t, string(b), "python3.12")
+			require.NoError(t, err)
+			assert.Contains(t, string(b), `"pythonResolution":"`+string(resolution)+`"`)
+			assert.NotContains(t, string(b), "python3.12")
+		})
+	}
 }
 
 func TestResultOmitsUnknownPythonResolution(t *testing.T) {
-	b, err := json.Marshal(NewResult())
+	result := NewResult()
+	result.PythonResolution = PythonResolutionUnspecified
+	b, err := json.Marshal(result)
 	require.NoError(t, err)
 	assert.NotContains(t, string(b), "pythonResolution")
 }
