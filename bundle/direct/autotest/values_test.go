@@ -371,6 +371,10 @@ type field struct {
 	kind   reflect.Kind
 	values []any
 
+	// aliases maps a value's own label to the short alias the report shows instead, for values
+	// whose label would otherwise be an unreadable truncation. Only populated for those.
+	aliases map[string]string
+
 	// required fields do not get an "absent" transition: a config missing one is
 	// rejected by bundle validate, so removing it is not something a user can deploy.
 	required bool
@@ -379,6 +383,9 @@ type field struct {
 // transition is one move of a field from one value to another.
 type transition struct {
 	from, to any
+	// The labels the report and the subtest name use, which for an unwieldy value is a short
+	// alias the legend explains rather than the value itself.
+	fromLabel, toLabel string
 }
 
 // label names the transition for the subtest. Kept free of shell metacharacters so a
@@ -386,7 +393,39 @@ type transition struct {
 //
 //	go test ./bundle/direct/autotest -run TestFields/pipelines/.*/dry_run/absent_to_true -v
 func (t transition) label() string {
-	return valueLabel(t.from) + "_to_" + valueLabel(t.to)
+	return t.fromLabel + "_to_" + t.toLabel
+}
+
+// label names one of the field's values for the report and the subtest. An unwieldy value gets a
+// short alias -- v1, v2 -- which the legend maps back, because the alternative is a subtest called
+// "absent_to_alerts@databricks.i~4539": unreadable, and no easier to retype than v1.
+func (f field) label(value any) string {
+	own := valueLabel(value)
+	if alias, ok := f.aliases[own]; ok {
+		return alias
+	}
+	return own
+}
+
+// assignAliases gives every value whose own label is not a clean short token an alias. Numbered by
+// sorted label rather than by position, so the alias for a value does not move when the run order
+// does.
+func assignAliases(values []any) map[string]string {
+	var unwieldy []string
+	for _, value := range values {
+		if own := valueLabel(value); own != cleanLabel(own) {
+			unwieldy = append(unwieldy, own)
+		}
+	}
+	if len(unwieldy) == 0 {
+		return nil
+	}
+	slices.Sort(unwieldy)
+	aliases := make(map[string]string, len(unwieldy))
+	for i, own := range slices.Compact(unwieldy) {
+		aliases[own] = "v" + strconv.Itoa(i+1)
+	}
+	return aliases
 }
 
 // transitions returns every ordered pair of the field's values, ordered as a single walk:
@@ -445,7 +484,11 @@ func (f field) transitions() []transition {
 
 	out := make([]transition, 0, len(circuit)-1)
 	for i := 1; i < len(circuit); i++ {
-		out = append(out, transition{from: values[circuit[i-1]], to: values[circuit[i]]})
+		from, to := values[circuit[i-1]], values[circuit[i]]
+		out = append(out, transition{
+			from: from, to: to,
+			fromLabel: f.label(from), toLabel: f.label(to),
+		})
 	}
 	return out
 }
@@ -547,6 +590,7 @@ func enumerateFields(resourceType string, inputType reflect.Type, fv *fieldValue
 			path:     path,
 			kind:     kind,
 			values:   values,
+			aliases:  assignAliases(values),
 			required: isRequired(resourceType, path),
 		}
 		// A field with nothing to walk is a gap, not something to drop on the floor: no

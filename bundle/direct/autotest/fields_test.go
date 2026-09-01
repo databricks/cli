@@ -141,13 +141,13 @@ func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClie
 	rep.addCoverage(fields, uncovered)
 	fields = sample(fields, sampleSeedValue, rep)
 
-	// A container's label says only how many entries it has, so record what each one stands for.
+	// A label that does not say what the value is needs the legend to: a container's says only how
+	// many entries it has, and an alias says nothing at all.
 	for _, f := range fields {
-		if !isContainer(f.kind) {
-			continue
-		}
 		for _, value := range f.values {
-			rep.addLegend(f.path, valueLabel(value), value)
+			if label := f.label(value); isContainer(f.kind) || label != valueLabel(value) {
+				rep.addLegend(f.path, label, value)
+			}
 		}
 	}
 
@@ -192,7 +192,7 @@ func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClie
 		// every later field, so they are recorded as such instead of run.
 		var broken error
 
-		t.Run(f.path, func(t *testing.T) {
+		t.Run(subtestName(f.path), func(t *testing.T) {
 			// What the field is currently deployed as, when that is known. Transitions are
 			// generated in runs that share a starting value, so this skips about half of
 			// the setup deploys -- the single biggest cost in the suite.
@@ -201,7 +201,7 @@ func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClie
 			for _, tr := range f.transitions() {
 				t.Run(tr.label(), func(t *testing.T) {
 					if broken != nil {
-						rep.add(result{f.path, valueLabel(tr.from), valueLabel(tr.to), verdictBaseError, oneLine(broken.Error()), broken.Error()})
+						rep.add(result{f.path, tr.fromLabel, tr.toLabel, verdictBaseError, oneLine(broken.Error()), broken.Error()})
 						return
 					}
 
@@ -489,7 +489,7 @@ type declarations struct {
 
 func runTransition(t *testing.T, h *bundleHarness, path string, tr transition, startsDeployed bool, baseline map[string]bool, decl declarations) result {
 	from, to := tr.from, tr.to
-	res := result{field: path, from: valueLabel(tr.from), to: valueLabel(tr.to)} //exhaustruct:ignore
+	res := result{field: path, from: tr.fromLabel, to: tr.toLabel} //exhaustruct:ignore
 
 	// Reach the starting value.
 	if err := h.setField(path, from); err != nil {
@@ -730,6 +730,16 @@ func valueLabel(v any) string {
 	}
 }
 
+// subtestName turns a field path into a subtest name. An index is written "tasks_0", not
+// "tasks[0]": brackets are a character class to the -run regex, so a filter copied from the test
+// output would quietly mean something else.
+func subtestName(path string) string {
+	return indexPattern.ReplaceAllString(path, "_$1")
+}
+
+// indexPattern matches a slice index in a field path.
+var indexPattern = regexp.MustCompile(`\[([0-9]+)\]`)
+
 // labelSafe matches the characters a label keeps verbatim: everything else would need
 // quoting to pass a label back to `go test -run`.
 var labelSafe = regexp.MustCompile(`[^A-Za-z0-9._@/:=-]+`)
@@ -739,16 +749,28 @@ var labelSafe = regexp.MustCompile(`[^A-Za-z0-9._@/:=-]+`)
 // cluster policy definition is a whole JSON document -- is trimmed and given a short digest,
 // so two values that share a prefix still get different labels.
 func shortLabel(s string) string {
-	const maxLabel = 24
-
-	clean := labelSafe.ReplaceAllString(s, "_")
-	if clean == s && len(clean) <= maxLabel {
+	if clean := cleanLabel(s); clean != "" {
 		return clean
 	}
 
+	// No alias was assigned for this value -- it is not one of a field's declared values, so
+	// nothing holds a legend entry for it. A digest keeps the label short and unique.
 	digest := fnv.New32a()
 	_, _ = digest.Write([]byte(s))
-	return strings.Trim(clean[:min(len(clean), maxLabel-5)], "_") + "~" + strconv.FormatUint(uint64(digest.Sum32())%0x10000, 16)
+	safe := labelSafe.ReplaceAllString(s, "_")
+	return strings.Trim(safe[:min(len(safe), maxLabelLength-5)], "_") + "~" + strconv.FormatUint(uint64(digest.Sum32())%0x10000, 16)
+}
+
+// maxLabelLength is how long a value's own label may be before it is aliased instead.
+const maxLabelLength = 24
+
+// cleanLabel returns the value unchanged when it reads as a label already -- short, and free of
+// characters that would need quoting in a test filter -- and "" when it does not.
+func cleanLabel(s string) string {
+	if len(s) <= maxLabelLength && labelSafe.ReplaceAllString(s, "_") == s {
+		return s
+	}
+	return ""
 }
 
 // allErrors returns every error diagnostic in full -- status, code, message, endpoint --

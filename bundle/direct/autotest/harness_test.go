@@ -188,7 +188,7 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 	// binary's own -timeout remains the backstop.
 	ctx = dbr.MockRuntime(context.WithoutCancel(ctx), dbr.Environment{}) //exhaustruct:ignore
 	for name, value := range variables {
-		ctx = env.Set(ctx, "BUNDLE_VAR_"+name, value)
+		ctx := env.Set(ctx, "BUNDLE_VAR_"+name, value)
 	}
 	// Thousands of deploys run through here, so cap how long any one of them waits for
 	// a resource to become ready. Without a cap a resource that never reaches its
