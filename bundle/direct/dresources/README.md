@@ -64,6 +64,10 @@ Declare `inputConfig` with its concrete type when every parent shares one (grant
 The state struct is serialized to JSON and persisted between deploys. Backward incompatible changes will result in a drift, which depending
 on field behaviour might result in recreate. See dstate/migrate.go on how to handle state migration.
 
+## hashed_fields: storing large fields as content hashes
+
+Declaring a field under `hashed_fields` in `resources.yml` makes the engine persist only a `sha256:<hex>` content hash of it in state (via `CompactState`) rather than the full contents, for large equality-only fields that are never read back from state (e.g. `dashboards.serialized_dashboard`).
+
 ## RemapState is a dumb copy; DoRead owns all remapping
 
 `RemapState` converts `RemoteType` to `StateType` only because `StateType` is typically a
