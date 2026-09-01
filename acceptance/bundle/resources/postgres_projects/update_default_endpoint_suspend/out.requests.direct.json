@@ -2,7 +2,7 @@
   "method": "PATCH",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
   "q": {
-    "update_mask": "spec.default_endpoint_settings.suspend_timeout_duration"
+    "update_mask": "spec.default_endpoint_settings.suspension"
   },
   "body": {
     "spec": {

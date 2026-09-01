@@ -23,7 +23,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== Remove suspend_timeout_duration: both engines plan it, only terraform applies it
+=== Remove suspend_timeout_duration: neither engine can apply it
 >>> update_file.py databricks.yml       suspend_timeout_duration: 300s 
 
 >>> [CLI] bundle plan
@@ -36,6 +36,19 @@ Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint
+{
+  "endpoint_id": "my-endpoint",
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "uid": "[ENDPOINT_UID]",
+  "status": {
+    "endpoint_id": "my-endpoint",
+    "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
+    "autoscaling_limit_min_cu": 0.5,
+    "autoscaling_limit_max_cu": 8,
+    "suspend_timeout_duration": "300s"
+  }
+}
 
 >>> [CLI] bundle plan -o json
 
