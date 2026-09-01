@@ -224,7 +224,7 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 
 		// Resolve field name from JSON tag or fall back to Go field name
 		fieldName := jsonTag.Name()
-		if fieldName == "-" {
+		if structaccess.IsSkippedField(sf) {
 			continue
 		}
 

@@ -122,7 +122,7 @@ func walkTypeStruct(path *structpath.PatternNode, st reflect.Type, visit VisitTy
 
 		// Skip fields marked as "-" in json tag
 		jsonTagName := structtag.JSONTag(jsonTag).Name()
-		if jsonTagName == "-" {
+		if structaccess.IsSkippedField(sf) {
 			continue
 		}
 

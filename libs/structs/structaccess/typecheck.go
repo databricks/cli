@@ -298,10 +298,10 @@ func directCandidates(t reflect.Type, key string, prefix []int) []candidate {
 		if sf.Name == EmbeddedSliceFieldName || IsFlattenedEmbed(sf) {
 			continue
 		}
-		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-		if name == "-" {
+		if IsSkippedField(sf) {
 			continue
 		}
+		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
 		tagged := name != ""
 		if !tagged {
 			name = sf.Name
@@ -348,6 +348,13 @@ func pickCandidate(candidates []candidate) (candidate, bool) {
 		return tagged[0], true
 	}
 	return candidate{}, false
+}
+
+// IsSkippedField reports whether encoding/json omits the field entirely. Only the exact tag
+// `json:"-"` does that: `json:"-,"` and `json:"-,omitempty"` name the field "-", which is a
+// distinction structtag's parsed name alone cannot carry, since it reports "-" for both.
+func IsSkippedField(sf reflect.StructField) bool {
+	return sf.Tag.Get("json") == "-"
 }
 
 // IsFlattenedEmbed reports whether the field is an embed encoding/json flattens into the
