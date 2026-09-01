@@ -283,11 +283,30 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 	level := embeddedStructs(v)
 	for len(level) > 0 {
 		var next []reflect.Value
+		var found []struct {
+			value reflect.Value
+			field reflect.StructField
+			owner reflect.Value
+		}
 		for _, fv := range level {
-			if out, sf, found := findFieldInStruct(fv, key); found {
-				return out, sf, fv, true
+			if out, sf, ok := findFieldInStruct(fv, key); ok {
+				found = append(found, struct {
+					value reflect.Value
+					field reflect.StructField
+					owner reflect.Value
+				}{out, sf, fv})
+				continue
 			}
 			next = append(next, embeddedStructs(fv)...)
+		}
+		if len(found) == 1 {
+			return found[0].value, found[0].field, found[0].owner, true
+		}
+		if len(found) > 1 {
+			// Two embedded structs declare the same name at the same depth. encoding/json calls
+			// that ambiguous and omits the field entirely, so there is no field to read or
+			// write: picking one would target data that is never serialized.
+			return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
 		}
 		level = next
 	}
