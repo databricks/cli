@@ -1,0 +1,19 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+# Normalize the non-deterministic dashboard ID so the published-dashboard request
+# path is stable across engines and runs.
+dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.inline_dash.id')
+add_repl "$dashboard_id" DASHBOARD_ID
+
+# serialized_dashboard is authored as an inline YAML map but must reach the API as a
+# JSON *string*, not a nested object. Record the create request to prove that.
+trace print_requests.py //api/2.0/lakeview/dashboards
