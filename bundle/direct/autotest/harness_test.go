@@ -187,6 +187,8 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 	// in the cleanup case. Values (dbr, logdiag, cmdio, env) still propagate; the test
 	// binary's own -timeout remains the backstop.
 	ctx = dbr.MockRuntime(context.WithoutCancel(ctx), dbr.Environment{}) //exhaustruct:ignore
+	// A fixture's variables are passed the way a user passes them, so the config keeps the
+	// ${var...} reference the format requires rather than a resolved literal.
 	for name, value := range variables {
 		ctx := env.Set(ctx, "BUNDLE_VAR_"+name, value)
 	}
