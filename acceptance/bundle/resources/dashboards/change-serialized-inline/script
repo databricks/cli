@@ -1,6 +1,5 @@
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
 }
 trap cleanup EXIT
 
@@ -22,17 +21,6 @@ export PAGE_DISPLAY_NAME="Page One"
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle plan
 
-# Discard the requests from the initial deploy so the recording below shows only what
-# deploying the change sends. Direct only: terraform echoes OUTPUT_ONLY fields in the
-# request body, and the direct engine is the default we care about here.
-if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
-    print_requests.py //api/2.0/lakeview/dashboards > /dev/null
-fi
-
-# Deploy the change. The update serializes the inline YAML map to a JSON string, same
-# as create.
-trace $CLI bundle deploy
-
-if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
-    print_requests.py //api/2.0/lakeview/dashboards > out.requests.direct.txt
-fi
+# Capture the machine-readable plan too. The plan structure differs between engines,
+# so each engine writes its own file.
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
