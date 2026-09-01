@@ -18,7 +18,7 @@ trace $CLI bundle deploy
 rm -f out.requests.txt
 trace $CLI postgres get-project "${project_name}" | project_fields
 
-title "Change default_endpoint_settings.suspend_timeout_duration: both engines plan it, only terraform applies it"
+title "Change default_endpoint_settings.suspend_timeout_duration and re-deploy"
 trace update_file.py databricks.yml "suspend_timeout_duration: 300s" "suspend_timeout_duration: 600s"
 
 # Only terraform applies it: suspend_timeout_duration is a
@@ -27,6 +27,6 @@ trace update_file.py databricks.yml "suspend_timeout_duration: 300s" "suspend_ti
 trace $CLI bundle plan
 trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
-errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle deploy
 trace print_requests.py --del-body project_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
-trace $CLI postgres get-project "${project_name}" | project_fields > out.project.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI postgres get-project "${project_name}" | project_fields

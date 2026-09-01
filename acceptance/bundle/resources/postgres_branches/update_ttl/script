@@ -14,7 +14,7 @@ title "Initial deployment"
 trace $CLI bundle deploy
 rm -f out.requests.txt
 
-title "Change ttl: both engines plan it, only terraform applies it"
+title "Change ttl and re-deploy"
 trace update_file.py databricks.yml "ttl: 604800s" "ttl: 259200s"
 
 # Only terraform applies it: ttl is a member of the
@@ -26,5 +26,5 @@ trace update_file.py databricks.yml "ttl: 604800s" "ttl: 259200s"
 trace $CLI bundle plan
 trace $CLI bundle plan -o json | jq '.plan."resources.postgres_branches.dev_branch" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
-errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle deploy
 trace print_requests.py --del-body project_id,branch_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
