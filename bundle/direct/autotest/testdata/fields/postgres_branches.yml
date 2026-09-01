@@ -1,0 +1,15 @@
+# Value library for postgres branches. See ../../README.md.
+
+# The parent project holds its name after deletion until the soft delete is purged, so the chain
+# cannot be rebuilt on a real workspace. See postgres_projects.yml.
+local_only: a recreate cannot reuse the project name until the soft delete is purged
+
+deps:
+  postgres_projects:
+    project_id: test-pg-project-$UNIQUE_NAME
+    display_name: Test Postgres Project
+
+base:
+  parent: ${resources.postgres_projects.postgres_projects.name}
+  branch_id: test-branch-$UNIQUE_NAME
+  no_expiry: true

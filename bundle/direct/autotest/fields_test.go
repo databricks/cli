@@ -63,7 +63,7 @@ import (
 )
 
 func TestFields(t *testing.T) {
-	driven, undriven := discoverFixtures(t)
+	driven := drivenTypes(t)
 
 	// -update writes the report as the whole truth for a type, so it cannot come from a run
 	// that tested a few fields: the missing ones would read as removed.
@@ -81,8 +81,6 @@ func TestFields(t *testing.T) {
 		sampleFields = sampleSeed(t)
 		t.Logf("testing %d fields per resource type, seeded from HEAD (%d)", *sampleSize, sampleFields)
 	}
-
-	writeCoverageReport(t, driven, undriven)
 
 	for _, resourceType := range driven {
 		t.Run(resourceType, func(t *testing.T) {
@@ -647,7 +645,7 @@ func runTransition(t *testing.T, h *bundleHarness, path string, tr transition, s
 // the subtest would destroy the resource as soon as that transition ended, and every
 // transition after it would silently be creating a new one.
 func newBaseline(owner *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, resourceType string, fv *fieldValues, presets ...preset) (*bundleHarness, error) {
-	h, err := newHarness(owner, ctx, client, user, resourceType, uniqueName(), fv.base)
+	h, err := newHarness(owner, ctx, client, user, resourceType, uniqueName(), fv.base, fv.deps, fv.variables)
 	if err != nil {
 		return nil, err
 	}
