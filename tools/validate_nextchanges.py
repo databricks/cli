@@ -313,9 +313,57 @@ def has_fragments(changelog_dir):
     return any(p.name != README for p in changelog_dir.glob("*/*.md"))
 
 
+def fragment_paths(changelog_dir):
+    """The section fragments under ``changelog_dir`` (README.md excluded), sorted."""
+    return sorted(p for p in changelog_dir.glob("*/*.md") if p.name != README)
+
+
+def fixed_fragment(text, pr):
+    r"""Return ``text`` with a trailing PR link for ``pr`` appended, or unchanged.
+
+    Only a well-formed fragment (single line, ``* `` bullet, trailing period) with
+    no trailing link group is changed; anything else is returned unchanged for the
+    linter to report, so the fix never guesses at a malformed entry.
+
+    >>> fixed_fragment("* Added a thing.\n", "42")
+    '* Added a thing. ([#42](https://github.com/databricks/cli/pull/42))\n'
+    >>> fixed_fragment("* Already linked. ([#7](https://github.com/databricks/cli/pull/7))\n", "42")
+    '* Already linked. ([#7](https://github.com/databricks/cli/pull/7))\n'
+    >>> fixed_fragment("No bullet.\n", "42")
+    'No bullet.\n'
+    """
+    stripped = text.strip()
+    if fragment_format_problem(text) is not None or TRAILING_GROUP_RE.search(stripped):
+        return text
+    return f"{stripped} ([#{pr}](https://github.com/databricks/cli/pull/{pr}))\n"
+
+
+def autofix(changelog_dir, root):
+    """Append the branch's PR link to fragments missing one (a lint autofix).
+
+    The PR is inferred from the current branch (local only; see
+    ``current_branch_pr``). Prints each file changed. Does nothing when the branch
+    has no PR yet — the number can't be inferred, so there's nothing to add."""
+    pr = current_branch_pr(root)
+    if pr is None:
+        print("--fix: no PR found for the current branch; cannot infer the link", file=sys.stderr)
+        return
+    for path in fragment_paths(changelog_dir):
+        text = path.read_text(encoding="utf-8")
+        fixed = fixed_fragment(text, pr)
+        if fixed != text:
+            path.write_text(fixed, encoding="utf-8")
+            print(f"Fixed {path.relative_to(root)}: added ([#{pr}](.../pull/{pr}))")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--root", type=pathlib.Path, default=pathlib.Path.cwd(), help="repository root")
+    parser.add_argument(
+        "--fix",
+        action="store_true",
+        help="add the branch's PR link to fragments missing one (inferred from the branch via gh), then validate",
+    )
     args = parser.parse_args(argv)
 
     changelog_dir = args.root / CHANGELOG_DIR
@@ -323,6 +371,9 @@ def main(argv=None):
         return
 
     sections = load_sections(args.root)
+
+    if args.fix and has_fragments(changelog_dir):
+        autofix(changelog_dir, args.root)
 
     # A trailing PR link is required whenever the change is associated with a PR:
     # always in CI (fail closed), and locally when the branch has an open PR.
