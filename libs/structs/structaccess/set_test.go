@@ -1113,3 +1113,41 @@ func TestGet_AnonymousNonStructIsANamedMember(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, EmbeddedName("n"), value)
 }
+
+// The same embedded type reached by two routes: encoding/json descends into it once, so a name
+// declared *below* it is not ambiguous, while a name the duplicated type declares itself is.
+type repeatedLeaf struct {
+	Value string `json:"value,omitempty"`
+}
+
+type repeatedMiddle struct {
+	repeatedLeaf
+}
+
+type repeatedLeft struct {
+	repeatedMiddle
+}
+
+type repeatedRight struct {
+	repeatedMiddle
+}
+
+type repeatedEmbed struct {
+	repeatedLeft
+	repeatedRight
+}
+
+func TestGet_TypeReachedTwiceIsNotAmbiguousBelowIt(t *testing.T) {
+	target := &repeatedEmbed{
+		repeatedLeft:  repeatedLeft{repeatedMiddle: repeatedMiddle{repeatedLeaf: repeatedLeaf{Value: "left"}}},
+		repeatedRight: repeatedRight{repeatedMiddle: repeatedMiddle{repeatedLeaf: repeatedLeaf{Value: "right"}}},
+	}
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"value":"left"}`, string(blob), "encoding/json takes the first route")
+
+	value, err := structaccess.GetByString(target, "value")
+	require.NoError(t, err)
+	assert.Equal(t, "left", value)
+}

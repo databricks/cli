@@ -173,10 +173,9 @@ func findFieldIndexByKeyType(t reflect.Type, key string) ([]int, reflect.StructF
 	}
 
 	// A cycle must not be walked twice, or a key the type never declares sends the search
-	// round forever. Only types from *earlier* levels are excluded: a type reachable twice
-	// within one level is a diamond, and its two matches are the ambiguity json omits.
+	// round forever.
 	seen := map[reflect.Type]bool{t: true}
-	level := embeddedIndexPaths(t, nil)
+	level := dedupeByType(embeddedIndexPaths(t, nil))
 	for len(level) > 0 {
 		var next []embeddedPath
 		var found []candidate
@@ -184,6 +183,12 @@ func findFieldIndexByKeyType(t reflect.Type, key string) ([]int, reflect.StructF
 			matches := directCandidates(embed.typ, key, embed.index)
 			if len(matches) > 0 {
 				found = append(found, matches...)
+				if embed.reached > 1 {
+					// Several members of the previous level reach this type, so encoding/json sees
+					// the names it declares once per route and annihilates them. One extra match is
+					// enough to make the name ambiguous below.
+					found = append(found, matches[0])
+				}
 				continue
 			}
 			for _, deeper := range embeddedIndexPaths(embed.typ, embed.index) {
@@ -193,7 +198,8 @@ func findFieldIndexByKeyType(t reflect.Type, key string) ([]int, reflect.StructF
 				next = append(next, deeper)
 			}
 		}
-		for _, embed := range next {
+		level = dedupeByType(next)
+		for _, embed := range level {
 			seen[embed.typ] = true
 		}
 		if len(found) > 0 {
@@ -202,16 +208,36 @@ func findFieldIndexByKeyType(t reflect.Type, key string) ([]int, reflect.StructF
 			}
 			return nil, reflect.StructField{}, false
 		}
-		level = next
 	}
 
 	return nil, reflect.StructField{}, false
 }
 
-// embeddedPath is an embedded struct type together with the index chain that reaches it.
+// embeddedPath is an embedded struct type together with the index chain that reaches it, and
+// how many members of the previous level reach it.
 type embeddedPath struct {
-	typ   reflect.Type
-	index []int
+	typ     reflect.Type
+	index   []int
+	reached int
+}
+
+// dedupeByType collapses repeated embeds of one type into a single entry, counting how many
+// routes reached it. encoding/json descends into a type once per level however many members
+// embed it, so a name declared *below* a type reached twice is not ambiguous; a name the
+// duplicated type declares itself is, and the count records that.
+func dedupeByType(paths []embeddedPath) []embeddedPath {
+	var out []embeddedPath
+	index := map[reflect.Type]int{}
+	for _, path := range paths {
+		if at, ok := index[path.typ]; ok {
+			out[at].reached++
+			continue
+		}
+		index[path.typ] = len(out)
+		path.reached = 1
+		out = append(out, path)
+	}
+	return out
 }
 
 // embeddedIndexPaths returns the embeds of t that encoding/json flattens, each with the index
@@ -283,7 +309,15 @@ func directCandidates(t reflect.Type, key string, prefix []int) []candidate {
 		if name != key {
 			continue
 		}
-		// Skip fields marked as internal/readonly
+		// Skip fields marked as internal/readonly.
+		//
+		// Known divergence from encoding/json: such a field still shadows a same-named field
+		// further down, so dropping it here lets the deeper one win and a caller can reach a
+		// field the wire format does not carry. resources.App is the live example -- its
+		// BaseResource.URL is internal and shadows the SDK's url, which json serializes as the
+		// internal one. Rejecting the name outright instead would make
+		// ${resources.apps.*.url} unresolvable, so which of the two is right is a decision
+		// about what internal means, not a detail of the search.
 		btag := structtag.BundleTag(sf.Tag.Get("bundle"))
 		if btag.Internal() || btag.ReadOnly() {
 			continue
