@@ -1,3 +1,6 @@
+# Inherited MSYS_NO_PATHCONV breaks bare python helpers on Windows; this test doesn't need it.
+unset MSYS_NO_PATHCONV
+
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
