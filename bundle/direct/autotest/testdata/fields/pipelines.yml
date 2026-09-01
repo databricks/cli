@@ -1,8 +1,8 @@
 # Value library for pipelines. See ../../README.md.
 
-# No pipeline config in the corpus declares a clusters block, so its whole spec -- 346
+# base has to declare a clusters block, or its whole spec -- 346
 # fields, including the init_scripts union and the tag maps -- would go untested. Values
-# that differ per cloud come from the same variables the corpus configs use.
+# that differ per cloud come from the same variables an acceptance config would get.
 base:
   name: test-pipeline-$UNIQUE_NAME
   clusters:

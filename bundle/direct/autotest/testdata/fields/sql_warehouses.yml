@@ -14,7 +14,7 @@ skip:
   # Only accepted on the CUSTOM channel, so the version and the channel name have to move
   # together; either alone is rejected.
   channel.dbsql_version: only valid on the CUSTOM channel, so it cannot move alone
-  # Serverless is only offered on a PRO warehouse, and the corpus config is CLASSIC, so
+  # Serverless is only offered on a PRO warehouse, and base is CLASSIC, so
   # this flag cannot be moved on its own -- the pair would have to change together.
   enable_serverless_compute: only valid on a PRO warehouse, which the config is not
 
@@ -22,7 +22,7 @@ fields:
   # The backend validates these as ranges rather than accepting any integer:
   # auto_stop_mins is 0 (never) or at least 10, and max_num_clusters is at least 2 once it
   # is being changed at all. min_num_clusters cannot exceed max_num_clusters, which the
-  # corpus config sets to 1, so 1 is its only deployable value -- with absent in the set
+  # base sets to 1, so 1 is its only deployable value -- with absent in the set
   # that is still an add and a remove.
   auto_stop_mins: [10, 20]
   min_num_clusters: [1]
