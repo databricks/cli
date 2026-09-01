@@ -26,3 +26,18 @@ skip:
   # test workspace has none to reference, and creating one is an account-level operation.
   budget_policy_id: needs an account-level budget policy to exist
   usage_policy_id: needs an account-level usage policy to exist
+
+  # The API validates the block as a set: "Git repository requires both URL and provider to be
+  # defined." Moving either leaf on its own leaves the other unset, so neither is testable until
+  # the fixture declares a coherent block for them to vary inside -- the same shape as a job's
+  # git_source, which base seeds for exactly that reason.
+  git_source.git_repository.url: validated as a set with the provider, which the fixture does not declare
+  git_source.git_repository.provider: validated as a set with the url, which the fixture does not declare
+  git_repository.url: validated as a set with the provider, which the fixture does not declare
+  git_repository.provider: validated as a set with the url, which the fixture does not declare
+
+  # "Manual instance count configuration is not enabled in this workspace." A workspace-level
+  # feature, so the local report for these two records what the fake server allows, not what a
+  # workspace does.
+  compute_max_instances: needs manual instance count enabled on the workspace
+  compute_min_instances: needs manual instance count enabled on the workspace
