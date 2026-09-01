@@ -11,9 +11,13 @@
 // argument stands for a changed file instead, and counts as modified unless it carries a
 // status ("A:path" for an added file, "R100:old:new" for a rename).
 //
-// Each line is a name go test accepts, so a selected test can be run as printed:
+// Each line is a `go test -run` pattern, so a selected test can be run as printed:
 //
-//	go test ./acceptance -run 'TestAccept/bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=job.yml.tmpl'
+//	go test ./acceptance -run 'TestAccept/^bundle$/^invariant$/^no_drift$/^DATABRICKS_BUNDLE_ENGINE=direct$/^INPUT_CONFIG=job.yml.tmpl$'
+//
+// Every element is anchored, because a -run element is a regexp matched against one level of
+// the test name: unanchored, `no_drift` would also run no_drift_extra, and `DMS=` would also
+// run the DMS=true variant.
 //
 // The variants come from each test's materialized config (out.test.toml), which already has
 // the excluded matrix values removed. Excludes that name a combination of variables are not
@@ -25,12 +29,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
-	"github.com/BurntSushi/toml"
-
-	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/acceptance/internal/selection"
 )
 
@@ -54,9 +56,9 @@ func main() {
 
 	var result selection.Result
 	if args := flag.Args(); len(args) > 0 {
-		result = selection.FromDiff(diffFromArgs(args), testDirs, *limit)
+		result = selection.FromDiff(*root, diffFromArgs(args), testDirs, *limit)
 	} else {
-		result, err = selection.FromGit(testDirs, *limit)
+		result, err = selection.FromGit(*root, testDirs, *limit)
 		if err != nil {
 			fatalf("%s", err)
 		}
@@ -78,12 +80,12 @@ func main() {
 // it runs, and otherwise up to the variant the selection names.
 func variantNames(root string, test selection.Test) []string {
 	if test.Filter == "" {
-		return []string{test.Dir}
+		return []string{runPattern(strings.Split(test.Dir, "/"))}
 	}
 	key, _, _ := strings.Cut(test.Filter, "=")
 
 	var names []string
-	for _, envset := range internal.ExpandEnvMatrix(envMatrix(root, test.Dir), nil, nil) {
+	for _, envset := range selection.Variants(root, test.Dir) {
 		if !selection.MatchesFilters(envset, []string{test.Filter}) {
 			continue
 		}
@@ -94,28 +96,24 @@ func variantNames(root string, test selection.Test) []string {
 				break
 			}
 		}
-		if name := test.Dir + "/" + strings.Join(envset, "/"); !slices.Contains(names, name) {
+		if name := runPattern(append(strings.Split(test.Dir, "/"), envset...)); !slices.Contains(names, name) {
 			names = append(names, name)
 		}
 	}
 	return names
 }
 
-// envMatrix reads the variant matrix of a test from its materialized config, the same file
-// the harness generates so that inherited settings are visible.
-func envMatrix(root, dir string) map[string][]string {
-	path := filepath.Join(root, dir, internal.MaterializedConfigFile)
-	contents, err := os.ReadFile(path)
-	if err != nil {
-		// A test dir without a materialized config has no variants.
-		return nil
+// runPattern renders test name elements as a `go test -run` pattern. Each element of such a
+// pattern is a regexp matched against one level of the test name, so every element is escaped
+// and anchored: otherwise `bundle/deploy/immutable` would also run immutable-no-artifacts, and
+// the dots in job.yml.tmpl would match any character. The pattern is left open at the end, so
+// the variants below its last element still run.
+func runPattern(elements []string) string {
+	anchored := make([]string, 0, len(elements))
+	for _, element := range elements {
+		anchored = append(anchored, "^"+regexp.QuoteMeta(element)+"$")
 	}
-
-	var config internal.TestConfig
-	if _, err := toml.Decode(string(contents), &config); err != nil {
-		fatalf("cannot parse %s: %s", path, err)
-	}
-	return config.EnvMatrix
+	return strings.Join(anchored, "/")
 }
 
 // diffFromArgs renders command line arguments as `git diff --name-status` lines, so the

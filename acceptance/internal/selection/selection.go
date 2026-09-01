@@ -9,11 +9,16 @@ import (
 	"fmt"
 	"io/fs"
 	"maps"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/BurntSushi/toml"
+
+	"github.com/databricks/cli/acceptance/internal"
 )
 
 const (
@@ -139,6 +144,49 @@ func MatchesFilters(envset, filters []string) bool {
 	return true
 }
 
+// Variants returns the env sets dir runs with, read from its materialized config
+// (out.test.toml), which already has the excluded matrix values removed. Excludes that name a
+// combination of variables are not recorded there, so a returned variant can still be one the
+// harness skips.
+//
+// A dir with no readable materialized config has no matrix, which expands to a single variant
+// with no env set, so every filter matches it. That is the conservative answer: it can only
+// select more tests, never fewer, and the harness parses the same file strictly when it runs a
+// test, so a malformed one is reported there.
+func Variants(root, dir string) [][]string {
+	var config internal.TestConfig
+
+	contents, err := os.ReadFile(filepath.Join(root, dir, internal.MaterializedConfigFile))
+	if err == nil {
+		_, _ = toml.Decode(string(contents), &config)
+	}
+
+	return internal.ExpandEnvMatrix(config.EnvMatrix, nil, nil)
+}
+
+// variantIndex answers whether a test dir runs a given variant, reading each dir's
+// materialized config at most once.
+type variantIndex struct {
+	root    string
+	envsets map[string][][]string
+}
+
+// has reports whether dir runs a variant matching filter.
+func (v *variantIndex) has(dir, filter string) bool {
+	envsets, ok := v.envsets[dir]
+	if !ok {
+		envsets = Variants(v.root, dir)
+		v.envsets[dir] = envsets
+	}
+
+	for _, envset := range envsets {
+		if MatchesFilters(envset, []string{filter}) {
+			return true
+		}
+	}
+	return false
+}
+
 // FindTestDirs returns every test dir under root, named relative to root with forward
 // slashes, sorted.
 func FindTestDirs(root string) ([]string, error) {
@@ -175,7 +223,7 @@ func FindTestDirs(root string) ([]string, error) {
 // committed. The three-dot form origin/main...HEAD only covers committed
 // changes and misses unstaged edits, which breaks the "touch a config, run
 // the test" local dev workflow (same reason lintdiff.py uses --merge-base).
-func FromGit(testDirs map[string]bool, limit int) (Result, error) {
+func FromGit(root string, testDirs map[string]bool, limit int) (Result, error) {
 	out, err := exec.Command("git", "diff", "--name-status", "--merge-base", "-M", "origin/main").Output()
 	if err != nil {
 		// A failed diff (most commonly a missing origin/main in a shallow CI checkout)
@@ -190,7 +238,7 @@ func FromGit(testDirs map[string]bool, limit int) (Result, error) {
 		return Result{}, fmt.Errorf("git diff --merge-base origin/main failed: %w", err)
 	}
 
-	return FromDiff(strings.TrimSpace(string(out)), testDirs, limit), nil
+	return FromDiff(root, strings.TrimSpace(string(out)), testDirs, limit), nil
 }
 
 // testDirForFile maps a repo-relative changed file (e.g. acceptance/bundle/foo/script)
@@ -223,10 +271,13 @@ type changedDir struct {
 	allVariants bool
 
 	// newTest is set when the dir's script is new, so the whole test is new. moved is set
-	// when the script arrived as a rename, so the test only changed location. score treats
-	// them as exclusive.
+	// when the script arrived as an identical rename, so the test only changed location.
 	newTest bool
 	moved   bool
+
+	// nonRenameChange is set by a change that is not a rename, so a dir that both moved and
+	// changed is not scored as a pure move.
+	nonRenameChange bool
 
 	// fixture is set when a file the test is made of changed, generated when a file the
 	// test produces changed (out*). A dir with only generated changes is one whose golden
@@ -248,7 +299,7 @@ const (
 )
 
 func (d *changedDir) score(newVariant bool) int {
-	if d.moved {
+	if d.moved && !d.nonRenameChange {
 		// The files of a moved dir all arrive as renames. Moving a test does not change what
 		// it does, so those renames do not also count as changes.
 		return scoreMoved
@@ -263,6 +314,10 @@ func (d *changedDir) score(newVariant bool) int {
 	}
 	if d.generated {
 		score += scoreGenerated
+	}
+	if d.moved {
+		// A dir that moved and changed is scored for both.
+		score += scoreMoved
 	}
 	return score
 }
@@ -333,10 +388,28 @@ func isGeneratedFile(path, dir string) bool {
 	return strings.HasPrefix(strings.TrimPrefix(path, acceptanceDirPrefix+dir+"/"), "out")
 }
 
+// markChanged records a changed file against its test dir. The dir runs in full, and the file
+// counts as a fixture unless it is output the test generates.
+func markChanged(dirs changedDirs, dir, path string) *changedDir {
+	d := dirs.get(dir)
+	// A change to the dir itself runs every variant, so any variant filter it picked up from a
+	// config change is dropped and a later one is ignored.
+	d.allVariants = true
+	d.filters = nil
+	if isGeneratedFile(path, dir) {
+		d.generated = true
+	} else {
+		d.fixture = true
+	}
+	return d
+}
+
 // FromDiff selects among testDirs the tests touched by `git diff --name-status` output,
-// keeping at most limit of them in the order documented on the score constants.
-func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
+// keeping at most limit of them in the order documented on the score constants. root is the
+// acceptance directory, read for the variants each test dir runs.
+func FromDiff(root, diff string, testDirs map[string]bool, limit int) Result {
 	dirs := changedDirs{}
+	variants := &variantIndex{root: root, envsets: map[string][][]string{}}
 
 	for line := range strings.SplitSeq(diff, "\n") {
 		// A rename line carries both paths ("R100\told\tnew"); the last field is the
@@ -348,11 +421,27 @@ func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
 		status := fields[0]
 		path := fields[len(fields)-1]
 
+		// A rename also changes the dir the file left: it lost an input and may no longer
+		// pass. It only counts while that test dir still exists, so moving a whole dir does
+		// not select the dir it came from.
+		if strings.HasPrefix(status, "R") && len(fields) >= 3 {
+			if source := testDirForFile(fields[1], testDirs); source != "" {
+				markChanged(dirs, source, fields[1])
+			}
+		}
+
 		// A changed invariant config re-enables every invariant subdir, but only for the
 		// variants generated from that config.
 		if configName := invariantConfigName(path); configName != "" {
+			filter := "INPUT_CONFIG=" + configName
 			for dir := range testDirs {
 				if !strings.HasPrefix(dir, invariantDirPrefix) {
+					continue
+				}
+				// A dir that does not run this config would be selected with every
+				// variant skipped, spending the limit on a test that runs nothing.
+				// A deleted config is gone from every matrix, so this drops it too.
+				if !variants.has(dir, filter) {
 					continue
 				}
 				d := dirs.get(dir)
@@ -362,16 +451,17 @@ func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
 				// variant runs.
 				d.fixture = true
 				isNewConfig := status == "A" && strings.HasSuffix(path, configName)
-				d.addFilter("INPUT_CONFIG="+configName, isNewConfig)
+				d.addFilter(filter, isNewConfig)
 			}
 			continue
 		}
 
-		// test.toml and out.test.toml under the invariant tree regenerate
-		// automatically when INPUT_CONFIG changes; ignore them so they don't
-		// unlock all variants of every invariant subdir.
+		// out.test.toml under the invariant tree regenerates automatically when
+		// INPUT_CONFIG changes; ignore it so a regenerated matrix does not unlock all
+		// variants of every invariant subdir. The test.toml beside it is hand-written, so
+		// it is a fixture like any other.
 		if strings.HasPrefix(path, acceptanceDirPrefix+invariantDirPrefix) {
-			if name := filepath.Base(path); name == "test.toml" || name == "out.test.toml" {
+			if filepath.Base(path) == internal.MaterializedConfigFile {
 				continue
 			}
 		}
@@ -381,22 +471,18 @@ func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
 			continue
 		}
 
-		d := dirs.get(dir)
-		// A change to the dir itself runs every variant, so any variant filter it picked up
-		// from a config change is dropped and a later one is ignored.
-		d.allVariants = true
-		d.filters = nil
-		if isGeneratedFile(path, dir) {
-			d.generated = true
-		} else {
-			d.fixture = true
+		d := markChanged(dirs, dir, path)
+		if !strings.HasPrefix(status, "R") {
+			d.nonRenameChange = true
 		}
 		// The status of the dir's script says how the dir itself changed.
 		if strings.HasSuffix(path, "/script") {
-			switch {
-			case status == "A":
+			switch status {
+			case "A":
 				d.newTest = true
-			case strings.HasPrefix(status, "R"):
+			case "R100":
+				// Only an identical rename is a pure move. A rename that also rewrote the
+				// script is a change like any other.
 				d.moved = true
 			}
 		}
@@ -414,10 +500,13 @@ func FromDiff(diff string, testDirs map[string]bool, limit int) Result {
 		}
 	}
 
-	// Sorted by name above, then stably by descending score, so tests that score the same
-	// stay alphabetical.
-	slices.SortStableFunc(tests, func(a, b Test) int {
-		return b.Score - a.Score
+	// Highest score first, then by name, so the limit cuts the same set whatever order the
+	// diff happens to list the changed files in.
+	slices.SortFunc(tests, func(a, b Test) int {
+		if byScore := b.Score - a.Score; byScore != 0 {
+			return byScore
+		}
+		return strings.Compare(a.Name(), b.Name())
 	})
 
 	dropped := max(len(tests)-limit, 0)

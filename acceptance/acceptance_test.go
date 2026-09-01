@@ -492,7 +492,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	if changedLimit > 0 {
 		// A failed selection (e.g. no origin/main in a shallow checkout) must fail the
 		// run: treating it as "nothing changed" would silently skip new tests.
-		result, err := selection.FromGit(testDirsSet, changedLimit)
+		result, err := selection.FromGit(".", testDirsSet, changedLimit)
 		require.NoError(t, err)
 		t.Log(result.Summary())
 		changedTests = result.Tests()
