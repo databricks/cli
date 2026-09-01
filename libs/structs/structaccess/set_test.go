@@ -1042,3 +1042,74 @@ func TestGetSet_TaggedEmbedIsANamedField(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"leaf":{"value":"set"},"own":"o"}`, string(blob))
 }
+
+// At one depth, encoding/json prefers a field whose json tag names it over one that only has
+// the matching Go field name, instead of calling the pair ambiguous.
+type untaggedX struct {
+	X string
+}
+
+type taggedAsX struct {
+	Y string `json:"X"`
+}
+
+type taggedBeatsUntagged struct {
+	untaggedX
+	taggedAsX
+}
+
+func TestGet_TaggedNameBeatsUntaggedAtTheSameDepth(t *testing.T) {
+	target := &taggedBeatsUntagged{untaggedX: untaggedX{X: "untagged"}, taggedAsX: taggedAsX{Y: "tagged"}}
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"X":"tagged"}`, string(blob))
+
+	value, err := structaccess.GetByString(target, "X")
+	require.NoError(t, err)
+	assert.Equal(t, "tagged", value, "must resolve to the field encoding/json serializes")
+}
+
+// A field whose tag sets only an option has no json name, so encoding/json serializes it under
+// its Go field name and that is the name it has to be reachable by.
+type optionOnlyTag struct {
+	Count int `json:"count,omitempty"`
+	Total int `json:",omitempty"`
+}
+
+func TestGetSet_FieldWithoutATagNameUsesItsGoName(t *testing.T) {
+	target := &optionOnlyTag{Count: 1, Total: 2}
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"count":1,"Total":2}`, string(blob))
+
+	value, err := structaccess.GetByString(target, "Total")
+	require.NoError(t, err)
+	assert.Equal(t, 2, value)
+
+	require.NoError(t, structaccess.SetByString(target, "Total", 7))
+	assert.Equal(t, 7, target.Total)
+}
+
+// An anonymous field that is not a struct is not promoted: encoding/json serializes it as a
+// member named after its type.
+type EmbeddedName string
+
+type embeddedScalar struct {
+	EmbeddedName
+
+	Own string `json:"own,omitempty"`
+}
+
+func TestGet_AnonymousNonStructIsANamedMember(t *testing.T) {
+	target := &embeddedScalar{EmbeddedName: "n", Own: "o"}
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"EmbeddedName":"n","own":"o"}`, string(blob))
+
+	value, err := structaccess.GetByString(target, "EmbeddedName")
+	require.NoError(t, err)
+	assert.Equal(t, EmbeddedName("n"), value)
+}
