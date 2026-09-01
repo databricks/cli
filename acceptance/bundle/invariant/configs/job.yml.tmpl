@@ -5,9 +5,6 @@ resources:
   jobs:
     foo:
       name: test-job-$UNIQUE_NAME
-      # Mutations for apply_update / apply_remote_update; see acceptance/bin/apply_mutation.py.
-      #description: test description   # ACTION: UNCOMMENT
-      #max_concurrent_runs: 2          # ACTION: UNCOMMENT
       permissions:
         - level: CAN_VIEW
           group_name: users
