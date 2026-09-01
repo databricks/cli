@@ -8,14 +8,16 @@ Error: expected JSON object, received sequence
 >>> [CLI] secrets create-scope --scope-backend-type AZURE_KEYVAULT --json {
   "scope": "xxxxxxxx-xxx",
   "scope_backend_type": "AZURE_KEYVAULT",
-  "keyvault_metadata": {
+  "backend_azure_keyvault": {
     "dns_name": "test",
     "resource_id": "123456"
   }
 }
-Warning: unknown field: keyvault_metadata
-  in (inline):4:4
 
+>>> [CLI] secrets delete-scope xxxxxxxx-xxx
+
+>>> musterr [CLI] secrets create-scope --scope-backend-type AZURE_KEYVAULT --json {
+  "scope": "xxxxxxxx-xxx",
+  "scope_backend_type": "AZURE_KEYVAULT"
+}
 Error: Scope with Azure KeyVault must have AzureKeyVaultSecretScopeMetadata defined!
-
-Exit code: 1
