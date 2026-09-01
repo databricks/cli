@@ -140,13 +140,15 @@ func setStructField(parentVal reflect.Value, fieldName string, valueVal reflect.
 		return fmt.Errorf("field %q cannot be set", sf.Name)
 	}
 
-	// Handle ForceSendFields: remove if setting nil, add if setting empty value
-	err := updateForceSendFields(parentVal, sf.Name, embeddedIndex, valueVal, sf)
-	if err != nil {
+	// Assign first: a value that cannot be converted must leave the struct exactly as it was,
+	// and updating ForceSendFields before the assignment left the field's send-behaviour
+	// changed after a failed Set.
+	if err := assignValue(fv, valueVal); err != nil {
 		return err
 	}
 
-	return assignValue(fv, valueVal)
+	// Handle ForceSendFields: remove if setting nil, add if setting empty value
+	return updateForceSendFields(parentVal, sf.Name, embeddedIndex, valueVal, sf)
 }
 
 // setMapValue sets a value in a map

@@ -791,3 +791,12 @@ func TestSet_MixedForceSendFields(t *testing.T) {
 		assert.Equal(t, []string{"SecondFieldOmit"}, obj.Second.ForceSendFields) // no duplicates
 	})
 }
+
+// A value that cannot be converted must leave the struct untouched, ForceSendFields included.
+func TestSet_FailedConversionLeavesForceSendFields(t *testing.T) {
+	job := &jobs.JobSettings{Name: "n"} //exhaustruct:ignore
+
+	require.Error(t, structaccess.SetByString(job, "max_concurrent_runs", ""))
+	assert.Empty(t, job.ForceSendFields)
+	assert.Equal(t, "n", job.Name)
+}
