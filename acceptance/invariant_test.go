@@ -19,9 +19,8 @@ const invariantConfigsDir = "bundle/invariant/configs"
 // LackingInvariantTest lists keys from config.ResourcesTypes that knowingly lack
 // a covering config in invariantConfigsDir. Keys match the ResourcesTypes
 // form: "<group>" for the resource itself, "<group>.permissions" / "<group>.grants"
-// / "<group>.libraries" for sub-resource coverage. Add a config and remove the entry
-// to close a gap; the test fails if an entry here is actually covered, so the list
-// only shrinks.
+// for permissions/grants coverage. Add a config and remove the entry to close a gap;
+// the test fails if an entry here is actually covered, so the list only shrinks.
 var LackingInvariantTest = map[string]bool{
 	"quality_monitors": true,
 }
@@ -31,11 +30,10 @@ var LackingInvariantTest = map[string]bool{
 // types supporting permissions or grants have at least one config exercising them.
 //
 // config.ResourcesTypes is the source of truth: it maps each resource group
-// (e.g. "jobs") to its Go type and adds derived keys "<group>.permissions",
-// "<group>.grants", and "<group>.libraries" where the resource has the
-// corresponding sub-resource.
+// (e.g. "jobs") to its Go type and, where the resource struct has a Permissions
+// or Grants field, adds derived keys "<group>.permissions" and "<group>.grants".
 func TestInvariantConfigsCoverage(t *testing.T) {
-	present, withPermissions, withGrants, withLibraries := scanInvariantConfigs(t)
+	present, withPermissions, withGrants := scanInvariantConfigs(t)
 
 	keys := make([]string, 0, len(config.ResourcesTypes))
 	for key := range config.ResourcesTypes {
@@ -55,10 +53,6 @@ func TestInvariantConfigsCoverage(t *testing.T) {
 			group := strings.TrimSuffix(key, ".grants")
 			covered = withGrants[group]
 			hint = "attaches grants to a " + group + " resource"
-		case strings.HasSuffix(key, ".libraries"):
-			group := strings.TrimSuffix(key, ".libraries")
-			covered = withLibraries[group]
-			hint = "attaches libraries to a " + group + " resource"
 		default:
 			covered = present[key]
 			hint = "defines a " + key + " resource"
@@ -75,13 +69,12 @@ func TestInvariantConfigsCoverage(t *testing.T) {
 }
 
 // scanInvariantConfigs parses every config in the invariant configs directory and
-// returns the set of resource groups present, and the groups with at least one
-// resource carrying permissions, grants, or libraries.
-func scanInvariantConfigs(t *testing.T) (present, withPermissions, withGrants, withLibraries map[string]bool) {
+// returns the set of resource groups present, the groups with at least one resource
+// carrying permissions, and the groups with at least one resource carrying grants.
+func scanInvariantConfigs(t *testing.T) (present, withPermissions, withGrants map[string]bool) {
 	present = map[string]bool{}
 	withPermissions = map[string]bool{}
 	withGrants = map[string]bool{}
-	withLibraries = map[string]bool{}
 
 	entries, err := os.ReadDir(invariantConfigsDir)
 	require.NoError(t, err)
@@ -121,12 +114,9 @@ func scanInvariantConfigs(t *testing.T) (present, withPermissions, withGrants, w
 				if cfg.Get("grants").Kind() != dyn.KindInvalid {
 					withGrants[groupName] = true
 				}
-				if cfg.Get("libraries").Kind() != dyn.KindInvalid {
-					withLibraries[groupName] = true
-				}
 			}
 		}
 	}
 
-	return present, withPermissions, withGrants, withLibraries
+	return present, withPermissions, withGrants
 }
