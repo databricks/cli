@@ -273,13 +273,17 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 
 	now := nowMilli()
 	endpoint := serving.ServingEndpointDetailed{
-		AiGateway:            createReq.AiGateway,
-		BudgetPolicyId:       createReq.BudgetPolicyId,
-		Config:               config,
-		CreationTimestamp:    now,
-		Creator:              s.CurrentUser().UserName,
-		Description:          createReq.Description,
-		EmailNotifications:   createReq.EmailNotifications,
+		AiGateway:         createReq.AiGateway,
+		BudgetPolicyId:    createReq.BudgetPolicyId,
+		Config:            config,
+		CreationTimestamp: now,
+		Creator:           s.CurrentUser().UserName,
+		Description:       createReq.Description,
+		// Not carried over from the create: a real workspace does not echo the notifications a
+		// create asked for (aws, 2026-09 -- the field is absent from a GET straight afterwards),
+		// so the endpoint drifts from the moment it exists. An update does apply them, which is
+		// why they are set in the update handler below and not here.
+		EmailNotifications:   nil,
 		Id:                   nextUUID(),
 		LastUpdatedTimestamp: now,
 		Name:                 createReq.Name,
