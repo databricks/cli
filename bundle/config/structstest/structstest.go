@@ -48,6 +48,13 @@ type Report struct {
 	// the value stored at the path.
 	ValueMismatch []string
 
+	// InsideFreeFormField are paths that sit inside a free-form any field. structwalk does not
+	// traverse an interface and structaccess cannot validate a path through one, so nothing
+	// below such a field is visible to the packages -- a serialized dashboard or a cluster
+	// policy definition authored as inline YAML is opaque to them. One known limitation rather
+	// than a list of paths, which would depend on the filler's choice of key.
+	InsideFreeFormField []string
+
 	// SelfMarshalingScalars are paths whose Go type is a struct that marshals itself as a
 	// scalar through its own MarshalJSON -- duration.Duration and the SDK's time wrapper.
 	// structwalk looks for scalar *fields* and finds none inside them, so it never visits
@@ -59,7 +66,8 @@ type Report struct {
 // Empty reports whether the type and the libs/structs packages agree completely.
 func (r Report) Empty() bool {
 	return len(r.WalkMissing) == 0 && len(r.WalkExtra) == 0 && len(r.GetFailed) == 0 &&
-		len(r.ValidateFailed) == 0 && len(r.ValueMismatch) == 0 && len(r.SelfMarshalingScalars) == 0
+		len(r.ValidateFailed) == 0 && len(r.ValueMismatch) == 0 && len(r.SelfMarshalingScalars) == 0 &&
+		len(r.InsideFreeFormField) == 0
 }
 
 // String renders the report as one indented line per category, for a test failure message.
@@ -75,6 +83,7 @@ func (r Report) String() string {
 		{"structaccess.ValidatePath rejects", r.ValidateFailed},
 		{"structaccess.Get and encoding/json disagree on the value at", r.ValueMismatch},
 		{"marshals itself as a scalar, so structwalk never visits", r.SelfMarshalingScalars},
+		{"sits inside a free-form any field, which the packages do not look into", r.InsideFreeFormField},
 	} {
 		if len(s.paths) == 0 {
 			continue
@@ -102,7 +111,7 @@ func Check(t reflect.Type) (Report, error) {
 	FillNonZero(ptr.Elem())
 	v := ptr.Interface()
 
-	jsonLeaves, selfMarshaling, err := jsonLeaves(v)
+	jsonLeaves, marks, err := jsonLeaves(v)
 	if err != nil {
 		return Report{}, err
 	}
@@ -117,7 +126,11 @@ func Check(t reflect.Type) (Report, error) {
 
 	var report Report
 	for path, want := range jsonLeaves {
-		if selfMarshaling[path] {
+		if marks.freeForm[path] {
+			report.InsideFreeFormField = append(report.InsideFreeFormField, path)
+			continue
+		}
+		if marks.selfMarshaling[path] {
 			report.SelfMarshalingScalars = append(report.SelfMarshalingScalars, path)
 			continue
 		}
@@ -150,6 +163,12 @@ func Check(t reflect.Type) (Report, error) {
 	}
 	for path := range walkLeaves {
 		if _, ok := jsonLeaves[path]; !ok {
+			if marks.freeFormField[path] {
+				// The any field itself: the walk offers it as a scalar leaf while the wire format
+				// carries whatever it holds, which is the same limitation seen from the other side.
+				report.InsideFreeFormField = append(report.InsideFreeFormField, path)
+				continue
+			}
 			report.WalkExtra = append(report.WalkExtra, path)
 		}
 	}
@@ -166,27 +185,47 @@ func Check(t reflect.Type) (Report, error) {
 // jsonLeaves marshals v and returns its scalar leaves keyed by the structpath rendering of
 // their location, which is the dialect every libs/structs package speaks, plus the subset of
 // those leaves whose Go type marshalled itself as a scalar.
-func jsonLeaves(v any) (map[string]string, map[string]bool, error) {
+// leafMarks records leaves that need a category of their own rather than a path-by-path
+// comparison.
+type leafMarks struct {
+	// selfMarshaling are leaves whose Go type is a struct that marshalled itself as a scalar.
+	selfMarshaling map[string]bool
+	// freeForm are leaves below an any field; freeFormField holds the any fields themselves.
+	freeForm      map[string]bool
+	freeFormField map[string]bool
+}
+
+func jsonLeaves(v any) (map[string]string, leafMarks, error) {
+	marks := leafMarks{
+		selfMarshaling: map[string]bool{},
+		freeForm:       map[string]bool{},
+		freeFormField:  map[string]bool{},
+	}
+
 	blob, err := json.Marshal(v)
 	if err != nil {
-		return nil, nil, fmt.Errorf("structstest: marshal %T: %w", v, err)
+		return nil, marks, fmt.Errorf("structstest: marshal %T: %w", v, err)
 	}
 	var generic any
 	if err := json.Unmarshal(blob, &generic); err != nil {
-		return nil, nil, fmt.Errorf("structstest: unmarshal %T: %w", v, err)
+		return nil, marks, fmt.Errorf("structstest: unmarshal %T: %w", v, err)
 	}
 	out := map[string]string{}
-	selfMarshaling := map[string]bool{}
-	flatten(nil, reflect.TypeOf(v), generic, out, selfMarshaling)
-	return out, selfMarshaling, nil
+	flatten(nil, reflect.TypeOf(v), generic, out, marks, false)
+	return out, marks, nil
 }
 
 // flatten walks the decoded JSON alongside the Go type, because the path syntax for an
 // object member depends on which one it is: a struct field is .name, a map entry is
 // ['name'], and only the type knows the difference.
-func flatten(path *structpath.PathNode, typ reflect.Type, v any, out map[string]string, selfMarshaling map[string]bool) {
+func flatten(path *structpath.PathNode, typ reflect.Type, v any, out map[string]string, marks leafMarks, freeForm bool) {
 	for typ != nil && typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
+	}
+	if typ != nil && typ.Kind() == reflect.Interface {
+		// Everything below an any field is opaque to the packages.
+		marks.freeFormField[path.String()] = true
+		freeForm = true
 	}
 
 	switch value := v.(type) {
@@ -206,7 +245,7 @@ func flatten(path *structpath.PathNode, typ reflect.Type, v any, out map[string]
 						// its elements at the parent path, while the wire format keeps the
 						// __embed__ key. Follow the walkers, or every such type reads as a
 						// disagreement when it is really the convention working.
-						flatten(path, sf.Type, member, out, selfMarshaling)
+						flatten(path, sf.Type, member, out, marks, freeForm)
 						continue
 					}
 					if sf, _, ok := structaccess.FindStructFieldByKeyType(typ, key); ok {
@@ -214,7 +253,7 @@ func flatten(path *structpath.PathNode, typ reflect.Type, v any, out map[string]
 					}
 				}
 			}
-			flatten(next, memberType, member, out, selfMarshaling)
+			flatten(next, memberType, member, out, marks, freeForm)
 		}
 	case []any:
 		var elemType reflect.Type
@@ -222,16 +261,19 @@ func flatten(path *structpath.PathNode, typ reflect.Type, v any, out map[string]
 			elemType = typ.Elem()
 		}
 		for i, member := range value {
-			flatten(structpath.NewIndex(path, i), elemType, member, out, selfMarshaling)
+			flatten(structpath.NewIndex(path, i), elemType, member, out, marks, freeForm)
 		}
 	case nil:
 		// A JSON null carries no scalar leaf.
 	default:
 		out[path.String()] = render(value)
+		if freeForm {
+			marks.freeForm[path.String()] = true
+		}
 		// A scalar on the wire whose Go type is a struct marshalled itself: the walkers
 		// cannot see inside it.
 		if typ != nil && typ.Kind() == reflect.Struct {
-			selfMarshaling[path.String()] = true
+			marks.selfMarshaling[path.String()] = true
 		}
 	}
 }
@@ -360,10 +402,10 @@ func fillNonZero(v reflect.Value, depth int) {
 		fillNonZero(val, depth+1)
 		v.SetMapIndex(reflect.ValueOf("k").Convert(v.Type().Key()), val)
 	case reflect.Interface:
-		// A free-form any field gets a scalar, not a map: structwalk deliberately does not
-		// traverse into an interface, so a composite here would show up as a path mismatch
-		// that says nothing about the type under test.
-		v.Set(reflect.ValueOf("x"))
+		// A free-form any field holds a composite in practice -- a cluster policy definition or
+		// a serialized dashboard authored as inline YAML -- and that is the case worth covering,
+		// because structwalk does not traverse into an interface and so cannot see any of it.
+		v.Set(reflect.ValueOf(map[string]any{"k": "v"}))
 	case reflect.Struct:
 		for i := range v.Type().NumField() {
 			sf := v.Type().Field(i)
@@ -380,37 +422,76 @@ func fillNonZero(v reflect.Value, depth int) {
 	}
 }
 
-// coveredBy reports whether path equals one of the entries or sits underneath it.
-func coveredBy(known []string, path string) bool {
-	if slices.Contains(known, path) {
-		return true
-	}
-	for _, k := range known {
-		if strings.HasPrefix(path, k) && strings.ContainsAny(path[len(k):len(k)+1], ".[") {
-			return true
-		}
-	}
-	return false
-}
+// Filter removes the known divergences from a report and returns the entries that matched
+// nothing, so a caller can fail when a recorded divergence has been fixed and the entry is
+// stale. Without that, a known-divergence list is an exemption rather than a ratchet.
+//
+// Prefix coverage applies only to the two walk categories, where a field lost wholesale takes
+// all of its leaves with it. The categories that name a specific failure -- Get, ValidatePath,
+// a value mismatch -- match exactly, so an entry cannot quietly absorb an unrelated failure at
+// a path beneath it.
+func (r Report) Filter(known []string) (Report, []string) {
+	used := map[string]bool{}
 
-// Filter removes the known divergences from a report, so the test fails only on new ones.
-// An entry covers the path it names and everything under it, so listing a field that is
-// lost wholesale does not mean enumerating each of its leaves.
-func (r Report) Filter(known []string) Report {
-	drop := func(paths []string) []string {
+	dropPrefix := func(paths []string) []string {
 		var out []string
 		for _, p := range paths {
-			if !coveredBy(known, strings.SplitN(p, ":", 2)[0]) {
-				out = append(out, p)
+			if match, ok := coveredBy(known, pathOf(p)); ok {
+				used[match] = true
+				continue
 			}
+			out = append(out, p)
 		}
 		return out
 	}
-	return Report{
-		WalkMissing:    drop(r.WalkMissing),
-		WalkExtra:      drop(r.WalkExtra),
-		GetFailed:      drop(r.GetFailed),
-		ValidateFailed: drop(r.ValidateFailed),
-		ValueMismatch:  drop(r.ValueMismatch),
+	dropExact := func(paths []string) []string {
+		var out []string
+		for _, p := range paths {
+			if slices.Contains(known, pathOf(p)) {
+				used[pathOf(p)] = true
+				continue
+			}
+			out = append(out, p)
+		}
+		return out
 	}
+
+	filtered := Report{
+		WalkMissing:    dropPrefix(r.WalkMissing),
+		WalkExtra:      dropPrefix(r.WalkExtra),
+		GetFailed:      dropExact(r.GetFailed),
+		ValidateFailed: dropExact(r.ValidateFailed),
+		ValueMismatch:  dropExact(r.ValueMismatch),
+		// These two are categories, not per-path lists, so the caller decides what to do with
+		// them. Dropping them here would make that decision unreachable.
+		SelfMarshalingScalars: r.SelfMarshalingScalars,
+		InsideFreeFormField:   r.InsideFreeFormField,
+	}
+
+	var stale []string
+	for _, k := range known {
+		if !used[k] {
+			stale = append(stale, k)
+		}
+	}
+	return filtered, stale
+}
+
+// pathOf strips the explanatory suffix some categories append after a colon.
+func pathOf(reported string) string {
+	return strings.SplitN(reported, ":", 2)[0]
+}
+
+// coveredBy reports which entry covers path: the one that equals it, or names a field it sits
+// underneath.
+func coveredBy(known []string, path string) (string, bool) {
+	for _, k := range known {
+		if path == k {
+			return k, true
+		}
+		if strings.HasPrefix(path, k) && strings.ContainsAny(path[len(k):len(k)+1], ".[") {
+			return k, true
+		}
+	}
+	return "", false
 }

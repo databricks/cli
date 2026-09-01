@@ -18,31 +18,19 @@ import (
 // wrapper loses fields across Marshal -> Unmarshal. This covers whether the libs/structs
 // packages and encoding/json name and reach the same fields in the first place.
 
-// knownStateDivergences and knownRemoteDivergences enumerate what disagrees today, so a
-// new disagreement fails the test while these are worked through.
-var (
-	knownStateDivergences = map[string][]string{
-		// Free-form any fields: structwalk documents that it does not traverse an interface,
-		// so drift inside a serialized dashboard or a cluster policy definition is invisible
-		// to it and to structdiff.
-		"dashboards":       {"serialized_dashboard"},
-		"genie_spaces":     {"serialized_space"},
-		"cluster_policies": {"definition", "policy_family_definition_overrides"},
-	}
-
-	knownRemoteDivergences = map[string][]string{
-		"dashboards":       {"serialized_dashboard"},
-		"genie_spaces":     {"serialized_space"},
-		"cluster_policies": {"definition", "policy_family_definition_overrides"},
-	}
-)
+// knownDivergences is where a per-path disagreement would be recorded. It is empty: the state
+// and remote types agree with encoding/json on every path today, and the two limitations that
+// remain -- free-form any fields and types that marshal themselves as a scalar -- are reported
+// as categories rather than paths. A new disagreement fails the test rather than landing here
+// silently.
+var knownDivergences = map[string][]string{}
 
 func TestStateTypeAgreesWithJSON(t *testing.T) {
-	testAgreesWithJSON(t, (*Adapter).StateType, knownStateDivergences)
+	testAgreesWithJSON(t, (*Adapter).StateType, knownDivergences)
 }
 
 func TestRemoteTypeAgreesWithJSON(t *testing.T) {
-	testAgreesWithJSON(t, (*Adapter).RemoteType, knownRemoteDivergences)
+	testAgreesWithJSON(t, (*Adapter).RemoteType, knownDivergences)
 }
 
 // testAgreesWithJSON runs the check for every registered resource, so a newly supported
@@ -57,7 +45,16 @@ func testAgreesWithJSON(t *testing.T, typeOf func(*Adapter) reflect.Type, known 
 			report, err := structstest.Check(typ)
 			require.NoError(t, err)
 
-			report = report.Filter(known[resourceType])
+			report, stale := report.Filter(known[resourceType])
+			require.Empty(t, stale,
+				"these recorded divergences no longer occur -- remove them from the list: %v", stale)
+			if len(report.InsideFreeFormField) > 0 {
+				// A known limitation: structwalk does not traverse an interface and structaccess
+				// cannot validate a path through one, so a free-form field is opaque to both.
+				t.Logf("%d path(s) inside a free-form any field: %v",
+					len(report.InsideFreeFormField), report.InsideFreeFormField)
+				report.InsideFreeFormField = nil
+			}
 			if len(report.SelfMarshalingScalars) > 0 {
 				// A known structwalk limitation, tracked as one item rather than one entry per
 				// timestamp field, because every new SDK time field joins it.
