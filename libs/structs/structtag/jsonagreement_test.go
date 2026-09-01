@@ -36,7 +36,7 @@ func TestJSONTagNameMatchesEncodingJSON(t *testing.T) {
 		t.Run(tc.tag, func(t *testing.T) {
 			typ := reflect.StructOf([]reflect.StructField{{
 				Name: "Field",
-				Type: reflect.TypeOf(""),
+				Type: reflect.TypeFor[string](),
 				Tag:  reflect.StructTag(tc.tag),
 			}})
 			value := reflect.New(typ)
@@ -86,7 +86,7 @@ func TestOmitEmptyMatchesEncodingJSON(t *testing.T) {
 		t.Run(tc.tag, func(t *testing.T) {
 			typ := reflect.StructOf([]reflect.StructField{{
 				Name: "Field",
-				Type: reflect.TypeOf(""),
+				Type: reflect.TypeFor[string](),
 				Tag:  reflect.StructTag(tc.tag),
 			}})
 
