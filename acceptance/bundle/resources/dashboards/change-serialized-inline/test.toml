@@ -1,5 +1,6 @@
-# Local only: the real Lakeview API pretty-prints serialized_dashboard and returns a
-# differently-shaped etag, which the recorded plan golden can't match.
+# the real API returns a pretty printed JSON output which causes
+# the test to fail, since we are testing CLI only feature, we can set to
+# Cloud = true
 Cloud = false
 
 Ignore = [
