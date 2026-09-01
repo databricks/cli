@@ -722,6 +722,7 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 		first := path.SkipPrefix(3).Prefix(1)
 		if key, ok := first.StringKey(); ok && (key == "permissions" || key == "grants") {
 			return path.Prefix(4).String(), path.SkipPrefix(4)
+		}
 	}
 	return path.Prefix(3).String(), path.SkipPrefix(3)
 }
