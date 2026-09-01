@@ -1,6 +1,9 @@
+# Local only: the real Lakeview API pretty-prints serialized_dashboard and returns a
+# differently-shaped etag, which the recorded plan golden can't match.
+Cloud = false
+
 Ignore = [
     "databricks.yml",
-    "tmp.plan.json",
 ]
 
 EnvMatrix.READPLAN = ["", "1"]

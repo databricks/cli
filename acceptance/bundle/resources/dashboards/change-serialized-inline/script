@@ -18,18 +18,15 @@ update_file.py databricks.yml "Page 1" "Page One"
 
 trace $CLI bundle plan | contains.py "update" "!recreate"
 
-# Full plan drives the READPLAN=1 deploy below.
-trace $CLI bundle plan -o json > tmp.plan.json
-# Golden keeps only the asserted change; a real workspace formats the dropped
-# remote_state/etag/serialized_dashboard fields differently than the local fake.
-jq '{plan: (.plan | map_values({action} + (if .changes then {changes: {serialized_dashboard: (.changes.serialized_dashboard | {action, old, new})}} else {} end)))}' tmp.plan.json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+# Per-engine JSON plan; also the saved plan for READPLAN=1.
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 # Drop the initial-deploy requests so the capture below shows only the change.
 print_requests.py //api/2.0/lakeview/dashboards > /dev/null
 
 # Deploy the change: in-memory (READPLAN="") or from the saved plan (READPLAN="1").
 title "deploy the change\n"
-$CLI bundle deploy $(readplanarg tmp.plan.json)
+$CLI bundle deploy $(readplanarg out.plan.$DATABRICKS_BUNDLE_ENGINE.json)
 
 # Capture the update request per engine (terraform echoes OUTPUT_ONLY fields).
 print_requests.py //api/2.0/lakeview/dashboards > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt
