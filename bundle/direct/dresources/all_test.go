@@ -259,18 +259,10 @@ var testConfig map[string]any = map[string]any{
 			DisplayName: "my-dashboard",
 			ParentPath:  "/Workspace/Users/user@example.com",
 			WarehouseId: "test-warehouse-id",
-			// Use []any/map[string]any to mirror how this any-typed field is
-			// populated in production (JSON/dyn decoding); a typed []map[string]any
-			// can never come out of that path.
-			SerializedDashboard: map[string]any{
-				"pages": []any{
-					map[string]any{
-						"name":        "page1",
-						"displayName": "Page 1",
-						"pageType":    "PAGE_TYPE_CANVAS",
-					},
-				},
-			},
+			// ConfigureDashboardSerializedDashboard normalizes this any-typed field
+			// to a JSON string before the deploy engine runs, so it is always a
+			// string by the time DoCreate/DoUpdate see it.
+			SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1","pageType":"PAGE_TYPE_CANVAS"}]}`,
 
 			DatasetCatalog: "main",
 			DatasetSchema:  "myschema",
