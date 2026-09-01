@@ -14,7 +14,6 @@ add_repl "$dashboard_id" DASHBOARD_ID
 # Wait out eventual consistency (direct's first read 404s) before changing.
 retry --until "Page 1" $CLI lakeview get "$dashboard_id" > /dev/null
 
-# Change a value inside the map; update_file.py asserts if the text is missing.
 update_file.py databricks.yml "Page 1" "Page One"
 
 # Should be detected as an update, not a recreate.
