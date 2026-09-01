@@ -26,4 +26,4 @@ trace $CLI grants get schema main.schema_remove_all_$UNIQUE_NAME | gron.py --noi
     trace $CLI bundle plan
     trace $CLI bundle deploy
     trace $CLI bundle plan
-} &> out.plan.txt
+} &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt

@@ -1,0 +1,30 @@
+
+=== Deploy with one grant
+>>> [CLI] bundle deploy -qq
+
+=== Empty the list: the grant is revoked
+>>> [CLI] bundle deploy -qq
+
+>>> [CLI] grants get schema main.schema_oob_after_empty_[UNIQUE_NAME]
+json = {};
+
+=== Add a grant out of band
+>>> [CLI] grants update schema main.schema_oob_after_empty_[UNIQUE_NAME] --json @update.json
+
+>>> [CLI] grants get schema main.schema_oob_after_empty_[UNIQUE_NAME]
+json.privilege_assignments[].principal = "deco-test-user@databricks.com";
+json.privilege_assignments[].privileges[] = "USE_SCHEMA";
+
+=== Redeploy: the enforced empty list revokes the out-of-band grant
+>>> [CLI] bundle deploy -qq
+
+>>> errcode [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.grants_schema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.grants_schema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-oob-after-empty-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
