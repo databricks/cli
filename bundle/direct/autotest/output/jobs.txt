@@ -6,9 +6,9 @@ parent_path                                  y          absent     UPDATE_IGNORE
 parent_path                                  y          x          UPDATE_IGNORED
 
 === summary
-OK                 693
+OK                 561
 OK_INERT           6
-SUPPRESSED         53
-NOT_OBSERVABLE     40
+SUPPRESSED         47
+NOT_OBSERVABLE     34
 UPDATE_IGNORED     6
-SKIPPED            46
+SKIPPED            54

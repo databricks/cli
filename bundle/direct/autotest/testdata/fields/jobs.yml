@@ -131,6 +131,33 @@ skip:
   # A trigger, a schedule and a continuous block are three arms of one choice, so a schedule
   # field cannot move on a job the corpus config gives no schedule.
   schedule: one of schedule, trigger or continuous, and the config declares none
+  # trigger is a choice between file_arrival, table_update, model and periodic, and base seeds
+  # periodic. Each other member is rejected as a set, in its own words:
+  #   "Invalid trigger settings. One of 'schedule', 'trigger' or 'continuous' can be set."
+  #   "Field 'new_settings.trigger.table_update.table_names' is required, expected non-empty collection!"
+  #   "Missing required field: new_settings.trigger.model.condition"
+  # Covering them needs a second fixture per member rather than a value for a leaf inside one.
+  trigger.file_arrival: a trigger member the seeded periodic trigger excludes
+  trigger.table_update: a trigger member the seeded periodic trigger excludes
+  trigger.model: a trigger member the seeded periodic trigger excludes
+
+  # "dependencies and java_dependencies cannot be provided at the same time for environment key
+  # seeded", and base seeds dependencies.
+  environments[*].spec.java_dependencies: cannot be set alongside the seeded dependencies
+
+  # "Sparse checkout pattern must a valid file path and cannot exceed 2048 characters" -- the
+  # generic x and y are not paths.
+  git_source.sparse_checkout: needs a valid file path, which no generic string value is
+
+  # Both hold node type ids, and a node type is cloud-specific: "Node type x is not supported."
+  # The suite has one node type variable, so there is no second value to move to.
+  job_clusters[*].new_cluster.worker_node_type_flexibility: cloud-specific node type ids
+  job_clusters[*].new_cluster.driver_node_type_flexibility: cloud-specific node type ids
+
+  # "S3 cluster log destination is provided without region" -- the block is validated as a set,
+  # and a region is cloud-specific.
+  job_clusters[*].new_cluster.cluster_log_conf.s3: validated as a set with a cloud-specific region
+
   # Only one of the three cloud attribute blocks applies, decided by the workspace's cloud.
   job_clusters[*].new_cluster.azure_attributes: cloud-specific; only one attribute block applies
   job_clusters[*].new_cluster.gcp_attributes: cloud-specific; only one attribute block applies
