@@ -285,7 +285,8 @@ def current_branch_pr(root):
             timeout=10,
             cwd=root,
         )
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError) as e:
+        print(f"gh pr view failed: {e}", file=sys.stderr)
         return None
     out = result.stdout.strip()
     return out if result.returncode == 0 and out.isdigit() else None
