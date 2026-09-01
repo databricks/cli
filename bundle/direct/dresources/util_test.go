@@ -28,7 +28,7 @@ func assertFieldsCovered(t *testing.T, sdkType, remoteType reflect.Type, skip ma
 	}
 }
 
-func TestCollectLeafUpdatePathsWithPrefix(t *testing.T) {
+func TestCollectUpdatePathsWithPrefix(t *testing.T) {
 	upd := func() *deployplan.ChangeDesc { return &deployplan.ChangeDesc{Action: deployplan.Update} }
 	skip := func() *deployplan.ChangeDesc { return &deployplan.ChangeDesc{Action: deployplan.Skip} }
 
@@ -66,7 +66,7 @@ func TestCollectLeafUpdatePathsWithPrefix(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, collectLeafUpdatePathsWithPrefix(tc.changes, "spec."))
+			assert.Equal(t, tc.want, collectUpdatePathsWithPrefix(tc.changes, "spec."))
 		})
 	}
 }

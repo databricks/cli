@@ -25,26 +25,17 @@ func shouldRetry(err error) bool {
 // collectUpdatePathsWithPrefix extracts field paths from Changes that have action=Update,
 // adding a prefix to each path. This is used when the state type has a flattened structure
 // but the API expects paths relative to a nested object (e.g., "spec.display_name").
+//
+// A parent path is dropped when a more specific child path is also being updated. Masking a
+// message asks the API to replace it wholesale, so the API then requires every field under
+// that message to be populated in the request body — verified against a real workspace on
+// 2026-08-31, where update_mask=spec.default_endpoint_settings with a body carrying only
+// the autoscaling limits was rejected with "Field
+// 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in
+// request". A bundle sends only the fields it declares, so only the leaf may be masked.
+//
 // Sorted, so the generated update_mask does not depend on map iteration order.
 func collectUpdatePathsWithPrefix(changes Changes, prefix string) []string {
-	var paths []string
-	for path, change := range changes {
-		if change.Action == deployplan.Update {
-			paths = append(paths, prefix+path)
-		}
-	}
-	slices.Sort(paths)
-	return paths
-}
-
-// collectLeafUpdatePathsWithPrefix is like collectUpdatePathsWithPrefix but drops a parent
-// path when a more specific child path is also being updated, and sorts the result.
-//
-// The Postgres Role PATCH endpoint rejects an update_mask that lists both a struct and one
-// of its sub-fields, since the parent already implies the whole subtree. E.g. {"attributes",
-// "attributes.createdb"} collapses to {"attributes.createdb"}. Sorting keeps the generated
-// update_mask stable regardless of map iteration order.
-func collectLeafUpdatePathsWithPrefix(changes Changes, prefix string) []string {
 	var paths []string
 	for path, change := range changes {
 		if change.Action != deployplan.Update {
