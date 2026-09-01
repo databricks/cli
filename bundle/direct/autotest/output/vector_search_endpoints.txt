@@ -1,5 +1,8 @@
+target_qps                                   1          absent     UPDATE_IGNORED
+target_qps                                   2          absent     UPDATE_IGNORED
 
 === summary
-OK                 18
+OK                 10
 OK_RECREATE        4
-SKIPPED            1
+UPDATE_IGNORED     2
+SKIPPED            2
