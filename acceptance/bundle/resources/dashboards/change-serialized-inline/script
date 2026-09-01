@@ -1,3 +1,6 @@
+# Inherited MSYS_NO_PATHCONV breaks bare python helpers on Windows; this test doesn't need it.
+unset MSYS_NO_PATHCONV
+
 cleanup() {
     trace $CLI bundle destroy --auto-approve
     rm -f out.requests.txt
