@@ -1,9 +1,7 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    # Cleanup only. The direct engine's destroy 404s on the injected stale GET and
-    # reports "0 deleted" while terraform reports "1 deleted", so keep it out of the
-    # compared output.
+    # Cleanup; direct's destroy 404s on the stale GET and diverges, so keep it out of the diff.
     $CLI bundle destroy --auto-approve &> LOG.destroy
     rm -f out.requests.txt
 }
@@ -12,11 +10,9 @@ trap cleanup EXIT
 trace $CLI bundle plan
 trace $CLI bundle deploy
 
-# Normalize the non-deterministic dashboard ID so the published-dashboard request
-# path is stable across engines and runs.
+# Stabilize the non-deterministic dashboard ID in recorded requests.
 dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.inline_dash.id')
 add_repl "$dashboard_id" DASHBOARD_ID
 
-# serialized_dashboard is authored as an inline YAML map but must reach the API as a
-# JSON *string*, not a nested object. Record the create request to prove that.
+# Prove the inline YAML map reaches the API as a JSON string.
 trace print_requests.py //api/2.0/lakeview/dashboards
