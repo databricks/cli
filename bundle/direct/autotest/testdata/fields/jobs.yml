@@ -4,7 +4,7 @@
 # branch/tag/commit. Seeding one makes its fields reachable, so changing the commit or the
 # provider is tested rather than skipped.
 #
-# job_clusters, triggers and environments are declared by no config in the corpus, so their
+# job_clusters, triggers and environments would otherwise be absent entirely, so their
 # fields would go untested; seeding one entry each makes them reachable.
 base:
   name: test-job-$UNIQUE_NAME
@@ -72,7 +72,7 @@ skip:
   # cluster the seeded task carries ("For each does not need a cluster"). Locally the fake server
   # accepted it, so ~2200 transitions were exercising configurations no user can write.
   #
-  # Covering a member needs a corpus config whose task is of that type. Some exist --
+  # Covering a member needs a fixture whose task is of that type. Some exist in the acceptance corpus --
   # job_apply_policy_default_values_for_each_task.yml.tmpl is one -- but this suite drives the
   # simplest config per resource type, so they are not the one picked. Their fields are listed as
   # uncovered rather than tested against a task that cannot hold them.
@@ -129,7 +129,7 @@ skip:
   job_clusters[*].new_cluster.cluster_log_conf.s3.kms_key: needs a KMS key registered for the workspace
   tasks[*].notebook_task.warehouse_id: needs a second SQL warehouse to exist
   # A trigger, a schedule and a continuous block are three arms of one choice, so a schedule
-  # field cannot move on a job the corpus config gives no schedule.
+  # field cannot move on a job base gives no schedule.
   schedule: one of schedule, trigger or continuous, and the config declares none
   # trigger is a choice between file_arrival, table_update, model and periodic, and base seeds
   # periodic. Each other member is rejected as a set, in its own words:
