@@ -2,8 +2,11 @@ package aircmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -12,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
@@ -126,7 +130,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 				if ids := resolveMLflowIDsForRun(ctx, w, runID); ids != nil {
 					printMLflowLinks(ctx, out, w.Config.Host, ids)
 				}
-				cmdio.LogString(ctx, "\nTip: use --watch to stream logs until the run completes.")
+				printPostSubmitGuidance(out, w.Config.Profile, runIDStr)
 				return nil
 			}
 			// PENDING is the submit status, distinct from the --watch JSONL
@@ -144,6 +148,9 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			jsonOutput: jsonOut,
 		}
 
+		watchCtx, stop := notifyInterrupt(ctx)
+		defer stop()
+
 		if !jsonOut {
 			out := cmd.OutOrStdout()
 			// The MLflow links stream in via the logs below, so don't poll here.
@@ -152,7 +159,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			fmt.Fprintln(out)
 			fmt.Fprintln(out, "Monitoring run and streaming logs...")
 			printLogsDivider(ctx, out)
-			return runLogs(ctx, cmd, req)
+			return handleWatchResult(out, w.Config.Profile, runIDStr, runLogs(watchCtx, cmd, req))
 		}
 
 		// --json: emit SUBMITTED first (so a consumer sees the run id immediately),
@@ -163,7 +170,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		req.onStatusChange = func(current, previous string) {
 			printStatusEvent(out, current, previous)
 		}
-		err = runLogs(ctx, cmd, req)
+		err = runLogs(watchCtx, cmd, req)
 
 		// Re-resolve the run for the closing envelope. STATUS events only fire on
 		// the Bricklens path, so the terminal status must come from the run's
@@ -174,6 +181,73 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 	}
 
 	return cmd
+}
+
+func airLogsCommand(profile, runID string) string {
+	args := []string{"databricks", "experimental", "air", "logs", shellquote.BashArg(runID)}
+	if profile != "" {
+		args = append(args, "-p", shellquote.BashArg(profile))
+	}
+	return strings.Join(args, " ")
+}
+
+func airGetCommand(profile, runID string) string {
+	args := []string{"databricks", "experimental", "air", "get", shellquote.BashArg(runID)}
+	if profile != "" {
+		args = append(args, "-p", shellquote.BashArg(profile))
+	}
+	return strings.Join(args, " ")
+}
+
+func printPostSubmitGuidance(out io.Writer, profile, runID string) {
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Tip: use --watch when submitting a run to stream logs to your terminal.")
+	fmt.Fprintln(out, "Stream logs after submission using:")
+	fmt.Fprintln(out, "  "+airLogsCommand(profile, runID))
+}
+
+// notifyInterrupt returns a context cancelled on the first interrupt (Ctrl-C),
+// which lets the log stream unwind and print resume guidance via
+// handleWatchResult; the CLI root installs no signal handler of its own. The
+// caller must defer the returned stop.
+//
+// signal.Notify disables the default SIGINT disposition process-wide for as long
+// as the channel stays registered, so a second Ctrl-C would merely be buffered
+// and dropped, leaving no way to abort a hung teardown. Calling signal.Stop
+// before cancel restores SIG_DFL first, so the cancellation is only observable
+// once a second signal is guaranteed to terminate the process.
+func notifyInterrupt(parent context.Context) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(parent)
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt)
+	go func() {
+		// Selecting on ctx.Done() too lets the goroutine exit on the normal (no
+		// signal) path rather than parking on sigCh for the life of the process.
+		select {
+		case <-sigCh:
+			signal.Stop(sigCh)
+			cancel()
+		case <-ctx.Done():
+			signal.Stop(sigCh)
+		}
+	}()
+	return ctx, cancel
+}
+
+func handleWatchResult(out io.Writer, profile, runID string, err error) error {
+	if !errors.Is(err, context.Canceled) {
+		return err
+	}
+
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Streaming logs interrupted.")
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "To check status:")
+	fmt.Fprintln(out, airGetCommand(profile, runID))
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "To resume streaming logs:")
+	fmt.Fprintln(out, airLogsCommand(profile, runID))
+	return root.ErrAlreadyPrinted
 }
 
 // printSubmitResult writes the green success line and Job Run link. These don't

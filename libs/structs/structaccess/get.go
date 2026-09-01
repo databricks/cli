@@ -384,7 +384,7 @@ func forceSendFieldsContains(owner reflect.Value, name string) bool {
 	if !fsf.IsValid() {
 		return false
 	}
-	fields, ok := fsf.Interface().([]string)
+	fields, ok := reflect.TypeAssert[[]string](fsf)
 	return ok && containsString(fields, name)
 }
 

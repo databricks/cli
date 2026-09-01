@@ -1,5 +1,13 @@
 # Version changelog
 
+## Release v1.14.1 (2026-08-28)
+
+### Bundles
+
+ * Fix `bundle deploy` failing with `deployment_source.source_code_path cannot be set on UpdateApp` (400) when updating an app that has an active deployment ([#6401](https://github.com/databricks/cli/issues/6401)).
+ * Fixed `${resources...}` references to resource keys starting with an underscore (e.g. `_my_job`). On the direct engine, deploying such a resource with `permissions` or `grants` failed with `cannot parse "/jobs/${resources.jobs._my_job.id}"`, and user-written references to it were silently left unresolved.
+
+
 ## Release v1.14.0 (2026-08-26)
 
 ### Notable Changes

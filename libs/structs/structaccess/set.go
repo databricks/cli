@@ -353,7 +353,7 @@ func updateForceSendFields(owner reflect.Value, fieldName string, valueVal refle
 // removeFromForceSendFields removes fieldName from the ForceSendFields slice
 func removeFromForceSendFields(forceSendFieldsSlice reflect.Value, fieldName string) {
 	// Get the original []string slice
-	fields := forceSendFieldsSlice.Interface().([]string)
+	fields, _ := reflect.TypeAssert[[]string](forceSendFieldsSlice)
 
 	// Find the index of the field to remove
 	index := slices.Index(fields, fieldName)
@@ -369,7 +369,7 @@ func removeFromForceSendFields(forceSendFieldsSlice reflect.Value, fieldName str
 // addToForceSendFields adds fieldName to the ForceSendFields slice if not already present
 func addToForceSendFields(forceSendFieldsSlice reflect.Value, fieldName string) {
 	// Get the original []string slice
-	fields := forceSendFieldsSlice.Interface().([]string)
+	fields, _ := reflect.TypeAssert[[]string](forceSendFieldsSlice)
 
 	// Check if already present
 	if slices.Contains(fields, fieldName) {
