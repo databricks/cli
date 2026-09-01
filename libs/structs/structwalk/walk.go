@@ -115,8 +115,10 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 			continue
 		}
 
-		// Directly walk into embedded structs without adding the key to the path.
-		if sf.Anonymous {
+		// Directly walk into embedded structs without adding the key to the path. An anonymous
+		// field carrying a json name is not one of those: encoding/json serializes it as a
+		// nested object under that name, so it is walked as a named field below.
+		if structaccess.IsFlattenedEmbed(sf) {
 			walkValue(path, s.Field(i), &sf, visit)
 			continue
 		}

@@ -225,7 +225,7 @@ func embeddedIndexPaths(t reflect.Type, prefix []int) []embeddedPath {
 	var out []embeddedPath
 	for i := range t.NumField() {
 		sf := t.Field(i)
-		if !isFlattenedEmbed(sf) {
+		if !IsFlattenedEmbed(sf) {
 			continue
 		}
 		ft := sf.Type
@@ -279,10 +279,11 @@ func findDirectFieldByKeyType(t reflect.Type, key string) (int, reflect.StructFi
 	return 0, reflect.StructField{}, false
 }
 
-// isFlattenedEmbed reports whether the field is an embed encoding/json flattens into the
-// outer object. An anonymous field that carries a json name is a named field instead: it
-// serializes as a nested object under that name.
-func isFlattenedEmbed(sf reflect.StructField) bool {
+// IsFlattenedEmbed reports whether the field is an embed encoding/json flattens into the
+// outer object. An anonymous field that carries a json *name* is a named field instead: it
+// serializes as a nested object under that name. The name is what matters, not the presence
+// of a tag: `json:",omitempty"` leaves the name empty, so such a field is still flattened.
+func IsFlattenedEmbed(sf reflect.StructField) bool {
 	if !sf.Anonymous {
 		return false
 	}
