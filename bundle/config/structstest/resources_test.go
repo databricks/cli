@@ -56,11 +56,10 @@ func baseResourceFields(extra ...string) []string {
 // structstest.Check. Driving it off the struct by reflection means a newly added resource
 // is covered without touching this test.
 func TestResourceTypesAgreeWithJSON(t *testing.T) {
-	rt := reflect.TypeOf(config.Resources{})
+	rt := reflect.TypeFor[config.Resources]()
 
 	var checked int
-	for i := range rt.NumField() {
-		field := rt.Field(i)
+	for field := range rt.Fields() {
 		if field.Type.Kind() != reflect.Map {
 			continue
 		}
