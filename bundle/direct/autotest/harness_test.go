@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"math"
 	"os"
 	"path/filepath"
@@ -26,6 +27,7 @@ import (
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -187,6 +189,16 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 	// in the cleanup case. Values (dbr, logdiag, cmdio, env) still propagate; the test
 	// binary's own -timeout remains the backstop.
 	ctx = dbr.MockRuntime(context.WithoutCancel(ctx), dbr.Environment{}) //exhaustruct:ignore
+	// The CLI logs through libs/log, whose default handler writes to stderr. Under -v that output
+	// belongs to no subtest, so a harness built by one resource type appears beneath whichever
+	// parallel type happened to print last -- which is how "Phase: load" ends up under an unrelated
+	// transition. Routed through t.Log instead: the framework attributes it, and it stays out of a
+	// passing run's output.
+	ctx = log.NewContext(ctx, slog.New(slog.NewTextHandler(testWriter{t}, &slog.HandlerOptions{
+		Level:       slog.LevelInfo,
+		AddSource:   false,
+		ReplaceAttr: nil,
+	})))
 	ctx = withBundleVars(ctx, variables)
 	// Thousands of deploys run through here, so cap how long any one of them waits for
 	// a resource to become ready. Without a cap a resource that never reaches its
@@ -431,6 +443,16 @@ func withBundleVars(ctx context.Context, variables map[string]string) context.Co
 		ctx = env.Set(ctx, "BUNDLE_VAR_"+name, value)
 	}
 	return ctx
+}
+
+// testWriter sends the CLI's log output to the test that owns it.
+type testWriter struct {
+	t *testing.T
+}
+
+func (w testWriter) Write(p []byte) (int, error) {
+	w.t.Log(strings.TrimRight(string(p), "\n"))
+	return len(p), nil
 }
 
 // resourceKey is the name every fixture's resource is declared under. One resource per bundle,
