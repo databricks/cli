@@ -1,0 +1,12 @@
+bundle:
+  name: change-serialized-inline-$UNIQUE_NAME
+
+resources:
+  dashboards:
+    inline_dash:
+      display_name: Inline Dash
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      serialized_dashboard:        # inline YAML MAP = the non-string case
+        pages:
+          - name: page1
+            displayName: $PAGE_DISPLAY_NAME

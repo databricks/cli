@@ -1,0 +1,38 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Deploy a dashboard whose serialized_dashboard is an inline YAML map.
+export PAGE_DISPLAY_NAME="Page 1"
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+
+dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.inline_dash.id')
+add_repl "$dashboard_id" DASHBOARD_ID
+
+# Wait out eventual consistency so the change below is planned against the deployed
+# state (the first read of a freshly created dashboard 404s on the direct engine).
+retry --until "Page 1" $CLI lakeview get "$dashboard_id" > /dev/null
+
+# Change a value *inside* the inline serialized_dashboard, then show the plan. The
+# change must be detected as an update to the existing dashboard, not a recreate.
+export PAGE_DISPLAY_NAME="Page One"
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle plan
+
+# Discard the requests from the initial deploy so the recording below shows only what
+# deploying the change sends. Direct only: terraform echoes OUTPUT_ONLY fields in the
+# request body, and the direct engine is the default we care about here.
+if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
+    print_requests.py //api/2.0/lakeview/dashboards > /dev/null
+fi
+
+# Deploy the change. The update serializes the inline YAML map to a JSON string, same
+# as create.
+trace $CLI bundle deploy
+
+if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
+    print_requests.py //api/2.0/lakeview/dashboards > out.requests.direct.txt
+fi
