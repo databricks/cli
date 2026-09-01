@@ -982,3 +982,63 @@ func TestSet_AmbiguousPointerEmbedsIgnoreNilness(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{}`, string(blob))
 }
+
+// A name declared behind a nil embedded pointer and again deeper down. encoding/json resolves
+// it to the shallower declaration and then serializes nothing, because the pointer is nil --
+// so the deeper field, which the wire format never carries, is not the answer either.
+type shallowLeaf struct {
+	Value string `json:"value,omitempty"`
+}
+
+type deepHolder struct {
+	shallowLeaf
+}
+
+type shallowBehindNil struct {
+	*shallowLeaf
+	deepHolder
+}
+
+func TestGet_ShallowFieldBehindNilPointerIsAbsent(t *testing.T) {
+	target := &shallowBehindNil{deepHolder: deepHolder{shallowLeaf: shallowLeaf{Value: "deep"}}} //exhaustruct:ignore
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{}`, string(blob))
+
+	_, err = structaccess.GetByString(target, "value")
+	require.Error(t, err, "the field encoding/json resolves to is absent, so there is nothing to read")
+}
+
+// An anonymous field carrying a json name is a named field to encoding/json: it serializes as
+// a nested object under that name rather than being flattened into the outer one.
+type TaggedEmbedLeaf struct {
+	Value string `json:"value,omitempty"`
+}
+
+type taggedEmbed struct {
+	TaggedEmbedLeaf `json:"leaf"`
+
+	Own string `json:"own,omitempty"`
+}
+
+func TestGetSet_TaggedEmbedIsANamedField(t *testing.T) {
+	target := &taggedEmbed{TaggedEmbedLeaf: TaggedEmbedLeaf{Value: "v"}, Own: "o"}
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"leaf":{"value":"v"},"own":"o"}`, string(blob))
+
+	// Not flattened: the outer object has no "value" member.
+	_, err = structaccess.GetByString(target, "value")
+	require.Error(t, err)
+
+	value, err := structaccess.GetByString(target, "leaf.value")
+	require.NoError(t, err)
+	assert.Equal(t, "v", value)
+
+	require.NoError(t, structaccess.SetByString(target, "leaf.value", "set"))
+	blob, err = json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"leaf":{"value":"set"},"own":"o"}`, string(blob))
+}

@@ -228,138 +228,38 @@ func accessKeyValue(v reflect.Value, key, value string, path *structpath.PathNod
 	return reflect.Value{}, &NotFoundError{fmt.Sprintf("%s: no element found with %s=%q", path.String(), key, value)}
 }
 
-// findFieldInStruct searches for a field by JSON key in a single struct (no embedding).
-// Returns: fieldValue, structField, found
-func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.StructField, bool) {
-	t := v.Type()
-	for i := range t.NumField() {
-		sf := t.Field(i)
-		if sf.PkgPath != "" { // unexported
-			continue
-		}
-		if sf.Anonymous { // skip embedded fields
-			continue
-		}
-
-		// Read JSON tag using structtag helper
-		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-		if name == "-" {
-			name = ""
-		}
-
-		if sf.Name == EmbeddedSliceFieldName {
-			continue // EmbeddedSlice fields are not accessible by name
-		}
-		if name != "" && name == key {
-			// Skip fields marked as internal or readonly via bundle tag
-			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
-			if btag.Internal() || btag.ReadOnly() {
-				continue
-			}
-			return v.Field(i), sf, true
-		}
-	}
-	return reflect.Value{}, reflect.StructField{}, false
-}
-
-// findStructFieldByKey searches exported fields of struct v for a field matching key.
-// It matches json tag name (when present and not "-") only.
-// It also searches embedded anonymous structs recursively (flattening semantics), which
-// FindStructFieldByKeyType does too: a bundle resource embeds a config struct that embeds
-// the SDK request struct, so its fields sit two levels down.
+// findStructFieldByKey resolves key against the type of v and then navigates v along the
+// index chain the resolution produced.
+//
+// Resolving on the type is what keeps Get, Set and ValidatePattern agreeing with each other
+// and with encoding/json: the type decides which of two same-named fields wins, whether the
+// name is ambiguous, and by which path the winner is reached. Navigating the value afterwards
+// means a nil pointer on that path reads as an absent field, rather than the search falling
+// through to a deeper field of the same name that the wire format never carries.
+//
 // Returns: fieldValue, structField, owner (the struct value declaring the field), found
 func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.StructField, reflect.Value, bool) {
-	t := v.Type()
-
-	// First pass: direct fields
-	if fv, sf, found := findFieldInStruct(v, key); found {
-		return fv, sf, v, true
-	}
-
-	// Ambiguity is a property of the type, not of the value: a name declared at the same
-	// embedding depth by two members is one encoding/json omits, whether or not one of those
-	// members happens to be a nil pointer right now. Asking the type walk first keeps Get, Set
-	// and ValidatePattern agreeing on which names exist.
-	if _, _, ok := FindStructFieldByKeyType(t, key); !ok {
+	index, sf, ok := findFieldIndexByKeyType(v.Type(), key)
+	if !ok {
 		return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
 	}
 
-	// Second pass: search embedded anonymous structs (flattening semantics) breadth-first, one
-	// level of embedding at a time. Not depth-first: encoding/json resolves a name declared at
-	// two embedding depths in favour of the shallower one, so descending fully into the first
-	// embed could pick a field three levels down over the same name two levels down in a
-	// later one -- and then reading or writing the field would not be the field serialized
-	// under that name.
-	// Guards against a cyclic embedding (a struct embedding a pointer to itself), which would
-	// otherwise enqueue the same type forever when the key is not found at all. Only types from
-	// *earlier* levels are excluded: a type reachable twice within one level is a diamond, and
-	// the two matches it produces are exactly the ambiguity json resolves by omitting the field.
-	seen := map[reflect.Type]bool{v.Type(): true}
-	level := embeddedStructs(v)
-	for len(level) > 0 {
-		var next []reflect.Value
-		var found []struct {
-			value reflect.Value
-			field reflect.StructField
-			owner reflect.Value
-		}
-		for _, fv := range level {
-			if out, sf, ok := findFieldInStruct(fv, key); ok {
-				found = append(found, struct {
-					value reflect.Value
-					field reflect.StructField
-					owner reflect.Value
-				}{out, sf, fv})
-				continue
+	cur := v
+	var owner reflect.Value
+	for _, i := range index {
+		for cur.Kind() == reflect.Pointer {
+			if cur.IsNil() {
+				return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
 			}
-			for _, deeper := range embeddedStructs(fv) {
-				if seen[deeper.Type()] {
-					continue
-				}
-				next = append(next, deeper)
-			}
+			cur = cur.Elem()
 		}
-		for _, fv := range next {
-			seen[fv.Type()] = true
-		}
-		if len(found) == 1 {
-			return found[0].value, found[0].field, found[0].owner, true
-		}
-		if len(found) > 1 {
-			// Two embedded structs declare the same name at the same depth. encoding/json calls
-			// that ambiguous and omits the field entirely, so there is no field to read or
-			// write: picking one would target data that is never serialized.
+		if cur.Kind() != reflect.Struct {
 			return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
 		}
-		level = next
+		owner = cur
+		cur = cur.Field(i)
 	}
-
-	return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
-}
-
-// embeddedStructs returns the anonymous struct fields of v, dereferenced, skipping any that
-// cannot be descended into.
-func embeddedStructs(v reflect.Value) []reflect.Value {
-	var out []reflect.Value
-	t := v.Type()
-	for i := range t.NumField() {
-		if !t.Field(i).Anonymous {
-			continue
-		}
-		fv := v.Field(i)
-		for fv.Kind() == reflect.Pointer {
-			if fv.IsNil() {
-				// Not initialized; can't descend.
-				break
-			}
-			fv = fv.Elem()
-		}
-		if fv.Kind() != reflect.Struct {
-			continue
-		}
-		out = append(out, fv)
-	}
-	return out
+	return cur, sf, owner, true
 }
 
 // forceSendFields returns the ForceSendFields slice a struct declares itself. A struct that
