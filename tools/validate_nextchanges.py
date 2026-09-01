@@ -342,11 +342,11 @@ def autofix(changelog_dir, root):
     """Append the branch's PR link to fragments missing one (a lint autofix).
 
     The PR is inferred from the current branch (local only; see
-    ``current_branch_pr``). Prints each file changed. Does nothing when the branch
-    has no PR yet — the number can't be inferred, so there's nothing to add."""
+    ``current_branch_pr``). Prints each file changed. Silently does nothing when
+    the branch has no PR yet — the number can't be inferred, so there's nothing
+    to add — since this runs by default on every validation."""
     pr = current_branch_pr(root)
     if pr is None:
-        print("--fix: no PR found for the current branch; cannot infer the link", file=sys.stderr)
         return
     for path in fragment_paths(changelog_dir):
         text = path.read_text(encoding="utf-8")
@@ -359,11 +359,6 @@ def autofix(changelog_dir, root):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--root", type=pathlib.Path, default=pathlib.Path.cwd(), help="repository root")
-    parser.add_argument(
-        "--fix",
-        action="store_true",
-        help="add the branch's PR link to fragments missing one (inferred from the branch via gh), then validate",
-    )
     args = parser.parse_args(argv)
 
     changelog_dir = args.root / CHANGELOG_DIR
@@ -372,7 +367,9 @@ def main(argv=None):
 
     sections = load_sections(args.root)
 
-    if args.fix and has_fragments(changelog_dir):
+    # Auto-fix by default: add the branch's PR link to fragments missing one
+    # before validating. A no-op in CI and anywhere the branch has no PR.
+    if has_fragments(changelog_dir):
         autofix(changelog_dir, args.root)
 
     # A trailing PR link is required whenever the change is associated with a PR:

@@ -47,7 +47,6 @@ tasks:
   full:
     desc: More complete dev loop (full rather than incremental formatters and linters)
     cmds:
-      - task: fix-changelog
       - task: checks
       - task: fmt
       - task: lint
@@ -69,7 +68,6 @@ tasks:
       - task: pydabs-codegen
       - task: pydabs-lint
       - task: pydabs-test
-      - task: fix-changelog
       - task: checks
       - task: fmt
       - task: lint
@@ -287,11 +285,6 @@ tasks:
     desc: Validate .nextchanges fragment placement and links
     cmds:
       - "./tools/validate_nextchanges.py"
-
-  fix-changelog:
-    desc: Add the branch's PR link to .nextchanges fragments missing one, then validate
-    cmds:
-      - "./tools/validate_nextchanges.py --fix"
 
   changelog-preview:
     desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
