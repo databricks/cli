@@ -187,11 +187,7 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 	// in the cleanup case. Values (dbr, logdiag, cmdio, env) still propagate; the test
 	// binary's own -timeout remains the backstop.
 	ctx = dbr.MockRuntime(context.WithoutCancel(ctx), dbr.Environment{}) //exhaustruct:ignore
-	// A fixture's variables are passed the way a user passes them, so the config keeps the
-	// ${var...} reference the format requires rather than a resolved literal.
-	for name, value := range variables {
-		ctx := env.Set(ctx, "BUNDLE_VAR_"+name, value)
-	}
+	ctx = withBundleVars(ctx, variables)
 	// Thousands of deploys run through here, so cap how long any one of them waits for
 	// a resource to become ready. Without a cap a resource that never reaches its
 	// terminal state stalls the whole suite instead of showing up as one bad verdict.
@@ -422,6 +418,19 @@ func (h *bundleHarness) resource() (any, error) {
 // only in the sense that it is unique per type, so base references read ${resources.<type>.<type>...}.
 func depKey(depType string) string {
 	return depType
+}
+
+// withBundleVars passes a fixture's variables the way a user does, so the config keeps the
+// ${var...} reference its format requires instead of a literal resolved before validation.
+func withBundleVars(ctx context.Context, variables map[string]string) context.Context {
+	// fatcontext objects to building a context in a loop, which is about a context that grows per
+	// request; this one is built once per harness and holds at most a handful of variables. Its
+	// autofix turns the assignment into a declaration, which drops every variable.
+	//nolint:fatcontext
+	for name, value := range variables {
+		ctx = env.Set(ctx, "BUNDLE_VAR_"+name, value)
+	}
+	return ctx
 }
 
 // resourceKey is the name every fixture's resource is declared under. One resource per bundle,
