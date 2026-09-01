@@ -10,7 +10,6 @@ Terraform will perform the following actions:
 
   # databricks_pipeline.foo will be updated in-place
   ~ resource "databricks_pipeline" "foo" {
-      + catalog                = "main"
       + channel                = "CURRENT"
       + edition                = "ADVANCED"
         id                     = "[NEW_PIPELINE_ID]"
