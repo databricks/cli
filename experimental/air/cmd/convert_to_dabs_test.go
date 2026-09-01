@@ -298,12 +298,13 @@ func TestConvertToDabsRejectsCodeOutsideBundle(t *testing.T) {
 	require.ErrorContains(t, err, "not inside the bundle")
 }
 
-// A git-pinned code_source is rejected: convert no longer materializes a commit;
-// the deploy-time mutator packages the working tree in place.
-func TestConvertToDabsRejectsGitPin(t *testing.T) {
+// A git-pinned code_source is emitted as a `tgz` artifact (the DABs artifact
+// snapshotter): DABs builds the tarball from the ref at deploy and code_source_path
+// points at it.
+func TestConvertToDabsGitPinEmitsArtifact(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))
-	cfg := "experiment_name: git-pin\ncommand: python train.py\n" +
+	cfg := "experiment_name: gitpin\ncommand: python train.py\n" +
 		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
 		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: ./src\n    git:\n      commit: abc123\n"
 	path := filepath.Join(dir, "run.yaml")
@@ -311,8 +312,17 @@ func TestConvertToDabsRejectsGitPin(t *testing.T) {
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	_, _, err = convertToDabs(t.Context(), loaded, path, dir)
-	require.ErrorContains(t, err, "git is not supported")
+	root, _, err := convertToDabs(t.Context(), loaded, path, dir)
+	require.NoError(t, err)
+
+	a := "artifacts." + codeSourceArtifactKey
+	assert.Equal(t, "tgz", get(t, root, a+".type").MustString())
+	assert.Equal(t, "./src", get(t, root, a+".path").MustString())
+	assert.Equal(t, "abc123", get(t, root, a+".git.commit").MustString())
+	assert.Equal(t, "./dist/code_source.tgz", get(t, root, a+".files[0].source").MustString())
+
+	task := "resources.jobs." + loaded.ExperimentName + ".tasks[0].ai_runtime_task"
+	assert.Equal(t, "./dist/code_source.tgz", get(t, root, task+".code_source_path").MustString())
 }
 
 // A requirements-FILE dependency set (environment.dependencies is a path) is folded
@@ -398,9 +408,9 @@ func TestConvertToDabsSafeJobKey(t *testing.T) {
 	}
 }
 
-// include_paths narrows the archive to a subset of root_path, which a bundle can't
-// express per code source. Rejected rather than silently uploading the whole dir.
-func TestConvertToDabsRejectsIncludePaths(t *testing.T) {
+// include_paths narrows the archive to a subset of root_path: emitted as the `tgz`
+// artifact's include (relative to the code-source root), matching air CLI semantics.
+func TestConvertToDabsIncludePathsEmitsArtifact(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))
 	cfg := "experiment_name: inc\ncommand: python train.py\n" +
@@ -412,8 +422,18 @@ func TestConvertToDabsRejectsIncludePaths(t *testing.T) {
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	_, _, err = convertToDabs(t.Context(), loaded, path, dir)
-	require.ErrorContains(t, err, "include_paths is not supported")
+	root, _, err := convertToDabs(t.Context(), loaded, path, dir)
+	require.NoError(t, err)
+
+	a := "artifacts." + codeSourceArtifactKey
+	assert.Equal(t, "tgz", get(t, root, a+".type").MustString())
+	assert.Equal(t, "./src", get(t, root, a+".path").MustString())
+	inc := get(t, root, a+".include").MustSequence()
+	require.Len(t, inc, 1)
+	assert.Equal(t, "keep", inc[0].MustString())
+
+	task := "resources.jobs." + loaded.ExperimentName + ".tasks[0].ai_runtime_task"
+	assert.Equal(t, "./dist/code_source.tgz", get(t, root, task+".code_source_path").MustString())
 }
 
 func TestConvertToDabsRejectsUnsupported(t *testing.T) {
