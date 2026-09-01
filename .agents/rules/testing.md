@@ -184,10 +184,8 @@ Available on `PATH` during test execution (from `acceptance/bin/`):
 - `find.py REGEX [--expect N]`: find files matching regex in current directory. `--expect N` asserts an exact count.
 - `diff.py DIR1 DIR2` or `diff.py FILE1 FILE2`: recursive diff with test replacements applied.
 - `print_state.py [-t TARGET] [--backup]`: print deployment state (terraform or direct).
-- `state_snapshot.py save|restore [-t TARGET]`: snapshot the deployment state file and restore it later, so a change the CLI made itself looks like out-of-band remote drift. Restore re-stamps the serial past the current one, otherwise `statemgmt.readStates` prefers the newer copy pushed to the workspace and the restore is a no-op.
-- `apply_mutation.py FILE [NAME|--list]`: list or apply the `# ACTION:` field mutations declared in an invariant config. See `acceptance/bundle/invariant/README.md`.
 - `edit_resource.py TYPE ID < script.py`: fetch resource by ID, execute Python on it (resource in `r`), then update it. TYPE is `jobs` or `pipelines`.
-- `verify_no_drift.py PLAN.json [--expect-change FIELD --shape local|remote]`: assert every action in a JSON plan is `skip`, or that one field has a planned change with the given shape (`local`: config moved away from state; `remote`: only the remote moved).
+- `verify_no_drift.py PLAN.json`: assert every action in a JSON plan is `skip`.
 - `gron.py`: flatten JSON into greppable discrete assignments (simpler than `jq` for searching JSON).
 - `jq` is also available for JSON processing.
 

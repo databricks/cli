@@ -1,3 +1,0 @@
-Cloud = true
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-EnvMatrix.INPUT_CONFIG = ["app.yml.tmpl", "job.yml.tmpl", "schema.yml.tmpl"]
