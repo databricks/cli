@@ -72,6 +72,14 @@ func testAgreesWithJSON(t *testing.T, typeOf func(*Adapter) reflect.Type, known 
 			report, stale := report.Filter(known[resourceType])
 			require.Empty(t, stale,
 				"these recorded divergences no longer occur -- remove them from the list: %v", stale)
+			// The EmbeddedSlice convention renames exactly one key: __embed__ carries the slice
+			// while the walkers put its elements at the parent path. Anything else renamed would
+			// be a change to the convention.
+			for _, path := range report.RenamedByConvention {
+				assert.Equal(t, "__embed__", path, "only __embed__ is renamed by convention")
+			}
+			report.RenamedByConvention = nil
+
 			// Free-form any fields are opaque to the packages; which resources have one is stable,
 			// so it is ratcheted by name rather than logged away.
 			assert.ElementsMatch(t, freeFormFields[resourceType], topLevelNames(report.InsideFreeFormField),
