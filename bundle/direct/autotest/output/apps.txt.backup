@@ -1,0 +1,105 @@
+config.command                               absent     len1       START_NOT_REACHED  no active deployment
+config.command                               absent     len2       START_NOT_REACHED  no active deployment
+config.command                               len1       absent     START_NOT_REACHED  no active deployment
+config.command                               len1       len2       START_NOT_REACHED  no active deployment
+config.command                               len2       absent     START_NOT_REACHED  no active deployment
+config.command                               len2       len1       START_NOT_REACHED  no active deployment
+config.command[0]                            absent     x          UNSETTABLE  cannot make config.command[0] absent: config.command[1] would shift into it
+config.command[0]                            absent     y          UNSETTABLE  cannot make config.command[0] absent: config.command[1] would shift into it
+config.command[0]                            x          absent     START_NOT_REACHED  no active deployment
+config.command[0]                            x          y          START_NOT_REACHED  no active deployment
+config.command[0]                            y          absent     START_NOT_REACHED  no active deployment
+config.command[0]                            y          x          START_NOT_REACHED  no active deployment
+config.command[1]                            absent     x          START_NOT_REACHED  no active deployment
+config.command[1]                            absent     y          START_NOT_REACHED  no active deployment
+config.command[1]                            x          absent     START_NOT_REACHED  no active deployment
+config.command[1]                            x          y          START_NOT_REACHED  no active deployment
+config.command[1]                            y          absent     START_NOT_REACHED  no active deployment
+config.command[1]                            y          x          START_NOT_REACHED  no active deployment
+config.env                                   absent     len0       START_NOT_REACHED  no active deployment
+config.env                                   absent     len1       START_NOT_REACHED  no active deployment
+config.env                                   len0       absent     START_NOT_REACHED  no active deployment
+config.env                                   len0       len1       START_NOT_REACHED  no active deployment
+config.env                                   len1       absent     START_NOT_REACHED  no active deployment
+config.env                                   len1       len0       START_NOT_REACHED  no active deployment
+config.env[0].name                           x          y          START_NOT_REACHED  no active deployment
+config.env[0].name                           y          x          START_NOT_REACHED  no active deployment
+config.env[0].value                          absent     x          START_NOT_REACHED  no active deployment
+config.env[0].value                          absent     y          START_NOT_REACHED  no active deployment
+config.env[0].value                          x          absent     START_NOT_REACHED  no active deployment
+config.env[0].value                          x          y          START_NOT_REACHED  no active deployment
+config.env[0].value                          y          absent     START_NOT_REACHED  no active deployment
+config.env[0].value                          y          x          START_NOT_REACHED  no active deployment
+config.env[0].value_from                     absent     x          START_NOT_REACHED  no active deployment
+config.env[0].value_from                     absent     y          START_NOT_REACHED  no active deployment
+config.env[0].value_from                     x          absent     START_NOT_REACHED  no active deployment
+config.env[0].value_from                     x          y          START_NOT_REACHED  no active deployment
+config.env[0].value_from                     y          absent     START_NOT_REACHED  no active deployment
+config.env[0].value_from                     y          x          START_NOT_REACHED  no active deployment
+description                                  x          absent     UPDATE_IGNORED
+description                                  y          absent     UPDATE_IGNORED
+git_repository.auto_deploy                   true       absent     UPDATE_IGNORED
+git_repository.caller_credential_id          1          absent     UPDATE_IGNORED
+git_repository.caller_credential_id          2          absent     UPDATE_IGNORED
+git_source.branch                            absent     x          SUPPRESSED  no active deployment
+git_source.branch                            absent     y          SUPPRESSED  no active deployment
+git_source.branch                            x          absent     START_NOT_REACHED  no active deployment
+git_source.branch                            x          y          START_NOT_REACHED  no active deployment
+git_source.branch                            y          absent     START_NOT_REACHED  no active deployment
+git_source.branch                            y          x          START_NOT_REACHED  no active deployment
+git_source.commit                            absent     x          SUPPRESSED  no active deployment
+git_source.commit                            absent     y          SUPPRESSED  no active deployment
+git_source.commit                            x          absent     START_NOT_REACHED  no active deployment
+git_source.commit                            x          y          START_NOT_REACHED  no active deployment
+git_source.commit                            y          absent     START_NOT_REACHED  no active deployment
+git_source.commit                            y          x          START_NOT_REACHED  no active deployment
+git_source.git_repository.auto_deploy        absent     false      SUPPRESSED  no active deployment
+git_source.git_repository.auto_deploy        absent     true       SUPPRESSED  no active deployment
+git_source.git_repository.auto_deploy        false      absent     START_NOT_REACHED  no active deployment
+git_source.git_repository.auto_deploy        false      true       START_NOT_REACHED  no active deployment
+git_source.git_repository.auto_deploy        true       absent     START_NOT_REACHED  no active deployment
+git_source.git_repository.auto_deploy        true       false      START_NOT_REACHED  no active deployment
+git_source.git_repository.caller_credential_id 1          2          START_NOT_REACHED  no active deployment
+git_source.git_repository.caller_credential_id 1          absent     START_NOT_REACHED  no active deployment
+git_source.git_repository.caller_credential_id 2          1          START_NOT_REACHED  no active deployment
+git_source.git_repository.caller_credential_id 2          absent     START_NOT_REACHED  no active deployment
+git_source.git_repository.caller_credential_id absent     1          SUPPRESSED  no active deployment
+git_source.git_repository.caller_credential_id absent     2          SUPPRESSED  no active deployment
+git_source.resolved_commit                   absent     x          SUPPRESSED  no active deployment
+git_source.resolved_commit                   absent     y          SUPPRESSED  no active deployment
+git_source.resolved_commit                   x          absent     START_NOT_REACHED  no active deployment
+git_source.resolved_commit                   x          y          START_NOT_REACHED  no active deployment
+git_source.resolved_commit                   y          absent     START_NOT_REACHED  no active deployment
+git_source.resolved_commit                   y          x          START_NOT_REACHED  no active deployment
+git_source.source_code_path                  absent     x          SUPPRESSED  no active deployment
+git_source.source_code_path                  absent     y          SUPPRESSED  no active deployment
+git_source.source_code_path                  x          absent     START_NOT_REACHED  no active deployment
+git_source.source_code_path                  x          y          START_NOT_REACHED  no active deployment
+git_source.source_code_path                  y          absent     START_NOT_REACHED  no active deployment
+git_source.source_code_path                  y          x          START_NOT_REACHED  no active deployment
+git_source.tag                               absent     x          SUPPRESSED  no active deployment
+git_source.tag                               absent     y          SUPPRESSED  no active deployment
+git_source.tag                               x          absent     START_NOT_REACHED  no active deployment
+git_source.tag                               x          y          START_NOT_REACHED  no active deployment
+git_source.tag                               y          absent     START_NOT_REACHED  no active deployment
+git_source.tag                               y          x          START_NOT_REACHED  no active deployment
+source_code_path                             absent     x-UNIQUE   SUPPRESSED  no active deployment
+source_code_path                             absent     y-UNIQUE   SUPPRESSED  no active deployment
+source_code_path                             x-UNIQUE   absent     START_NOT_REACHED  no active deployment
+source_code_path                             x-UNIQUE   y-UNIQUE   START_NOT_REACHED  no active deployment
+source_code_path                             y-UNIQUE   absent     START_NOT_REACHED  no active deployment
+source_code_path                             y-UNIQUE   x-UNIQUE   START_NOT_REACHED  no active deployment
+user_api_scopes                              len1       absent     UPDATE_IGNORED
+user_api_scopes                              len1       len0       UPDATE_IGNORED
+user_api_scopes                              len2       absent     UPDATE_IGNORED
+user_api_scopes                              len2       len0       UPDATE_IGNORED
+
+=== summary
+OK                 35
+OK_RECREATE        2
+SUPPRESSED         23
+NOT_OBSERVABLE     3
+UPDATE_IGNORED     9
+UNSETTABLE         2
+SKIPPED            90
+START_NOT_REACHED  68

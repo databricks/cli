@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/testdiff"
@@ -176,6 +177,10 @@ type result struct {
 type report struct {
 	resourceType string
 
+	// started is when this type's run began, so the full report can say how long it took. Only in
+	// the full report: the committed golden has to be the same whatever the machine's speed.
+	started time.Time
+
 	results  []result
 	wildcard map[string]bool
 	covered  map[string]bool
@@ -196,6 +201,19 @@ func (r *report) addSampled(path string) {
 	}
 	r.sampled[path] = true
 }
+
+// reportHeader introduces a committed report to a reader who has only the diff.
+const reportHeader = `# field | from | to | verdict | detail
+#
+# How the direct engine handles every field of this resource type: each row is one move of one field
+# between two values, "absent" included. An outcome the engine got wrong is recorded here rather than
+# failed, so this file is a description of current behaviour -- what fails the test is a verdict
+# changing. Passing rows are counted in the summary and listed in logs/<type>.full.txt, along with
+# the evidence behind each finding and what could not be covered.
+#
+# Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
+
+`
 
 // fieldColumnWidth is how wide the field column is in a rendered row. Named because sampledRows
 // reads the field back out of the text by it.
@@ -290,6 +308,12 @@ func (r *report) uncoveredPaths() []string {
 // behind each finding, and what was not covered.
 func (r *report) render(problemsOnly bool) string {
 	var sb strings.Builder
+	if problemsOnly {
+		// The committed report is read on its own in a diff, with nothing around it to say what
+		// the columns are. Deliberately free of counts, times and dates: a header that moved when
+		// something unrelated changed would be noise in every review.
+		sb.WriteString(reportHeader)
+	}
 
 	slices.SortStableFunc(r.results, func(a, b result) int {
 		return cmp.Or(
@@ -342,6 +366,8 @@ func (r *report) render(problemsOnly bool) string {
 	if problemsOnly {
 		return sb.String()
 	}
+
+	fmt.Fprintf(&sb, "\n=== elapsed\n%s\n", r.elapsed().Round(time.Millisecond))
 
 	// The legend goes here and not into the committed report: it is JSON, so it would churn
 	// whenever an SDK type gains a field, and a reader decoding a label is already looking at
@@ -525,6 +551,15 @@ const logsDir = "logs"
 
 func reportPath(name string) string {
 	return filepath.Join(outputDir, name)
+}
+
+// elapsed is how long this type's run took, or zero when the report was built without a start time
+// (the unit tests construct one directly).
+func (r *report) elapsed() time.Duration {
+	if r.started.IsZero() {
+		return 0
+	}
+	return time.Since(r.started)
 }
 
 func logPath(name string) string {
