@@ -46,6 +46,7 @@ EnvMatrix.INPUT_CONFIG = [
     "job_with_depends_on.yml.tmpl",
     "job_with_task.yml.tmpl",
     "model.yml.tmpl",
+    "model_with_permissions.yml.tmpl",
     "model_serving_endpoint.yml.tmpl",
     "model_serving_endpoint_telemetry.yml.tmpl",
     "pipeline.yml.tmpl",

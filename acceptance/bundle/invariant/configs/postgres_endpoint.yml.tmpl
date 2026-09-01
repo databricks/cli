@@ -18,7 +18,3 @@ resources:
       parent: ${resources.postgres_branches.branch.name}
       endpoint_id: test-endpoint-$UNIQUE_NAME
       endpoint_type: ENDPOINT_TYPE_READ_WRITE
-      # An SDK duration used to look like an empty struct to isEmptyStruct, so every change to one
-      # was suppressed with reason "empty", until #6377. A remote change is still dropped on
-      # purpose, the field being declared spec:input_only.
-      suspend_timeout_duration: 300s
