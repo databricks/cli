@@ -433,6 +433,42 @@ func (r *report) write(t testutil.TestingT) {
 	testdiff.AssertEqualTexts(t, name, name, testdiff.NormalizeNewlines(string(expected)), body)
 }
 
+// collateralCause returns the field a COLLATERAL_DRIFT row blames, which the renderer puts in the
+// detail column. Reports false for any other row.
+func collateralCause(line string) (string, bool) {
+	marker := " " + string(verdictCollateral) + "  "
+	_, after, ok := strings.Cut(line, marker)
+	if !ok {
+		return "", false
+	}
+	// The detail is a comma-separated list of drifting paths; the first is enough to decide
+	// whether this run had any business reproducing the row.
+	detail := strings.TrimSpace(after)
+	cause, _, _ := strings.Cut(detail, ",")
+	return cause, true
+}
+
+// rowField reports whether a rendered row belongs to a sampled field, or to the harness itself.
+//
+// Matched by prefix rather than by reading a fixed-width column: a field path can be far longer
+// than the column (a pipeline's ingestion_definition reaches 130 characters), and the column then
+// holds a truncated path that matches nothing -- silently dropping the row from both sides, which
+// is the one thing this comparison must not do.
+func rowField(line string, sampled map[string]bool) bool {
+	// A row the harness records against itself -- "(base config)", "(rebuild)", "(baseline)" --
+	// says the run for that type did not happen, so no sample may hide it.
+	if strings.HasPrefix(line, "(") {
+		return true
+	}
+	for field := range sampled {
+		// The separator matters: without it "tags" would also claim "tags_extra".
+		if strings.HasPrefix(line, field+" ") {
+			return true
+		}
+	}
+	return false
+}
+
 // sampledRows keeps the report rows belonging to the sampled fields, dropping the summary and
 // blank lines. Rows the harness records against itself rather than a field -- "(base config)",
 // "(rebuild)", "(baseline)" -- are always kept: they mean the run for that type did not happen,
@@ -449,14 +485,14 @@ func sampledRows(body string, sampled map[string]bool) string {
 		if line == "" {
 			continue
 		}
-		// A verdict whose cause is another field cannot be reproduced by a run that did not
-		// sample that field: COLLATERAL_DRIFT is drift the plan attributes to something else,
-		// and its detail names what. Dropped from both sides rather than compared.
-		if strings.Contains(line, string(verdictCollateral)) {
+		// COLLATERAL_DRIFT is drift the plan attributes to another field, which its detail names.
+		// A run that did not sample that other field cannot reproduce the row, so it is dropped --
+		// but only then. Dropping every one of them would hide a sampled field turning from OK
+		// into COLLATERAL_DRIFT, which is a regression like any other.
+		if cause, ok := collateralCause(line); ok && !sampled[cause] {
 			continue
 		}
-		field := strings.TrimRight(line[:min(fieldColumnWidth, len(line))], " ")
-		if sampled[field] || strings.HasPrefix(field, "(") {
+		if rowField(line, sampled) {
 			sb.WriteString(line + "\n")
 		}
 	}

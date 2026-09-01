@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/databricks/cli/libs/structs/structpath"
 
@@ -377,4 +378,14 @@ func TestOneLineKeepsTheCause(t *testing.T) {
 	assert.Contains(t, line, "operation timed out")
 	assert.NotContains(t, line, "dbc-61ef35eb")
 	assert.LessOrEqual(t, len(line), 143)
+}
+
+// Truncation is by rune, since an API message can carry any character and the ellipsis oneLine
+// inserts for a URL is itself multi-byte: a byte index can land inside one.
+func TestOneLineKeepsValidUTF8(t *testing.T) {
+	// Long enough to truncate, and multi-byte throughout so every cut lands inside a rune if the
+	// truncation is done by byte.
+	line := oneLine(strings.Repeat("héllo wörld ", 20))
+	assert.True(t, utf8.ValidString(line), "%q is not valid UTF-8", line)
+	assert.Contains(t, line, "...")
 }
