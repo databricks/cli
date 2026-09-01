@@ -3,9 +3,7 @@ package autotest
 import (
 	"cmp"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -507,37 +505,6 @@ func writeReport(t testutil.TestingT, name, body string) {
 	if err := os.WriteFile(name, []byte(body), 0o644); err != nil {
 		t.Errorf("writing %s: %s", name, err)
 	}
-}
-
-// writeCoverageReport records which resource types the suite drives and which supported types
-// it does not, so the catalog accounts for everything the direct engine knows rather than only
-// what it happens to cover.
-func writeCoverageReport(t testutil.TestingT, driven, undriven []string) {
-	var sb strings.Builder
-	sb.WriteString("=== covered\n")
-	for _, resourceType := range driven {
-		fmt.Fprintf(&sb, "%s\n", resourceType)
-	}
-	sb.WriteString("\n=== not covered: no value library in testdata/fields\n")
-	for _, resourceType := range undriven {
-		fmt.Fprintf(&sb, "%s\n", resourceType)
-	}
-
-	name := reportPath("configs.txt")
-	body := sb.String()
-	if isCloud() {
-		return
-	}
-	if testdiff.OverwriteMode {
-		writeReport(t, name, body)
-		return
-	}
-	expected, err := os.ReadFile(name)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("reading %s: %s", name, err)
-		return
-	}
-	testdiff.AssertEqualTexts(t, name, name, testdiff.NormalizeNewlines(string(expected)), body)
 }
 
 // outputDir holds the committed reports. Kept out of the package directory so the Go

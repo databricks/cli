@@ -1,0 +1,14 @@
+# Value library for postgres catalogs. See ../../README.md.
+
+local_only: a recreate cannot reuse the project name until the soft delete is purged
+
+deps:
+  postgres_projects:
+    project_id: test-pg-project-$UNIQUE_NAME
+    display_name: Test Postgres Project
+
+base:
+  catalog_id: test_pg_catalog_$UNIQUE_NAME
+  branch: ${resources.postgres_projects.postgres_projects.name}/branches/production
+  postgres_database: appdb
+  create_database_if_missing: true

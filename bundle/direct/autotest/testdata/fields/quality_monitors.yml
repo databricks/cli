@@ -1,0 +1,16 @@
+# Value library for quality monitors. See ../../README.md.
+
+# A monitor attaches to a table that already holds data, and its own name is that table's -- the
+# suite provisions no table, so a real workspace has nothing to monitor.
+local_only: needs an existing table with data to monitor
+
+base:
+  table_name: main.default.test_monitor_$UNIQUE_NAME
+  assets_dir: /Shared/databricks_monitoring/main.default.test_monitor_$UNIQUE_NAME
+  output_schema_name: main.default
+  inference_log:
+    granularities: ["1 day"]
+    timestamp_col: timestamp
+    prediction_col: prediction
+    model_id_col: model_id
+    problem_type: PROBLEM_TYPE_REGRESSION

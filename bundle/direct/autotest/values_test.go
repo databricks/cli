@@ -60,6 +60,19 @@ type fieldValues struct {
 	// cloud run neither confirms nor contradicts it.
 	localOnly string
 
+	// variables are bundle variables the fixture's own values reference, with the value to give
+	// each. A secret's value has to be a ${var...} reference -- the config format refuses a
+	// literal, to keep secrets out of config files -- so the fixture needs somewhere to declare
+	// one. The value is passed the way a user would, through BUNDLE_VAR_<name>: a default in the
+	// config would be resolved before that validation runs, and then fail it.
+	variables map[string]string
+
+	// deps are resources the one under test needs in order to exist, keyed by resource type: a
+	// postgres branch needs a project, a secret needs nothing but a catalog and schema that
+	// already exist. They are deployed in the same bundle and referenced from base with
+	// ${resources...}, and no field of one is ever tested -- only the resource under test is.
+	deps map[string]any
+
 	// clouds names the clouds whose workspaces can host this resource type, for a service that
 	// exists on some and not others. Empty means every cloud. Unlike localOnly this does not
 	// give up on the cloud run: the type is verified where the service exists and skipped
@@ -174,7 +187,7 @@ var cliManagedFields = map[string]string{
 // corpus configs use so a value can name the workspace's own user rather than a placeholder
 // only the fake server knows.
 func loadFieldValues(resourceType string, vars map[string]string) (*fieldValues, error) {
-	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]any{}, base: nil, localOnly: "", clouds: nil}
+	fv := &fieldValues{skip: map[string]string{}, fields: map[string][]any{}, base: nil, localOnly: "", clouds: nil, deps: nil, variables: nil}
 	maps.Copy(fv.skip, cliManagedFields)
 
 	path := filepath.Join(fieldsDir, resourceType+".yml")
@@ -194,11 +207,17 @@ func loadFieldValues(resourceType string, vars map[string]string) (*fieldValues,
 		if key == uniqueNameVar {
 			return "$" + uniqueNameVar
 		}
-		value, ok := vars[key]
-		if !ok {
-			missing = key
+		if value, ok := vars[key]; ok {
+			return value
 		}
-		return value
+		// A bundle's own interpolation shares this syntax and belongs to the config: base declares
+		// ${var.secret_value} and a dep reference like ${resources.postgres_projects.x.name}. Told
+		// apart by the dot, as in renderBundle, which is where they are finally emitted.
+		if strings.Contains(key, ".") {
+			return "${" + key + "}"
+		}
+		missing = key
+		return ""
 	})
 	if missing != "" {
 		return nil, fmt.Errorf("%s uses $%s, which this suite does not provide here", path, missing)
@@ -209,6 +228,8 @@ func loadFieldValues(resourceType string, vars map[string]string) (*fieldValues,
 		Fields    map[string][]any  `yaml:"fields"`
 		Base      any               `yaml:"base"`
 		LocalOnly string            `yaml:"local_only"`
+		Deps      map[string]any    `yaml:"deps"`
+		Variables map[string]string `yaml:"variables"`
 		Clouds    []string          `yaml:"clouds"`
 	}
 	if err := yaml.Unmarshal([]byte(expanded), &file); err != nil {
@@ -218,6 +239,8 @@ func loadFieldValues(resourceType string, vars map[string]string) (*fieldValues,
 	maps.Copy(fv.fields, file.Fields)
 	fv.base = file.Base
 	fv.localOnly = file.LocalOnly
+	fv.deps = file.Deps
+	fv.variables = file.Variables
 	fv.clouds = file.Clouds
 
 	return fv, nil

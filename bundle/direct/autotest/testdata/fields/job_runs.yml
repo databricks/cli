@@ -1,0 +1,22 @@
+# Value library for job runs. See ../../README.md.
+
+# Deploying a job run actually runs the job, and the wait needs a task a workspace will execute --
+# serverless keeps that to about a minute. The catalog moves a field hundreds of times, so this type
+# is driven against the fake server only; a real workspace would spend a run per transition.
+local_only: every transition would start a real job run
+
+deps:
+  jobs:
+    name: test-job-$UNIQUE_NAME
+    tasks:
+      - task_key: only_task
+        spark_python_task:
+          python_file: ./job_run.py
+        environment_key: default
+    environments:
+      - environment_key: default
+        spec:
+          environment_version: "2"
+
+base:
+  job_id: ${resources.jobs.jobs.id}

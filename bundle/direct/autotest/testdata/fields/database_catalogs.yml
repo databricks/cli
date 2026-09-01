@@ -1,0 +1,15 @@
+# Value library for database catalogs. See ../../README.md.
+
+# Lakebase v1 is not available in every cloud, same as the instance this catalog needs.
+local_only: Lakebase v1 is not available in every cloud
+
+deps:
+  database_instances:
+    name: test-db-instance-$UNIQUE_NAME
+    capacity: CU_1
+
+base:
+  database_instance_name: ${resources.database_instances.database_instances.name}
+  database_name: test_db
+  name: test-catalog-$UNIQUE_NAME
+  create_database_if_not_exists: true
