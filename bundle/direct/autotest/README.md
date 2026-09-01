@@ -241,16 +241,19 @@ faithfully, which is worth failing over. The full report goes to
 - resource types with no value library yet, listed in `output/configs.txt`
 - fields under a slice or map, listed at the end of each report
 
-Three divergences from a real workspace are known and left as findings rather than modelled,
+Two divergences from a real workspace are known and left as findings rather than modelled,
 because each needs a behavioural change the acceptance suite currently asserts otherwise:
 
 - A SQL warehouse reads back `STARTING`, not `RUNNING`, right after create, so a config asking
   for `started: false` is already satisfied there. Modelling it means the fake server also has
   to move the warehouse to `RUNNING` on a later read, which the engine's waiter depends on.
-- A model serving endpoint's `email_notifications` do not take effect from a create; they are
-  configured through their own endpoint.
-- A Genie space's title cannot be cleared, and the chain then reaches a different value than it
-  does locally in one transition.
+- A model serving endpoint's `email_notifications` do not take effect from a create, so the field
+  drifts from the moment the resource exists — recorded as `BASELINE_DRIFT`, with the plan behind
+  it in the full report.
+
+A third, a Genie space's title, is fixed: the fake server named an untitled space `""` where the
+backend names it `New Agent`, and the missing default was masking a bug in this suite. That is the
+shape these entries usually have, which is why they are worth chasing rather than tolerating.
 
 Two types cannot be driven against the workspace this was verified on, for reasons that are its
 capacity rather than the engine's behaviour: a cluster never reaches `RUNNING` because the
