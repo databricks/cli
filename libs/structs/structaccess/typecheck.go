@@ -157,11 +157,27 @@ func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 	level := embeddedStructTypes(t)
 	for len(level) > 0 {
 		var next []reflect.Type
+		var found []struct {
+			field reflect.StructField
+			owner reflect.Type
+		}
 		for _, ft := range level {
 			if sf, ok := findDirectFieldByKeyType(ft, key); ok {
-				return sf, ft, true
+				found = append(found, struct {
+					field reflect.StructField
+					owner reflect.Type
+				}{sf, ft})
+				continue
 			}
 			next = append(next, embeddedStructTypes(ft)...)
+		}
+		if len(found) == 1 {
+			return found[0].field, found[0].owner, true
+		}
+		if len(found) > 1 {
+			// Ambiguous at this depth, which encoding/json resolves by omitting the field; see
+			// findStructFieldByKey in get.go.
+			return reflect.StructField{}, reflect.TypeOf(nil), false
 		}
 		level = next
 	}
