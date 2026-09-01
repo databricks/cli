@@ -111,6 +111,14 @@ func TestResourceTypesAgreeWithJSON(t *testing.T) {
 			// validate a path through one, so a free-form field is opaque to both. Which resources
 			// have one is stable, so it is ratcheted by name: a new free-form field is a new blind
 			// spot and has to be added here deliberately.
+			// The EmbeddedSlice convention renames exactly one key: __embed__ carries the slice
+			// while the walkers put its elements at the parent path. Anything else renamed would
+			// be a change to the convention.
+			for _, path := range report.RenamedByConvention {
+				assert.Equal(t, "__embed__", path, "only __embed__ is renamed by convention")
+			}
+			report.RenamedByConvention = nil
+
 			assert.ElementsMatch(t, walkDuplicates[group], report.WalkDuplicated,
 				"paths structwalk visits twice changed for %s", group)
 			report.WalkDuplicated = nil
