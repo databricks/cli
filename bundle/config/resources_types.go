@@ -43,7 +43,6 @@ var ResourcesTypes = func() map[string]reflect.Type {
 			if resourceField.Name == "Grants" {
 				grantsKey := name + ".grants"
 				res[grantsKey] = resourceField.Type
-				continue
 			}
 		}
 	}
