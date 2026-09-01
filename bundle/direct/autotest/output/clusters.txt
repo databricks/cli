@@ -1,6 +1,6 @@
 
 === summary
-OK                 429
-SUPPRESSED         22
+OK                 383
+SUPPRESSED         20
 NOT_OBSERVABLE     9
-SKIPPED            4
+SKIPPED            10

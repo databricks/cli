@@ -29,6 +29,18 @@ fields:
   autotermination_minutes: [10, 20]
 
 skip:
+  # An init script entry carries exactly one of workspace, volumes, s3, abfss, gcs, dbfs or file,
+  # and base seeds the workspace member. Setting a leaf inside another arm leaves that arm without
+  # its own destination, which the backend accepts and then ignores -- every such row was recording
+  # the fake server storing a value the API drops. Covering an arm needs a fixture that seeds it,
+  # not a value for a leaf inside one that is not there.
+  init_scripts[*].abfss: an init script member the seeded workspace member excludes
+  init_scripts[*].dbfs: an init script member the seeded workspace member excludes
+  init_scripts[*].file: an init script member the seeded workspace member excludes
+  init_scripts[*].gcs: an init script member the seeded workspace member excludes
+  init_scripts[*].s3: an init script member the seeded workspace member excludes
+  init_scripts[*].volumes: an init script member the seeded workspace member excludes
+
   # "The field 'worker_node_type_flexibility' cannot be supplied when an instance pool ID is
   # provided", and the corpus config provides one. The alternates would also have to name a
   # second node type, which differs per cloud.
