@@ -1,4 +1,0 @@
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-expire-[UNIQUE_NAME]/default/files...
-Updated postgres_branches.dev_branch
-Files: 0 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged

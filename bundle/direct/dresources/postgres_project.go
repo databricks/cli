@@ -136,6 +136,13 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 	return remote.Name, remote, nil
 }
 
+// The default endpoint settings carry the same suspension oneof as an endpoint does;
+// see branchOneofGroups.
+var projectOneofGroups = map[string]string{
+	"default_endpoint_settings.no_suspension":            "default_endpoint_settings.suspension",
+	"default_endpoint_settings.suspend_timeout_duration": "default_endpoint_settings.suspension",
+}
+
 func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, entry *PlanEntry) (*PostgresProjectRemote, error) {
 	// Build the mask from the plan's change list and prefix with "spec." (the
 	// API expects paths relative to Project). The API rejects mask entries
@@ -143,7 +150,7 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 	// expands to nested attributes the body would have to set too — so we
 	// can't use a static all-fields mask. The change list naturally tracks
 	// what the user actually set, so the body and mask stay consistent.
-	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.")
+	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", projectOneofGroups)
 
 	// purge_on_delete is an input-only flag consulted at delete time; it is
 	// not a spec field. Strip it from the mask so toggling it between deploys
