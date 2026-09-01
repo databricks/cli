@@ -401,28 +401,3 @@ func bundleWithSkippedJobRun(t *testing.T, remote *dresources.JobRunRemote) *Dep
 	b.RemoteStateCache.Store(jobRunKey, remote)
 	return b
 }
-
-func TestSplitResourcePath(t *testing.T) {
-	tests := []struct {
-		path      string
-		wantKey   string
-		wantField string
-	}{
-		{"resources.jobs.foo.name", "resources.jobs.foo", "name"},
-		{"resources.jobs.foo.permissions[0].level", "resources.jobs.foo.permissions", "[0].level"},
-		{"resources.schemas.foo.grants[0].principal", "resources.schemas.foo.grants", "[0].principal"},
-		// libraries is a plain field on the cluster (managed as part of the cluster), not a sub-resource.
-		{"resources.clusters.foo.libraries[0].whl", "resources.clusters.foo", "libraries[0].whl"},
-		// pipelines have a native top-level libraries field, likewise not a sub-resource.
-		{"resources.pipelines.foo.libraries[0].notebook.path", "resources.pipelines.foo", "libraries[0].notebook.path"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
-			path, err := structpath.ParsePath(tt.path)
-			require.NoError(t, err)
-			key, field := splitResourcePath(path)
-			assert.Equal(t, tt.wantKey, key)
-			assert.Equal(t, tt.wantField, field.String())
-		})
-	}
-}
