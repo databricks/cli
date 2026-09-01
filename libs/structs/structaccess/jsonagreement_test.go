@@ -1,7 +1,6 @@
 package structaccess_test
 
 import (
-	"encoding/json"
 	"reflect"
 	"slices"
 	"testing"
@@ -44,12 +43,10 @@ func TestAgreesWithEncodingJSON(t *testing.T) {
 				require.NoError(t, structaccess.SetByString(fresh, name, "written"),
 					"%q is on the wire, so Set must reach it", name)
 
-				blob, err := json.Marshal(fresh)
+				leaves, err := jsonshapes.Leaves(fresh)
 				require.NoError(t, err)
-				var got map[string]any
-				require.NoError(t, json.Unmarshal(blob, &got))
-				assert.Equal(t, "written", got[name],
-					"Set wrote somewhere encoding/json does not serialize: %s", blob)
+				assert.Equal(t, "written", leaves[name],
+					"Set wrote somewhere encoding/json does not serialize: %v", leaves)
 			}
 
 			for _, name := range shape.Unreachable {
