@@ -25,6 +25,16 @@ import (
 	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
+// KnownSelfMarshalingTypes are the Go types that serialize themselves as a scalar through
+// their own MarshalJSON, which is why structwalk never visits a field of one: it looks for
+// scalar fields and finds none inside. A new *type* here is a new way for a field to hide from
+// the packages, so callers assert the set stays within this list rather than listing every
+// field of these types.
+var KnownSelfMarshalingTypes = []string{
+	"duration.Duration",
+	"time.Time",
+}
+
 // Report lists the disagreements found for one type. A field is identified by the JSON
 // path encoding/json puts it at, which is the only name all the packages share.
 type Report struct {
@@ -55,19 +65,30 @@ type Report struct {
 	// than a list of paths, which would depend on the filler's choice of key.
 	InsideFreeFormField []string
 
+	// ContainerUnreachable are paths at which encoding/json emits an object or an array that
+	// structaccess cannot resolve. Scalar leaves alone would miss them: a field serialized as
+	// {} or [] contributes no leaf, so a field the packages cannot reach at all would otherwise
+	// go unnoticed.
+	ContainerUnreachable []string
+
 	// SelfMarshalingScalars are paths whose Go type is a struct that marshals itself as a
 	// scalar through its own MarshalJSON -- duration.Duration and the SDK's time wrapper.
 	// structwalk looks for scalar *fields* and finds none inside them, so it never visits
-	// them and structdiff never reports drift on them. One known limitation rather than a
-	// per-field list, because every new timestamp field in the SDK joins it.
+	// them and structdiff never reports drift on them.
 	SelfMarshalingScalars []string
+
+	// SelfMarshalingTypes are the distinct Go types behind SelfMarshalingScalars. Callers
+	// ratchet on these rather than on the paths: a new timestamp field of a type already known
+	// to behave this way tells them nothing, while a new *type* that hides itself from the
+	// walkers is a finding.
+	SelfMarshalingTypes []string
 }
 
 // Empty reports whether the type and the libs/structs packages agree completely.
 func (r Report) Empty() bool {
 	return len(r.WalkMissing) == 0 && len(r.WalkExtra) == 0 && len(r.GetFailed) == 0 &&
 		len(r.ValidateFailed) == 0 && len(r.ValueMismatch) == 0 && len(r.SelfMarshalingScalars) == 0 &&
-		len(r.InsideFreeFormField) == 0
+		len(r.InsideFreeFormField) == 0 && len(r.ContainerUnreachable) == 0
 }
 
 // String renders the report as one indented line per category, for a test failure message.
@@ -84,6 +105,7 @@ func (r Report) String() string {
 		{"structaccess.Get and encoding/json disagree on the value at", r.ValueMismatch},
 		{"marshals itself as a scalar, so structwalk never visits", r.SelfMarshalingScalars},
 		{"sits inside a free-form any field, which the packages do not look into", r.InsideFreeFormField},
+		{"is emitted as an object or array structaccess cannot resolve", r.ContainerUnreachable},
 	} {
 		if len(s.paths) == 0 {
 			continue
@@ -130,8 +152,11 @@ func Check(t reflect.Type) (Report, error) {
 			report.InsideFreeFormField = append(report.InsideFreeFormField, path)
 			continue
 		}
-		if marks.selfMarshaling[path] {
+		if typeName, ok := marks.selfMarshaling[path]; ok {
 			report.SelfMarshalingScalars = append(report.SelfMarshalingScalars, path)
+			if !slices.Contains(report.SelfMarshalingTypes, typeName) {
+				report.SelfMarshalingTypes = append(report.SelfMarshalingTypes, typeName)
+			}
 			continue
 		}
 		if _, ok := walkLeaves[path]; !ok {
@@ -161,6 +186,27 @@ func Check(t reflect.Type) (Report, error) {
 				fmt.Sprintf("%s: structaccess=%s encoding/json=%s", path, render(got), want))
 		}
 	}
+	for path := range marks.containers {
+		if marks.freeForm[path] || marks.freeFormField[path] {
+			continue
+		}
+		node, err := structpath.ParsePath(path)
+		if err != nil {
+			report.ContainerUnreachable = append(report.ContainerUnreachable, path+": "+err.Error())
+			continue
+		}
+		if skippedByTag(reflect.TypeOf(v), node) {
+			continue
+		}
+		if err := structaccess.ValidatePath(reflect.TypeOf(v), node); err != nil {
+			report.ContainerUnreachable = append(report.ContainerUnreachable, path+": "+err.Error())
+			continue
+		}
+		if _, err := structaccess.Get(v, node); err != nil {
+			report.ContainerUnreachable = append(report.ContainerUnreachable, path+": "+err.Error())
+		}
+	}
+
 	for path := range walkLeaves {
 		if _, ok := jsonLeaves[path]; !ok {
 			if marks.freeFormField[path] {
@@ -188,18 +234,21 @@ func Check(t reflect.Type) (Report, error) {
 // leafMarks records leaves that need a category of their own rather than a path-by-path
 // comparison.
 type leafMarks struct {
-	// selfMarshaling are leaves whose Go type is a struct that marshalled itself as a scalar.
-	selfMarshaling map[string]bool
+	// selfMarshaling maps such a leaf to the Go type that marshalled itself.
+	selfMarshaling map[string]string
 	// freeForm are leaves below an any field; freeFormField holds the any fields themselves.
 	freeForm      map[string]bool
 	freeFormField map[string]bool
+	// containers are paths at which an object or array is emitted.
+	containers map[string]bool
 }
 
 func jsonLeaves(v any) (map[string]string, leafMarks, error) {
 	marks := leafMarks{
-		selfMarshaling: map[string]bool{},
+		selfMarshaling: map[string]string{},
 		freeForm:       map[string]bool{},
 		freeFormField:  map[string]bool{},
+		containers:     map[string]bool{},
 	}
 
 	blob, err := json.Marshal(v)
@@ -230,6 +279,9 @@ func flatten(path *structpath.PathNode, typ reflect.Type, v any, out map[string]
 
 	switch value := v.(type) {
 	case map[string]any:
+		if path != nil {
+			marks.containers[path.String()] = true
+		}
 		isMap := typ != nil && typ.Kind() == reflect.Map
 		for key, member := range value {
 			var next *structpath.PathNode
@@ -256,6 +308,9 @@ func flatten(path *structpath.PathNode, typ reflect.Type, v any, out map[string]
 			flatten(next, memberType, member, out, marks, freeForm)
 		}
 	case []any:
+		if path != nil {
+			marks.containers[path.String()] = true
+		}
 		var elemType reflect.Type
 		if typ != nil && (typ.Kind() == reflect.Slice || typ.Kind() == reflect.Array) {
 			elemType = typ.Elem()
@@ -273,7 +328,7 @@ func flatten(path *structpath.PathNode, typ reflect.Type, v any, out map[string]
 		// A scalar on the wire whose Go type is a struct marshalled itself: the walkers
 		// cannot see inside it.
 		if typ != nil && typ.Kind() == reflect.Struct {
-			marks.selfMarshaling[path.String()] = true
+			marks.selfMarshaling[path.String()] = typ.String()
 		}
 	}
 }
@@ -457,14 +512,16 @@ func (r Report) Filter(known []string) (Report, []string) {
 	}
 
 	filtered := Report{
-		WalkMissing:    dropPrefix(r.WalkMissing),
-		WalkExtra:      dropPrefix(r.WalkExtra),
-		GetFailed:      dropExact(r.GetFailed),
-		ValidateFailed: dropExact(r.ValidateFailed),
-		ValueMismatch:  dropExact(r.ValueMismatch),
+		WalkMissing:          dropPrefix(r.WalkMissing),
+		WalkExtra:            dropPrefix(r.WalkExtra),
+		GetFailed:            dropExact(r.GetFailed),
+		ContainerUnreachable: dropExact(r.ContainerUnreachable),
+		ValidateFailed:       dropExact(r.ValidateFailed),
+		ValueMismatch:        dropExact(r.ValueMismatch),
 		// These two are categories, not per-path lists, so the caller decides what to do with
 		// them. Dropping them here would make that decision unreachable.
 		SelfMarshalingScalars: r.SelfMarshalingScalars,
+		SelfMarshalingTypes:   r.SelfMarshalingTypes,
 		InsideFreeFormField:   r.InsideFreeFormField,
 	}
 
