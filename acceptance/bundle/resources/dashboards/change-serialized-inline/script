@@ -21,15 +21,12 @@ trace $CLI bundle plan | contains.py "update" "!recreate"
 # Per-engine JSON plan; also the saved plan for READPLAN=1.
 trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-# Drop initial-deploy requests so we capture only the change (direct only).
-if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
-    print_requests.py //api/2.0/lakeview/dashboards > /dev/null
-fi
+# Drop the initial-deploy requests so the capture below shows only the change.
+print_requests.py //api/2.0/lakeview/dashboards > /dev/null
 
 # Deploy the change: in-memory (READPLAN="") or from the saved plan (READPLAN="1").
 title "deploy the change\n"
 $CLI bundle deploy $(readplanarg out.plan.$DATABRICKS_BUNDLE_ENGINE.json)
 
-if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
-    print_requests.py //api/2.0/lakeview/dashboards > out.requests.direct.txt
-fi
+# Capture the update request per engine (terraform echoes OUTPUT_ONLY fields).
+print_requests.py //api/2.0/lakeview/dashboards > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt
