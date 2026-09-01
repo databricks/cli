@@ -230,7 +230,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// hashed_fields); hashing it on read lines the sides up so an unchanged resource
 		// shows no change. This only affects the in-memory copy used for the diff; the
 		// on-disk entry keeps its full contents until the resource is next saved.
-		savedState, err = dresources.CompactState(adapter.ResourceConfig(), savedState)
+		compactedSavedState, err := dresources.CompactState(adapter.ResourceConfig(), savedState)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: compacting saved state: %w", errorPrefix, err))
 			return false
@@ -254,7 +254,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			logdiag.LogError(ctx, fmt.Errorf("%s: compacting local state: %w", errorPrefix, err))
 			return false
 		}
-		localDiff, err := structdiff.GetStructDiff(savedState, localState, adapter.KeyedSlices())
+		localDiff, err := structdiff.GetStructDiff(compactedSavedState, localState, adapter.KeyedSlices())
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
@@ -308,7 +308,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			}
 		}
 
-		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, savedState, remoteStateComparable)
+		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, compactedSavedState, remoteStateComparable)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
