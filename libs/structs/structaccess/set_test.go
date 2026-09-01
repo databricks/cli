@@ -1247,3 +1247,27 @@ func TestGet_RepeatedEmbedMatrixMatchesEncodingJSON(t *testing.T) {
 		})
 	}
 }
+
+// Only the exact tag json:"-" omits a field. A tag whose name part is "-" followed by options
+// names the field "-", which encoding/json serializes like any other name.
+type dashNamed struct {
+	Skipped string `json:"-"`
+	Named   string `json:"-,omitempty"` //nolint:staticcheck // the odd tag is the point
+	Kept    string `json:"kept,omitempty"`
+}
+
+func TestGetSet_DashIsAFieldNameWhenTheTagHasOptions(t *testing.T) {
+	target := &dashNamed{Skipped: "s", Named: "n", Kept: "k"}
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"-":"n","kept":"k"}`, string(blob))
+
+	value, err := structaccess.GetByString(target, "-")
+	require.NoError(t, err)
+	assert.Equal(t, "n", value)
+
+	require.NoError(t, structaccess.SetByString(target, "-", "set"))
+	assert.Equal(t, "set", target.Named)
+	assert.Equal(t, "s", target.Skipped, "the json:\"-\" field stays out of reach")
+}
