@@ -238,6 +238,8 @@ var EnumFields = map[string][]string{
 	"resources.postgres_roles.*.identity_type":       {"GROUP", "SERVICE_PRINCIPAL", "USER"},
 	"resources.postgres_roles.*.membership_roles[*]": {"DATABRICKS_SUPERUSER"},
 
+	"resources.postgres_snapshot_schedules.*.schedule[*].weekly_schedule.day_of_week": {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
+
 	"resources.postgres_synced_tables.*.extra_columns[*].maintenance":       {"STORED_GENERATED"},
 	"resources.postgres_synced_tables.*.new_pipeline_spec.pipeline_channel": {"CURRENT", "PREVIEW"},
 	"resources.postgres_synced_tables.*.scheduling_policy":                  {"CONTINUOUS", "SNAPSHOT", "TRIGGERED"},

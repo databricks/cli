@@ -269,6 +269,11 @@ var RequiredFields = map[string][]string{
 
 	"resources.postgres_roles.*": {"role_id", "parent"},
 
+	"resources.postgres_snapshot_schedules.*":                              {"branch"},
+	"resources.postgres_snapshot_schedules.*.schedule[*]":                  {"retention"},
+	"resources.postgres_snapshot_schedules.*.schedule[*].monthly_schedule": {"day"},
+	"resources.postgres_snapshot_schedules.*.schedule[*].weekly_schedule":  {"day_of_week"},
+
 	"resources.postgres_synced_tables.*":                   {"synced_table_id"},
 	"resources.postgres_synced_tables.*.extra_columns[*]":  {"column_name", "column_type"},
 	"resources.postgres_synced_tables.*.type_overrides[*]": {"column_name", "pg_type"},
