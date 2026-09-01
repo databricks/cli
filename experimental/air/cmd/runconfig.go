@@ -56,6 +56,7 @@ type runConfig struct {
 	Parameters                map[string]any `yaml:"parameters" help:"Free-form values passed through to the workload. Any nested structure is allowed."`
 	MLflowRunName             *string        `yaml:"mlflow_run_name" help:"Name for the MLflow run. Max 100 characters, alphanumerics, hyphens, and underscores only."`
 	MLflowExperimentDirectory *string        `yaml:"mlflow_experiment_directory" help:"Workspace directory holding the MLflow experiment. Must start with /Workspace."`
+	MLflowArtifactLocation    *string        `yaml:"mlflow_artifact_location" help:"DBFS location where MLflow artifacts are written. A /Volumes path is normalized to dbfs:/Volumes/... ."`
 	Permissions               []permission   `yaml:"permissions" help:"Who may view or manage the run, as a list of principal plus level grants."`
 	UsagePolicyName           *string        `yaml:"usage_policy_name" help:"Usage policy to bill the run to, by name. Max 127 characters. Mutually exclusive with usage_policy_id."`
 	UsagePolicyID             *string        `yaml:"usage_policy_id" help:"Usage policy to bill the run to, by id. Mutually exclusive with usage_policy_name."`
@@ -148,6 +149,20 @@ func (c *runConfig) validate() error {
 		if !strings.HasPrefix(v, "/Workspace") {
 			return fmt.Errorf("mlflow_experiment_directory must start with '/Workspace', got: %s", v)
 		}
+	}
+
+	if c.MLflowArtifactLocation != nil {
+		v := strings.TrimSpace(*c.MLflowArtifactLocation)
+		if v == "" {
+			return errors.New("mlflow_artifact_location cannot be empty")
+		}
+		if strings.HasPrefix(v, "/Volumes/") {
+			v = "dbfs:" + v
+		}
+		if !strings.HasPrefix(v, "dbfs:/") {
+			return fmt.Errorf("mlflow_artifact_location must be a dbfs: URI, got: %s", v)
+		}
+		*c.MLflowArtifactLocation = v
 	}
 
 	for i := range c.Permissions {
@@ -255,6 +270,13 @@ func (e *environmentConfig) validate() error {
 	// inline dependency set.
 	if e.Version.set && !e.Dependencies.set {
 		return errors.New("'environment.version' requires inline 'dependencies' (a list of packages)")
+	}
+	if e.Version.set {
+		version, err := validateRuntimeVersion(e.Version.raw, "environment.version")
+		if err != nil {
+			return err
+		}
+		e.Version.raw = version
 	}
 
 	return nil

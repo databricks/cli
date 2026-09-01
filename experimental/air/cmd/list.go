@@ -37,17 +37,21 @@ type listData struct {
 // machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable table.
 type listRow struct {
-	RunID     string  `json:"run_id"`
-	RunName   string  `json:"run_name"`
-	User      string  `json:"user"`
-	Status    string  `json:"status"`
-	StartedAt *string `json:"started_at"`
-	IsSweep   bool    `json:"is_sweep"`
+	RunID         string  `json:"run_id"`
+	RunName       string  `json:"run_name"`
+	User          string  `json:"user"`
+	Status        string  `json:"status"`
+	DisplayStatus string  `json:"-"`
+	StartedAt     *string `json:"started_at"`
+	IsSweep       bool    `json:"is_sweep"`
 
-	// Experiment, Duration, MLflowURL and Accelerators are table-only columns,
-	// omitted from JSON to match `air list --json`.
-	Experiment    string `json:"-"`
-	Duration      string `json:"-"`
+	// Experiment, Duration, Progress, MLflowURL and Accelerators are table-only
+	// columns, omitted from JSON to match `air list --json`.
+	Experiment string `json:"-"`
+	Duration   string `json:"-"`
+	// Progress is a best-effort estimate ("45% · ~2h 15m"), set only for a running
+	// run we could estimate; empty renders as "-".
+	Progress      string `json:"-"`
 	MLflowURL     string `json:"-"`
 	MLflowLabel   string `json:"-"`
 	RunURL        string `json:"-"`
@@ -308,18 +312,29 @@ func warnIfTruncated(ctx context.Context, f *runFetcher) {
 	}
 }
 
-// setMLflowLinks fills in each row's MLflow link, label, and experiment URL in
-// parallel, best-effort: a row whose IDs can't be resolved keeps its "-" placeholder.
+// setMLflowLinks fills in each row's MLflow link, label, and experiment URL -
+// and, for a running run, its ETA - in parallel, best-effort: a row whose IDs
+// can't be resolved keeps its "-" placeholder, and a run we can't estimate has
+// no ETA.
 func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, host string, entries []listedRun) {
 	var g errgroup.Group
 	g.SetLimit(enrichConcurrency)
 	for i := range entries {
 		g.Go(func() error {
-			if ids := mlflowIDsForTask(ctx, w, entries[i].taskRunID); ids != nil {
-				entries[i].row.MLflowURL = mlflowLogsURL(host, ids)
-				name := fetchMLflowRunName(ctx, w, ids.RunID)
-				entries[i].row.MLflowLabel = mlflowRunLabel(name, ids.RunID)
-				entries[i].row.ExperimentURL = mlflowExperimentURL(host, ids)
+			ids := mlflowIDsForTask(ctx, w, entries[i].taskRunID)
+			if ids == nil {
+				return nil
+			}
+			entries[i].row.MLflowURL = mlflowLogsURL(host, ids)
+			name := fetchMLflowRunName(ctx, w, ids.RunID)
+			entries[i].row.MLflowLabel = mlflowRunLabel(name, ids.RunID)
+			entries[i].row.ExperimentURL = mlflowExperimentURL(host, ids)
+			// The ETA needs a progress-metric history fetch, so it's computed only
+			// for running rows (the only ones that can have one).
+			if entries[i].row.Status == string(jobs.RunLifeCycleStateRunning) {
+				if eta := estimateTrainingETA(ctx, w, ids.RunID); eta != nil {
+					entries[i].row.Progress = eta.compact()
+				}
 			}
 			return nil
 		})

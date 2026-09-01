@@ -119,6 +119,7 @@ Connect to a dedicated cluster:
 			ShutdownDelay:        shutdownDelay,
 			MaxClients:           maxClients,
 			HandoverTimeout:      handoverTimeout,
+			KeepaliveInterval:    defaultKeepaliveInterval,
 			ReleasesDir:          releasesDir,
 			ServerTimeout:        max(serverTimeout, shutdownDelay),
 			TaskStartupTimeout:   startupTimeout,
