@@ -10,9 +10,9 @@
 
 
 === summary
-OK                 33
+OK                 24
 OK_RECREATE        12
 OK_INERT           6
-SUPPRESSED         4
-NOT_OBSERVABLE     3
+SUPPRESSED         3
+NOT_OBSERVABLE     1
 SKIPPED            4
