@@ -305,11 +305,10 @@ func flattenLeaves(prefix string, v any, out map[string]string) {
 	switch value := v.(type) {
 	case map[string]any:
 		for key, member := range value {
-			path := key
 			if prefix != "" {
-				path = prefix + "." + key
+				key = prefix + "." + key
 			}
-			flattenLeaves(path, member, out)
+			flattenLeaves(key, member, out)
 		}
 	case []any:
 		for i, member := range value {
