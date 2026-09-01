@@ -12,6 +12,7 @@
 package structstest
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -72,6 +73,12 @@ type Report struct {
 	// than a path-by-path failure.
 	WalkDuplicated []string
 
+	// RenamedByConvention are paths where the packages deliberately use a different name than
+	// the wire: an EmbeddedSlice field is tagged __embed__ but the walkers put its elements at
+	// the parent path. Reported rather than silently rewritten, so the convention is visible and
+	// a change to it is noticed.
+	RenamedByConvention []string
+
 	// ContainerUnreachable are paths at which encoding/json emits an object or an array that
 	// structaccess cannot resolve. Scalar leaves alone would miss them: a field serialized as
 	// {} or [] contributes no leaf, so a field the packages cannot reach at all would otherwise
@@ -96,7 +103,7 @@ func (r Report) Empty() bool {
 	return len(r.WalkMissing) == 0 && len(r.WalkExtra) == 0 && len(r.GetFailed) == 0 &&
 		len(r.ValidateFailed) == 0 && len(r.ValueMismatch) == 0 && len(r.SelfMarshalingScalars) == 0 &&
 		len(r.InsideFreeFormField) == 0 && len(r.ContainerUnreachable) == 0 &&
-		len(r.WalkDuplicated) == 0
+		len(r.WalkDuplicated) == 0 && len(r.RenamedByConvention) == 0
 }
 
 // String renders the report as one indented line per category, for a test failure message.
@@ -115,6 +122,7 @@ func (r Report) String() string {
 		{"sits inside a free-form any field, which the packages do not look into", r.InsideFreeFormField},
 		{"is emitted as an object or array structaccess cannot resolve", r.ContainerUnreachable},
 		{"structwalk visits more than once", r.WalkDuplicated},
+		{"is at a different path on the wire, by the EmbeddedSlice convention", r.RenamedByConvention},
 	} {
 		if len(s.paths) == 0 {
 			continue
@@ -153,7 +161,7 @@ func Check(t reflect.Type) (Report, error) {
 		// Counted, not just recorded: a map would collapse two visits to one path and hide a
 		// shadowed embedded field, which is agreement reported where there is none.
 		walkVisits[path.String()]++
-		walkLeaves[path.String()] = render(val)
+		walkLeaves[path.String()] = renderGo(val)
 	})
 	if err != nil {
 		return Report{}, fmt.Errorf("structstest: walk %s: %w", t, err)
@@ -194,11 +202,15 @@ func Check(t reflect.Type) (Report, error) {
 			report.GetFailed = append(report.GetFailed, path+": "+err.Error())
 			continue
 		}
-		if render(got) != want {
+		if renderGo(got) != want {
 			report.ValueMismatch = append(report.ValueMismatch,
-				fmt.Sprintf("%s: structaccess=%s encoding/json=%s", path, render(got), want))
+				fmt.Sprintf("%s: structaccess=%s encoding/json=%s", path, renderGo(got), want))
 		}
 	}
+	for path := range marks.renamed {
+		report.RenamedByConvention = append(report.RenamedByConvention, path)
+	}
+
 	for path, visits := range walkVisits {
 		if visits > 1 && !marks.freeForm[path] && !marks.freeFormField[path] {
 			report.WalkDuplicated = append(report.WalkDuplicated, path)
@@ -260,6 +272,8 @@ type leafMarks struct {
 	freeFormField map[string]bool
 	// containers are paths at which an object or array is emitted.
 	containers map[string]bool
+	// renamed are wire paths the packages present under a different name by convention.
+	renamed map[string]bool
 }
 
 func jsonLeaves(v any) (map[string]string, leafMarks, error) {
@@ -268,14 +282,20 @@ func jsonLeaves(v any) (map[string]string, leafMarks, error) {
 		freeForm:       map[string]bool{},
 		freeFormField:  map[string]bool{},
 		containers:     map[string]bool{},
+		renamed:        map[string]bool{},
 	}
 
 	blob, err := json.Marshal(v)
 	if err != nil {
 		return nil, marks, fmt.Errorf("structstest: marshal %T: %w", v, err)
 	}
+	// UseNumber keeps a JSON number distinct from a JSON string, so a field tagged
+	// json:",string" -- which puts a number on the wire as "1" -- is not mistaken for agreement
+	// with the Go int behind it.
+	decoder := json.NewDecoder(bytes.NewReader(blob))
+	decoder.UseNumber()
 	var generic any
-	if err := json.Unmarshal(blob, &generic); err != nil {
+	if err := decoder.Decode(&generic); err != nil {
 		return nil, marks, fmt.Errorf("structstest: unmarshal %T: %w", v, err)
 	}
 	out := map[string]string{}
@@ -312,10 +332,11 @@ func flatten(path *structpath.PathNode, typ reflect.Type, v any, out map[string]
 				next = structpath.NewStringKey(path, key)
 				if typ != nil && typ.Kind() == reflect.Struct {
 					if sf, ok := embeddedSliceField(typ, key); ok {
-						// An EmbeddedSlice field is transparent by design: the walkers put
-						// its elements at the parent path, while the wire format keeps the
-						// __embed__ key. Follow the walkers, or every such type reads as a
-						// disagreement when it is really the convention working.
+						// An EmbeddedSlice field is transparent by design: the walkers put its
+						// elements at the parent path, while the wire format keeps the __embed__
+						// key. Follow the walkers so the rest of the type can be compared, and
+						// record the rename so it is visible rather than assumed.
+						marks.renamed[next.String()] = true
 						flatten(path, sf.Type, member, out, marks, freeForm)
 						continue
 					}
@@ -340,7 +361,7 @@ func flatten(path *structpath.PathNode, typ reflect.Type, v any, out map[string]
 	case nil:
 		// A JSON null carries no scalar leaf.
 	default:
-		out[path.String()] = render(value)
+		out[path.String()] = renderWire(value)
 		if freeForm {
 			marks.freeForm[path.String()] = true
 		}
@@ -365,15 +386,32 @@ func embeddedSliceField(typ reflect.Type, key string) (reflect.StructField, bool
 	return reflect.StructField{}, false
 }
 
-// render normalises a scalar so a value decoded from JSON and the same value read out of
-// the struct compare equal: JSON numbers decode to float64, the struct holds int64 and
-// friends, and a nil pointer reads back as nil.
-func render(v any) string {
+// renderWire describes a scalar as it appears on the wire, keeping the JSON type: a number and
+// the string of the same digits are different values, which is the difference json:",string"
+// makes and the reason the two renderings are not one function.
+func renderWire(v any) string {
+	switch value := v.(type) {
+	case nil:
+		return "<nil>"
+	case json.Number:
+		return "number:" + normalizeNumber(value.String())
+	case string:
+		return "string:" + value
+	case bool:
+		return fmt.Sprintf("bool:%v", value)
+	default:
+		return fmt.Sprintf("other:%v", value)
+	}
+}
+
+// renderGo describes a Go value in the same vocabulary, so the two can be compared. A pointer
+// is followed, since the wire carries what it points at.
+func renderGo(v any) string {
 	if v == nil {
 		return "<nil>"
 	}
 	rv := reflect.ValueOf(v)
-	for rv.Kind() == reflect.Pointer {
+	for rv.Kind() == reflect.Pointer || rv.Kind() == reflect.Interface {
 		if rv.IsNil() {
 			return "<nil>"
 		}
@@ -381,14 +419,28 @@ func render(v any) string {
 	}
 	switch rv.Kind() {
 	case reflect.Float32, reflect.Float64:
-		return strconv.FormatFloat(rv.Float(), 'g', -1, 64)
+		return "number:" + normalizeNumber(strconv.FormatFloat(rv.Float(), 'f', -1, 64))
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return strconv.FormatFloat(float64(rv.Int()), 'g', -1, 64)
+		return "number:" + normalizeNumber(strconv.FormatInt(rv.Int(), 10))
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return strconv.FormatFloat(float64(rv.Uint()), 'g', -1, 64)
+		return "number:" + normalizeNumber(strconv.FormatUint(rv.Uint(), 10))
+	case reflect.String:
+		return "string:" + rv.String()
+	case reflect.Bool:
+		return fmt.Sprintf("bool:%v", rv.Bool())
 	default:
-		return fmt.Sprintf("%v", rv.Interface())
+		return fmt.Sprintf("other:%v", rv.Interface())
 	}
+}
+
+// normalizeNumber renders a number the same way whichever side it came from, so 1 and 1.0 and
+// 1e0 compare equal without letting a string masquerade as a number.
+func normalizeNumber(text string) string {
+	f, err := strconv.ParseFloat(text, 64)
+	if err != nil {
+		return text
+	}
+	return strconv.FormatFloat(f, 'g', -1, 64)
 }
 
 // skippedByTag reports whether the last segment of path names a field structaccess
@@ -536,6 +588,7 @@ func (r Report) Filter(known []string) (Report, []string) {
 		GetFailed:            dropExact(r.GetFailed),
 		ContainerUnreachable: dropExact(r.ContainerUnreachable),
 		WalkDuplicated:       r.WalkDuplicated,
+		RenamedByConvention:  r.RenamedByConvention,
 		ValidateFailed:       dropExact(r.ValidateFailed),
 		ValueMismatch:        dropExact(r.ValueMismatch),
 		// These two are categories, not per-path lists, so the caller decides what to do with
