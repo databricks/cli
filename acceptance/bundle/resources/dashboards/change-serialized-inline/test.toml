@@ -1,4 +1,5 @@
 Ignore = [
     "databricks.yml",
 ]
-RecordRequests = false
+
+EnvMatrix.READPLAN = ["", "1"]

@@ -1,10 +1,10 @@
 cleanup() {
     trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
 }
 trap cleanup EXIT
 
 # Deploy a dashboard whose serialized_dashboard is an inline YAML map.
-export PAGE_DISPLAY_NAME="Page 1"
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle deploy
 
@@ -15,12 +15,27 @@ add_repl "$dashboard_id" DASHBOARD_ID
 # state (the first read of a freshly created dashboard 404s on the direct engine).
 retry --until "Page 1" $CLI lakeview get "$dashboard_id" > /dev/null
 
-# Change a value *inside* the inline serialized_dashboard, then show the plan. The
-# change must be detected as an update to the existing dashboard, not a recreate.
-export PAGE_DISPLAY_NAME="Page One"
-envsubst < databricks.yml.tmpl > databricks.yml
+# Change a value *inside* the inline serialized_dashboard. update_file.py asserts if the
+# text is missing, so a broken test fails loudly instead of silently doing nothing.
+update_file.py databricks.yml "Page 1" "Page One"
+
+# The change must be detected as an update to the existing dashboard, not a recreate.
 trace $CLI bundle plan
 
-# Capture the machine-readable plan too. The plan structure differs between engines,
-# so each engine writes its own file.
+# Machine-readable plan (per engine); also fed to the READPLAN=1 deploy below.
 trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+# Discard the requests from the initial deploy so the capture below shows only what
+# deploying the change sends (direct only; terraform echoes OUTPUT_ONLY fields).
+if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
+    print_requests.py //api/2.0/lakeview/dashboards > /dev/null
+fi
+
+# Deploy the change, in-memory (READPLAN="") or from the saved plan (READPLAN="1"). A
+# saved-plan deploy must send the same request as an in-memory one.
+title "deploy the change\n"
+$CLI bundle deploy $(readplanarg out.plan.$DATABRICKS_BUNDLE_ENGINE.json)
+
+if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
+    print_requests.py //api/2.0/lakeview/dashboards > out.requests.direct.txt
+fi
