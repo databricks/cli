@@ -40,5 +40,19 @@ skip:
 fields:
   # A recipient is validated by format, so the generic "x" is rejected. Reserved
   # non-resolving addresses, per RFC 2606.
+  # Both the list and the address inside it need real values: the API validates every entry
+  # ("Invalid email format: x"), and the generic one- and two-element lists a slice gets by default
+  # hold plain strings. Declared for the container as well as the element, so growing the list is
+  # tested with addresses the backend accepts.
+  #
+  # In alphabetical order, because the backend returns the list sorted: declared the other way round,
+  # a two-address list read back reordered and the endpoint drifted on the ordering alone, for good.
+  # That is a property worth knowing, and it makes the field untestable if the fixture fights it.
+  email_notifications.on_update_failure:
+    - [alerts@databricks.invalid]
+    - [alerts@databricks.invalid, notify@databricks.invalid]
+  email_notifications.on_update_success:
+    - [alerts@databricks.invalid]
+    - [alerts@databricks.invalid, notify@databricks.invalid]
   email_notifications.on_update_failure[*]: [notify@databricks.invalid, alerts@databricks.invalid]
   email_notifications.on_update_success[*]: [notify@databricks.invalid, alerts@databricks.invalid]
