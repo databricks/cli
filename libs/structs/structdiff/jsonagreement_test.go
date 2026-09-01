@@ -58,10 +58,14 @@ func TestDiffNeverReportsAnUnreachableField(t *testing.T) {
 					reported = append(reported, change.Path.String())
 				}
 			}
-			if shape.Gap("structdiff") {
-				assert.NotEmpty(t, reported,
-					"structdiff no longer reports an unreachable field -- remove the recorded gap")
-				t.Logf("recorded gap: structdiff reports %v, which encoding/json does not serialize", reported)
+			if shape.DiffGap != nil {
+				// The recorded gap is the exact set structdiff reports today, so a change in
+				// either direction fails here.
+				slices.Sort(reported)
+				gap := slices.Clone(shape.DiffGap)
+				slices.Sort(gap)
+				assert.Equal(t, gap, reported,
+					"structdiff changed here -- update or remove the recorded gap")
 				return
 			}
 			assert.Empty(t, reported,
@@ -77,10 +81,8 @@ func cloneWith(t *testing.T, shape jsonshapes.Shape, name, value string) any {
 
 	clone := freshLike(shape.Value)
 	if err := structaccess.SetByString(clone, name, value); err != nil {
-		for _, gap := range shape.KnownSetGap {
-			if gap == name {
-				return nil
-			}
+		if slices.Contains(shape.KnownSetGap, name) {
+			return nil
 		}
 		t.Fatalf("cannot set %q: %v", name, err)
 	}
