@@ -1151,3 +1151,99 @@ func TestGet_TypeReachedTwiceIsNotAmbiguousBelowIt(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "left", value)
 }
+
+// Combinations of a repeated embedded type with tagged and untagged declarations of one name.
+// encoding/json is the oracle for each: the assertion compares what it serializes under the
+// name with what Get resolves, so the pair cannot drift.
+type matrixTagged struct {
+	Y string `json:"x"`
+}
+
+type matrixUntagged struct {
+	X string
+}
+
+type (
+	matrixLeftTagged    struct{ matrixTagged }
+	matrixRightTagged   struct{ matrixTagged }
+	matrixLeftUntagged  struct{ matrixUntagged }
+	matrixRightUntagged struct{ matrixUntagged }
+)
+
+// The repeated type declares the name itself: two routes, so encoding/json annihilates it.
+type matrixRepeatDeclares struct {
+	matrixLeftTagged
+	matrixRightTagged
+}
+
+// The repeated type's tagged name is annihilated, leaving a sibling's untagged X under "X".
+type matrixRepeatTaggedPlusUntagged struct {
+	matrixLeftTagged
+	matrixRightTagged
+	matrixUntagged
+}
+
+// The repeated type's untagged name never collides with "x"; the sibling's tagged one wins.
+type matrixRepeatUntaggedPlusTagged struct {
+	matrixLeftUntagged
+	matrixRightUntagged
+	matrixTagged
+}
+
+type (
+	matrixDeepHolder  struct{ matrixTagged }
+	matrixDeeperRoute struct{ matrixDeepHolder }
+)
+
+// One route reaches the declaring type a level earlier than the other: the shallower wins.
+type matrixMixedDepth struct {
+	matrixTagged
+	matrixDeeperRoute
+}
+
+func TestGet_RepeatedEmbedMatrixMatchesEncodingJSON(t *testing.T) {
+	repeatDeclares := &matrixRepeatDeclares{}
+	repeatDeclares.matrixLeftTagged.Y = "L"
+	repeatDeclares.matrixRightTagged.Y = "R"
+
+	taggedPlusUntagged := &matrixRepeatTaggedPlusUntagged{}
+	taggedPlusUntagged.matrixLeftTagged.Y = "L"
+	taggedPlusUntagged.matrixRightTagged.Y = "R"
+	taggedPlusUntagged.X = "U"
+
+	untaggedPlusTagged := &matrixRepeatUntaggedPlusTagged{}
+	untaggedPlusTagged.matrixLeftUntagged.X = "L"
+	untaggedPlusTagged.matrixRightUntagged.X = "R"
+	untaggedPlusTagged.Y = "T"
+
+	mixedDepth := &matrixMixedDepth{}
+	mixedDepth.Y = "shallow"
+	mixedDepth.Y = "deep"
+
+	for _, tc := range []struct {
+		name  string
+		value any
+	}{
+		{"repeated type declares the name", repeatDeclares},
+		{"repeated tagged plus untagged sibling", taggedPlusUntagged},
+		{"repeated untagged plus tagged sibling", untaggedPlusTagged},
+		{"one route shallower than the other", mixedDepth},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			blob, err := json.Marshal(tc.value)
+			require.NoError(t, err)
+			var emitted map[string]any
+			require.NoError(t, json.Unmarshal(blob, &emitted))
+
+			want, onTheWire := emitted["x"]
+			got, err := structaccess.GetByString(tc.value, "x")
+
+			if !onTheWire {
+				require.Error(t, err, "encoding/json emitted %s, so there is no x to read", blob)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, want, got, "encoding/json emitted %s", blob)
+		})
+	}
+}
