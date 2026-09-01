@@ -35,10 +35,13 @@ func TestWalkVisitsExactlyWhatJSONEmits(t *testing.T) {
 			}
 			slices.Sort(want)
 
-			if shape.Gap("structwalk.Walk") {
-				assert.NotEqual(t, want, visited,
-					"structwalk.Walk now agrees with encoding/json here -- remove the recorded gap")
-				t.Logf("recorded gap: encoding/json emits %v, Walk visits %v", want, visited)
+			if shape.WalkGap != nil {
+				// A recorded gap holds the exact current output, so a different wrong answer
+				// fails here too rather than passing as "still broken".
+				gap := slices.Clone(shape.WalkGap)
+				slices.Sort(gap)
+				assert.Equal(t, gap, visited,
+					"structwalk.Walk changed here; encoding/json emits %v -- update or remove the recorded gap", want)
 				return
 			}
 
@@ -83,10 +86,11 @@ func TestWalkTypeCoversTheType(t *testing.T) {
 
 			want := append([]string(nil), shape.Fields()...)
 			slices.Sort(want)
-			if shape.Gap("structwalk.WalkType") {
-				assert.NotEqual(t, want, visited,
-					"structwalk.WalkType now agrees with encoding/json here -- remove the recorded gap")
-				t.Logf("recorded gap: the type declares %v, WalkType visits %v", want, visited)
+			if shape.WalkTypeGap != nil {
+				gap := slices.Clone(shape.WalkTypeGap)
+				slices.Sort(gap)
+				assert.Equal(t, gap, visited,
+					"structwalk.WalkType changed here; the type declares %v -- update or remove the recorded gap", want)
 				return
 			}
 			assert.Equal(t, want, visited)

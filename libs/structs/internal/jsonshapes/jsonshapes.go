@@ -7,8 +7,6 @@
 // two same-named fields wins, and when encoding/json gives up and serializes neither.
 package jsonshapes
 
-import "slices"
-
 // Shape is one struct whose JSON behaviour a libs/structs package must match.
 type Shape struct {
 	// Name identifies the shape in test output.
@@ -29,10 +27,13 @@ type Shape struct {
 	// "same as JSONFields".
 	TypeFields []string
 
-	// KnownGaps names the entry points that disagree with encoding/json about this shape
-	// today: "structwalk.Walk", "structwalk.WalkType", "structdiff". The package's own test asserts the disagreement is still there, so fixing
-	// it breaks the test and the entry has to be removed: a ratchet, not an exemption.
-	KnownGaps []string
+	// WalkGap, WalkTypeGap and DiffGap record what a package does today where it disagrees
+	// with encoding/json. They hold the exact current output, not merely a "this is broken"
+	// flag, so any change to the behaviour -- including a different wrong answer -- fails the
+	// package's test and forces the entry to be revisited. Nil means "must agree".
+	WalkGap     []string
+	WalkTypeGap []string
+	DiffGap     []string
 
 	// KnownSetGap are json names encoding/json can unmarshal into but structaccess.Set
 	// cannot reach today. Consumers assert that Set still fails for them, so fixing the gap
@@ -88,7 +89,7 @@ type SideB struct {
 // and emits neither, so the field is not readable or writable either.
 type SameDepthConflict struct {
 	SideA
-	SideB
+	SideB //nolint:govet // the repeated json tag is the point: both embeds declare "value"
 }
 
 type DiamondLeft struct {
@@ -102,7 +103,7 @@ type DiamondRight struct {
 // Diamond reaches one Leaf by two routes of equal length: ambiguous, like SameDepthConflict.
 type Diamond struct {
 	DiamondLeft
-	DiamondRight
+	DiamondRight //nolint:govet // the repeated json tag is the point: both routes reach Leaf
 }
 
 type NilSide struct {
@@ -115,7 +116,7 @@ type NilSide struct {
 // declaration and wrongly concludes the field is reachable.
 type AmbiguousViaNilPointer struct {
 	*NilSide
-	SideB
+	SideB //nolint:govet // the repeated json tag is the point: both embeds declare "value"
 }
 
 // Cyclic embeds a pointer to itself, so a type-level search that does not remember where it
@@ -152,11 +153,6 @@ type SkippedField struct {
 	unexported string //nolint:unused // present to prove it is ignored
 }
 
-// Gap reports whether the named entry point is recorded as disagreeing about this shape.
-func (s Shape) Gap(entryPoint string) bool {
-	return slices.Contains(s.KnownGaps, entryPoint)
-}
-
 // Fields returns the names a type-level walk should yield for the shape.
 func (s Shape) Fields() []string {
 	if len(s.TypeFields) > 0 {
@@ -179,7 +175,8 @@ func Shapes() []Shape {
 			JSONFields: []string{"value"},
 			// Both walks visit each declaration, so a shadowed field is reported twice while the
 			// wire format carries one value.
-			KnownGaps: []string{"structwalk.Walk", "structwalk.WalkType"},
+			WalkGap:     []string{"value", "value"},
+			WalkTypeGap: []string{"value", "value"},
 		},
 		{
 			Name:        "same depth conflict",
@@ -189,21 +186,32 @@ func Shapes() []Shape {
 			// structaccess reports the name as not found, as encoding/json does. The walks still
 			// visit both declarations and structdiff still reports a change at the path, so the
 			// engine can plan an update for a field that cannot be serialized.
-			KnownGaps: []string{"structwalk.Walk", "structwalk.WalkType", "structdiff"},
+			WalkGap:     []string{"value", "value"},
+			WalkTypeGap: []string{"value", "value"},
+			// Once per declaration, since structdiff walks both.
+			DiffGap: []string{"value", "value"},
 		},
 		{
 			Name:        "diamond",
 			Value:       &Diamond{DiamondLeft: DiamondLeft{Leaf: Leaf{Value: "l"}}, DiamondRight: DiamondRight{Leaf: Leaf{Value: "r"}}},
 			JSONFields:  nil,
 			Unreachable: []string{"value"},
-			KnownGaps:   []string{"structwalk.Walk", "structwalk.WalkType", "structdiff"},
+			WalkGap:     []string{"value", "value"},
+			WalkTypeGap: []string{"value", "value"},
+			// Once per declaration, since structdiff walks both.
+			DiffGap: []string{"value", "value"},
 		},
 		{
 			Name:        "ambiguous via nil pointer",
 			Value:       &AmbiguousViaNilPointer{SideB: SideB{Value: "b"}}, //exhaustruct:ignore
 			JSONFields:  nil,
 			Unreachable: []string{"value"},
-			KnownGaps:   []string{"structwalk.Walk", "structwalk.WalkType", "structdiff"},
+			// The value walk reaches only the non-nil declaration; the type walk sees both.
+			WalkGap:     []string{"value"},
+			WalkTypeGap: []string{"value", "value"},
+			// Once per declaration, since structdiff walks both.
+			// Once: the nil side is not reachable in the value, so only one declaration is walked.
+			DiffGap: []string{"value"},
 		},
 		{
 			Name:       "cyclic embed",
@@ -212,7 +220,7 @@ func Shapes() []Shape {
 			// The embedded *Cyclic promotes name a level down, where encoding/json shadows it
 			// with the outer one. The type walk reports both; the value walk agrees, because the
 			// corpus leaves the pointer nil.
-			KnownGaps: []string{"structwalk.WalkType"},
+			WalkTypeGap: []string{"name", "name"},
 		},
 		{
 			Name:       "nil pointer embed",
