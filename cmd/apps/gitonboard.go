@@ -129,6 +129,20 @@ func onboardExistingRepo(ctx context.Context, outputDir string) (gitOnboardResul
 // otherwise it falls back to writing the git-backed config from a URL the user
 // supplies, leaving repo creation to them.
 func onboardCreateRepo(ctx context.Context, outputDir string) (gitOnboardResult, error) {
+	// gh must be installed and authenticated to create the repo for the user.
+	// Its login and org memberships also drive owner selection, so resolve it
+	// before prompting.
+	login, ghOK := ghLogin(ctx)
+
+	owner := login
+	if ghOK {
+		selected, err := prompt.PromptRepoOwner(ctx, login, ghOrgs(ctx))
+		if err != nil {
+			return gitOnboardResult{}, err
+		}
+		owner = selected
+	}
+
 	name, private, err := prompt.PromptNewRepoDetails(ctx, defaultRepoName())
 	if err != nil {
 		return gitOnboardResult{}, err
@@ -139,9 +153,8 @@ func onboardCreateRepo(ctx context.Context, outputDir string) (gitOnboardResult,
 		destDir = filepath.Join(outputDir, name)
 	}
 
-	// gh must be installed and authenticated to create the repo for the user.
-	if login, ok := ghLogin(ctx); ok {
-		ownerRepo := login + "/" + name
+	if ghOK {
+		ownerRepo := owner + "/" + name
 		src := &gitScaffoldSource{
 			URL:            "https://github.com/" + ownerRepo,
 			Provider:       "gitHub",
@@ -231,6 +244,23 @@ func ghLogin(ctx context.Context) (string, bool) {
 		return "", false
 	}
 	return login, true
+}
+
+// ghOrgs returns the organizations the authenticated gh user belongs to, or nil
+// if the query fails (e.g. the token lacks read:org). Best-effort — owner
+// selection falls back to the personal account when this is empty.
+func ghOrgs(ctx context.Context) []string {
+	out, err := exec.CommandContext(ctx, "gh", "api", "user/orgs", "--jq", ".[].login").Output()
+	if err != nil {
+		return nil
+	}
+	var orgs []string
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			orgs = append(orgs, line)
+		}
+	}
+	return orgs
 }
 
 // defaultRepoName suggests the current directory's basename as the repo/app

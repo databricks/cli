@@ -55,6 +55,33 @@ func PromptCreateOrExistingRepo(ctx context.Context) (string, error) {
 	return choice, nil
 }
 
+// PromptRepoOwner asks which GitHub account the new repo should be created
+// under: the personal account or an organization the user belongs to. When
+// there are no orgs to choose from it returns the personal account without
+// prompting.
+func PromptRepoOwner(ctx context.Context, personal string, orgs []string) (string, error) {
+	if len(orgs) == 0 {
+		return personal, nil
+	}
+	options := make([]huh.Option[string], 0, len(orgs)+1)
+	options = append(options, huh.NewOption(personal+" (personal)", personal))
+	for _, o := range orgs {
+		options = append(options, huh.NewOption(o, o))
+	}
+	owner := personal
+	if err := huh.NewSelect[string]().
+		Title("Repository owner").
+		Description("your personal account or an organization you belong to").
+		Options(options...).
+		Value(&owner).
+		WithTheme(AppkitTheme()).
+		Run(); err != nil {
+		return "", err
+	}
+	printAnswered(ctx, "Owner", owner)
+	return owner, nil
+}
+
 // PromptRepoURL asks for a Git repository URL. An empty response is allowed and
 // left for the caller to treat as "skip".
 func PromptRepoURL(ctx context.Context, title, description string) (string, error) {
