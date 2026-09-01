@@ -138,16 +138,6 @@ type ResourceFeatureEngineeringFeatureFunctionColumnSelection struct {
 	Column string `json:"column"`
 }
 
-type ResourceFeatureEngineeringFeatureFunctionCustomUdfInputBindings struct {
-	Column    string `json:"column"`
-	Parameter string `json:"parameter"`
-}
-
-type ResourceFeatureEngineeringFeatureFunctionCustomUdf struct {
-	FunctionPath  string                                                            `json:"function_path"`
-	InputBindings []ResourceFeatureEngineeringFeatureFunctionCustomUdfInputBindings `json:"input_bindings,omitempty"`
-}
-
 type ResourceFeatureEngineeringFeatureFunctionExtraParameters struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
@@ -156,7 +146,6 @@ type ResourceFeatureEngineeringFeatureFunctionExtraParameters struct {
 type ResourceFeatureEngineeringFeatureFunction struct {
 	AggregationFunction *ResourceFeatureEngineeringFeatureFunctionAggregationFunction `json:"aggregation_function,omitempty"`
 	ColumnSelection     *ResourceFeatureEngineeringFeatureFunctionColumnSelection     `json:"column_selection,omitempty"`
-	CustomUdf           *ResourceFeatureEngineeringFeatureFunctionCustomUdf           `json:"custom_udf,omitempty"`
 	ExtraParameters     []ResourceFeatureEngineeringFeatureFunctionExtraParameters    `json:"extra_parameters,omitempty"`
 	FunctionType        string                                                        `json:"function_type,omitempty"`
 }

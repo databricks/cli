@@ -199,10 +199,9 @@ type DataSourceServingEndpointsEndpointsTelemetryConfigTableNames struct {
 }
 
 type DataSourceServingEndpointsEndpointsTelemetryConfig struct {
-	EnabledTelemetryFeatures []string                                                                 `json:"enabled_telemetry_features,omitempty"`
-	InferenceTableConfig     []DataSourceServingEndpointsEndpointsTelemetryConfigInferenceTableConfig `json:"inference_table_config,omitempty"`
-	TableNames               []DataSourceServingEndpointsEndpointsTelemetryConfigTableNames           `json:"table_names,omitempty"`
-	TelemetryProfileId       string                                                                   `json:"telemetry_profile_id,omitempty"`
+	InferenceTableConfig []DataSourceServingEndpointsEndpointsTelemetryConfigInferenceTableConfig `json:"inference_table_config,omitempty"`
+	TableNames           []DataSourceServingEndpointsEndpointsTelemetryConfigTableNames           `json:"table_names,omitempty"`
+	TelemetryProfileId   string                                                                   `json:"telemetry_profile_id,omitempty"`
 }
 
 type DataSourceServingEndpointsEndpoints struct {

@@ -404,7 +404,7 @@ func newUpdateAlert() *cobra.Command {
   Update alert
 
   Arguments:
-    ID: UUID identifying the alert.
+    ID: The canonical identifier of the alert to retrieve information about.
     UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
       commas (no spaces). The field path is relative to the resource object,
       using a dot (.) to navigate sub-fields (e.g., author.given_name).

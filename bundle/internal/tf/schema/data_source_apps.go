@@ -13,10 +13,8 @@ type DataSourceAppsAppActiveDeploymentEnvVars struct {
 }
 
 type DataSourceAppsAppActiveDeploymentGitSourceGitRepository struct {
-	AutoDeploy         bool   `json:"auto_deploy,omitempty"`
-	CallerCredentialId int    `json:"caller_credential_id,omitempty"`
-	Provider           string `json:"provider"`
-	Url                string `json:"url"`
+	Provider string `json:"provider"`
+	Url      string `json:"url"`
 }
 
 type DataSourceAppsAppActiveDeploymentGitSource struct {
@@ -59,43 +57,9 @@ type DataSourceAppsAppComputeStatus struct {
 	State           string `json:"state,omitempty"`
 }
 
-type DataSourceAppsAppDefaultGitSourceGitRepository struct {
-	AutoDeploy         bool   `json:"auto_deploy,omitempty"`
-	CallerCredentialId int    `json:"caller_credential_id,omitempty"`
-	Provider           string `json:"provider"`
-	Url                string `json:"url"`
-}
-
-type DataSourceAppsAppDefaultGitSource struct {
-	Branch         string                                          `json:"branch,omitempty"`
-	Commit         string                                          `json:"commit,omitempty"`
-	GitRepository  *DataSourceAppsAppDefaultGitSourceGitRepository `json:"git_repository,omitempty"`
-	ResolvedCommit string                                          `json:"resolved_commit,omitempty"`
-	SourceCodePath string                                          `json:"source_code_path,omitempty"`
-	Tag            string                                          `json:"tag,omitempty"`
-}
-
 type DataSourceAppsAppGitRepository struct {
-	AutoDeploy         bool   `json:"auto_deploy,omitempty"`
-	CallerCredentialId int    `json:"caller_credential_id,omitempty"`
-	Provider           string `json:"provider"`
-	Url                string `json:"url"`
-}
-
-type DataSourceAppsAppGitSourceGitRepository struct {
-	AutoDeploy         bool   `json:"auto_deploy,omitempty"`
-	CallerCredentialId int    `json:"caller_credential_id,omitempty"`
-	Provider           string `json:"provider"`
-	Url                string `json:"url"`
-}
-
-type DataSourceAppsAppGitSource struct {
-	Branch         string                                   `json:"branch,omitempty"`
-	Commit         string                                   `json:"commit,omitempty"`
-	GitRepository  *DataSourceAppsAppGitSourceGitRepository `json:"git_repository,omitempty"`
-	ResolvedCommit string                                   `json:"resolved_commit,omitempty"`
-	SourceCodePath string                                   `json:"source_code_path,omitempty"`
-	Tag            string                                   `json:"tag,omitempty"`
+	Provider string `json:"provider"`
+	Url      string `json:"url"`
 }
 
 type DataSourceAppsAppPendingDeploymentDeploymentArtifacts struct {
@@ -109,10 +73,8 @@ type DataSourceAppsAppPendingDeploymentEnvVars struct {
 }
 
 type DataSourceAppsAppPendingDeploymentGitSourceGitRepository struct {
-	AutoDeploy         bool   `json:"auto_deploy,omitempty"`
-	CallerCredentialId int    `json:"caller_credential_id,omitempty"`
-	Provider           string `json:"provider"`
-	Url                string `json:"url"`
+	Provider string `json:"provider"`
+	Url      string `json:"url"`
 }
 
 type DataSourceAppsAppPendingDeploymentGitSource struct {
@@ -234,15 +196,12 @@ type DataSourceAppsApp struct {
 	ComputeStatus               *DataSourceAppsAppComputeStatus                `json:"compute_status,omitempty"`
 	CreateTime                  string                                         `json:"create_time,omitempty"`
 	Creator                     string                                         `json:"creator,omitempty"`
-	DefaultGitSource            *DataSourceAppsAppDefaultGitSource             `json:"default_git_source,omitempty"`
 	DefaultSourceCodePath       string                                         `json:"default_source_code_path,omitempty"`
 	Description                 string                                         `json:"description,omitempty"`
 	EffectiveBudgetPolicyId     string                                         `json:"effective_budget_policy_id,omitempty"`
 	EffectiveUsagePolicyId      string                                         `json:"effective_usage_policy_id,omitempty"`
 	EffectiveUserApiScopes      []string                                       `json:"effective_user_api_scopes,omitempty"`
-	ForwardUserAccessToken      bool                                           `json:"forward_user_access_token,omitempty"`
 	GitRepository               *DataSourceAppsAppGitRepository                `json:"git_repository,omitempty"`
-	GitSource                   *DataSourceAppsAppGitSource                    `json:"git_source,omitempty"`
 	Id                          string                                         `json:"id,omitempty"`
 	Name                        string                                         `json:"name"`
 	Oauth2AppClientId           string                                         `json:"oauth2_app_client_id,omitempty"`
@@ -252,7 +211,6 @@ type DataSourceAppsApp struct {
 	ServicePrincipalClientId    string                                         `json:"service_principal_client_id,omitempty"`
 	ServicePrincipalId          int                                            `json:"service_principal_id,omitempty"`
 	ServicePrincipalName        string                                         `json:"service_principal_name,omitempty"`
-	SourceCodePath              string                                         `json:"source_code_path,omitempty"`
 	Space                       string                                         `json:"space,omitempty"`
 	TelemetryExportDestinations []DataSourceAppsAppTelemetryExportDestinations `json:"telemetry_export_destinations,omitempty"`
 	ThumbnailUrl                string                                         `json:"thumbnail_url,omitempty"`

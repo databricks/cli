@@ -659,9 +659,7 @@ type ResourceJobTaskAiRuntimeTaskDeployments struct {
 
 type ResourceJobTaskAiRuntimeTask struct {
 	CodeSourcePath            string                                    `json:"code_source_path,omitempty"`
-	DockerImageUrl            string                                    `json:"docker_image_url,omitempty"`
 	Experiment                string                                    `json:"experiment"`
-	MlflowArtifactLocation    string                                    `json:"mlflow_artifact_location,omitempty"`
 	MlflowExperimentDirectory string                                    `json:"mlflow_experiment_directory,omitempty"`
 	MlflowRun                 string                                    `json:"mlflow_run,omitempty"`
 	Deployments               []ResourceJobTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
@@ -761,9 +759,7 @@ type ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments struct {
 
 type ResourceJobTaskForEachTaskTaskAiRuntimeTask struct {
 	CodeSourcePath            string                                                   `json:"code_source_path,omitempty"`
-	DockerImageUrl            string                                                   `json:"docker_image_url,omitempty"`
 	Experiment                string                                                   `json:"experiment"`
-	MlflowArtifactLocation    string                                                   `json:"mlflow_artifact_location,omitempty"`
 	MlflowExperimentDirectory string                                                   `json:"mlflow_experiment_directory,omitempty"`
 	MlflowRun                 string                                                   `json:"mlflow_run,omitempty"`
 	Deployments               []ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
@@ -1889,58 +1885,6 @@ type ResourceJobTrigger struct {
 	TableUpdate  *ResourceJobTriggerTableUpdate  `json:"table_update,omitempty"`
 }
 
-type ResourceJobTriggersContinuous struct {
-	TaskRetryMode string `json:"task_retry_mode,omitempty"`
-}
-
-type ResourceJobTriggersFileArrival struct {
-	MinTimeBetweenTriggersSeconds int    `json:"min_time_between_triggers_seconds,omitempty"`
-	Url                           string `json:"url"`
-	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
-}
-
-type ResourceJobTriggersModel struct {
-	Aliases                       []string `json:"aliases,omitempty"`
-	Condition                     string   `json:"condition"`
-	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
-	SecurableName                 string   `json:"securable_name,omitempty"`
-	WaitAfterLastChangeSeconds    int      `json:"wait_after_last_change_seconds,omitempty"`
-}
-
-type ResourceJobTriggersPeriodic struct {
-	Interval int    `json:"interval"`
-	Unit     string `json:"unit"`
-}
-
-type ResourceJobTriggersSchedule struct {
-	QuartzCronExpression string `json:"quartz_cron_expression"`
-	TimezoneId           string `json:"timezone_id"`
-}
-
-type ResourceJobTriggersSqlCondition struct {
-	SqlQueryId  string `json:"sql_query_id"`
-	TriggerMode string `json:"trigger_mode,omitempty"`
-	WarehouseId string `json:"warehouse_id"`
-}
-
-type ResourceJobTriggersTableUpdate struct {
-	Condition                     string   `json:"condition,omitempty"`
-	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
-	TableNames                    []string `json:"table_names"`
-	WaitAfterLastChangeSeconds    int      `json:"wait_after_last_change_seconds,omitempty"`
-}
-
-type ResourceJobTriggers struct {
-	PauseStatus  string                           `json:"pause_status,omitempty"`
-	Continuous   *ResourceJobTriggersContinuous   `json:"continuous,omitempty"`
-	FileArrival  *ResourceJobTriggersFileArrival  `json:"file_arrival,omitempty"`
-	Model        *ResourceJobTriggersModel        `json:"model,omitempty"`
-	Periodic     *ResourceJobTriggersPeriodic     `json:"periodic,omitempty"`
-	Schedule     *ResourceJobTriggersSchedule     `json:"schedule,omitempty"`
-	SqlCondition *ResourceJobTriggersSqlCondition `json:"sql_condition,omitempty"`
-	TableUpdate  *ResourceJobTriggersTableUpdate  `json:"table_update,omitempty"`
-}
-
 type ResourceJobWebhookNotificationsOnDurationWarningThresholdExceeded struct {
 	Id string `json:"id"`
 }
@@ -2014,6 +1958,5 @@ type ResourceJob struct {
 	SparkSubmitTask        *ResourceJobSparkSubmitTask      `json:"spark_submit_task,omitempty"`
 	Task                   []ResourceJobTask                `json:"task,omitempty"`
 	Trigger                *ResourceJobTrigger              `json:"trigger,omitempty"`
-	Triggers               []ResourceJobTriggers            `json:"triggers,omitempty"`
 	WebhookNotifications   *ResourceJobWebhookNotifications `json:"webhook_notifications,omitempty"`
 }

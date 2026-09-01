@@ -106,7 +106,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parameters": {
-                        "description": "[Private Preview] Query parameters bound when executing the alert query, referenced in the\nquery text with `:name` syntax. Static values only.",
+                        "description": "[Private Preview] A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.\n\nReference a parameter in the query text as `:name`. Each parameter must have a unique, non-empty name.\nEach parameter consists of a name, a value, and optionally a type. To represent a NULL\nvalue, the `value` field may be omitted or set to `null` explicitly. If the `type` field\nis omitted, the value is interpreted as a string.\n\nIf the type is given, parameters will be checked for type correctness according\nto the given type. A value is correct if the provided string can be converted to\nthe requested type using the `cast` function. The exact semantics are described in\nthe section [`cast` function](https://docs.databricks.com/sql/language-manual/functions/cast.html) of the SQL language reference.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/sql.AlertStatementParameter",
                         "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                         "doNotSuggest": true
@@ -538,7 +538,7 @@
                         "$ref": "#/$defs/slice/string"
                       },
                       "total_initial_remote_disk_size": {
-                        "description": "If set, what the total initial volume size (in GB) of the remote disks should be. Currently only supported for GCP HYPERDISK_BALANCED disks.",
+                        "description": "If set, what the total initial volume size (in GB) of the remote disks should be. Supported for GCP.",
                         "$ref": "#/$defs/int"
                       },
                       "use_ml_runtime": {
@@ -1116,7 +1116,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "continuous": {
-                        "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
+                        "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.\n\nPipelines started by a continuous job also run continuously, regardless of their own pipeline mode setting.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Continuous"
                       },
                       "description": {
@@ -1762,8 +1762,10 @@
                         "$ref": "#/$defs/map/string"
                       },
                       "continuous": {
-                        "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`.",
-                        "$ref": "#/$defs/bool"
+                        "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`.\n\nDeprecated: wrap the pipeline in a continuous job instead, which also lets you take advantage\nof job-level settings such as performance mode. When the pipeline is started by a continuous\njob, the job's setting takes precedence and this field is ignored.",
+                        "$ref": "#/$defs/bool",
+                        "deprecationMessage": "This field is deprecated",
+                        "deprecated": true
                       },
                       "development": {
                         "description": "Whether the pipeline is in Development mode. Defaults to false.",
@@ -1973,6 +1975,12 @@
                       "source_branch_time": {
                         "description": "[Beta] The point in time on the source branch from which this branch was created.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      },
+                      "source_snapshot": {
+                        "description": "[Private Preview] The snapshot this branch was created from. When set, the branch's data\ncomes from the snapshot rather than a source branch, so source_branch,\nsource_branch_lsn, and source_branch_time must be empty. The snapshot must\nbe AVAILABLE and belong to this branch's project.\nFormat: projects/{project_id}/snapshots/{snapshot_id}",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                        "doNotSuggest": true
                       },
                       "ttl": {
                         "description": "[Beta] Relative time-to-live duration. When set, the branch will expire at creation_time + ttl.\nMutually exclusive with `expire_time` and `no_expiry`. When updating, use `spec.expiration` in the update_mask.",
@@ -5697,7 +5705,7 @@
                       "$ref": "#/$defs/slice/string"
                     },
                     "total_initial_remote_disk_size": {
-                      "description": "If set, what the total initial volume size (in GB) of the remote disks should be. Currently only supported for GCP HYPERDISK_BALANCED disks.",
+                      "description": "If set, what the total initial volume size (in GB) of the remote disks should be. Supported for GCP.",
                       "$ref": "#/$defs/int"
                     },
                     "use_ml_runtime": {
@@ -6105,9 +6113,11 @@
                   "description": "HardwareAcceleratorType: The type of hardware accelerator to use for compute workloads.\nNOTE: This enum is referenced and is intended to be used by other Databricks services\nthat need to specify hardware accelerator requirements for AI compute workloads.",
                   "enum": [
                     "GPU_1xA10",
-                    "GPU_8xH100"
+                    "GPU_8xH100",
+                    "GPU_1xH100"
                   ],
                   "enumDescriptions": [
+                    "[Beta]",
                     "[Beta]",
                     "[Beta]"
                   ]
@@ -6436,6 +6446,10 @@
                     "alternate_node_type_ids": {
                       "description": "A list of node type IDs to use as fallbacks when the primary node type is unavailable.",
                       "$ref": "#/$defs/slice/string"
+                    },
+                    "aws_context_id": {
+                      "description": "The AWS Context ID for EC2 Fleet.\nWhen set (non-empty), the value is passed to AWS CreateFleet API to create the EC2 Fleet.",
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
@@ -7199,6 +7213,12 @@
                       "description": "[Public Preview] The alert_id is the canonical identifier of the alert.",
                       "$ref": "#/$defs/string"
                     },
+                    "parameters": {
+                      "description": "[Private Preview] Per-run parameter overrides, keyed by parameter name, applied onto the alert's stored\nquery parameters before the query is executed. Only scalar values are supported. Values\nmay reference job parameters with `{{job.parameters.*}}`, which are resolved before the\ntask runs. An override whose key does not match a stored parameter fails the task run.\nLimited to 10000 characters when serialized as JSON; keys must be 1-100 characters and\ncontain only letters, digits, underscores, dashes, and periods.",
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "subscribers": {
                       "description": "[Public Preview] The subscribers receive alert evaluation result notifications after the alert task is completed.\nThe number of subscriptions is limited to 100.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.AlertTaskSubscriber"
@@ -7470,6 +7490,12 @@
                 {
                   "type": "object",
                   "properties": {
+                    "maintenance_window": {
+                      "description": "[Private Preview] Defines when platform-initiated maintenance may run for this job. If unspecified, maintenance may run at any time.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.MaintenanceWindow",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "pause_status": {
                       "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PauseStatus"
@@ -7493,6 +7519,12 @@
                   "type": "object",
                   "description": "Continuous trigger. Stripped-down counterpart to `ContinuousSettings`: `pause_status` is owned by the enclosing\n`TriggerConfiguration` and intentionally omitted here.",
                   "properties": {
+                    "maintenance_window": {
+                      "description": "[Private Preview] Defines when platform-initiated maintenance may run for this trigger. If unspecified,\nmaintenance may run at any time.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.MaintenanceWindow",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
                     "task_retry_mode": {
                       "description": "[Beta] Whether the continuous job applies task-level retries. Defaults to NEVER.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TaskRetryMode"
@@ -7595,6 +7627,36 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.DayOfWeek": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Days of week that can be referenced by Jobs scheduling settings.",
+                  "enum": [
+                    "MONDAY",
+                    "TUESDAY",
+                    "WEDNESDAY",
+                    "THURSDAY",
+                    "FRIDAY",
+                    "SATURDAY",
+                    "SUNDAY"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
                 },
                 {
                   "type": "string",
@@ -8349,6 +8411,44 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.MaintenanceWindow": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A recurring weekly time window during which platform-initiated maintenance is\nallowed to run for a continuous job.",
+                  "properties": {
+                    "day_of_week": {
+                      "description": "[Private Preview] The day of week on which maintenance is allowed to happen. This field is required.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DayOfWeek",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "start_hour": {
+                      "description": "[Private Preview] An integer between 0 and 23 denoting the start hour for the maintenance window in the 24-hour day.\nPlatform-initiated maintenance is triggered only within a one-hour window starting at this hour.\nThis field is required.",
+                      "$ref": "#/$defs/int",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "timezone_id": {
+                      "description": "[Private Preview] A Java timezone ID. The maintenance window is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "day_of_week",
+                    "start_hour",
+                    "timezone_id"
+                  ]
                 },
                 {
                   "type": "string",
@@ -9676,7 +9776,7 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "A single trigger attached to a job via `JobSettings.triggers`. Exactly one of the trigger-type fields\n(`periodic`, `schedule`, `continuous`, `file_arrival`, `table_update`, `model`) must be set; mutual exclusivity\nis enforced in the API handler rather than via `oneof` so that codegen, validation, and JSON serialization\nacross SDKs and Terraform behave consistently.",
+                  "description": "A single trigger attached to a job via `JobSettings.triggers`. Exactly one of the trigger-type fields\n(`periodic`, `schedule`, `continuous`, `file_arrival`, `table_update`, `model`, `job_completion`) must be set;\nmutual exclusivity is enforced in the API handler rather than via `oneof` so that codegen, validation, and JSON\nserialization across SDKs and Terraform behave consistently.",
                   "properties": {
                     "continuous": {
                       "description": "[Beta] Continuous trigger configuration.",
@@ -10122,6 +10222,10 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookOptions",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
+                    },
+                    "rabbitmq_options": {
+                      "description": "[Beta] RabbitMQ specific options for ingestion.\nPerformance tuning options (consumers_per_task, max_messages_per_fetch, etc.)\nare intentionally not exposed in the public API. The managed connector uses\nsensible defaults internally. These can be added later if user demand arises.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RabbitmqOptions"
                     },
                     "reddit_ads_options": {
                       "description": "[Private Preview] Reddit Ads specific options for ingestion",
@@ -10944,6 +11048,7 @@
                     "CONFLUENCE",
                     "META_MARKETING",
                     "ZENDESK",
+                    "RABBITMQ",
                     "FOREIGN_CATALOG"
                   ],
                   "enumDescriptions": [
@@ -10966,6 +11071,7 @@
                     "[Public Preview]",
                     "[Beta]",
                     "[Public Preview]",
+                    "[Beta]",
                     "[Private Preview]"
                   ]
                 },
@@ -11633,7 +11739,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "label": {
-                      "description": "A label for the cluster specification, either `default` to configure the default cluster, or `maintenance` to configure the maintenance cluster. This field is optional. The default value is `default`.",
+                      "description": "A label for the cluster specification, either `default` to configure the default cluster settings applied to both the update and maintenance clusters, `updates` to configure the update cluster, or `maintenance` to configure the maintenance cluster. This field is optional. The default value is `default`.",
                       "$ref": "#/$defs/string"
                     },
                     "node_type_id": {
@@ -11833,7 +11939,7 @@
                       "$ref": "#/$defs/slice/string"
                     },
                     "environment_version": {
-                      "description": "[Beta] The environment version of the serverless Python environment used to execute\ncustomer Python code. Each environment version includes a specific Python\nversion and a curated set of pre-installed libraries with defined versions,\nproviding a stable and reproducible execution environment.\n\nDatabricks supports a three-year lifecycle for each environment version.\nFor available versions and their included packages, see\nhttps://docs.databricks.com/aws/en/release-notes/serverless/environment-version/\n\nThe value should be a string representing the environment version number, for example: `\"4\"`.",
+                      "description": "[Public Preview] The environment version of the serverless Python environment used to execute\ncustomer Python code. Each environment version includes a specific Python\nversion and a curated set of pre-installed libraries with defined versions,\nproviding a stable and reproducible execution environment.\n\nDatabricks supports a three-year lifecycle for each environment version.\nFor available versions and their included packages, see\nhttps://docs.databricks.com/aws/en/release-notes/serverless/environment-version/\n\nThe value should be a string representing the environment version number, for example: `\"4\"`.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -11880,6 +11986,28 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.RabbitmqOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "RabbitMQ specific options for ingestion.\nPerformance tuning options (consumers_per_task, max_messages_per_fetch, etc.)\nare intentionally not exposed in the public API. The managed connector uses\nsensible defaults internally. These can be added later if user demand arises.",
+                  "properties": {
+                    "queue": {
+                      "description": "[Beta] (Required) RabbitMQ queue name to consume from.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "queue"
+                  ]
                 },
                 {
                   "type": "string",
@@ -12070,7 +12198,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "source_schema": {
-                      "description": "[Public Preview] Schema name in the source database. Currently required; this field will become optional in\nan upcoming release, since some source types (for example streaming / message-bus connectors)\ndo not use it. When that change ships, this field's type in the generated SDKs and CLI will\nchange from required to optional (nullable); clients that assume it is always present should\nhandle its absence.",
+                      "description": "[Public Preview] Schema name in the source database. Optional: some source types (for example streaming or\nmessage-bus connectors) do not use it, so it may be absent from a pipeline's definition.\nClients that assume it is always present should handle its absence.",
                       "$ref": "#/$defs/string"
                     },
                     "table_configuration": {
@@ -12081,8 +12209,7 @@
                   "additionalProperties": false,
                   "required": [
                     "destination_catalog",
-                    "destination_schema",
-                    "source_schema"
+                    "destination_schema"
                   ]
                 },
                 {
@@ -12250,7 +12377,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "source_table": {
-                      "description": "[Public Preview] Table name in the source database. Currently required; this field will become optional in\nan upcoming release, since some source types (for example streaming / message-bus connectors)\ndo not use it. When that change ships, this field's type in the generated SDKs and CLI will\nchange from required to optional (nullable); clients that assume it is always present should\nhandle its absence.",
+                      "description": "[Public Preview] Table name in the source database. Optional: some source types (for example streaming or\nmessage-bus connectors) do not use it, so it may be absent from a pipeline's definition.\nClients that assume it is always present should handle its absence.",
                       "$ref": "#/$defs/string"
                     },
                     "table_configuration": {
@@ -12261,8 +12388,7 @@
                   "additionalProperties": false,
                   "required": [
                     "destination_catalog",
-                    "destination_schema",
-                    "source_table"
+                    "destination_schema"
                   ]
                 },
                 {
@@ -14339,22 +14465,22 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "Redash-owned copy of the internal StatementParameter for the external AlertV2 API.\nThe internal `ordinal` and `args` fields are intentionally omitted: the public API\nsupports only flat, named scalar parameters; complex types (ARRAY, MAP, STRUCT) are\nnot supported. This mirrors SEA's public StatementParameter schema, see:\ncmdexec/sql-exec-api/proto/sql_exec_api_service.proto:763-779",
+                  "description": "A named parameter bound to the alert query. Only flat, named scalar parameters are\nsupported; complex types such as ARRAY, MAP, and STRUCT are not.",
                   "properties": {
                     "name": {
-                      "description": "[Private Preview] The name of the parameter, referenced in the query as `:name`.",
+                      "description": "[Private Preview] The name of the parameter. Reference it in the query text as `:name`. Required, must be\nnon-empty, and must be unique across the alert's parameters.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     },
                     "type": {
-                      "description": "[Private Preview] The SQL data type of the parameter, e.g. STRING, INT, or DATE. Defaults to STRING. This is a\nstring rather than an enum because scalar subtypes such as DECIMAL(10, 4) cannot be enumerated.\nComplex types such as ARRAY, MAP, and STRUCT are not supported.",
+                      "description": "[Private Preview] The SQL data type of the parameter, for example `STRING`, `INT`, or `DECIMAL(10, 2)`. If no type is given\nthe type is assumed to be `STRING`. Complex types such as `ARRAY`, `MAP`, and `STRUCT` are not supported.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     },
                     "value": {
-                      "description": "[Private Preview] The bound value for the parameter, given as a string. If omitted, the value is interpreted as NULL.",
+                      "description": "[Private Preview] The value bound to the parameter, represented as a string. If omitted, the value is interpreted as NULL.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true

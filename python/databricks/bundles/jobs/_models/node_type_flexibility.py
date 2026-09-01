@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOrList
+from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -22,6 +22,12 @@ class NodeTypeFlexibility:
     A list of node type IDs to use as fallbacks when the primary node type is unavailable.
     """
 
+    aws_context_id: VariableOrOptional[str] = None
+    """
+    The AWS Context ID for EC2 Fleet.
+    When set (non-empty), the value is passed to AWS CreateFleet API to create the EC2 Fleet.
+    """
+
     @classmethod
     def from_dict(cls, value: "NodeTypeFlexibilityDict") -> "Self":
         return _transform(cls, value)
@@ -36,6 +42,12 @@ class NodeTypeFlexibilityDict(TypedDict, total=False):
     alternate_node_type_ids: VariableOrList[str]
     """
     A list of node type IDs to use as fallbacks when the primary node type is unavailable.
+    """
+
+    aws_context_id: VariableOrOptional[str]
+    """
+    The AWS Context ID for EC2 Fleet.
+    When set (non-empty), the value is passed to AWS CreateFleet API to create the EC2 Fleet.
     """
 
 

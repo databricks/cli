@@ -46,6 +46,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newExecuteMessageAttachmentQuery())
 	cmd.AddCommand(newExecuteMessageQuery())
 	cmd.AddCommand(newGenerateDownloadFullQueryResult())
+	cmd.AddCommand(newGenieCancelResponse())
 	cmd.AddCommand(newGenieCreateEvalRun())
 	cmd.AddCommand(newGenieGetEvalResultDetails())
 	cmd.AddCommand(newGenieGetEvalRun())
@@ -507,10 +508,8 @@ func newDownloadMessageAttachmentVisualization() *cobra.Command {
 	var downloadMessageAttachmentVisualizationReq dashboards.DownloadMessageAttachmentVisualizationRequest
 
 	cmd.Use = "download-message-attachment-visualization NAME"
-	cmd.Short = `*Beta* Download message attachment visualization.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Download message attachment visualization.
+	cmd.Short = `Download message attachment visualization.`
+	cmd.Long = `Download message attachment visualization.
 
   Download a rendered image of a message visualization attachment. The response
   body is the raw PNG image, not a JSON payload. This is only available if the
@@ -522,8 +521,8 @@ Download message attachment visualization.
       spaces/{space_id}/conversations/{conversation_id}/messages/{message_id}/attachments/{attachment_id}.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -773,6 +772,72 @@ func newGenerateDownloadFullQueryResult() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range generateDownloadFullQueryResultOverrides {
 		fn(cmd, &generateDownloadFullQueryResultReq)
+	}
+
+	return cmd
+}
+
+// start genie-cancel-response command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var genieCancelResponseOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieCancelResponseRequest,
+)
+
+func newGenieCancelResponse() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var genieCancelResponseReq dashboards.GenieCancelResponseRequest
+
+	cmd.Use = "genie-cancel-response AGENT_ID CONVERSATION_ID RESPONSE_ID"
+	cmd.Short = `Cancel Genie agent response.`
+	cmd.Long = `Cancel Genie agent response.
+
+  Cancels an in-flight agent-mode response. response_id is the id returned in
+  the response.created event from the agent-mode responses endpoint. The
+  response stops at the next agent boundary and its terminal state is returned.
+
+  Arguments:
+    AGENT_ID: The ID of the Genie agent (synonymous with the Genie space ID).
+    CONVERSATION_ID: The ID of the conversation containing the response.
+    RESPONSE_ID: The ID of the response to cancel (the id from the response.created
+      event).`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		genieCancelResponseReq.AgentId = args[0]
+		genieCancelResponseReq.ConversationId = args[1]
+		genieCancelResponseReq.ResponseId = args[2]
+
+		response, err := w.Genie.GenieCancelResponse(ctx, genieCancelResponseReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range genieCancelResponseOverrides {
+		fn(cmd, &genieCancelResponseReq)
 	}
 
 	return cmd

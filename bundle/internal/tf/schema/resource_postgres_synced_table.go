@@ -14,10 +14,9 @@ type ResourcePostgresSyncedTableSpecExtraColumns struct {
 }
 
 type ResourcePostgresSyncedTableSpecNewPipelineSpec struct {
-	BudgetPolicyId  string `json:"budget_policy_id,omitempty"`
-	PipelineChannel string `json:"pipeline_channel,omitempty"`
-	StorageCatalog  string `json:"storage_catalog,omitempty"`
-	StorageSchema   string `json:"storage_schema,omitempty"`
+	BudgetPolicyId string `json:"budget_policy_id,omitempty"`
+	StorageCatalog string `json:"storage_catalog,omitempty"`
+	StorageSchema  string `json:"storage_schema,omitempty"`
 }
 
 type ResourcePostgresSyncedTableSpecTypeOverrides struct {

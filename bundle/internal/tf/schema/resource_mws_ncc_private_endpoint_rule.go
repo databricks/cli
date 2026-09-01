@@ -2,15 +2,9 @@
 
 package schema
 
-type ResourceMwsNccPrivateEndpointRuleGcpEndpointGoogleApiEndpoints struct {
-	Endpoints []string `json:"endpoints,omitempty"`
-}
-
 type ResourceMwsNccPrivateEndpointRuleGcpEndpoint struct {
-	AllVpcScServices   bool                                                            `json:"all_vpc_sc_services,omitempty"`
-	PscEndpointUri     string                                                          `json:"psc_endpoint_uri,omitempty"`
-	ServiceAttachment  string                                                          `json:"service_attachment,omitempty"`
-	GoogleApiEndpoints *ResourceMwsNccPrivateEndpointRuleGcpEndpointGoogleApiEndpoints `json:"google_api_endpoints,omitempty"`
+	PscEndpointUri    string `json:"psc_endpoint_uri,omitempty"`
+	ServiceAttachment string `json:"service_attachment,omitempty"`
 }
 
 type ResourceMwsNccPrivateEndpointRule struct {

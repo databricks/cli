@@ -8,20 +8,13 @@ type ResourceBudgetAlertConfigurationsActionConfigurations struct {
 	Target                string `json:"target,omitempty"`
 }
 
-type ResourceBudgetAlertConfigurationsPrincipalOverrides struct {
-	OverrideThreshold string `json:"override_threshold,omitempty"`
-	PrincipalId       int    `json:"principal_id,omitempty"`
-}
-
 type ResourceBudgetAlertConfigurations struct {
 	AlertConfigurationId string                                                  `json:"alert_configuration_id,omitempty"`
 	QuantityThreshold    string                                                  `json:"quantity_threshold,omitempty"`
 	QuantityType         string                                                  `json:"quantity_type,omitempty"`
-	ScopeType            string                                                  `json:"scope_type,omitempty"`
 	TimePeriod           string                                                  `json:"time_period,omitempty"`
 	TriggerType          string                                                  `json:"trigger_type,omitempty"`
 	ActionConfigurations []ResourceBudgetAlertConfigurationsActionConfigurations `json:"action_configurations,omitempty"`
-	PrincipalOverrides   []ResourceBudgetAlertConfigurationsPrincipalOverrides   `json:"principal_overrides,omitempty"`
 }
 
 type ResourceBudgetFilterTagsValue struct {
@@ -50,7 +43,6 @@ type ResourceBudget struct {
 	CreateTime            int                                 `json:"create_time,omitempty"`
 	DisplayName           string                              `json:"display_name,omitempty"`
 	Id                    string                              `json:"id,omitempty"`
-	ResourceType          string                              `json:"resource_type,omitempty"`
 	UpdateTime            int                                 `json:"update_time,omitempty"`
 	AlertConfigurations   []ResourceBudgetAlertConfigurations `json:"alert_configurations,omitempty"`
 	Filter                *ResourceBudgetFilter               `json:"filter,omitempty"`
