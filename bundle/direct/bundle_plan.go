@@ -224,12 +224,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		// Compact the saved state so hashed_fields fields are hashes, matching the
-		// local and remote sides below. The state read from disk may still hold the full
-		// contents (written by an older CLI, or the field was only just added to
-		// hashed_fields); hashing it on read lines the sides up so an unchanged resource
-		// shows no change. This only affects the in-memory copy used for the diff; the
-		// on-disk entry keeps its full contents until the resource is next saved.
+		// Compact the saved state so hashed_fields fields are hashes
 		compactedSavedState, err := dresources.CompactState(adapter.ResourceConfig(), savedState)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: compacting saved state: %w", errorPrefix, err))
@@ -288,13 +283,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			}
 
 			// Compact the remapped remote on the same fields, so a hashed_fields field
-			// is a hash on all three sides of the diff (saved, local, remote). Once the
-			// saved value is a hash, every comparison must be hash-vs-hash to be meaningful,
-			// including remote drift. This keeps hashed_fields orthogonal to
-			// ignore_remote_changes: remote drift is still detected as hash != hash, so a
-			// field can be hashed without being ignored. serialized_dashboard is also
-			// ignore_remote_changes, but for the independent reason that the server
-			// normalizes it (see resources.yml).
+			// is a hash on all three sides of the diff (saved, local, remote)
 			remoteStateComparable, err = dresources.CompactState(adapter.ResourceConfig(), remoteStateComparable)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
