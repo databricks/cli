@@ -16,7 +16,6 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -155,12 +154,12 @@ func Check(t reflect.Type) (Report, error) {
 		}
 	}
 
-	sort.Strings(report.WalkMissing)
-	sort.Strings(report.WalkExtra)
-	sort.Strings(report.GetFailed)
-	sort.Strings(report.ValidateFailed)
-	sort.Strings(report.ValueMismatch)
-	sort.Strings(report.SelfMarshalingScalars)
+	slices.Sort(report.WalkMissing)
+	slices.Sort(report.WalkExtra)
+	slices.Sort(report.GetFailed)
+	slices.Sort(report.ValidateFailed)
+	slices.Sort(report.ValueMismatch)
+	slices.Sort(report.SelfMarshalingScalars)
 	return report, nil
 }
 
@@ -243,8 +242,7 @@ func flatten(path *structpath.PathNode, typ reflect.Type, v any, out map[string]
 
 // embeddedSliceField reports whether key names the struct's EmbeddedSlice field.
 func embeddedSliceField(typ reflect.Type, key string) (reflect.StructField, bool) {
-	for i := range typ.NumField() {
-		sf := typ.Field(i)
+	for sf := range typ.Fields() {
 		if sf.Name != structaccess.EmbeddedSliceFieldName {
 			continue
 		}
@@ -309,8 +307,7 @@ func skippedByTag(typ reflect.Type, path *structpath.PathNode) bool {
 // taggedInternal reports whether the struct, or a struct it embeds, declares key with
 // bundle:"internal" or bundle:"readonly".
 func taggedInternal(typ reflect.Type, key string) bool {
-	for i := range typ.NumField() {
-		sf := typ.Field(i)
+	for sf := range typ.Fields() {
 		if !sf.IsExported() {
 			continue
 		}
