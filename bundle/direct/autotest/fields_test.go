@@ -1069,8 +1069,20 @@ func oneLine(s string) string {
 	s = redactIDs(s)
 	s = strings.ReplaceAll(s, "\n", " ")
 	s = strings.Join(strings.Fields(s), " ")
+	// A long URL in the middle pushes out the part that says what went wrong -- a request that
+	// never completed reads as `Get "https://…": read tcp …: operation timed out`, and truncating
+	// at 140 characters kept the host and dropped the cause. The URL identifies nothing a reader
+	// of the report can use: the resource is already the row's own field, and the id is redacted.
+	s = urlPattern.ReplaceAllString(s, `"…"`)
 	if len(s) > 140 {
-		s = s[:140] + "..."
+		// Elided in the middle, keeping both ends: the front says which resource and operation,
+		// the back says what the backend or the network answered. Cutting at the front dropped
+		// the answer, which is the half a reader needs.
+		s = s[:90] + "..." + s[len(s)-47:]
 	}
 	return s
 }
+
+// urlPattern matches a quoted http(s) URL, which carries a workspace host and a long path and
+// crowds out the error that follows it.
+var urlPattern = regexp.MustCompile(`"https?://[^"]*"`)
