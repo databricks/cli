@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
@@ -36,6 +37,24 @@ func sqlWarehouseFixUps(warehouse *sql.GetWarehouseResponse, userName string) {
 	if warehouse.WarehouseType == "" {
 		warehouse.WarehouseType = sql.GetWarehouseResponseWarehouseTypeClassic
 	}
+
+	// Defaults the backend applies to a create that omits them (observed on aws, 2026-09: a
+	// create with only a name, cluster_size and max_num_clusters reads back with both set).
+	// Storing the zero value instead made a config asking for the non-default value look like a
+	// no-op, since state and remote already agreed on it.
+	if !warehouse.EnablePhoton && !forceSent(warehouse.ForceSendFields, "EnablePhoton") {
+		warehouse.EnablePhoton = true
+		warehouse.ForceSendFields = append(warehouse.ForceSendFields, "EnablePhoton")
+	}
+	if warehouse.SpotInstancePolicy == "" {
+		warehouse.SpotInstancePolicy = sql.SpotInstancePolicyCostOptimized
+	}
+}
+
+// forceSent reports whether a field was explicitly present in the request body, as opposed to
+// omitted: an explicit false and an absent one are the same zero value otherwise.
+func forceSent(fields []string, name string) bool {
+	return slices.Contains(fields, name)
 }
 
 func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Response {

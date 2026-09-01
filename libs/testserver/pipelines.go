@@ -117,17 +117,20 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 		}
 	}
 
-	// A pipeline that has a storage location is not a Unity Catalog pipeline, and the backend
-	// will not convert one into the other in place (aws, 2026-08). Only the fake server having
-	// allowed it hid the fact that the engine neither recreates nor rejects the change: it sends
-	// the update and the API refuses it. The condition is the API's own -- a UC pipeline, which
-	// has no storage, can have its catalog edited.
+	// A pipeline that has a storage location is not a Unity Catalog pipeline, and the backend will
+	// not convert one into the other in place. Verified directly (aws, 2026-09): a pipeline created
+	// with neither storage nor catalog is given a default storage location, and a later PUT adding
+	// a catalog is refused -- so a backend-assigned storage counts, not just one the user wrote.
+	// Only the fake server having allowed it hid the fact that the engine neither recreates nor
+	// rejects the change: it sends the update and the API refuses it.
 	if item.Spec != nil && item.Spec.Storage != "" && spec.Catalog != "" && spec.Catalog != item.Spec.Catalog {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
 				"error_code": "INVALID_PARAMETER_VALUE",
-				"message":    "Cannot add catalog to an existing pipeline with defined storage location, if you want to migrate to Unity Catalog, please use the migration API.",
+				"message": fmt.Sprintf("Cannot add catalog to an existing pipeline with defined storage location, "+
+					"if you want to use UC create a new pipeline and set catalog.\nExisting storage location: %q\nRequested catalog: %q",
+					item.Spec.Storage, spec.Catalog),
 			},
 		}
 	}
