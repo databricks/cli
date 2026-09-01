@@ -49,6 +49,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -108,7 +109,7 @@ func TestFields(t *testing.T) {
 			// Outlives the field-level subtests that rebuild harnesses.
 			ctx := t.Context()
 
-			rep := &report{resourceType: resourceType} //exhaustruct:ignore
+			rep := &report{resourceType: resourceType, started: time.Now()} //exhaustruct:ignore
 			runType(t, ctx, client, user, resourceType, fv, rep, runSeed, sampleFields)
 			rep.write(t)
 		})

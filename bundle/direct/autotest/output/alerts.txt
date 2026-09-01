@@ -1,3 +1,13 @@
+# field | from | to | verdict | detail
+#
+# How the direct engine handles every field of this resource type: each row is one move of one field
+# between two values, "absent" included. An outcome the engine got wrong is recorded here rather than
+# failed, so this file is a description of current behaviour -- what fails the test is a verdict
+# changing. Passing rows are counted in the summary and listed in logs/<type>.full.txt, along with
+# the evidence behind each finding and what could not be covered.
+#
+# Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
+
 
 === summary
 OK                 26

@@ -1,0 +1,10 @@
+description                                  x          absent     UPDATE_IGNORED
+description                                  y          absent     UPDATE_IGNORED
+title                                        x-UNIQUE   absent     UPDATE_IGNORED
+title                                        y-UNIQUE   absent     UPDATE_IGNORED
+
+=== summary
+OK                 8
+NOT_OBSERVABLE     6
+UPDATE_IGNORED     4
+SKIPPED            4

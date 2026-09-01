@@ -1,0 +1,14 @@
+custom_max_retention_hours                   168        absent     UPDATE_IGNORED
+custom_max_retention_hours                   720        absent     UPDATE_IGNORED
+properties                                   keys1      absent     UPDATE_IGNORED
+properties                                   keys1      keys0      UPDATE_IGNORED
+properties['team']                           x          absent     UPDATE_IGNORED
+properties['team']                           y          absent     UPDATE_IGNORED
+
+=== summary
+OK                 16
+OK_RECREATE        2
+SUPPRESSED         1
+NOT_OBSERVABLE     1
+UPDATE_IGNORED     6
+SKIPPED            2
