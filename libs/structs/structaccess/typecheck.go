@@ -168,8 +168,8 @@ func findFieldIndexByKeyType(t reflect.Type, key string) ([]int, reflect.StructF
 		return nil, reflect.StructField{}, false
 	}
 
-	if i, sf, ok := findDirectFieldByKeyType(t, key); ok {
-		return []int{i}, sf, true
+	if c, ok := pickCandidate(directCandidates(t, key, nil)); ok {
+		return c.index, c.field, true
 	}
 
 	// A cycle must not be walked twice, or a key the type never declares sends the search
@@ -179,32 +179,27 @@ func findFieldIndexByKeyType(t reflect.Type, key string) ([]int, reflect.StructF
 	level := embeddedIndexPaths(t, nil)
 	for len(level) > 0 {
 		var next []embeddedPath
-		var found []struct {
-			index []int
-			field reflect.StructField
-		}
-		for _, candidate := range level {
-			if i, sf, ok := findDirectFieldByKeyType(candidate.typ, key); ok {
-				found = append(found, struct {
-					index []int
-					field reflect.StructField
-				}{append(append([]int{}, candidate.index...), i), sf})
+		var found []candidate
+		for _, embed := range level {
+			matches := directCandidates(embed.typ, key, embed.index)
+			if len(matches) > 0 {
+				found = append(found, matches...)
 				continue
 			}
-			for _, deeper := range embeddedIndexPaths(candidate.typ, candidate.index) {
+			for _, deeper := range embeddedIndexPaths(embed.typ, embed.index) {
 				if seen[deeper.typ] {
 					continue
 				}
 				next = append(next, deeper)
 			}
 		}
-		for _, candidate := range next {
-			seen[candidate.typ] = true
+		for _, embed := range next {
+			seen[embed.typ] = true
 		}
-		if len(found) == 1 {
-			return found[0].index, found[0].field, true
-		}
-		if len(found) > 1 {
+		if len(found) > 0 {
+			if c, ok := pickCandidate(found); ok {
+				return c.index, c.field, true
+			}
 			return nil, reflect.StructField{}, false
 		}
 		level = next
@@ -254,17 +249,36 @@ func ownerTypeAt(t reflect.Type, index []int) reflect.Type {
 	return t
 }
 
-// findDirectFieldByKeyType matches key against the struct's own fields, by json tag name, and
-// returns the field's index.
-func findDirectFieldByKeyType(t reflect.Type, key string) (int, reflect.StructField, bool) {
+// candidate is a field that matches a json name, with the index chain reaching it and whether
+// the name came from a json tag. encoding/json prefers a tagged name over an untagged one at
+// the same depth, so the distinction has to survive the search.
+type candidate struct {
+	index  []int
+	field  reflect.StructField
+	tagged bool
+}
+
+// directCandidates returns the struct's own fields that key can name. A field with a json tag
+// name is matched on that; a field without one is matched on its Go field name, which is what
+// encoding/json serializes it under. An embed that encoding/json flattens is not addressable by
+// name at all, so it is not a candidate.
+func directCandidates(t reflect.Type, key string, prefix []int) []candidate {
+	var out []candidate
 	for i := range t.NumField() {
 		sf := t.Field(i)
 		if sf.PkgPath != "" { // unexported
 			continue
 		}
-		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-		if name == "-" || sf.Name == EmbeddedSliceFieldName {
+		if sf.Name == EmbeddedSliceFieldName || IsFlattenedEmbed(sf) {
 			continue
+		}
+		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
+		if name == "-" {
+			continue
+		}
+		tagged := name != ""
+		if !tagged {
+			name = sf.Name
 		}
 		if name != key {
 			continue
@@ -274,9 +288,32 @@ func findDirectFieldByKeyType(t reflect.Type, key string) (int, reflect.StructFi
 		if btag.Internal() || btag.ReadOnly() {
 			continue
 		}
-		return i, sf, true
+		out = append(out, candidate{
+			index:  append(append([]int{}, prefix...), i),
+			field:  sf,
+			tagged: tagged,
+		})
 	}
-	return 0, reflect.StructField{}, false
+	return out
+}
+
+// pickCandidate applies encoding/json's precedence among fields that share a name at one
+// depth: a single tagged name wins over untagged ones, a single match of either kind wins, and
+// anything else is ambiguous and serialized as nothing.
+func pickCandidate(candidates []candidate) (candidate, bool) {
+	if len(candidates) == 1 {
+		return candidates[0], true
+	}
+	var tagged []candidate
+	for _, c := range candidates {
+		if c.tagged {
+			tagged = append(tagged, c)
+		}
+	}
+	if len(tagged) == 1 {
+		return tagged[0], true
+	}
+	return candidate{}, false
 }
 
 // IsFlattenedEmbed reports whether the field is an embed encoding/json flattens into the
@@ -287,5 +324,14 @@ func IsFlattenedEmbed(sf reflect.StructField) bool {
 	if !sf.Anonymous {
 		return false
 	}
-	return structtag.JSONTag(sf.Tag.Get("json")).Name() == ""
+	if structtag.JSONTag(sf.Tag.Get("json")).Name() != "" {
+		return false
+	}
+	// Only an anonymous *struct* is promoted. An embedded scalar, slice or interface is a member
+	// named after its type, so it belongs at its own path rather than the parent's.
+	ft := sf.Type
+	for ft.Kind() == reflect.Pointer {
+		ft = ft.Elem()
+	}
+	return ft.Kind() == reflect.Struct
 }
