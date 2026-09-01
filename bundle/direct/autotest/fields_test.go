@@ -223,7 +223,7 @@ func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClie
 							// answer for this transition: a dashboard has to have a display name,
 							// so nothing starts from it being absent. Recorded, and a plain
 							// rebuild follows so the remaining transitions have a resource.
-							res.detail = "cannot create the resource holding it: " + oneLine(err.Error())
+							res.detail = "cannot create the resource with this starting value: " + oneLine(err.Error())
 							res.evidence = withContext("error creating the resource with the starting value:", err.Error())
 							rebuilt, err = rebuild(owner, ctx, client, user, resourceType, fv, h)
 						}
