@@ -717,14 +717,11 @@ func isEmptyStruct(rv reflect.Value) bool {
 // For regular resources like "resources.jobs.foo.name", returns ("resources.jobs.foo", "name").
 // For sub-resources like "resources.jobs.foo.permissions[0].level", returns ("resources.jobs.foo.permissions", "[0].level").
 func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode) {
-	// permissions and grants are sub-resources for every group.
+	// Check if the 4th component is "permissions" or "grants" (sub-resource)
 	if path.Len() > 4 {
 		first := path.SkipPrefix(3).Prefix(1)
-		if key, ok := first.StringKey(); ok {
-			if key == "permissions" || key == "grants" {
-				return path.Prefix(4).String(), path.SkipPrefix(4)
-			}
-		}
+		if key, ok := first.StringKey(); ok && (key == "permissions" || key == "grants") {
+			return path.Prefix(4).String(), path.SkipPrefix(4)
 	}
 	return path.Prefix(3).String(), path.SkipPrefix(3)
 }
