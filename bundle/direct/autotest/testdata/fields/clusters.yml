@@ -22,6 +22,12 @@ base:
     - workspace:
         destination: /Users/$CURRENT_USER_NAME/init.sh
 
+fields:
+  # The API refuses anything between 1 and 9: "The cluster autotermination time cannot be less than
+  # 10 minutes." 0 disables it and is accepted too, but the CLI defaults the field to 60, so 0 is
+  # what a user writes to turn it off rather than a second ordinary value.
+  autotermination_minutes: [10, 20]
+
 skip:
   # "The field 'worker_node_type_flexibility' cannot be supplied when an instance pool ID is
   # provided", and the corpus config provides one. The alternates would also have to name a
