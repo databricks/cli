@@ -482,16 +482,22 @@ func pathOf(reported string) string {
 	return strings.SplitN(reported, ":", 2)[0]
 }
 
-// coveredBy reports which entry covers path: the one that equals it, or names a field it sits
-// underneath.
+// coveredBy reports which entry covers path: the one that equals it, or the longest one that
+// names a field it sits underneath. Longest wins so that overlapping entries -- "a" and "a.b"
+// -- are each credited with what they alone cover, rather than the first one absorbing
+// everything and leaving the other looking stale.
 func coveredBy(known []string, path string) (string, bool) {
+	best := ""
 	for _, k := range known {
 		if path == k {
 			return k, true
 		}
-		if strings.HasPrefix(path, k) && strings.ContainsAny(path[len(k):len(k)+1], ".[") {
-			return k, true
+		if !strings.HasPrefix(path, k) || !strings.ContainsAny(path[len(k):len(k)+1], ".[") {
+			continue
+		}
+		if len(k) > len(best) {
+			best = k
 		}
 	}
-	return "", false
+	return best, best != ""
 }

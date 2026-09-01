@@ -7,6 +7,12 @@
 // two same-named fields wins, and when encoding/json gives up and serializes neither.
 package jsonshapes
 
+import (
+	"encoding/json"
+	"fmt"
+	"strconv"
+)
+
 // Shape is one struct whose JSON behaviour a libs/structs package must match.
 type Shape struct {
 	// Name identifies the shape in test output.
@@ -145,6 +151,22 @@ type SetPointerEmbed struct {
 	Own string `json:"own,omitempty"`
 }
 
+// TaggedEmbed carries a json name on an anonymous field, which makes it an ordinary field to
+// encoding/json: it serializes as a nested object under that name rather than being flattened.
+type TaggedEmbed struct {
+	Leaf `json:"leaf"`
+
+	Own string `json:"own,omitempty"`
+}
+
+// OptionOnlyEmbed sets an option on the embed's tag without giving it a name, which leaves it
+// flattened -- the presence of a tag is not what decides.
+type OptionOnlyEmbed struct {
+	Leaf `json:",omitempty"`
+
+	Own string `json:"own,omitempty"`
+}
+
 // SkippedField declares a field encoding/json never serializes.
 type SkippedField struct {
 	Kept    string `json:"kept,omitempty"`
@@ -239,10 +261,63 @@ func Shapes() []Shape {
 			KnownSetGap: []string{"value"},
 		},
 		{
+			Name:       "tagged embed is a named field",
+			Value:      &TaggedEmbed{Leaf: Leaf{Value: "v"}, Own: "o"},
+			JSONFields: []string{"leaf.value", "own"},
+			// Not flattened, so the outer object has no "value" member.
+			Unreachable: []string{"value"},
+		},
+		{
+			Name:       "option-only embed stays flattened",
+			Value:      &OptionOnlyEmbed{Leaf: Leaf{Value: "v"}, Own: "o"},
+			JSONFields: []string{"value", "own"},
+		},
+		{
 			Name:        "skipped field",
 			Value:       &SkippedField{Kept: "k", Skipped: "s"}, //exhaustruct:ignore
 			JSONFields:  []string{"kept"},
 			Unreachable: []string{"-"},
 		},
+	}
+}
+
+// Leaves marshals v and returns its scalar leaves keyed by path, so a shape's JSONFields can
+// be compared against what encoding/json actually produces even when a shape nests.
+//
+// Object members are joined with a dot, which is the struct-field rendering. That is enough
+// here because no shape in the corpus contains a map; the type-aware version, which has to
+// tell a map entry's ['key'] from a field's .name, lives in bundle/config/structstest.
+func Leaves(v any) (map[string]string, error) {
+	blob, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var generic any
+	if err := json.Unmarshal(blob, &generic); err != nil {
+		return nil, err
+	}
+	out := map[string]string{}
+	flattenLeaves("", generic, out)
+	return out, nil
+}
+
+func flattenLeaves(prefix string, v any, out map[string]string) {
+	switch value := v.(type) {
+	case map[string]any:
+		for key, member := range value {
+			path := key
+			if prefix != "" {
+				path = prefix + "." + key
+			}
+			flattenLeaves(path, member, out)
+		}
+	case []any:
+		for i, member := range value {
+			flattenLeaves(prefix+"["+strconv.Itoa(i)+"]", member, out)
+		}
+	case nil:
+		// A JSON null carries no scalar leaf.
+	default:
+		out[prefix] = fmt.Sprintf("%v", value)
 	}
 }
