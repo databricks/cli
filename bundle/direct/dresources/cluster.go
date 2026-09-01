@@ -256,11 +256,9 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 		}
 	}
 
-	// TODO(#1860): a local whl/jar whose workspace path is unchanged but whose contents
+	// TODO: a local whl/jar whose workspace path is unchanged but whose contents
 	// changed (same name+version, non-dev mode) is not detected here, so no restart fires.
-	// Dev mode handles this via patchwheel (a source-derived version bump); a general fix
-	// needs a source hash tracked in state. Hashing the built wheel is unsafe — the zip
-	// embeds mtimes, so a rebuild would churn a restart every deploy.
+	// Dev mode handles this via patchwheel (a source-derived version bump).
 	if entry.Changes.HasChange(librariesPath) {
 		if err := r.reconcileLibraries(ctx, id, config.Libraries, entry); err != nil {
 			return nil, err
