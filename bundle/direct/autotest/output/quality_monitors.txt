@@ -1,0 +1,12 @@
+latest_monitor_failure_msg                   absent     x          POST_DEPLOY_DRIFT  latest_monitor_failure_msg
+latest_monitor_failure_msg                   absent     y          POST_DEPLOY_DRIFT  latest_monitor_failure_msg
+latest_monitor_failure_msg                   x          y          POST_DEPLOY_DRIFT  latest_monitor_failure_msg
+latest_monitor_failure_msg                   y          x          POST_DEPLOY_DRIFT  latest_monitor_failure_msg
+
+=== summary
+OK                 100
+OK_RECREATE        4
+SUPPRESSED         6
+NOT_OBSERVABLE     4
+POST_DEPLOY_DRIFT  4
+SKIPPED            1

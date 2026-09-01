@@ -164,14 +164,14 @@ func maxWaitSeconds() string {
 // built is usually the environment (an expired token, a workspace that rejects the
 // config), and the run is more useful if that lands in the report as one bad verdict
 // than if it aborts thousands of pending observations.
-func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, resourceType, uniqueName string, base any) (*bundleHarness, error) {
+func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, resourceType, uniqueName string, base any, deps map[string]any, variables map[string]string) (*bundleHarness, error) {
 	dir := t.TempDir()
 	if err := copyDir(dataDir, dir); err != nil {
 		return nil, err
 	}
 
 	rememberWorkspaceUser(user.UserName)
-	yml, err := renderBundle(resourceType, uniqueName, user.UserName, base)
+	yml, err := renderBundle(resourceType, uniqueName, user.UserName, base, deps, variables)
 	if err != nil {
 		return nil, err
 	}
@@ -187,6 +187,9 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 	// in the cleanup case. Values (dbr, logdiag, cmdio, env) still propagate; the test
 	// binary's own -timeout remains the backstop.
 	ctx = dbr.MockRuntime(context.WithoutCancel(ctx), dbr.Environment{}) //exhaustruct:ignore
+	for name, value := range variables {
+		ctx = env.Set(ctx, "BUNDLE_VAR_"+name, value)
+	}
 	// Thousands of deploys run through here, so cap how long any one of them waits for
 	// a resource to become ready. Without a cap a resource that never reaches its
 	// terminal state stalls the whole suite instead of showing up as one bad verdict.
@@ -237,7 +240,7 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 		return nil, err
 	}
 
-	node, err := soleResourceNode(&b.Config)
+	node, err := resourceNode(&b.Config, resourceType)
 	if err != nil {
 		return nil, err
 	}
@@ -413,6 +416,12 @@ func (h *bundleHarness) resource() (any, error) {
 	return structaccess.GetByString(&h.bundle.Config, h.node)
 }
 
+// depKey is the bundle key a dependency is declared under: its own resource type, singularised
+// only in the sense that it is unique per type, so base references read ${resources.<type>.<type>...}.
+func depKey(depType string) string {
+	return depType
+}
+
 // resourceKey is the name every fixture's resource is declared under. One resource per bundle,
 // so the name carries nothing and only has to be stable.
 const resourceKey = "foo"
@@ -423,27 +432,56 @@ const resourceKey = "foo"
 //
 // $UNIQUE_NAME survives loadFieldValues unexpanded and is expanded here, because it belongs to
 // one deploy: a rebuild gets a new name, while a value library is read once for the whole run.
-func renderBundle(resourceType, uniqueName, userName string, base any) (string, error) {
+func renderBundle(resourceType, uniqueName, userName string, base any, deps map[string]any, variables map[string]string) (string, error) {
 	// Marshalled as one document rather than spliced together as indented text: re-indenting
 	// someone else's YAML has to reason about block scalars, where a blank line is content.
-	document, err := yaml.Marshal(map[string]any{
+	resources := map[string]any{resourceType: map[string]any{resourceKey: base}}
+	// A dependency is declared under its own type with its own key, so base can reference it as
+	// ${resources.<type>.<key>.<field>} the way a bundle normally would. The key is the type's
+	// own name, which keeps a reference readable and cannot collide with the resource under test.
+	for depType, body := range deps {
+		if depType == resourceType {
+			return "", fmt.Errorf("dep %s is the resource type under test", depType)
+		}
+		resources[depType] = map[string]any{depKey(depType): body}
+	}
+
+	document := map[string]any{
 		"bundle":    map[string]any{"name": "test-bundle-$UNIQUE_NAME"},
-		"resources": map[string]any{resourceType: map[string]any{resourceKey: base}},
-	})
+		"resources": resources,
+	}
+	// Declared without a value: the value comes from the environment below, since a default here
+	// would be resolved before the config-format validations run.
+	if len(variables) > 0 {
+		declared := map[string]any{}
+		for name := range variables {
+			declared[name] = map[string]any{"description": "set by the field catalog"}
+		}
+		document["variables"] = declared
+	}
+
+	body, err := yaml.Marshal(document)
 	if err != nil {
 		return "", err
 	}
 
 	vars := templateVars(uniqueName, userName)
 	var missing string
-	yml := os.Expand(string(document), func(key string) string {
-		value, ok := vars[key]
-		if !ok {
-			// Expanding an unknown variable to "" turns a required field into null, and the
-			// failure then surfaces as a confusing validation error much later.
-			missing = key
+	yml := os.Expand(string(body), func(key string) string {
+		if value, ok := vars[key]; ok {
+			return value
 		}
-		return value
+		// A bundle's own interpolation shares this syntax -- ${var.secret_value},
+		// ${resources.postgres_projects.x.name} -- and belongs to the config, not to the suite.
+		// Told apart by the dot: every variable the suite provides is a bare upper-case name, and
+		// every bundle reference is dotted. Restored verbatim so the config still carries it.
+		if strings.Contains(key, ".") {
+			return "${" + key + "}"
+		}
+		// Expanding an unknown variable to "" turns a required field into null, and the failure
+		// then surfaces as a confusing validation error much later.
+		missing = key
+		return ""
 	})
 	if missing != "" {
 		return "", fmt.Errorf("%s.yml uses $%s, which this suite does not provide", resourceType, missing)

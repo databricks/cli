@@ -2,6 +2,7 @@ package autotest
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -18,50 +19,51 @@ import (
 // themselves live in testdata/fields and belong to this suite alone.
 const dataDir = "../../../acceptance/bundle/invariant/data"
 
-// discoverFixtures returns the resource types this suite drives -- one value library each --
-// and the supported types that have none, so the report accounts for every type the direct
-// engine knows rather than only the ones covered.
+// drivenTypes returns every resource type the direct engine supports, which is what this suite
+// covers: a type with no value library is a failure rather than a line in a report, so adding a
+// resource type to the engine and forgetting the catalog cannot go unnoticed.
 //
-// Sub-resources are not among either: permissions and grants are separate plan nodes whose
-// fields describe an ACL rather than the resource, they need a parent to attach to, and the
-// suite strips them from every fixture. Listing them as gaps would suggest fixtures are missing.
-func discoverFixtures(t *testing.T) (driven, undriven []string) {
-	entries, err := filepath.Glob(filepath.Join(fieldsDir, "*.yml"))
-	require.NoError(t, err)
-	require.NotEmpty(t, entries)
-
-	has := map[string]bool{}
-	for _, path := range entries {
-		resourceType := strings.TrimSuffix(filepath.Base(path), ".yml")
-		// A library for a type the engine does not support is a leftover, and silently
-		// ignoring it would let a rename go unnoticed.
-		_, supported := dresources.SupportedResources[resourceType]
-		require.True(t, supported, "%s names no supported resource type", path)
-		has[resourceType] = true
+// Permissions and grants are excluded. They are separate plan nodes whose fields describe an ACL
+// rather than the resource, they need a parent to attach to, and the suite strips them from every
+// fixture.
+func drivenTypes(t *testing.T) []string {
+	var driven []string
+	for resourceType := range dresources.SupportedResources {
+		if strings.Contains(resourceType, ".") {
+			continue
+		}
+		path := filepath.Join(fieldsDir, resourceType+".yml")
+		_, err := os.Stat(path)
+		require.NoError(t, err, "%s is supported by the engine but has no value library", resourceType)
 		driven = append(driven, resourceType)
 	}
 
-	for resourceType := range dresources.SupportedResources {
-		if !has[resourceType] && !strings.Contains(resourceType, ".") {
-			undriven = append(undriven, resourceType)
-		}
+	// A library naming no supported type is a leftover -- a rename that missed one side.
+	entries, err := filepath.Glob(filepath.Join(fieldsDir, "*.yml"))
+	require.NoError(t, err)
+	for _, path := range entries {
+		resourceType := strings.TrimSuffix(filepath.Base(path), ".yml")
+		_, supported := dresources.SupportedResources[resourceType]
+		require.True(t, supported, "%s names no supported resource type", path)
 	}
 
 	slices.Sort(driven)
-	slices.Sort(undriven)
-	return driven, undriven
+	return driven
 }
 
-// soleResourceNode returns the single resource node of an initialized config.
-func soleResourceNode(root *bundleconfig.Root) (string, error) {
+// resourceNode returns the node of the resource under test, which a fixture declares under
+// resourceKey. A fixture may declare dependencies of other types alongside it, so this is not
+// simply the only node in the config.
+func resourceNode(root *bundleconfig.Root, resourceType string) (string, error) {
+	want := "resources." + resourceType + "." + resourceKey
 	nodes, err := initializedNodes(root)
 	if err != nil {
 		return "", err
 	}
-	if len(nodes) != 1 {
-		return "", fmt.Errorf("expected exactly one resource node, got %v", nodes)
+	if !slices.Contains(nodes, want) {
+		return "", fmt.Errorf("%s is not among the declared resources %v", want, nodes)
 	}
-	return nodes[0], nil
+	return want, nil
 }
 
 func initializedNodes(root *bundleconfig.Root) ([]string, error) {

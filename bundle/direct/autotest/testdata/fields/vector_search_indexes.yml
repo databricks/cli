@@ -1,0 +1,17 @@
+# Value library for vector search indexes. See ../../README.md.
+
+deps:
+  vector_search_endpoints:
+    name: test-vse-$UNIQUE_NAME
+    endpoint_type: STANDARD
+
+base:
+  name: main.default.test_index_$UNIQUE_NAME
+  endpoint_name: ${resources.vector_search_endpoints.vector_search_endpoints.name}
+  primary_key: id
+  index_type: DIRECT_ACCESS
+  direct_access_index_spec:
+    schema_json: '{"id":"integer","vector":"array<float>"}'
+    embedding_vector_columns:
+      - name: vector
+        embedding_dimension: 768

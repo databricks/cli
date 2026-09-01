@@ -1,0 +1,6 @@
+# Value library for vector search endpoints. See ../../README.md.
+
+base:
+  # Endpoint names must be under 50 characters.
+  name: test-vse-$UNIQUE_NAME
+  endpoint_type: STANDARD
