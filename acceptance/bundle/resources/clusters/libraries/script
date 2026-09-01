@@ -13,7 +13,8 @@ trap cleanup EXIT
 # install request (which shows the rewritten wheel path). Libraries are part of the
 # cluster, so they show up under the cluster, not a separate resource.
 title "Deploy a cluster with a pypi and a local wheel library"
-$CLI bundle deploy &> LOG.deploy
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "Created clusters.mycluster" > /dev/null
 
 title "Libraries installed via the Libraries API (wheel rewritten to its uploaded path)"
@@ -21,6 +22,7 @@ trace print_requests.py //libraries/install
 
 title "Removing the wheel and redeploying uninstalls it and restarts the running cluster"
 update_file.py databricks.yml "        - whl: ./dist/*.whl" ""
-$CLI bundle deploy &> LOG.redeploy
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.redeploy
 cat LOG.redeploy | contains.py "Updated clusters.mycluster" "Restarting cluster" > /dev/null
 trace print_requests.py //libraries/uninstall

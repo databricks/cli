@@ -3,8 +3,9 @@ CloudSlow = true
 RecordRequests = true
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.READPLAN = ["", "1"]
 
-Ignore = [".databricks", ".venv", "build", "dist", "my_test_code.egg-info", "databricks.yml"]
+Ignore = [".databricks", ".venv", "build", "dist", "my_test_code.egg-info", "databricks.yml", "tmp.plan.json"]
 
 [[Repls]]
 Old = "[0-9]{4}-[0-9]{6}-[0-9a-z]{8}"
