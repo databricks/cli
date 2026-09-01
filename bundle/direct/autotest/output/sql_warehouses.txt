@@ -7,8 +7,8 @@ cluster_size                                 absent     X-Small    START_NOT_REA
 enable_photon                                true       absent     UPDATE_IGNORED
 max_num_clusters                             2          absent     UPDATE_IGNORED
 max_num_clusters                             3          absent     UPDATE_IGNORED
-max_num_clusters                             absent     2          START_NOT_REACHED  cannot create the resource holding it: cannot create resources.sql_warehouses.foo: 0 is not a valid value for max_num_clusters. The value must be greater than or equal to 1, and l...
-max_num_clusters                             absent     3          START_NOT_REACHED  cannot create the resource holding it: cannot create resources.sql_warehouses.foo: 0 is not a valid value for max_num_clusters. The value must be greater than or equal to 1, and l...
+max_num_clusters                             absent     2          START_NOT_REACHED  cannot create the resource holding it: cannot create resources.sql_warehouses.foo: 0 is not a valid value for max_num_clusters. T...n or equal to 40. (400 INVALID_PARAMETER_VALUE)
+max_num_clusters                             absent     3          START_NOT_REACHED  cannot create the resource holding it: cannot create resources.sql_warehouses.foo: 0 is not a valid value for max_num_clusters. T...n or equal to 40. (400 INVALID_PARAMETER_VALUE)
 name                                         absent     x-UNIQUE   START_NOT_REACHED  cannot create the resource holding it: cannot create resources.sql_warehouses.foo: Invalid value for SQL Endpoint name, it cannot be empty. (400 INVALID_PARAMETER_VALUE)
 name                                         absent     y-UNIQUE   START_NOT_REACHED  cannot create the resource holding it: cannot create resources.sql_warehouses.foo: Invalid value for SQL Endpoint name, it cannot be empty. (400 INVALID_PARAMETER_VALUE)
 name                                         x-UNIQUE   absent     UPDATE_IGNORED
