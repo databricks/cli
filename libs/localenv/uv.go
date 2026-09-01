@@ -164,12 +164,13 @@ func (m *uvManager) EnsurePython(ctx context.Context, minor, constraint string) 
 	if installErr == nil {
 		return PythonSelection{Executable: minor, Resolution: PythonResolutionUVInstallSucceeded}, nil
 	}
+	fallbackConstraint := constraint + ",==" + minor + ".*"
 
-	managed, err := m.listInstalledPython(ctx, constraint, true)
+	managed, err := m.listInstalledPython(ctx, fallbackConstraint, true)
 	if err != nil {
 		return PythonSelection{}, uvFailure(ErrPythonInstall, errors.Join(installErr, err), "uv python install "+minor)
 	}
-	system, err := m.listInstalledPython(ctx, constraint, false)
+	system, err := m.listInstalledPython(ctx, fallbackConstraint, false)
 	if err != nil {
 		return PythonSelection{}, uvFailure(ErrPythonInstall, errors.Join(installErr, err), "uv python install "+minor)
 	}

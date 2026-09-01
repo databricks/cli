@@ -128,7 +128,7 @@ func TestEnsurePythonFallsBackToInstalledInterpreter(t *testing.T) {
 		}
 	}}
 
-	selection, err := m.EnsurePython(t.Context(), "3.12", "==3.12.*")
+	selection, err := m.EnsurePython(t.Context(), "3.12", ">=3.12,<3.15")
 
 	require.NoError(t, err)
 	assert.Equal(t, PythonSelection{
@@ -138,11 +138,11 @@ func TestEnsurePythonFallsBackToInstalledInterpreter(t *testing.T) {
 	require.Len(t, calls, 3)
 	assert.Equal(t, []string{
 		"uv", "python", "list", "--only-installed", "--all-versions",
-		"--output-format", "json", "--managed-python", "cpython@==3.12.*",
+		"--output-format", "json", "--managed-python", "cpython@>=3.12,<3.15,==3.12.*",
 	}, calls[1])
 	assert.Equal(t, []string{
 		"uv", "python", "list", "--only-installed", "--all-versions",
-		"--output-format", "json", "--no-managed-python", "cpython@==3.12.*",
+		"--output-format", "json", "--no-managed-python", "cpython@>=3.12,<3.15,==3.12.*",
 	}, calls[2])
 }
 
