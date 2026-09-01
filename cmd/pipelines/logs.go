@@ -24,7 +24,9 @@ func buildFieldFilter(field string, values []string) string {
 }
 
 // buildPipelineEventFilter constructs a SQL filter string for pipeline events based on the provided parameters.
-func buildPipelineEventFilter(updateId string, levels, eventTypes []string, startTime, endTime string) string {
+// event_type is intentionally not included: the pipeline events API only supports
+// filtering on level, id, and timestamp, so events are filtered by type client-side.
+func buildPipelineEventFilter(updateId string, levels []string, startTime, endTime string) string {
 	var filterParts []string
 
 	if updateId != "" {
@@ -33,10 +35,6 @@ func buildPipelineEventFilter(updateId string, levels, eventTypes []string, star
 
 	if levelFilter := buildFieldFilter("level", levels); levelFilter != "" {
 		filterParts = append(filterParts, levelFilter)
-	}
-
-	if typeFilter := buildFieldFilter("event_type", eventTypes); typeFilter != "" {
-		filterParts = append(filterParts, typeFilter)
 	}
 
 	if startTime != "" {
@@ -123,7 +121,7 @@ Example usage:
 			}
 		}
 
-		filter := buildPipelineEventFilter(updateId, levels, eventTypes, startTime, endTime)
+		filter := buildPipelineEventFilter(updateId, levels, startTime, endTime)
 
 		params := &PipelineEventsQueryParams{
 			Filter:  filter,
@@ -139,6 +137,9 @@ Example usage:
 		if err != nil {
 			return fmt.Errorf("failed to fetch events for pipeline %s with update ID %s: %w", pipelineId, updateId, err)
 		}
+
+		// event_type is not filterable server-side, so filter by type here.
+		events = filterEventsByType(events, eventTypes)
 
 		return cmdio.Render(ctx, events)
 	}

@@ -1,0 +1,1 @@
+Fixed `pipelines run` returning a non-zero exit code on successful runs and the `pipelines logs --event-type` filter being unusable, both caused by filtering pipeline events on the unsupported `event_type` field. Events are now filtered by type client-side.

@@ -180,14 +180,19 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceC
 	latestUpdate := *getUpdateResponse.Update
 
 	params := &PipelineEventsQueryParams{
-		Filter:  fmt.Sprintf("update_id='%s' AND event_type='update_progress'", updateId),
-		OrderBy: "timestamp asc",
+		Filter:     fmt.Sprintf("update_id='%s'", updateId),
+		MaxResults: maxResultsPerPage,
+		OrderBy:    "timestamp asc",
 	}
 
 	events, err := fetchAllPipelineEvents(ctx, w, pipelineId, params)
 	if err != nil {
 		return err
 	}
+
+	// event_type is not filterable server-side, so keep only the update_progress
+	// events (the ones enrichEvents/phaseFromUpdateProgress expect) client-side.
+	events = filterEventsByType(events, []string{"update_progress"})
 
 	err = displayPipelineUpdate(ctx, latestUpdate, pipelineId, events)
 	if err != nil {

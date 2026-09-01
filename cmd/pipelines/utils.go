@@ -153,11 +153,35 @@ type PipelineEventsQueryParams struct {
 	OrderBy    string `json:"order_by,omitempty"`
 }
 
+const maxResultsPerPage = 250
+
+// filterEventsByType returns only the events whose EventType is one of eventTypes.
+// The pipeline events API does not support filtering on event_type server-side
+// (only level, id, and timestamp are filterable), so type filtering happens here.
+// When eventTypes is empty the events are returned unchanged.
+func filterEventsByType(events []pipelines.PipelineEvent, eventTypes []string) []pipelines.PipelineEvent {
+	if len(eventTypes) == 0 {
+		return events
+	}
+
+	wanted := make(map[string]struct{}, len(eventTypes))
+	for _, t := range eventTypes {
+		wanted[t] = struct{}{}
+	}
+
+	filtered := make([]pipelines.PipelineEvent, 0, len(events))
+	for _, e := range events {
+		if _, ok := wanted[e.EventType]; ok {
+			filtered = append(filtered, e)
+		}
+	}
+	return filtered
+}
+
 // fetchAllPipelineEvents retrieves pipeline events with optional SQL filtering and ordering.
 // Necessary as current Go SDK endpoints don't support OrderBy parameter.
 // Retrieves only one page of results, so the number of results is bound by the API's limit of results per page.
 func fetchAllPipelineEvents(ctx context.Context, w *databricks.WorkspaceClient, pipelineID string, params *PipelineEventsQueryParams) ([]pipelines.PipelineEvent, error) {
-	maxResultsPerPage := 250
 	if params.MaxResults > maxResultsPerPage {
 		return nil, fmt.Errorf("number of results must be %d or less", maxResultsPerPage)
 	}
