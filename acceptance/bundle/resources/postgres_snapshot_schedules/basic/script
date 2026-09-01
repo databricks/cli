@@ -25,3 +25,6 @@ trace cat databricks.yml
 trace $CLI bundle deploy --auto-approve
 trace $CLI postgres get-snapshot-schedule "${schedule_name}" | snapshot_schedule_fields
 print_requests.py --del-body parent,project_id,branch_id --sort --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.remove.txt
+
+title "Plan again to confirm no drift after removal"
+trace $CLI bundle plan

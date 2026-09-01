@@ -75,6 +75,10 @@ Resources: 0 created, 0 changed, 1 deleted, 2 unchanged
   "schedule": null
 }
 
+=== Plan again to confirm no drift after removal
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_branches.main
