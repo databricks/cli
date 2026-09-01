@@ -54,7 +54,6 @@ skip:
   clusters[*].instance_pool_id: needs a second instance pool to exist
   clusters[*].driver_instance_pool_id: needs a second instance pool to exist
   clusters[*].policy_id: needs a cluster policy to exist
-  clusters[*].init_scripts[*].s3.kms_key: needs a KMS key registered for the workspace
   gateway_definition: needs a UC connection to a source database
   ingestion_definition.connection_name: needs a UC connection to a source database
   ingestion_definition.ingestion_gateway_id: needs an ingestion gateway pipeline to exist
@@ -65,6 +64,18 @@ skip:
   # timezone cannot move without an expression beside it. The config declares no trigger, so
   # there is none to move it with.
   trigger.cron: validated as a pair with the cron expression, which the config does not declare
+
+  # An init script entry carries exactly one of workspace, volumes, s3, abfss, gcs, dbfs or file,
+  # and base seeds the workspace member. Setting a leaf inside another arm leaves that arm without
+  # its own destination, which the backend accepts and then ignores -- every such row was recording
+  # the fake server storing a value the API drops. Covering an arm needs a fixture that seeds it,
+  # not a value for a leaf inside one that is not there.
+  clusters[*].init_scripts[*].abfss: an init script member the seeded workspace member excludes
+  clusters[*].init_scripts[*].dbfs: an init script member the seeded workspace member excludes
+  clusters[*].init_scripts[*].file: an init script member the seeded workspace member excludes
+  clusters[*].init_scripts[*].gcs: an init script member the seeded workspace member excludes
+  clusters[*].init_scripts[*].s3: an init script member the seeded workspace member excludes
+  clusters[*].init_scripts[*].volumes: an init script member the seeded workspace member excludes
 
 fields:
   # Constrained by the backend but typed as a plain string in the SDK, so nothing derives their
