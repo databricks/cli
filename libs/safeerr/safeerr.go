@@ -18,8 +18,7 @@ const maxSafeErrorSize = 1000
 type safeValue struct{ v any }
 
 type safeErr struct {
-	// err is the fmt.Errorf result. It carries the interpolated message and
-	// the unwrap chain, so this type never reimplements either.
+	// err is the fmt.Errorf result
 	err error
 
 	// safe error counterpart
