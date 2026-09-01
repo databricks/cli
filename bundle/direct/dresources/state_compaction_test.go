@@ -2,7 +2,6 @@ package dresources
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"strings"
 	"testing"
 
@@ -13,25 +12,22 @@ import (
 )
 
 const (
-	// largeDashboard is a serialized_dashboard whose JSON encoding exceeds
-	// stateHashPlaceholderLen, so it is actually compacted.
+	// largeDashboard is a serialized_dashboard longer than stateHashPlaceholderLen, so it is
+	// actually compacted.
 	largeDashboard = `{"pages":[{"name":"p1","displayName":"Page One","layout":[{"widget":{"name":"w1"}}]}]}`
 
-	// smallDashboard is a serialized_dashboard whose JSON encoding fits within
-	// stateHashPlaceholderLen, so hashing it would grow the state and it is persisted raw.
+	// smallDashboard is a serialized_dashboard no longer than stateHashPlaceholderLen, so
+	// hashing it would grow the state and it is persisted raw.
 	smallDashboard = `{"pages":[{"name":"p1"}]}`
 )
 
 // requireLargeEnoughToHash asserts a fixture is on the hashed side of the size threshold.
-// Whether a value is hashed depends on the length of its JSON encoding, so shrinking a
-// fixture would silently leave it raw and make the tests below assert the opposite of what
-// they were written for. Fail with an explicit message instead.
+// Whether a value is hashed depends on its length, so shrinking a fixture would silently
+// leave it raw and make the tests below assert the opposite of what they were written for.
 func requireLargeEnoughToHash(t *testing.T, content string) {
 	t.Helper()
-	encoded, err := json.Marshal(content)
-	require.NoError(t, err)
-	require.Greater(t, len(encoded), stateHashPlaceholderLen,
-		"fixture must encode to more than %d bytes to be hashed; enlarge it", stateHashPlaceholderLen)
+	require.Greater(t, len(content), stateHashPlaceholderLen,
+		"fixture must be more than %d bytes to be hashed; enlarge it", stateHashPlaceholderLen)
 }
 
 // requireTooSmallToHash is the inverse of requireLargeEnoughToHash: it asserts a fixture
@@ -39,10 +35,8 @@ func requireLargeEnoughToHash(t *testing.T, content string) {
 // persisted-raw test into a hashing test that passes for the wrong reason.
 func requireTooSmallToHash(t *testing.T, content string) {
 	t.Helper()
-	encoded, err := json.Marshal(content)
-	require.NoError(t, err)
-	require.LessOrEqual(t, len(encoded), stateHashPlaceholderLen,
-		"fixture must encode to at most %d bytes to be persisted raw; shrink it", stateHashPlaceholderLen)
+	require.LessOrEqual(t, len(content), stateHashPlaceholderLen,
+		"fixture must be at most %d bytes to be persisted raw; shrink it", stateHashPlaceholderLen)
 }
 
 // TestHashedFieldsAreTopLevel guards the shallow-copy assumption in CompactState:
@@ -67,6 +61,29 @@ func TestCompactStateRejectsNestedField(t *testing.T) {
 
 	_, err := CompactState(cfg, state)
 	require.ErrorContains(t, err, "must be a top-level field")
+}
+
+// TestCompactStateRejectsNonStringField verifies CompactState panics when a hashed_fields
+// value is not a string. hashed_fields values are serialized to a string before the deploy
+// engine runs, so a non-string here is a broken invariant, not a user error.
+func TestCompactStateRejectsNonStringField(t *testing.T) {
+	state := &DashboardState{DashboardConfig: resources.DashboardConfig{
+		SerializedDashboard: map[string]any{"pages": []any{}},
+	}}
+
+	assert.Panics(t, func() {
+		_, _ = CompactState(GetResourceConfig("dashboards"), state)
+	})
+}
+
+// TestCompactStateSkipsNilField verifies an unset hashed_fields value passes through
+// untouched, since there is nothing to hash.
+func TestCompactStateSkipsNilField(t *testing.T) {
+	state := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: nil}}
+
+	out, err := CompactState(GetResourceConfig("dashboards"), state)
+	require.NoError(t, err)
+	assert.Nil(t, out.(*DashboardState).SerializedDashboard)
 }
 
 // TestCompactStateNoDeclaredFields verifies CompactState is a no-op for a resource
@@ -111,31 +128,26 @@ func TestCompactStateMigratesLegacyFullContent(t *testing.T) {
 func TestHashStateValue(t *testing.T) {
 	requireLargeEnoughToHash(t, largeDashboard)
 
-	stringHash, err := hashStateValue(largeDashboard)
-	require.NoError(t, err)
-	require.IsType(t, "", stringHash)
-	assert.True(t, strings.HasPrefix(stringHash.(string), stateHashPrefix))
+	stringHash := hashStateValue(largeDashboard)
+	assert.True(t, strings.HasPrefix(stringHash, stateHashPrefix))
+	assert.Equal(t, stringHash, hashStateValue(largeDashboard))
 
-	again, err := hashStateValue(largeDashboard)
-	require.NoError(t, err)
-	assert.Equal(t, stringHash, again)
-
-	other, err := hashStateValue(strings.Replace(largeDashboard, "p1", "p2", 1))
-	require.NoError(t, err)
+	other := hashStateValue(strings.Replace(largeDashboard, "p1", "p2", 1))
 	assert.NotEqual(t, stringHash, other)
 }
 
-// TestHashStateValueIsValueAgnostic verifies hashStateValue hashes, not just
-// dashboard JSON, since a hashed_fields field may hold arbitrary content (YAML, scripts, SQL).
-// It also checks that small JSON values stay the same
-func TestHashStateValueIsValueAgnostic(t *testing.T) {
-	// A string encodes with two surrounding quotes, so a raw string of
-	// stateHashPlaceholderLen-2 chars sits exactly at the limit; one more tips it over.
-	atLimit := strings.Repeat("x", stateHashPlaceholderLen-2)
+// TestHashStateValueContentAgnostic verifies hashStateValue hashes any string content, not
+// just dashboard JSON, since a hashed_fields field may hold arbitrary serialized content
+// (YAML, scripts, SQL). It also checks that content no larger than a placeholder stays raw,
+// and that hashing is deterministic and idempotent.
+func TestHashStateValueContentAgnostic(t *testing.T) {
+	// A raw string of exactly stateHashPlaceholderLen bytes sits at the limit; one more
+	// tips it over.
+	atLimit := strings.Repeat("x", stateHashPlaceholderLen)
 
 	cases := []struct {
 		name    string
-		content any
+		content string
 		hashed  bool
 	}{
 		{name: "yaml", content: "resources:\n  jobs:\n    nightly:\n      name: nightly-etl\n      tasks:\n        - task_key: main\n          notebook_task:\n            notebook_path: ./main.py\n", hashed: true},
@@ -144,12 +156,6 @@ func TestHashStateValueIsValueAgnostic(t *testing.T) {
 		{name: "sql", content: "SELECT user_id, COUNT(*) AS n FROM events WHERE ts > current_date - INTERVAL 7 DAYS GROUP BY user_id ORDER BY n DESC LIMIT 100", hashed: true},
 		{name: "markdown", content: "# Weekly report\n\nThis summarizes **activity** across all regions.\n\n- signups\n- active users\n- churn\n\nSee the appendix for methodology.\n", hashed: true},
 		{name: "json_array", content: `[{"id":1,"tags":["a","b"]},{"id":2,"tags":["c","d"]},{"id":3,"tags":["e","f"]}]`, hashed: true},
-		{name: "non_string_map", content: map[string]any{
-			"query":  "SELECT * FROM t",
-			"params": []any{"alpha", "beta", "gamma"},
-			"limit":  100,
-			"nested": map[string]any{"a": 1, "b": 2, "c": 3},
-		}, hashed: true},
 		{name: "small_stays_raw", content: smallDashboard, hashed: false},
 		{name: "at_size_limit", content: atLimit, hashed: false},
 		{name: "over_size_limit", content: atLimit + "x", hashed: true},
@@ -157,24 +163,20 @@ func TestHashStateValueIsValueAgnostic(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out, err := hashStateValue(tc.content)
-			require.NoError(t, err)
+			out := hashStateValue(tc.content)
 
 			if tc.hashed {
-				require.IsType(t, "", out)
-				assert.True(t, isStateHashPlaceholder(out.(string)))
+				assert.True(t, isStateHashPlaceholder(out))
 				assert.Len(t, out, stateHashPlaceholderLen)
 			} else {
 				assert.Equal(t, tc.content, out)
 			}
 
-			again, err := hashStateValue(tc.content)
-			require.NoError(t, err)
-			assert.Equal(t, out, again)
-
-			rehashed, err := hashStateValue(out)
-			require.NoError(t, err)
-			assert.Equal(t, out, rehashed)
+			// Deterministic: same content -> same result.
+			assert.Equal(t, out, hashStateValue(tc.content))
+			// Idempotent: re-hashing the result is a no-op, so re-compacting an
+			// already-compact state does not double-hash.
+			assert.Equal(t, out, hashStateValue(out))
 		})
 	}
 }
@@ -214,12 +216,6 @@ func TestCompactStateSkipsSmallField(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, smallDashboard, out.(*DashboardState).SerializedDashboard)
 
-	// The persisted form holds the content itself, and holding it costs less than the
-	// placeholder that replacing it would have written.
-	persisted, err := json.Marshal(out.(*DashboardState).SerializedDashboard)
-	require.NoError(t, err)
-	assert.LessOrEqual(t, len(persisted), stateHashPlaceholderLen)
-
 	// Compacting the already-raw state again leaves it alone, so repeated saves and every
 	// side of the diff keep comparing content against content.
 	out2, err := CompactState(cfg, out)
@@ -242,21 +238,11 @@ func TestCompactStateHashesLargeField(t *testing.T) {
 	assert.Len(t, compacted, stateHashPlaceholderLen)
 
 	// The whole point of hashing: the persisted form is smaller than the raw content.
-	persisted, err := json.Marshal(compacted)
-	require.NoError(t, err)
-	raw, err := json.Marshal(largeDashboard)
-	require.NoError(t, err)
-	assert.Less(t, len(persisted), len(raw))
+	assert.Less(t, len(compacted.(string)), len(largeDashboard))
 }
 
-// TestHashStateValueEmptyAndNil verifies empty and nil values pass through unchanged,
-// since there is nothing to hash.
-func TestHashStateValueEmptyAndNil(t *testing.T) {
-	empty, err := hashStateValue("")
-	require.NoError(t, err)
-	assert.Empty(t, empty)
-
-	null, err := hashStateValue(nil)
-	require.NoError(t, err)
-	assert.Nil(t, null)
+// TestHashStateValueEmpty verifies an empty string passes through unchanged, since there is
+// nothing to hash.
+func TestHashStateValueEmpty(t *testing.T) {
+	assert.Empty(t, hashStateValue(""))
 }

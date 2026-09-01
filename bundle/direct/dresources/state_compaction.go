@@ -3,7 +3,6 @@ package dresources
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -36,37 +35,19 @@ func isStateHashPlaceholder(s string) bool {
 	return true
 }
 
-// hashStateValue returns a content-hash placeholder ("sha256:<hex>") over the JSON
-// encoding of v. It is used to store large, equality-only fields (e.g. a dashboard's
-// serialized_dashboard) compactly in state instead of their full contents.
+// hashStateValue returns a content-hash placeholder ("sha256:<hex>") for s, used to store
+// large, equality-only string fields (e.g. a dashboard's serialized_dashboard) compactly in
+// state instead of their full contents. hashed_fields values are serialized to a string
+// before the deploy engine runs, so this operates on a plain string.
 //
-// It is idempotent and stable: nil, an empty string, a value that is already a
-// placeholder, and a value too small to be worth hashing are returned unchanged.
-func hashStateValue(v any) (any, error) {
-	if s, ok := v.(string); ok {
-		if s == "" || isStateHashPlaceholder(s) {
-			return v, nil
-		}
+// It is idempotent and stable: an empty string, a value already a placeholder, and a value
+// no larger than a placeholder are returned unchanged.
+func hashStateValue(s string) string {
+	if s == "" || isStateHashPlaceholder(s) || len(s) <= stateHashPlaceholderLen {
+		return s
 	}
-
-	if v == nil {
-		return v, nil
-	}
-
-	// json.Marshal sorts map keys, so the digest is stable across runs for equal values.
-	data, err := json.Marshal(v)
-	if err != nil {
-		return nil, fmt.Errorf("marshalling value for hashing: %w", err)
-	}
-
-	// Compare against the JSON encoding, since that is what the state file stores
-	if len(data) <= stateHashPlaceholderLen {
-		return v, nil
-	}
-
-	sum := sha256.Sum256(data)
-
-	return stateHashPrefix + hex.EncodeToString(sum[:]), nil
+	sum := sha256.Sum256([]byte(s))
+	return stateHashPrefix + hex.EncodeToString(sum[:])
 }
 
 // CompactState returns a copy of state with every field declared in cfg.HashedFields
@@ -89,7 +70,7 @@ func CompactState(cfg *ResourceLifecycleConfig, state any) (any, error) {
 	}
 
 	// Shallow copy so the caller's value (reused for the deploy) is untouched. This is
-	// safe only because every hashed_fields field is a top-level scalar (e.g.
+	// safe only because every hashed_fields field is a top-level field (e.g.
 	// serialized_dashboard): SetByString overwrites it on the copy directly. A field
 	// reached through a shared pointer/slice/map would need a deep copy here.
 	out := reflect.New(rv.Type().Elem())
@@ -114,11 +95,18 @@ func CompactState(cfg *ResourceLifecycleConfig, state any) (any, error) {
 		if err != nil {
 			return nil, fmt.Errorf("compacting state field %q: %w", field, err)
 		}
-		hashed, err := hashStateValue(current)
-		if err != nil {
-			return nil, fmt.Errorf("compacting state field %q: %w", field, err)
+		if current == nil {
+			// Field is unset; nothing to hash.
+			continue
 		}
-		if err := structaccess.SetByString(compacted, field, hashed); err != nil {
+		s, ok := current.(string)
+		if !ok {
+			// hashed_fields values are serialized to a string before the deploy engine
+			// runs (e.g. ConfigureDashboardSerializedDashboard), so a non-string here is a
+			// broken invariant / programming error, not a user error — fail loudly.
+			panic(fmt.Sprintf("hashed_fields field %q must be a string, got %T", field, current))
+		}
+		if err := structaccess.SetByString(compacted, field, hashStateValue(s)); err != nil {
 			return nil, fmt.Errorf("compacting state field %q: %w", field, err)
 		}
 	}
