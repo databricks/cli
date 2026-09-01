@@ -163,13 +163,9 @@ func Check(t reflect.Type) (Report, error) {
 	return report, nil
 }
 
-// JSONLeaves marshals v and returns its scalar leaves keyed by the structpath rendering
-// of their location, which is the dialect every libs/structs package speaks.
-func JSONLeaves(v any) (map[string]string, error) {
-	leaves, _, err := jsonLeaves(v)
-	return leaves, err
-}
-
+// jsonLeaves marshals v and returns its scalar leaves keyed by the structpath rendering of
+// their location, which is the dialect every libs/structs package speaks, plus the subset of
+// those leaves whose Go type marshalled itself as a scalar.
 func jsonLeaves(v any) (map[string]string, map[string]bool, error) {
 	blob, err := json.Marshal(v)
 	if err != nil {
@@ -395,14 +391,6 @@ func coveredBy(known []string, path string) bool {
 		}
 	}
 	return false
-}
-
-// KnownDivergence records a disagreement that exists today and is not this test's to fix.
-// Every entry must say why it is here and what removes it.
-type KnownDivergence struct {
-	Type   string
-	Paths  []string
-	Reason string
 }
 
 // Filter removes the known divergences from a report, so the test fails only on new ones.
