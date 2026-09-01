@@ -1,0 +1,60 @@
+capacity                                     absent     x          UPDATE_IGNORED
+capacity                                     absent     y          UPDATE_IGNORED
+capacity                                     x          y          POST_DEPLOY_DRIFT  capacity
+capacity                                     y          x          POST_DEPLOY_DRIFT  capacity
+custom_tags                                  absent     len1       COLLATERAL_DRIFT  capacity
+custom_tags                                  len0       len1       COLLATERAL_DRIFT  capacity
+custom_tags                                  len1       absent     COLLATERAL_DRIFT  capacity
+custom_tags                                  len1       len0       COLLATERAL_DRIFT  capacity
+custom_tags[0].key                           absent     x          COLLATERAL_DRIFT  capacity
+custom_tags[0].key                           absent     y          COLLATERAL_DRIFT  capacity
+custom_tags[0].key                           x          absent     COLLATERAL_DRIFT  capacity
+custom_tags[0].key                           x          y          COLLATERAL_DRIFT  capacity
+custom_tags[0].key                           y          absent     COLLATERAL_DRIFT  capacity
+custom_tags[0].key                           y          x          COLLATERAL_DRIFT  capacity
+custom_tags[0].value                         absent     x          COLLATERAL_DRIFT  capacity
+custom_tags[0].value                         absent     y          COLLATERAL_DRIFT  capacity
+custom_tags[0].value                         x          absent     COLLATERAL_DRIFT  capacity
+custom_tags[0].value                         x          y          COLLATERAL_DRIFT  capacity
+custom_tags[0].value                         y          absent     COLLATERAL_DRIFT  capacity
+custom_tags[0].value                         y          x          COLLATERAL_DRIFT  capacity
+enable_pg_native_login                       absent     true       COLLATERAL_DRIFT  capacity
+enable_pg_native_login                       false      true       COLLATERAL_DRIFT  capacity
+enable_pg_native_login                       true       absent     COLLATERAL_DRIFT  capacity
+enable_pg_native_login                       true       false      COLLATERAL_DRIFT  capacity
+enable_readable_secondaries                  absent     true       COLLATERAL_DRIFT  capacity
+enable_readable_secondaries                  false      true       COLLATERAL_DRIFT  capacity
+enable_readable_secondaries                  true       absent     COLLATERAL_DRIFT  capacity
+enable_readable_secondaries                  true       false      COLLATERAL_DRIFT  capacity
+node_count                                   1          2          COLLATERAL_DRIFT  capacity
+node_count                                   1          absent     COLLATERAL_DRIFT  capacity
+node_count                                   2          1          COLLATERAL_DRIFT  capacity
+node_count                                   2          absent     COLLATERAL_DRIFT  capacity
+node_count                                   absent     1          COLLATERAL_DRIFT  capacity
+node_count                                   absent     2          COLLATERAL_DRIFT  capacity
+retention_window_in_days                     1          2          COLLATERAL_DRIFT  capacity
+retention_window_in_days                     1          absent     COLLATERAL_DRIFT  capacity
+retention_window_in_days                     2          1          COLLATERAL_DRIFT  capacity
+retention_window_in_days                     2          absent     COLLATERAL_DRIFT  capacity
+retention_window_in_days                     absent     1          COLLATERAL_DRIFT  capacity
+retention_window_in_days                     absent     2          COLLATERAL_DRIFT  capacity
+stopped                                      absent     true       COLLATERAL_DRIFT  capacity
+stopped                                      false      true       COLLATERAL_DRIFT  capacity
+stopped                                      true       absent     COLLATERAL_DRIFT  capacity
+stopped                                      true       false      COLLATERAL_DRIFT  capacity
+usage_policy_id                              absent     x          COLLATERAL_DRIFT  capacity
+usage_policy_id                              absent     y          COLLATERAL_DRIFT  capacity
+usage_policy_id                              x          absent     COLLATERAL_DRIFT  capacity
+usage_policy_id                              x          y          COLLATERAL_DRIFT  capacity
+usage_policy_id                              y          absent     COLLATERAL_DRIFT  capacity
+usage_policy_id                              y          x          COLLATERAL_DRIFT  capacity
+
+=== summary
+OK                 2
+OK_RECREATE        32
+SUPPRESSED         6
+NOT_OBSERVABLE     2
+UPDATE_IGNORED     2
+POST_DEPLOY_DRIFT  2
+COLLATERAL_DRIFT   46
+SKIPPED            24

@@ -966,11 +966,19 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
-	// Simulate cloud behavior: first poll returns RUNNING, next the terminal state.
+	// Simulate cloud behavior: first poll returns RUNNING, next the terminal state. The waiter then
+	// pays the SDK's backoff -- attempt times a second, plus jitter -- for every run, which a suite
+	// deploying thousands of them cannot afford. SettleAsyncImmediately reports the terminal state
+	// on the first poll instead; the acceptance suite leaves the simulation on, so the waiter and
+	// its logging stay covered there.
 	if run.State.LifeCycleState == jobs.RunLifeCycleStateRunning {
 		// Transition stored state to TERMINATED for the next poll.
 		terminateRun(&run)
 		s.JobRuns[runIdInt] = run
+
+		if s.SettleAsyncImmediately {
+			return Response{Body: run}
+		}
 
 		// Return RUNNING for this poll (before the transition).
 		runResp := run

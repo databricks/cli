@@ -1,0 +1,15 @@
+is_protected                                 true       absent     BACKEND_ERROR  cannot update resources.postgres_branches.foo: updating id=projects/test-pg-project-[UNIQU...ovided in request (400 INVALID_PARAMETER_VALUE)
+no_expiry                                    absent     false      BASE_ERROR  cannot update resources.postgres_branches.foo: updating id=projects/test-pg-project-[UNIQU...ovided in request (400 INVALID_PARAMETER_VALUE)
+no_expiry                                    true       absent     BACKEND_ERROR  cannot update resources.postgres_branches.foo: updating id=projects/test-pg-project-[UNIQU...ovided in request (400 INVALID_PARAMETER_VALUE)
+parent                                       x          y          BASE_ERROR  cannot recreate resources.postgres_branches.foo: No stub found for pattern: POST /api/2.0/postgres/x/branches (501 <nil>)
+parent                                       y          x          BASE_ERROR  cannot recreate resources.postgres_branches.foo: No stub found for pattern: POST /api/2.0/postgres/y/branches (501 <nil>)
+
+=== summary
+OK                 10
+OK_RECREATE        14
+OK_INERT           6
+SUPPRESSED         4
+NOT_OBSERVABLE     1
+BACKEND_ERROR      2
+SKIPPED            1
+BASE_ERROR         3
