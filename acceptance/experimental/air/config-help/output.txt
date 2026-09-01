@@ -50,6 +50,7 @@ config
     parameters                   Free-form values passed through to the workload.
     mlflow_run_name              Name for the MLflow run.
     mlflow_experiment_directory  Workspace directory holding the MLflow experiment.
+    mlflow_artifact_location     DBFS location where MLflow artifacts are written.
     permissions                  Who may view or manage the run, as a list of principal plus level grants.
     usage_policy_name            Usage policy to bill the run to, by name.
     usage_policy_id              Usage policy to bill the run to, by id.
@@ -62,10 +63,33 @@ config.compute
   Which accelerators to run on and how many.
 
   Fields:
-    num_accelerators  Total number of GPUs to allocate.
-    accelerator_type  Which accelerator to run on, e.g. GPU_1xA10.
+    num_accelerators         Total number of GPUs to allocate.
+    accelerator_type         Which accelerator to run on, e.g. GPU_1xA10.
+    provisioned_capacity_id  Pre-provisioned AIR capacity reservation id.
 
 Use "-h config.compute.<field>" for details on a field.
+
+=== new submission fields are documented
+>>> [CLI] experimental air run -h config.mlflow_artifact_location
+config.mlflow_artifact_location
+  DBFS location where MLflow artifacts are written. A /Volumes path is normalized to dbfs:/Volumes/... .
+
+  Type:     string
+  Required: no
+
+>>> [CLI] experimental air run -h config.compute.provisioned_capacity_id
+config.compute.provisioned_capacity_id
+  Pre-provisioned AIR capacity reservation id. Must be 1-255 characters.
+
+  Type:     string
+  Required: no
+
+>>> [CLI] experimental air run -h config.environment.dependencies
+config.environment.dependencies
+  Inline list of packages to install. Not allowed alongside docker_image.
+
+  Type:     list of strings
+  Required: no
 
 === leaf field
 >>> [CLI] experimental air run -h config.compute.accelerator_type
@@ -103,7 +127,7 @@ config.compute.num_accelerators
 >>> [CLI] experimental air run -h config.compute.acclerator_type
 Error: unknown config field "config.compute.acclerator_type"; did you mean "accelerator_type"?
 
-fields under "config.compute" are: accelerator_type, num_accelerators
+fields under "config.compute" are: accelerator_type, num_accelerators, provisioned_capacity_id
 
 === free-form map keys are not schema fields
 >>> [CLI] experimental air run -h config.parameters.learning_rate

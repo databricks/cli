@@ -322,14 +322,14 @@ func getForceSendFieldsForFromTyped(v reflect.Value) map[int][]string {
 
 		if field.Name == "ForceSendFields" && !field.Anonymous {
 			// Direct ForceSendFields (structKey = -1)
-			if fields, ok := fieldValue.Interface().([]string); ok {
+			if fields, ok := reflect.TypeAssert[[]string](fieldValue); ok {
 				result[-1] = fields
 			}
 		} else if field.Anonymous {
 			// Embedded struct - check for ForceSendFields inside it
 			if embeddedStruct := getEmbeddedStructForReading(fieldValue); embeddedStruct.IsValid() {
 				if forceSendField := embeddedStruct.FieldByName("ForceSendFields"); forceSendField.IsValid() {
-					if fields, ok := forceSendField.Interface().([]string); ok {
+					if fields, ok := reflect.TypeAssert[[]string](forceSendField); ok {
 						result[i] = fields
 					}
 				}

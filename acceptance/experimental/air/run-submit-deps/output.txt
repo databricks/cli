@@ -5,14 +5,16 @@ Submitting experiment: deps-smoke
 Submitted workload with Job Run ID: 555
 View job run at: [DATABRICKS_URL]/jobs/runs/555
 
-Tip: use --watch to stream logs until the run completes.
+Tip: use --watch when submitting a run to stream logs to your terminal.
+Stream logs after submission using:
+  databricks experimental air logs 555
 
 === only config + command are uploaded; no requirements.yaml
 >>> print_requests.py //api/2.0/workspace-files/import-file --oneline --sort --unique --keep
 {"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/command.sh", "q": {"overwrite": "true"}, "raw_body": "python train.py"}
-{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/training_config.yaml", "q": {"overwrite": "true"}, "raw_body": "experiment_name: deps-smoke\ncommand: python train.py\ncompute:\n  accelerator_type: GPU_1xH100\n  num_accelerators: 1\nenvironment:\n  version: 5\n  dependencies:\n    - numpy\n    - torch==2.3.0\n"}
+{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/training_config.yaml", "q": {"overwrite": "true"}, "raw_body": "experiment_name: deps-smoke\ncommand: python train.py\ncompute:\n  accelerator_type: GPU_1xH100\n  num_accelerators: 1\n  provisioned_capacity_id: capacity-123\nenvironment:\n  version: 5\n  dependencies:\n    - numpy\n    - torch==2.3.0\nmlflow_artifact_location: /Volumes/main/default/air-artifacts\n"}
 
-=== declared deps ride on environments[].spec.dependencies
+=== inline deps, artifact location, and capacity id reach the submit payload
 >>> print_requests.py //api/2.2/jobs/runs/submit
 {
   "method": "POST",
@@ -40,11 +42,13 @@ Tip: use --watch to stream logs until the run completes.
               "command_path": "/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/command.sh",
               "compute": {
                 "accelerator_count": 1,
-                "accelerator_type": "GPU_1xH100"
+                "accelerator_type": "GPU_1xH100",
+                "provisioned_capacity_id": "capacity-123"
               }
             }
           ],
-          "experiment": "deps-smoke"
+          "experiment": "deps-smoke",
+          "mlflow_artifact_location": "dbfs:/Volumes/main/default/air-artifacts"
         },
         "environment_key": "default",
         "max_retries": 3,

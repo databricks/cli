@@ -1,0 +1,19 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint",
+  "q": {
+    "update_mask": "spec.settings.pg_settings"
+  },
+  "body": {
+    "spec": {
+      "autoscaling_limit_max_cu": 8,
+      "autoscaling_limit_min_cu": 0.5,
+      "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
+      "settings": {
+        "pg_settings": {
+          "statement_timeout": "16000"
+        }
+      }
+    }
+  }
+}

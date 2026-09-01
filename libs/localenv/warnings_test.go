@@ -46,6 +46,22 @@ dev = ["databricks-connect~=16.1.0"]
 	assert.Equal(t, []string{WarnRequiresPythonOverridden, WarnDBConnectPinOverridden}, codes(got))
 }
 
+func TestDetectMergeWarningsWithMultilineString(t *testing.T) {
+	user := []byte(`[project]
+requires-python = ">=3.10"
+description = """
+[dependency-groups]
+dev = ["databricks-connect==1.0.0"]
+"""
+
+[dependency-groups]
+dev = ["databricks-connect~=16.1.0"]
+`)
+	c := Constraints{RequiresPython: "==3.12.*", DatabricksConnect: "databricks-connect~=18.0.0"}
+	got := detectWarnings(user, c)
+	assert.Equal(t, []string{WarnRequiresPythonOverridden, WarnDBConnectPinOverridden}, codes(got))
+}
+
 func TestDetectMergeWarningsNoOverrideWhenMatching(t *testing.T) {
 	// User already matches the env pins exactly — the merge is a no-op, so no
 	// override warnings.

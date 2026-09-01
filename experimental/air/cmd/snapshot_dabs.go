@@ -23,6 +23,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+// uploadProvenanceSidecars controls collection and upload of git_state.json
+// and git_diff.patch during submission. Keep the implementation available, but
+// turn it off for now because the additional local queries and WSFS writes add
+// latency to AIR submissions.
+const uploadProvenanceSidecars = false
+
 // snapshotViaDABsUpload packages the code_source into a tarball and uploads it using
 // DABs' artifact-upload plumbing (the same path a bundle uses for a file-valued
 // code_source_path), returning the remote path to attach to the ai_runtime_task.
@@ -68,7 +74,7 @@ func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, s
 	// in would force a distinct tarball per run (defeating the cache) or serve a prior
 	// run's stale provenance on a cache hit. They also live in the per-run launch dir,
 	// not the shared artifact dir, so they don't accumulate. Keep them out of the tar.
-	if plan.isGitRepo {
+	if uploadProvenanceSidecars && plan.isGitRepo {
 		result.GitStatePath, result.GitDiffPath = uploadSnapshotSidecars(ctx, sidecarStore, sidecarBase, newGitRepo(repoPath), plan)
 	}
 	return result, nil

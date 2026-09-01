@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -67,6 +68,9 @@ func TestComputeConfigValidate(t *testing.T) {
 		{"single node", computeConfig{NumAccelerators: 8, AcceleratorType: "GPU_8xH100"}, ""},
 		{"multiple nodes", computeConfig{NumAccelerators: 16, AcceleratorType: "GPU_8xH100"}, ""},
 		{"single-gpu partitions", computeConfig{NumAccelerators: 3, AcceleratorType: "GPU_1xH100"}, ""},
+		{"capacity id", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", ProvisionedCapacityID: new(" capacity ")}, ""},
+		{"empty capacity id", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", ProvisionedCapacityID: new(" ")}, "cannot be empty"},
+		{"long capacity id", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", ProvisionedCapacityID: new(strings.Repeat("a", 256))}, "255 characters or less"},
 		{"unknown type", computeConfig{NumAccelerators: 8, AcceleratorType: "b200"}, "accelerator_type"},
 		{"legacy type rejected", computeConfig{NumAccelerators: 8, AcceleratorType: "h100_80gb"}, "accelerator_type"},
 		{"non-positive count", computeConfig{NumAccelerators: 0, AcceleratorType: "GPU_1xH100"}, "must be positive"},
