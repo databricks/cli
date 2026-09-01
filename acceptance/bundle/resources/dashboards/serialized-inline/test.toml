@@ -1,8 +1,3 @@
 Ignore = [
     "databricks.yml",
 ]
-
-# This test does no read-after-deploy, so the inherited eventual-consistency stale GET
-# is unnecessary. With it enabled, the direct-engine destroy's first GET 404s and reports
-# "0 deleted", diverging from terraform. Disable it so both engines destroy identically.
-Env.INJECT_STALE_ON_DIRECT = "0"

@@ -29,11 +29,3 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }
-
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.dashboards.inline_dash
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dashboard-serialized-inline-[UNIQUE_NAME]/default
-
-Destroy: 1 deleted

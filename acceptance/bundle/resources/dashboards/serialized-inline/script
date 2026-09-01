@@ -1,8 +1,11 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
-    rm out.requests.txt
+    # Cleanup only. The direct engine's destroy 404s on the injected stale GET and
+    # reports "0 deleted" while terraform reports "1 deleted", so keep it out of the
+    # compared output.
+    $CLI bundle destroy --auto-approve &> LOG.destroy
+    rm -f out.requests.txt
 }
 trap cleanup EXIT
 
