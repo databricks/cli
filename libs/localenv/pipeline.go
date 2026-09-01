@@ -247,7 +247,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 
 	// Phase: provision — ensure Python, run uv sync, seed pip.
 	p.report(ctx, PhaseProvision)
-	if err := p.provision(ctx, pyMinor); err != nil {
+	if err := p.provision(ctx, pyMinor, c.RequiresPython); err != nil {
 		return err
 	}
 
@@ -492,11 +492,16 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 
 // provision ensures the required Python version is installed, runs uv sync, and
 // seeds pip. All three are reported under the provision phase.
-func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
-	if err := p.PM.EnsurePython(ctx, pyMinor); err != nil {
+func (p *Pipeline) provision(ctx context.Context, pyMinor, constraint string) error {
+	selection, err := p.PM.EnsurePython(ctx, pyMinor, constraint)
+	if err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrPythonInstall, "ensure python %s failed", pyMinor))
 	}
-	if err := p.PM.Provision(ctx, p.ProjectDir, pyMinor); err != nil {
+	// Record how Python was resolved before sync: if provisioning fails after an
+	// installed fallback was selected, IDE consumers still need that categorical
+	// fact to offer the correct manual recovery without receiving the path.
+	p.res.PythonResolution = selection.Resolution
+	if err := p.PM.Provision(ctx, p.ProjectDir, selection.Executable); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "provision failed"))
 	}
 	if err := p.PM.PostProvision(ctx, p.ProjectDir); err != nil {

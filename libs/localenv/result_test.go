@@ -44,6 +44,23 @@ func TestNewResultEmitsEmptyArraysNotNull(t *testing.T) {
 	assert.Contains(t, string(bare), `"phases":null`, "sanity: bare literal is the null case")
 }
 
+func TestResultEmitsPythonResolutionCategorically(t *testing.T) {
+	result := NewResult()
+	result.PythonResolution = PythonResolutionInstalledFallback
+
+	b, err := json.Marshal(result)
+
+	require.NoError(t, err)
+	assert.Contains(t, string(b), `"pythonResolution":"installed_fallback"`)
+	assert.NotContains(t, string(b), "python3.12")
+}
+
+func TestResultOmitsUnknownPythonResolution(t *testing.T) {
+	b, err := json.Marshal(NewResult())
+	require.NoError(t, err)
+	assert.NotContains(t, string(b), "pythonResolution")
+}
+
 func TestComputeInfoLabel(t *testing.T) {
 	cases := []struct {
 		name string

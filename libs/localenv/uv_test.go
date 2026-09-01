@@ -39,7 +39,131 @@ func TestUvArgs(t *testing.T) {
 	m := &uvManager{bin: "uv"}
 	assert.Equal(t, []string{"sync", "--python", "3.12"}, m.syncArgs("3.12"))
 	assert.Equal(t, []string{"python", "install", "3.12"}, m.pythonInstallArgs("3.12"))
+	assert.Equal(t, []string{
+		"python", "list", "--only-installed", "--all-versions",
+		"--output-format", "json", "--managed-python", "cpython@==3.12.*",
+	}, m.pythonListArgs("==3.12.*", true))
+	assert.Equal(t, []string{
+		"python", "list", "--only-installed", "--all-versions",
+		"--output-format", "json", "--no-managed-python", "cpython@==3.12.*",
+	}, m.pythonListArgs("==3.12.*", false))
 	assert.Equal(t, []string{"pip", "install", "pip", "--python", "/p/.venv/bin/python"}, m.pipSeedArgs("/p/.venv/bin/python"))
+}
+
+func TestSelectInstalledPython(t *testing.T) {
+	tests := []struct {
+		name    string
+		managed string
+		system  string
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "newer system patch beats managed",
+			managed: `[{"version_parts":{"major":3,"minor":12,"patch":10},"path":"/managed/3.12.10"}]`,
+			system:  `[{"version_parts":{"major":3,"minor":12,"patch":11},"path":"/system/3.12.11"}]`,
+			want:    "/system/3.12.11",
+		},
+		{
+			name:    "managed wins an equal-version tie",
+			managed: `[{"version_parts":{"major":3,"minor":12,"patch":10},"path":"/managed/3.12.10"}]`,
+			system:  `[{"version_parts":{"major":3,"minor":12,"patch":10},"path":"/system/3.12.10"}]`,
+			want:    "/managed/3.12.10",
+		},
+		{
+			name:    "highest candidate within one source wins",
+			managed: `[{"version_parts":{"major":3,"minor":12,"patch":8},"path":"/managed/3.12.8"},{"version_parts":{"major":3,"minor":12,"patch":12},"path":"/managed/3.12.12"}]`,
+			system:  `[]`,
+			want:    "/managed/3.12.12",
+		},
+		{name: "no candidates", managed: `[]`, system: `[]`, wantErr: true},
+		{name: "malformed JSON", managed: `{`, system: `[]`, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := selectInstalledPython([]byte(tt.managed), []byte(tt.system))
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Empty(t, got)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestEnsurePythonStopsAfterSuccessfulInstall(t *testing.T) {
+	var calls [][]string
+	m := &uvManager{bin: "uv", runFn: func(_ context.Context, args []string, _ string) (string, error) {
+		calls = append(calls, args)
+		return "", nil
+	}}
+
+	selection, err := m.EnsurePython(t.Context(), "3.12", "==3.12.*")
+
+	require.NoError(t, err)
+	assert.Equal(t, PythonSelection{
+		Executable: "3.12",
+		Resolution: PythonResolutionUVInstallSucceeded,
+	}, selection)
+	assert.Equal(t, [][]string{{"uv", "python", "install", "3.12"}}, calls)
+}
+
+func TestEnsurePythonFallsBackToInstalledInterpreter(t *testing.T) {
+	var calls [][]string
+	m := &uvManager{bin: "uv", runFn: func(_ context.Context, args []string, _ string) (string, error) {
+		calls = append(calls, args)
+		switch len(calls) {
+		case 1:
+			return "", errors.New("download blocked")
+		case 2:
+			return `[{"version_parts":{"major":3,"minor":12,"patch":10},"path":"/managed/python3.12"}]`, nil
+		case 3:
+			return `[{"version_parts":{"major":3,"minor":12,"patch":11},"path":"/system/python3.12"}]`, nil
+		default:
+			t.Fatalf("unexpected extra uv call: %v", args)
+			return "", nil
+		}
+	}}
+
+	selection, err := m.EnsurePython(t.Context(), "3.12", "==3.12.*")
+
+	require.NoError(t, err)
+	assert.Equal(t, PythonSelection{
+		Executable: "/system/python3.12",
+		Resolution: PythonResolutionInstalledFallback,
+	}, selection)
+	require.Len(t, calls, 3)
+	assert.Equal(t, []string{
+		"uv", "python", "list", "--only-installed", "--all-versions",
+		"--output-format", "json", "--managed-python", "cpython@==3.12.*",
+	}, calls[1])
+	assert.Equal(t, []string{
+		"uv", "python", "list", "--only-installed", "--all-versions",
+		"--output-format", "json", "--no-managed-python", "cpython@==3.12.*",
+	}, calls[2])
+}
+
+func TestEnsurePythonDoesNotRetryWhenFallbackFails(t *testing.T) {
+	installCalls := 0
+	m := &uvManager{bin: "uv", runFn: func(_ context.Context, args []string, _ string) (string, error) {
+		if len(args) >= 3 && args[1] == "python" && args[2] == "install" {
+			installCalls++
+			return "", errors.New("download blocked")
+		}
+		return `[]`, nil
+	}}
+
+	selection, err := m.EnsurePython(t.Context(), "3.12", "==3.12.*")
+
+	require.Error(t, err)
+	assert.Empty(t, selection)
+	assert.Equal(t, 1, installCalls)
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrPythonInstall, pe.Code)
 }
 
 func TestVenvPythonPath(t *testing.T) {

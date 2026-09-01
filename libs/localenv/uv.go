@@ -3,7 +3,9 @@ package localenv
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"os/exec"
@@ -26,7 +28,69 @@ const EnvAutoInstallUv = "DATABRICKS_LOCALENV_AUTO_INSTALL_UV"
 // uvManager implements PackageManager using the uv tool.
 // https://docs.astral.sh/uv/
 type uvManager struct {
-	bin string
+	bin   string
+	runFn uvRunFn
+}
+
+type uvRunFn func(ctx context.Context, args []string, dir string) (string, error)
+
+type uvPython struct {
+	VersionParts struct {
+		Major int `json:"major"`
+		Minor int `json:"minor"`
+		Patch int `json:"patch"`
+	} `json:"version_parts"`
+	Path string `json:"path"`
+}
+
+type installedPython struct {
+	uvPython
+	managed bool
+}
+
+func selectInstalledPython(managedJSON, systemJSON []byte) (string, error) {
+	var managed, system []uvPython
+	if err := json.Unmarshal(managedJSON, &managed); err != nil {
+		return "", fmt.Errorf("parse managed Python installations: %w", err)
+	}
+	if err := json.Unmarshal(systemJSON, &system); err != nil {
+		return "", fmt.Errorf("parse system Python installations: %w", err)
+	}
+
+	var best *installedPython
+	for _, group := range []struct {
+		pythons []uvPython
+		managed bool
+	}{{managed, true}, {system, false}} {
+		for _, python := range group.pythons {
+			candidate := installedPython{uvPython: python, managed: group.managed}
+			if python.Path == "" {
+				return "", errors.New("installed Python entry has no executable path")
+			}
+			if best == nil || newerInstalledPython(candidate, *best) {
+				best = &candidate
+			}
+		}
+	}
+	if best == nil {
+		return "", errors.New("no compatible installed Python found")
+	}
+	return best.Path, nil
+}
+
+func newerInstalledPython(candidate, current installedPython) bool {
+	c := candidate.VersionParts
+	b := current.VersionParts
+	if c.Major != b.Major {
+		return c.Major > b.Major
+	}
+	if c.Minor != b.Minor {
+		return c.Minor > b.Minor
+	}
+	if c.Patch != b.Patch {
+		return c.Patch > b.Patch
+	}
+	return candidate.managed && !current.managed
 }
 
 // NewUvManager returns a PackageManager backed by the uv tool. The binary path
@@ -79,30 +143,58 @@ func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 // (Python, build backends); on SIGINT/SIGTERM they must be reaped as a group
 // rather than left as orphans holding locks over a half-written .venv.
 func (m *uvManager) runUv(ctx context.Context, args []string, dir string) error {
-	if indexURL := m.resolveIndexURL(ctx); indexURL != "" {
-		_, err := process.Background(ctx, args, process.WithDir(dir), process.WithEnv("UV_INDEX_URL", indexURL), process.WithProcessGroup())
-		return err
-	}
-	_, err := process.Background(ctx, args, process.WithDir(dir), process.WithProcessGroup())
+	_, err := m.runUvOutput(ctx, args, dir)
 	return err
 }
 
-// EnsurePython installs the requested Python minor version via uv.
-func (m *uvManager) EnsurePython(ctx context.Context, minor string) error {
-	args := append([]string{m.bin}, m.pythonInstallArgs(minor)...)
-	if err := m.runUv(ctx, args, ""); err != nil {
-		return uvFailure(ErrPythonInstall, err, "uv python install "+minor)
+func (m *uvManager) runUvOutput(ctx context.Context, args []string, dir string) (string, error) {
+	if m.runFn != nil {
+		return m.runFn(ctx, args, dir)
 	}
-	return nil
+	if indexURL := m.resolveIndexURL(ctx); indexURL != "" {
+		return process.Background(ctx, args, process.WithDir(dir), process.WithEnv("UV_INDEX_URL", indexURL), process.WithProcessGroup())
+	}
+	return process.Background(ctx, args, process.WithDir(dir), process.WithProcessGroup())
+}
+
+// EnsurePython installs the requested Python minor version via uv.
+func (m *uvManager) EnsurePython(ctx context.Context, minor, constraint string) (PythonSelection, error) {
+	args := append([]string{m.bin}, m.pythonInstallArgs(minor)...)
+	installErr := m.runUv(ctx, args, "")
+	if installErr == nil {
+		return PythonSelection{Executable: minor, Resolution: PythonResolutionUVInstallSucceeded}, nil
+	}
+
+	managed, err := m.listInstalledPython(ctx, constraint, true)
+	if err != nil {
+		return PythonSelection{}, uvFailure(ErrPythonInstall, errors.Join(installErr, err), "uv python install "+minor)
+	}
+	system, err := m.listInstalledPython(ctx, constraint, false)
+	if err != nil {
+		return PythonSelection{}, uvFailure(ErrPythonInstall, errors.Join(installErr, err), "uv python install "+minor)
+	}
+	executable, err := selectInstalledPython(managed, system)
+	if err != nil {
+		return PythonSelection{}, uvFailure(ErrPythonInstall, errors.Join(installErr, err), "uv python install "+minor)
+	}
+	return PythonSelection{Executable: executable, Resolution: PythonResolutionInstalledFallback}, nil
+}
+
+func (m *uvManager) listInstalledPython(ctx context.Context, constraint string, managed bool) ([]byte, error) {
+	args := append([]string{m.bin}, m.pythonListArgs(constraint, managed)...)
+	out, err := m.runUvOutput(ctx, args, "")
+	if err != nil {
+		return nil, err
+	}
+	return []byte(out), nil
 }
 
 // Provision runs `uv sync` inside projectDir to install project dependencies,
-// pinning the interpreter to pyMinor. Without --python, `uv sync` selects the
-// newest installed interpreter satisfying requires-python (e.g. 3.13 for a
-// ">=3.12" floor), which then fails validation against the 3.12 target; pinning
-// the minor we just installed keeps the venv on the intended version.
-func (m *uvManager) Provision(ctx context.Context, projectDir, pyMinor string) error {
-	args := append([]string{m.bin}, m.syncArgs(pyMinor)...)
+// pinning the interpreter to python. Without --python, `uv sync` can select a
+// newer interpreter than the target; the explicit request is either the minor
+// just installed or the exact compatible path selected by fallback discovery.
+func (m *uvManager) Provision(ctx context.Context, projectDir, python string) error {
+	args := append([]string{m.bin}, m.syncArgs(python)...)
 	if err := m.runUv(ctx, args, projectDir); err != nil {
 		return uvFailure(ErrProvision, err, "uv sync")
 	}
@@ -217,13 +309,27 @@ func lineWithPrefix(out, prefix string) (string, bool) {
 
 // syncArgs returns the argument slice for `uv sync` (without the binary),
 // pinning the interpreter to pyMinor via --python.
-func (m *uvManager) syncArgs(pyMinor string) []string {
-	return []string{"sync", "--python", pyMinor}
+func (m *uvManager) syncArgs(python string) []string {
+	return []string{"sync", "--python", python}
 }
 
 // pythonInstallArgs returns the argument slice for `uv python install <minor>`.
 func (m *uvManager) pythonInstallArgs(minor string) []string {
 	return []string{"python", "install", minor}
+}
+
+// pythonListArgs returns the arguments for listing compatible interpreters
+// already present on this machine. Splitting managed and system installations
+// lets selection prefer a uv-managed interpreter only when versions tie.
+func (m *uvManager) pythonListArgs(constraint string, managed bool) []string {
+	preference := "--no-managed-python"
+	if managed {
+		preference = "--managed-python"
+	}
+	return []string{
+		"python", "list", "--only-installed", "--all-versions",
+		"--output-format", "json", preference, "cpython@" + constraint,
+	}
 }
 
 // pipSeedArgs returns the argument slice for seeding pip into the venv.

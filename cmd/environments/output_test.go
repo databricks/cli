@@ -49,6 +49,19 @@ func TestRenderSuccessSummary(t *testing.T) {
 	assert.NotContains(t, out, "preflight  ok")
 }
 
+func TestRenderSuccessExplainsInstalledPythonFallback(t *testing.T) {
+	res := libslocalenv.NewResult()
+	res.OK = true
+	res.Resolved = &libslocalenv.ResolvedInfo{PythonVersion: "3.12"}
+	res.VenvPath = ".venv"
+	res.PythonResolution = libslocalenv.PythonResolutionInstalledFallback
+
+	out := renderText(t, res, nil)
+
+	assert.Contains(t, out, "Python download failed")
+	assert.Contains(t, out, "compatible installed Python")
+}
+
 func TestRenderSuccessConstraintsOnlyOmitsDBConnect(t *testing.T) {
 	res := libslocalenv.NewResult()
 	res.OK = true

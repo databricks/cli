@@ -111,6 +111,10 @@ func renderSuccess(ctx context.Context, res *libslocalenv.Result) {
 		pyprojectDetail = "updated (backup: " + res.BackupPath + ")"
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("  %-20s%s", "pyproject.toml", pyprojectDetail))
+	if res.PythonResolution == libslocalenv.PythonResolutionInstalledFallback {
+		cmdio.LogString(ctx, "")
+		cmdio.LogString(ctx, "Python download failed; used a compatible installed Python instead.")
+	}
 
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "Next steps:")

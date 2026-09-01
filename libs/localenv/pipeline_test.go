@@ -31,7 +31,9 @@ type fakePM struct{ py, dbc, pyspark, dbcImportErr string }
 
 func (fakePM) Name() string                                    { return "fake" }
 func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.0", nil }
-func (fakePM) EnsurePython(context.Context, string) error      { return nil }
+func (fakePM) EnsurePython(_ context.Context, minor, _ string) (PythonSelection, error) {
+	return PythonSelection{Executable: minor, Resolution: PythonResolutionUVInstallSucceeded}, nil
+}
 func (fakePM) Provision(context.Context, string, string) error { return nil }
 func (fakePM) PostProvision(context.Context, string) error     { return nil }
 func (f fakePM) Validate(context.Context, string) (VenvInfo, error) {
@@ -48,8 +50,8 @@ func (noProvisionPM) EnsureAvailable(context.Context) (string, error) {
 	return "", errors.New("EnsureAvailable must not be called under --dry-run")
 }
 
-func (noProvisionPM) EnsurePython(context.Context, string) error {
-	return errors.New("EnsurePython must not be called under --dry-run")
+func (noProvisionPM) EnsurePython(context.Context, string, string) (PythonSelection, error) {
+	return PythonSelection{}, errors.New("EnsurePython must not be called under --dry-run")
 }
 
 func (noProvisionPM) Provision(context.Context, string, string) error {
@@ -71,6 +73,28 @@ type uvMissingPM struct{ fakePM }
 
 func (uvMissingPM) EnsureAvailable(context.Context) (string, error) {
 	return "", errors.New("uv not found and install failed")
+}
+
+type recordingPM struct {
+	fakePM
+	minor           string
+	constraint      string
+	provisionPython string
+	provisionErr    error
+}
+
+func (p *recordingPM) EnsurePython(_ context.Context, minor, constraint string) (PythonSelection, error) {
+	p.minor = minor
+	p.constraint = constraint
+	return PythonSelection{
+		Executable: "/installed/python3.12",
+		Resolution: PythonResolutionInstalledFallback,
+	}, nil
+}
+
+func (p *recordingPM) Provision(_ context.Context, _, python string) error {
+	p.provisionPython = python
+	return p.provisionErr
 }
 
 // cancelPM simulates uv being interrupted: Provision closes entered (so the test
@@ -107,6 +131,48 @@ requires-python = ">=3.10"
 dev = ["databricks-connect~=16.0.0"]
 `), 0o644))
 	return dir
+}
+
+func TestPipelineProvisionsWithSelectedPython(t *testing.T) {
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+	pm := &recordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}}
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags: ComputeFlags{Serverless: "v4"}, Compute: stubCompute{}, PM: pm,
+	}
+
+	res, err := p.Run(t.Context())
+
+	require.NoError(t, err)
+	assert.Equal(t, "3.12", pm.minor)
+	assert.Equal(t, "==3.12.*", pm.constraint)
+	assert.Equal(t, "/installed/python3.12", pm.provisionPython)
+	assert.Equal(t, PythonResolutionInstalledFallback, res.PythonResolution)
+}
+
+func TestPipelineRetainsFallbackResolutionWhenProvisioningFails(t *testing.T) {
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+	pm := &recordingPM{
+		fakePM:       fakePM{py: "3.12", dbc: "17.2.0"},
+		provisionErr: errors.New("sync failed"),
+	}
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags: ComputeFlags{Serverless: "v4"}, Compute: stubCompute{}, PM: pm,
+	}
+
+	res, err := p.Run(t.Context())
+
+	require.Error(t, err)
+	assert.Equal(t, PythonResolutionInstalledFallback, res.PythonResolution)
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrProvision, res.Error.Code)
 }
 
 func newTestServer(t *testing.T) *httptest.Server {
