@@ -2268,6 +2268,35 @@
                   }
                 ]
               },
+              "resources.PostgresSnapshotSchedule": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "branch": {
+                        "description": "The branch whose automatic-snapshot schedule this manages. Format: projects/{project_id}/branches/{branch_id}",
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "schedule": {
+                        "description": "The cadences at which automatic snapshots are taken. An empty set disables automatic snapshots. When several cadences fire together, one snapshot is taken and retained for the longest of their retentions.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.ScheduleCadence"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "branch"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.PostgresSyncedTable": {
                 "oneOf": [
                   {
@@ -3580,6 +3609,10 @@
                     "postgres_roles": {
                       "description": "The Postgres role definitions for the bundle, where each key is the name of the role. Each entry defines a role on a Lakebase Autoscaling branch, optionally backed by a Databricks identity.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresRole"
+                    },
+                    "postgres_snapshot_schedules": {
+                      "description": "The Postgres snapshot schedule definitions for the bundle, where each key is the name of the snapshot schedule. Each entry configures the automatic-snapshot cadences for a branch of a Lakebase Autoscaling project.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresSnapshotSchedule"
                     },
                     "postgres_synced_tables": {
                       "description": "The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.",
@@ -12736,6 +12769,57 @@
                 }
               ]
             },
+            "postgres.DailySchedule": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Take a snapshot once per day, at the configured hour.",
+                  "properties": {
+                    "hour": {
+                      "description": "[Private Preview] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+                      "$ref": "#/$defs/int",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.DayOfWeek": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The day of the week on which a weekly snapshot is taken.",
+                  "enum": [
+                    "MONDAY",
+                    "TUESDAY",
+                    "WEDNESDAY",
+                    "THURSDAY",
+                    "FRIDAY",
+                    "SATURDAY",
+                    "SUNDAY"
+                  ],
+                  "enumDescriptions": [
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "postgres.EndpointGroupSpec": {
               "oneOf": [
                 {
@@ -12793,6 +12877,36 @@
                   "enum": [
                     "ENDPOINT_TYPE_READ_WRITE",
                     "ENDPOINT_TYPE_READ_ONLY"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.MonthlySchedule": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Take a snapshot once per month, on the configured day at the configured hour.",
+                  "properties": {
+                    "day": {
+                      "description": "[Private Preview] The day of the month on which to take the snapshot, in [1, 31]. In shorter\nmonths the snapshot is taken on the last day instead (day 31 runs on Feb 28\nor 29, and on Apr 30), so every month gets exactly one snapshot.",
+                      "$ref": "#/$defs/int",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "hour": {
+                      "description": "[Private Preview] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+                      "$ref": "#/$defs/int",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "day"
                   ]
                 },
                 {
@@ -12986,6 +13100,48 @@
                 }
               ]
             },
+            "postgres.ScheduleCadence": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "One cadence at which automatic snapshots are taken.",
+                  "properties": {
+                    "daily_schedule": {
+                      "description": "[Private Preview] Take a snapshot once per day.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.DailySchedule",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "monthly_schedule": {
+                      "description": "[Private Preview] Take a snapshot once per month.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.MonthlySchedule",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "retention": {
+                      "description": "[Private Preview] How long snapshots from this cadence are kept before automatic deletion.\nMust be at least 1 hour. Applied when a snapshot is taken; not retroactive,\nso changing it affects only later snapshots.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "weekly_schedule": {
+                      "description": "[Private Preview] Take a snapshot once per week.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.WeeklySchedule",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "retention"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "postgres.SyncedTableSyncedTableSpecExtraColumn": {
               "oneOf": [
                 {
@@ -13104,6 +13260,36 @@
                   "required": [
                     "column_name",
                     "pg_type"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.WeeklySchedule": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Take a snapshot once per week, on the configured day at the configured hour.",
+                  "properties": {
+                    "day_of_week": {
+                      "description": "[Private Preview] The day of the week on which to take the snapshot.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.DayOfWeek",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "hour": {
+                      "description": "[Private Preview] The hour of the day, in UTC, at which to take the snapshot, in [0, 23].",
+                      "$ref": "#/$defs/int",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "day_of_week"
                   ]
                 },
                 {
@@ -15506,6 +15692,20 @@
                     }
                   ]
                 },
+                "resources.PostgresSnapshotSchedule": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresSnapshotSchedule"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.PostgresSyncedTable": {
                   "oneOf": [
                     {
@@ -16565,6 +16765,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "postgres.ScheduleCadence": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ScheduleCadence"
                     }
                   },
                   {

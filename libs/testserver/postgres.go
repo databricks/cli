@@ -516,6 +516,65 @@ func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 	}
 }
 
+var snapshotScheduleUpdateMaskPaths = []string{"schedule"}
+
+// PostgresSnapshotScheduleGet retrieves a branch's snapshot schedule. The
+// schedule is intrinsic to the branch: for a branch that never had one set, the
+// API returns an empty schedule rather than 404, so the fake mirrors that.
+func (s *FakeWorkspace) PostgresSnapshotScheduleGet(name string) Response {
+	defer s.LockUnlock()()
+
+	branchName := strings.TrimSuffix(name, "/snapshot-schedule")
+	if _, exists := s.PostgresBranches[branchName]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	schedule, exists := s.PostgresSnapshotSchedules[name]
+	if !exists {
+		schedule = postgres.SnapshotSchedule{Name: name}
+	}
+
+	return Response{
+		Body: schedule,
+	}
+}
+
+// PostgresSnapshotScheduleUpdate sets a branch's snapshot schedule. There is no
+// create/delete endpoint; the schedule is managed entirely through this update.
+// An empty schedule set disables automatic snapshots.
+func (s *FakeWorkspace) PostgresSnapshotScheduleUpdate(req Request, name string) Response {
+	if resp := validateUpdateMask(req, snapshotScheduleUpdateMaskPaths); resp != nil {
+		return *resp
+	}
+
+	defer s.LockUnlock()()
+
+	branchName := strings.TrimSuffix(name, "/snapshot-schedule")
+	if _, exists := s.PostgresBranches[branchName]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	var updateSchedule postgres.SnapshotSchedule
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &updateSchedule); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	schedule := postgres.SnapshotSchedule{
+		Name:     name,
+		Schedule: updateSchedule.Schedule,
+	}
+	s.PostgresSnapshotSchedules[name] = schedule
+
+	return Response{
+		Body: s.createOperationLocked(name, schedule),
+	}
+}
+
 // PostgresEndpointCreate creates a new postgres endpoint.
 //
 // When replaceExisting is true, an existing endpoint with the same ID is updated
@@ -1472,6 +1531,8 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 		resourceType = "Catalog"
 	case strings.HasPrefix(resourceName, "synced_tables/"):
 		resourceType = "SyncedTable"
+	case strings.HasSuffix(resourceName, "/snapshot-schedule"):
+		resourceType = "SnapshotSchedule"
 	case strings.Contains(resourceName, "/endpoints/"):
 		resourceType = "Endpoint"
 	case strings.Contains(resourceName, "/databases/"):

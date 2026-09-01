@@ -1575,6 +1575,19 @@ resources:
         "role_id":
           "description": |-
             The user-specified role ID; becomes the final component of the role's resource name. Must be 4-63 characters, lowercase letters, numbers, and hyphens (RFC 1123).
+    "postgres_snapshot_schedules":
+      "description": |-
+        The Postgres snapshot schedule definitions for the bundle, where each key is the name of the snapshot schedule. Each entry configures the automatic-snapshot cadences for a branch of a Lakebase Autoscaling project.
+      "$fields":
+        "branch":
+          "description": |-
+            The branch whose automatic-snapshot schedule this manages. Format: projects/{project_id}/branches/{branch_id}
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "schedule":
+          "description": |-
+            The cadences at which automatic snapshots are taken. An empty set disables automatic snapshots. When several cadences fire together, one snapshot is taken and retained for the longest of their retentions.
     "postgres_synced_tables":
       "description": |-
         The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.

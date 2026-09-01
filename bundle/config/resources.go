@@ -15,37 +15,38 @@ type Resources struct {
 	JobRuns   map[string]*resources.JobRun   `json:"job_runs,omitempty"`
 	Pipelines map[string]*resources.Pipeline `json:"pipelines,omitempty"`
 
-	Models                map[string]*resources.MlflowModel          `json:"models,omitempty"`
-	Experiments           map[string]*resources.MlflowExperiment     `json:"experiments,omitempty"`
-	ModelServingEndpoints map[string]*resources.ModelServingEndpoint `json:"model_serving_endpoints,omitempty"`
-	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
-	QualityMonitors       map[string]*resources.QualityMonitor       `json:"quality_monitors,omitempty"`
-	Catalogs              map[string]*resources.Catalog              `json:"catalogs,omitempty"`
-	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
-	Volumes               map[string]*resources.Volume               `json:"volumes,omitempty"`
-	ExternalLocations     map[string]*resources.ExternalLocation     `json:"external_locations,omitempty"`
-	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
-	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
-	GenieSpaces           map[string]*resources.GenieSpace           `json:"genie_spaces,omitempty"`
-	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
-	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
-	Alerts                map[string]*resources.Alert                `json:"alerts,omitempty"`
-	SqlWarehouses         map[string]*resources.SqlWarehouse         `json:"sql_warehouses,omitempty"`
-	DatabaseInstances     map[string]*resources.DatabaseInstance     `json:"database_instances,omitempty"`
-	DatabaseCatalogs      map[string]*resources.DatabaseCatalog      `json:"database_catalogs,omitempty"`
-	SyncedDatabaseTables  map[string]*resources.SyncedDatabaseTable  `json:"synced_database_tables,omitempty"`
-	PostgresProjects      map[string]*resources.PostgresProject      `json:"postgres_projects,omitempty"`
-	PostgresBranches      map[string]*resources.PostgresBranch       `json:"postgres_branches,omitempty"`
-	PostgresEndpoints     map[string]*resources.PostgresEndpoint     `json:"postgres_endpoints,omitempty"`
-	PostgresCatalogs      map[string]*resources.PostgresCatalog      `json:"postgres_catalogs,omitempty"`
-	PostgresDatabases     map[string]*resources.PostgresDatabase     `json:"postgres_databases,omitempty"`
-	PostgresRoles         map[string]*resources.PostgresRole         `json:"postgres_roles,omitempty"`
-	PostgresSyncedTables  map[string]*resources.PostgresSyncedTable  `json:"postgres_synced_tables,omitempty"`
-	VectorSearchEndpoints map[string]*resources.VectorSearchEndpoint `json:"vector_search_endpoints,omitempty"`
-	VectorSearchIndexes   map[string]*resources.VectorSearchIndex    `json:"vector_search_indexes,omitempty"`
-	InstancePools         map[string]*resources.InstancePool         `json:"instance_pools,omitempty"`
-	Secrets               map[string]*resources.Secret               `json:"secrets,omitempty"`
-	ClusterPolicies       map[string]*resources.ClusterPolicy        `json:"cluster_policies,omitempty"`
+	Models                    map[string]*resources.MlflowModel              `json:"models,omitempty"`
+	Experiments               map[string]*resources.MlflowExperiment         `json:"experiments,omitempty"`
+	ModelServingEndpoints     map[string]*resources.ModelServingEndpoint     `json:"model_serving_endpoints,omitempty"`
+	RegisteredModels          map[string]*resources.RegisteredModel          `json:"registered_models,omitempty"`
+	QualityMonitors           map[string]*resources.QualityMonitor           `json:"quality_monitors,omitempty"`
+	Catalogs                  map[string]*resources.Catalog                  `json:"catalogs,omitempty"`
+	Schemas                   map[string]*resources.Schema                   `json:"schemas,omitempty"`
+	Volumes                   map[string]*resources.Volume                   `json:"volumes,omitempty"`
+	ExternalLocations         map[string]*resources.ExternalLocation         `json:"external_locations,omitempty"`
+	Clusters                  map[string]*resources.Cluster                  `json:"clusters,omitempty"`
+	Dashboards                map[string]*resources.Dashboard                `json:"dashboards,omitempty"`
+	GenieSpaces               map[string]*resources.GenieSpace               `json:"genie_spaces,omitempty"`
+	Apps                      map[string]*resources.App                      `json:"apps,omitempty"`
+	SecretScopes              map[string]*resources.SecretScope              `json:"secret_scopes,omitempty"`
+	Alerts                    map[string]*resources.Alert                    `json:"alerts,omitempty"`
+	SqlWarehouses             map[string]*resources.SqlWarehouse             `json:"sql_warehouses,omitempty"`
+	DatabaseInstances         map[string]*resources.DatabaseInstance         `json:"database_instances,omitempty"`
+	DatabaseCatalogs          map[string]*resources.DatabaseCatalog          `json:"database_catalogs,omitempty"`
+	SyncedDatabaseTables      map[string]*resources.SyncedDatabaseTable      `json:"synced_database_tables,omitempty"`
+	PostgresProjects          map[string]*resources.PostgresProject          `json:"postgres_projects,omitempty"`
+	PostgresBranches          map[string]*resources.PostgresBranch           `json:"postgres_branches,omitempty"`
+	PostgresEndpoints         map[string]*resources.PostgresEndpoint         `json:"postgres_endpoints,omitempty"`
+	PostgresCatalogs          map[string]*resources.PostgresCatalog          `json:"postgres_catalogs,omitempty"`
+	PostgresDatabases         map[string]*resources.PostgresDatabase         `json:"postgres_databases,omitempty"`
+	PostgresRoles             map[string]*resources.PostgresRole             `json:"postgres_roles,omitempty"`
+	PostgresSyncedTables      map[string]*resources.PostgresSyncedTable      `json:"postgres_synced_tables,omitempty"`
+	PostgresSnapshotSchedules map[string]*resources.PostgresSnapshotSchedule `json:"postgres_snapshot_schedules,omitempty"`
+	VectorSearchEndpoints     map[string]*resources.VectorSearchEndpoint     `json:"vector_search_endpoints,omitempty"`
+	VectorSearchIndexes       map[string]*resources.VectorSearchIndex        `json:"vector_search_indexes,omitempty"`
+	InstancePools             map[string]*resources.InstancePool             `json:"instance_pools,omitempty"`
+	Secrets                   map[string]*resources.Secret                   `json:"secrets,omitempty"`
+	ClusterPolicies           map[string]*resources.ClusterPolicy            `json:"cluster_policies,omitempty"`
 }
 
 type ConfigResource interface {
@@ -128,6 +129,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["postgres_databases"], r.PostgresDatabases),
 		collectResourceMap(descriptions["postgres_roles"], r.PostgresRoles),
 		collectResourceMap(descriptions["postgres_synced_tables"], r.PostgresSyncedTables),
+		collectResourceMap(descriptions["postgres_snapshot_schedules"], r.PostgresSnapshotSchedules),
 		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
 		collectResourceMap(descriptions["vector_search_indexes"], r.VectorSearchIndexes),
 		collectResourceMap(descriptions["instance_pools"], r.InstancePools),
@@ -164,39 +166,40 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 // SupportedResources returns a map which keys correspond to the resource key in the bundle configuration.
 func SupportedResources() map[string]resources.ResourceDescription {
 	return map[string]resources.ResourceDescription{
-		"jobs":                    (&resources.Job{}).ResourceDescription(),
-		"job_runs":                (&resources.JobRun{}).ResourceDescription(),
-		"pipelines":               (&resources.Pipeline{}).ResourceDescription(),
-		"models":                  (&resources.MlflowModel{}).ResourceDescription(),
-		"experiments":             (&resources.MlflowExperiment{}).ResourceDescription(),
-		"instance_pools":          (&resources.InstancePool{}).ResourceDescription(),
-		"model_serving_endpoints": (&resources.ModelServingEndpoint{}).ResourceDescription(),
-		"registered_models":       (&resources.RegisteredModel{}).ResourceDescription(),
-		"quality_monitors":        (&resources.QualityMonitor{}).ResourceDescription(),
-		"catalogs":                (&resources.Catalog{}).ResourceDescription(),
-		"schemas":                 (&resources.Schema{}).ResourceDescription(),
-		"external_locations":      (&resources.ExternalLocation{}).ResourceDescription(),
-		"clusters":                (&resources.Cluster{}).ResourceDescription(),
-		"dashboards":              (&resources.Dashboard{}).ResourceDescription(),
-		"genie_spaces":            (&resources.GenieSpace{}).ResourceDescription(),
-		"volumes":                 (&resources.Volume{}).ResourceDescription(),
-		"apps":                    (&resources.App{}).ResourceDescription(),
-		"secret_scopes":           (&resources.SecretScope{}).ResourceDescription(),
-		"alerts":                  (&resources.Alert{}).ResourceDescription(),
-		"sql_warehouses":          (&resources.SqlWarehouse{}).ResourceDescription(),
-		"database_instances":      (&resources.DatabaseInstance{}).ResourceDescription(),
-		"database_catalogs":       (&resources.DatabaseCatalog{}).ResourceDescription(),
-		"synced_database_tables":  (&resources.SyncedDatabaseTable{}).ResourceDescription(),
-		"postgres_projects":       (&resources.PostgresProject{}).ResourceDescription(),
-		"postgres_branches":       (&resources.PostgresBranch{}).ResourceDescription(),
-		"postgres_endpoints":      (&resources.PostgresEndpoint{}).ResourceDescription(),
-		"postgres_catalogs":       (&resources.PostgresCatalog{}).ResourceDescription(),
-		"postgres_databases":      (&resources.PostgresDatabase{}).ResourceDescription(),
-		"postgres_roles":          (&resources.PostgresRole{}).ResourceDescription(),
-		"postgres_synced_tables":  (&resources.PostgresSyncedTable{}).ResourceDescription(),
-		"vector_search_endpoints": (&resources.VectorSearchEndpoint{}).ResourceDescription(),
-		"vector_search_indexes":   (&resources.VectorSearchIndex{}).ResourceDescription(),
-		"secrets":                 (&resources.Secret{}).ResourceDescription(),
-		"cluster_policies":        (&resources.ClusterPolicy{}).ResourceDescription(),
+		"jobs":                        (&resources.Job{}).ResourceDescription(),
+		"job_runs":                    (&resources.JobRun{}).ResourceDescription(),
+		"pipelines":                   (&resources.Pipeline{}).ResourceDescription(),
+		"models":                      (&resources.MlflowModel{}).ResourceDescription(),
+		"experiments":                 (&resources.MlflowExperiment{}).ResourceDescription(),
+		"instance_pools":              (&resources.InstancePool{}).ResourceDescription(),
+		"model_serving_endpoints":     (&resources.ModelServingEndpoint{}).ResourceDescription(),
+		"registered_models":           (&resources.RegisteredModel{}).ResourceDescription(),
+		"quality_monitors":            (&resources.QualityMonitor{}).ResourceDescription(),
+		"catalogs":                    (&resources.Catalog{}).ResourceDescription(),
+		"schemas":                     (&resources.Schema{}).ResourceDescription(),
+		"external_locations":          (&resources.ExternalLocation{}).ResourceDescription(),
+		"clusters":                    (&resources.Cluster{}).ResourceDescription(),
+		"dashboards":                  (&resources.Dashboard{}).ResourceDescription(),
+		"genie_spaces":                (&resources.GenieSpace{}).ResourceDescription(),
+		"volumes":                     (&resources.Volume{}).ResourceDescription(),
+		"apps":                        (&resources.App{}).ResourceDescription(),
+		"secret_scopes":               (&resources.SecretScope{}).ResourceDescription(),
+		"alerts":                      (&resources.Alert{}).ResourceDescription(),
+		"sql_warehouses":              (&resources.SqlWarehouse{}).ResourceDescription(),
+		"database_instances":          (&resources.DatabaseInstance{}).ResourceDescription(),
+		"database_catalogs":           (&resources.DatabaseCatalog{}).ResourceDescription(),
+		"synced_database_tables":      (&resources.SyncedDatabaseTable{}).ResourceDescription(),
+		"postgres_projects":           (&resources.PostgresProject{}).ResourceDescription(),
+		"postgres_branches":           (&resources.PostgresBranch{}).ResourceDescription(),
+		"postgres_endpoints":          (&resources.PostgresEndpoint{}).ResourceDescription(),
+		"postgres_catalogs":           (&resources.PostgresCatalog{}).ResourceDescription(),
+		"postgres_databases":          (&resources.PostgresDatabase{}).ResourceDescription(),
+		"postgres_roles":              (&resources.PostgresRole{}).ResourceDescription(),
+		"postgres_synced_tables":      (&resources.PostgresSyncedTable{}).ResourceDescription(),
+		"postgres_snapshot_schedules": (&resources.PostgresSnapshotSchedule{}).ResourceDescription(),
+		"vector_search_endpoints":     (&resources.VectorSearchEndpoint{}).ResourceDescription(),
+		"vector_search_indexes":       (&resources.VectorSearchIndex{}).ResourceDescription(),
+		"secrets":                     (&resources.Secret{}).ResourceDescription(),
+		"cluster_policies":            (&resources.ClusterPolicy{}).ResourceDescription(),
 	}
 }
