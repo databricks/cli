@@ -132,6 +132,17 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 		return nil
 	}
 
+	if IsOpaqueStruct(v1Type) {
+		equal, err := equalJSON(v1, v2)
+		if err != nil {
+			return err
+		}
+		if !equal {
+			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
+		}
+		return nil
+	}
+
 	kind := v1.Kind()
 
 	// Perform nil checks for nilable types.
@@ -293,7 +304,7 @@ func getForceSendFields(v reflect.Value) []string {
 	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
 		return nil
 	}
-	result, ok := fsField.Interface().([]string)
+	result, ok := reflect.TypeAssert[[]string](fsField)
 	if ok {
 		return result
 	}

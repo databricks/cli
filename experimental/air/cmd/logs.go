@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
@@ -13,6 +14,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
 
@@ -85,6 +87,10 @@ func newLogsCommand() *cobra.Command {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
 				fmt.Errorf("invalid --node %d: must not be negative", node))
 		}
+		if retry < -1 {
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+				fmt.Errorf("invalid --retry %d: must be -1 or greater", retry))
+		}
 
 		runID, err := strconv.ParseInt(args[0], 10, 64)
 		if err != nil || runID <= 0 {
@@ -99,7 +105,17 @@ func newLogsCommand() *cobra.Command {
 			tailLines = lines
 		}
 
-		return runLogs(ctx, cmd, logRequest{
+		// Only the streaming path prints resume guidance, so only it catches the
+		// interrupt: without this a Ctrl-C kills the process before
+		// handleWatchResult runs. Download and JSON keep the default handling.
+		streamCtx := ctx
+		if downloadTo == "" && root.OutputType(cmd) != flags.OutputJSON {
+			var stop context.CancelFunc
+			streamCtx, stop = notifyInterrupt(ctx)
+			defer stop()
+		}
+
+		err = runLogs(streamCtx, cmd, logRequest{
 			runID:         runID,
 			node:          node,
 			nodeSet:       cmd.Flags().Changed("node"),
@@ -109,6 +125,10 @@ func newLogsCommand() *cobra.Command {
 			downloadTo:    downloadTo,
 			jsonOutput:    root.OutputType(cmd) == flags.OutputJSON,
 		})
+		if downloadTo != "" || root.OutputType(cmd) == flags.OutputJSON {
+			return err
+		}
+		return handleWatchResult(cmd.OutOrStdout(), cmdctx.WorkspaceClient(ctx).Config.Profile, args[0], err)
 	}
 
 	return cmd
@@ -179,6 +199,29 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 		return root.ErrAlreadyPrinted
 	}
 	return nil
+}
+
+func resolveLogAttempt(run *jobs.Run, requested int) (int, int64, error) {
+	if requested < -1 {
+		return 0, 0, fmt.Errorf("invalid retry %d: must be -1 or greater", requested)
+	}
+	if len(run.Tasks) == 0 {
+		return 0, 0, nil
+	}
+	latest := latestAttemptNumber(run)
+	attempt := requested
+	if attempt < 0 {
+		attempt = latest
+	}
+	if attempt > latest {
+		return 0, 0, fmt.Errorf("invalid retry %d: available retries are 0 to %d", requested, latest)
+	}
+	for _, v := range slices.Backward(run.Tasks) {
+		if v.AttemptNumber == attempt {
+			return attempt, v.RunId, nil
+		}
+	}
+	return 0, 0, fmt.Errorf("run %d has no task for retry %d", run.RunId, attempt)
 }
 
 // fetchLogs serves logs from Bricklens, falling back to MLflow when Bricklens
