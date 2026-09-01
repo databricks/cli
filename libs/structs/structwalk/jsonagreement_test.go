@@ -27,8 +27,8 @@ func TestWalkVisitsExactlyWhatJSONEmits(t *testing.T) {
 
 			blob, err := json.Marshal(shape.Value)
 			require.NoError(t, err)
-			var emitted map[string]any
-			require.NoError(t, json.Unmarshal(blob, &emitted))
+			emitted, err := jsonshapes.Leaves(shape.Value)
+			require.NoError(t, err)
 			var want []string
 			for name := range emitted {
 				want = append(want, name)

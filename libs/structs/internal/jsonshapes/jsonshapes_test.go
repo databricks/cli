@@ -19,8 +19,8 @@ func TestCorpusMatchesEncodingJSON(t *testing.T) {
 			blob, err := json.Marshal(shape.Value)
 			require.NoError(t, err)
 
-			var got map[string]any
-			require.NoError(t, json.Unmarshal(blob, &got))
+			got, err := jsonshapes.Leaves(shape.Value)
+			require.NoError(t, err)
 
 			var names []string
 			for name := range got {
