@@ -55,6 +55,10 @@ func TestTypeScalar(t *testing.T) {
 
 func TestTypes(t *testing.T) {
 	assert.Equal(t, map[string]any{
+		// IgnoredFieldOdd and IgnoredFieldOddPtr are tagged `json:"-,omitempty"`, which names
+		// them "-" rather than omitting them: only the exact tag `json:"-"` is a skip. The two
+		// collide on that one name, so the walk reports it once.
+		"-":                  "",
 		"ArrayString[*]":     "",
 		"Array[*].X":         0,
 		"BoolField":          false,
