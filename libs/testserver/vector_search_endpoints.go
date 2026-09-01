@@ -106,7 +106,12 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdate(req Request, endpointName str
 	if endpoint.ScalingInfo == nil {
 		endpoint.ScalingInfo = &vectorsearch.EndpointScalingInfo{}
 	}
-	endpoint.ScalingInfo.RequestedTargetQps = patchReq.TargetQps
+	// target_qps is omitempty, so a config that clears it drops it from the body and the backend
+	// keeps the value it had (aws, 2026-09: the clear is accepted and has no effect). Assigning the
+	// zero value here instead made the field look freely clearable.
+	if patchReq.TargetQps != 0 {
+		endpoint.ScalingInfo.RequestedTargetQps = patchReq.TargetQps
+	}
 	endpoint.LastUpdatedTimestamp = nowMilli()
 	endpoint.LastUpdatedUser = s.CurrentUser().UserName
 
