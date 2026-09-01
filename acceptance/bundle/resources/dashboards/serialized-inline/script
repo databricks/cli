@@ -8,11 +8,9 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle plan
-trace $CLI bundle deploy
-
-# Stabilize the non-deterministic dashboard ID in recorded requests.
-dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.inline_dash.id')
-add_repl "$dashboard_id" DASHBOARD_ID
+$CLI bundle plan -o json > tmp.plan.json
+$CLI bundle deploy $(readplanarg tmp.plan.json)
+replace_ids.py
 
 # Prove the inline YAML map reaches the API as a JSON string.
 trace print_requests.py //api/2.0/lakeview/dashboards
