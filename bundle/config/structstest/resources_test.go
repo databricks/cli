@@ -2,11 +2,14 @@ package structstest_test
 
 import (
 	"reflect"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/structstest"
 	"github.com/databricks/cli/libs/structs/structtag"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,6 +37,27 @@ var knownDivergences = map[string][]string{
 	"postgres_databases":     baseResourceFields(),
 	"postgres_roles":         baseResourceFields(),
 	"postgres_synced_tables": baseResourceFields(),
+}
+
+// freeFormFields lists the any-typed fields of each resource. Everything at or below one is
+// invisible to the packages.
+var freeFormFields = map[string][]string{
+	"dashboards":       {"serialized_dashboard"},
+	"genie_spaces":     {"serialized_space"},
+	"cluster_policies": {"definition", "policy_family_definition_overrides"},
+}
+
+// freeFormFieldNames reduces the reported paths to the distinct top-level field each sits under,
+// so the expectation does not depend on the filler's choice of map key.
+func freeFormFieldNames(paths []string) []string {
+	var out []string
+	for _, path := range paths {
+		name, _, _ := strings.Cut(strings.SplitN(path, ":", 2)[0], ".")
+		if !slices.Contains(out, name) {
+			out = append(out, name)
+		}
+	}
+	return out
 }
 
 // baseResourceFields returns the paths a resource gains from BaseResource, plus any extra
@@ -68,19 +92,23 @@ func TestResourceTypesAgreeWithJSON(t *testing.T) {
 			report, stale := report.Filter(known)
 			require.Empty(t, stale,
 				"these recorded divergences no longer occur -- remove them from the list: %v", stale)
-			if len(report.InsideFreeFormField) > 0 {
-				// A known limitation: structwalk does not traverse an interface and structaccess
-				// cannot validate a path through one, so a free-form field is opaque to both.
-				t.Logf("%d path(s) inside a free-form any field: %v",
-					len(report.InsideFreeFormField), report.InsideFreeFormField)
-				report.InsideFreeFormField = nil
-			}
+			// A known limitation: structwalk does not traverse an interface and structaccess cannot
+			// validate a path through one, so a free-form field is opaque to both. Which resources
+			// have one is stable, so it is ratcheted by name: a new free-form field is a new blind
+			// spot and has to be added here deliberately.
+			assert.ElementsMatch(t, freeFormFields[group], freeFormFieldNames(report.InsideFreeFormField),
+				"free-form any fields changed for %s", group)
+			report.InsideFreeFormField = nil
 			if len(report.SelfMarshalingScalars) > 0 {
-				// A known structwalk limitation, tracked as one item rather than one entry per
-				// timestamp field, because every new SDK time field joins it.
-				t.Logf("%d self-marshaling scalar field(s) structwalk does not visit: %v",
+				// A known structwalk limitation. The ratchet is on the *types* that behave this
+				// way, not the paths: a new field of a type already known to hide itself tells us
+				// nothing, while a new such type is a finding.
+				assert.Subset(t, structstest.KnownSelfMarshalingTypes, report.SelfMarshalingTypes,
+					"a Go type that marshals itself as a scalar and so is invisible to structwalk")
+				t.Logf("%d self-marshaling scalar field(s): %v",
 					len(report.SelfMarshalingScalars), report.SelfMarshalingScalars)
 				report.SelfMarshalingScalars = nil
+				report.SelfMarshalingTypes = nil
 			}
 			require.True(t, report.Empty(),
 				"%s (%s) disagrees with encoding/json:%s", group, elem, report)
