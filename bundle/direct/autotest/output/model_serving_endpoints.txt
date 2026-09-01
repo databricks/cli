@@ -1,3 +1,4 @@
+email_notifications                                                BASELINE_DRIFT  drifts with no config change
 
 === summary
 OK                 32
@@ -5,4 +6,5 @@ OK_RECREATE        12
 OK_INERT           6
 SUPPRESSED         5
 NOT_OBSERVABLE     3
+BASELINE_DRIFT     1
 SKIPPED            4
