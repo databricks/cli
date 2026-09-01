@@ -6,7 +6,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Deploy output is noisy and differs fake vs cloud; assert only the plan signals below.
+# Deploy output is noisy and differs fake vs cloud, so route it to LOG.
+title "Deploy creates the cluster and installs the pypi library"
 $CLI bundle deploy &> LOG.deploy
 cat LOG.deploy | contains.py "Created clusters.mycluster" > /dev/null
 
