@@ -25,6 +25,17 @@ func (a Action) IsChildResource() bool {
 	return len(items) == 4
 }
 
+// ParentKey returns the key of the resource a child node hangs off, e.g.
+// "resources.schemas.foo" for "resources.schemas.foo.grants". Returns "" if
+// resourceKey is not a child node.
+func ParentKey(resourceKey string) string {
+	items := strings.Split(resourceKey, ".")
+	if len(items) != 4 {
+		return ""
+	}
+	return strings.Join(items[:3], ".")
+}
+
 type ActionType string
 
 // Actions are ordered in increasing severity.

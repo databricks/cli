@@ -43,6 +43,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
+	// Computed up front: the callback below holds a write lock on its own entry, so it
+	// cannot read another node's entry without risking a lock error.
+	parentDeleted := childDeletesWithDeletedParent(plan)
+
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		entry, err := plan.WriteLockEntry(resourceKey)
 		if err != nil {
@@ -100,9 +104,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		if action == deployplan.Delete {
-			if entry.Gone {
-				// Planning confirmed the resource is already deleted remotely; only
-				// remove it from the state, without calling the delete API.
+			if entry.Gone || parentDeleted[resourceKey] {
+				// Planning confirmed the resource is already deleted remotely, or the parent
+				// resource is going away and takes this node with it; only remove it from
+				// the state, without calling the delete API.
 				err = b.StateDB.DeleteState(resourceKey)
 			} else {
 				err = d.Destroy(ctx, &b.StateDB)
@@ -162,6 +167,31 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		return true
 	})
+}
+
+// childDeletesWithDeletedParent returns the child nodes (grants, permissions) whose
+// delete coincides with their parent resource being deleted. Deleting the parent removes
+// them along with it, so the child's own delete has nothing left to do: it is applied as a
+// state-only cleanup. This is what keeps `bundle destroy` working — issuing the child call
+// against a resource that is about to disappear is what used to break it.
+func childDeletesWithDeletedParent(plan *deployplan.Plan) map[string]bool {
+	result := make(map[string]bool)
+
+	for key, entry := range plan.Plan {
+		if entry.Action != deployplan.Delete {
+			continue
+		}
+		parent := deployplan.ParentKey(key)
+		if parent == "" {
+			continue
+		}
+		parentEntry := plan.Plan[parent]
+		if parentEntry != nil && parentEntry.Action == deployplan.Delete {
+			result[key] = true
+		}
+	}
+
+	return result
 }
 
 func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
