@@ -32,6 +32,7 @@ class _ResourceType:
         # be imported in databricks.bundles.<resource_type>
 
         from databricks.bundles.alerts._models.alert import Alert
+        from databricks.bundles.catalogs._models.catalog import Catalog
         from databricks.bundles.jobs._models.job import Job
         from databricks.bundles.pipelines._models.pipeline import Pipeline
         from databricks.bundles.schemas._models.schema import Schema
@@ -62,5 +63,10 @@ class _ResourceType:
                 resource_type=Alert,
                 plural_name="alerts",
                 singular_name="alert",
+            ),
+            _ResourceType(
+                resource_type=Catalog,
+                plural_name="catalogs",
+                singular_name="catalog",
             ),
         )

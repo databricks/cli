@@ -1,0 +1,13 @@
+bundle:
+  name: update-postgres-project-retention-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Test Project for History Retention Update"
+      pg_version: 16
+      history_retention_duration: 604800s

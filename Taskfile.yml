@@ -288,6 +288,8 @@ tasks:
 
   changelog-preview:
     desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
+    env:
+      NEXTCHANGES_DIR: .nextchanges/
     cmds:
       # Validate placement first so a misplaced fragment fails loudly instead of
       # being silently skipped by the renderer (see validate_nextchanges.py).

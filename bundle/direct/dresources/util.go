@@ -25,6 +25,7 @@ func shouldRetry(err error) bool {
 // collectUpdatePathsWithPrefix extracts field paths from Changes that have action=Update,
 // adding a prefix to each path. This is used when the state type has a flattened structure
 // but the API expects paths relative to a nested object (e.g., "spec.display_name").
+// Sorted, so the generated update_mask does not depend on map iteration order.
 func collectUpdatePathsWithPrefix(changes Changes, prefix string) []string {
 	var paths []string
 	for path, change := range changes {
@@ -32,6 +33,7 @@ func collectUpdatePathsWithPrefix(changes Changes, prefix string) []string {
 			paths = append(paths, prefix+path)
 		}
 	}
+	slices.Sort(paths)
 	return paths
 }
 

@@ -1,6 +1,7 @@
 package dresources
 
 import (
+	"encoding/json"
 	"reflect"
 	"slices"
 	"strings"
@@ -169,4 +170,39 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 	for _, field := range UpdateMaskFields {
 		assert.Contains(t, allFields, field, "field %s is in UpdateMaskFields but not in apps.App struct", field)
 	}
+}
+
+// TestAppRequestBody_StripsSourceCodePathFromForceSendFields verifies that
+// appRequestBody removes SourceCodePath from ForceSendFields even when the plan
+// JSON round-trip has forced it in — reproduces the v1.14.0 regression where
+// "source_code_path": "" was sent in the UpdateApp body, causing a 400.
+func TestAppRequestBody_StripsSourceCodePathFromForceSendFields(t *testing.T) {
+	config := &AppState{
+		App: apps.App{
+			Name:           "my-app",
+			SourceCodePath: "/Workspace/Users/me/app",
+			// Simulate ForceSendFields as populated by marshal.Unmarshal when the
+			// plan entry is deserialized from JSON (ToStructVar calls json.Unmarshal,
+			// which calls apps.App.UnmarshalJSON -> marshal.Unmarshal, which adds
+			// every basic-type field present in the JSON to ForceSendFields).
+			ForceSendFields: []string{"Name", "SourceCodePath"},
+		},
+	}
+
+	body := appRequestBody(config)
+
+	// SourceCodePath must be cleared and absent from ForceSendFields so that
+	// the SDK's marshal.Marshal omits it from the request body.
+	assert.Empty(t, body.SourceCodePath)
+	assert.NotContains(t, body.ForceSendFields, "SourceCodePath")
+
+	// Verify the field is absent from the marshaled JSON (the root cause of the 400).
+	data, err := json.Marshal(body)
+	require.NoError(t, err)
+	var m map[string]any
+	require.NoError(t, json.Unmarshal(data, &m))
+	assert.NotContains(t, m, "source_code_path", "source_code_path must not appear in the UpdateApp request body")
+
+	// Other ForceSendFields entries must be preserved.
+	assert.Contains(t, body.ForceSendFields, "Name")
 }
