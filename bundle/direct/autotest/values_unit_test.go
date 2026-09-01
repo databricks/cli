@@ -365,3 +365,16 @@ func paths(fields []field) []string {
 	slices.Sort(out)
 	return out
 }
+
+// A row's detail is one line, and a long URL in the middle of an error pushes out the part that
+// says what went wrong.
+func TestOneLineKeepsTheCause(t *testing.T) {
+	err := `cannot plan resources.registered_models.foo: reading id="main.default.test-model-abc": ` +
+		`Get "https://dbc-61ef35eb-01e7.cloud.databricks.com/api/2.1/unity-catalog/models/main.default.test-model-abc?": ` +
+		`read tcp 10.0.0.1:1234->3.4.5.6:443: read: operation timed out`
+
+	line := oneLine(err)
+	assert.Contains(t, line, "operation timed out")
+	assert.NotContains(t, line, "dbc-61ef35eb")
+	assert.LessOrEqual(t, len(line), 143)
+}
