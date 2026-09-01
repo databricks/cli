@@ -1,4 +1,3 @@
-# The full report moves whenever a passing row moves; output/<type>.txt is the one that
-# records findings and is worth diffing. Both the fake server and a real workspace are held
-# to that single golden.
-output/*.full.txt
+# What a run produces for reading rather than for review: the full report, its cloud counterpart,
+# and the previous copy of each. output/ holds the committed goldens and nothing else.
+logs/

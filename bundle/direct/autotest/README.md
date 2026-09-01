@@ -83,7 +83,7 @@ the count of every verdict — including the passing ones, which no line names. 
 are what makes a change in *passing* behaviour visible, since a field that starts being
 recreated instead of updated moves one `OK` to `OK_RECREATE` and nothing else would show it.
 
-`output/<type>.full.txt` holds every row, the not-covered list, and the evidence indented
+`logs/<type>.full.txt` holds every row, the not-covered list, and the evidence indented
 under each finding — the post-deploy plan for drift, the whole API error for a rejection. It
 is gitignored, because it is full of generated ids and moves whenever any row moves.
 
@@ -225,7 +225,7 @@ own:
       -run 'TestFields/^apps$/[^/]*/^(budget_policy_id|usage_policy_id)$'
 
 The golden comparison fails on a partial run, which is expected: read the rows in
-`output/<type>.<cloud>.full.txt` instead. This is how to check a field the local report calls
+`logs/<type>.<cloud>.full.txt` instead. This is how to check a field the local report calls
 `OK` when its value looks like it must name something real, a `*_id` or an ARN or a path. The
 fake server takes any string, so `OK` there means nothing until a workspace has agreed: both
 `budget_policy_id` and `usage_policy_id` on apps read `OK` locally and are rejected outright on
@@ -234,7 +234,7 @@ a real workspace, which names an account-level policy neither has.
 On cloud (`CLOUD_ENV` set) the same reports are compared against the same committed
 goldens: a divergence means the fake server in `libs/testserver` does not model the API
 faithfully, which is worth failing over. The full report goes to
-`output/<resource_type>.<cloud>.full.txt` so a cloud run can be read next to a local one.
+`logs/<resource_type>.<cloud>.full.txt` so a cloud run can be read next to a local one.
 
 ## Out of scope for now
 
