@@ -15,6 +15,13 @@ import (
 // name: "projects/{project_id}/branches/{branch_id}/snapshot-schedule".
 const snapshotScheduleSuffix = "/snapshot-schedule"
 
+// snapshotScheduleName returns the schedule's resource name for a branch. It
+// trims any trailing slash on the branch name (e.g. a user-supplied
+// "projects/p/branches/b/") so the suffix is not doubled up.
+func snapshotScheduleName(branch string) string {
+	return strings.TrimRight(branch, "/") + snapshotScheduleSuffix
+}
+
 // PostgresSnapshotScheduleRemote is the return type for DoRead. It carries all
 // paths present in StateType (branch, schedule) so drift detection works, plus
 // the schedule's resource name.
@@ -105,7 +112,7 @@ func (r *ResourcePostgresSnapshotSchedule) updateSnapshotSchedule(ctx context.Co
 func (r *ResourcePostgresSnapshotSchedule) DoCreate(ctx context.Context, config *PostgresSnapshotScheduleState) (string, *PostgresSnapshotScheduleRemote, error) {
 	// The schedule exists implicitly for every branch; "creating" the resource
 	// means setting its cadences via UpdateSnapshotSchedule.
-	result, err := r.updateSnapshotSchedule(ctx, config.Branch+snapshotScheduleSuffix, config.Schedule)
+	result, err := r.updateSnapshotSchedule(ctx, snapshotScheduleName(config.Branch), config.Schedule)
 	if err != nil {
 		return "", nil, err
 	}
