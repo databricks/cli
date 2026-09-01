@@ -31,7 +31,7 @@ type fakePM struct{ py, dbc, pyspark, dbcImportErr string }
 
 func (fakePM) Name() string                                    { return "fake" }
 func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.0", nil }
-func (fakePM) EnsurePython(_ context.Context, minor, _ string) (PythonSelection, error) {
+func (fakePM) EnsurePython(_ context.Context, minor string) (PythonSelection, error) {
 	return PythonSelection{Executable: minor, Resolution: PythonResolutionUVInstallSucceeded}, nil
 }
 func (fakePM) Provision(context.Context, string, string) error { return nil }
@@ -50,7 +50,7 @@ func (noProvisionPM) EnsureAvailable(context.Context) (string, error) {
 	return "", errors.New("EnsureAvailable must not be called under --dry-run")
 }
 
-func (noProvisionPM) EnsurePython(context.Context, string, string) (PythonSelection, error) {
+func (noProvisionPM) EnsurePython(context.Context, string) (PythonSelection, error) {
 	return PythonSelection{}, errors.New("EnsurePython must not be called under --dry-run")
 }
 
@@ -78,14 +78,12 @@ func (uvMissingPM) EnsureAvailable(context.Context) (string, error) {
 type recordingPM struct {
 	fakePM
 	minor           string
-	constraint      string
 	provisionPython string
 	provisionErr    error
 }
 
-func (p *recordingPM) EnsurePython(_ context.Context, minor, constraint string) (PythonSelection, error) {
+func (p *recordingPM) EnsurePython(_ context.Context, minor string) (PythonSelection, error) {
 	p.minor = minor
-	p.constraint = constraint
 	return PythonSelection{
 		Executable: "/installed/python3.12",
 		Resolution: PythonResolutionInstalledFallback,
@@ -148,7 +146,6 @@ func TestPipelineProvisionsWithSelectedPython(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "3.12", pm.minor)
-	assert.Equal(t, "==3.12.*", pm.constraint)
 	assert.Equal(t, "/installed/python3.12", pm.provisionPython)
 	assert.Equal(t, PythonResolutionInstalledFallback, res.PythonResolution)
 }

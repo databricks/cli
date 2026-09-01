@@ -3,9 +3,7 @@ package localenv
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"net/url"
 	"os"
 	"os/exec"
@@ -29,73 +27,6 @@ const EnvAutoInstallUv = "DATABRICKS_LOCALENV_AUTO_INSTALL_UV"
 // https://docs.astral.sh/uv/
 type uvManager struct {
 	bin string
-}
-
-// uvPython is the subset of uv's JSON-formatted Python installation record
-// needed to choose an executable.
-type uvPython struct {
-	VersionParts struct {
-		Major int `json:"major"`
-		Minor int `json:"minor"`
-		Patch int `json:"patch"`
-	} `json:"version_parts"`
-	Path string `json:"path"`
-}
-
-// installedPython associates a uv installation record with its source so an
-// equal-version tie can prefer a uv-managed interpreter.
-type installedPython struct {
-	uvPython
-	managed bool
-}
-
-// selectInstalledPython returns the highest compatible patch from uv's managed
-// and system installation lists. A managed interpreter wins an exact tie.
-func selectInstalledPython(managedJSON, systemJSON []byte) (string, error) {
-	var managed, system []uvPython
-	if err := json.Unmarshal(managedJSON, &managed); err != nil {
-		return "", fmt.Errorf("parse managed Python installations: %w", err)
-	}
-	if err := json.Unmarshal(systemJSON, &system); err != nil {
-		return "", fmt.Errorf("parse system Python installations: %w", err)
-	}
-
-	var best *installedPython
-	for _, group := range []struct {
-		pythons []uvPython
-		managed bool
-	}{{system, false}, {managed, true}} {
-		for _, python := range group.pythons {
-			candidate := installedPython{uvPython: python, managed: group.managed}
-			if python.Path == "" {
-				continue
-			}
-			if best == nil || newerInstalledPython(candidate, *best) {
-				best = &candidate
-			}
-		}
-	}
-	if best == nil {
-		return "", errors.New("no compatible installed Python found")
-	}
-	return best.Path, nil
-}
-
-// newerInstalledPython reports whether candidate should replace current. Patch
-// version is the primary product preference; uv-managed wins only an exact tie.
-func newerInstalledPython(candidate, current installedPython) bool {
-	c := candidate.VersionParts
-	b := current.VersionParts
-	if c.Major != b.Major {
-		return c.Major > b.Major
-	}
-	if c.Minor != b.Minor {
-		return c.Minor > b.Minor
-	}
-	if c.Patch != b.Patch {
-		return c.Patch > b.Patch
-	}
-	return candidate.managed && !current.managed
 }
 
 // NewUvManager returns a PackageManager backed by the uv tool. The binary path
@@ -161,8 +92,9 @@ func (m *uvManager) runUvOutput(ctx context.Context, args []string, dir string) 
 	return process.Background(ctx, args, process.WithDir(dir), process.WithProcessGroup())
 }
 
-// EnsurePython installs the requested Python minor version via uv.
-func (m *uvManager) EnsurePython(ctx context.Context, minor, constraint string) (PythonSelection, error) {
+// EnsurePython installs the requested Python minor via uv, falling back to a
+// compatible interpreter already on the machine when the download fails.
+func (m *uvManager) EnsurePython(ctx context.Context, minor string) (PythonSelection, error) {
 	args := append([]string{m.bin}, m.pythonInstallArgs(minor)...)
 	installErr := m.runUv(ctx, args, "")
 	if installErr == nil {
@@ -171,66 +103,58 @@ func (m *uvManager) EnsurePython(ctx context.Context, minor, constraint string) 
 	if ctx.Err() != nil {
 		return PythonSelection{}, uvFailure(ErrPythonInstall, installErr, "uv python install "+minor)
 	}
-	fallbackConstraint := fallbackPythonConstraint(constraint, minor)
-
-	managed, err := m.listInstalledPython(ctx, fallbackConstraint, true)
-	if err != nil {
-		return PythonSelection{}, uvFailure(ErrPythonInstall, errors.Join(installErr, err), "uv python install "+minor)
+	executable, findErr := m.findInstalledPython(ctx, minor)
+	if ctx.Err() != nil {
+		// Interrupted mid-search: report the cancellation, not a false "nothing
+		// found". errors.Join drops a nil findErr when the search had finished.
+		return PythonSelection{}, uvFailure(ErrPythonInstall, errors.Join(installErr, findErr), "uv python install "+minor)
 	}
-	system, err := m.listInstalledPython(ctx, fallbackConstraint, false)
-	if err != nil {
-		return PythonSelection{}, uvFailure(ErrPythonInstall, errors.Join(installErr, err), "uv python install "+minor)
+	if findErr != nil {
+		// Two sentences, each carrying its own command's stderr: the download
+		// failure and the search failure are distinct, so the find stderr attaches
+		// to the search sentence rather than reading as if `python install`
+		// rejected an argument it never saw.
+		msg := "uv python install " + minor + " failed"
+		if stderr := uvStderr(installErr); stderr != "" {
+			msg += ": " + stderr
+		}
+		msg += "\nno compatible installed Python found"
+		if stderr := uvStderr(findErr); stderr != "" {
+			msg += ": " + stderr
+		}
+		return PythonSelection{}, NewError(ErrPythonInstall, errors.Join(installErr, findErr), "%s", msg)
 	}
-	executable, err := selectInstalledPython(managed, system)
-	if err != nil {
-		return PythonSelection{}, uvFailure(ErrPythonInstall, errors.Join(installErr, err), "uv python install "+minor)
-	}
-	log.Debugf(ctx, "uv: selected compatible installed Python at %s", executable)
+	log.Debugf(ctx, "uv: Python download failed (%s); using installed interpreter %s", uvStderr(installErr), executable)
 	return PythonSelection{Executable: executable, Resolution: PythonResolutionInstalledFallback}, nil
 }
 
-// fallbackPythonConstraint converts the accepted shorthand forms of
-// requires-python to specifiers uv can parse, then pins discovery to the target
-// minor. See https://docs.astral.sh/uv/concepts/python-versions/#requesting-a-version
-func fallbackPythonConstraint(constraint, minor string) string {
-	clauses := make([]string, 0, strings.Count(constraint, ",")+2)
-	minorPin := "==" + minor + ".*"
-	hasMinorPin := false
-	for clause := range strings.SplitSeq(constraint, ",") {
-		clause = strings.TrimSpace(clause)
-		if clause == "" {
-			continue
-		}
-		match := clauseRe.FindStringSubmatch(clause)
-		if match != nil && match[1] == "" {
-			clause = ">=" + clause
-		}
-		hasMinorPin = hasMinorPin || clause == minorPin
-		clauses = append(clauses, clause)
-	}
-	if !hasMinorPin {
-		clauses = append(clauses, minorPin)
-	}
-	return strings.Join(clauses, ",")
-}
-
-// listInstalledPython asks uv for compatible installed interpreters from one
-// source and returns its JSON response unchanged for selection.
-func (m *uvManager) listInstalledPython(ctx context.Context, constraint string, managed bool) ([]byte, error) {
-	args := append([]string{m.bin}, m.pythonListArgs(constraint, managed)...)
+// findInstalledPython returns the path to an interpreter for the target minor
+// already present on the machine, or an error if none is. uv applies its own
+// managed-first preference and excludes project venvs; --system is required so an
+// active .venv is ignored, and --no-python-downloads keeps it from re-attempting
+// the download that just failed.
+// https://docs.astral.sh/uv/reference/cli/#uv-python-find
+func (m *uvManager) findInstalledPython(ctx context.Context, minor string) (string, error) {
+	args := append([]string{m.bin}, m.pythonFindArgs(minor)...)
 	out, err := m.runUvOutput(ctx, args, "")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return []byte(out), nil
+	// uv find errors when nothing matches, so an empty path is unexpected; guard
+	// it anyway to keep an empty --python off the uv sync command line.
+	path := strings.TrimSpace(out)
+	if path == "" {
+		return "", errors.New("uv python find returned no interpreter")
+	}
+	return path, nil
 }
 
 // Provision runs `uv sync` inside projectDir to install project dependencies,
 // pinning the interpreter to python. Without --python, `uv sync` selects the
 // newest installed interpreter satisfying requires-python (e.g. 3.13 for a
 // ">=3.12" floor), which then fails pipeline validation against the 3.12 target.
-// The explicit request is either the minor just installed or the exact
-// compatible path selected by fallback discovery.
+// The explicit request is either the minor just installed or the interpreter
+// path found by the installed-Python fallback.
 func (m *uvManager) Provision(ctx context.Context, projectDir, python string) error {
 	args := append([]string{m.bin}, m.syncArgs(python)...)
 	if err := m.runUv(ctx, args, projectDir); err != nil {
@@ -356,19 +280,11 @@ func (m *uvManager) pythonInstallArgs(minor string) []string {
 	return []string{"python", "install", minor}
 }
 
-// pythonListArgs returns the arguments for listing compatible interpreters
-// already present on this machine. Splitting managed and system installations
-// lets selection prefer a uv-managed interpreter only when versions tie.
-// https://docs.astral.sh/uv/reference/cli/#uv-python-list
-func (m *uvManager) pythonListArgs(constraint string, managed bool) []string {
-	preference := "--no-managed-python"
-	if managed {
-		preference = "--managed-python"
-	}
-	return []string{
-		"python", "list", "--only-installed", "--all-versions",
-		"--output-format", "json", preference, "cpython@" + constraint,
-	}
+// pythonFindArgs returns the arguments for locating an installed interpreter for
+// the target minor without downloading. --system ignores the project's own venv.
+// https://docs.astral.sh/uv/reference/cli/#uv-python-find
+func (m *uvManager) pythonFindArgs(minor string) []string {
+	return []string{"python", "find", "--system", "--no-python-downloads", "cpython@==" + minor + ".*"}
 }
 
 // pipSeedArgs returns the argument slice for seeding pip into the venv.
@@ -483,37 +399,19 @@ func redactURLCredentials(raw string) string {
 // "Connection refused") rather than just the exit code.
 func uvFailure(code ErrorCode, err error, action string) *PipelineError {
 	msg := action + " failed"
-	if stderr := processStderr(err); stderr != "" {
+	if stderr := uvStderr(err); stderr != "" {
 		msg = msg + ": " + stderr
 	}
 	return NewError(code, err, "%s", msg)
 }
 
-// processStderr collects diagnostics from every process failure in an error
-// tree, including errors.Join trees produced by fallback attempts.
-func processStderr(err error) string {
-	return strings.Join(appendProcessStderr(nil, err), "\n")
-}
-
-// appendProcessStderr recursively appends process diagnostics from err while
-// preserving the order of errors.Join children.
-func appendProcessStderr(messages []string, err error) []string {
-	if err == nil {
-		return messages
+// uvStderr returns the trimmed stderr of a failed uv process, or "" when err is
+// not a process failure.
+func uvStderr(err error) string {
+	if perr, ok := errors.AsType[*process.ProcessError](err); ok {
+		return strings.TrimSpace(perr.Stderr)
 	}
-	if joined, ok := err.(interface{ Unwrap() []error }); ok {
-		for _, child := range joined.Unwrap() {
-			messages = appendProcessStderr(messages, child)
-		}
-		return messages
-	}
-	if perr, ok := err.(*process.ProcessError); ok {
-		if stderr := strings.TrimSpace(perr.Stderr); stderr != "" {
-			messages = append(messages, stderr)
-		}
-		return messages
-	}
-	return appendProcessStderr(messages, errors.Unwrap(err))
+	return ""
 }
 
 // confirmUvInstall reports whether the caller has consented to installUv running

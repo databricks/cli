@@ -12,9 +12,9 @@ type PackageManager interface {
 	EnsureAvailable(ctx context.Context) (version string, err error)
 
 	// EnsurePython first asks the package manager to install the requested minor.
-	// If that fails, it may select an already-installed interpreter satisfying
-	// constraint. The returned executable is passed unchanged to Provision.
-	EnsurePython(ctx context.Context, minor, constraint string) (PythonSelection, error)
+	// If that fails, it may select an already-installed interpreter for that
+	// minor. The returned executable is passed unchanged to Provision.
+	EnsurePython(ctx context.Context, minor string) (PythonSelection, error)
 
 	// Provision installs the project dependencies inside projectDir, pinning the
 	// environment to python, which is either a minor request (e.g. "3.12") or an
@@ -35,8 +35,8 @@ type PackageManager interface {
 }
 
 // PythonResolution records which preparation path supplied the interpreter.
-// It is deliberately categorical: executable paths and versions never belong
-// in telemetry derived from the structured result.
+// It is deliberately categorical (never a path or version) so consumers can
+// branch on a stable value in the structured result.
 type PythonResolution string
 
 const (

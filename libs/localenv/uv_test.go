@@ -53,83 +53,9 @@ func TestUvArgs(t *testing.T) {
 	assert.Equal(t, []string{"sync", "--python", "3.12"}, m.syncArgs("3.12"))
 	assert.Equal(t, []string{"python", "install", "3.12"}, m.pythonInstallArgs("3.12"))
 	assert.Equal(t, []string{
-		"python", "list", "--only-installed", "--all-versions",
-		"--output-format", "json", "--managed-python", "cpython@==3.12.*",
-	}, m.pythonListArgs("==3.12.*", true))
-	assert.Equal(t, []string{
-		"python", "list", "--only-installed", "--all-versions",
-		"--output-format", "json", "--no-managed-python", "cpython@==3.12.*",
-	}, m.pythonListArgs("==3.12.*", false))
+		"python", "find", "--system", "--no-python-downloads", "cpython@==3.12.*",
+	}, m.pythonFindArgs("3.12"))
 	assert.Equal(t, []string{"pip", "install", "pip", "--python", "/p/.venv/bin/python"}, m.pipSeedArgs("/p/.venv/bin/python"))
-}
-
-func TestSelectInstalledPython(t *testing.T) {
-	tests := []struct {
-		name    string
-		managed string
-		system  string
-		want    string
-		wantErr bool
-	}{
-		{
-			name:    "newer system patch beats managed",
-			managed: `[{"version_parts":{"major":3,"minor":12,"patch":10},"path":"/managed/3.12.10"}]`,
-			system:  `[{"version_parts":{"major":3,"minor":12,"patch":11},"path":"/system/3.12.11"}]`,
-			want:    "/system/3.12.11",
-		},
-		{
-			name:    "managed wins an equal-version tie",
-			managed: `[{"version_parts":{"major":3,"minor":12,"patch":10},"path":"/managed/3.12.10"}]`,
-			system:  `[{"version_parts":{"major":3,"minor":12,"patch":10},"path":"/system/3.12.10"}]`,
-			want:    "/managed/3.12.10",
-		},
-		{
-			name:    "highest candidate within one source wins",
-			managed: `[{"version_parts":{"major":3,"minor":12,"patch":8},"path":"/managed/3.12.8"},{"version_parts":{"major":3,"minor":12,"patch":12},"path":"/managed/3.12.12"}]`,
-			system:  `[]`,
-			want:    "/managed/3.12.12",
-		},
-		{
-			name:    "entry without a path is skipped",
-			managed: `[{"version_parts":{"major":3,"minor":12,"patch":12},"path":""},{"version_parts":{"major":3,"minor":12,"patch":10},"path":"/managed/3.12.10"}]`,
-			system:  `[]`,
-			want:    "/managed/3.12.10",
-		},
-		{name: "no candidates", managed: `[]`, system: `[]`, wantErr: true},
-		{name: "malformed JSON", managed: `{`, system: `[]`, wantErr: true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := selectInstalledPython([]byte(tt.managed), []byte(tt.system))
-			if tt.wantErr {
-				require.Error(t, err)
-				assert.Empty(t, got)
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
-func TestFallbackPythonConstraint(t *testing.T) {
-	tests := []struct {
-		name       string
-		constraint string
-		want       string
-	}{
-		{"trims clauses", " >=3.12 , <3.13 ", ">=3.12,<3.13,==3.12.*"},
-		{"normalizes bare floor", "3.12", ">=3.12,==3.12.*"},
-		{"normalizes bare floor among exclusions", "!=3.11,3.12", "!=3.11,>=3.12,==3.12.*"},
-		{"preserves exact minor", "==3.12", "==3.12,==3.12.*"},
-		{"preserves arbitrary equality", "===3.12", "===3.12,==3.12.*"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, fallbackPythonConstraint(tt.constraint, "3.12"))
-		})
-	}
 }
 
 func TestEnsurePythonStopsAfterSuccessfulInstall(t *testing.T) {
@@ -137,7 +63,7 @@ func TestEnsurePythonStopsAfterSuccessfulInstall(t *testing.T) {
 	stub.WithCallback(func(_ *exec.Cmd) error { return nil })
 	m := &uvManager{bin: "uv"}
 
-	selection, err := m.EnsurePython(ctx, "3.12", "==3.12.*")
+	selection, err := m.EnsurePython(ctx, "3.12")
 
 	require.NoError(t, err)
 	assert.Equal(t, PythonSelection{
@@ -150,11 +76,10 @@ func TestEnsurePythonStopsAfterSuccessfulInstall(t *testing.T) {
 func TestEnsurePythonFallsBackToInstalledInterpreter(t *testing.T) {
 	ctx, stub := process.WithStub(t.Context())
 	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("download blocked"))
-	stub.WithStdoutFor(`--managed-python`, `[{"version_parts":{"major":3,"minor":12,"patch":10},"path":"/managed/python3.12"}]`)
-	stub.WithStdoutFor(`--no-managed-python`, `[{"version_parts":{"major":3,"minor":12,"patch":11},"path":"/system/python3.12"}]`)
+	stub.WithStdoutFor(`python find`, "/system/python3.12\n")
 	m := &uvManager{bin: "uv"}
 
-	selection, err := m.EnsurePython(ctx, "3.12", ">=3.12,<3.15")
+	selection, err := m.EnsurePython(ctx, "3.12")
 
 	require.NoError(t, err)
 	assert.Equal(t, PythonSelection{
@@ -163,8 +88,7 @@ func TestEnsurePythonFallsBackToInstalledInterpreter(t *testing.T) {
 	}, selection)
 	assert.Equal(t, []string{
 		uvStubCommand("python install 3.12"),
-		uvStubCommand("python list --only-installed --all-versions --output-format json --managed-python cpython@>=3.12,<3.15,==3.12.*"),
-		uvStubCommand("python list --only-installed --all-versions --output-format json --no-managed-python cpython@>=3.12,<3.15,==3.12.*"),
+		uvStubCommand("python find --system --no-python-downloads cpython@==3.12.*"),
 	}, stub.Commands())
 }
 
@@ -176,10 +100,9 @@ func TestEnsurePythonFallbackPreservesIndexURLBridge(t *testing.T) {
 	ctx := writePipConf(t, "[global]\nindex-url = https://proxy.example/simple\n")
 	ctx, stub := process.WithStub(ctx)
 	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("download blocked"))
-	stub.WithStdoutFor(`--managed-python`, `[]`)
-	stub.WithStdoutFor(`--no-managed-python`, `[{"version_parts":{"major":3,"minor":12,"patch":11},"path":"/system/python3.12"}]`)
+	stub.WithStdoutFor(`python find`, "/system/python3.12\n")
 
-	selection, err := (&uvManager{bin: "uv"}).EnsurePython(ctx, "3.12", ">=3.12")
+	selection, err := (&uvManager{bin: "uv"}).EnsurePython(ctx, "3.12")
 
 	require.NoError(t, err)
 	assert.Equal(t, "/system/python3.12", selection.Executable)
@@ -194,23 +117,70 @@ func TestEnsurePythonStopsFallbackWhenContextIsCanceled(t *testing.T) {
 		return context.Canceled
 	})
 
-	_, err := (&uvManager{bin: "uv"}).EnsurePython(ctx, "3.12", ">=3.12")
+	_, err := (&uvManager{bin: "uv"}).EnsurePython(ctx, "3.12")
 
 	require.ErrorIs(t, err, context.Canceled)
 	assert.Equal(t, []string{uvStubCommand("python install 3.12")}, stub.Commands())
 }
 
-func TestEnsurePythonDoesNotRetryWhenFallbackFails(t *testing.T) {
+func TestEnsurePythonFallbackErrorSurfacesSearchStderr(t *testing.T) {
 	ctx, stub := process.WithStub(t.Context())
-	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("download blocked"))
-	stub.WithStdoutFor(`python list`, `[]`)
+	stub.WithStderrFor(uvPythonInstall312Pattern, "error: Connection refused")
+	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("exit status 1"))
+	stub.WithStderrFor(`python find`, "error: unexpected argument '--no-python-downloads'")
+	stub.WithFailureFor(`python find`, errors.New("exit status 2"))
 	m := &uvManager{bin: "uv"}
 
-	selection, err := m.EnsurePython(ctx, "3.12", "==3.12.*")
+	_, err := m.EnsurePython(ctx, "3.12")
+
+	require.Error(t, err)
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	// Both the download reason and the search command's own stderr must be
+	// reachable; the latter distinguishes "nothing installed" from a uv that
+	// rejected the find flags.
+	assert.Contains(t, pe.Msg, "Connection refused")
+	assert.Contains(t, pe.Msg, "unexpected argument '--no-python-downloads'")
+}
+
+func TestEnsurePythonReportsCancellationDuringFallbackSearch(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	ctx, stub := process.WithStub(ctx)
+	// Install fails normally (ctx still live), so the search runs; the search is
+	// then interrupted. The error must report the interruption, not claim that no
+	// interpreter is installed.
+	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("download blocked"))
+	stub.WithCallback(func(_ *exec.Cmd) error {
+		cancel()
+		return context.Canceled
+	})
+
+	_, err := (&uvManager{bin: "uv"}).EnsurePython(ctx, "3.12")
+
+	require.ErrorIs(t, err, context.Canceled)
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.NotContains(t, pe.Msg, "no compatible installed Python found")
+	assert.Equal(t, []string{
+		uvStubCommand("python install 3.12"),
+		uvStubCommand("python find --system --no-python-downloads cpython@==3.12.*"),
+	}, stub.Commands())
+}
+
+func TestEnsurePythonFailsWhenFallbackFindsNothing(t *testing.T) {
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("download blocked"))
+	stub.WithFailureFor(`python find`, errors.New("No interpreter found"))
+	m := &uvManager{bin: "uv"}
+
+	selection, err := m.EnsurePython(ctx, "3.12")
 
 	require.Error(t, err)
 	assert.Empty(t, selection)
-	assert.Equal(t, 3, stub.Len())
+	assert.Equal(t, []string{
+		uvStubCommand("python install 3.12"),
+		uvStubCommand("python find --system --no-python-downloads cpython@==3.12.*"),
+	}, stub.Commands())
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, ErrPythonInstall, pe.Code)
@@ -407,14 +377,6 @@ func TestUvFailureIncludesStderr(t *testing.T) {
 		pe := uvFailure(ErrProvision, errors.New("some other error"), "uv sync")
 		assert.Equal(t, ErrProvision, pe.Code)
 		assert.Equal(t, "uv sync failed", pe.Msg)
-	})
-
-	t.Run("includes_stderr_from_joined_fallback_failure", func(t *testing.T) {
-		installErr := &process.ProcessError{Err: errors.New("exit status 1"), Stderr: "download blocked"}
-		listErr := &process.ProcessError{Err: errors.New("exit status 2"), Stderr: "unexpected argument '--managed-python'"}
-		pe := uvFailure(ErrPythonInstall, errors.Join(installErr, listErr), "uv python install 3.12")
-		assert.Contains(t, pe.Msg, "download blocked")
-		assert.Contains(t, pe.Msg, "unexpected argument '--managed-python'")
 	})
 }
 
