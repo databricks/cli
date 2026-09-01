@@ -1,0 +1,2 @@
+json.privilege_assignments[].principal = "deco-test-user@databricks.com";
+json.privilege_assignments[].privileges[] = "USE_SCHEMA";

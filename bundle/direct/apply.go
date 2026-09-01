@@ -159,24 +159,13 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	empty, err := d.Adapter.IsEmptyState(newState)
+	// An update that empties the resource out (e.g. all grants revoked) saves the empty state
+	// rather than dropping the entry. The resource is still there - the schema keeps existing,
+	// it just grants nothing - so the node stays tracked, and a caller reading the state sees
+	// what the update applied instead of nothing at all.
+	err = d.saveState(db, id, newState, d.DependsOn)
 	if err != nil {
-		return err
-	}
-
-	if empty {
-		// The update emptied the resource out (e.g. all grants revoked). Keeping an entry
-		// would report the node as tracked-and-unchanged forever, while a fresh deploy of
-		// the same config plans no node at all; drop it so the two agree.
-		err = db.DeleteState(d.ResourceKey)
-		if err != nil {
-			return fmt.Errorf("deleting state id=%s: %w", id, err)
-		}
-	} else {
-		err = d.saveState(db, id, newState, d.DependsOn)
-		if err != nil {
-			return fmt.Errorf("saving state id=%s: %w", id, err)
-		}
+		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
 	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
