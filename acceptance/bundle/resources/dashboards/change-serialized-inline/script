@@ -16,8 +16,7 @@ retry --until "Page 1" $CLI lakeview get "$dashboard_id" > /dev/null
 
 update_file.py databricks.yml "Page 1" "Page One"
 
-# Should be detected as an update, not a recreate.
-trace $CLI bundle plan
+trace $CLI bundle plan | contains.py "update" "!recreate"
 
 # Per-engine JSON plan; also the saved plan for READPLAN=1.
 trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
