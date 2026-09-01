@@ -65,6 +65,13 @@ type Report struct {
 	// than a list of paths, which would depend on the filler's choice of key.
 	InsideFreeFormField []string
 
+	// WalkDuplicated are paths structwalk visits more than once. encoding/json serializes a
+	// name once, so a second visit is a second field under one name -- a shadowed embed -- and
+	// structdiff would report a change at that path twice. Carried through Filter untouched:
+	// callers ratchet on it by name, like the other categories that name a limitation rather
+	// than a path-by-path failure.
+	WalkDuplicated []string
+
 	// ContainerUnreachable are paths at which encoding/json emits an object or an array that
 	// structaccess cannot resolve. Scalar leaves alone would miss them: a field serialized as
 	// {} or [] contributes no leaf, so a field the packages cannot reach at all would otherwise
@@ -88,7 +95,8 @@ type Report struct {
 func (r Report) Empty() bool {
 	return len(r.WalkMissing) == 0 && len(r.WalkExtra) == 0 && len(r.GetFailed) == 0 &&
 		len(r.ValidateFailed) == 0 && len(r.ValueMismatch) == 0 && len(r.SelfMarshalingScalars) == 0 &&
-		len(r.InsideFreeFormField) == 0 && len(r.ContainerUnreachable) == 0
+		len(r.InsideFreeFormField) == 0 && len(r.ContainerUnreachable) == 0 &&
+		len(r.WalkDuplicated) == 0
 }
 
 // String renders the report as one indented line per category, for a test failure message.
@@ -106,6 +114,7 @@ func (r Report) String() string {
 		{"marshals itself as a scalar, so structwalk never visits", r.SelfMarshalingScalars},
 		{"sits inside a free-form any field, which the packages do not look into", r.InsideFreeFormField},
 		{"is emitted as an object or array structaccess cannot resolve", r.ContainerUnreachable},
+		{"structwalk visits more than once", r.WalkDuplicated},
 	} {
 		if len(s.paths) == 0 {
 			continue
@@ -139,7 +148,11 @@ func Check(t reflect.Type) (Report, error) {
 	}
 
 	walkLeaves := map[string]string{}
+	walkVisits := map[string]int{}
 	err = structwalk.Walk(v, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
+		// Counted, not just recorded: a map would collapse two visits to one path and hide a
+		// shadowed embedded field, which is agreement reported where there is none.
+		walkVisits[path.String()]++
 		walkLeaves[path.String()] = render(val)
 	})
 	if err != nil {
@@ -186,6 +199,12 @@ func Check(t reflect.Type) (Report, error) {
 				fmt.Sprintf("%s: structaccess=%s encoding/json=%s", path, render(got), want))
 		}
 	}
+	for path, visits := range walkVisits {
+		if visits > 1 && !marks.freeForm[path] && !marks.freeFormField[path] {
+			report.WalkDuplicated = append(report.WalkDuplicated, path)
+		}
+	}
+
 	for path := range marks.containers {
 		if marks.freeForm[path] || marks.freeFormField[path] {
 			continue
@@ -516,6 +535,7 @@ func (r Report) Filter(known []string) (Report, []string) {
 		WalkExtra:            dropPrefix(r.WalkExtra),
 		GetFailed:            dropExact(r.GetFailed),
 		ContainerUnreachable: dropExact(r.ContainerUnreachable),
+		WalkDuplicated:       r.WalkDuplicated,
 		ValidateFailed:       dropExact(r.ValidateFailed),
 		ValueMismatch:        dropExact(r.ValueMismatch),
 		// These two are categories, not per-path lists, so the caller decides what to do with
