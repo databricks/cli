@@ -202,6 +202,11 @@ longer deploys at all. The summary counts every field and has no meaningful subs
 not compared -- a change between two *passing* verdicts shows up only in the full run.
 `-sample` refuses to run with `-update`, which would truncate the goldens to the sample.
 
+A value whose own label would be unreadable gets a short alias -- `v1`, `v2` -- which the legend at
+the end of the full report maps back, so a subtest is `absent_to_v1` rather than a truncated email
+address with a digest on the end. An index is written `tasks_0`, not `tasks[0]`: brackets are a
+character class to the `-run` regex, so a filter copied from the output would mean something else.
+
 One transition is addressable on its own, and the subtest names carry no shell
 metacharacters so no quoting is needed. `-v` prints the post-deploy plan behind any
 problem verdict:
