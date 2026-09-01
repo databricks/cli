@@ -71,6 +71,14 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	listenAddr := fmt.Sprintf("0.0.0.0:%d", port)
 	log.Info(ctx, "Starting server on "+listenAddr)
 
+	// Done before the first /Workspace access below, because this server binary is
+	// itself exec'd from /Workspace. Best-effort, like seedEnvActivation further
+	// down: the tunnel has always run without a registration of its own, so a node
+	// whose FUSE daemons do not answer must not lose the tunnel as well.
+	if err := registerFuseCredentials(ctx, client); err != nil {
+		log.Warnf(ctx, "Failed to register with the FUSE daemons, /Workspace and /Volumes will stop working for this session if the bootstrap notebook exits: %v", err)
+	}
+
 	// Save metadata including ClusterID (required for Driver Proxy connections in serverless mode)
 	metadata := &workspace.WorkspaceMetadata{
 		Port:          port,
