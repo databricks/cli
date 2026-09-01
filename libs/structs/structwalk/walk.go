@@ -124,8 +124,8 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 		}
 
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
-		if jsonTag.Name() == "-" {
-			continue // skip fields without json name
+		if structaccess.IsSkippedField(sf) {
+			continue // encoding/json omits it entirely
 		}
 
 		// Resolve field name from JSON tag or fall back to Go field name
