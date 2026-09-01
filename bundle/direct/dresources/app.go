@@ -178,30 +178,34 @@ var UpdateMaskFields = []string{
 	"telemetry_export_destinations",
 }
 
-var updateMask = strings.Join(UpdateMaskFields, ",")
-
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
 	// Deploy-only fields (source_code_path, config, git_source, lifecycle) are excluded
 	// from the request body; see appRequestBody.
 	if hasAppChanges(entry) {
 		app := appRequestBody(config)
-		request := apps.AsyncUpdateAppRequest{
-			App:        &app,
-			AppName:    id,
-			UpdateMask: updateMask,
-		}
-		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
-		if err != nil {
-			return nil, err
-		}
+		fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "")
+		fieldPaths = slices.DeleteFunc(fieldPaths, func(p string) bool {
+			return p == "source_code_path" || p == "config" || p == "git_source" || p == "lifecycle" || strings.HasPrefix(p, "lifecycle.")
+		})
+		if len(fieldPaths) > 0 {
+			request := apps.AsyncUpdateAppRequest{
+				App:        &app,
+				AppName:    id,
+				UpdateMask: strings.Join(fieldPaths, ","),
+			}
+			updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
+			if err != nil {
+				return nil, err
+			}
 
-		response, err := updateWaiter.Get()
-		if err != nil {
-			return nil, err
-		}
+			response, err := updateWaiter.Get()
+			if err != nil {
+				return nil, err
+			}
 
-		if response.Status.State != apps.AppUpdateUpdateStatusUpdateStateSucceeded {
-			return nil, fmt.Errorf("update status: %s: %s", response.Status.State, response.Status.Message)
+			if response.Status.State != apps.AppUpdateUpdateStatusUpdateStateSucceeded {
+				return nil, fmt.Errorf("update status: %s: %s", response.Status.State, response.Status.Message)
+			}
 		}
 	}
 
