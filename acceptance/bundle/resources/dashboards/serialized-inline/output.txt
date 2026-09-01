@@ -3,11 +3,9 @@
 create dashboards.inline_dash
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
-
->>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard-serialized-inline-[UNIQUE_NAME]/default/files...
 Created dashboards.inline_dash
-Files: 6 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //api/2.0/lakeview/dashboards
@@ -23,7 +21,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 {
   "method": "POST",
-  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]/published",
+  "path": "/api/2.0/lakeview/dashboards/[INLINE_DASH_ID]/published",
   "body": {
     "embed_credentials": false,
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
