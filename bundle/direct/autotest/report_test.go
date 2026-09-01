@@ -143,7 +143,7 @@ var benignSuppressions = map[string]bool{
 }
 
 // isProblem reports whether a result is something a person should look at. The committed
-// report lists only these; the .full.txt companion lists everything.
+// report lists only these; the logs/<type>.full.txt companion lists everything.
 func (r result) isProblem() bool {
 	switch r.verdict {
 	case verdictOK, verdictRecreate, verdictNotObservable, verdictSkipped, verdictInertConfirmed,
@@ -396,10 +396,10 @@ func (r *report) write(t testutil.TestingT) {
 
 	fullName := r.resourceType + ".full.txt"
 	if isCloud() {
-		// Keep both around locally when comparing a cloud run against the fake server.
+		// Keep both around when comparing a cloud run against the fake server.
 		fullName = r.resourceType + "." + cloudName() + ".full.txt"
 	}
-	writeReport(t, reportPath(fullName), r.render(false))
+	writeReport(t, logPath(fullName), r.render(false))
 
 	if testdiff.OverwriteMode {
 		writeReport(t, name, body)
@@ -502,17 +502,33 @@ func writeReport(t testutil.TestingT, name, body string) {
 		t.Errorf("creating %s: %s", filepath.Dir(name), err)
 		return
 	}
+	// The previous run's copy is kept next to the new one: reading what a change did to a report
+	// means diffing the two, and the full report is not in git to diff against.
+	if previous, err := os.ReadFile(name); err == nil {
+		if err := os.WriteFile(name+".backup", previous, 0o644); err != nil {
+			t.Errorf("backing up %s: %s", name, err)
+			return
+		}
+	}
 	if err := os.WriteFile(name, []byte(body), 0o644); err != nil {
 		t.Errorf("writing %s: %s", name, err)
 	}
 }
 
-// outputDir holds the committed reports. Kept out of the package directory so the Go
-// files stay readable next to two dozen goldens.
+// outputDir holds the committed reports and nothing else, so a change to one is visible in a diff.
+// Kept out of the package directory so the Go files stay readable next to three dozen goldens.
 const outputDir = "output"
+
+// logsDir holds what a run produces for a reader rather than for review: the full report, and the
+// cloud run's copy of it. Ignored wholesale, so nothing here can be mistaken for a golden.
+const logsDir = "logs"
 
 func reportPath(name string) string {
 	return filepath.Join(outputDir, name)
+}
+
+func logPath(name string) string {
+	return filepath.Join(logsDir, name)
 }
 
 func cloudName() string {
