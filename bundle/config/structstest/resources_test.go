@@ -36,16 +36,6 @@ var knownDivergences = map[string][]string{
 	"postgres_synced_tables": baseResourceFields(),
 }
 
-// interfaceFieldPaths are free-form any fields. structwalk documents that it does not
-// traverse an interface, so these never reach a visit callback and structdiff never
-// reports a change to one. Intentional, but it means drift in a serialized dashboard or a
-// cluster policy definition is invisible to the packages.
-var interfaceFieldPaths = map[string][]string{
-	"dashboards":       {"serialized_dashboard"},
-	"genie_spaces":     {"serialized_space"},
-	"cluster_policies": {"definition", "policy_family_definition_overrides"},
-}
-
 // baseResourceFields returns the paths a resource gains from BaseResource, plus any extra
 // fields the resource declares alongside it. They are lost together, by one cause.
 func baseResourceFields(extra ...string) []string {
@@ -75,8 +65,16 @@ func TestResourceTypesAgreeWithJSON(t *testing.T) {
 
 			var known []string
 			known = append(known, knownDivergences[group]...)
-			known = append(known, interfaceFieldPaths[group]...)
-			report = report.Filter(known)
+			report, stale := report.Filter(known)
+			require.Empty(t, stale,
+				"these recorded divergences no longer occur -- remove them from the list: %v", stale)
+			if len(report.InsideFreeFormField) > 0 {
+				// A known limitation: structwalk does not traverse an interface and structaccess
+				// cannot validate a path through one, so a free-form field is opaque to both.
+				t.Logf("%d path(s) inside a free-form any field: %v",
+					len(report.InsideFreeFormField), report.InsideFreeFormField)
+				report.InsideFreeFormField = nil
+			}
 			if len(report.SelfMarshalingScalars) > 0 {
 				// A known structwalk limitation, tracked as one item rather than one entry per
 				// timestamp field, because every new SDK time field joins it.
