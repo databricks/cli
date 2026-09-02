@@ -1,0 +1,12 @@
+cleanup() {
+    $CLI bundle destroy --auto-approve &> LOG.destroy
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "depends_on: only the real reference creates an edge"
+trace $CLI bundle plan -o json | jq '.plan | map_values(.depends_on)'
+
+title "Payload: escaped stays literal, real is resolved"
+trace $CLI bundle deploy
+trace print_requests.py //jobs --sort

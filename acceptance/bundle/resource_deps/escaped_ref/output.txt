@@ -1,0 +1,69 @@
+
+=== depends_on: only the real reference creates an edge
+>>> [CLI] bundle plan -o json
+{
+  "resources.jobs.bar": null,
+  "resources.jobs.foo": [
+    {
+      "node": "resources.jobs.bar",
+      "label": "${resources.jobs.bar.id}"
+    }
+  ]
+}
+
+=== Payload: escaped stays literal, real is resolved
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.bar
+Created jobs.foo
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //jobs --sort
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "job bar",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "job foo",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "notebook_task": {
+          "base_parameters": {
+            "escaped": "${resources.jobs.bar.id}",
+            "real": "[NUMID]"
+          },
+          "notebook_path": "/notebook",
+          "source": "WORKSPACE"
+        },
+        "task_key": "job_task"
+      }
+    ]
+  }
+}
