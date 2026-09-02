@@ -397,7 +397,7 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		if dmsDeploymentID == "" && len(db.Data.State) > 0 {
 			// The remedy is ordered deliberately: this error also blocks destroy, so the
 			// setting has to come out first or there is no way to tear the bundle down.
-			return fmt.Errorf(`cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded
+			return fmt.Errorf(`cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded (adopting existing state is planned for a followup)
 
 To record this bundle's history, start it over as a new deployment:
   1. remove experimental.record_deployment_history from your bundle configuration

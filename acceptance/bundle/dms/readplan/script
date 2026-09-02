@@ -1,0 +1,7 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "deploy --plan is not yet supported with deployment history recording (planned for a followup)"
+trace $CLI bundle plan -o json > tmp.plan.json
+trace musterr $CLI bundle deploy --plan tmp.plan.json
+
+rm -f tmp.plan.json out.requests.txt

@@ -12,4 +12,6 @@ trace jq '.plan | map_values(.depends_on)' plan.json
 # that the payload below is identical either way.
 title "Payload: escaped stays literal, real is resolved\n"
 $CLI bundle deploy $(readplanarg plan.json)
-trace print_requests.py //jobs --sort
+# --nostamp: under deployment-history recording the job payload carries the DMS deployment
+# stamp; drop it so the assertion is the same whether or not recording is on.
+trace print_requests.py //jobs --sort --nostamp

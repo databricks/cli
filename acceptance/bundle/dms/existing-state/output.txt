@@ -10,7 +10,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Turning recording on afterwards is an error: those resources were never recorded, so treating DMS as authoritative would deploy them a second time
 >>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded
+Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded (adopting existing state is planned for a followup)
 
 To record this bundle's history, start it over as a new deployment:
   1. remove experimental.record_deployment_history from your bundle configuration
@@ -25,7 +25,7 @@ To keep the existing resources instead, unset experimental.record_deployment_his
 
 === Still an error after wiping the local cache: deploy pulls the state file back from the workspace, so the resources are still tracked
 >>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded
+Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded (adopting existing state is planned for a followup)
 
 To record this bundle's history, start it over as a new deployment:
   1. remove experimental.record_deployment_history from your bundle configuration

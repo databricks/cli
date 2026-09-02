@@ -10,8 +10,8 @@ EnvMatrix.DMS = ["", "true"]
 # DMS recording is only supported by the direct engine; it is a no-op on terraform.
 EnvMatrixExclude.dms_needs_direct = ["DMS=true", "DATABRICKS_BUNDLE_ENGINE=terraform"]
 
-# Saved plans don't carry the deployment stamp. A first plan writes the deployment record,
-# so `deploy --plan` creates resources without it and reports drift on the next plan.
+# deploy --plan is not yet supported with deployment history recording (planned for a followup),
+# so skip the recording + saved-plan combination.
 EnvMatrixExclude.dms_no_readplan = ["DMS=true", "READPLAN=1"]
 
 # The DMS run asserts the same golden files as the engine runs.

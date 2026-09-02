@@ -1,0 +1,7 @@
+
+=== deploy --plan is not yet supported with deployment history recording (planned for a followup)
+>>> [CLI] bundle plan -o json
+
+>>> musterr [CLI] bundle deploy --plan tmp.plan.json
+Error: deploy --plan is not yet supported with deployment history recording; support is planned for a followup
+

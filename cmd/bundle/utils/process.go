@@ -248,6 +248,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			var dmsClient *dms.Client
 			var dmsDeploymentID string
 			if b.RecordsDeploymentHistory(ctx) {
+				// Deploying a saved plan is not yet supported with deployment history recording;
+				// planned for a followup.
+				if opts.ReadPlanPath != "" {
+					logdiag.LogError(ctx, errors.New("deploy --plan is not yet supported with deployment history recording; support is planned for a followup"))
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
 				deploymentID, deployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 				if err != nil {
 					logdiag.LogError(ctx, err)

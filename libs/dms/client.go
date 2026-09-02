@@ -94,14 +94,6 @@ func (c *Client) CompleteVersion(ctx context.Context, deploymentID string, versi
 	return err
 }
 
-// Heartbeat renews the version's lease.
-func (c *Client) Heartbeat(ctx context.Context, deploymentID string, version int64) error {
-	_, err := c.Service.Heartbeat(ctx, bundledeployments.HeartbeatRequest{
-		Name: versionName(deploymentID, version),
-	})
-	return err
-}
-
 // UpdateOperation fills in one operation the version staged, and returns the sequence id the
 // next update for that resource must send.
 func (c *Client) UpdateOperation(ctx context.Context, deploymentID string, version int64, stateKey, sequenceID string, update OperationUpdate) (string, error) {
