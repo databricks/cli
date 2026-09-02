@@ -5,19 +5,17 @@
   16.4.x-scala2.12
 {{- end}}
 
-{{/* A conservative DB Connect pin for local development.
+{{/* A conservative version of DB Connect for local development.
    *
-   * The DB Connect client is only forward-compatible (it reaches compute of its
-   * own version and higher), so keep this at the LOWEST version that still
-   * works: bump it only when the pinned DBR release falls out of support, never
-   * to match the newest serverless environment version. A higher pin rules out
-   * customers on older DBR; they can upgrade themselves after init.
+   * DB Connect is only forward-compatible: a client connects to compute of the
+   * same version and higher. We keep this conservative (low) so a freshly
+   * initialized project can reach the widest range of DBR versions; a high
+   * version would rule out customers on older DBR. Customers can move to a
+   * newer version themselves after initializing the template. This pin must
+   * stay compatible with python_version_spec and serverless_environment_version
+   * below.
    *
-   * Current floor is 16.4 (DBR 15 is out of support and ran Python 3.11; 16.4
-   * runs Python 3.12, matching serverless env 5 and python_version_spec).
-   *
-   * See .agents/rules/template-versions.md for the full upgrade rule and the
-   * env-version / Python / DB Connect consistency invariant, and
+   * See .agents/rules/template-versions.md before changing this, and
    * https://docs.databricks.com/dev-tools/databricks-connect/python/index.html#requirements
    * for DB Connect release notes and version compatibility.
    */}}
