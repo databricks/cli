@@ -512,7 +512,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		return runIDE(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, opts)
 	} else {
 		log.Infof(ctx, "Additional SSH arguments: %v", opts.AdditionalArgs)
-		return spawnSSHClient(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, opts)
+		return spawnSSHClient(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, version, opts)
 	}
 }
 
@@ -875,6 +875,34 @@ func shellSingleQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
+// agentWrapperScript returns one agent's on-PATH launcher: it resolves the uploaded
+// databricks CLI for the driver's arch, then delegates to `ssh agent-shim <agent>`.
+// wsHome anchors that binary path and is forwarded (via env) for the agent context.
+func agentWrapperScript(wsHome, version, agent string) string {
+	versionedDir := wsHome + "/.databricks/ssh-tunnel/" + version
+	// Mirror getReleaseName (minus .zip); ${_arch} is expanded on the remote.
+	subdir := strings.TrimSuffix(getReleaseName("${_arch}", version), ".zip")
+	// Single-quote the workspace/version-derived path so a username or version with
+	// shell metacharacters can't break (or inject into) the exec line, while leaving
+	// ${_arch} unquoted so the remote shell still expands it (getReleaseName always
+	// embeds it, so Cut always splits here).
+	before, after, _ := strings.Cut(subdir, "${_arch}")
+	binary := shellSingleQuote(versionedDir+"/"+before) + "${_arch}" + shellSingleQuote(after+"/databricks")
+
+	// buildRemoteShellArgs only installs launchers when wsHome is set, so it is
+	// always non-empty here.
+	exports := "export " + workspaceHomeEnv + "=" + shellSingleQuote(wsHome) + "\n"
+
+	return fmt.Sprintf(`#!/usr/bin/env bash
+# "%[3]s" launcher from "databricks ssh connect"; delegates to "ssh agent-shim %[3]s".
+case "$(uname -m)" in
+  x86_64|amd64) _arch=amd64 ;;
+  aarch64|arm64) _arch=arm64 ;;
+  *) echo "%[3]s: unsupported architecture $(uname -m)" >&2; exit 1 ;;
+esac
+%[1]sexec %[2]s ssh agent-shim %[3]s "$@"`, exports, binary, agent)
+}
+
 // buildRemoteShellArgs returns the ssh arguments that follow the hostname.
 //
 // For the interactive case (no remote command given), it forces PTY allocation
@@ -886,9 +914,8 @@ func shellSingleQuote(s string) string {
 // would resolve to the system interpreter instead of $DATABRICKS_VIRTUAL_ENV. Using
 // -i avoids that reset; the server's ~/.bashrc snippet (see seedEnvActivation) then
 // re-prepends the environment bin after /etc/bash.bashrc runs, so bare `python`/`pip`
-// resolve to the environment interpreter. When wsHome is set, the shell first changes
-// into the user's workspace home folder; if that directory is missing the cd is
-// ignored and the shell still launches from $HOME.
+// resolve to the environment interpreter. It first installs a per-agent launcher
+// (see agentWrapperScript) on PATH, then cds into wsHome when set (else $HOME).
 //
 // For the non-interactive case (e.g. `databricks ssh connect ... -- ls -la`),
 // the user's command is returned verbatim so behavior is unchanged.
@@ -896,15 +923,39 @@ func shellSingleQuote(s string) string {
 // Note: this returns the remote command only. PTY allocation (-t) is added to
 // the ssh options *before* the destination by the caller; -t placed after the
 // host would be parsed as part of the remote command, not as ssh's flag.
-func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
+func buildRemoteShellArgs(opts ClientOptions, wsHome, version string) []string {
 	if len(opts.AdditionalArgs) > 0 {
 		return opts.AdditionalArgs
 	}
-	cmd := `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
+	shell := `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
+	// For any interactive session, land in the user's workspace home when known;
+	// if that directory is missing the cd is ignored and the shell still launches
+	// from $HOME. This is independent of the launcher install below, so dedicated
+	// clusters keep the workspace cwd they had before agent launchers existed.
 	if wsHome != "" {
-		cmd = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + cmd
+		shell = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + shell
 	}
-	return []string{cmd}
+	// The agent launchers are serverless-only for now: dedicated clusters have no
+	// story for persisting the shims or respecting existing installs. They also
+	// need the workspace path to locate the uploaded CLI. Otherwise just open the shell.
+	if !opts.IsServerlessMode() || wsHome == "" {
+		return []string{shell}
+	}
+	// Write each agent's wrapper (quoted heredoc keeps its $VARS literal), then open the shell.
+	remoteShimDir := filepath.Join("$HOME", agentBinDir)
+	var cmd strings.Builder
+	fmt.Fprintf(&cmd, "mkdir -p \"%s\"\n", remoteShimDir)
+	for _, agent := range SupportedAgentNames() {
+		fmt.Fprintf(&cmd, `cat > "%[1]s/%[2]s" <<'AGENT_SHIM_WRAPPER_EOF'
+%[3]s
+AGENT_SHIM_WRAPPER_EOF
+chmod +x "%[1]s/%[2]s"
+`, remoteShimDir, agent, agentWrapperScript(wsHome, version, agent))
+	}
+	// Append the shim dir (don't prepend) so the wrappers never shadow a real
+	// binary of the same name earlier on PATH.
+	fmt.Fprintf(&cmd, "export PATH=\"$PATH:%s\"\n", remoteShimDir)
+	return []string{cmd.String() + shell}
 }
 
 // buildSSHArgs assembles the argument list for the ssh client. Options come
@@ -916,7 +967,7 @@ func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
 // Host key checking is strict rather than accept-new because the caller has already
 // pinned the server's key in knownHostsPath (see pinServerHostKey), so there is nothing
 // left to accept on trust.
-func buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome string, opts ClientOptions) []string {
+func buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome, version string, opts ClientOptions) []string {
 	sshArgs := []string{
 		"-l", userName,
 		"-i", privateKeyPath,
@@ -931,11 +982,11 @@ func buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostNa
 		sshArgs = append(sshArgs, "-t")
 	}
 	sshArgs = append(sshArgs, hostName)
-	sshArgs = append(sshArgs, buildRemoteShellArgs(opts, wsHome)...)
+	sshArgs = append(sshArgs, buildRemoteShellArgs(opts, wsHome, version)...)
 	return sshArgs
 }
 
-func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath, knownHostsPath string, serverPort int, clusterID string, opts ClientOptions) error {
+func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath, knownHostsPath string, serverPort int, clusterID, version string, opts ClientOptions) error {
 	// Create a copy with metadata for the ProxyCommand
 	optsWithMetadata := opts
 	optsWithMetadata.ServerMetadata = FormatMetadata(userName, serverPort, clusterID)
@@ -959,7 +1010,7 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 		}
 	}
 
-	sshArgs := buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome, opts)
+	sshArgs := buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostName, wsHome, version, opts)
 
 	log.Debugf(ctx, "Launching SSH client: ssh %s", strings.Join(sshArgs, " "))
 	sshCmd := exec.CommandContext(ctx, "ssh", sshArgs...)
