@@ -80,7 +80,21 @@ func (r resolver) run() (out dyn.Value, err error) {
 		return dyn.InvalidValue, err
 	}
 
-	return out, nil
+	return unescapeVariableReferences(out)
+}
+
+// unescapeVariableReferences converts escaped references ("$${...}") to literal
+// references ("${...}") after all real variable references have been resolved.
+// This allows bundle configs to include literal "${...}" placeholders that are
+// interpreted by the Databricks runtime rather than the bundle variable system.
+func unescapeVariableReferences(v dyn.Value) (dyn.Value, error) {
+	return dyn.Walk(v, func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+		s, ok := v.AsString()
+		if !ok || !strings.Contains(s, "$${") {
+			return v, nil
+		}
+		return dyn.NewValue(strings.ReplaceAll(s, "$${", "${"), v.Locations()), nil
+	})
 }
 
 func (r *resolver) collectVariableReferences() (err error) {

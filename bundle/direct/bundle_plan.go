@@ -1035,6 +1035,13 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 				if targetPath == "workspace.snapshot_path" {
 					continue
 				}
+				// Skip references that don't point to a known resource node.
+				// Non-resource references (e.g. runtime-interpreted placeholders
+				// that reach the API as-is after variable resolution) are not
+				// dependencies between bundle resources.
+				if targetNode == "" {
+					continue
+				}
 
 				fullRef := "${" + targetPath + "}"
 
