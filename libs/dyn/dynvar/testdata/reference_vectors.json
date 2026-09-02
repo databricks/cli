@@ -337,6 +337,32 @@
       "id": "wrong-braces",
       "input": "{foo.bar}",
       "match": false
+    },
+    {
+      "id": "escaped-double-dollar",
+      "input": "$${foo.bar}",
+      "match": false
+    },
+    {
+      "id": "escaped-only-multiple",
+      "input": "$${a.b} $${c.d}",
+      "match": false
+    },
+    {
+      "id": "escaped-mixed-with-real",
+      "input": "${real.ref} $${escaped.ref}",
+      "match": true,
+      "references": ["real.ref"],
+      "pure": false,
+      "path_ok": false
+    },
+    {
+      "id": "escaped-prefix-real-suffix",
+      "input": "$${escaped} text ${real.ref}",
+      "match": true,
+      "references": ["real.ref"],
+      "pure": false,
+      "path_ok": false
     }
   ]
 }

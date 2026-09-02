@@ -395,7 +395,7 @@ tasks:
   # --- Testing ---
 
   test:
-    desc: Run unit and acceptance tests
+    desc: Run unit, acceptance, and doctests
     # Run the legs as sequential cmds (not parallel deps) so the concatenating
     # cat can be a `defer`, which runs even when a leg fails. When the legs are
     # deps, the cat in cmds is skipped on failure, so test-output.json is never
@@ -407,10 +407,18 @@ tasks:
       - test-output.json
     cmds:
       - defer: cat test-output-unit.json test-output-acc.json > test-output.json
+      - task: doctest
       - task: test-unit
       - task: test-acc
         vars:
           ACCEPTANCE_TEST_FILTER: "{{.ACCEPTANCE_TEST_FILTER}}"
+
+  doctest:
+    desc: Run doctests for all Python files in the repo
+    sources:
+      - "**/*.py"
+    cmds:
+      - 'uv run -p ">=3.11" --no-project python tools/run_doctests.py'
 
   test-unit:
     desc: Run unit tests across all Go modules (root, tools, codegen)

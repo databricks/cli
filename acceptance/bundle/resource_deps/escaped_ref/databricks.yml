@@ -1,0 +1,21 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    bar:
+      name: job bar
+    foo:
+      name: job foo
+      tasks:
+        - task_key: job_task
+          notebook_task:
+            notebook_path: /notebook
+            source: WORKSPACE
+            base_parameters:
+              # An escaped reference that looks like a resource path must not become a
+              # dependency on jobs.bar: foo has no depends_on and the API receives the
+              # literal "${resources.jobs.bar.id}".
+              escaped: $${resources.jobs.bar.id}
+              # A real reference next to it still resolves.
+              real: ${resources.jobs.bar.id}

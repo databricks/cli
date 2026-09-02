@@ -193,6 +193,23 @@ def infer_expected_pr(path, fallback_pr, root):
     return fallback_pr
 
 
+def is_shallow(root):
+    """Whether ``root`` is a shallow git clone. Best-effort; a git failure (or a
+    non-repo) returns False. On a shallow clone every file looks added at the
+    single available commit, so ``--diff-filter=A`` attribution is unreliable."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--is-shallow-repository"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd=root,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return result.returncode == 0 and result.stdout.strip() == "true"
+
+
 def load_sections(root):
     """Return the section slugs from .codegen.json, in changelog order.
 
@@ -217,6 +234,13 @@ def find_problems(changelog_dir, sections, require_pr_link=False, fallback_pr=No
     see ``main``); ``root`` is the repo the PR inference queries via git."""
     problems = []
     known_sections = set(sections)
+    # A shallow clone (e.g. the merge queue's checkout) makes every fragment look
+    # added at the single commit, so PR attribution is unreliable — skip the
+    # PR-link checks. They run at PR time with full history (changelog-preview);
+    # modifying a fragment there must not require re-stamping it with a PR link.
+    shallow = is_shallow(root)
+    if shallow:
+        require_pr_link = False
     for path in sorted(changelog_dir.rglob("*")):
         if path.is_dir():
             continue
@@ -242,9 +266,9 @@ def find_problems(changelog_dir, sections, require_pr_link=False, fallback_pr=No
                 text = path.read_text(encoding="utf-8")
                 problem = fragment_format_problem(text) or link_problem(text)
                 if problem is None:
-                    # Only infer the expected PR (a git call) once the fragment
-                    # is structurally valid.
-                    expected_pr = infer_expected_pr(path, fallback_pr, root)
+                    # Infer the expected PR (a git call) only for a structurally
+                    # valid fragment, and only with full history — see `shallow`.
+                    expected_pr = None if shallow else infer_expected_pr(path, fallback_pr, root)
                     problem = pr_link_problem(text, require_pr_link, expected_pr)
                 if problem:
                     problems.append((path, problem))
