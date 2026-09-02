@@ -148,7 +148,10 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 		return nil, nil, err
 	}
 	codeSourcePath := codeDirPath
-	art := codeArtifactFor(cfg, codeDirPath)
+	art, err := codeArtifactFor(cfg, codeDirPath)
+	if err != nil {
+		return nil, nil, err
+	}
 	if art != nil {
 		// The artifact snapshotter builds the tarball; code_source_path points at it.
 		codeSourcePath = art.tgzPath
@@ -204,19 +207,28 @@ type codeArtifact struct {
 
 // codeArtifactFor returns the artifact to emit when the snapshot pins a git ref or
 // narrows to include_paths, else nil — the plain directory case, packaged by the
-// deploy-time aicode mutator. codeDirPath is the source dir relative to the bundle
+// deploy-time aicode mutator. It errors when the code dir resolves to the bundle root
+// (no basename to nest under). codeDirPath is the source dir relative to the bundle
 // ("./"-prefixed).
 //
 // The artifact snapshotter names entries relative to `path`, and the runtime extracts
 // to /databricks/code_source/<dir>, so the code dir's basename must be the top-level
 // entry. To get that, emit path = the code dir's parent and include = basename-prefixed
 // subpaths, so entries come out as "<basename>/..." — the layout the air CLI produced.
-func codeArtifactFor(cfg *runConfig, codeDirPath string) *codeArtifact {
+func codeArtifactFor(cfg *runConfig, codeDirPath string) (*codeArtifact, error) {
 	snap := codeSnapshot(cfg)
 	if snap == nil || (snap.Git == nil && len(snap.IncludePaths) == 0) {
-		return nil
+		return nil, nil
 	}
 	codeDirRel := strings.TrimPrefix(codeDirPath, "./")
+	// A code dir that resolves to the bundle root has no basename to nest under: the
+	// archive would sit directly at /databricks/code_source (no <dir>), and an include
+	// rooted at "." would also sweep the bundle's own generated files (databricks.yml,
+	// generated_artifacts/, the output tarball) into it. Reject rather than emit that;
+	// the user should point root_path at a subdirectory.
+	if codeDirRel == "." {
+		return nil, fmt.Errorf("code_source root_path %q resolves to the bundle root; convert-to-dabs cannot translate a git or include_paths snapshot there (no code directory to package under %s/<dir>). Point root_path at a subdirectory", snap.RootPath, runtimeCodeSourceRoot)
+	}
 	dirName := path.Base(codeDirRel)
 	art := &codeArtifact{
 		path:    path.Dir(codeDirRel),
@@ -233,7 +245,7 @@ func codeArtifactFor(cfg *runConfig, codeDirPath string) *codeArtifact {
 		art.gitBranch = snap.Git.Branch
 		art.gitCommit = snap.Git.Commit
 	}
-	return art
+	return art, nil
 }
 
 // codeSnapshot returns the snapshot code source config, or nil if none.

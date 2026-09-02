@@ -471,6 +471,61 @@ func TestConvertToDabsIncludePathsEmitsArtifact(t *testing.T) {
 	assert.Equal(t, "./dist/code_source.tgz", get(t, root, task+".code_source_path").MustString())
 }
 
+// include_paths pointing at directories (the primary use case, not single files):
+// each entry is basename-prefixed the same way, so a subdirectory `pkg` under a
+// `./src` root becomes `src/pkg`. Convert is a syntactic mapping — whether the entry
+// names a directory or a file is identical here; the tgz builder (#6428) walks a
+// directory entry recursively at deploy.
+func TestConvertToDabsIncludePathsDirectories(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src", "pkg"), 0o700))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src", "config"), 0o700))
+	cfg := "experiment_name: incdir\ncommand: python train.py\n" +
+		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
+		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: ./src\n" +
+		"    include_paths:\n      - pkg\n      - config\n"
+	path := filepath.Join(dir, "run.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	root, _, err := convertToDabs(t.Context(), loaded, path, dir)
+	require.NoError(t, err)
+
+	a := "artifacts." + codeSourceArtifactKey
+	assert.Equal(t, ".", get(t, root, a+".path").MustString())
+	inc := get(t, root, a+".include").MustSequence()
+	require.Len(t, inc, 2)
+	assert.Equal(t, "src/pkg", inc[0].MustString())
+	assert.Equal(t, "src/config", inc[1].MustString())
+}
+
+// root_path "." (the code source is the whole bundle directory) has no basename to
+// nest the archive under, and an include rooted at "." would sweep the bundle's own
+// generated files into the tarball — so a git/include snapshot there is rejected with
+// a message pointing at a subdirectory. (A plain snapshot with root_path "." is not an
+// artifact case and is unaffected.)
+func TestConvertToDabsDotRootPathRejected(t *testing.T) {
+	for _, tc := range []struct{ name, snap string }{
+		{"git", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    git:\n      commit: abc123\n"},
+		{"include", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    include_paths:\n      - foo\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			require.NoError(t, os.MkdirAll(filepath.Join(dir, "foo"), 0o700))
+			cfg := "experiment_name: dot\ncommand: python train.py\n" +
+				"compute: {accelerator_type: GPU_1xA10, num_accelerators: 1}\n" + tc.snap
+			path := filepath.Join(dir, "run.yaml")
+			require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+			loaded, err := loadRunConfig(path)
+			require.NoError(t, err)
+
+			_, _, err = convertToDabs(t.Context(), loaded, path, dir)
+			require.ErrorContains(t, err, "resolves to the bundle root")
+		})
+	}
+}
+
 func TestConvertToDabsRejectsUnsupported(t *testing.T) {
 	t.Run("docker_image", func(t *testing.T) {
 		cfg := minimalConfig + `
