@@ -8,7 +8,9 @@ An `ai_runtime_task` runs a command against a body of code named by its
 `code_source_path`. At deploy the code is packaged into a gzipped tarball, uploaded,
 and `code_source_path` is rewritten to the uploaded workspace path. The runtime
 extracts the tarball to `/databricks/code_source/<dir>`, where `<dir>` is the tarball's
-single top-level directory.
+single top-level directory, and exports that path as `$CODE_SOURCE_PATH`. It runs the
+task's command *without* changing into that directory, so the command is expected to
+`cd "$CODE_SOURCE_PATH"` (or reference it) itself.
 
 There are three ways `code_source_path` is handled, chosen by what it points at.
 
@@ -74,6 +76,6 @@ A `/Workspace/…` or `/Volumes/…` value is used as-is — nothing is packaged
 `databricks experimental air convert-to-dabs` translates an AIR run config into a
 bundle. A plain `code_source.snapshot` becomes a directory `code_source_path` (case 1);
 a snapshot that pins `git` or narrows `include_paths` becomes an explicit `tgz` artifact
-(case 2). The generated `command.sh` `cd`s into `/databricks/code_source/<dir>` first,
-so a relative command such as `python train.py` resolves against the code — matching how
-the command reads under `air run`.
+(case 2). The command is copied into `command.sh` verbatim, exactly as under `air run` —
+so a command that already `cd "$CODE_SOURCE_PATH"`s (as air commands do) resolves against
+the code without any change.
