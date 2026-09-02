@@ -2,7 +2,7 @@ package aircmd
 
 import (
 	"encoding/json"
-	"io"
+	"io/fs"
 	"path"
 	"path/filepath"
 	"strings"
@@ -455,9 +455,10 @@ code_source:
 	assert.Len(t, uploaded, 1, "git_archive cache hit should skip the second upload")
 }
 
-// A code source uploads provenance sidecars (git_state.json and git_diff.patch
-// when the tree is dirty) next to the run's launch directory.
-func TestSubmitWorkloadUploadsProvenanceSidecars(t *testing.T) {
+// When enabled, a code source uploads provenance sidecars (git_state.json and
+// git_diff.patch when the tree is dirty) next to the run's launch directory.
+// This path is paused to avoid dirty-state query and WSFS write latency.
+func TestSubmitWorkloadSkipsProvenanceSidecars(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
@@ -490,25 +491,13 @@ code_source:
 	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 
-	assert.Equal(t, path.Join(sidecarBase, gitStateName), snap.GitStatePath)
-	assert.Equal(t, path.Join(sidecarBase, gitDiffName), snap.GitDiffPath)
+	assert.Empty(t, snap.GitStatePath)
+	assert.Empty(t, snap.GitDiffPath)
 
-	stateReader, err := sidecarStore.Read(ctx, gitStateName)
-	require.NoError(t, err)
-	defer stateReader.Close()
-	stateBytes, err := io.ReadAll(stateReader)
-	require.NoError(t, err)
-	var state gitStateSidecar
-	require.NoError(t, json.Unmarshal(stateBytes, &state))
-	assert.True(t, state.Dirty)
-	assert.Equal(t, diffStatusCaptured, state.DiffStatus)
-
-	diffReader, err := sidecarStore.Read(ctx, gitDiffName)
-	require.NoError(t, err)
-	defer diffReader.Close()
-	diffBytes, err := io.ReadAll(diffReader)
-	require.NoError(t, err)
-	assert.Contains(t, string(diffBytes), "train.py")
+	_, err = sidecarStore.Read(ctx, gitStateName)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	_, err = sidecarStore.Read(ctx, gitDiffName)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 // remote_volume uploads the snapshot to a UC Volume: DABs' artifact uploader handles

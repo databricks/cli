@@ -24,8 +24,10 @@ import (
 )
 
 // uploadProvenanceSidecars controls collection and upload of git_state.json
-// and git_diff.patch during submission.
-const uploadProvenanceSidecars = true
+// and git_diff.patch during submission. Keep the implementation available, but
+// turn it off for now because the additional local queries and WSFS writes add
+// latency to AIR submissions.
+const uploadProvenanceSidecars = false
 
 // snapshotViaDABsUpload packages the code_source into a tarball and uploads it using
 // DABs' artifact-upload plumbing (the same path a bundle uses for a file-valued
