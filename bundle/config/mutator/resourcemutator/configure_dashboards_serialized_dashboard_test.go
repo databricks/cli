@@ -70,8 +70,14 @@ func TestConfigureDashboardSerializedDashboard(t *testing.T) {
 			name:                "non-structured serialized_dashboard is rejected",
 			setSerialized:       true,
 			serializedDashboard: true,
-			wantErr:             "serialized_dashboard must be a string, map, or sequence, got bool",
+			wantErr:             "serialized_dashboard must be a string or map, got bool",
 		},
+		{
+			name: "inline sequence is rejected",
+			setSerialized:   true,
+			serializedDashboard: []any{map[string]any{"version": 1}},
+			wantErr:         "serialized_dashboard must be a string or map, got sequence",
+		}
 		{
 			name:     "unreadable file_path is an error",
 			filePath: "does_not_exist.json",
