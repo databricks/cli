@@ -258,7 +258,7 @@ func nilIfEmpty(s string) *string {
 // buildGitStateSidecar gathers git provenance. pinnedTip overrides the HEAD-derived
 // tip for git_archive (the tarball reflects that commit, not HEAD); pass "" for
 // plain_tar. Metadata is best-effort — unavailable fields become null.
-func buildGitStateSidecar(ctx context.Context, git gitRepo, packagingMode, pinnedTip string, now time.Time) (gitStateSidecar, error) {
+func buildGitStateSidecar(ctx context.Context, git gitRepo, packagingMode, pinnedTip string, dirty bool, now time.Time) (gitStateSidecar, error) {
 	tip := pinnedTip
 	if tip == "" {
 		head, err := git.headSHA(ctx)
@@ -266,11 +266,6 @@ func buildGitStateSidecar(ctx context.Context, git gitRepo, packagingMode, pinne
 			return gitStateSidecar{}, err
 		}
 		tip = head
-	}
-
-	dirty, err := git.hasUncommittedChanges(ctx)
-	if err != nil {
-		return gitStateSidecar{}, err
 	}
 
 	return gitStateSidecar{
@@ -295,11 +290,16 @@ func (s gitStateSidecar) marshal() ([]byte, error) {
 // captureDirtyDiff runs `git diff HEAD` over the repo subtree, returning a diff_status
 // and the diff bytes (non-nil only when captured): clean (no changes or diff failed),
 // captured (under the cap), size_exceeded, or timeout.
-func captureDirtyDiff(ctx context.Context, git gitRepo, sizeCapBytes int, timeout time.Duration) (string, []byte) {
+func captureDirtyDiff(ctx context.Context, git gitRepo, includePaths []string, sizeCapBytes int, timeout time.Duration) (string, []byte) {
 	diffCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	out, err := git.runBytes(diffCtx, "diff", "HEAD", "--", ".")
+	pathspecs := includePaths
+	if len(pathspecs) == 0 {
+		pathspecs = []string{"."}
+	}
+	args := append([]string{"diff", "HEAD", "--"}, pathspecs...)
+	out, err := git.runBytes(diffCtx, args...)
 	if err != nil {
 		if errors.Is(diffCtx.Err(), context.DeadlineExceeded) {
 			return diffStatusTimeout, nil
