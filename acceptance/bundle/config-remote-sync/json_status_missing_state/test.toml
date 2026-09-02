@@ -1,0 +1,11 @@
+Cloud = true
+
+RecordRequests = false
+Ignore = [".databricks", "dummy.whl", "databricks.yml"]
+
+Env.DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
+
+# "Missing tf state" is terraform-specific: the direct engine has no separate
+# state snapshot to be absent, so ErrStateSnapshotNotFound (and the skipped
+# outcome it drives) only arises on terraform.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]

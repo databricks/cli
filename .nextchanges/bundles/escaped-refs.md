@@ -1,0 +1,1 @@
+Fixed `$${...}` no longer escaping a literal `${...}` on the direct engine. A config using `$${source_file}` for a placeholder the Databricks runtime resolves failed with `invalid dependency "${source_file}", no such node ""`; it now deploys with `${source_file}` sent to the API, matching the terraform engine ([#6480](https://github.com/databricks/cli/issues/6480)).

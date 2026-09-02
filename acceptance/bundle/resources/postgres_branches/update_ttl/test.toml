@@ -1,6 +1,0 @@
-# ttl, expire_time and no_expiry are three sides of one oneof. The API masks them
-# together under spec.expiration and rejects each field name on its own, so the
-# direct engine's update_mask=spec.ttl is answered with 400 INVALID_PARAMETER_VALUE.
-# Same bug as postgres_endpoints/update_suspend_timeout, and a separate fix from
-# the diffing this test covers.
-Badness = "Direct engine cannot apply a ttl change: it masks the field under its own name, but the API only accepts the oneof group name spec.expiration"
