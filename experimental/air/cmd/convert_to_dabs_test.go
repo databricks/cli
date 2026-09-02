@@ -3,7 +3,6 @@ package aircmd
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -47,9 +46,11 @@ func TestConvertToDabsForceOverwrite(t *testing.T) {
 	assert.Contains(t, string(regenerated), "ai_runtime_task")
 }
 
-// The generated command.sh cds into the extracted code dir, so a relative command
-// like `python train.py` resolves against the code rather than the launch dir.
-func TestConvertToDabsCommandCdsIntoCodeSource(t *testing.T) {
+// command.sh is the user's command copied verbatim — convert injects no cd. The
+// launcher exports $CODE_SOURCE_PATH and runs the command in the launch dir without
+// cd-ing, so (as under air run) the command owns its own cd; convert must not add one,
+// which would make it more lenient than air run.
+func TestConvertToDabsCommandVerbatim(t *testing.T) {
 	cfg := minimalConfig + `
 code_source:
   type: snapshot
@@ -70,8 +71,8 @@ code_source:
 			cmd = string(it.data)
 		}
 	}
-	assert.True(t, strings.HasPrefix(cmd, "cd /databricks/code_source/src\n"),
-		"command.sh should cd into the code dir; got %q", cmd)
+	assert.Equal(t, "python train.py", cmd, "command.sh must be the verbatim command, no injected cd")
+	assert.NotContains(t, cmd, "cd /databricks/code_source")
 }
 
 func TestConvertToDabsCommandShape(t *testing.T) {
