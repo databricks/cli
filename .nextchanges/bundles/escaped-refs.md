@@ -1,1 +1,1 @@
-* Fixed `$${...}` not escaping a literal `${...}` on the direct engine, which failed with `invalid dependency "${source_file}", no such node ""`. An escape and a real reference may appear in the same string. ([#6484](https://github.com/databricks/cli/pull/6484), [#6489](https://github.com/databricks/cli/pull/6489))
+* Fixed `$${...}` not escaping a literal `${...}` on the direct engine, which failed with `invalid dependency "${source_file}", no such node ""`. ([#6484](https://github.com/databricks/cli/pull/6484), [#6489](https://github.com/databricks/cli/pull/6489))
