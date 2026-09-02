@@ -34,8 +34,11 @@ func shouldRetry(err error) bool {
 // 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in
 // request". A bundle sends only the fields it declares, so only the leaf may be masked.
 //
+// oneofGroups renames a change path to the group it belongs to, for fields the API only
+// accepts under their oneof group name; see the per-resource maps below.
+//
 // Sorted, so the generated update_mask does not depend on map iteration order.
-func collectUpdatePathsWithPrefix(changes Changes, prefix string) []string {
+func collectUpdatePathsWithPrefix(changes Changes, prefix string, oneofGroups map[string]string) []string {
 	var paths []string
 	for path, change := range changes {
 		if change.Action != deployplan.Update {
@@ -52,11 +55,16 @@ func collectUpdatePathsWithPrefix(changes Changes, prefix string) []string {
 			}
 		}
 		if !hasChild {
-			paths = append(paths, prefix+maskPath(path))
+			masked := maskPath(path)
+			if group, ok := oneofGroups[masked]; ok {
+				masked = group
+			}
+			paths = append(paths, prefix+masked)
 		}
 	}
 	slices.Sort(paths)
-	// Truncating subscripts can map two changed entries of the same map onto one path.
+	// Truncating subscripts can map two changed entries of the same map onto one path, and
+	// two members of one oneof collapse onto their group.
 	return slices.Compact(paths)
 }
 
