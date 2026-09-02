@@ -58,6 +58,76 @@ base:
       unit: HOURS
 
 skip:
+
+  # --- Fields a real workspace rejects. The mock server accepts every one of them, so each row below
+  # had only ever measured the mock server. The API's own words are quoted in each comment.
+
+  # Invalid trigger settings. One of schedule, trigger or continuous can be set -- and base seeds a
+  # trigger, so no field of continuous is reachable without removing that first.
+  continuous: one of schedule, trigger or continuous, and base declares a trigger
+
+  # Metadata file path must begin with a slash, so no generic value is one.
+  deployment.metadata_file_path: must be an absolute path, which no generic value is
+
+  # An environment is validated as a set -- either base environment or version must be specified, and
+  # specifying both is refused. No one of the three can move on its own.
+  environments[*].spec.base_environment: validated as a set with client and environment_version
+  environments[*].spec.client: validated as a set with base_environment and environment_version
+  environments[*].spec.environment_version: validated as a set with base_environment and client
+
+  # Git branch, tag, or commit must be specified -- clearing the commit leaves no ref at all, and the
+  # other two members of that oneof are already skipped.
+  git_source.git_commit: clearing it leaves git_source with no ref, which the API refuses
+
+  # Job cluster seeded is not defined in the field job_clusters -- the task names the key, so the list
+  # cannot move unless the task moves with it.
+  job_clusters: the task names a key in it, which cannot change at the same time
+
+  # Cluster-level constraints. A job cluster is created with no kind and no size of its own, so
+  # several of these can never hold on this fixture.
+  job_clusters[*].new_cluster.autoscale.min_workers: the maximum must be greater, and max does not move with it
+  job_clusters[*].new_cluster.autotermination_minutes: automated clusters do not support autotermination
+  job_clusters[*].new_cluster.cluster_log_conf.dbfs.destination: needs a dbfs path, which no generic value is
+  job_clusters[*].new_cluster.cluster_log_conf.volumes.destination: needs an access mode this cluster does not have
+  job_clusters[*].new_cluster.is_single_node: not allowed with unspecified kind, and a job cluster has none
+  job_clusters[*].new_cluster.use_ml_runtime: not allowed with unspecified kind, and a job cluster has none
+  job_clusters[*].new_cluster.num_workers: clearing it leaves the cluster with no size, which the API refuses
+  job_clusters[*].new_cluster.spark_version: required, so clearing it is refused
+  job_clusters[*].new_cluster.remote_disk_throughput: an unrecognized field on this workspace
+  job_clusters[*].new_cluster.total_initial_remote_disk_size: an unrecognized field on this workspace
+
+  # A shared job cluster is only supported for multi-task jobs, so the list cannot shrink to one task
+  # while a job_cluster_key is in play.
+  tasks: a shared job cluster needs more than one task, and base seeds one of each
+
+  # compute in task settings cannot be used with job_cluster_key, which base seeds.
+  tasks[*].compute.hardware_accelerator: cannot be set on a task that names a job_cluster_key
+
+  # Only an absolute notebook path is accepted, so no generic value is one.
+  tasks[*].notebook_task.source: needs an absolute notebook path, which no generic value is
+
+  # A Python operator task does not need a command, and the API refuses one.
+  tasks[*].python_operator_task.main: the API refuses a command on this task type
+
+  # The duration warning threshold must not be greater than the timeout, and base seeds a rule whose
+  # threshold is above every timeout the suite would try.
+  timeout_seconds: must exceed the seeded health rule warning threshold
+
+  # A webhook id has to be a valid UUID naming a destination that exists.
+  webhook_notifications.on_failure[*].id: needs a notification destination to exist
+
+  # --- Fields the API accepts and then does not apply. Recorded here rather than as rows, because the
+  # mock server does apply them: a local row would say OK where a workspace says the write had no
+  # effect. Modelling each in libs/testserver is the real fix; until then the reason is the finding.
+  edit_mode: the API accepts the write and does not apply it
+  format: the API accepts the write and does not apply it
+  health.rules: the API accepts the write and does not apply it
+  max_concurrent_runs: the API accepts the write and does not apply it
+  parent_path: the API accepts the write and does not apply it
+  trigger.pause_status: the API accepts the write and does not apply it
+  email_notifications: the API accepts the write and does not apply it
+  tasks[*].email_notifications: the API accepts the write and does not apply it
+  tasks[*].disable_auto_optimization: the API accepts the write and does not apply it
   # An init script has to name a file that exists: a real workspace fails the cluster with "Init
   # scripts failed ... Tree node with path ... does not exist". This suite deliberately uploads no
   # bundle files -- a sync per permutation would dominate the run -- so no destination it could name

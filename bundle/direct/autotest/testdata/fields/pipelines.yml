@@ -44,6 +44,42 @@ base:
     table: users
 
 skip:
+
+  # --- Fields a real workspace rejects, with the API's own reason. The mock server accepts them all.
+
+  # Cannot add catalog to an existing pipeline with a storage location, and this fixture's pipeline has
+  # one -- the backend assigns it when neither storage nor catalog is given. That the engine sends the
+  # update anyway rather than recreating is a finding in its own right; see the branch notes.
+  catalog: cannot be added to a pipeline that already has a storage location
+
+  # A cluster label has to be default or maintenance.
+  clusters[*].label: only default or maintenance are accepted
+
+  # The environment version applies to Unity Catalog pipelines, and this one is storage-backed.
+  environment.environment_version: only for Unity Catalog pipelines, and base is storage-backed
+
+  # An event log can only be configured on a UC pipeline, so the whole block is unreachable here.
+  event_log: only for Unity Catalog pipelines, and base is storage-backed
+
+  # libraries must contain at least one element, so the list cannot be emptied.
+  libraries: cannot be emptied, and the API refuses a pipeline with no library
+
+  # Only an absolute file path is accepted.
+  libraries[*].file.path: needs an absolute path, which no generic value is
+
+  # Storage has to be an absolute path.
+  storage: needs an absolute path, which no generic value is
+
+  # --- Fields the API accepts and then does not apply. The mock server applies them, so a local row
+  # would say OK where a workspace says the write had no effect. Modelling each in libs/testserver is
+  # the real fix; until then the reason is the finding.
+  dry_run: the API accepts the write and does not apply it
+  libraries[*].jar: the API accepts the write and does not apply it
+  libraries[*].maven: the API accepts the write and does not apply it
+  clusters[*].azure_attributes.capacity_reservation_group: the API accepts the write and does not apply it
+  clusters[*].gcp_attributes.confidential_compute_type: the API accepts the write and does not apply it
+  clusters[*].gcp_attributes.first_on_demand: the API accepts the write and does not apply it
+  ingestion_definition.ingest_from_uc_foreign_catalog: the API accepts the write and does not apply it
   # An init script has to name a file that exists: a real workspace fails the cluster with "Init
   # scripts failed ... Tree node with path ... does not exist". This suite deliberately uploads no
   # bundle files -- a sync per permutation would dominate the run -- so no destination it could name

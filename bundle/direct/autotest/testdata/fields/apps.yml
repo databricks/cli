@@ -30,6 +30,28 @@ fields:
   compute_size: [MEDIUM, LARGE]
 
 skip:
+  # Starting an app deploys its source, and "Invalid source code path: .../files/app. Path does not
+  # exist": this suite uploads no bundle files -- a sync per permutation would dominate the run -- so
+  # the directory the app points at is never there. The mock server does not check, which is the only
+  # reason starting one ever appeared to work.
+  lifecycle.started: starting the app deploys source this suite does not upload
+
+  # "Setting forward_user_access_token on CreateApp is not enabled in this workspace." A
+  # workspace-level feature, so the local rows for it record what the mock server allows and not
+  # what a workspace does.
+  forward_user_access_token: needs the feature enabled on the workspace
+
+  # "git_repository.caller_credential_id can only be set on CreateApp, not on UpdateApp." Every
+  # transition of it is an update, so none is a request the API accepts; reaching it would need a
+  # fixture that varies the field across creates.
+  git_repository.caller_credential_id: settable only on create, and every transition is an update
+
+  # "Git repository requires both URL and provider to be defined" -- the block is validated as a set,
+  # and this leaf cannot move without the other two beside it. Same shape as the url and provider
+  # skips below.
+  git_repository.auto_deploy: validated as a set with the url and provider, which base does not declare
+
+
   # Both name an account-level policy: "Invalid resource: accounts/<id>/budgetPolicies/x". A
   # test workspace has none to reference, and creating one is an account-level operation.
   budget_policy_id: needs an account-level budget policy to exist
