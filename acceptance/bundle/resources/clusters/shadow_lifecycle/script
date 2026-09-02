@@ -1,16 +1,4 @@
-# The cluster has lifecycle.prevent_destroy: true in the config.
-# bundle plan shows a CREATE action. The new_state.value carries what
-# the direct engine will actually track for drift detection. If
-# lifecycle.prevent_destroy appears there, the engine can detect future
-# changes to it; if it doesn't, changes to that field are invisible.
-#
-# Because ClusterState (the state type) only has lifecycle.started and no
-# lifecycle.prevent_destroy, the plan's new_state.value never carries the
-# field -- the direct engine is blind to changes to it. That is a
-# consequence of structwalk visiting the field from BaseResource.Lifecycle
-# AND from Cluster.Lifecycle, both at the same JSON path "lifecycle",
-# but PrepareState only copying Cluster.Lifecycle.started into state.
-trace $CLI bundle plan -o json > plan.json
-
-# Show the action and whether prevent_destroy survived into tracked state.
-jq '{action: .plan."resources.clusters.the_cluster".action, prevent_destroy_in_state: (.plan."resources.clusters.the_cluster".new_state.value.lifecycle.prevent_destroy // "ABSENT")}' plan.json
+# Record the full plan JSON for the cluster entry.
+# lifecycle.prevent_destroy is absent from new_state.value because ClusterState
+# only carries lifecycle.started -- the direct engine is blind to changes to it.
+trace $CLI bundle plan -o json | jq '.plan."resources.clusters.the_cluster"'
