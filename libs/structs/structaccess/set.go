@@ -140,9 +140,7 @@ func setStructField(parentVal reflect.Value, fieldName string, valueVal reflect.
 		return fmt.Errorf("field %q cannot be set", sf.Name)
 	}
 
-	// Assign first: a value that cannot be converted must leave the struct exactly as it was,
-	// and updating ForceSendFields before the assignment left the field's send-behaviour
-	// changed after a failed Set.
+	// Assign first: a value that cannot be converted must leave the struct exactly as it was.
 	converted, err := convertValue(valueVal, fv.Type())
 	if err != nil {
 		return err
