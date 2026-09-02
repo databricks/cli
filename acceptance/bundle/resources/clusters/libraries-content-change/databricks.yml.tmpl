@@ -1,0 +1,23 @@
+bundle:
+  name: cluster-libraries-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+artifacts:
+  my_test_code:
+    type: whl
+    path: .
+    # Use 'python' because 'python3' does not exist in Windows virtualenvs.
+    build: python setup.py bdist_wheel
+
+resources:
+  clusters:
+    mycluster:
+      cluster_name: mycluster-$UNIQUE_NAME
+      spark_version: $DEFAULT_SPARK_VERSION
+      node_type_id: $NODE_TYPE_ID
+      num_workers: 1
+      data_security_mode: $DATA_SECURITY_MODE
+      libraries:
+        - whl: ./dist/*.whl
