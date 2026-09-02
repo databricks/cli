@@ -69,7 +69,7 @@ func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundl
 				// KindInvalid means serialized_dashboard is absent (neither it nor
 				// file_path is set); leave it for backend validation to reject.
 				return v, nil
-			case dyn.KindMap, dyn.KindSequence:
+			case dyn.KindMap:
 				jsonBytes, err := json.Marshal(sd.AsAny())
 				if err != nil {
 					return dyn.InvalidValue, fmt.Errorf("failed to marshal inline serialized_dashboard: %w", err)
@@ -78,7 +78,7 @@ func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundl
 			default:
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
-					Summary:   fmt.Sprintf("serialized_dashboard must be a string, map, or sequence, got %s", sd.Kind()),
+					Summary:   fmt.Sprintf("serialized_dashboard must be a string or map, got %s", sd.Kind()),
 					Locations: sd.Locations(),
 				})
 				return v, nil
