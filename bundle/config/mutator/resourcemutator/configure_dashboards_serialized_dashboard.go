@@ -37,6 +37,9 @@ func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundl
 	// Configure serialized_dashboard field for all dashboards.
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			// Include "serialized_dashboard" field if "file_path" is set.
+			// Note: the Terraform resource supports "file_path" natively, but we read the contents of the dashboard here
+			// to be able to read file contents in Databricks Workspace (reading a dashboard file via file system fails there)
 			filePath, hasFilePath := v.Get(filePathFieldName).AsString()
 			sd := v.Get(serializedDashboardFieldName)
 
