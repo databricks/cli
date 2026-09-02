@@ -42,6 +42,7 @@ import (
 	"maps"
 	"math/rand/v2"
 	"os"
+	"os/exec"
 	"reflect"
 	"regexp"
 	"slices"
@@ -66,9 +67,11 @@ import (
 func TestFields(t *testing.T) {
 	driven := drivenTypes(t)
 
+	sample := sampleSize(t)
+
 	// -update writes the report as the whole truth for a type, so it cannot come from a run
 	// that tested a few fields: the missing ones would read as removed.
-	if *sampleSize > 0 && testdiff.OverwriteMode {
+	if sample > 0 && testdiff.OverwriteMode {
 		t.Fatal("-sample cannot be combined with -update: a sampled run would truncate the reports")
 	}
 
@@ -78,9 +81,9 @@ func TestFields(t *testing.T) {
 	t.Logf("field and value order seeded from orderSeed %d", runSeed)
 
 	var sampleFields uint64
-	if *sampleSize > 0 {
+	if sample > 0 {
 		sampleFields = sampleSeed(t)
-		t.Logf("testing %d fields per resource type, seeded from HEAD (%d)", *sampleSize, sampleFields)
+		t.Logf("testing %d fields per resource type, seeded from HEAD (%d)", sample, sampleFields)
 	}
 
 	for _, resourceType := range driven {
@@ -110,7 +113,7 @@ func TestFields(t *testing.T) {
 			ctx := t.Context()
 
 			rep := &report{resourceType: resourceType, started: time.Now()} //exhaustruct:ignore
-			runType(t, ctx, client, user, resourceType, fv, rep, runSeed, sampleFields)
+			runType(t, ctx, client, user, resourceType, fv, rep, runSeed, sampleFields, sample)
 			rep.write(t)
 		})
 	}
@@ -119,7 +122,7 @@ func TestFields(t *testing.T) {
 // runType drives one resource type. Every resource it creates belongs to this test's lifetime,
 // which is what `owner` below carries into the subtests: a resource a subtest asks for is
 // reused by the transitions after it, so its cleanup cannot be the subtest's.
-func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, resourceType string, fv *fieldValues, rep *report, runSeed, sampleSeedValue uint64) {
+func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClient, user *iam.User, resourceType string, fv *fieldValues, rep *report, runSeed, sampleSeedValue uint64, sample int) {
 	owner := t
 	adapter, err := dresources.NewAdapter(dresources.SupportedResources[resourceType], resourceType, client)
 	require.NoError(t, err)
@@ -140,7 +143,7 @@ func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClie
 	fields, uncovered, inert := enumerateFields(resourceType, adapter.InputConfigType(), fv, resource, runSeed,
 		declaredUnsettable(adapter), h.unique)
 	rep.addCoverage(fields, uncovered)
-	fields = sample(fields, sampleSeedValue, rep)
+	fields = pickSample(fields, sampleSeedValue, sample, rep)
 
 	// A label that does not say what the value is needs the legend to: a container's says only how
 	// many entries it has, and an alias says nothing at all.
@@ -295,17 +298,17 @@ func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClie
 // makes the draw depend only on the seed, not on the order enumeration happened to produce.
 // The chosen paths go to the report, which needs them to compare a partial run against a
 // golden written by a full one.
-func sample(fields []field, seed uint64, rep *report) []field {
+func pickSample(fields []field, seed uint64, sample int, rep *report) []field {
 	// A type with no more fields than the sample size is covered in full, so its report stays
 	// comparable whole -- rep.sampled is left nil.
-	if *sampleSize <= 0 || len(fields) <= *sampleSize {
+	if sample <= 0 || len(fields) <= sample {
 		return fields
 	}
 	ordered := slices.Clone(fields)
 	slices.SortFunc(ordered, func(a, b field) int { return strings.Compare(a.path, b.path) })
 	rng := rand.New(rand.NewPCG(seed, 2))
 	rng.Shuffle(len(ordered), func(i, j int) { ordered[i], ordered[j] = ordered[j], ordered[i] })
-	ordered = ordered[:*sampleSize]
+	ordered = ordered[:sample]
 	for _, f := range ordered {
 		rep.addSampled(f.path)
 	}
@@ -1039,7 +1042,49 @@ func redactIDs(s string) string {
 // rather than exhaustive -- a PR check against a real workspace. Which fields are picked comes
 // from the commit, so successive commits cover different ground, and a whole run's picks are
 // reproducible from its SHA alone.
-var sampleSize = flag.Int("sample", 0, "test only N randomly chosen fields per resource type (0 tests every field)")
+var sampleSizeFlag = flag.Int("sample", -1, "test only N fields per resource type (0 tests every field; -1 decides from the environment)")
+
+// sampleSize is how many fields per type this run tests, 0 meaning all of them.
+//
+// A cloud run costs minutes per type and hours in total, which is too much for every PR, so on cloud
+// it samples unless the commit asks for everything. That is what AUTOTEST_ALL in a commit title means:
+// put it there and the PR's integration run drives every field against a real workspace.
+//
+// Locally a full run is 11 seconds, so there is nothing to save and the default is all of them --
+// which also keeps the committed goldens compared in full by ./task test.
+func sampleSize(t *testing.T) int {
+	if *sampleSizeFlag >= 0 {
+		return *sampleSizeFlag
+	}
+	if !isCloud() {
+		return 0
+	}
+	if subject := commitSubject(); strings.Contains(subject, autotestAllMarker) {
+		t.Logf("commit title contains %s, so every field runs against the workspace", autotestAllMarker)
+		return 0
+	}
+	t.Logf("cloud run without %s in the commit title, so %d fields per type are sampled; "+
+		"put %s in a commit title to run them all", autotestAllMarker, defaultCloudSample, autotestAllMarker)
+	return defaultCloudSample
+}
+
+// autotestAllMarker in a commit title asks a cloud run for every field rather than a sample.
+const autotestAllMarker = "AUTOTEST_ALL"
+
+// defaultCloudSample is how many fields per type a cloud run tests when the commit does not ask for
+// all of them. Two is enough to establish that every resource type still deploys and that the fields
+// picked still behave as the goldens record.
+const defaultCloudSample = 2
+
+// commitSubject returns the subject line of HEAD, or "" when it cannot be read. A subprocess because
+// libs/git exposes the commit id but not its message, and this runs once per suite.
+func commitSubject() string {
+	out, err := exec.Command("git", "log", "-1", "--format=%s").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
 
 // sampleSeed derives the sample's seed from HEAD. Unlike orderSeed it may move freely: a
 // sampled run compares each field's rows against the same golden as a full run, and never

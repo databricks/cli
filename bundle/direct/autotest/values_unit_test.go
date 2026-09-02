@@ -318,17 +318,13 @@ func TestSampledRows(t *testing.T) {
 // The draw is by seed alone, so the same seed picks the same fields whatever order enumeration
 // produced, and the picks are recorded for the golden comparison.
 func TestSample(t *testing.T) {
-	defer func(previous int) { sampleSize = &previous }(*sampleSize)
-
 	var fields []field
 	for _, path := range []string{"a", "b", "c", "d", "e"} {
 		fields = append(fields, field{path: path}) //exhaustruct:ignore
 	}
 
-	two := 2
-	sampleSize = &two
 	rep := &report{resourceType: "t"} //exhaustruct:ignore
-	got := sample(fields, 7, rep)
+	got := pickSample(fields, 7, 2, rep)
 	require.Len(t, got, 2)
 	assert.Len(t, rep.sampled, 2)
 	for _, f := range got {
@@ -338,23 +334,21 @@ func TestSample(t *testing.T) {
 	// Same seed, reversed input: the same two fields.
 	reversed := slices.Clone(fields)
 	slices.Reverse(reversed)
-	again := sample(reversed, 7, &report{resourceType: "t"}) //exhaustruct:ignore
+	again := pickSample(reversed, 7, 2, &report{resourceType: "t"}) //exhaustruct:ignore
 	assert.Equal(t, paths(got), paths(again))
 	// The seed is what decides the pick, so some seed picks something else. Scanned rather than
 	// asserted against one other seed: two of five fields collide once in ten, which would make
 	// this test fail on its own about as often as it caught anything.
 	distinct := map[string]bool{}
 	for seed := range uint64(20) {
-		distinct[strings.Join(paths(sample(fields, seed, &report{resourceType: "t"})), ",")] = true //exhaustruct:ignore
+		distinct[strings.Join(paths(pickSample(fields, seed, 2, &report{resourceType: "t"})), ",")] = true //exhaustruct:ignore
 	}
 	assert.Greater(t, len(distinct), 1, "the seed decides the pick")
 
 	// A type with no more fields than the sample size is covered whole, and records nothing:
 	// its report stays comparable in full, summary included.
-	six := 6
-	sampleSize = &six
 	whole := &report{resourceType: "t"} //exhaustruct:ignore
-	assert.Len(t, sample(fields, 7, whole), 5)
+	assert.Len(t, pickSample(fields, 7, 6, whole), 5)
 	assert.Nil(t, whole.sampled)
 }
 
