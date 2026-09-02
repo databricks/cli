@@ -110,15 +110,17 @@ func (m *uvManager) EnsurePython(ctx context.Context, minor string) (PythonSelec
 		return PythonSelection{}, uvFailure(ErrPythonInstall, errors.Join(installErr, findErr), "uv python install "+minor)
 	}
 	if findErr != nil {
-		// Two sentences, each carrying its own command's stderr: the download
-		// failure and the search failure are distinct, so the find stderr attaches
-		// to the search sentence rather than reading as if `python install`
-		// rejected an argument it never saw.
+		// The download and the installed-interpreter search are distinct commands.
+		// Attribute each stderr to its own clause ("found either: <find stderr>") so
+		// the find stderr doesn't read as if `python install` rejected an argument it
+		// never saw. Kept on one line: PipelineError.Error() appends the wrapped
+		// cause after Msg, so a newline here would strand that tail on the next line.
+		// Both process errors ride along in the joined cause for errors.As / --debug.
 		msg := "uv python install " + minor + " failed"
 		if stderr := uvStderr(installErr); stderr != "" {
 			msg += ": " + stderr
 		}
-		msg += "\nno compatible installed Python found"
+		msg += "; no compatible installed Python found either"
 		if stderr := uvStderr(findErr); stderr != "" {
 			msg += ": " + stderr
 		}

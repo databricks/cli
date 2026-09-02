@@ -501,6 +501,11 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 	// installed fallback was selected, IDE consumers still need that categorical
 	// fact to offer the correct manual recovery without receiving the path.
 	p.res.PythonResolution = selection.Resolution
+	if selection.Resolution == PythonResolutionInstalledFallback {
+		// Only the fallback yields a concrete interpreter path; the normal path's
+		// Executable is just the minor request. The text summary names it (json:"-").
+		p.res.PythonInterpreter = selection.Executable
+	}
 	if err := p.PM.Provision(ctx, p.ProjectDir, selection.Executable); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "provision failed"))
 	}

@@ -55,11 +55,13 @@ func TestRenderSuccessExplainsInstalledPythonFallback(t *testing.T) {
 	res.Resolved = &libslocalenv.ResolvedInfo{PythonVersion: "3.12"}
 	res.VenvPath = ".venv"
 	res.PythonResolution = libslocalenv.PythonResolutionInstalledFallback
+	res.PythonInterpreter = "/usr/bin/python3.12"
 
 	out := renderText(t, res, nil)
 
 	assert.Contains(t, out, "Python download failed")
-	assert.Contains(t, out, "compatible installed Python")
+	// The exact interpreter is named so the user knows what backs the venv.
+	assert.Contains(t, out, "/usr/bin/python3.12")
 }
 
 func TestRenderSuccessConstraintsOnlyOmitsDBConnect(t *testing.T) {
@@ -96,6 +98,7 @@ func TestRenderFailure(t *testing.T) {
 func TestRenderFailureExplainsInstalledPythonFallback(t *testing.T) {
 	res := libslocalenv.NewResult()
 	res.PythonResolution = libslocalenv.PythonResolutionInstalledFallback
+	res.PythonInterpreter = "/usr/bin/python3.12"
 	res.Error = &libslocalenv.PipelineError{
 		Code:         libslocalenv.ErrProvision,
 		FailurePhase: libslocalenv.PhaseProvision,
@@ -105,7 +108,21 @@ func TestRenderFailureExplainsInstalledPythonFallback(t *testing.T) {
 	out := renderText(t, res, res.Error)
 
 	assert.Contains(t, out, "Python download failed")
-	assert.Contains(t, out, "compatible installed Python")
+	assert.Contains(t, out, "/usr/bin/python3.12")
+}
+
+// A user interrupt after a fallback must not append the fallback note, which
+// would contradict "Setup canceled".
+func TestRenderCanceledOmitsInstalledPythonFallback(t *testing.T) {
+	res := libslocalenv.NewResult()
+	res.PythonResolution = libslocalenv.PythonResolutionInstalledFallback
+	res.PythonInterpreter = "/usr/bin/python3.12"
+	res.Error = &libslocalenv.PipelineError{Code: libslocalenv.ErrCanceled, FailurePhase: libslocalenv.PhaseProvision, Msg: "interrupted"}
+
+	out := renderText(t, res, res.Error)
+
+	assert.Contains(t, out, "canceled")
+	assert.NotContains(t, out, "Python download failed")
 }
 
 func TestRenderCanceled(t *testing.T) {

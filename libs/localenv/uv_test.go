@@ -136,11 +136,13 @@ func TestEnsurePythonFallbackErrorSurfacesSearchStderr(t *testing.T) {
 	require.Error(t, err)
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
-	// Both the download reason and the search command's own stderr must be
-	// reachable; the latter distinguishes "nothing installed" from a uv that
-	// rejected the find flags.
-	assert.Contains(t, pe.Msg, "Connection refused")
-	assert.Contains(t, pe.Msg, "unexpected argument '--no-python-downloads'")
+	// Each stderr must be attributed to its own command so the find stderr does
+	// not read as if `python install` rejected an argument it never saw. Assert on
+	// Error() — what the user sees — since PipelineError.Error() appends the wrapped
+	// cause after Msg.
+	rendered := pe.Error()
+	assert.Contains(t, rendered, "uv python install 3.12 failed: error: Connection refused")
+	assert.Contains(t, rendered, "no compatible installed Python found either: error: unexpected argument '--no-python-downloads'")
 }
 
 func TestEnsurePythonReportsCancellationDuringFallbackSearch(t *testing.T) {

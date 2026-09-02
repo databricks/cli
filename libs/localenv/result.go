@@ -313,10 +313,15 @@ type Result struct {
 	Plan             *Plan            `json:"plan,omitempty"`
 	VenvPath         string           `json:"venvPath,omitempty"`
 	PythonResolution PythonResolution `json:"pythonResolution,omitempty"`
-	Phases           []PhaseStatus    `json:"phases"`
-	Warnings         []Warning        `json:"warnings"`
-	Error            *PipelineError   `json:"error"`
-	BackupPath       string           `json:"backupPath,omitempty"`
+	// PythonInterpreter is the exact interpreter chosen by the installed-Python
+	// fallback, named in the text summary so the user can tell which interpreter
+	// backs the venv. Not serialized: the structured result stays categorical via
+	// PythonResolution (a path would leak machine layout to JSON consumers).
+	PythonInterpreter string         `json:"-"`
+	Phases            []PhaseStatus  `json:"phases"`
+	Warnings          []Warning      `json:"warnings"`
+	Error             *PipelineError `json:"error"`
+	BackupPath        string         `json:"backupPath,omitempty"`
 	// DurationMs is the pipeline's wall time in milliseconds (spec §6). It covers the
 	// CLI pipeline only; the extension measures its own end-to-end latency (process
 	// spawn, interpreter adoption) separately.

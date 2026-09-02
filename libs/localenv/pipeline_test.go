@@ -148,6 +148,7 @@ func TestPipelineProvisionsWithSelectedPython(t *testing.T) {
 	assert.Equal(t, "3.12", pm.minor)
 	assert.Equal(t, "/installed/python3.12", pm.provisionPython)
 	assert.Equal(t, PythonResolutionInstalledFallback, res.PythonResolution)
+	assert.Equal(t, "/installed/python3.12", res.PythonInterpreter)
 }
 
 func TestPipelineRetainsFallbackResolutionWhenProvisioningFails(t *testing.T) {

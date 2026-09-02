@@ -61,8 +61,10 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libslocalenv.Res
 				// unrelated output rather than part of the reason.
 				cmdio.LogString(ctx, indent(res.Error.Error(), "  "))
 			}
+			// Only on an actual failure, not a user interrupt: after Ctrl-C the
+			// fallback note reads as a contradictory postscript to "Setup canceled".
+			renderInstalledPythonFallback(ctx, res)
 		}
-		renderInstalledPythonFallback(ctx, res)
 		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, "Re-run with --debug for details, or --output json for a structured report.")
 		// The failing message is already surfaced above; ErrAlreadyPrinted exits
@@ -125,7 +127,7 @@ func renderSuccess(ctx context.Context, res *libslocalenv.Result) {
 func renderInstalledPythonFallback(ctx context.Context, res *libslocalenv.Result) {
 	if res.PythonResolution == libslocalenv.PythonResolutionInstalledFallback {
 		cmdio.LogString(ctx, "")
-		cmdio.LogString(ctx, "Python download failed; used a compatible installed Python instead.")
+		cmdio.LogString(ctx, "Python download failed; using the installed interpreter "+res.PythonInterpreter+" instead.")
 	}
 }
 
