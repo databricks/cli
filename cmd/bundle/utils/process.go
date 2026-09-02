@@ -283,6 +283,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 
+			// The service holds this deployment, so it has to keep being recorded: deploying
+			// without recording would leave it describing resources that have moved on.
+			if !b.RecordsDeploymentHistory(ctx) && b.DeploymentBundle.StateDB.RequiresDeploymentHistory() {
+				logdiag.LogError(ctx, errors.New(`this deployment was previously deployed with experimental.record_deployment_history, so the feature cannot be turned off now
+
+Set it back to true to deploy or destroy this bundle`))
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+
 			// Warn when the state was last written by a newer CLI than the one
 			// running now. The state schema version is a hard gate (dstate.Open
 			// rejects a too-new state_version), but a state can be written by a

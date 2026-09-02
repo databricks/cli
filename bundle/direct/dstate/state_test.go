@@ -185,7 +185,7 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 // TestEmptyFeatureStateAcceptedWithoutFlippingVersion pins the special case that a
 // featureStateVersion state with no features is accepted as-is — the on-disk version
 // is left at featureStateVersion, not flipped down to currentStateVersion — and that
-// a featureStateVersion state recording any feature is refused. This is scaffolding
+// a featureStateVersion state recording an unrecognized feature is refused. This is scaffolding
 // for the deferred version bump, special-cased to featureStateVersion only (see the
 // featureStateVersion doc comment).
 //
@@ -201,7 +201,7 @@ func TestEmptyFeatureStateAcceptedWithoutFlippingVersion(t *testing.T) {
 	require.NoError(t, migrateState(empty))
 	assert.Equal(t, featureStateVersion, empty.StateVersion, "v3 + no features keeps its on-disk version, not flipped to v2")
 
-	// v3 that records a feature is refused: this CLI does not understand features.
+	// v3 that records an unrecognized feature is refused.
 	withFeature := &Database{Header: Header{
 		StateVersion: featureStateVersion,
 		Features:     map[string]struct{}{"future_feature": {}},
@@ -212,6 +212,28 @@ func TestEmptyFeatureStateAcceptedWithoutFlippingVersion(t *testing.T) {
 	assert.Contains(t, err.Error(), "future_feature")
 	assert.Contains(t, err.Error(), "upgrade to the latest CLI version")
 	assert.Contains(t, err.Error(), featuresDocURL)
+}
+
+// TestSupportedFeatureAcceptedUnknownOneNamed covers the features this CLI does write:
+// a state recording only those loads, and an unsupported feature alongside one of them
+// is still refused — naming only the feature the user has to upgrade for.
+func TestSupportedFeatureAcceptedUnknownOneNamed(t *testing.T) {
+	supported := &Database{Header: Header{
+		StateVersion: featureStateVersion,
+		Features:     map[string]struct{}{featureRecordDeploymentHistory: {}},
+	}}
+	require.NoError(t, migrateState(supported))
+	assert.Equal(t, featureStateVersion, supported.StateVersion)
+	assert.Contains(t, supported.Features, featureRecordDeploymentHistory, "a supported feature is left on the state, not stripped")
+
+	mixed := &Database{Header: Header{
+		StateVersion: featureStateVersion,
+		Features:     map[string]struct{}{featureRecordDeploymentHistory: {}, "future_feature": {}},
+	}}
+	err := migrateState(mixed)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "future_feature")
+	assert.NotContains(t, err.Error(), featureRecordDeploymentHistory)
 }
 
 func TestDeleteState(t *testing.T) {

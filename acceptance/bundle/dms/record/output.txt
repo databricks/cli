@@ -69,6 +69,30 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> jq has("deployment_id") .databricks/bundle/default/resources.json
 false
 
+=== The state file still tracks every recorded resource, and records the feature that says so: a CLI without it refuses this state rather than deploying over the deployment
+>>> jq {state_version, features, resources: (.state | keys)} .databricks/bundle/default/resources.json
+{
+  "state_version": 3,
+  "features": {
+    "record_deployment_history": {}
+  },
+  "resources": [
+    "resources.jobs.foo"
+  ]
+}
+
+=== The same state is uploaded to the workspace, marker and all: that upload is what a redeploy from a clean cache reads back
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/state/resources.json
+{
+  "state_version": 3,
+  "features": {
+    "record_deployment_history": {}
+  },
+  "resources": [
+    "resources.jobs.foo"
+  ]
+}
+
 === Redeploy after deleting the local cache: the deployment ID is resolved from that node, the same deployment is reused, and the version increments (no new CreateDeployment)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record-[UNIQUE_NAME]/default/files...
