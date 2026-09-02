@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/metrics"
@@ -38,7 +39,7 @@ Please forward these warnings to dabs-feedback@databricks.com`
 // autoMigrateStoppedNotice is emitted when the direct engine is selected but the
 // dry-run migration surfaced errors or warnings, so the automatic post-deploy
 // migration is skipped.
-const autoMigrateStoppedNotice = `Direct engine was selected but the dry-run migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.`
+const autoMigrateStoppedNotice = `Direct engine was selected but the migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.`
 
 // MigrateToDirect performs a dry-run migration of the just-deployed terraform
 // state to the direct engine and records the outcome in deploy telemetry.
@@ -91,7 +92,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		return
 	}
 
-	tempStatePath, resourceCount, hasWarnings, err := convertTFStateToDirect(ctx, b, tfState)
+	tempStatePath, resourceCount, hasWarnings, cfg, err := convertTFStateToDirect(ctx, b, tfState)
 	if tempStatePath != "" {
 		// The temp file sits next to the real resources.json path (same
 		// filesystem, so commitMigration's os.Rename works even when
@@ -133,6 +134,14 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		return
 	}
 
+	if planErr := checkPlanOnTempState(ctx, b, tempStatePath, cfg); planErr != nil {
+		log.Warnf(ctx, "%s%v", warnPrefix, planErr)
+		log.Warnf(ctx, "%s", feedbackNotice)
+		b.Metrics.SetBoolValue(metrics.DirectMigratePlanError, true)
+		log.Warnf(ctx, "%s", autoMigrateStoppedNotice)
+		return
+	}
+
 	cmdio.LogString(ctx, "Migrating state to direct deployment engine (selected via "+requestedEngine.Source+")...")
 
 	if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
@@ -142,6 +151,33 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 	}
 
 	recordAutoMigrateSource(b, requestedEngine)
+}
+
+// checkPlanOnTempState opens the migrated state at tempStatePath in read mode,
+// runs a full plan against it, and returns a non-nil error if the plan fails.
+// Individual planning errors are emitted as warnings with warnPrefix so they
+// are visible without failing the deploy. The plan is run in an isolated
+// context so its diagnostics do not affect the deploy's own error state.
+func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath string, cfg *config.Root) error {
+	planCtx := logdiag.IsolatedContext(ctx)
+	logdiag.SetCollect(planCtx, true)
+	defer func() {
+		for _, d := range logdiag.FlushCollected(planCtx) {
+			msg := d.Summary
+			if d.Detail != "" {
+				msg += ": " + d.Detail
+			}
+			log.Warnf(ctx, "%s%s", warnPrefix, msg)
+		}
+	}()
+
+	var planBundle direct.DeploymentBundle
+	if err := planBundle.StateDB.Open(planCtx, tempStatePath, false, false); err != nil {
+		return fmt.Errorf("opening migrated state for plan check: %w", err)
+	}
+
+	_, err := planBundle.CalculatePlan(planCtx, b.WorkspaceClient(ctx), cfg)
+	return err
 }
 
 // recordDryRunNoop records dry-run telemetry for a no-op case (no state, or
@@ -209,12 +245,13 @@ func backupTerraformState(ctx context.Context, b *bundle.Bundle) error {
 
 // convertTFStateToDirect converts the given terraform state to the direct engine state,
 // returning the path to the converted state file, the number of resources
-// migrated, and whether any warnings were emitted. Callers must ensure
-// tfState is non-nil and has at least one resource ID (the empty and nil
-// cases are handled by MigrateToDirect directly, since they take different
-// commit paths). The caller is responsible for deleting the temp state's
-// parent directory when it is done with the file.
-func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migrate.TFState) (string, int, bool, error) {
+// migrated, whether any warnings were emitted, and the bundle config with
+// terraform interpolation reversed (needed by the caller to run a plan against
+// the converted state). Callers must ensure tfState is non-nil and has at least
+// one resource ID (the empty and nil cases are handled by MigrateToDirect
+// directly, since they take different commit paths). The caller is responsible
+// for deleting the temp state's parent directory when it is done with the file.
+func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migrate.TFState) (string, int, bool, *config.Root, error) {
 	// Write the converted state to a sibling of the final resources.json
 	// path so commitMigration's os.Rename stays within one filesystem
 	// (os.TempDir() often lives on a different volume from the project;
@@ -265,7 +302,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	// the migrated state and config agree on .permissions entries.
 	bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
 	if logdiag.HasError(ctx) {
-		return tempStatePath, resourceCount, false, errors.New("failed to apply secret scope fixups")
+		return tempStatePath, resourceCount, false, nil, errors.New("failed to apply secret scope fixups")
 	}
 
 	// b.Config has been modified by terraform.Interpolate which converts bundle-style
@@ -273,7 +310,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	// BuildStateFromTF expects ${resources.*} references, so reverse the interpolation first.
 	uninterpolatedRoot, err := reverseInterpolate(b.Config.Value())
 	if err != nil {
-		return tempStatePath, resourceCount, false, fmt.Errorf("failed to reverse interpolation: %w", err)
+		return tempStatePath, resourceCount, false, nil, fmt.Errorf("failed to reverse interpolation: %w", err)
 	}
 
 	var uninterpolatedConfig config.Root
@@ -281,34 +318,34 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 		return uninterpolatedRoot, nil
 	})
 	if err != nil {
-		return tempStatePath, resourceCount, false, fmt.Errorf("failed to create uninterpolated config: %w", err)
+		return tempStatePath, resourceCount, false, nil, fmt.Errorf("failed to create uninterpolated config: %w", err)
 	}
 
 	adapters, err := dresources.InitAll(nil)
 	if err != nil {
-		return tempStatePath, resourceCount, false, err
+		return tempStatePath, resourceCount, false, nil, err
 	}
 
 	if err := stateDB.UpgradeToWrite(); err != nil {
-		return tempStatePath, resourceCount, false, fmt.Errorf("upgrading state for apply: %w", err)
+		return tempStatePath, resourceCount, false, nil, fmt.Errorf("upgrading state for apply: %w", err)
 	}
 
 	// warnPrefix labels the conversion's warnings as coming from the background dry run.
 	hasWarnings, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
 	if err != nil {
-		return tempStatePath, resourceCount, hasWarnings, err
+		return tempStatePath, resourceCount, hasWarnings, nil, err
 	}
 
 	if _, err := stateDB.Finalize(ctx); err != nil {
-		return tempStatePath, resourceCount, hasWarnings, err
+		return tempStatePath, resourceCount, hasWarnings, nil, err
 	}
 
 	// BuildStateFromTF reports some failures via logdiag instead of returning an error.
 	if logdiag.HasError(ctx) {
-		return tempStatePath, resourceCount, hasWarnings, errors.New("state conversion failed")
+		return tempStatePath, resourceCount, hasWarnings, nil, errors.New("state conversion failed")
 	}
 
-	return tempStatePath, resourceCount, hasWarnings, nil
+	return tempStatePath, resourceCount, hasWarnings, &uninterpolatedConfig, nil
 }
 
 // commitMigration finalizes the dry-run migration by pushing the direct state
