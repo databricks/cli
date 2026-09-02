@@ -8,14 +8,7 @@
 #
 # Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
 
-endpoint_name                                x          y          BASE_ERROR  cannot recreate resources.vector_search_indexes.foo: Vector search endpoint x not found (404 RESOURCE_DOES_NOT_EXIST)
-endpoint_name                                y          x          BASE_ERROR  cannot recreate resources.vector_search_indexes.foo: Vector search endpoint y not found (404 RESOURCE_DOES_NOT_EXIST)
-name                                         x-UNIQUE   y-UNIQUE   BASE_ERROR  cannot recreate resources.vector_search_indexes.foo: Invalid index name. Must specify the ...ores are allowed. (400 INVALID_PARAMETER_VALUE)
-name                                         y-UNIQUE   x-UNIQUE   BASE_ERROR  cannot recreate resources.vector_search_indexes.foo: Invalid index name. Must specify the ...ores are allowed. (400 INVALID_PARAMETER_VALUE)
 
 === summary
-OK_RECREATE        69
-SUPPRESSED         4
-NOT_OBSERVABLE     3
-SKIPPED            1
-BASE_ERROR         4
+OK_RECREATE        2
+SKIPPED            7
