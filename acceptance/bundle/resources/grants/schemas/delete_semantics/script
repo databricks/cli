@@ -45,5 +45,10 @@ record "the grants list is empty"
 restore_grant
 title "Case 3: the schema and its grants are deleted together"
 echo "=== the parent is deleted too" >> $ENGINE_OUT
+# Planned against a config with the schema gone, so the plan names both nodes and the
+# action each one gets. `bundle destroy` applies the same shape but its banner hides
+# child nodes, so it never shows what happens to the grants.
+envsubst < databricks.empty.yml.tmpl > databricks.yml
+$CLI bundle plan >> $ENGINE_OUT
 trace $CLI bundle destroy --auto-approve
 print_requests.py //unity-catalog --sort >> $ENGINE_OUT

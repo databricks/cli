@@ -37,6 +37,10 @@ Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
 }
 json = {};
 === the parent is deleted too
+delete schemas.grants_schema
+delete schemas.grants_schema.grants
+
+Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
 {
   "method": "DELETE",
   "path": "/api/2.1/unity-catalog/schemas/main.schema_delete_semantics_[UNIQUE_NAME]",
