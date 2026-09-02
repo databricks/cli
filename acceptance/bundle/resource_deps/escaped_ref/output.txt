@@ -56,7 +56,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "notebook_task": {
           "base_parameters": {
             "escaped": "${resources.jobs.bar.id}",
-            "real": "[NUMID]"
+            "mixed": "${runtime} [NUMID]",
+            "real": "[NUMID]",
+            "same_name": "${resources.jobs.bar.id} [NUMID]"
           },
           "notebook_path": "/notebook",
           "source": "WORKSPACE"
