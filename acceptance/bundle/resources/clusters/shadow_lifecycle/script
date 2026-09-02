@@ -1,4 +1,0 @@
-# Record the full plan JSON for the cluster entry.
-# lifecycle.prevent_destroy is absent from new_state.value because ClusterState
-# only carries lifecycle.started -- the direct engine is blind to changes to it.
-trace $CLI bundle plan -o json | jq '.plan."resources.clusters.the_cluster"'
