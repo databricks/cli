@@ -91,6 +91,16 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	// The API requires all three of these on a create, and libs/testserver applies the same checks:
+	// a warehouse with no name, no cluster_size or max_num_clusters outside 1..40 is refused.
+	"sql_warehouses": &resources.SqlWarehouse{
+		CreateWarehouseRequest: sql.CreateWarehouseRequest{
+			Name:           "my-warehouse",
+			ClusterSize:    "2X-Small",
+			MaxNumClusters: 1,
+		},
+	},
+
 	"instance_pools": &resources.InstancePool{
 		CreateInstancePool: compute.CreateInstancePool{
 			InstancePoolName: "my-instance-pool",
