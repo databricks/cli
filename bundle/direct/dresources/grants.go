@@ -166,9 +166,11 @@ func (r *ResourceGrants) DoDelete(ctx context.Context, id string, _ *GrantsState
 	slices.Sort(principals)
 
 	_, err = r.client.Grants.Update(ctx, catalog.UpdatePermissions{
-		SecurableType: securableType,
-		FullName:      fullName,
-		Changes:       buildGrantChanges(nil, principals),
+		SecurableType:             securableType,
+		FullName:                  fullName,
+		Changes:                   buildGrantChanges(nil, principals),
+		OmitPermissionsInResponse: false,
+		ForceSendFields:           nil,
 	})
 	return err
 }

@@ -5,14 +5,16 @@
 === Case 1: the grants block is removed, the schema stays
 >>> [CLI] bundle deploy -qq
 
+=== Put the grant back
+>>> [CLI] bundle deploy -qq
+
 === Case 2: the grants list is set to []
 >>> [CLI] bundle deploy -qq
 
+=== Put the grant back
 >>> [CLI] bundle deploy -qq
 
 === Case 3: the schema and its grants are deleted together
->>> [CLI] bundle deploy -qq
-
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.grants_schema

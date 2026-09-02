@@ -171,7 +171,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 // willDeleteParent returns the child nodes (grants, permissions) whose parent resource the
 // same plan deletes: the parent takes them with it, so the child delete is applied as a
-// state-only cleanup. Issuing it anyway is what used to break `bundle destroy`.
+// state-only cleanup.
 func willDeleteParent(plan *deployplan.Plan) map[string]bool {
 	result := make(map[string]bool)
 
