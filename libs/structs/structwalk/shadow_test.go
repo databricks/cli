@@ -6,7 +6,6 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
@@ -14,49 +13,111 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// The structs below mirror the embedding patterns in the real resource types
+// from bundle/config/resources/ and the SDK. They are local copies so that
+// these tests are independent of the bundle package. Comments name the originals.
+//
+// Embedded field types must be exported so that structwalk, structdiff, and
+// reflect descend into them (unexported anonymous fields are skipped by
+// sf.PkgPath != "" / sf.IsExported() checks).
+
+// ShadowBase mirrors bundle/config/resources.BaseResource, which every
+// resource struct embeds anonymously. It contributes both "id" and "lifecycle"
+// at the same embedding depth as the SDK types below.
+type ShadowBase struct {
+	// bundle/config/resources.BaseResource.ID — json:"id,omitempty"
+	ID string `json:"id,omitempty"`
+
+	// bundle/config/resources.BaseResource.Lifecycle — json:"lifecycle,omitempty"
+	Lifecycle ShadowLifecycle `json:"lifecycle,omitempty"`
+}
+
+// ShadowLifecycle mirrors bundle/config/resources.Lifecycle.
+type ShadowLifecycle struct {
+	PreventDestroy bool `json:"prevent_destroy,omitempty"`
+}
+
+// ShadowLifecycleWithStarted mirrors bundle/config/resources.LifecycleWithStarted,
+// which extends Lifecycle with start/stop control for clusters and apps.
+type ShadowLifecycleWithStarted struct {
+	ShadowLifecycle
+	Started *bool `json:"started,omitempty"`
+}
+
+// ShadowSDKPipeline mirrors the Id field that pipelines.CreatePipeline carries
+// at the same json name "id" as ShadowBase.ID, creating the ambiguity under test.
+type ShadowSDKPipeline struct {
+	// pipelines.CreatePipeline.Id — json:"id,omitempty"
+	Id string `json:"id,omitempty"` //nolint:revive // mirroring the SDK field name exactly
+}
+
+// ShadowPipeline mirrors the embedding shape of bundle/config/resources.Pipeline:
+//
+//	type Pipeline struct {
+//	    BaseResource             // ← has ID string `json:"id,omitempty"`
+//	    pipelines.CreatePipeline // ← also has Id string `json:"id,omitempty"`
+//	    ...
+//	}
+//
+// Two anonymous embeds at the same depth both declare "id", making it
+// ambiguous: encoding/json drops the field entirely; structwalk visits it twice.
+type ShadowPipeline struct {
+	ShadowBase
+	ShadowSDKPipeline //nolint:govet // the repeated json "id" tag is the point: both embeds declare it, creating the ambiguity under test
+}
+
+// ShadowCluster mirrors the embedding shape of bundle/config/resources.Cluster:
+//
+//	type Cluster struct {
+//	    BaseResource                    // ← has Lifecycle `json:"lifecycle,omitempty"`
+//	    compute.ClusterSpec             // ← no lifecycle field
+//	    Lifecycle *LifecycleWithStarted `json:"lifecycle,omitempty"` // direct named field
+//	    ...
+//	}
+//
+// A direct named field (Lifecycle) shadows the same name promoted from
+// BaseResource: encoding/json uses the named field only; structwalk visits both.
+type ShadowCluster struct {
+	ShadowBase
+	// Direct named field — shallower than ShadowBase.Lifecycle, so
+	// encoding/json uses this one.
+	Lifecycle *ShadowLifecycleWithStarted `json:"lifecycle,omitempty"`
+}
+
 // TestShadowedEmbedIsVisitedTwice shows the core bug: structwalk visits a
 // field that appears at the same JSON path through two different embedded
-// struct chains without noticing that one shadows the other.
-//
-// resources.Pipeline embeds both BaseResource and pipelines.CreatePipeline,
-// and both declare json:"id". encoding/json calls that ambiguous and drops the
-// field entirely, so neither field is ever serialized. structwalk visits both
-// paths anyway and emits "id" twice.
-//
-// resources.Cluster embeds BaseResource (Lifecycle.PreventDestroy) alongside
-// its own Lifecycle *LifecycleWithStarted (which also embeds Lifecycle); again
-// two paths to "lifecycle.prevent_destroy" and both are visited.
+// struct chains, without noticing that one shadows the other.
 func TestShadowedEmbedIsVisitedTwice(t *testing.T) {
-	// ----- Pipeline: id -----
-	// Fill both shadowed fields with non-zero values so neither is
-	// dropped by the omitempty skip that masks the bug at zero value.
-	pipe := &resources.Pipeline{}
-	pipe.BaseResource.ID = "base-id"  //nolint:staticcheck // explicit: sets the shadowed BaseResource field, not the promoted CreatePipeline.Id
-	pipe.CreatePipeline.Id = "sdk-id" //nolint:staticcheck // explicit: sets the promoted SDK field, not the shadowed BaseResource.ID
+	// ----- Pipeline-shape: id -----
+	// Fill both shadowed fields with non-zero values so neither is dropped
+	// by the omitempty skip that hides the bug at zero value.
+	pipe := &ShadowPipeline{}
+	pipe.ID = "base-id"
+	pipe.Id = "sdk-id"
 
 	pipeVisits := map[string]int{}
 	require.NoError(t, structwalk.Walk(pipe, func(path *structpath.PathNode, _ any, _ *reflect.StructField) {
 		pipeVisits[path.String()]++
 	}))
 
-	// encoding/json emits nothing for "id" because both fields declare it at
-	// the same embedding depth → ambiguous. The walk should match that: zero
-	// visits. Two visits is the bug.
-	var blob []byte
-	blob, _ = json.Marshal(pipe)
+	// encoding/json calls "id" ambiguous (both embeds at the same depth) and
+	// drops it — neither field is serialized. structwalk visits it twice.
+	// The assertions below record the current (buggy) behaviour so a fix
+	// requires updating them.
+	blob, _ := json.Marshal(pipe)
 	var pipeJSON map[string]any
 	require.NoError(t, json.Unmarshal(blob, &pipeJSON))
 
-	jsonEmitsID := pipeJSON["id"] != nil
-	walkVisitsID := pipeVisits["id"]
-	assert.Equal(t, jsonEmitsID, walkVisitsID > 0,
-		"structwalk and encoding/json disagree about whether 'id' exists on resources.Pipeline; "+
-			"json emits=%v, walk visits=%d times", jsonEmitsID, walkVisitsID)
+	// Bug: structwalk visits "id" twice; encoding/json emits it zero times.
+	assert.Equal(t, 2, pipeVisits["id"], "structwalk should visit 'id' twice (bug); fix → 0")
+	assert.Nil(t, pipeJSON["id"], "encoding/json must not emit the ambiguous 'id'")
 
-	// ----- Cluster: lifecycle.prevent_destroy -----
-	clus := &resources.Cluster{}
-	clus.BaseResource.Lifecycle = resources.Lifecycle{PreventDestroy: true} //nolint:staticcheck // explicit: sets the embedded BaseResource field shadowed by Cluster.Lifecycle
-	clus.Lifecycle = &resources.LifecycleWithStarted{Lifecycle: resources.Lifecycle{PreventDestroy: true}}
+	// ----- Cluster-shape: lifecycle.prevent_destroy -----
+	clus := &ShadowCluster{}
+	// Set the promoted (shadowed) field from ShadowBase directly.
+	clus.ShadowBase.Lifecycle = ShadowLifecycle{PreventDestroy: true}
+	// Set the direct named field that shadows it.
+	clus.Lifecycle = &ShadowLifecycleWithStarted{ShadowLifecycle: ShadowLifecycle{PreventDestroy: true}}
 
 	clusVisits := map[string]int{}
 	require.NoError(t, structwalk.Walk(clus, func(path *structpath.PathNode, _ any, _ *reflect.StructField) {
@@ -67,26 +128,28 @@ func TestShadowedEmbedIsVisitedTwice(t *testing.T) {
 	var clusJSON map[string]any
 	require.NoError(t, json.Unmarshal(blob, &clusJSON))
 
-	// encoding/json serializes Cluster.Lifecycle (shallower named field) and
-	// drops BaseResource.Lifecycle (deeper, shadowed). The walk visits both.
-	t.Logf("cluster lifecycle.prevent_destroy: json=%v, walk visits=%d",
-		nestedGet(clusJSON, "lifecycle", "prevent_destroy"),
-		clusVisits["lifecycle.prevent_destroy"])
+	// encoding/json serializes ShadowCluster.Lifecycle (named, shallower) and
+	// ignores the promoted ShadowBase.Lifecycle. structwalk visits both.
+	// Bug: walk visits twice; json emits once. Record the buggy values.
+	assert.Equal(t, 2, clusVisits["lifecycle.prevent_destroy"],
+		"structwalk should visit 'lifecycle.prevent_destroy' twice (bug); fix → 1")
+	assert.Equal(t, true, nestedGet(clusJSON, "lifecycle", "prevent_destroy"),
+		"encoding/json must emit 'lifecycle.prevent_destroy' from the named field")
 }
 
 // TestShadowedEmbedCausesStructdiffDuplicate shows what happens downstream:
-// when both shadowed fields are non-zero and they differ, structdiff emits the
-// same path twice — once per shadowed declaration. prepareChanges in the direct
-// engine uses a map and so the second entry silently overwrites the first, but
-// which value wins is arbitrary and depends on iteration order in the embedding.
+// when both shadowed fields are non-zero and differ, structdiff emits the same
+// path twice — once per shadowed declaration. prepareChanges in the direct
+// engine uses a map, so the second entry silently overwrites the first; which
+// value wins is arbitrary.
 func TestShadowedEmbedCausesStructdiffDuplicate(t *testing.T) {
-	before := &resources.Pipeline{}
-	before.BaseResource.ID = "old-base-id"  //nolint:staticcheck // explicit: sets the shadowed BaseResource field
-	before.CreatePipeline.Id = "old-sdk-id" //nolint:staticcheck // explicit: sets the promoted SDK field
+	before := &ShadowPipeline{}
+	before.ID = "old-base-id"
+	before.Id = "old-sdk-id"
 
-	after := &resources.Pipeline{}
-	after.BaseResource.ID = "new-base-id"  //nolint:staticcheck // explicit: sets the shadowed BaseResource field
-	after.CreatePipeline.Id = "new-sdk-id" //nolint:staticcheck // explicit: sets the promoted SDK field
+	after := &ShadowPipeline{}
+	after.ID = "new-base-id"
+	after.Id = "new-sdk-id"
 
 	changes, err := structdiff.GetStructDiff(before, after, nil)
 	require.NoError(t, err)
@@ -111,9 +174,9 @@ func TestShadowedEmbedCausesStructdiffDuplicate(t *testing.T) {
 	// Reporting it twice is the bug; zero is correct.
 	if len(dupes) > 0 {
 		t.Logf("structdiff reports the following paths more than once: %v", dupes)
-		t.Logf("encoding/json would emit neither entry: they are ambiguous fields")
+		t.Logf("encoding/json would emit neither: they are ambiguous fields")
 	}
-	// Assert the current (buggy) behavior so a fix requires updating this test.
+	// Assert the current (buggy) behaviour so a fix requires updating this test.
 	assert.Equal(t, []string{"id"}, dupes,
 		"expected 'id' to be reported twice (shadowed embeds, both non-zero); "+
 			"if this fails the fix is working — remove the duplicate from this assertion")
