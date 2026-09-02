@@ -11,25 +11,21 @@ trap cleanup EXIT
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle deploy
 
+rm out.requests.txt
+
 dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.inline_dash.id')
 add_repl "$dashboard_id" DASHBOARD_ID
 
-# Wait out eventual consistency (direct's first read 404s) before changing.
+# Wait out eventual consistency before changing.
 retry --until "Page 1" $CLI lakeview get "$dashboard_id" > /dev/null
 
 update_file.py databricks.yml "Page 1" "Page One"
 
 trace $CLI bundle plan | contains.py "update" "!recreate"
 
-# Per-engine JSON plan; also the saved plan for READPLAN=1.
 trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-# Drop the initial-deploy requests so the capture below shows only the change.
-print_requests.py //api/2.0/lakeview/dashboards > /dev/null
-
-# Deploy the change: in-memory (READPLAN="") or from the saved plan (READPLAN="1").
 title "deploy the change\n"
 $CLI bundle deploy $(readplanarg out.plan.$DATABRICKS_BUNDLE_ENGINE.json)
 
-# Capture the update request per engine (terraform echoes OUTPUT_ONLY fields).
 print_requests.py //api/2.0/lakeview/dashboards > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt
