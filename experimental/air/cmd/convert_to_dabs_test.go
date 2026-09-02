@@ -3,6 +3,7 @@ package aircmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -44,6 +45,33 @@ func TestConvertToDabsForceOverwrite(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEqual(t, edited, regenerated)
 	assert.Contains(t, string(regenerated), "ai_runtime_task")
+}
+
+// The generated command.sh cds into the extracted code dir, so a relative command
+// like `python train.py` resolves against the code rather than the launch dir.
+func TestConvertToDabsCommandCdsIntoCodeSource(t *testing.T) {
+	cfg := minimalConfig + `
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ./src
+`
+	path := writeConfigFile(t, "run.yaml", cfg)
+	require.NoError(t, os.MkdirAll(filepath.Join(filepath.Dir(path), "src"), 0o700))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	_, artifacts, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.NoError(t, err)
+
+	var cmd string
+	for _, it := range artifacts {
+		if it.name == commandScriptName {
+			cmd = string(it.data)
+		}
+	}
+	assert.True(t, strings.HasPrefix(cmd, "cd /databricks/code_source/src\n"),
+		"command.sh should cd into the code dir; got %q", cmd)
 }
 
 func TestConvertToDabsCommandShape(t *testing.T) {

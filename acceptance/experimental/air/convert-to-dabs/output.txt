@@ -55,6 +55,7 @@ resources:
 
 === the generated command.sh carries the run command
 >>> cat generated_artifacts/command.sh
+cd /databricks/code_source/src
 torchrun --nproc_per_node=1 train.py
 === the emitted bundle validates
 >>> [CLI] bundle validate

@@ -164,8 +164,31 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 		return nil, nil, err
 	}
 
+	// The launcher runs command.sh from the launch dir, but code_source extracts to
+	// /databricks/code_source/<dir>. cd there first so relative paths in the user's
+	// command (e.g. `python train.py`) resolve against the code, matching how the
+	// command reads under `air run`.
+	if codeDirPath != "" {
+		cdIntoCodeSource(artifacts, path.Base(strings.TrimPrefix(codeDirPath, "./")))
+	}
+
 	root := buildBundleValue(ctx, cfg, configPath, codeSourcePath, art)
 	return root, artifacts, nil
+}
+
+// runtimeCodeSourceRoot is where the launcher extracts an AI Runtime task's
+// code_source; the tarball's top-level dir lands directly under it.
+const runtimeCodeSourceRoot = "/databricks/code_source"
+
+// cdIntoCodeSource prepends a `cd` into the extracted code dir to the generated
+// command.sh, so the user's command runs against the code rather than the launch dir.
+func cdIntoCodeSource(artifacts []uploadItem, dirName string) {
+	target := path.Join(runtimeCodeSourceRoot, dirName)
+	for i := range artifacts {
+		if artifacts[i].name == commandScriptName {
+			artifacts[i].data = []byte("cd " + target + "\n" + string(artifacts[i].data))
+		}
+	}
 }
 
 // codeArtifact is the `tgz` artifact convert emits when a snapshot pins a git ref or
