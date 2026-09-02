@@ -3,7 +3,7 @@ package structwalk_test
 import (
 	"encoding/json"
 	"reflect"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -31,8 +31,8 @@ func TestShadowedEmbedIsVisitedTwice(t *testing.T) {
 	// Fill both shadowed fields with non-zero values so neither is
 	// dropped by the omitempty skip that masks the bug at zero value.
 	pipe := &resources.Pipeline{}
-	pipe.BaseResource.ID = "base-id"
-	pipe.CreatePipeline.Id = "sdk-id"
+	pipe.BaseResource.ID = "base-id"  //nolint:staticcheck // explicit: sets the shadowed BaseResource field, not the promoted CreatePipeline.Id
+	pipe.CreatePipeline.Id = "sdk-id" //nolint:staticcheck // explicit: sets the promoted SDK field, not the shadowed BaseResource.ID
 
 	pipeVisits := map[string]int{}
 	require.NoError(t, structwalk.Walk(pipe, func(path *structpath.PathNode, _ any, _ *reflect.StructField) {
@@ -55,7 +55,7 @@ func TestShadowedEmbedIsVisitedTwice(t *testing.T) {
 
 	// ----- Cluster: lifecycle.prevent_destroy -----
 	clus := &resources.Cluster{}
-	clus.BaseResource.Lifecycle = resources.Lifecycle{PreventDestroy: true}
+	clus.BaseResource.Lifecycle = resources.Lifecycle{PreventDestroy: true} //nolint:staticcheck // explicit: sets the embedded BaseResource field shadowed by Cluster.Lifecycle
 	clus.Lifecycle = &resources.LifecycleWithStarted{Lifecycle: resources.Lifecycle{PreventDestroy: true}}
 
 	clusVisits := map[string]int{}
@@ -81,12 +81,12 @@ func TestShadowedEmbedIsVisitedTwice(t *testing.T) {
 // which value wins is arbitrary and depends on iteration order in the embedding.
 func TestShadowedEmbedCausesStructdiffDuplicate(t *testing.T) {
 	before := &resources.Pipeline{}
-	before.BaseResource.ID = "old-base-id"
-	before.CreatePipeline.Id = "old-sdk-id"
+	before.BaseResource.ID = "old-base-id"  //nolint:staticcheck // explicit: sets the shadowed BaseResource field
+	before.CreatePipeline.Id = "old-sdk-id" //nolint:staticcheck // explicit: sets the promoted SDK field
 
 	after := &resources.Pipeline{}
-	after.BaseResource.ID = "new-base-id"
-	after.CreatePipeline.Id = "new-sdk-id"
+	after.BaseResource.ID = "new-base-id"  //nolint:staticcheck // explicit: sets the shadowed BaseResource field
+	after.CreatePipeline.Id = "new-sdk-id" //nolint:staticcheck // explicit: sets the promoted SDK field
 
 	changes, err := structdiff.GetStructDiff(before, after, nil)
 	require.NoError(t, err)
@@ -104,7 +104,7 @@ func TestShadowedEmbedCausesStructdiffDuplicate(t *testing.T) {
 			dupes = append(dupes, p)
 		}
 	}
-	sort.Strings(dupes)
+	slices.Sort(dupes)
 
 	// encoding/json says "id" is ambiguous and drops it, so a diff library
 	// that agrees with encoding/json would report zero changes at "id".
