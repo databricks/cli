@@ -1,4 +1,0 @@
-RecordRequests = false
-
-# depends_on is only present in the direct engine's plan JSON.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

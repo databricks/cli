@@ -992,6 +992,17 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
+		// Unescape "$${...}" to a literal "${...}" in the typed state, which is what
+		// gets deployed and saved. The terraform engine leaves the escape in place for
+		// Terraform itself to unescape; the direct engine has to do it here.
+		//
+		// This runs on the typed state rather than the dynamic config so that
+		// extractReferences below still sees the escaped form and does not mistake
+		// these placeholders for bundle references.
+		if err := unescapeRefs(newStateConfig); err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+
 		// New nodes only: a node with state must stay in the plan, otherwise emptying it plans nothing.
 		// Apply drops the state entry once the node is empty, so it is skipped from then on.
 		if _, hasState := db.State[node]; !hasState {
@@ -1033,13 +1044,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 				// ${workspace.snapshot_path} is resolved by the mutator pipeline after
 				// snapshot.Upload(), not by the direct engine — skip it here.
 				if targetPath == "workspace.snapshot_path" {
-					continue
-				}
-				// Skip references that don't point to a known resource node.
-				// Non-resource references (e.g. runtime-interpreted placeholders
-				// that reach the API as-is after variable resolution) are not
-				// dependencies between bundle resources.
-				if targetNode == "" {
 					continue
 				}
 
