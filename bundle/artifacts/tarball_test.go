@@ -45,10 +45,9 @@ func runGit(t *testing.T, dir string, args ...string) {
 	require.NoError(t, err, "git %v: %s", args, out)
 }
 
-// TestTarballFromGitPrefixesEntries verifies git mode nests every entry under the
-// code-source dir name (the load-bearing top-level the runtime extracts to
-// /databricks/code_source/<dir>), matching aicode and the air CLI.
-func TestTarballFromGitPrefixesEntries(t *testing.T) {
+// TestTarballFromGitArchivesRef verifies git mode archives the committed tree with
+// entries named relative to the artifact's path (here the repo root, so no prefix).
+func TestTarballFromGitArchivesRef(t *testing.T) {
 	repo := t.TempDir()
 	runGit(t, repo, "init", "-q")
 	runGit(t, repo, "config", "user.email", "t@example.com")
@@ -66,11 +65,10 @@ func TestTarballFromGitPrefixesEntries(t *testing.T) {
 	var buf bytes.Buffer
 	require.NoError(t, tarballFromGit(t.Context(), b, a, &buf))
 
-	// The entry nests under the code-source dir name (the load-bearing top-level).
-	dir := filepath.Base(repo)
+	// path == repo root, so the entry is relative to it (no injected prefix).
 	entries := tarEntries(t, buf.Bytes())
-	require.Contains(t, entries, dir+"/train.py")
-	assert.Equal(t, "print('x')", strings.TrimSpace(entries[dir+"/train.py"]))
+	require.Contains(t, entries, "train.py")
+	assert.Equal(t, "print('x')", strings.TrimSpace(entries["train.py"]))
 }
 
 func TestTarballFromGitRequiresRef(t *testing.T) {
