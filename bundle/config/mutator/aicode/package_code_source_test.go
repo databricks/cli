@@ -19,11 +19,10 @@ import (
 // bundleWithCodeSource builds a bundle rooted at dir whose single AI Runtime task
 // points at codeSourcePath.
 //
-// The end-to-end package/upload/rewrite behavior (local dir -> tarball -> upload ->
-// rewritten code_source_path) runs the full mutator pipeline (sync file list,
-// workspace filer) and is covered by acceptance tests under
-// acceptance/bundle/ai_runtime_task. This unit test covers only the pure
-// config-collection seam that does not touch the pipeline.
+// The end-to-end build/upload behavior (tarball built by artifacts.Build, uploaded by
+// libraries) runs the full pipeline and is covered by acceptance tests under
+// acceptance/bundle/ai_runtime_task. These unit tests cover the config-only seam:
+// which paths are collected, and the artifact synthesis + code_source_path rewrite.
 func bundleWithCodeSource(t *testing.T, dir, codeSourcePath string) *bundle.Bundle {
 	t.Helper()
 	b := &bundle.Bundle{
@@ -52,6 +51,34 @@ func bundleWithCodeSource(t *testing.T, dir, codeSourcePath string) *bundle.Bund
 	}
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
 	return b
+}
+
+// A local-directory code_source_path is turned into a tgz artifact and the field is
+// rewritten to the tarball that artifact builds. path/include are chosen so archive
+// entries nest under the directory basename (the runtime's code_source layout), and
+// the rewritten path equals the artifact's files.source so the upload rail links them.
+func TestPackageCodeSourceSynthesizesArtifact(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))
+	b := bundleWithCodeSource(t, dir, "./src")
+
+	diags := PackageCodeSource().Apply(t.Context(), b)
+	require.Empty(t, diags)
+
+	outRel := ".databricks/air_code_source/air_code_source_src.tar.gz"
+	a := b.Config.Artifacts["air_code_source_src"]
+	require.NotNil(t, a)
+	assert.Equal(t, config.ArtifactTarball, a.Type)
+	// path/files are absolute: a synthesized artifact has no location for Prepare to
+	// resolve relative paths against.
+	assert.Equal(t, dir, a.Path)
+	assert.Equal(t, []string{"src"}, a.Include)
+	require.Len(t, a.Files, 1)
+	assert.Equal(t, filepath.Join(dir, filepath.FromSlash(outRel)), a.Files[0].Source)
+
+	// code_source_path is rewritten to the bundle-relative output, which resolves to
+	// the same absolute file so the upload rail links them.
+	assert.Equal(t, "./"+outRel, b.Config.Resources.Jobs["train"].Tasks[0].AiRuntimeTask.CodeSourcePath)
 }
 
 func TestCollectLocalCodeSourcesFindsLocalDir(t *testing.T) {

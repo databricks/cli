@@ -219,6 +219,13 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Applies the artifacts_dynamic_version preset to enable dynamic versioning on all artifacts
 		mutator.ApplyArtifactsDynamicVersion(),
 
+		// Turn any AI Runtime task code_source_path that points at a local directory
+		// into a `tgz` artifact and rewrite the field to the tarball that artifact
+		// builds, so the code is packaged and uploaded through the standard artifact
+		// path. Runs before artifacts.Prepare so the synthesized artifact is prepared
+		// and built like any other. Remote values and local files are left untouched.
+		aicode.PackageCodeSource(),
+
 		// Reads (typed): b.Config.Artifacts, b.BundleRootPath (checks artifact configurations and bundle path)
 		// Updates (typed): b.Config.Artifacts (auto-creates Python wheel artifact if none defined but setup.py exists)
 		// Updates (dynamic): artifacts.*.{path,build_command,files.*.source} (sets default paths, build commands, and makes relative paths absolute)

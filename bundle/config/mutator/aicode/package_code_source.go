@@ -1,51 +1,46 @@
-// Package aicode packages a local directory referenced by an AI Runtime task's
-// code_source_path into a content-addressed tarball inside the bundle, and rewrites
-// code_source_path to the workspace path that tarball occupies once synced. Remote
-// values are left untouched.
+// Package aicode routes an AI Runtime task's local-directory code_source_path through
+// the standard artifact path: it synthesizes a `tgz` artifact that packages the
+// directory and rewrites code_source_path to the tarball the artifact builds. Remote
+// values and local files (a pre-built tarball from an explicit `artifacts` block) are
+// left untouched.
 //
-// The archive is overlaid on the sync tree and uploaded by normal bundle file sync
-// in the deploy phase; the mutator performs no workspace writes, so it is safe in
-// the build phase (which runs before `bundle plan`). Living in the bundle means
-// `bundle destroy` cleans it, and the content-addressed name lets incremental sync
-// skip re-uploading unchanged code.
-//
-// Not done via mutator.TranslatePaths (which handles command_path): that runs in
-// initialize, which also runs on `bundle validate`, so the archive would be
-// materialized during validate. Build phase is deploy-only.
+// It runs before artifacts.Prepare, so the synthesized artifact is prepared, built, and
+// uploaded by the normal artifact pipeline — there is no sync-root overlay. Because it
+// only edits config (no packaging or workspace writes), it is safe in the initialize
+// phase; the tarball itself is produced later by artifacts.Build.
 package aicode
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/files"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/log"
-	libsync "github.com/databricks/cli/libs/sync"
-	"github.com/databricks/cli/libs/vfs"
 )
 
-// codeSourcePattern is the config location of an AI Runtime task's
-// code_source_path. It matches a direct task only — the same scope aicode.Validate
-// operates on. ai_runtime_task nested under a for_each_task is not a supported
-// combination yet (Validate rejects it); when it is, both should gain it together.
+// codeSourcePattern is the config location of an AI Runtime task's code_source_path. It
+// matches a direct task only — the same scope aicode.Validate operates on.
 var codeSourcePattern = dyn.NewPattern(
 	dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),
 	dyn.Key("tasks"), dyn.AnyIndex(),
 	dyn.Key("ai_runtime_task"), dyn.Key("code_source_path"),
 )
+
+// codeArtifactOutputDir is where synthesized tgz artifacts write their tarball. It lives
+// under .databricks (transient, not synced) so the built file is uploaded once via the
+// artifact path and never swept into a sync or into the archive it produces.
+const codeArtifactOutputDir = ".databricks/air_code_source"
 
 // codeSource is a single local code_source_path occurrence to package.
 type codeSource struct {
@@ -67,144 +62,79 @@ func (m *packageCodeSource) Name() string {
 
 func (m *packageCodeSource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	sources, diags := collectLocalCodeSources(b)
-	if diags.HasError() {
-		return diags
-	}
-	if len(sources) == 0 {
+	if diags.HasError() || len(sources) == 0 {
 		return diags
 	}
 
-	// remotePaths maps each config location to the synced workspace path its archive
-	// will occupy; overlayFiles maps each archive's sync-relative path to its bytes.
-	// Both are built before any config mutation so packaging failures are reported
-	// first. The archives are added to the sync root as in-memory overlay files
-	// (see below) rather than written to disk, so the user's working tree is not
-	// dirtied by deploy.
-	remotePaths := make(map[string]string, len(sources))
-	overlayFiles := make(map[string][]byte, len(sources))
+	// artifacts maps the synthesized artifact name to its spec; outputs maps each
+	// code_source_path config location to the tarball it should point at. The
+	// code_source_path and the artifact's `files` output share the same local path —
+	// that shared path is what links them when libraries upload rewrites both to the
+	// same remote location.
+	artifacts := make(map[string]*config.Artifact, len(sources))
+	outputs := make(map[string]string, len(sources))
 	for _, cs := range sources {
-		relArchive, archive, err := packageOne(ctx, b, cs)
-		if err != nil {
-			diags = diags.Extend(diag.FromErr(err))
-			return diags
+		relDir := strings.TrimPrefix(filepath.ToSlash(cs.value), "./")
+		key := artifactKey(relDir)
+		outRel := path.Join(codeArtifactOutputDir, key+".tar.gz")
+		// Paths are set absolute: a synthesized artifact carries no config location, so
+		// artifacts.Prepare cannot resolve relative paths against the bundle root for it.
+		// The runtime extracts to /databricks/code_source/<dir>, so entries must nest
+		// under the directory basename — hence path = the directory's parent and
+		// include = its basename, so the tgz builder names entries "<basename>/...".
+		artifacts[key] = &config.Artifact{
+			Type:    config.ArtifactTarball,
+			Path:    filepath.Join(b.SyncRootPath, filepath.FromSlash(path.Dir(relDir))),
+			Include: []string{path.Base(relDir)},
+			Files:   []config.ArtifactFile{{Source: filepath.Join(b.SyncRootPath, filepath.FromSlash(outRel))}},
 		}
-		overlayFiles[relArchive] = archive
-		// The workspace path the archive occupies once file sync uploads it. Matches
-		// how command_path is translated (workspace.file_path + sync-relative path).
-		remotePaths[cs.configPath.String()] = path.Join(b.Config.Workspace.FilePath, relArchive)
+		// code_source_path resolves (via the sync root) to the same absolute output, so
+		// libraries upload links the two and rewrites both to the same remote path.
+		outputs[cs.configPath.String()] = "./" + outRel
+		log.Debugf(ctx, "synthesized tgz artifact %q for code_source_path %q", key, cs.value)
 	}
 
-	// Overlay the archives onto the sync root: bundle file sync walks and uploads
-	// them like real files, but they never touch the user's working tree.
-	syncRoot, err := vfs.Overlay(b.SyncRoot, overlayFiles)
-	if err != nil {
-		return diags.Extend(diag.FromErr(err))
-	}
-	b.SyncRoot = syncRoot
-
-	// Signal GetSyncIncludePatterns to force-sync the snapshot dir for this bundle,
-	// so a user ignore rule can't filter the archives out of the upload set.
-	b.HasAiRuntimeCodeSnapshot = true
-
-	err = b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+	// Rewrite code_source_path first (via the dynamic tree); the typed Artifacts set
+	// below then survives to the dynamic tree on mutator exit. Doing it in the other
+	// order would let Mutate's ToTyped pass drop the freshly-set artifacts.
+	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		for _, cs := range sources {
-			remote := remotePaths[cs.configPath.String()]
+			out := outputs[cs.configPath.String()]
 			var err error
-			root, err = dyn.SetByPath(root, cs.configPath, dyn.NewValue(remote, []dyn.Location{cs.location}))
+			root, err = dyn.SetByPath(root, cs.configPath, dyn.NewValue(out, []dyn.Location{cs.location}))
 			if err != nil {
-				return root, fmt.Errorf("failed to update code_source_path %q to %q: %w", cs.value, remote, err)
+				return root, fmt.Errorf("failed to update code_source_path %q to %q: %w", cs.value, out, err)
 			}
 		}
 		return root, nil
 	})
 	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
+		return diags.Extend(diag.FromErr(err))
 	}
+
+	if b.Config.Artifacts == nil {
+		b.Config.Artifacts = make(map[string]*config.Artifact, len(artifacts))
+	}
+	maps.Copy(b.Config.Artifacts, artifacts)
 
 	return diags
 }
 
-// snapshotSubdir is the sync-relative dir the archives are placed under (dedicated
-// so a snapshot is never nested in the dir it snapshots). See bundle.AiCodeSnapshotDir.
-const snapshotSubdir = bundle.AiCodeSnapshotDir
-
-// packageOne packages the local directory for a single code source into a
-// reproducible, content-addressed tarball and returns its sync-relative path plus
-// the archive bytes. It performs no disk or workspace write: the caller overlays the
-// bytes onto the sync root and the deploy-phase file sync uploads them.
-func packageOne(ctx context.Context, b *bundle.Bundle, cs codeSource) (string, []byte, error) {
-	localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(cs.value))
-	dirName := filepath.Base(localDir)
-
-	// relBase is the code directory relative to the sync root, used both to scope the
-	// sync file list to this directory and to re-base archive entry names under it.
-	relBase, err := filepath.Rel(b.SyncRootPath, localDir)
-	if err != nil {
-		return "", nil, fmt.Errorf("code_source_path %q: %w", cs.value, err)
-	}
-	relBase = filepath.ToSlash(relBase)
-
-	files, err := codeSourceFiles(ctx, b, relBase)
-	if err != nil {
-		return "", nil, fmt.Errorf("failed to list files for code_source_path %q: %w", cs.value, err)
-	}
-	// An empty file list means every file under the directory was filtered out
-	// (gitignore / sync.exclude) or the directory is empty. Packaging it would deploy
-	// a job with no code, so fail with an actionable message instead.
-	if len(files) == 0 {
-		return "", nil, fmt.Errorf("code_source_path %q has no files to package (all excluded by .gitignore or sync.exclude, or the directory is empty)", cs.value)
-	}
-
-	// Build the archive in memory so its content hash can name the file; the hash is
-	// computed while gzipping, so this adds no extra pass over the files.
-	var buf bytes.Buffer
-	sha, err := buildCodeSnapshot(b.SyncRoot, relBase, files, dirName, &buf)
-	if err != nil {
-		return "", nil, fmt.Errorf("failed to package code_source_path %q: %w", cs.value, err)
-	}
-	// Content-addressed name + incremental file sync means an unchanged archive keeps
-	// the same synced path and is not re-uploaded.
-	relArchive := path.Join(snapshotSubdir, fmt.Sprintf("%s_%s.tar.gz", dirName, sha[:16]))
-	log.Debugf(ctx, "packaged code snapshot %s for code_source_path %q", relArchive, cs.value)
-	return relArchive, buf.Bytes(), nil
+// artifactKey is a stable, unique artifact name for a code directory (relative to the
+// bundle). Two tasks pointing at the same directory collapse to one artifact.
+func artifactKey(relDir string) string {
+	safe := strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			return r
+		}
+		return '_'
+	}, relDir)
+	return "air_code_source_" + safe
 }
 
-// codeSourceFiles returns the files under the code directory (relBase, relative to
-// the sync root) that should go into the snapshot. It reuses the bundle's sync
-// options so the file list is filtered exactly like bundle file sync: .gitignore
-// aware, plus the top-level sync.include/exclude globs. Scoping Paths to relBase
-// restricts the walk (and the returned relative paths) to the code directory.
-func codeSourceFiles(ctx context.Context, b *bundle.Bundle, relBase string) ([]fileset.File, error) {
-	opts, err := files.GetSyncOptions(ctx, b)
-	if err != nil {
-		return nil, err
-	}
-	// Scope the file list to the code directory (relBase) while keeping the
-	// bundle's include/exclude globs, so filtering matches bundle file sync.
-	fl, err := libsync.NewFileList(ctx, opts.WorktreeRoot, opts.LocalRoot, []string{relBase}, opts.Include, opts.Exclude)
-	if err != nil {
-		return nil, err
-	}
-	all, err := fl.Files(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// sync.include is force-added regardless of the scoped walk, so the list can
-	// contain files outside the code directory. Keep only what is under relBase, or
-	// those strays make an all-filtered directory look non-empty and an empty archive
-	// ships.
-	if relBase == "." {
-		return all, nil
-	}
-	prefix := relBase + "/"
-	return slices.DeleteFunc(all, func(f fileset.File) bool {
-		return !strings.HasPrefix(f.Relative, prefix)
-	}), nil
-}
-
-// collectLocalCodeSources returns every AI Runtime task code_source_path that
-// points at a local directory. Already-remote values are skipped.
+// collectLocalCodeSources returns every AI Runtime task code_source_path that points at
+// a local directory. Remote values and local files (handled by the artifact path) are
+// skipped.
 func collectLocalCodeSources(b *bundle.Bundle) ([]codeSource, diag.Diagnostics) {
 	var sources []codeSource
 	var diags diag.Diagnostics
@@ -218,10 +148,9 @@ func collectLocalCodeSources(b *bundle.Bundle) ([]codeSource, diag.Diagnostics) 
 			if !libraries.IsLocalPath(value) {
 				return v, nil
 			}
-			// Only package a local *directory*. A local file (e.g. a pre-built
-			// tarball delivered via an `artifacts` block) is left alone so it flows
-			// through the standard artifact-upload path as a file. aicode.Validate
-			// applies the same directory check, so the two stay in agreement.
+			// Only package a local *directory*. A local file (e.g. a pre-built tarball
+			// delivered via an `artifacts` block) is left alone so it flows through the
+			// standard artifact-upload path as a file.
 			localDir := filepath.Join(b.SyncRootPath, filepath.FromSlash(value))
 			isDir, err := isExistingDir(localDir)
 			if err != nil {
@@ -245,10 +174,9 @@ func collectLocalCodeSources(b *bundle.Bundle) ([]codeSource, diag.Diagnostics) 
 	return sources, diags
 }
 
-// isExistingDir reports whether path is an existing directory. A not-exist error
-// is not an error here (the path is simply not a directory this mutator packages),
-// but any other stat failure — notably a permission error on the parent — is
-// surfaced so it is not silently swallowed into "skip".
+// isExistingDir reports whether path is an existing directory. A not-exist error is not
+// an error here (the path is simply not a directory this mutator packages), but any
+// other stat failure — notably a permission error on the parent — is surfaced.
 func isExistingDir(path string) (bool, error) {
 	info, err := os.Stat(path)
 	if err != nil {
