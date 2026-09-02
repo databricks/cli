@@ -491,6 +491,28 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 }
 
 // Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json
+// DmsStateSource returns what dstate.Open needs in order to read a recorded bundle's resources
+// from the deployment metadata service: a client, and the deployment id resolved from the state
+// path. Both are zero when the bundle does not record deployment history. While recording, the
+// state file carries only the feature marker, so a command that reads state without these sees no
+// resources at all.
+func DmsStateSource(ctx context.Context, b *bundle.Bundle) (*dms.Client, string, error) {
+	if !b.RecordsDeploymentHistory(ctx) {
+		return nil, "", nil
+	}
+
+	deploymentID, _, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	if err != nil {
+		return nil, "", err
+	}
+
+	client, err := dms.NewClient(b.WorkspaceClient(ctx))
+	if err != nil {
+		return nil, "", err
+	}
+	return client, deploymentID, nil
+}
+
 func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
 	nodePath := path.Join(statePath, dms.DeploymentNodeName)
 

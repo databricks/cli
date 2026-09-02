@@ -90,5 +90,6 @@ def get_resources(target):
         result[resource["resource_key"]] = {
             "id": resource.get("resource_id"),
             "state": envelope.get("state") or {},
+            "depends_on": envelope.get("depends_on") or [],
         }
     return result

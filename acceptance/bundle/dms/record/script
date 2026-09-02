@@ -12,10 +12,10 @@ title "The deployment ID is the ID of the workspace node the service registered 
 trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record-${UNIQUE_NAME}/default/state/resources.deployment.json" | jq '{object_type,path}'
 trace jq 'has("deployment_id")' .databricks/bundle/default/resources.json
 
-title "The state file still tracks every recorded resource, and records the feature that says so: a CLI without it refuses this state rather than deploying over the deployment"
+title "The state file holds no resources at all - the service does. All it carries is the feature, which a CLI that does not know it refuses rather than deploying over the deployment"
 trace jq '{state_version, features, resources: (.state | keys)}' .databricks/bundle/default/resources.json
 
-title "The same state is uploaded to the workspace, marker and all: that upload is what a redeploy from a clean cache reads back"
+title "The same header-only state is uploaded to the workspace: that upload is where a redeploy from a clean cache reads the feature back from"
 trace MSYS_NO_PATHCONV=1 $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record-${UNIQUE_NAME}/default/state/resources.json" | jq '{state_version, features, resources: (.state | keys)}'
 
 title "Redeploy after deleting the local cache: the deployment ID is resolved from that node, the same deployment is reused, and the version increments (no new CreateDeployment)"

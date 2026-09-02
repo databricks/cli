@@ -12,7 +12,7 @@ trap cleanup EXIT
 # resources.json. The field is omitted from JSON when unset (omitempty +
 # ForceSendFields tracking), so an absent value falls back to "(unset)".
 get_purge() {
-  gron.py < .databricks/bundle/default/resources.json | grep purge_on_delete || echo '(unset)'
+  print_state.py | gron.py | grep purge_on_delete || echo '(unset)'
 }
 
 title "Step 1: deploy with purge_on_delete unset"

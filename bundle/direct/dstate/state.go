@@ -759,7 +759,15 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 // the WAL. A torn write would therefore leave a state file that Open rejects
 // next to an intact WAL it never reads.
 func (db *DeploymentState) unlockedSave() error {
-	data, err := json.MarshalIndent(db.Data, "", " ")
+	saved := db.Data
+	if _, recorded := saved.Features[featureRecordDeploymentHistory]; recorded {
+		// The service holds the resources and is what they are read back from, so the file keeps
+		// only its header - above all the feature, which is what an unaware CLI refuses. Writing
+		// the resources too would be a second, never-read copy of the service's records.
+		saved.State = map[string]ResourceEntry{}
+	}
+
+	data, err := json.MarshalIndent(saved, "", " ")
 	if err != nil {
 		return err
 	}

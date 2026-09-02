@@ -8,7 +8,12 @@ the goal is to record all states that are available.
 
 import argparse
 import glob
+import json
 import os
+
+
+def records_deployment_history():
+    return os.environ.get("DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY") == "true"
 
 
 def print_file(filename):
@@ -53,6 +58,26 @@ def get_state_file(target, backup):
     return filtered[0] if filtered else result[0]
 
 
+def print_recorded_state(filename, target):
+    """Print the state file with its resources filled in from the deployment metadata service.
+
+    While recording, the file itself carries only the header - the service holds the resources - so
+    printing it raw would show an empty state and differ from the same test's non-recording run.
+    """
+    # Imported here rather than at module level: dms_resources reads get_state_file from this module.
+    from dms_resources import get_resources
+
+    data = json.loads(open(filename).read())
+    state = {}
+    for key, value in sorted(get_resources(target).items()):
+        entry = {"__id__": value["id"], "state": value["state"]}
+        if value["depends_on"]:
+            entry["depends_on"] = value["depends_on"]
+        state[f"resources.{key}"] = entry
+    data["state"] = state
+    print(json.dumps(data, indent=1))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--target")
@@ -60,7 +85,11 @@ def main():
     args = parser.parse_args()
 
     for filename in get_state_files(args.target, args.backup):
-        if os.path.exists(filename):
+        if not os.path.exists(filename):
+            continue
+        if filename.endswith("resources.json") and records_deployment_history():
+            print_recorded_state(filename, args.target)
+        else:
             print_file(filename)
 
 
