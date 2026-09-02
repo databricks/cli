@@ -45,9 +45,6 @@ base:
       - metric: RUN_DURATION_SECONDS
         op: GREATER_THAN
         value: 3600
-  email_notifications:
-    on_failure:
-      - notify@databricks.invalid
   webhook_notifications:
     on_failure:
       - id: 00000000-0000-0000-0000-000000000000
@@ -58,6 +55,12 @@ base:
       unit: HOURS
 
 skip:
+  # Clearing the name does not converge on a real workspace. The CLI defaults a nameless job to
+  # Untitled (resourcemutator's defaults table), the remote ends up holding that, and the plan keeps
+  # proposing an update afterwards -- so the transition to absent never settles. The mock server
+  # stores the cleared value and converges, which is the divergence. The other five transitions of
+  # the field are fine on both, so only absent is out of reach.
+  name: clearing it leaves the remote at the CLI default Untitled, and the plan never converges
 
   # --- Fields a real workspace rejects. The mock server accepts every one of them, so each row below
   # had only ever measured the mock server. The API's own words are quoted in each comment.
@@ -125,6 +128,8 @@ skip:
   max_concurrent_runs: the API accepts the write and does not apply it
   parent_path: the API accepts the write and does not apply it
   trigger.pause_status: the API accepts the write and does not apply it
+  # Not seeded in base either: the create does not apply it, so the job drifts from the moment it
+  # exists and every other field is then measured against a resource already pending.
   email_notifications: the API accepts the write and does not apply it
   tasks[*].email_notifications: the API accepts the write and does not apply it
   tasks[*].disable_auto_optimization: the API accepts the write and does not apply it

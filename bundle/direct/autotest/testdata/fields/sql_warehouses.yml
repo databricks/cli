@@ -9,6 +9,13 @@ base:
   warehouse_type: CLASSIC
 
 skip:
+  # A warehouse is STARTING for a while after it is created, not RUNNING, so on a real workspace a
+  # config asking for started: false is already satisfied and the change is suppressed as
+  # remote_already_set -- where the mock server, which reports RUNNING at once, plans and applies a
+  # stop. One row differs, absent to false. Modelling it needs the mock server to move a warehouse
+  # from STARTING to RUNNING across reads, which the engine's waiter depends on, so the state this
+  # field is in depends on timing rather than on the engine and it is not worth a row either way.
+  lifecycle.started: a new warehouse is STARTING, so stopping it is already satisfied on cloud
   # Must be an ARN of an instance profile registered with the workspace.
   instance_profile_arn: needs an instance profile registered with the workspace
   # Only accepted on the CUSTOM channel, so the version and the channel name have to move

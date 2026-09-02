@@ -10,8 +10,8 @@
 
 
 === summary
-OK                 587
+OK                 541
 OK_INERT           12
-SUPPRESSED         37
-NOT_OBSERVABLE     26
-SKIPPED            32
+SUPPRESSED         32
+NOT_OBSERVABLE     23
+SKIPPED            38
