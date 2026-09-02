@@ -31,7 +31,10 @@ base:
           spark.speculation: "true"
         init_scripts:
           - workspace:
-              destination: /Users/$CURRENT_USER_NAME/init.sh
+              # The file the bundle uploads, not a path in the user home: a real workspace fails the
+            # cluster with "Init scripts failed ... Tree node with path ... does not exist" when the
+            # script is not there, and the mock server accepts any path.
+            destination: /Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle-$UNIQUE_NAME/default/files/init.sh
   environments:
     - environment_key: seeded
       spec:

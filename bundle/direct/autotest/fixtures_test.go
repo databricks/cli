@@ -19,6 +19,11 @@ import (
 // themselves live in testdata/fields and belong to this suite alone.
 const dataDir = "../../../acceptance/bundle/invariant/data"
 
+// ownDataDir holds files only this suite needs, staged next to the shared ones. Kept separate
+// because everything in dataDir is uploaded by every invariant config too, so a file added there
+// for one fixture changes those tests' output.
+const ownDataDir = "testdata/data"
+
 // drivenTypes returns every resource type the direct engine supports, which is what this suite
 // covers: a type with no value library is a failure rather than a line in a report, so adding a
 // resource type to the engine and forgetting the catalog cannot go unnoticed.
