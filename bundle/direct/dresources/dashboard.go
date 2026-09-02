@@ -236,9 +236,6 @@ func prepareDashboardRequest(config *DashboardState) (dashboards.Dashboard, erro
 		// Thus we need to filter such fields out.
 		ForceSendFields: utils.FilterFields[dashboards.Dashboard](config.ForceSendFields),
 	}
-	// ConfigureDashboardSerializedDashboard normalizes serialized_dashboard to a JSON
-	// string (read from file_path, or marshalled from inline YAML) before the deploy
-	// engine runs, so the value is always a string or unset by this point.
 	switch v := config.SerializedDashboard.(type) {
 	case nil:
 	case string:

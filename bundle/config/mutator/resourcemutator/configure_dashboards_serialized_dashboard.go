@@ -52,8 +52,7 @@ func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundl
 					})
 					return v, nil
 				}
-				// Note: the Terraform resource supports "file_path" natively, but we read the contents of the dashboard here
-				// to be able to read file contents in Databricks Workspace (reading a dashboard file via file system fails there)
+
 				contents, err := b.SyncRoot.ReadFile(filePath)
 				if err != nil {
 					return dyn.InvalidValue, fmt.Errorf("failed to read serialized dashboard from file_path %s: %w", filePath, err)
@@ -61,11 +60,7 @@ func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundl
 				return dyn.Set(v, serializedDashboardFieldName, dyn.V(string(contents)))
 			}
 
-			// Marshal an inline structured serialized_dashboard to a JSON string so
-			// both config-side and state-side carry the same plain string.
-			// Otherwise YAML decodes small ints as Go `int` while state JSON
-			// round-trip decodes them as `float64`, and structdiff reports
-			// false drift on every plan.
+			// Marshal an inline structured serialized_dashboard to a JSON string
 			switch sd.Kind() {
 			case dyn.KindInvalid, dyn.KindNil, dyn.KindString:
 				// KindInvalid means serialized_dashboard is absent (neither it nor

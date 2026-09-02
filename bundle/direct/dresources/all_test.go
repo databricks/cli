@@ -256,12 +256,9 @@ var testConfig map[string]any = map[string]any{
 
 	"dashboards": &resources.Dashboard{
 		DashboardConfig: resources.DashboardConfig{
-			DisplayName: "my-dashboard",
-			ParentPath:  "/Workspace/Users/user@example.com",
-			WarehouseId: "test-warehouse-id",
-			// ConfigureDashboardSerializedDashboard normalizes this any-typed field
-			// to a JSON string before the deploy engine runs, so it is always a
-			// string by the time DoCreate/DoUpdate see it.
+			DisplayName:         "my-dashboard",
+			ParentPath:          "/Workspace/Users/user@example.com",
+			WarehouseId:         "test-warehouse-id",
 			SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1","pageType":"PAGE_TYPE_CANVAS"}]}`,
 
 			DatasetCatalog: "main",
