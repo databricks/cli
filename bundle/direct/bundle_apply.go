@@ -46,7 +46,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	// The state DB records every write with DMS from here on, so the service mirrors the WAL.
 	// Writes go out on one background goroutine, off the apply path, and are drained below
 	// once every worker has finished recording.
-	b.StateDB.RegisterDmsBufferedClient(b.DmsBufferedClient)
+	b.StateDB.RegisterOperationBuffer(b.DmsAsyncOperationClient)
 
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		entry, err := plan.WriteLockEntry(resourceKey)
@@ -79,9 +79,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		// Stop resource CRUD once recording state with DMS has failed.
-		if err := b.DmsBufferedClient.Err(); err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-			return false
+		if buf := b.DmsAsyncOperationClient; buf != nil {
+			if err := buf.Err(); err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+				return false
+			}
 		}
 
 		adapter, err := b.getAdapterForKey(resourceKey)
@@ -181,11 +183,12 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return true
 	})
 
-	// Wait for the uploads and report a failure here, with the deploy's other errors.
-	// dms.BufferedClient.Close(ctx context.Context, success bool) error completes the version and
-	// reports this deployment's error state; it waits again but quietly, so this is not printed twice.
-	if err := b.DmsBufferedClient.Drain(); err != nil {
-		logdiag.LogError(ctx, err)
+	// Wait for the uploads and report a failure here, with the deploy's other errors. The phase
+	// completes the version afterwards and drains again, quietly, so this is not printed twice.
+	if buf := b.DmsAsyncOperationClient; buf != nil {
+		if err := buf.Drain(); err != nil {
+			logdiag.LogError(ctx, err)
+		}
 	}
 }
 

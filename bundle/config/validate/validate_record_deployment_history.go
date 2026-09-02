@@ -23,12 +23,13 @@ func (v *validateRecordDeploymentHistory) Name() string {
 
 // Apply rejects experimental.record_deployment_history. The feature is complete
 // but not yet exposed: DMS is dev/staging only, and turning it on makes DMS the
-// source of truth for state (irreversible). Force-allow via DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY for CLI tests.
+// source of truth for state (irreversible). Setting DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY
+// permits it, for CLI tests and DMS development.
 func (v *validateRecordDeploymentHistory) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.Config.Experimental == nil || !b.Config.Experimental.RecordDeploymentHistory {
 		return nil
 	}
-	if env.ForceAllowRecordDeploymentHistory(ctx) {
+	if env.RecordDeploymentHistoryEnv(ctx) {
 		return nil
 	}
 	return diag.Diagnostics{{

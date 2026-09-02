@@ -14,16 +14,16 @@ import (
 
 func TestValidateRecordDeploymentHistory(t *testing.T) {
 	tests := []struct {
-		name       string
-		enabled    bool
-		forceAllow string
-		wantError  bool
+		name      string
+		enabled   bool
+		recordEnv string
+		wantError bool
 	}{
 		{name: "flag unset", enabled: false, wantError: false},
 		{name: "flag set", enabled: true, wantError: true},
-		{name: "flag set with force allow", enabled: true, forceAllow: "1", wantError: false},
-		{name: "flag set with empty force allow", enabled: true, forceAllow: "", wantError: true},
-		{name: "flag unset with force allow", enabled: false, forceAllow: "1", wantError: false},
+		{name: "flag set with record env", enabled: true, recordEnv: "true", wantError: false},
+		{name: "flag set with empty record env", enabled: true, recordEnv: "", wantError: true},
+		{name: "flag unset with record env", enabled: false, recordEnv: "true", wantError: false},
 	}
 
 	for _, tc := range tests {
@@ -34,7 +34,7 @@ func TestValidateRecordDeploymentHistory(t *testing.T) {
 				},
 			}
 
-			ctx := env.Set(t.Context(), bundleenv.ForceAllowRecordDeploymentHistoryVariable, tc.forceAllow)
+			ctx := env.Set(t.Context(), bundleenv.RecordDeploymentHistoryVariable, tc.recordEnv)
 			diags := ValidateRecordDeploymentHistory().Apply(ctx, b)
 
 			if !tc.wantError {

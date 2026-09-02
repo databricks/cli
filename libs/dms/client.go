@@ -13,6 +13,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
+// DeploymentNodeName is the workspace node DMS creates per deployment. Must
+// match DeploymentWhsClient.DEPLOYMENT_NODE_NAME on the service side.
+const DeploymentNodeName = "resources.deployment.json"
+
 // statePrefix is what a bundle state key carries and a DMS resource key does not: state calls a
 // job "resources.jobs.foo", DMS calls it "jobs.foo". Every exported name here takes the state
 // form; the prefix comes off where a request is built, and back on where a resource is read.
@@ -21,6 +25,8 @@ const statePrefix = "resources."
 // Client carries the calls the CLI makes to DMS, as methods below. Each one goes out through one
 // of two halves: the generated client for the calls it can express, and hand-written requests
 // for the two it cannot.
+//
+// TODO: Remove this and replace with the SDK.
 type Client struct {
 	// Service is the generated client.
 	Service bundledeployments.BundleDeploymentsInterface
@@ -38,9 +44,9 @@ func NewClient(w *databricks.WorkspaceClient) (*Client, error) {
 	return &Client{Service: w.BundleDeployments, raw: &rawClient{client: api}}, nil
 }
 
-// deploymentName and versionName are the two resource-name formats the service uses. Every
+// DeploymentName and versionName are the two resource-name formats the service uses. Every
 // call builds its name here, so a caller only ever passes ids.
-func deploymentName(deploymentID string) string {
+func DeploymentName(deploymentID string) string {
 	return "deployments/" + deploymentID
 }
 
@@ -70,7 +76,7 @@ func (c *Client) UpdateDeployment(ctx context.Context, deploymentID string, meta
 // DeleteDeployment removes the deployment record, which a completed destroy does.
 func (c *Client) DeleteDeployment(ctx context.Context, deploymentID string) error {
 	return c.Service.DeleteDeployment(ctx, bundledeployments.DeleteDeploymentRequest{
-		Name: deploymentName(deploymentID),
+		Name: DeploymentName(deploymentID),
 	})
 }
 
@@ -105,7 +111,7 @@ func (c *Client) UpdateOperation(ctx context.Context, deploymentID string, versi
 // deploymentIDFromName extracts the deployment ID from a DMS resource name of
 // the form "deployments/{deployment_id}".
 func deploymentIDFromName(name string) (string, error) {
-	id, ok := strings.CutPrefix(name, deploymentName(""))
+	id, ok := strings.CutPrefix(name, DeploymentName(""))
 	if !ok || id == "" {
 		return "", fmt.Errorf("unexpected deployment name %q from deployment metadata service", name)
 	}
@@ -174,7 +180,7 @@ func (r *rawClient) CreateVersion(ctx context.Context, deploymentID, versionID s
 	body.Operations = staged
 
 	var version bundledeployments.Version
-	path := "/api/2.0/bundle/" + deploymentName(deploymentID) + "/versions"
+	path := "/api/2.0/bundle/" + DeploymentName(deploymentID) + "/versions"
 	err := r.client.Do(ctx, http.MethodPost, path,
 		auth.WorkspaceIDHeaders(r.client.Config),
 		map[string]any{"version_id": versionID},
@@ -205,7 +211,7 @@ func newDeploymentUpdate(deployment bundledeployments.Deployment, mask string) m
 }
 
 func (r *rawClient) UpdateDeployment(ctx context.Context, deploymentID string, deployment bundledeployments.Deployment, mask string) error {
-	path := "/api/2.0/bundle/" + deploymentName(deploymentID)
+	path := "/api/2.0/bundle/" + DeploymentName(deploymentID)
 	return r.client.Do(ctx, http.MethodPatch, path,
 		auth.WorkspaceIDHeaders(r.client.Config),
 		map[string]any{"update_mask": mask},

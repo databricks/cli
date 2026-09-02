@@ -1,7 +1,7 @@
 
 === Deploy: the deployment is created carrying this bundle's metadata
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/dev/files...
 Created schemas.foo
 Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
@@ -13,10 +13,10 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "body": {
     "display_name": "dms-metadata-before-[UNIQUE_NAME]",
     "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-pinned-[UNIQUE_NAME]/state",
-    "target_name": "default",
+    "target_name": "dev",
     "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/default"
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/dev/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/dev"
     }
   }
 }
@@ -59,11 +59,17 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== Rename the bundle. The state path is pinned, so this is the same deployment, updated in place - masked down to what changed, leaving target_name and deployment_mode alone
+=== Rename the bundle and switch target+mode. The state path is pinned, so this is the same deployment, updated in place - the mask carries every field that changed
 >>> update_file.py databricks.yml dms-metadata-before dms-metadata-after
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/default/files...
+>>> [CLI] bundle deploy -t prod
+Recommendation: target with 'mode: production' should set 'workspace.root_path' to make sure only one copy is deployed
+
+A common practice is to use a username or principal name in this path, i.e. use
+
+  root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/prod/files...
 Files: 5 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
@@ -72,13 +78,15 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
   "method": "PATCH",
   "path": "/api/2.0/bundle/deployments/[NUMID]",
   "q": {
-    "update_mask": "display_name,workspace_info"
+    "update_mask": "display_name,target_name,deployment_mode,workspace_info"
   },
   "body": {
+    "deployment_mode": "DEPLOYMENT_MODE_PRODUCTION",
     "display_name": "dms-metadata-after-[UNIQUE_NAME]",
+    "target_name": "prod",
     "workspace_info": {
-      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/default/files",
-      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/default"
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/prod/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/prod"
     }
   }
 }
@@ -103,8 +111,14 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 }
 
 === Deploy again without touching anything: the record already says this, so no deployment update
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/default/files...
+>>> [CLI] bundle deploy -t prod
+Recommendation: target with 'mode: production' should set 'workspace.root_path' to make sure only one copy is deployed
+
+A common practice is to use a username or principal name in this path, i.e. use
+
+  root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/prod/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 

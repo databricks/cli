@@ -1,6 +1,8 @@
 # Unset the force-allow variable inherited from the parent: this test asserts the
 # error users see.
-Env.DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY = ""
+# The parent records via DMS=true, which would permit the field; unset it so the rejection
+# path is what runs here.
+EnvMatrix.DMS = [""]
 
 # This test only checks validation output; no DMS request is made either way.
 RecordRequests = false

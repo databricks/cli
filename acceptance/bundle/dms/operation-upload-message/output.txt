@@ -4,7 +4,7 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-operation-upload-message-[UNIQUE_NAME]/default/files...
-Error: recording operation for resources.jobs.foo with the deployment metadata service: Fault injected by test. (500 INTERNAL_ERROR)
+Error: recording operation for resources.jobs.foo: Fault injected by test. (500 INTERNAL_ERROR)
 
 Endpoint: PATCH [DATABRICKS_URL]/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo?update_mask=state%2Cerror_message%2Cresource_id%2Cstatus
 HTTP Status: 500 Internal Server Error

@@ -4,11 +4,11 @@ title "Deploy: the deployment is created carrying this bundle's metadata"
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle
 
-title "Rename the bundle. The state path is pinned, so this is the same deployment, updated in place - masked down to what changed, leaving target_name and deployment_mode alone"
+title "Rename the bundle and switch target+mode. The state path is pinned, so this is the same deployment, updated in place - the mask carries every field that changed"
 trace update_file.py databricks.yml dms-metadata-before dms-metadata-after
-trace $CLI bundle deploy
+trace $CLI bundle deploy -t prod
 trace print_requests.py --dms //api/2.0/bundle
 
 title "Deploy again without touching anything: the record already says this, so no deployment update"
-trace $CLI bundle deploy
+trace $CLI bundle deploy -t prod
 trace print_requests.py --dms //api/2.0/bundle

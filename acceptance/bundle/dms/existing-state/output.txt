@@ -3,15 +3,13 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
 Created jobs.one
-Files: 5 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle --oneline
 
 === Turning recording on afterwards is an error: those resources were never recorded, so treating DMS as authoritative would deploy them a second time
->>> update_file.py databricks.yml record_deployment_history: false record_deployment_history: true
-
->>> musterr [CLI] bundle deploy
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
 Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded
 
 To record this bundle's history, start it over as a new deployment:
@@ -26,7 +24,7 @@ To keep the existing resources instead, unset experimental.record_deployment_his
 >>> print_requests.py --dms //api/2.0/bundle --oneline
 
 === Still an error after wiping the local cache: deploy pulls the state file back from the workspace, so the resources are still tracked
->>> musterr [CLI] bundle deploy
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
 Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded
 
 To record this bundle's history, start it over as a new deployment:
@@ -40,8 +38,6 @@ To keep the existing resources instead, unset experimental.record_deployment_his
 >>> print_requests.py --dms //api/2.0/bundle --oneline
 
 === Destroy clears the tracked resources, so recording can be enabled afterwards
->>> update_file.py databricks.yml record_deployment_history: true record_deployment_history: false
-
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.one
@@ -50,12 +46,10 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
->>> update_file.py databricks.yml record_deployment_history: false record_deployment_history: true
-
->>> [CLI] bundle deploy
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
 Created jobs.one
-Files: 5 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle --oneline

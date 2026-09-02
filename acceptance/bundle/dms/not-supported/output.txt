@@ -13,8 +13,8 @@ Workspace:
 
 Found 1 error
 
-=== The hidden force-allow variable permits it
->>> DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY=1 [CLI] bundle validate
+=== The hidden recording variable permits it
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle validate
 Name: dms-not-supported-[UNIQUE_NAME]
 Target: default
 Workspace:

@@ -61,11 +61,10 @@ type BindResult struct {
 // Call Finalize to commit the state or Cancel to discard.
 func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath, resourceKey, resourceID string) (*BindResult, error) {
 	// Check if the resource is already managed (bound to a different ID)
-	// TODO(DMS): bind and unbind do not tell the deployment metadata service about the
-	// resource, so a bound resource is missing from the recorded history and an unbound one
-	// still looks tracked. Opened with no DMS source for that reason.
+	// The state is opened without a DMS client, so the writes below record nothing;
+	// phases.Bind and phases.Unbind refuse to run at all when recording is enabled.
 	var checkStateDB dstate.DeploymentState
-	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false), nil); err == nil {
+	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false), nil, ""); err == nil {
 		existingID := checkStateDB.GetResourceID(resourceKey)
 		if _, err := checkStateDB.Finalize(ctx); err != nil {
 			log.Warnf(ctx, "failed to finalize state: %v", err)
@@ -89,7 +88,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Open temp state
-	err := b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(false), dstate.WithWrite(true), nil)
+	err := b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(false), dstate.WithWrite(true), nil, "")
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -112,7 +111,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	log.Infof(ctx, "Bound %s to id=%s (in temp state)", resourceKey, resourceID)
 
 	// First plan + update: populate state with resolved config
-	err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(false), nil)
+	err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(false), nil, "")
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -148,7 +147,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			}
 		}
 
-		err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(true), nil)
+		err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(true), nil, "")
 		if err != nil {
 			os.Remove(tmpStatePath)
 			return nil, err
@@ -168,7 +167,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Second plan: this is the plan to present to the user (change between remote resource and config)
-	err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(false), nil)
+	err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(false), nil, "")
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -218,7 +217,7 @@ func (result *BindResult) Cancel() {
 // Unbind removes a resource from direct engine state without deleting
 // the workspace resource. Also removes associated permissions/grants entries.
 func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey string) error {
-	err := b.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(true), nil)
+	err := b.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(true), nil, "")
 	if err != nil {
 		return err
 	}

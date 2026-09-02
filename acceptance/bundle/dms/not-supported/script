@@ -3,5 +3,5 @@ envsubst < databricks.yml.tmpl > databricks.yml
 title "record_deployment_history is rejected: the service side is not ready for users yet"
 trace musterr $CLI bundle validate
 
-title "The hidden force-allow variable permits it"
-trace DATABRICKS_BUNDLE_FORCE_ALLOW_RECORD_DEPLOYMENT_HISTORY=1 $CLI bundle validate
+title "The hidden recording variable permits it"
+trace DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true $CLI bundle validate

@@ -1,10 +1,8 @@
 package dms
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"sync"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
@@ -12,91 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// fakeVersionRequest is a CreateVersion call captured by fakeRaw.
-type fakeVersionRequest struct {
-	deploymentID string
-	versionID    string
-	body         CreateVersionRequest
-}
-
-// updaterCall is an UpdateOperation call captured by fakeRaw.
-type updaterCall struct {
-	deploymentID string
-	version      int64
-	key          string
-	sequenceID   string
-	update       OperationUpdate
-}
-
-// fakeRaw stands in for the hand-written half of a Client, capturing what the CLI would put
-// on the wire.
-type fakeRaw struct {
-	mu sync.Mutex
-
-	// versions collects CreateVersion calls, and versionErr fails them.
-	versions   []fakeVersionRequest
-	versionErr error
-
-	// deploymentUpdates collects UpdateDeployment calls.
-	deploymentUpdates []deploymentUpdate
-
-	// updates collects UpdateOperation calls. sequence is what the service reports back, and
-	// the call at index failOn fails instead.
-	updates  []updaterCall
-	sequence string
-	failOn   int
-}
-
-func newFakeRaw(sequence string) *fakeRaw {
-	return &fakeRaw{sequence: sequence, failOn: -1}
-}
-
-func (f *fakeRaw) CreateVersion(ctx context.Context, deploymentID, versionID string, body CreateVersionRequest) (*bundledeployments.Version, error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	f.versions = append(f.versions, fakeVersionRequest{deploymentID: deploymentID, versionID: versionID, body: body})
-	if f.versionErr != nil {
-		return nil, f.versionErr
-	}
-	return &bundledeployments.Version{VersionId: versionID}, nil
-}
-
-// deploymentUpdate is an UpdateDeployment call captured by fakeRaw.
-type deploymentUpdate struct {
-	deployment bundledeployments.Deployment
-	mask       string
-}
-
-func (f *fakeRaw) UpdateDeployment(ctx context.Context, deploymentID string, deployment bundledeployments.Deployment, mask string) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	f.deploymentUpdates = append(f.deploymentUpdates, deploymentUpdate{deployment: deployment, mask: mask})
-	return nil
-}
-
-func (f *fakeRaw) UpdateOperation(ctx context.Context, deploymentID string, version int64, key, sequenceID string, update OperationUpdate) (string, error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	callNum := len(f.updates)
-	f.updates = append(f.updates, updaterCall{
-		deploymentID: deploymentID,
-		version:      version,
-		key:          key,
-		sequenceID:   sequenceID,
-		update:       update,
-	})
-	if callNum == f.failOn {
-		return "", errors.New("injected error")
-	}
-	return f.sequence, nil
-}
-
 func TestClientNamesEveryResourceTheSameWay(t *testing.T) {
 	// One format each, so a call only ever passes ids.
-	assert.Equal(t, "deployments/dep-1", deploymentName("dep-1"))
+	assert.Equal(t, "deployments/dep-1", DeploymentName("dep-1"))
 	assert.Equal(t, "deployments/dep-1/versions/2", versionName("dep-1", 2))
 }
 

@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
@@ -28,6 +31,9 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"
 )
@@ -191,6 +197,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		return b, nil, err
 	}
 
+	// The deployment record the recording read, if any; passed to phases.Deploy for the metadata
+	// diff. Nil for a non-recording bundle or a first deploy.
+	var dmsDeployment *bundledeployments.Deployment
+
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
@@ -235,26 +245,42 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
 
-			// Recording makes the service the source of truth for state, so the client is
-			// built before the state is opened and read through. The engine is direct here,
-			// which needDirectState already required.
+			var dmsClient *dms.Client
+			var dmsDeploymentID string
 			if b.RecordsDeploymentHistory(ctx) {
-				var err error
-				b.DeploymentBundle.DmsBufferedClient, err = dms.NewBufferedClient(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath, phases.DeploymentMetadata(b))
+				deploymentID, deployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 				if err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
 
+				dmsClient, err = dms.NewClient(b.WorkspaceClient(ctx))
+				if err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+				dmsDeploymentID = deploymentID
+				dmsDeployment = deployment
+				b.DeploymentBundle.DmsApiClient = dmsClient
+
+				if deploymentID != "" {
+					bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
+						b.Config.Bundle.Deployment.History = &config.DeploymentHistory{
+							DeploymentID:    deploymentID,
+							LatestVersionID: deployment.LastVersionId,
+						}
+					})
+				}
+
 				// Stamp the deployment before anything diffs the resources: the workspace
 				// has it, so leaving it unset would report drift on an untouched resource.
 				// The deploy phase stamps the version, once it claims one.
-				bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(b.DeploymentBundle.DmsBufferedClient.DeploymentID()))
+				bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(deploymentID))
 				if logdiag.HasError(ctx) {
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
 			}
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), b.DeploymentBundle.DmsBufferedClient); err != nil {
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dmsClient, dmsDeploymentID); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -289,8 +315,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 			mutators := []bundle.Mutator{
 				statemgmt.Load(state, modes...),
-				// Reports what opening the state already read, so it costs nothing.
-				mutator.SetDeploymentAndLastVersionID(stateDesc.Engine),
 			}
 			// InitializeURLs makes an extra API call; only run it when URLs are needed.
 			if opts.InitIDs {
@@ -398,7 +422,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, requiredEngine, libs, plan)
+		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, requiredEngine, libs, plan, dmsDeployment)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),
@@ -450,6 +474,27 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 	}
 
 	return engine.EngineSetting{Type: engine.Default, Source: engine.SourceDefault, IsDefault: true}, nil
+}
+
+// Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json
+func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
+	nodePath := path.Join(statePath, dms.DeploymentNodeName)
+
+	obj, err := w.Workspace.GetStatusByPath(ctx, nodePath)
+	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		return "", nil, nil
+	}
+	if err != nil {
+		return "", nil, fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
+	}
+	deploymentID := strconv.FormatInt(obj.ObjectId, 10)
+	deployment, err := w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
+		Name: dms.DeploymentName(deploymentID),
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	return deploymentID, deployment, nil
 }
 
 // isNewerVersion reports whether the state's recorded CLI version is strictly

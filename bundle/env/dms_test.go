@@ -22,12 +22,12 @@ func TestRecordDeploymentHistoryEnv(t *testing.T) {
 		{"yes", false},
 	} {
 		ctx := env.Set(t.Context(), RecordDeploymentHistoryVariable, tc.value)
-		assert.Equal(t, tc.want, recordDeploymentHistoryEnv(ctx), "value %q", tc.value)
+		assert.Equal(t, tc.want, RecordDeploymentHistoryEnv(ctx), "value %q", tc.value)
 	}
 }
 
 func TestRecordDeploymentHistoryEnvUnset(t *testing.T) {
-	assert.False(t, recordDeploymentHistoryEnv(t.Context()))
+	assert.False(t, RecordDeploymentHistoryEnv(t.Context()))
 }
 
 func TestRecordsDeploymentHistory(t *testing.T) {
@@ -38,24 +38,4 @@ func TestRecordsDeploymentHistory(t *testing.T) {
 
 	ctx := env.Set(t.Context(), RecordDeploymentHistoryVariable, "true")
 	assert.True(t, RecordsDeploymentHistory(ctx, false))
-}
-
-func TestForceAllowRecordDeploymentHistory(t *testing.T) {
-	for _, tc := range []struct {
-		value string
-		want  bool
-	}{
-		{"", false},
-		{"1", true},
-		{"yes", true},
-		{"true", true},
-		{"false", true}, // any non-empty value enables the escape hatch
-	} {
-		ctx := env.Set(t.Context(), ForceAllowRecordDeploymentHistoryVariable, tc.value)
-		assert.Equal(t, tc.want, ForceAllowRecordDeploymentHistory(ctx), "value %q", tc.value)
-	}
-}
-
-func TestForceAllowRecordDeploymentHistoryUnset(t *testing.T) {
-	assert.False(t, ForceAllowRecordDeploymentHistory(t.Context()))
 }
