@@ -1,0 +1,2 @@
+trace $CLI bundle validate -o json | jq '.resources.jobs.foo.tasks[0].notebook_task.base_parameters'
+trace $CLI bundle plan
