@@ -140,13 +140,7 @@ func (m *uvManager) findInstalledPython(ctx context.Context, minor string) (stri
 	if err != nil {
 		return "", err
 	}
-	// uv find errors when nothing matches, so an empty path is unexpected; guard
-	// it anyway to keep an empty --python off the uv sync command line.
-	path := strings.TrimSpace(out)
-	if path == "" {
-		return "", errors.New("uv python find returned no interpreter")
-	}
-	return path, nil
+	return strings.TrimSpace(out), nil
 }
 
 // Provision runs `uv sync` inside projectDir to install project dependencies,
