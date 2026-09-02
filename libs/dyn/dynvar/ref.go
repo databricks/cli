@@ -34,6 +34,10 @@ type Ref struct {
 // with one or more variable references. It returns false if the given
 // [dyn.Value] does not contain variable references.
 //
+// A reference preceded by "$" is treated as an escaped literal and is not
+// included in the returned Ref. For example, "$${foo}" contains no references
+// because the "${foo}" part is escaped by the leading "$".
+//
 // Examples of a valid variable references:
 //   - "${a.b}"
 //   - "${a.b.c}"
@@ -45,8 +49,28 @@ func NewRef(v dyn.Value) (Ref, bool) {
 		return Ref{}, false
 	}
 
-	// Check if the string contains any variable references.
-	m := re.FindAllStringSubmatch(s, -1)
+	// Find all matches with their byte positions so we can detect escaped references.
+	indices := re.FindAllStringSubmatchIndex(s, -1)
+	if len(indices) == 0 {
+		return Ref{}, false
+	}
+
+	// Convert position-based matches to string matches, filtering out references
+	// escaped with a leading "$" (e.g. "$${foo}" should not match "${foo}").
+	var m [][]string
+	for _, idx := range indices {
+		if idx[0] > 0 && s[idx[0]-1] == '$' {
+			continue
+		}
+		match := make([]string, len(idx)/2)
+		for i := range len(idx) / 2 {
+			if idx[2*i] >= 0 {
+				match[i] = s[idx[2*i]:idx[2*i+1]]
+			}
+		}
+		m = append(m, match)
+	}
+
 	if len(m) == 0 {
 		return Ref{}, false
 	}
