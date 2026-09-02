@@ -332,6 +332,9 @@ func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config
 
 	// Install libraries once the cluster is running. A freshly-created cluster has no
 	// attached sessions, so the install applies live without a restart.
+	// TODO: Wait is supposed to be side effect free, but in this case moving it to
+	// the create will cause a wait for libraries to be installed befor the cluster is installed.
+	// this increases the risk of losing the cluster. This is a limitation
 	if len(config.Libraries) > 0 {
 		err = r.client.Libraries.Install(ctx, compute.InstallLibraries{ClusterId: id, Libraries: config.Libraries})
 		if err != nil {
