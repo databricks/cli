@@ -3,6 +3,7 @@ package snapshot
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -102,7 +103,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 func BundleID(b *bundle.Bundle) string {
 	// Use normal sha256 without the namespace.
 	hash := sha256.Sum256([]byte(b.Config.Workspace.StatePath))
-	return fmt.Sprintf("%x", hash)
+	return hex.EncodeToString(hash[:])
 }
 
 // BuildACL constructs the access_control_list for the snapshot upload.
