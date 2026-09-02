@@ -1,0 +1,2 @@
+# Six deploys plus a destroy; extra headroom for heavy parallel runs.
+Timeout = '2m'

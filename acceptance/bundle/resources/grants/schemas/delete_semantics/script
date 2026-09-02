@@ -1,0 +1,45 @@
+SCHEMA_FULL_NAME=main.schema_delete_semantics_$UNIQUE_NAME
+GRANTS_LINE='grants: [{ principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] }] # GRANTS'
+
+envsubst < databricks.yml.tmpl > databricks.yml
+cp databricks.yml databricks.yml.saved
+
+cleanup() {
+    errcode $CLI bundle destroy --auto-approve &> LOG.cleanup
+    rm -f out.requests.txt databricks.yml.saved tmp.yml
+}
+trap cleanup EXIT
+
+# Each case records the plan, the requests the deploy sends and the grants left on the
+# schema. All three go to per-engine files because the engines classify a dropped grants
+# node differently.
+record() {
+    $CLI bundle plan > out.plan_$1.$DATABRICKS_BUNDLE_ENGINE.txt
+    trace $CLI bundle deploy -qq
+    print_requests.py //unity-catalog --sort > out.requests_$1.$DATABRICKS_BUNDLE_ENGINE.json
+    $CLI grants get schema "$SCHEMA_FULL_NAME" | gron.py --noindex | sort_lines.py --repl > out.grants_$1.$DATABRICKS_BUNDLE_ENGINE.txt
+}
+
+restore_grant() {
+    cp databricks.yml.saved databricks.yml
+    trace $CLI bundle deploy -qq
+    rm -f out.requests.txt
+}
+
+title "Deploy the schema with one grant"
+trace $CLI bundle deploy -qq
+rm -f out.requests.txt
+
+title "Case 1: the grants block is removed, the schema stays"
+grep -v GRANTS databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+record only_grants_deleted
+
+title "Case 2: the grants list is set to []"
+restore_grant
+update_file.py databricks.yml "$GRANTS_LINE" 'grants: []'
+record empty_list
+
+title "Case 3: the schema and its grants are deleted together"
+restore_grant
+trace $CLI bundle destroy --auto-approve
+print_requests.py //unity-catalog --sort > out.requests_parent_deleted.$DATABRICKS_BUNDLE_ENGINE.json

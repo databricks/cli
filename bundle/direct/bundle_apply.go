@@ -45,7 +45,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 	// Computed up front: the callback below holds a write lock on its own entry, so it
 	// cannot read another node's entry without risking a lock error.
-	parentDeleted := childDeletesWithDeletedParent(plan)
+	parentDeleted := willDeleteParent(plan)
 
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		entry, err := plan.WriteLockEntry(resourceKey)
@@ -169,12 +169,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	})
 }
 
-// childDeletesWithDeletedParent returns the child nodes (grants, permissions) whose
-// delete coincides with their parent resource being deleted. Deleting the parent removes
-// them along with it, so the child's own delete has nothing left to do: it is applied as a
-// state-only cleanup. This is what keeps `bundle destroy` working — issuing the child call
-// against a resource that is about to disappear is what used to break it.
-func childDeletesWithDeletedParent(plan *deployplan.Plan) map[string]bool {
+// willDeleteParent returns the child nodes (grants, permissions) whose parent resource the
+// same plan deletes: the parent takes them with it, so the child delete is applied as a
+// state-only cleanup. Issuing it anyway is what used to break `bundle destroy`.
+func willDeleteParent(plan *deployplan.Plan) map[string]bool {
 	result := make(map[string]bool)
 
 	for key, entry := range plan.Plan {

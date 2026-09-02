@@ -1,0 +1,21 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema_delete_semantics_[UNIQUE_NAME]",
+  "q": {
+    "force": "true"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_delete_semantics_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "USE_SCHEMA"
+        ]
+      }
+    ]
+  }
+}
