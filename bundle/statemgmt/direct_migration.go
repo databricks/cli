@@ -39,7 +39,7 @@ Please forward these warnings to dabs-feedback@databricks.com`
 // autoMigrateStoppedNotice is emitted when the direct engine is selected but the
 // dry-run migration surfaced errors or warnings, so the automatic post-deploy
 // migration is skipped.
-const autoMigrateStoppedNotice = `Direct engine was selected but the dry-run migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.`
+const autoMigrateStoppedNotice = `Direct engine was selected but the migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.`
 
 // MigrateToDirect performs a dry-run migration of the just-deployed terraform
 // state to the direct engine and records the outcome in deploy telemetry.
