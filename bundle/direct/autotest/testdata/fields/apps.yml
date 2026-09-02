@@ -19,6 +19,14 @@ base:
         value: value
 
 fields:
+  # Real OAuth scopes, verified against the API: it refuses anything else outright ("The specified
+  # scope x is not a valid scope"), and the mock server takes any string. Declared for the list as
+  # well as the element, so growing the list uses scopes the backend accepts.
+  user_api_scopes:
+    - [sql]
+    - [dashboards.genie, sql]
+  user_api_scopes[*]: [sql, dashboards.genie]
+
   compute_size: [MEDIUM, LARGE]
 
 skip:

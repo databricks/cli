@@ -18,12 +18,12 @@ dry_run                                      absent     true       UPDATE_IGNORE
 dry_run                                      false      true       UPDATE_IGNORED
 
 === summary
-OK                 696
+OK                 690
 OK_RECREATE        9
 OK_INERT           12
-SUPPRESSED         44
-NOT_OBSERVABLE     29
+SUPPRESSED         43
+NOT_OBSERVABLE     28
 UPDATE_IGNORED     2
 BACKEND_ERROR      2
-SKIPPED            17
+SKIPPED            18
 BASE_ERROR         4
