@@ -48,9 +48,6 @@ config.env[0].value_from                     y          absent     START_NOT_REA
 config.env[0].value_from                     y          x          START_NOT_REACHED  no active deployment
 description                                  x          absent     UPDATE_IGNORED
 description                                  y          absent     UPDATE_IGNORED
-git_repository.auto_deploy                   true       absent     UPDATE_IGNORED
-git_repository.caller_credential_id          1          absent     UPDATE_IGNORED
-git_repository.caller_credential_id          2          absent     UPDATE_IGNORED
 git_source.branch                            absent     x          SUPPRESSED  no active deployment
 git_source.branch                            absent     y          SUPPRESSED  no active deployment
 git_source.branch                            x          absent     START_NOT_REACHED  no active deployment
@@ -103,11 +100,10 @@ user_api_scopes                              len1       absent     UPDATE_IGNORE
 user_api_scopes                              len2       absent     UPDATE_IGNORED
 
 === summary
-OK                 33
+OK                 20
 OK_RECREATE        2
-SUPPRESSED         22
-NOT_OBSERVABLE     2
-UPDATE_IGNORED     7
+SUPPRESSED         16
+UPDATE_IGNORED     4
 UNSETTABLE         2
-SKIPPED            90
+SKIPPED            94
 START_NOT_REACHED  68
