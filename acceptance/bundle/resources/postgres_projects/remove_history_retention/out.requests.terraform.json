@@ -1,0 +1,14 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
+  "q": {
+    "update_mask": "initial_branch_spec,initial_endpoint_spec,spec"
+  },
+  "body": {
+    "name": "projects/test-pg-proj-[UNIQUE_NAME]",
+    "spec": {
+      "display_name": "Test Project for History Retention Update",
+      "pg_version": 16
+    }
+  }
+}

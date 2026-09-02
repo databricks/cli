@@ -95,18 +95,8 @@ permissions:
 }
 
 // TestLoadRunConfig_PolymorphicFields exercises the str|int and bool|str unions
-// decoded by custom UnmarshalYAML, plus the rejection of the removed
-// dependencies string form.
+// decoded by custom UnmarshalYAML.
 func TestLoadRunConfig_PolymorphicFields(t *testing.T) {
-	t.Run("dependencies as string path is rejected", func(t *testing.T) {
-		_, err := loadRunConfig(writeConfig(t, minimalConfig+`
-environment:
-  dependencies: requirements.yaml
-`))
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "must be a list of packages")
-	})
-
 	t.Run("git remote as bool true is rejected", func(t *testing.T) {
 		_, err := loadRunConfig(writeConfig(t, minimalConfig+`
 code_source:
@@ -229,6 +219,9 @@ func TestRunConfigValidate_FieldRules(t *testing.T) {
 		{"long idempotency", func(c *runConfig) { c.IdempotencyToken = str(string(make([]byte, 65))) }, "64 characters or less"},
 		{"bad mlflow_run_name", func(c *runConfig) { c.MLflowRunName = str("bad name") }, "invalid mlflow_run_name"},
 		{"bad experiment dir", func(c *runConfig) { c.MLflowExperimentDirectory = str("/Users/me") }, "must start with '/Workspace'"},
+		{"artifact volume path normalizes", func(c *runConfig) { c.MLflowArtifactLocation = str(" /Volumes/main/default/artifacts ") }, ""},
+		{"empty artifact location", func(c *runConfig) { c.MLflowArtifactLocation = str(" ") }, "mlflow_artifact_location cannot be empty"},
+		{"non-dbfs artifact location", func(c *runConfig) { c.MLflowArtifactLocation = str("s3://bucket/path") }, "must be a dbfs: URI"},
 		{"empty usage policy", func(c *runConfig) { c.UsagePolicyName = str(" ") }, "usage_policy_name must not be empty"},
 		{"bad secret ref", func(c *runConfig) { c.Secrets = map[string]string{"T": "noslash"} }, "expected format 'scope/key'"},
 		{"empty secret scope", func(c *runConfig) { c.Secrets = map[string]string{"T": "/key"} }, "scope and key cannot be empty"},
@@ -254,6 +247,9 @@ func TestRunConfigValidate_FieldRules(t *testing.T) {
 			err := c.validate()
 			if tt.errFrag == "" {
 				assert.NoError(t, err)
+				if tt.name == "artifact volume path normalizes" {
+					assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", *c.MLflowArtifactLocation)
+				}
 				return
 			}
 			require.Error(t, err)
@@ -299,12 +295,31 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 			},
 			"",
 		},
+		{
+			"version prefix normalizes",
+			environmentConfig{
+				Version:      stringOrInt{set: true, raw: "DATABRICKS_AI_V5"},
+				Dependencies: dependencies{set: true, list: []string{"torch"}},
+			},
+			"",
+		},
+		{
+			"old databricks ai version rejected",
+			environmentConfig{
+				Version:      stringOrInt{set: true, raw: "databricks_ai_v4"},
+				Dependencies: dependencies{set: true, list: []string{"torch"}},
+			},
+			"requires AI Runtime version 5 or higher",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.env.validate()
 			if tt.errFrag == "" {
 				assert.NoError(t, err)
+				if tt.name == "version prefix normalizes" {
+					assert.Equal(t, "databricks_ai_v5", tt.env.Version.raw)
+				}
 				return
 			}
 			require.Error(t, err)
@@ -474,7 +489,7 @@ func TestResolveConfigField_Containers(t *testing.T) {
 	compute, err := resolveConfigField("config.compute")
 	require.NoError(t, err)
 	assert.Equal(t, "object", compute.typeName)
-	require.Len(t, compute.children, 2)
+	require.Len(t, compute.children, 3)
 }
 
 func TestResolveConfigField_Errors(t *testing.T) {

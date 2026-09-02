@@ -1,0 +1,20 @@
+bundle:
+  name: recreate-postgres-branch-fork-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Test Project for Branch Fork Point"
+      pg_version: 16
+
+  postgres_branches:
+    dev_branch:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: dev-branch
+      no_expiry: true
+      source_branch: ${resources.postgres_projects.my_project.id}/branches/production
+      source_branch_time: "2026-01-01T00:00:00Z"

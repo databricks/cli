@@ -139,12 +139,26 @@ func createTestWebsocketConnection(url string) (*websocket.Conn, error) {
 	return conn, err
 }
 
+// neverTick is a tick channel that never fires, for tests that don't exercise a periodic behaviour.
+func neverTick() <-chan time.Time {
+	return time.After(time.Hour)
+}
+
 func setupTestClient(ctx context.Context, t *testing.T, serverURL string) *TestProxy {
+	return setupTestClientWithDialHook(ctx, t, serverURL, nil)
+}
+
+// setupTestClientWithDialHook is setupTestClient with a hook called on every websocket dial: the
+// initial connection and each one a handover creates.
+func setupTestClientWithDialHook(ctx context.Context, t *testing.T, serverURL string, onDial func()) *TestProxy {
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("Client", true))
 	clientInput, clientInputWriter := io.Pipe()
 	clientOutput := newTestBuffer(t)
 	wsURL := "ws" + serverURL[4:]
 	clientProxy := newProxyConnection(func(ctx context.Context, connID string) (*websocket.Conn, error) {
+		if onDial != nil {
+			onDial()
+		}
 		return createTestWebsocketConnection(wsURL)
 	})
 	err := clientProxy.connect(ctx)

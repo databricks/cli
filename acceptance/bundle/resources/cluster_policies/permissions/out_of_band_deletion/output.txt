@@ -55,4 +55,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_permissions_recreate/default
 
-Destroy: 1 deleted
+Destroy: 0 deleted

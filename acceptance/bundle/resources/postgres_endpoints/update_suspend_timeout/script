@@ -1,3 +1,8 @@
+# suspend_timeout_duration and no_suspension are two sides of one oneof, and the API
+# accepts them in update_mask only under the group name spec.suspension. out.requests.*.json
+# shows both engines applying the change: direct masks the group, the Terraform provider
+# masks the whole spec.
+
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
@@ -16,12 +21,16 @@ trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 title "Change suspend_timeout_duration to 600s"
 trace update_file.py databricks.yml "suspend_timeout_duration: 300s" "suspend_timeout_duration: 600s"
 
-# The engines diverge from here on, so each step goes to a per-engine file.
-# Terraform plans and applies the change. The direct engine plans nothing:
-# structdiff compares duration.Duration field by field, and that type holds a
-# single unexported protobuf pointer, so 300s and 600s look equal to it. The
-# edit is silently dropped and the endpoint keeps its old value.
-trace $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
-trace $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+title "Plan and deploy"
+
+# Both engines apply the change; only the mask they send differs, so out.requests
+# is the one per-engine file left.
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
-trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields > out.endpoint.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle deploy
+
+# The update_mask each engine sends is the whole point of this test.
+trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields

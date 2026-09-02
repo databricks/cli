@@ -3,11 +3,21 @@ from typing import Callable
 
 import pytest
 
+from databricks.bundles.alerts._models.alert import Alert
+from databricks.bundles.alerts._models.alert_v2_evaluation import AlertV2Evaluation
+from databricks.bundles.alerts._models.alert_v2_operand_column import (
+    AlertV2OperandColumn,
+)
+from databricks.bundles.alerts._models.comparison_operator import ComparisonOperator
+from databricks.bundles.alerts._models.cron_schedule import CronSchedule
+from databricks.bundles.catalogs._models.catalog import Catalog
 from databricks.bundles.core import Location, Resources, Severity
 from databricks.bundles.core._bundle import Bundle
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._resource_mutator import (
     ResourceMutator,
+    alert_mutator,
+    catalog_mutator,
     job_mutator,
     pipeline_mutator,
     schema_mutator,
@@ -26,6 +36,7 @@ class TestCase:
     dict_example: dict
     dataclass_example: Resource
     mutator: Callable
+    article: str = "a"  # grammatical article in the duplicate-resource error message
 
 
 resource_types = {tpe.resource_type: tpe for tpe in _ResourceType.all()}
@@ -73,6 +84,49 @@ test_cases = [
             mutator=schema_mutator,
         ),
         resource_types[Schema],
+    ),
+    (
+        TestCase(
+            add_resource=Resources.add_alert,
+            dict_example={
+                "display_name": "My Alert",
+                "query_text": "SELECT 1",
+                "warehouse_id": "my_warehouse",
+                "evaluation": {
+                    "comparison_operator": "GREATER_THAN",
+                    "source": {"name": "column_1"},
+                },
+                "schedule": {
+                    "quartz_cron_schedule": "0 0 0 * * ?",
+                    "timezone_id": "UTC",
+                },
+            },
+            dataclass_example=Alert(
+                display_name="My Alert",
+                query_text="SELECT 1",
+                warehouse_id="my_warehouse",
+                evaluation=AlertV2Evaluation(
+                    comparison_operator=ComparisonOperator.GREATER_THAN,
+                    source=AlertV2OperandColumn(name="column_1"),
+                ),
+                schedule=CronSchedule(
+                    quartz_cron_schedule="0 0 0 * * ?",
+                    timezone_id="UTC",
+                ),
+            ),
+            mutator=alert_mutator,
+            article="an",
+        ),
+        resource_types[Alert],
+    ),
+    (
+        TestCase(
+            add_resource=Resources.add_catalog,
+            dict_example={"name": "my_catalog"},
+            dataclass_example=Catalog(name="my_catalog"),
+            mutator=catalog_mutator,
+        ),
+        resource_types[Catalog],
     ),
 ]
 test_case_ids = [tpe.plural_name for _, tpe in test_cases]
@@ -270,7 +324,7 @@ def test_add_duplicate_resource(tc: TestCase, tpe: _ResourceType):
     assert item.severity == Severity.ERROR
     assert (
         item.summary
-        == f"Duplicate resource name 'my_resource' for a {tpe.singular_name}. Resource names must be unique."
+        == f"Duplicate resource name 'my_resource' for {tc.article} {tpe.singular_name}. Resource names must be unique."
     )
 
 

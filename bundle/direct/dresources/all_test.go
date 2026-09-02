@@ -66,6 +66,7 @@ var testConfig map[string]any = map[string]any{
 		CreateSchema: catalog.CreateSchema{
 			CatalogName: "main",
 			Name:        "myschema",
+			Comment:     "Test schema",
 		},
 	},
 
@@ -74,6 +75,7 @@ var testConfig map[string]any = map[string]any{
 			CatalogName: "main",
 			SchemaName:  "myschema",
 			Name:        "myvolume",
+			Comment:     "Test volume",
 		},
 	},
 

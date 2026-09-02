@@ -25,7 +25,7 @@ trace $CLI lakeview unpublish $DASHBOARD_ID
 # Direct: shows "update" because Published field changes from false to true
 trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 
-$CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 json_in_json_normalize.py out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle deploy -qq

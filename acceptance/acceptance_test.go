@@ -35,6 +35,7 @@ import (
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 )
 
 var (
@@ -300,6 +301,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		require.NoError(t, err)
 		t.Logf("Writing coverage to %s", coverDir)
 	}
+
+	// Build the CLI with the FIPS toolchain so a plain `go test` produces the
+	// same FIPS binary as `task` (which sets GOFIPS140 in its env) and the
+	// release pipeline; without it acceptance/fips fails outside `task`. The
+	// build below inherits os.Environ(), so setting it here is enough.
+	t.Setenv("GOFIPS140", readGOFIPS140(t, cwd))
 
 	execPath := ""
 	cliVersion := ""
@@ -1056,6 +1063,13 @@ func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
 	}
 }
 
+// envAliases are short EnvMatrix keys, expanded here into the variable the CLI reads. Every
+// matrix key ends up in the variant's test name, so a long one makes every name that carries
+// it hard to read. Tests may still name the variable itself; the alias is only shorter.
+var envAliases = map[string]string{
+	"DMS": "DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY",
+}
+
 // buildTestEnv builds the test environment from config.Env and customEnv.
 // customEnv (from EnvMatrix) takes precedence over config.Env.
 func buildTestEnv(configEnv map[string]string, customEnv []string) []string {
@@ -1071,6 +1085,16 @@ func buildTestEnv(configEnv map[string]string, customEnv []string) []string {
 
 	// Add customEnv second (takes precedence)
 	env = append(env, customEnv...)
+
+	// An alias sets the variable it stands for, unless the test set that itself.
+	for _, kv := range customEnv {
+		key, value, _ := strings.Cut(kv, "=")
+		full, ok := envAliases[key]
+		if !ok || hasKey(env, full) {
+			continue
+		}
+		env = append(env, full+"="+value)
+	}
 
 	return env
 }
@@ -1274,6 +1298,24 @@ func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {
 
 	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch})
 	return execPath
+}
+
+// readGOFIPS140 returns the GOFIPS140 version the Taskfile pins for `task`
+// builds; the release pipeline pins the same value independently in
+// .goreleaser.yaml.
+func readGOFIPS140(t *testing.T, cwd string) string {
+	path := filepath.Join(cwd, "..", "Taskfile.yml")
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	var taskfile struct {
+		Env struct {
+			GOFIPS140 string `yaml:"GOFIPS140"`
+		} `yaml:"env"`
+	}
+	require.NoError(t, yaml.Unmarshal(data, &taskfile))
+	require.NotEmpty(t, taskfile.Env.GOFIPS140, "GOFIPS140 not set in Taskfile.yml")
+	return taskfile.Env.GOFIPS140
 }
 
 // CreateReleaseArtifacts builds release artifacts for the given OS using amd64 and arm64 architectures,

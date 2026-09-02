@@ -11,3 +11,8 @@ Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] jobs delete [NUMID]
+
+>>> errcode [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 0 deleted
