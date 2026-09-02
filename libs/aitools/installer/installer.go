@@ -472,7 +472,7 @@ func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts Instal
 		for _, name := range opts.SpecificSkills {
 			meta, ok := skills[name]
 			if !ok {
-				return nil, fmt.Errorf("skill %q not found", name)
+				return nil, &SkillError{Skill: name, Reason: ReasonSkillNotFound, Detail: "not found"}
 			}
 			candidates[name] = meta
 		}
@@ -492,7 +492,7 @@ func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts Instal
 
 		if meta.MinCLIVer != "" && !isDev && semver.Compare("v"+cliVersion, "v"+meta.MinCLIVer) < 0 {
 			if isSpecific {
-				return nil, fmt.Errorf("skill %q requires CLI version %s (running %s)", name, meta.MinCLIVer, cliVersion)
+				return nil, &SkillError{Skill: name, Reason: ReasonVersionIncompatible, Detail: fmt.Sprintf("requires CLI version %s (running %s)", meta.MinCLIVer, cliVersion)}
 			}
 			log.Warnf(ctx, "Skipping %s: requires CLI version %s (running %s)", name, meta.MinCLIVer, cliVersion)
 			continue

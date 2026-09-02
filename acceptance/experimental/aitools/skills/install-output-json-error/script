@@ -1,0 +1,9 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+
+title "install --output json reports a top-level error category and exits non-zero"
+# A --skills entry absent from the manifest fails before any agent is touched, so the
+# failure has no per-agent entry and surfaces in the top-level error/errorCategory
+# fields (agents stays empty). The command exits non-zero, but root prints no
+# duplicate "Error:" line to stderr because the JSON already reported the failure.
+trace $CLI experimental aitools install --skills-only --scope=global --agents=claude-code --skills=nonexistent --output json
