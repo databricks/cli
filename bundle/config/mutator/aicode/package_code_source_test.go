@@ -81,6 +81,35 @@ func TestPackageCodeSourceSynthesizesArtifact(t *testing.T) {
 	assert.Equal(t, "./"+outRel, b.Config.Resources.Jobs["train"].Tasks[0].AiRuntimeTask.CodeSourcePath)
 }
 
+// Two distinct code_source directories that sanitize to the same artifact key
+// ("a/b" and "a_b" both become air_code_source_a_b) are rejected rather than
+// silently collapsed into one tarball.
+func TestPackageCodeSourceErrorsOnKeyCollision(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "a", "b"), 0o700))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "a_b"), 0o700))
+	b := &bundle.Bundle{
+		BundleRootPath: dir,
+		SyncRootPath:   dir,
+		Config: config.Root{
+			Bundle: config.Bundle{Target: "default"},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"train": {JobSettings: jobs.JobSettings{Tasks: []jobs.Task{
+						{TaskKey: "t1", AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "exp", CodeSourcePath: "./a/b"}},
+						{TaskKey: "t2", AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "exp", CodeSourcePath: "./a_b"}},
+					}}},
+				},
+			},
+		},
+	}
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
+
+	diags := PackageCodeSource().Apply(t.Context(), b)
+	require.True(t, diags.HasError())
+	assert.ErrorContains(t, diags.Error(), "map to the same artifact name")
+}
+
 func TestCollectLocalCodeSourcesFindsLocalDir(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))

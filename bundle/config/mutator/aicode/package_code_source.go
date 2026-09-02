@@ -73,9 +73,18 @@ func (m *packageCodeSource) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	// same remote location.
 	artifacts := make(map[string]*config.Artifact, len(sources))
 	outputs := make(map[string]string, len(sources))
+	// keyDir records which relDir each artifact key was derived from. artifactKey
+	// sanitizes non-alphanumerics to '_', so distinct directories ("a/b" and "a_b")
+	// can collide on one key — which would collapse them to a single tarball and make
+	// both tasks silently ship the same code. Detect that and error instead.
+	keyDir := make(map[string]string, len(sources))
 	for _, cs := range sources {
 		relDir := strings.TrimPrefix(filepath.ToSlash(cs.value), "./")
 		key := artifactKey(relDir)
+		if prev, ok := keyDir[key]; ok && prev != relDir {
+			return diags.Extend(diag.Errorf("code_source directories %q and %q map to the same artifact name %q; rename one so they differ by more than a non-alphanumeric character", prev, relDir, key))
+		}
+		keyDir[key] = relDir
 		outRel := path.Join(codeArtifactOutputDir, key+".tar.gz")
 		// Paths are set absolute: a synthesized artifact carries no config location, so
 		// artifacts.Prepare cannot resolve relative paths against the bundle root for it.
@@ -120,8 +129,10 @@ func (m *packageCodeSource) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	return diags
 }
 
-// artifactKey is a stable, unique artifact name for a code directory (relative to the
-// bundle). Two tasks pointing at the same directory collapse to one artifact.
+// artifactKey is a stable artifact name for a code directory (relative to the
+// bundle). Two tasks pointing at the same directory collapse to one artifact. The
+// sanitization is lossy, so distinct directories can collide on one key; the caller
+// guards against that (see keyDir in Apply).
 func artifactKey(relDir string) string {
 	safe := strings.Map(func(r rune) rune {
 		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
