@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -409,27 +408,39 @@ func ensureToolchain(ctx context.Context, home string) error {
 
 // installToolchain performs the actual installs. The caller holds the setup lock.
 func installToolchain(ctx context.Context, home string) error {
+	ui := newProgressUI(ctx)
+
 	// 1. uv (installs into ~/.local/bin).
 	if _, err := exec.LookPath("uv"); err != nil {
-		cmdio.LogString(ctx, "Installing uv...")
-		if err := runShell(ctx, "curl -LsSf https://astral.sh/uv/install.sh | sh"); err != nil {
-			return fmt.Errorf("failed to install uv: %w", err)
+		if err := ui.runStep(ctx, "Installing dependencies", func(out io.Writer) error {
+			if err := runShell(ctx, out, "curl -LsSf https://astral.sh/uv/install.sh | sh"); err != nil {
+				return fmt.Errorf("failed to install uv: %w", err)
+			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 
 	// 2. ucode (pinned stock upstream release).
 	if _, err := exec.LookPath("ucode"); err != nil {
-		cmdio.LogString(ctx, "Installing ucode...")
-		if err := runCommand(ctx, "uv", "tool", "install", "git+https://github.com/"+ucodeRepo+"@"+ucodeVersion); err != nil {
-			return fmt.Errorf("failed to install ucode: %w", err)
+		if err := ui.runStep(ctx, "Installing ucode", func(out io.Writer) error {
+			if err := runCommand(ctx, out, "uv", "tool", "install", "git+https://github.com/"+ucodeRepo+"@"+ucodeVersion); err != nil {
+				return fmt.Errorf("failed to install ucode: %w", err)
+			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 
 	// 3. Node/npm. Some agents (e.g. Claude Code) need it and serverless images
 	// don't ship it. It installs into depsDir/node/bin, already prepended to PATH.
 	if _, err := exec.LookPath("npm"); err != nil {
-		cmdio.LogString(ctx, "Installing npm...")
-		if _, err := ensureNode(ctx, home); err != nil {
+		if err := ui.runStep(ctx, "Installing Node.js", func(out io.Writer) error {
+			_, err := ensureNode(ctx, home, out)
+			return err
+		}); err != nil {
 			return err
 		}
 	}
@@ -533,9 +544,10 @@ func injectAgentContext(ctx context.Context, home string, agent agentSpec) ([]st
 }
 
 // ensureNode downloads the latest Krypton LTS Node into deps/node once, returning
-// its bin. Linux-only by design: the shim runs on the serverless driver, so the
-// tarball name is hardcoded to linux while nodeDownloadArch guards the arch.
-func ensureNode(ctx context.Context, home string) (string, error) {
+// its bin; extraction output is written to out. Linux-only by design: the shim runs
+// on the serverless driver, so the tarball name is hardcoded to linux while
+// nodeDownloadArch guards the arch.
+func ensureNode(ctx context.Context, home string, out io.Writer) (string, error) {
 	depsRoot := filepath.Join(home, depsDir)
 	nodeDir := filepath.Join(depsRoot, "node")
 	nodeBin := filepath.Join(nodeDir, "bin")
@@ -570,7 +582,7 @@ func ensureNode(ctx context.Context, home string) (string, error) {
 	}
 	defer os.RemoveAll(tmpDir) // no-op once renamed; cleans up a failed extraction
 	// Node's .tar.xz is the smallest download; extract it with the system tar.
-	if err := runCommand(ctx, "tar", "-xJf", tarball, "--strip-components=1", "-C", tmpDir); err != nil {
+	if err := runCommand(ctx, out, "tar", "-xJf", tarball, "--strip-components=1", "-C", tmpDir); err != nil {
 		return "", fmt.Errorf("failed to extract Node.js: %w", err)
 	}
 	// Clear any partial leftover from a previously-interrupted run, then publish
@@ -676,21 +688,22 @@ func npmGlobalPrefix(ctx context.Context) string {
 	return strings.TrimSpace(string(out))
 }
 
-// runCommand runs name with the given args, inheriting stdio and the process env.
-func runCommand(ctx context.Context, name string, args ...string) error {
+// runCommand runs name with the given args, writing combined stdout+stderr to out
+// (captured so it surfaces only on failure) and inheriting the process env. Stdin
+// is left closed: the shim's install steps are non-interactive.
+func runCommand(ctx context.Context, out io.Writer, name string, args ...string) error {
 	cmd := exec.CommandContext(ctx, name, args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = out
+	cmd.Stderr = out
 	return cmd.Run()
 }
 
-// runShell runs a shell snippet — for the curl|sh / curl|tar pipelines.
-func runShell(ctx context.Context, script string) error {
+// runShell runs a shell snippet — for the curl|sh / curl|tar pipelines — writing
+// combined stdout+stderr to out.
+func runShell(ctx context.Context, out io.Writer, script string) error {
 	cmd := exec.CommandContext(ctx, "sh", "-c", script)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = out
+	cmd.Stderr = out
 	return cmd.Run()
 }
 
