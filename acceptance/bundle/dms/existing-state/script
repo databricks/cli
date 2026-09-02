@@ -3,6 +3,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 title "Deploy without recording: the bundle gets ordinary direct-engine state, unknown to DMS"
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --oneline
+trace jq '{state_version, features}' .databricks/bundle/default/resources.json
 
 title "Turning recording on afterwards is an error: those resources were never recorded, so treating DMS as authoritative would deploy them a second time"
 trace update_file.py databricks.yml "record_deployment_history: false" "record_deployment_history: true"
@@ -20,5 +21,13 @@ title "Destroy clears the tracked resources, so recording can be enabled afterwa
 trace update_file.py databricks.yml "record_deployment_history: true" "record_deployment_history: false"
 trace $CLI bundle destroy --auto-approve
 trace update_file.py databricks.yml "record_deployment_history: false" "record_deployment_history: true"
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --oneline
+
+title "Recording moves the state to the feature version and records the feature, which is what says its resources are the ones the service holds"
+trace jq '{state_version, features}' .databricks/bundle/default/resources.json
+
+title "So it is accepted even with the deployment gone. The file's state is a no-op while recording, so the service having nothing means the job is created again under a fresh deployment"
+trace MSYS_NO_PATHCONV=1 $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.deployment.json"
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --oneline

@@ -29,12 +29,13 @@ const (
 	maxWalEntrySize     = 10 * 1024 * 1024
 	walSuffix           = ".wal"
 
-	// featureStateVersion is the schema version a future CLI will write once it
-	// records deployment state "feature flags" (see Header.Features). This CLI does
-	// not write it and records no features; it exists now only so this CLI reads
-	// such states correctly (see migrateState):
+	// featureStateVersion is the schema version a CLI writes once it
+	// records deployment state "feature flags" (see Header.Features). This CLI writes
+	// it for a state that records a feature, and reads such states as follows
+	// (see migrateState):
 	//   - featureStateVersion with no features  -> accept and leave the version as-is
-	//   - featureStateVersion with any feature   -> refuse, tell the user to upgrade
+	//   - featureStateVersion with recognized features -> accept and leave the version as-is
+	//   - featureStateVersion with any other feature -> refuse, tell the user to upgrade
 	//
 	// A featureStateVersion state with no features is equivalent to
 	// currentStateVersion, but we deliberately do not flip the on-disk version down
@@ -48,10 +49,26 @@ const (
 	// supportedStateVersion is the highest schema version this CLI can read. It is
 	// normally equal to currentStateVersion — the version this CLI reads is the
 	// version it writes — and exceeds it only during a two-phase version bump like
-	// the current feature-flag scaffolding, where this CLI reads (but does not
-	// write) featureStateVersion. A state newer than this is rejected as too new.
+	// the current feature-flag scaffolding, where this CLI writes featureStateVersion
+	// only for a state that records a feature. A state newer than this is rejected as too new.
 	supportedStateVersion = featureStateVersion
 )
+
+// featureRecordDeploymentHistory marks a state whose resources are also recorded with the
+// deployment metadata service. Both stores are kept in step, so the marker is what tells a
+// reader the two already agree. A CLI that does not know the name refuses the state rather
+// than deploying over a deployment it would leave the service out of step with.
+//
+// The marker is sticky: once a deployment is recorded, the service holds resources that a
+// CLI which is not recording must not touch. So turning recording off does not clear it, and
+// deploying such a state without recording is refused (see RequiresDeploymentHistory).
+const featureRecordDeploymentHistory = "record_deployment_history"
+
+// recognizedFeatures are the state features this CLI understands. A state recording anything
+// outside this set is refused (see migrateState).
+var recognizedFeatures = map[string]struct{}{
+	featureRecordDeploymentHistory: {},
+}
 
 // featuresDocURL is the single documentation page describing deployment state
 // feature flags. It is shown when a state records a feature this CLI does not
@@ -89,10 +106,9 @@ type Header struct {
 	Serial  int    `json:"serial"`
 
 	// Features maps each feature flag this state depends on to a (currently empty)
-	// value. This CLI writes no features; it only reads the field to detect a state
-	// that depends on features it lacks and refuse it (see migrateState). It is a
-	// map so a future CLI can attach per-feature data without reshaping the state.
-	// Empty/omitted for states that use no features.
+	// value. It is read to detect a state that depends on features this CLI lacks and
+	// refuse it (see migrateState). It is a map so a future CLI can attach per-feature
+	// data without reshaping the state. Empty/omitted for states that use no features.
 	Features map[string]struct{} `json:"features,omitempty"`
 }
 
@@ -285,6 +301,18 @@ func (db *DeploymentState) StateCLIVersion() string {
 	return db.Data.CLIVersion
 }
 
+// RequiresDeploymentHistory reports whether the state depends on the deployment metadata
+// service recording it. Deploying such a state without recording would leave the service
+// holding a deployment that no longer matches, so the caller refuses instead.
+func (db *DeploymentState) RequiresDeploymentHistory() bool {
+	db.AssertOpenedForReadOrWrite()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	_, ok := db.Data.Features[featureRecordDeploymentHistory]
+	return ok
+}
+
 // GetOrInitLineage returns the deployment lineage, generating and storing a new
 // one if the state does not have one yet. It is the single place the lineage is
 // initialized, shared so the direct deployment engine (when it writes state, via
@@ -391,10 +419,13 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 	}
 
 	if dmsBufferedClient != nil {
-		// Only empty bundles can be recorded. Once DMS owns the deployment, pre-existing
-		// resources it never saw would be created again. TODO: support migration via state
-		// upgrade with feature flag and per-resource tombstones.
-		if dmsBufferedClient.DeploymentID() == "" && len(db.Data.State) > 0 {
+		// A state this CLI wrote while recording is already in step with the service, so it is
+		// safe to carry on from. One written without recording tracks resources the service
+		// never saw, and treating it as recorded would create them a second time, so refuse it.
+		// The marker is the only thing that distinguishes the two. TODO(DMS): support handing
+		// an unmarked state over to the service, via per-resource tombstones.
+		_, alreadyRecorded := db.Data.Features[featureRecordDeploymentHistory]
+		if !alreadyRecorded && dmsBufferedClient.DeploymentID() == "" && len(db.Data.State) > 0 {
 			// The remedy is ordered deliberately: this error also blocks destroy, so the
 			// setting has to come out first or there is no way to tear the bundle down.
 			return fmt.Errorf(`cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded
@@ -406,14 +437,29 @@ To record this bundle's history, start it over as a new deployment:
 
 To keep the existing resources instead, unset experimental.record_deployment_history`, path)
 		}
+
+		// The state file keeps tracking every resource the service records, so mark it as
+		// depending on that: a CLI without this feature refuses it (see migrateState) instead
+		// of deploying over the deployment and leaving the service behind.
+		db.Data.StateVersion = featureStateVersion
+		if db.Data.Features == nil {
+			db.Data.Features = make(map[string]struct{}, 1)
+		}
+		db.Data.Features[featureRecordDeploymentHistory] = struct{}{}
+
+		// The service owns the resource set while recording, so the file's copy is never read
+		// back as the truth. With no deployment yet there is nothing recorded, and an empty set
+		// is the honest answer: this deploy creates the deployment and records into it.
+		var recorded []dms.Resource
 		if dmsBufferedClient.DeploymentID() != "" {
-			recorded, err := dmsBufferedClient.ListResources(ctx)
+			var err error
+			recorded, err = dmsBufferedClient.ListResources(ctx)
 			if err != nil {
 				return err
 			}
-			if err := db.applyDMSState(recorded); err != nil {
-				return err
-			}
+		}
+		if err := db.applyDMSState(recorded); err != nil {
+			return err
 		}
 	}
 
@@ -521,6 +567,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 			if header.Serial > expectedSerial {
 				return false, fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expectedSerial)
 			}
+
 			newSerial = header.Serial
 			newCLIVersion = header.CLIVersion
 		} else {

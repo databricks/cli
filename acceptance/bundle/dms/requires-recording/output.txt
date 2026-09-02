@@ -1,0 +1,44 @@
+
+=== Deploy with recording on: the state records the feature
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-requires-recording-[UNIQUE_NAME]/default/files...
+Created jobs.one
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> jq .features .databricks/bundle/default/resources.json
+{
+  "record_deployment_history": {}
+}
+
+=== Turning recording off is refused: the service holds this deployment, so deploying without recording would leave it describing resources that have moved on
+>>> update_file.py databricks.yml record_deployment_history: true record_deployment_history: false
+
+>>> musterr [CLI] bundle deploy
+Error: this deployment was previously deployed with experimental.record_deployment_history, so the feature cannot be turned off now
+
+Set it back to true to deploy or destroy this bundle
+
+
+=== Destroy is refused for the same reason, which is why the error says to put the setting back
+>>> musterr [CLI] bundle destroy --auto-approve
+Error: this deployment was previously deployed with experimental.record_deployment_history, so the feature cannot be turned off now
+
+Set it back to true to deploy or destroy this bundle
+
+
+=== With recording back on, deploy and destroy work again
+>>> update_file.py databricks.yml record_deployment_history: false record_deployment_history: true
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-requires-recording-[UNIQUE_NAME]/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.one
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-requires-recording-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

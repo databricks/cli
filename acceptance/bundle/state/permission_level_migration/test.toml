@@ -1,6 +1,7 @@
-# Recording needs a bundle it has seen from the start. This test seeds a state file,
-# so recording refuses it. TODO(DMS): drop this once existing state can be
-# handed over to the service (see the TODO in dstate.Open).
+# The seeded state is a version-1 one, whose migration to version 2 is the whole point here.
+# Marking it as recorded (the way the other state-seeding tests do) would mean writing it at
+# featureStateVersion, where migrateState returns before running any migration. So recording
+# refuses it, and it has to: an unmarked state with resources cannot be handed to the service.
 EnvMatrix.DMS = [""]
 
 Ignore = [".databricks"]

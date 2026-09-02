@@ -1,5 +1,5 @@
 
-=== a version-3 state recording a feature is rejected (this CLI records no features yet)
+=== a version-3 state recording a feature this CLI does not write is rejected
 >>> errcode [CLI] bundle plan
 Error: migrating state [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: the deployment state requires features this CLI does not support: future_feature; upgrade to the latest CLI version and see https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features for more information
 

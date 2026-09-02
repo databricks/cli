@@ -1,4 +1,8 @@
-# Recording needs a bundle it has seen from the start. This test seeds a state file,
-# so recording refuses it. TODO(DMS): drop this once existing state can be
-# handed over to the service (see the TODO in dstate.Open).
+# The deploy here runs as the test service principal, so the bundle root - and with it the
+# deployment the service registers - lives under the SP's home. Every command after it runs as
+# the normal user, under a different root, and reads the job id out of the local state file. That
+# only works because the file is the resource set: while recording it is not read, and the user's
+# commands resolve no deployment of their own, so the id comes back null. Making this test
+# recording-compatible means staging the state through the DMS APIs for the reading identity
+# first.
 EnvMatrix.DMS = [""]
