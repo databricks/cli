@@ -4,8 +4,13 @@
   "ref": "${resources.jobs.bar.id}"
 }
 
->>> [CLI] bundle plan
-create jobs.bar
-create jobs.foo
-
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+>>> [CLI] bundle plan -o json
+{
+  "resources.jobs.bar": null,
+  "resources.jobs.foo": [
+    {
+      "node": "resources.jobs.bar",
+      "label": "${resources.jobs.bar.id}"
+    }
+  ]
+}
