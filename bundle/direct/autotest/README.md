@@ -194,7 +194,12 @@ do, since they need `CLOUD_ENV` and credentials:
 ./task autotest-cloud-pr    # -sample 2; PRs
 ```
 
-`-sample N` tests N of each type's fields instead of all of them, picked from HEAD so that
+A cloud run samples by default -- two fields per type -- because the full sweep takes hours and the
+autotest package is in the integration tasks, which a PR runs. Putting `AUTOTEST_ALL` in a commit title
+makes that PR's integration run drive every field instead. Locally nothing is sampled: a full run is 11
+seconds, so `./task test` always compares the goldens whole.
+
+`-sample N` overrides both, and tests N of each type's fields instead of all of them, picked from HEAD so that
 successive commits cover different ground and one run's picks follow from its SHA. The reports
 stay the same committed goldens: a sampled run is held to the rows belonging to the fields it
 picked, plus any row the harness records against itself, which is what catches a type that no
