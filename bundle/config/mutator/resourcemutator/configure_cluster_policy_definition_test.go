@@ -27,10 +27,10 @@ func TestConfigureClusterPolicyDefinition(t *testing.T) {
 			want:  `{"spark_version":{"type":"fixed","value":"13.3.x"}}`,
 		},
 		{
-			name:  "definition: inline sequence is marshaled to a JSON string",
-			field: "definition",
-			value: []any{"a", "b"},
-			want:  `["a","b"]`,
+			name:    "definition: inline sequence is rejected",
+			field:   "definition",
+			value:   []any{"a", "b"},
+			wantErr: "definition must be a string or map, got sequence",
 		},
 		{
 			name:  "definition: inline string is left unchanged",
@@ -47,7 +47,7 @@ func TestConfigureClusterPolicyDefinition(t *testing.T) {
 			name:    "definition: non-structured is rejected",
 			field:   "definition",
 			value:   true,
-			wantErr: "definition must be a string, map, or sequence, got bool",
+			wantErr: "definition must be a string or map, got bool",
 		},
 		{
 			// Number stays a JSON number (30, not "30").
@@ -66,7 +66,7 @@ func TestConfigureClusterPolicyDefinition(t *testing.T) {
 			name:    "overrides: non-structured is rejected",
 			field:   "policy_family_definition_overrides",
 			value:   true,
-			wantErr: "policy_family_definition_overrides must be a string, map, or sequence, got bool",
+			wantErr: "policy_family_definition_overrides must be a string or map, got bool",
 		},
 	}
 
