@@ -2,6 +2,7 @@
 >>> [CLI] bundle validate
 Error: Internal resources cannot be set in bundle configuration
   at resources
+  in databricks.yml:5:3
 
 Name: snapshot_resource_not_allowed
 Target: default

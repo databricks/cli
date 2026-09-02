@@ -15,7 +15,7 @@ Building python_artifact...
 [
   {
     "notebook_task": {
-      "notebook_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
+      "notebook_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/notebook"
     },
     "task_key": "notebook_task"
   },
@@ -30,7 +30,7 @@ Building python_artifact...
   {
     "environment_key": "env",
     "spark_python_task": {
-      "python_file": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
+      "python_file": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/main.py"
     },
     "task_key": "spark_python_task"
   }
@@ -42,7 +42,7 @@ Building python_artifact...
     "environment_key": "env",
     "spec": {
       "dependencies": [
-        "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
+        "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
       ],
       "environment_version": "4"
     }
@@ -54,9 +54,9 @@ Building python_artifact...
   "action": "create",
   "new_state": {
     "value": {
-      "relative_path": "[UUID]/[SNAPSHOT_HASH]",
-      "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
-      "bundle_id": "[UUID]",
+      "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+      "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+      "bundle_id": "[SNAPSHOT_HASH]",
       "acl": [
         {
           "user_name": "[USERNAME]",
@@ -76,14 +76,14 @@ Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq .settings.tasks job.json
-"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
+"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/main.py"
 
 >>> jq .settings.tasks job.json
-"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
+"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/notebook"
 
 >>> jq .settings.environments[0].spec.dependencies job.json
 [
-  "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
+  "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
 ]
 
 >>> title Check snapshot plan after deploy
@@ -97,9 +97,9 @@ Building python_artifact...
   "action": "recreate",
   "new_state": {
     "value": {
-      "relative_path": "[UUID]/[SNAPSHOT_HASH]",
-      "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
-      "bundle_id": "[UUID]",
+      "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+      "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+      "bundle_id": "[SNAPSHOT_HASH]",
       "acl": [
         {
           "user_name": "[USERNAME]",
@@ -110,8 +110,8 @@ Building python_artifact...
     }
   },
   "remote_state": {
-    "relative_path": "[UUID]/[SNAPSHOT_HASH]",
-    "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]"
+    "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+    "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]"
   },
   "changes": {
     "acl": {
@@ -134,23 +134,23 @@ Building python_artifact...
     "bundle_id": {
       "action": "skip",
       "reason": "missing_in_remote",
-      "old": "[UUID]",
-      "new": "[UUID]",
+      "old": "[SNAPSHOT_HASH]",
+      "new": "[SNAPSHOT_HASH]",
       "remote": ""
     },
     "full_path": {
       "action": "recreate",
       "reason": "immutable",
-      "old": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
-      "new": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
-      "remote": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]"
+      "old": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+      "new": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+      "remote": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]"
     },
     "relative_path": {
       "action": "recreate",
       "reason": "immutable",
-      "old": "[UUID]/[SNAPSHOT_HASH]",
-      "new": "[UUID]/[SNAPSHOT_HASH]",
-      "remote": "[UUID]/[SNAPSHOT_HASH]"
+      "old": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+      "new": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+      "remote": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]"
     },
     "zip_path": {
       "action": "recreate",
@@ -177,4 +177,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted
+Destroy: 1 deleted

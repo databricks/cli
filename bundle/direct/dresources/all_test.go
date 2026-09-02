@@ -979,11 +979,7 @@ func (f *testIgnoreFilter) shouldIgnore(path string) bool {
 		topLevelField = parts[0]
 	}
 
-	if f.ignoreFields[topLevelField] {
-		return true
-	}
-
-	return structaccess.ValidatePath(f.adapter.RemoteType(), structpath.MustParsePath(path)) != nil
+	return f.ignoreFields[topLevelField]
 }
 
 // filterChanges returns only the changes that should not be ignored.

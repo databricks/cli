@@ -25,10 +25,12 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 		return nil, "", diag.Errorf("remote artifact path not configured")
 	}
 
-	uploadPath := path.Join(b.Config.Workspace.ArtifactPath, InternalDirName)
-	uploadPath = ensureWorkspaceOrVolumesPrefix(uploadPath)
+	var uploadPath string
 	if b.IsImmutableFolder() {
 		uploadPath = path.Join(resources.SnapshotFullPathRef, "artifacts", InternalDirName)
+	} else {
+		uploadPath = path.Join(b.Config.Workspace.ArtifactPath, InternalDirName)
+		uploadPath = ensureWorkspaceOrVolumesPrefix(uploadPath)
 	}
 
 	switch {

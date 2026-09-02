@@ -2,6 +2,7 @@ package snapshot
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/snapshot"
-	"github.com/google/uuid"
 )
 
 // fileLimitWarning is the file count above which immutable folder deployments may fail.
@@ -53,7 +53,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	if b.Config.Resources.Snapshots == nil {
 		b.Config.Resources.Snapshots = make(map[string]*resources.Snapshot)
 	}
-	if _, ok := b.Config.Resources.Snapshots["immutable"]; ok {
+	if _, ok := b.Config.Resources.Snapshots[resources.SnapshotResourceKey]; ok {
 		return nil
 	}
 
@@ -76,7 +76,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return diag.FromErr(fmt.Errorf("failed to write snapshot zip: %w", err))
 	}
 
-	b.Config.Resources.Snapshots["immutable"] = &resources.Snapshot{
+	b.Config.Resources.Snapshots[resources.SnapshotResourceKey] = &resources.Snapshot{
 		BundleID:   BundleID(b),
 		ACL:        BuildACL(b),
 		RemoteRoot: remoteRoot,
@@ -94,16 +94,15 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	return diags
 }
 
-// bundleIDNamespace is the UUID namespace used to derive the bundle ID.
-var bundleIDNamespace = uuid.MustParse("4b4e4b5a-3c3d-4e4f-8b8c-9d9e9f0a0b0c")
-
-// BundleID returns a stable UUID that identifies the bundle deployment.
+// BundleID returns a stable hash that identifies the bundle deployment.
 // It is derived deterministically from workspace.state_path, which is the
 // canonical unique identifier for a deployment (name, target, and workspace root
 // are all encoded in it). Two bundles with the same name and target but different
 // workspace.state_path values get distinct IDs.
 func BundleID(b *bundle.Bundle) string {
-	return uuid.NewSHA1(bundleIDNamespace, []byte(b.Config.Workspace.StatePath)).String()
+	// Use normal sha256 without the namespace.
+	hash := sha256.Sum256([]byte(b.Config.Workspace.StatePath))
+	return fmt.Sprintf("%x", hash)
 }
 
 // BuildACL constructs the access_control_list for the snapshot upload.

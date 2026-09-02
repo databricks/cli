@@ -15,16 +15,16 @@ Validation OK!
   {
     "notebook_task": {
       "base_parameters": {
-        "path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/some_path"
+        "path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/some_path"
       },
-      "notebook_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
+      "notebook_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/notebook"
     },
     "task_key": "notebook_task"
   },
   {
     "environment_key": "env",
     "spark_python_task": {
-      "python_file": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
+      "python_file": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/main.py"
     },
     "task_key": "spark_python_task"
   }
@@ -35,9 +35,9 @@ Validation OK!
   "action": "create",
   "new_state": {
     "value": {
-      "relative_path": "[UUID]/[SNAPSHOT_HASH]",
-      "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]",
-      "bundle_id": "[UUID]",
+      "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+      "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+      "bundle_id": "[SNAPSHOT_HASH]",
       "acl": [
         {
           "user_name": "[USERNAME]",
@@ -56,13 +56,13 @@ Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq .settings.tasks job.json
-"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py"
+"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/main.py"
 
 >>> jq .settings.tasks job.json
-"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/notebook"
+"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/notebook"
 
 >>> jq .settings.tasks job.json
-"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/some_path"
+"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/some_path"
 
 >>> title Check snapshot plan after deploy: 
 
@@ -73,8 +73,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 {
   "action": "skip",
   "remote_state": {
-    "relative_path": "[UUID]/[SNAPSHOT_HASH]",
-    "full_path": "/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]"
+    "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+    "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]"
   },
   "changes": {
     "acl": {
@@ -97,8 +97,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     "bundle_id": {
       "action": "skip",
       "reason": "missing_in_remote",
-      "old": "[UUID]",
-      "new": "[UUID]",
+      "old": "[SNAPSHOT_HASH]",
+      "new": "[SNAPSHOT_HASH]",
       "remote": ""
     },
     "zip_path": {
@@ -122,4 +122,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-no-artifacts-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted
+Destroy: 1 deleted

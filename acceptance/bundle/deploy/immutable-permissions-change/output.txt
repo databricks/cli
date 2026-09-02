@@ -5,7 +5,7 @@ Created internal_immutable_snapshots.immutable
 Created jobs.my_job
 Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-First snapshot path: /Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py
+First snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/main.py
 
 === Add permissions and redeploy
 >>> [CLI] bundle deploy
@@ -26,7 +26,7 @@ Updated jobs.my_job
 Created jobs.my_job.permissions
 Files: 0 uploaded, 0 deleted
 Resources: 2 created, 1 changed, 1 deleted, 0 unchanged
-Second snapshot path: /Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py
+Second snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/main.py
 
 === Verify snapshot path changed after permissions change
 OK: snapshot path changed as expected
@@ -49,4 +49,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-perms-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted
+Destroy: 1 deleted

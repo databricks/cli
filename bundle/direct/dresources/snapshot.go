@@ -15,10 +15,14 @@ type ResourceSnapshot struct {
 }
 
 type SnapshotState struct {
-	RelativePath string              `json:"relative_path"`
-	FullPath     string              `json:"full_path"`
-	BundleID     string              `json:"bundle_id"`
-	ACL          []snapshot.ACLEntry `json:"acl"`
+	// RelativePath is the relative path (without the snapshot root provided by backend) to the snapshot in the workspace.
+	// RelativePath is client defined and normally contains the content hash of the snapshot.
+	RelativePath string `json:"relative_path"`
+	// FullPath is the absolute path to the snapshot in the workspace.
+	// It contains the root path provided by the backend and the relative path.
+	FullPath string              `json:"full_path"`
+	BundleID string              `json:"bundle_id"`
+	ACL      []snapshot.ACLEntry `json:"acl"`
 	// ZipPath locates the bundle zip staged locally by the deploy pipeline. It is
 	// small enough to round-trip through the plan file, so deploying from a plan
 	// restores it directly (no re-injection needed). The file name is the content

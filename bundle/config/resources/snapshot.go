@@ -20,6 +20,11 @@ const (
 	// path (FullPath). Mutators point workspace.file_path / workspace.artifact_path and
 	// translated resource paths at it so they resolve to the snapshot after deploy.
 	SnapshotFullPathRef = "${" + SnapshotKey + ".full_path}"
+
+	// SnapshotResourceKey is the config key of the singleton immutable-folder snapshot.
+	// The "immutable" map key is assigned in bundle/deploy/snapshot.PlanUpload; the plural
+	// segment must match ResourceDescription().PluralName below.
+	SnapshotResourceKey = "immutable"
 )
 
 // Snapshot is an internal resource that stores the bundle zip as an immutable
