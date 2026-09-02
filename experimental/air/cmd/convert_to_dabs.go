@@ -169,28 +169,42 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 }
 
 // codeArtifact is the `tgz` artifact convert emits when a snapshot pins a git ref or
-// narrows to include_paths. codeRootPath is the source dir relative to the bundle
-// (the artifact's `path`); tgzPath is the built tarball code_source_path points at.
+// narrows to include_paths. path/include follow the artifact snapshotter's semantics
+// (entries relative to `path`); tgzPath is the built tarball code_source_path points at.
 type codeArtifact struct {
-	codeRootPath string
-	tgzPath      string
-	gitBranch    *string
-	gitCommit    *string
-	includePaths []string
+	path      string // artifact `path`: the code dir's parent, relative to the bundle
+	include   []string
+	tgzPath   string
+	gitBranch *string
+	gitCommit *string
 }
 
 // codeArtifactFor returns the artifact to emit when the snapshot pins a git ref or
 // narrows to include_paths, else nil — the plain directory case, packaged by the
-// deploy-time aicode mutator. codeDirPath is the source dir relative to the bundle.
+// deploy-time aicode mutator. codeDirPath is the source dir relative to the bundle
+// ("./"-prefixed).
+//
+// The artifact snapshotter names entries relative to `path`, and the runtime extracts
+// to /databricks/code_source/<dir>, so the code dir's basename must be the top-level
+// entry. To get that, emit path = the code dir's parent and include = basename-prefixed
+// subpaths, so entries come out as "<basename>/..." — the layout the air CLI produced.
 func codeArtifactFor(cfg *runConfig, codeDirPath string) *codeArtifact {
 	snap := codeSnapshot(cfg)
 	if snap == nil || (snap.Git == nil && len(snap.IncludePaths) == 0) {
 		return nil
 	}
+	codeDirRel := strings.TrimPrefix(codeDirPath, "./")
+	dirName := path.Base(codeDirRel)
 	art := &codeArtifact{
-		codeRootPath: codeDirPath,
-		tgzPath:      localBundlePath(codeSourceTgzArtifact),
-		includePaths: snap.IncludePaths,
+		path:    path.Dir(codeDirRel),
+		tgzPath: localBundlePath(codeSourceTgzArtifact),
+	}
+	if len(snap.IncludePaths) > 0 {
+		for _, inc := range snap.IncludePaths {
+			art.include = append(art.include, path.Join(dirName, inc))
+		}
+	} else {
+		art.include = []string{dirName}
 	}
 	if snap.Git != nil {
 		art.gitBranch = snap.Git.Branch
@@ -376,7 +390,7 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 func buildArtifactsValue(art *codeArtifact) map[string]dyn.Value {
 	a := map[string]dyn.Value{
 		"type": nv("tgz", 1),
-		"path": nv(art.codeRootPath, 2),
+		"path": nv(art.path, 2),
 	}
 	fileLine := 3
 	if art.gitCommit != nil || art.gitBranch != nil {
@@ -390,14 +404,13 @@ func buildArtifactsValue(art *codeArtifact) map[string]dyn.Value {
 		a["git"] = nv(g, fileLine)
 		fileLine++
 	}
-	if len(art.includePaths) > 0 {
-		vals := make([]dyn.Value, len(art.includePaths))
-		for i, p := range art.includePaths {
-			vals[i] = dyn.V(p)
-		}
-		a["include"] = nv(vals, fileLine)
-		fileLine++
+	// include is always set: the basename (whole dir) or basename-prefixed subpaths.
+	vals := make([]dyn.Value, len(art.include))
+	for i, p := range art.include {
+		vals[i] = dyn.V(p)
 	}
+	a["include"] = nv(vals, fileLine)
+	fileLine++
 	a["files"] = nv([]dyn.Value{
 		dyn.V(map[string]dyn.Value{"source": nv(art.tgzPath, 1)}),
 	}, fileLine)

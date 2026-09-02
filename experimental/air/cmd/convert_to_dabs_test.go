@@ -317,8 +317,13 @@ func TestConvertToDabsGitPinEmitsArtifact(t *testing.T) {
 
 	a := "artifacts." + codeSourceArtifactKey
 	assert.Equal(t, "tgz", get(t, root, a+".type").MustString())
-	assert.Equal(t, "./src", get(t, root, a+".path").MustString())
+	// path is the code dir's parent; include is the basename, so archive entries are
+	// "src/..." (the layout the runtime extracts to /databricks/code_source/src).
+	assert.Equal(t, ".", get(t, root, a+".path").MustString())
 	assert.Equal(t, "abc123", get(t, root, a+".git.commit").MustString())
+	inc := get(t, root, a+".include").MustSequence()
+	require.Len(t, inc, 1)
+	assert.Equal(t, "src", inc[0].MustString())
 	assert.Equal(t, "./dist/code_source.tgz", get(t, root, a+".files[0].source").MustString())
 
 	task := "resources.jobs." + loaded.ExperimentName + ".tasks[0].ai_runtime_task"
@@ -427,10 +432,12 @@ func TestConvertToDabsIncludePathsEmitsArtifact(t *testing.T) {
 
 	a := "artifacts." + codeSourceArtifactKey
 	assert.Equal(t, "tgz", get(t, root, a+".type").MustString())
-	assert.Equal(t, "./src", get(t, root, a+".path").MustString())
+	// path is the code dir's parent; include_paths are basename-prefixed, so the
+	// entry is "src/keep" (relative to the bundle root, path ".").
+	assert.Equal(t, ".", get(t, root, a+".path").MustString())
 	inc := get(t, root, a+".include").MustSequence()
 	require.Len(t, inc, 1)
-	assert.Equal(t, "keep", inc[0].MustString())
+	assert.Equal(t, "src/keep", inc[0].MustString())
 
 	task := "resources.jobs." + loaded.ExperimentName + ".tasks[0].ai_runtime_task"
 	assert.Equal(t, "./dist/code_source.tgz", get(t, root, task+".code_source_path").MustString())
