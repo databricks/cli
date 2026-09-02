@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle plan -o json
+{
+  "action": "create",
+  "prevent_destroy_in_state": "ABSENT"
+}
