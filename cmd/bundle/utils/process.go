@@ -197,9 +197,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		return b, nil, err
 	}
 
-	// The deployment record the recording read, if any; passed to phases.Deploy for the metadata
-	// diff. Nil for a non-recording bundle or a first deploy.
+	// The current deployment read from the service (nil, id "" if there is none yet). Used for the
+	// metadata diff and to reject a saved plan that predates the deployment's recorded version.
 	var dmsDeployment *bundledeployments.Deployment
+	var dmsDeploymentID string
 
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
@@ -246,7 +247,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			_, localPath := b.StateFilenameDirect(ctx)
 
 			var dmsClient *dms.Client
-			var dmsDeploymentID string
 			if b.RecordsDeploymentHistory(ctx) {
 				deploymentID, deployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 				if err != nil {
@@ -263,6 +263,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				dmsDeployment = deployment
 				b.DeploymentBundle.DmsApiClient = dmsClient
 
+				// A resolved deployment id goes into history and is stamped onto resources to avoid drift
+				// (empty on a first deploy; the deploy phase stamps the created id; version_id is DMS-managed).
 				if deploymentID != "" {
 					bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
 						b.Config.Bundle.Deployment.History = &config.DeploymentHistory{
@@ -270,14 +272,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 							LatestVersionID: deployment.LastVersionId,
 						}
 					})
-				}
-
-				// Stamp the deployment before anything diffs the resources: the workspace
-				// has it, so leaving it unset would report drift on an untouched resource.
-				// The deploy phase stamps the version, once it claims one.
-				bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(deploymentID))
-				if logdiag.HasError(ctx) {
-					return b, stateDesc, root.ErrAlreadyPrinted
+					bundle.ApplyContext(ctx, b, metadata.AnnotateDeployment(deploymentID))
+					if logdiag.HasError(ctx) {
+						return b, stateDesc, root.ErrAlreadyPrinted
+					}
 				}
 			}
 			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dmsClient, dmsDeploymentID); err != nil {
@@ -354,6 +352,13 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		err = direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+
+		// A first-deploy plan has empty lineage, so ValidatePlanAgainstState skips it; if the deployment
+		// has since recorded a version, reject the replay (a non-empty lineage is covered above).
+		if plan.Lineage == "" && dmsDeployment != nil && dmsDeployment.LastVersionId != "" {
+			logdiag.LogError(ctx, fmt.Errorf("this plan predates the deployment's current version %s; run 'bundle plan' again", dmsDeployment.LastVersionId))
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 	} else if opts.Deploy {

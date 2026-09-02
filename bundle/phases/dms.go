@@ -173,7 +173,6 @@ func drainOperationsAndCompleteVersion(ctx context.Context, b *bundle.Bundle, su
 	if buf.Drain() != nil {
 		success = false
 	}
-	buf.Stop()
 
 	reason := bundledeployments.VersionCompleteVersionCompleteSuccess
 	if !success {

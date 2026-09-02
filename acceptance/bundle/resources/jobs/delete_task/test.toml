@@ -1,5 +1,5 @@
 RecordRequests = false
 EnvMatrix.READPLAN = ["", "1"]
-# `bundle deploy --plan` applies pre-saved state; the stamp isn't written into the plan,
-# so the next plan reports it as a change. Recording skipped until stamp reaches saved plans.
+# Dumps raw state/plan, which carry the DMS deployment stamp under recording (applied at deploy,
+# not saved in the plan). deploy --plan recording is covered by bundle/dms, so opt out here.
 EnvMatrix.DMS = [""]

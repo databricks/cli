@@ -3,19 +3,9 @@ package dms
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"net/http"
 	"sync"
-	"time"
-
-	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/apierr"
 )
-
-// The server expires a version's lease if it does not receive a heartbeat
-// within a 2-minute TTL; we heartbeat well inside that window.
-const defaultHeartbeatInterval = 30 * time.Second
 
 // bufferedOperations caps how far ahead of the service a deploy may get; DMS is what the next
 // plan reads.
@@ -26,15 +16,12 @@ const bufferedOperations = 10
 const stagedSequenceID = "0"
 
 // OperationBuffer records each state write with DMS for one deployment version, off the apply
-// path: writes are queued and sent on one background goroutine, and a heartbeat keeps the
-// version's lease alive until Stop. It exists only while a bundle records deployment history;
-// callers hold a nil buffer otherwise and must not call it.
+// path: writes are queued and sent on one background goroutine. It exists only while a bundle
+// records deployment history; callers hold a nil buffer otherwise and must not call it.
 type OperationBuffer struct {
 	client       *Client
 	deploymentID string
 	versionNum   int64
-
-	stopHeartbeat context.CancelFunc
 
 	// The buffer. queue holds bundle state keys, and pending the newest update per key, so a
 	// second write for a resource replaces the first.
@@ -56,9 +43,8 @@ type OperationBuffer struct {
 	err error
 }
 
-// StartOperationBuffer opens the buffer for the version the caller just created, and starts the
-// heartbeat that keeps its lease alive. The version must already exist: operations record under
-// it, and nothing here creates it.
+// StartOperationBuffer opens the buffer for the version the caller just created. The version
+// must already exist: operations record under it, and nothing here creates it.
 func StartOperationBuffer(ctx context.Context, client *Client, deploymentID string, versionNum int64) *OperationBuffer {
 	b := &OperationBuffer{
 		client:       client,
@@ -70,7 +56,6 @@ func StartOperationBuffer(ctx context.Context, client *Client, deploymentID stri
 		sequenceIDs:  make(map[string]string),
 	}
 	b.stopQueue = sync.OnceFunc(func() { close(b.queue) })
-	b.stopHeartbeat = startHeartbeat(ctx, client, deploymentID, versionNum)
 	go b.run(ctx)
 	return b
 }
@@ -167,11 +152,6 @@ func (b *OperationBuffer) Drain() error {
 	return b.Err()
 }
 
-// Stop stops the heartbeat. Call it once the version is completed.
-func (b *OperationBuffer) Stop() {
-	b.stopHeartbeat()
-}
-
 // setErr keeps the first error; one failure is enough to fail the deploy.
 func (b *OperationBuffer) setErr(err error) {
 	b.mu.Lock()
@@ -188,44 +168,4 @@ func (b *OperationBuffer) Err() error {
 	defer b.mu.Unlock()
 
 	return b.err
-}
-
-// startHeartbeat starts a background goroutine that sends heartbeats to keep
-// the deployment version's lease alive. Returns a cancel function to stop it.
-func startHeartbeat(ctx context.Context, client *Client, deploymentID string, version int64) context.CancelFunc {
-	ctx, cancel := context.WithCancel(ctx)
-
-	go func() {
-		ticker := time.NewTicker(defaultHeartbeatInterval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				err := client.Heartbeat(ctx, deploymentID, version)
-				if err != nil {
-					// A 409 Conflict is expected if the version was completed
-					// between the ticker firing and the heartbeat.
-					if isAbortedErr(err) {
-						log.Debugf(ctx, "Heartbeat stopped: version already completed")
-						return
-					}
-					log.Warnf(ctx, "Failed to send deployment heartbeat: %v", err)
-				} else {
-					log.Debugf(ctx, "Deployment heartbeat sent: deployment=%s version=%d", deploymentID, version)
-				}
-			}
-		}
-	}()
-
-	return cancel
-}
-
-// isAbortedErr reports whether err is an HTTP 409 Conflict from the DMS API, whose error
-// code is ABORTED.
-func isAbortedErr(err error) bool {
-	apiErr, ok := errors.AsType[*apierr.APIError](err)
-	return ok && apiErr.StatusCode == http.StatusConflict && apiErr.ErrorCode == "ABORTED"
 }

@@ -18,4 +18,6 @@ trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 # that the payload below is identical either way.
 title "Deploy: payload sent to the jobs API\n"
 $CLI bundle deploy $(readplanarg out.plan.$DATABRICKS_BUNDLE_ENGINE.json)
-trace print_requests.py //jobs
+# --nostamp: under deployment-history recording the job payload carries the DMS deployment
+# stamp; drop it so the assertion is the same whether or not recording is on.
+trace print_requests.py //jobs --nostamp

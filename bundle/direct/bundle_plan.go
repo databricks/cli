@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -58,9 +59,10 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 	return nil
 }
 
-// InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
+// InitForApply initializes the DeploymentBundle for applying a pre-computed plan. A non-empty
+// deploymentID/versionID (recording) is stamped onto each job/pipeline here, not into the saved plan.
 // StateDB must already be open for write before calling this function.
-func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
+func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan, deploymentID, versionID string) error {
 	b.StateDB.AssertOpenedForWrite()
 
 	err := b.init(client)
@@ -90,6 +92,25 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 			sv, err := entry.NewState.ToStructVar(adapter.StateType())
 			if err != nil {
 				return fmt.Errorf("loading plan entry %s: %w", resourceKey, err)
+			}
+			// Stamp the DMS id and version here (see InitForApply doc), not into the saved plan.
+			if deploymentID != "" {
+				var stamped bool
+				switch v := sv.Value.(type) {
+				case *jobs.JobSettings:
+					v.Deployment.DeploymentId = deploymentID
+					v.Deployment.VersionId = versionID
+					stamped = true
+				case *dresources.PipelineState:
+					v.Deployment.DeploymentId = deploymentID
+					v.Deployment.VersionId = versionID
+					stamped = true
+				}
+				if stamped {
+					if err := sv.SyncToJSON(entry.NewState); err != nil {
+						return fmt.Errorf("%s: stamping deployment into loaded plan: %w", resourceKey, err)
+					}
+				}
 			}
 			b.StateCache.Store(resourceKey, sv)
 		}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -271,27 +272,24 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	planFromFile := plan != nil
 	if b.DeploymentBundle.DmsApiClient != nil {
-		// Create the deployment and settle the version before planning: Plan snapshots the config,
-		// and the version itself is created after approval. The deployment has to exist to be stamped.
+		// Create the deployment before planning so it exists to stamp.
 		createOrUpdateDeployment(ctx, b, dmsDeployment)
 		if logdiag.HasError(ctx) {
 			return
 		}
-		// The deployment ID is stamped earlier, when the state is opened; only the
-		// version is new here. A first deploy has no ID until now, so stamp both.
-		deploymentID, versionID := recordedDeployment(b)
-		bundle.ApplySeqContext(
-			ctx, b,
-			metadata.AnnotateDeployment(deploymentID),
-			metadata.AnnotateDeploymentVersion(versionID),
-		)
-		if logdiag.HasError(ctx) {
-			return
+		// A normal deploy stamps id + version onto the config, off the plan, so RunPlan carries them
+		// into the applied plan; deploy --plan stamps the loaded plan in InitForApply below instead.
+		if !planFromFile {
+			deploymentID, version := recordedDeployment(b)
+			bundle.ApplySeqContext(ctx, b, metadata.AnnotateDeployment(deploymentID), metadata.AnnotateDeploymentVersion(version))
+			if logdiag.HasError(ctx) {
+				return
+			}
 		}
 	}
 
-	planFromFile := plan != nil
 	if plan == nil {
 		// State is already open for read by process.go (for direct engine)
 		plan = RunPlan(ctx, b, stateEngine)
@@ -313,8 +311,10 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	if planFromFile {
-		// Initialize DeploymentBundle for applying the loaded plan
-		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
+		// Stamp the deployment id and version onto the loaded plan here, not into the saved plan.
+		// Non-recording deploys pass "" and stamp nothing.
+		deploymentID, version := recordedDeployment(b)
+		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan, deploymentID, strconv.FormatInt(version, 10))
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
