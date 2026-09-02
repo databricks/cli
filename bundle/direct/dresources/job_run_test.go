@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
@@ -232,10 +231,22 @@ func TestJobRunWaitReportsOnlyTheLastAttemptOfATask(t *testing.T) {
 }
 
 func TestJobRunWaitAbandonedLinksTheRun(t *testing.T) {
-	client := jobRunClient(t, &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning})
-
-	ctx, cancel := context.WithTimeout(t.Context(), time.Millisecond)
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
+
+	// The first poll reports the run page and finds the run still going; the
+	// second cancels the wait. Driving the interrupt from the handler keeps it
+	// deterministic: the run page URL is always captured before the wait ends,
+	// instead of racing a wall-clock timeout against the first GetRun.
+	var gets atomic.Int32
+	client := jobRunServer(t, func(req testserver.Request) any {
+		if gets.Add(1) >= 2 {
+			cancel()
+		}
+		return jobs.Run{RunId: 123, JobId: 456, State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateRunning,
+		}, RunPageUrl: testRunPageURL}
+	})
 
 	_, err := waitForTestRun(t, ctx, client)
 
