@@ -31,6 +31,8 @@ const (
 	DirectMigrateError       = "direct_migrate_error"
 	DirectMigrateCommitError = "direct_migrate_commit_error"
 	DirectMigrateWarnings    = "direct_migrate_warnings"
+	// True when the post-convert plan check failed; the migration was not committed.
+	DirectMigratePlanError = "direct_migrate_plan_error"
 
 	// Recorded when an automatic post-deploy migration to the direct engine
 	// actually ran (state was rewritten). Exactly one of the three keys is true;

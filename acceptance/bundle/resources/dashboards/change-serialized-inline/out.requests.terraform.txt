@@ -1,0 +1,23 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]",
+  "body": {
+    "create_time": "[TIMESTAMP]",
+    "dashboard_id": "[DASHBOARD_ID]",
+    "display_name": "Inline Dash",
+    "lifecycle_state": "ACTIVE",
+    "parent_path": "/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources",
+    "path": "/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources/Inline Dash.lvdash.json",
+    "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Page One\",\"name\":\"page1\"}]}",
+    "update_time": "[TIMESTAMP]",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]/published",
+  "body": {
+    "embed_credentials": false,
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
