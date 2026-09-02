@@ -1,1 +1,1 @@
-trace $CLI bundle validate -o json | jq '.resources.jobs.ingest.tasks[0].notebook_task.base_parameters'
+trace $CLI bundle validate -o json | jq '.resources.jobs.example_ingestion_job.tasks[0].notebook_task.base_parameters'
