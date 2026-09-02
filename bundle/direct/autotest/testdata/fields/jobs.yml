@@ -29,12 +29,6 @@ base:
           team: eng
         spark_conf:
           spark.speculation: "true"
-        init_scripts:
-          - workspace:
-              # The file the bundle uploads, not a path in the user home: a real workspace fails the
-            # cluster with "Init scripts failed ... Tree node with path ... does not exist" when the
-            # script is not there, and the mock server accepts any path.
-            destination: /Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle-$UNIQUE_NAME/default/files/init.sh
   environments:
     - environment_key: seeded
       spec:
@@ -64,6 +58,11 @@ base:
       unit: HOURS
 
 skip:
+  # An init script has to name a file that exists: a real workspace fails the cluster with "Init
+  # scripts failed ... Tree node with path ... does not exist". This suite deliberately uploads no
+  # bundle files -- a sync per permutation would dominate the run -- so no destination it could name
+  # is there, and the mock server's acceptance of any path is what made the field look testable.
+  job_clusters[*].new_cluster.init_scripts: an init script has to name a file that exists, and this suite uploads none
   # git_branch and git_tag are the other two sides of the same oneof as git_commit, which
   # base sets. Adding one alongside it is rejected for being ambiguous, not for anything
   # this suite measures. Covered by acceptance/bundle/resources/jobs.

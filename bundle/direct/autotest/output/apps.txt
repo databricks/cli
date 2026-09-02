@@ -100,16 +100,14 @@ source_code_path                             x-UNIQUE   y-UNIQUE   START_NOT_REA
 source_code_path                             y-UNIQUE   absent     START_NOT_REACHED  no active deployment
 source_code_path                             y-UNIQUE   x-UNIQUE   START_NOT_REACHED  no active deployment
 user_api_scopes                              len1       absent     UPDATE_IGNORED
-user_api_scopes                              len1       len0       UPDATE_IGNORED
 user_api_scopes                              len2       absent     UPDATE_IGNORED
-user_api_scopes                              len2       len0       UPDATE_IGNORED
 
 === summary
-OK                 35
+OK                 33
 OK_RECREATE        2
-SUPPRESSED         23
-NOT_OBSERVABLE     3
-UPDATE_IGNORED     9
+SUPPRESSED         22
+NOT_OBSERVABLE     2
+UPDATE_IGNORED     7
 UNSETTABLE         2
 SKIPPED            90
 START_NOT_REACHED  68
