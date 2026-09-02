@@ -1,0 +1,9 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+
+title "install --output json emits parseable JSON on stdout; progress stays on stderr"
+# --agents makes the run fully non-interactive (no picker, no scope prompt), which
+# --output json requires. Piping stdout through jq proves the JSON payload is the
+# only thing on stdout; the human-readable progress lines go to stderr and still
+# show in the merged capture below.
+trace $CLI experimental aitools install --skills-only --scope=global --agents=claude-code --output json | jq .
