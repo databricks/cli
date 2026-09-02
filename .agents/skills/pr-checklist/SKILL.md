@@ -71,7 +71,7 @@ Add a changelog fragment under `.nextchanges/` when your change is user-visible.
 **How to add:**
 - Create `.nextchanges/<section>/<name>.md`, picking the section folder that fits: `cli`, `bundles`, `dependency-updates`, `notable-changes`, or `api-changes`. `<name>` is arbitrary (a feature name or your PR number) — just keep it unique.
 - Write a single line in user-facing language, no Jira links: start it with a `* ` bullet marker and end it with a period.
-- **Voice and tense: imperative mood, active voice, third person.** Lead with a verb that names the change — `Add`, `Fix`, `Bump`, `Remove`, `Deprecate`, `Support`, `Reject`, `Warn` — and describe the user-facing effect, not the implementation. Never use past tense (`Added`/`Fixed`) or first person (`we`/`I`/`our`). When a change reads better as a resulting behavior than as a verb, lead with the affected command, flag, or field in the present tense with "now".
+- **Voice and tense: imperative mood, active voice.** Lead with a verb that names the change — `Add`, `Fix`, `Bump`, `Remove`, `Deprecate`, `Support`, `Reject`, `Warn` — and describe the user-facing effect, not the implementation. Never use past tense (`Added`/`Fixed`) or first person (`we`/`I`/`our`). When a change reads better as a resulting behavior than as a verb, lead with the affected command, flag, or field in the present tense with "now".
   - GOOD: Add support for the `cluster_policies` resource type.
   - GOOD: Fix `--force-lock` being ignored when set in `databricks.yml`.
   - GOOD: `bundle plan` now ignores the output-only `securable_kind` field during drift detection.
