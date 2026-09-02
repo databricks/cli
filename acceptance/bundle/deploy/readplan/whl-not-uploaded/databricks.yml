@@ -1,0 +1,20 @@
+bundle:
+  name: whl-not-uploaded
+
+resources:
+  jobs:
+    my_job:
+      name: whl-not-uploaded-job
+      tasks:
+        - task_key: main
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 1
+          python_wheel_task:
+            package_name: my_test_code
+            entry_point: run
+          libraries:
+            # Local wheel, prebuilt (no build: step) to keep the test hermetic. See script
+            # for the bug this exercises. Behaves the same as a wheel with a build: step.
+            - whl: ./dist/*.whl
