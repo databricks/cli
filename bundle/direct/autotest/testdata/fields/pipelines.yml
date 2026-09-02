@@ -45,6 +45,25 @@ base:
 
 skip:
 
+  # An alert name and a recipient are both validated -- Invalid ... notifications: x -- so neither the
+  # list nor the entry inside it can hold a generic value. A recipient has to be an address and an
+  # alert has to be one the API knows.
+  notifications[*].alerts: needs alert names the API knows, and generic values are refused
+  notifications[*].email_recipients: needs real addresses, and generic values are refused
+
+  # You cannot provide clusters on a serverless pipeline, and base declares one.
+  serverless: cannot be set on a pipeline that declares clusters, which base does
+
+  # name must be set, so clearing it is refused, and this fixture has one name to give.
+  name: cannot be cleared, and the suite has one name for it
+
+  # A pipeline parameter is accepted and not applied.
+  parameters: the API accepts the write and does not apply it
+
+  # Changing the autoscale mode is reported against num_workers, which base sets and the suite does not
+  # move at the same time -- the same reason the other autoscale fields are already skipped.
+  clusters[*].autoscale.mode: drift is attributed to num_workers, which cannot move with it
+
   # --- Fields a real workspace rejects, with the API's own reason. The mock server accepts them all.
 
   # Cannot add catalog to an existing pipeline with a storage location, and this fixture's pipeline has
