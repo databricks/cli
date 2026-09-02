@@ -232,6 +232,37 @@ func createFakeIDEExecutable(t *testing.T, dir, command, output string) {
 	}
 }
 
+// createFailingIDEExecutable writes a fake IDE command that exits non-zero for every
+// invocation, so "--list-extensions" fails and the check never learns what is installed.
+func createFailingIDEExecutable(t *testing.T, dir, command string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		err := os.WriteFile(filepath.Join(dir, command+".cmd"), []byte("@echo off\nexit /b 4\n"), 0o755)
+		require.NoError(t, err)
+	} else {
+		err := os.WriteFile(filepath.Join(dir, command), []byte("#!/bin/sh\nexit 4\n"), 0o755)
+		require.NoError(t, err)
+	}
+}
+
+// createIDEExecutableFailingInstall writes a fake IDE command that lists extensions
+// successfully but rejects "--install-extension", as a marketplace or policy block would.
+func createIDEExecutableFailingInstall(t *testing.T, dir, command, output string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		payloadPath := filepath.Join(dir, command+"-payload.txt")
+		err := os.WriteFile(payloadPath, []byte(output), 0o644)
+		require.NoError(t, err)
+		script := fmt.Sprintf("@echo off\nif \"%%1\"==\"--install-extension\" exit /b 3\ntype \"%s\"\n", payloadPath)
+		err = os.WriteFile(filepath.Join(dir, command+".cmd"), []byte(script), 0o755)
+		require.NoError(t, err)
+	} else {
+		script := fmt.Sprintf("#!/bin/sh\nfor a in \"$@\"; do\n  [ \"$a\" = \"--install-extension\" ] && exit 3\ndone\nprintf '%%s' '%s'\n", output)
+		err := os.WriteFile(filepath.Join(dir, command), []byte(script), 0o755)
+		require.NoError(t, err)
+	}
+}
+
 func TestCheckIDESSHExtension_UpToDate(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("PATH", tmpDir)
@@ -268,6 +299,8 @@ func TestCheckIDESSHExtension_Missing(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `"Remote - SSH"`)
 	assert.Contains(t, err.Error(), "not installed")
+	// The test context is not a TTY, so consent cannot be asked for.
+	assert.ErrorIs(t, err, ErrSSHExtensionInstallUnavailable)
 }
 
 func TestCheckIDESSHExtension_Outdated(t *testing.T) {
@@ -282,6 +315,7 @@ func TestCheckIDESSHExtension_Outdated(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "0.100.0")
 	assert.Contains(t, err.Error(), ">= 0.120.0")
+	assert.ErrorIs(t, err, ErrSSHExtensionInstallUnavailable)
 }
 
 func TestCheckIDESSHExtension_Cursor(t *testing.T) {
@@ -319,4 +353,36 @@ func TestCheckIDESSHExtension_NoPrompt_WithoutAutoApprove_Errors(t *testing.T) {
 	err := CheckIDESSHExtension(ctx, VSCodeOption, false)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "--install-extension")
+	assert.ErrorIs(t, err, ErrSSHExtensionInstallUnavailable)
+}
+
+// A command that is on PATH but whose --list-extensions fails is reported separately from a
+// missing extension: nothing was learned about what is installed, so it is not an install
+// problem. CheckIDECommand passes here, since the command does resolve.
+func TestCheckIDESSHExtension_ListFails(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("PATH", tmpDir)
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+
+	createFailingIDEExecutable(t, tmpDir, "code")
+
+	err := CheckIDESSHExtension(ctx, VSCodeOption, true)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrSSHExtensionListFailed)
+	assert.NotErrorIs(t, err, ErrSSHExtensionInstallFailed)
+}
+
+// With --auto-approve there is no prompt, so a missing extension goes straight to an install.
+// A rejected install is the one outcome the IDE button can produce on this path.
+func TestCheckIDESSHExtension_AutoApprove_InstallFails(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("PATH", tmpDir)
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+
+	createIDEExecutableFailingInstall(t, tmpDir, "code", "ms-python.python@2024.1.1\n")
+
+	err := CheckIDESSHExtension(ctx, VSCodeOption, true)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrSSHExtensionInstallFailed)
+	assert.NotErrorIs(t, err, ErrSSHExtensionInstallUnavailable)
 }

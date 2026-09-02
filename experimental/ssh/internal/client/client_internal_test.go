@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
+	"github.com/databricks/cli/experimental/ssh/internal/vscode"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -554,6 +555,50 @@ func TestConnectOutcomeCategory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.want, tt.outcome.category())
+		})
+	}
+}
+
+// The four Remote SSH extension outcomes were reported as one category until they were split,
+// which left the largest IDE-mode failure bucket unattributable. Pin the mapping, including the
+// wrapping, since CheckIDESSHExtension returns its sentinels wrapped in a message.
+func TestSshExtensionErrorCategory(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want protos.SshTunnelErrorCategory
+	}{
+		{
+			name: "list failure",
+			err:  fmt.Errorf("%w in VS Code: %w", vscode.ErrSSHExtensionListFailed, errors.New("exit 4")),
+			want: protos.SshTunnelErrorCategoryIDESSHExtensionListFailed,
+		},
+		{
+			name: "install failure",
+			err:  fmt.Errorf("%w: %w", vscode.ErrSSHExtensionInstallFailed, errors.New("exit 3")),
+			want: protos.SshTunnelErrorCategoryIDESSHExtensionInstallFailed,
+		},
+		{
+			name: "user declined the install",
+			err:  fmt.Errorf("%w: install it with ...", vscode.ErrSSHExtensionInstallDeclined),
+			want: protos.SshTunnelErrorCategoryIDESSHExtensionInstallDeclined,
+		},
+		{
+			name: "no way to ask for consent",
+			err:  fmt.Errorf("%w: install it with ...", vscode.ErrSSHExtensionInstallUnavailable),
+			want: protos.SshTunnelErrorCategoryIDESSHExtensionInstallUnavailable,
+		},
+		{
+			// Only reachable if a new failure path forgets its sentinel.
+			name: "unsentinelled failure falls back to UNKNOWN",
+			err:  errors.New("something else"),
+			want: protos.SshTunnelErrorCategoryUnknown,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, sshExtensionErrorCategory(tt.err))
 		})
 	}
 }

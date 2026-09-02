@@ -2,6 +2,7 @@ package vscode
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -118,15 +119,28 @@ func isExtensionVersionAtLeast(version, minVersion string) bool {
 	return semver.IsValid(v) && semver.Compare(v, "v"+minVersion) >= 0
 }
 
+// The ways CheckIDESSHExtension can fail. Callers match these with errors.Is to attribute a
+// failure without matching on message text. They are separate because they call for different
+// fixes: a list failure means the check never ran, an install failure points at the marketplace
+// or a policy blocking it, and the two consent outcomes cannot happen under --auto-approve.
+var (
+	ErrSSHExtensionListFailed         = errors.New("could not list installed extensions")
+	ErrSSHExtensionInstallFailed      = errors.New("could not install the Remote SSH extension")
+	ErrSSHExtensionInstallDeclined    = errors.New("install of the Remote SSH extension declined")
+	ErrSSHExtensionInstallUnavailable = errors.New("cannot prompt to install the Remote SSH extension")
+)
+
 // CheckIDESSHExtension verifies that the required Remote SSH extension is installed
 // with a compatible version, and offers to install/update it if not.
 // When autoApprove is true, the extension is installed without asking.
+//
+// Every returned error wraps one of the Err* sentinels above.
 func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) error {
 	ide := getIDE(option)
 
 	out, err := exec.CommandContext(ctx, ide.Command, "--list-extensions", "--show-versions").Output()
 	if err != nil {
-		return fmt.Errorf("failed to list %s extensions: %w", ide.Name, err)
+		return fmt.Errorf("%w in %s: %w", ErrSSHExtensionListFailed, ide.Name, err)
 	}
 
 	version, found := parseExtensionVersion(string(out), ide.SSHExtensionID)
@@ -144,17 +158,17 @@ func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) 
 
 	if !autoApprove {
 		if !cmdio.IsPromptSupported(ctx) {
-			return fmt.Errorf("%s Install it with: %s --install-extension %s, or pass --auto-approve",
-				msg, ide.Command, ide.SSHExtensionID)
+			return fmt.Errorf("%w: %s Install it with: %s --install-extension %s, or pass --auto-approve",
+				ErrSSHExtensionInstallUnavailable, msg, ide.Command, ide.SSHExtensionID)
 		}
 
 		shouldInstall, err := cmdio.AskYesOrNo(ctx, msg+" Would you like to install it?")
 		if err != nil {
-			return fmt.Errorf("failed to prompt user: %w", err)
+			return fmt.Errorf("%w: %w", ErrSSHExtensionInstallUnavailable, err)
 		}
 		if !shouldInstall {
-			return fmt.Errorf("%s Install it with: %s --install-extension %s",
-				msg, ide.Command, ide.SSHExtensionID)
+			return fmt.Errorf("%w: %s Install it with: %s --install-extension %s",
+				ErrSSHExtensionInstallDeclined, msg, ide.Command, ide.SSHExtensionID)
 		}
 	} else {
 		cmdio.LogString(ctx, msg+" Installing automatically (--auto-approve).")
@@ -165,7 +179,7 @@ func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) 
 	installCmd.Stdout = os.Stdout
 	installCmd.Stderr = os.Stderr
 	if err := installCmd.Run(); err != nil {
-		return fmt.Errorf("failed to install extension %q: %w", ide.SSHExtensionName, err)
+		return fmt.Errorf("%w in %s: %w", ErrSSHExtensionInstallFailed, ide.Name, err)
 	}
 	return nil
 }

@@ -298,7 +298,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 			return err
 		}
 		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE, opts.AutoApprove); err != nil {
-			outcome.errorCategory = protos.SshTunnelErrorCategoryIDESSHExtensionMissing
+			outcome.errorCategory = sshExtensionErrorCategory(err)
 			return err
 		}
 	}
@@ -1245,6 +1245,26 @@ type connectOutcome struct {
 	// errorCategory is set at the failure site. Empty means the failure was not attributed.
 	errorCategory protos.SshTunnelErrorCategory
 	err           error
+}
+
+// sshExtensionErrorCategory attributes a Remote SSH extension check failure to the outcome that
+// caused it. The four are kept apart because they imply different fixes, and because only the
+// first two can occur under --auto-approve, which the IDE button always passes -- so a shift
+// between them and the consent outcomes distinguishes button traffic from direct CLI use.
+func sshExtensionErrorCategory(err error) protos.SshTunnelErrorCategory {
+	switch {
+	case errors.Is(err, vscode.ErrSSHExtensionListFailed):
+		return protos.SshTunnelErrorCategoryIDESSHExtensionListFailed
+	case errors.Is(err, vscode.ErrSSHExtensionInstallFailed):
+		return protos.SshTunnelErrorCategoryIDESSHExtensionInstallFailed
+	case errors.Is(err, vscode.ErrSSHExtensionInstallDeclined):
+		return protos.SshTunnelErrorCategoryIDESSHExtensionInstallDeclined
+	case errors.Is(err, vscode.ErrSSHExtensionInstallUnavailable):
+		return protos.SshTunnelErrorCategoryIDESSHExtensionInstallUnavailable
+	}
+	// CheckIDESSHExtension wraps a sentinel on every failure path, so this is only reachable if
+	// a new one is added without a category. UNKNOWN keeps it countable; see category() below.
+	return protos.SshTunnelErrorCategoryUnknown
 }
 
 // category returns the error category to report. A cancelled context means the user
