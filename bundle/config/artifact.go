@@ -12,12 +12,26 @@ const ArtifactPythonWheel ArtifactType = `whl`
 
 const ArtifactJar ArtifactType = `jar`
 
+// ArtifactTarball is a gzipped tar of source files, built by DABs itself from
+// `include` paths and/or a `git` ref rather than by a user `build` command.
+// Uploaded and referenced like any other artifact file (e.g. as an AI Runtime
+// task's code_source_path).
+const ArtifactTarball ArtifactType = `tgz`
+
 // Values returns all valid ArtifactType values
 func (ArtifactType) Values() []ArtifactType {
 	return []ArtifactType{
 		ArtifactPythonWheel,
 		ArtifactJar,
+		ArtifactTarball,
 	}
+}
+
+// ArtifactGit pins a `tgz` artifact to a git ref, so the tarball is a snapshot of
+// that ref rather than of the working tree. Commit wins over Branch when both set.
+type ArtifactGit struct {
+	Branch string `json:"branch,omitempty"`
+	Commit string `json:"commit,omitempty"`
 }
 
 type ArtifactFile struct {
@@ -46,4 +60,14 @@ type Artifact struct {
 	Executable exec.ExecutableType `json:"executable,omitempty"`
 
 	DynamicVersion bool `json:"dynamic_version,omitempty"`
+
+	// Include narrows a `tgz` artifact to these subpaths of `path`, relative to it;
+	// empty packs the whole `path`. .gitignore is honored; the bundle-wide
+	// sync.include/exclude do not apply. Archive entries are named relative to
+	// `path`. Mutually exclusive with `build`.
+	Include []string `json:"include,omitempty"`
+
+	// Git, when set on a `tgz` artifact, snapshots the given ref instead of the
+	// working tree. Mutually exclusive with `build`.
+	Git *ArtifactGit `json:"git,omitempty"`
 }
