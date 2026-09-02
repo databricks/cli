@@ -121,6 +121,27 @@ func TestResolveWithStringConcatenation(t *testing.T) {
 	assert.Equal(t, "aba", getByPath(t, out, "c").MustString())
 }
 
+func TestResolveWithEscapedReference(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"a":             dyn.V("A"),
+		"escaped_only":  dyn.V("$${a}"),
+		"escaped_first": dyn.V("$${a} ${a}"),
+		"real_first":    dyn.V("${a} $${a}"),
+		"surrounded":    dyn.V("$${a} ${a} $${a}"),
+		"other_name":    dyn.V("$${zz} ${a}"),
+	})
+
+	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
+	require.NoError(t, err)
+
+	// The escape is preserved here; it is removed when the API payload is built.
+	assert.Equal(t, "$${a}", getByPath(t, out, "escaped_only").MustString())
+	assert.Equal(t, "$${a} A", getByPath(t, out, "escaped_first").MustString())
+	assert.Equal(t, "A $${a}", getByPath(t, out, "real_first").MustString())
+	assert.Equal(t, "$${a} A $${a}", getByPath(t, out, "surrounded").MustString())
+	assert.Equal(t, "$${zz} A", getByPath(t, out, "other_name").MustString())
+}
+
 func TestResolveWithTypeInterpolation(t *testing.T) {
 	in := dyn.V(map[string]dyn.Value{
 		"a":          dyn.V(1),
