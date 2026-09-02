@@ -134,6 +134,24 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			if err != nil {
 				return err
 			}
+
+			// JSON output must be fully non-interactive: every choice has to come
+			// from flags so no scope prompt, agent picker, or confirm is shown.
+			// Require the flags those prompts would otherwise resolve, and fail
+			// fast naming them.
+			if jsonMode {
+				var missing []string
+				if !projectFlag && !globalFlag {
+					missing = append(missing, "--scope")
+				}
+				if agentsFlag == "" {
+					missing = append(missing, "--agents")
+				}
+				if len(missing) > 0 {
+					return fmt.Errorf("--output json requires %s so the command runs without interactive prompts", strings.Join(missing, " and "))
+				}
+			}
+
 			scope, err := resolveScopeWithPrompt(ctx, projectFlag, globalFlag)
 			if err != nil {
 				return err
@@ -191,6 +209,12 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				if jerr := renderInstallJSON(cmd.OutOrStdout(), buildInstallOutput(opts.Scope, outcomes)); jerr != nil {
 					return jerr
 				}
+				// The rendered JSON already carries the per-agent error categories,
+				// so don't also print runErr as a text "Error:" line. Silence
+				// cobra's error/usage output; the non-zero exit still comes from
+				// returning runErr.
+				cmd.SilenceErrors = true
+				cmd.SilenceUsage = true
 			}
 			return runErr
 		},

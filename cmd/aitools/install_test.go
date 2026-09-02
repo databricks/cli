@@ -405,19 +405,20 @@ func TestInstallOutputJSONReportsErrorCategories(t *testing.T) {
 	}
 	recordPluginInstallsFn = func(context.Context, string, map[string]installer.PluginRecord, string) error { return nil }
 
-	var out bytes.Buffer
+	var out, errOut bytes.Buffer
 	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
 	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"--agents", "codex", "--output", "json"})
-	cmd.SilenceErrors = true
-	cmd.SilenceUsage = true
+	cmd.SetErr(&errOut)
+	cmd.SetArgs([]string{"--agents", "codex", "--scope", "global", "--output", "json"})
 
 	// Explicit --agents makes a blocked install a hard error, but the JSON result
-	// is still emitted for the extension to consume.
+	// is still emitted for the extension to consume, and the error is not also
+	// printed as text.
 	err := cmd.Execute()
 	require.Error(t, err)
+	assert.NotContains(t, errOut.String(), "Error:")
 
 	var got installOutput
 	require.NoError(t, json.Unmarshal(out.Bytes(), &got))
@@ -426,6 +427,52 @@ func TestInstallOutputJSONReportsErrorCategories(t *testing.T) {
 	assert.Equal(t, deliveryPlugin.String(), got.Agents[0].Delivery)
 	assert.Equal(t, string(outcomeFailed), got.Agents[0].Status)
 	assert.Equal(t, string(protos.AitoolsErrorCategoryPluginInstallFailed), got.Agents[0].ErrorCategory)
+}
+
+func TestInstallOutputJSONRequiresNonInteractiveFlags(t *testing.T) {
+	setupTestAgents(t)
+
+	cases := []struct {
+		name string
+		args []string
+		want []string // substrings the error must name
+	}{
+		{
+			name: "no scope or agents",
+			args: []string{"--output", "json"},
+			want: []string{"--scope", "--agents"},
+		},
+		{
+			name: "agents without scope",
+			args: []string{"--agents", "claude-code", "--output", "json"},
+			want: []string{"--scope"},
+		},
+		{
+			name: "scope without agents",
+			args: []string{"--scope", "global", "--output", "json"},
+			want: []string{"--agents"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var out bytes.Buffer
+			ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+			cmd := newTestInstallCmd()
+			cmd.SetContext(ctx)
+			cmd.SetOut(&out)
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
+			cmd.SetArgs(tc.args)
+
+			err := cmd.Execute()
+			require.Error(t, err)
+			for _, w := range tc.want {
+				assert.Contains(t, err.Error(), w)
+			}
+			// The command errors before rendering, so no JSON is emitted.
+			assert.Empty(t, out.String())
+		})
+	}
 }
 
 func TestInstallUnknownAgentErrors(t *testing.T) {
