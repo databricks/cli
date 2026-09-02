@@ -605,7 +605,9 @@ tasks:
   autotest-cloud:
     desc: Run the resource field-support catalog against a real workspace (every field; nightly)
     cmds:
-      - "go test {{.FIELDS_PACKAGE}} -run '^TestFields$' -count=1 -timeout=${CLOUD_TIMEOUT:-300m}"
+      # -sample 0 says every field: without it a cloud run samples unless the commit title carries
+      # AUTOTEST_ALL, which is what keeps a PR's integration run affordable.
+      - "go test {{.FIELDS_PACKAGE}} -run '^TestFields$' -count=1 -sample 0 -timeout=${CLOUD_TIMEOUT:-300m}"
 
   autotest-cloud-pr:
     desc: Run a two-field sample of the field-support catalog against a real workspace (PRs)
@@ -614,6 +616,7 @@ tasks:
       # checks that every resource type still deploys and that the sampled fields' findings read
       # as recorded; a change between two passing verdicts only shows in the full run above.
       - "go test {{.FIELDS_PACKAGE}} -run '^TestFields$' -count=1 -sample 2 -timeout=${CLOUD_TIMEOUT:-90m}"
+
 
   test-update-templates:
     desc: Update acceptance test template output
