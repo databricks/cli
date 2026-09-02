@@ -1,1 +1,1 @@
-Before committing the automatic terraform→direct state migration, run a full deployment plan against the converted state. If the plan fails, the migration is abandoned and the bundle stays on terraform; `direct_migrate_plan_error` is recorded in telemetry.
+Before committing the automatic terraform→direct migration, run a deployment plan against the converted state; if the plan fails the migration is abandoned.
