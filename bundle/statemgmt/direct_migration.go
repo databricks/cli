@@ -176,13 +176,8 @@ func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath s
 		return fmt.Errorf("opening migrated state for plan check: %w", err)
 	}
 
-	if _, err := planBundle.CalculatePlan(planCtx, b.WorkspaceClient(ctx), cfg); err != nil {
-		return err
-	}
-	if logdiag.HasError(planCtx) {
-		return errors.New("plan check failed")
-	}
-	return nil
+	_, err := planBundle.CalculatePlan(planCtx, b.WorkspaceClient(ctx), cfg)
+	return err
 }
 
 // recordDryRunNoop records dry-run telemetry for a no-op case (no state, or
