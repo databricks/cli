@@ -1,0 +1,19 @@
+# Inherited MSYS_NO_PATHCONV breaks bare python helpers on Windows; this test doesn't need it.
+unset MSYS_NO_PATHCONV
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    # Cleanup; direct's destroy 404s on the stale GET and diverges, so keep it out of the diff.
+    $CLI bundle destroy --auto-approve &> LOG.destroy
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle plan
+$CLI bundle plan -o json > tmp.plan.json
+$CLI bundle deploy $(readplanarg tmp.plan.json)
+replace_ids.py
+
+# Prove the inline YAML map reaches the API as a JSON string.
+trace print_requests.py //api/2.0/lakeview/dashboards
