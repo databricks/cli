@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"golang.org/x/sync/errgroup"
 )
 
 // librariesWaitTimeout bounds how long we poll for libraries to finish installing.
@@ -152,15 +153,30 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 }
 
 func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote, error) {
-	details, err := r.client.Clusters.GetByClusterId(ctx, id)
-	if err != nil {
+	var details *compute.ClusterDetails
+	var libraries []compute.Library
+
+	// The cluster GET and the library-status GET are independent, so run them concurrently.
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		var err error
+		details, err = r.client.Clusters.GetByClusterId(ctx, id)
+		return err
+	})
+	g.Go(func() error {
+		var err error
+		libraries, err = r.readLibraries(ctx, id)
+		return err
+	})
+	if err := g.Wait(); err != nil {
 		return nil, err
 	}
+
 	remote := &ClusterRemote{
 		ClusterDetails:           *details,
 		ApplyPolicyDefaultValues: false,
 		Lifecycle:                nil,
-		Libraries:                nil,
+		Libraries:                libraries,
 	}
 	// The GET response carries apply_policy_default_values only under .spec (a snapshot of the
 	// create/edit settings), not at the top level. Promote it so RemapState is a dumb copy.
@@ -179,11 +195,6 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 		remote.Lifecycle = nil
 	}
 
-	libraries, err := r.readLibraries(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	remote.Libraries = libraries
 	return remote, nil
 }
 
