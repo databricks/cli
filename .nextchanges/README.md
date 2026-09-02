@@ -10,7 +10,7 @@ shared changelog file.
 Create `.nextchanges/<section>/<name>.md` and write what changed:
 
 ```
-* Added the `databricks quickstart` command.
+* Add the `databricks quickstart` command.
 ```
 
 You can do this straight from the GitHub UI: **Add file → Create new file**,

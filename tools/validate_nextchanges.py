@@ -365,7 +365,7 @@ def main(argv=None):
             print(f"{path}: {msg}", file=sys.stderr)
         print(f"\nFragments must live at {CHANGELOG_DIR}/<section>/<name>.md", file=sys.stderr)
         print("and be a single line with a `* ` bullet marker and a trailing period, e.g.", file=sys.stderr)
-        print("  * Added the `databricks quickstart` command.", file=sys.stderr)
+        print("  * Add the `databricks quickstart` command.", file=sys.stderr)
         print(f"Valid sections: {', '.join(sections)}", file=sys.stderr)
         print(f"{CHANGELOG_DIR}/{VERSION_FILE} must hold the next release version.", file=sys.stderr)
         sys.exit(1)
