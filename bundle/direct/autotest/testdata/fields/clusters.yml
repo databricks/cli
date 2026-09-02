@@ -20,7 +20,10 @@ base:
     - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQtest
   init_scripts:
     - workspace:
-        destination: /Users/$CURRENT_USER_NAME/init.sh
+        # The file the bundle uploads, not a path in the user home: a real workspace fails the
+        # cluster with "Init scripts failed ... Tree node with path ... does not exist" when the
+        # script is not there, and the mock server accepts any path.
+        destination: /Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle-$UNIQUE_NAME/default/files/init.sh
 
 fields:
   # The API refuses anything between 1 and 9: "The cluster autotermination time cannot be less than
@@ -29,6 +32,9 @@ fields:
   autotermination_minutes: [10, 20]
 
 skip:
+  # A cluster policy has to exist: "'x' is not a valid cluster policy ID." The fake server takes any
+  # string, so these rows only ever measured the fake.
+  policy_id: needs a cluster policy to exist
   # An init script entry carries exactly one of workspace, volumes, s3, abfss, gcs, dbfs or file,
   # and base seeds the workspace member. Setting a leaf inside another arm leaves that arm without
   # its own destination, which the backend accepts and then ignores -- every such row was recording
