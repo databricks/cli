@@ -1,4 +1,5 @@
 Cloud = true
+CloudSlow = true
 RecordRequests = false
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
