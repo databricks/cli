@@ -1,0 +1,7 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "catalog": "main",
+  "date_range": "${business_date[0..9]}",
+  "source_file": "${source_file}"
+}
