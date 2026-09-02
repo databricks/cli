@@ -10,7 +10,6 @@
 >>> [CLI] bundle plan -o json
 
 === Deploy: payload sent to the jobs API
->>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created jobs.example_ingestion_job
 Files: 6 uploaded, 0 deleted

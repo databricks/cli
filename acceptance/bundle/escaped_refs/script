@@ -14,6 +14,8 @@ trace $CLI bundle validate -o json | jq '.resources.jobs.example_ingestion_job.t
 title "Plan (json)"
 trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-title "Deploy: payload sent to the jobs API"
-trace $CLI bundle deploy
+# Not traced: the READPLAN variant adds "--plan ...", and the point of that variant is
+# that the payload below is identical either way.
+title "Deploy: payload sent to the jobs API\n"
+$CLI bundle deploy $(readplanarg out.plan.$DATABRICKS_BUNDLE_ENGINE.json)
 trace print_requests.py //jobs

@@ -5,8 +5,11 @@ cleanup() {
 trap cleanup EXIT
 
 title "depends_on: only the real reference creates an edge"
-trace $CLI bundle plan -o json | jq '.plan | map_values(.depends_on)'
+$CLI bundle plan -o json > plan.json
+trace jq '.plan | map_values(.depends_on)' plan.json
 
-title "Payload: escaped stays literal, real is resolved"
-trace $CLI bundle deploy
+# Not traced: the READPLAN variant adds "--plan ...", and the point of that variant is
+# that the payload below is identical either way.
+title "Payload: escaped stays literal, real is resolved\n"
+$CLI bundle deploy $(readplanarg plan.json)
 trace print_requests.py //jobs --sort
