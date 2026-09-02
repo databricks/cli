@@ -174,7 +174,7 @@ tasks:
       - "{{.EMBED_SOURCES}}"
       - "**/testdata/**"
     cmds:
-      - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --fix"
+      - "uv run --script tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --fix"
 
   # --- Formatting ---
 
@@ -225,7 +225,7 @@ tasks:
       - tools/lintdiff.py
       - "{{.EMBED_SOURCES}}"
     cmds:
-      - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint fmt"
+      - "uv run --script tools/lintdiff.py {{.GO_TOOL}} golangci-lint fmt"
 
   fmt-yaml:
     desc: Format YAML files
@@ -279,7 +279,7 @@ tasks:
   ws:
     desc: Fix whitespace issues
     cmds:
-      - "./tools/validate_whitespace.py --fix"
+      - "uv run --script tools/validate_whitespace.py --fix"
 
   links:
     desc: Update GitHub links in CHANGELOG.md and .nextchanges/ fragments
@@ -288,12 +288,12 @@ tasks:
       - ".nextchanges/**/*.md"
       - tools/update_github_links.py
     cmds:
-      - "./tools/update_github_links.py"
+      - "uv run --script tools/update_github_links.py"
 
   check-changelog:
     desc: Validate .nextchanges fragment placement
     cmds:
-      - "./tools/validate_nextchanges.py"
+      - "uv run --script tools/validate_nextchanges.py"
 
   changelog-preview:
     desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
@@ -312,7 +312,7 @@ tasks:
       - go.mod
       - go.sum
     cmds:
-      - ./tools/check_deadcode.py
+      - "uv run --script tools/check_deadcode.py"
 
   check-lockfiles:
     desc: Fail if a Databricks PyPI proxy URL leaked into a uv.lock or .py.lock
@@ -607,7 +607,7 @@ tasks:
   bump-mlops-stacks:
     desc: Bump the vendored mlops-stacks acceptance template to github.com/databricks/mlops-stacks HEAD
     cmds:
-      - "./tools/bump_mlops_stacks.py"
+      - 'uv run -p ">=3.11" --no-project python tools/bump_mlops_stacks.py'
       # The bump rewrites a test input, so refresh that test's golden output.
       - "go test ./acceptance -run '^TestAccept/bundle/deploy/mlops-stacks' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
@@ -1069,16 +1069,16 @@ tasks:
     desc: Run 1k benchmark and print summary
     cmds:
       - task: bench-1k
-      - ./tools/bench_parse.py bench1k.log
+      - 'uv run -p ">=3.11" --no-project python tools/bench_parse.py bench1k.log'
 
   bench-100-summary:
     desc: Run 100 benchmark and print summary
     cmds:
       - task: bench-100
-      - ./tools/bench_parse.py bench100.log
+      - 'uv run -p ">=3.11" --no-project python tools/bench_parse.py bench100.log'
 
   bench-10-summary:
     desc: Run 10 benchmark and print summary
     cmds:
       - task: bench-10
-      - ./tools/bench_parse.py bench10.log
+      - 'uv run -p ">=3.11" --no-project python tools/bench_parse.py bench10.log'
