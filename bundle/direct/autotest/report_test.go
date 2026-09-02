@@ -528,12 +528,16 @@ func writeReport(t testutil.TestingT, name, body string) {
 		t.Errorf("creating %s: %s", filepath.Dir(name), err)
 		return
 	}
-	// The previous run's copy is kept next to the new one: reading what a change did to a report
-	// means diffing the two, and the full report is not in git to diff against.
-	if previous, err := os.ReadFile(name); err == nil {
-		if err := os.WriteFile(name+".backup", previous, 0o644); err != nil {
-			t.Errorf("backing up %s: %s", name, err)
-			return
+	// The previous copy of a log is kept next to the new one: reading what a change did to a full
+	// report means diffing the two, and it is not in git to diff against. Not for a committed
+	// golden -- git is its history, and a .backup beside it would be an untracked file in the one
+	// directory that holds only tracked ones.
+	if strings.HasPrefix(name, logsDir+string(os.PathSeparator)) {
+		if previous, err := os.ReadFile(name); err == nil {
+			if err := os.WriteFile(name+".backup", previous, 0o644); err != nil {
+				t.Errorf("backing up %s: %s", name, err)
+				return
+			}
 		}
 	}
 	if err := os.WriteFile(name, []byte(body), 0o644); err != nil {

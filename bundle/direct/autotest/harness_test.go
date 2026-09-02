@@ -171,6 +171,9 @@ func newHarness(t *testing.T, ctx context.Context, client *databricks.WorkspaceC
 	if err := copyDir(dataDir, dir); err != nil {
 		return nil, err
 	}
+	if err := copyDir(ownDataDir, dir); err != nil {
+		return nil, err
+	}
 
 	rememberWorkspaceUser(user.UserName)
 	yml, err := renderBundle(resourceType, uniqueName, user.UserName, base, deps, variables)

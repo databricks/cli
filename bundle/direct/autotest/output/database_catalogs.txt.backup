@@ -1,9 +1,0 @@
-database_instance_name                       x          y          BASE_ERROR  cannot recreate resources.database_catalogs.foo: database instance with name 'x' not found (404 UNKNOWN)
-database_instance_name                       y          x          BASE_ERROR  cannot recreate resources.database_catalogs.foo: database instance with name 'y' not found (404 UNKNOWN)
-
-=== summary
-OK_RECREATE        8
-SUPPRESSED         1
-NOT_OBSERVABLE     1
-SKIPPED            2
-BASE_ERROR         2
