@@ -9,7 +9,7 @@ Wrote a Databricks Asset Bundle to .:
 To deploy and run this workload as a bundle:
   1. [CLI] bundle validate
   2. [CLI] bundle deploy
-  3. [CLI] bundle run torchrun-a10-smoke-test
+  3. [CLI] bundle run torchrun-a10-smoke-test --no-wait
 
 bundle deploy uploads the code source and launch scripts automatically.
 To see what it deployed and where: [CLI] bundle summary
@@ -82,7 +82,7 @@ Wrote a Databricks Asset Bundle to .:
 To deploy and run this workload as a bundle:
   1. [CLI] bundle validate
   2. [CLI] bundle deploy
-  3. [CLI] bundle run torchrun-a10-smoke-test
+  3. [CLI] bundle run torchrun-a10-smoke-test --no-wait
 
 bundle deploy uploads the code source and launch scripts automatically.
 To see what it deployed and where: [CLI] bundle summary

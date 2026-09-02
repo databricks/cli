@@ -593,7 +593,9 @@ func printConvertNextSteps(ctx context.Context, dir string, written []string, jo
 	steps = append(steps,
 		self+" bundle validate",
 		self+" bundle deploy",
-		self+" bundle run "+jobKey,
+		// --no-wait by default: AI Runtime training runs are long, so submit and
+		// return the terminal rather than blocking on a streamed run.
+		self+" bundle run "+jobKey+" --no-wait",
 	)
 
 	cmdio.LogString(ctx, "")
