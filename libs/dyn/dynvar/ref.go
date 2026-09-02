@@ -65,7 +65,7 @@ func NewRef(v dyn.Value) (Ref, bool) {
 		match := make([]string, len(idx)/2)
 		for i := range len(idx) / 2 {
 			if idx[2*i] >= 0 {
-				match[i] = s[idx[2*i] : idx[2*i+1]]
+				match[i] = s[idx[2*i]:idx[2*i+1]]
 			}
 		}
 		m = append(m, match)

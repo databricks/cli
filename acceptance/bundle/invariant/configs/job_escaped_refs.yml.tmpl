@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  catalog:
+    default: main
+
+resources:
+  jobs:
+    foo:
+      name: test-job-$UNIQUE_NAME
+      tasks:
+        - task_key: only_task
+          notebook_task:
+            notebook_path: /Shared/notebook
+            base_parameters:
+              option_a: $${test_var}
+              catalog: ${var.catalog}
+              source_file: $${source_file}
+              date_range: $${business_date[0..9]}
