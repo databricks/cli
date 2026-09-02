@@ -82,7 +82,7 @@ func TestConvertDashboardDropsFilePath(t *testing.T) {
 	// but keeps file_path around, so the converter sees both and must drop file_path.
 	src := resources.Dashboard{
 		DashboardConfig: resources.DashboardConfig{
-			SerializedDashboard: `{ "json": true }`,
+			SerializedDashboard: `{"pages":[{"displayName":"New Page","layout":[]}]}`,
 		},
 		FilePath: "some/path/to/dashboard.lvdash.json",
 	}
@@ -97,7 +97,7 @@ func TestConvertDashboardDropsFilePath(t *testing.T) {
 
 	// Assert that the "serialized_dashboard" is included.
 	assert.Subset(t, out.Dashboard["my_dashboard"], map[string]any{
-		"serialized_dashboard": `{ "json": true }`,
+		"serialized_dashboard": `{"pages":[{"displayName":"New Page","layout":[]}]}`,
 	})
 
 	// Assert that the "file_path" is dropped.
