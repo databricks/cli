@@ -20,7 +20,7 @@ fields:
   # An experiment name is an absolute workspace path, so the generic "x" is rejected.
   name: [/Shared/test-experiment-a, /Shared/test-experiment-b]
   # The artifact location needs a scheme.
-  artifact_location: [dbfs:/tmp/mlflow-a, dbfs:/tmp/mlflow-b]
+  artifact_location: ['dbfs:/tmp/mlflow-a', 'dbfs:/tmp/mlflow-b']
   # See the note in volumes.yml: a reference has to name something that exists.
   trace_location.uc_trace_location.catalog: [main]
   trace_location.uc_trace_location.schema: [default]

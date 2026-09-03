@@ -607,7 +607,6 @@ tasks:
       # as recorded; a change between two passing verdicts only shows in the full run above.
       - "go test {{.FIELDS_PACKAGE}} -run '^TestFields$' -count=1 -sample 2 -timeout=${CLOUD_TIMEOUT:-90m}"
 
-
   test-update-templates:
     desc: Update acceptance test template output
     sources: *ACC_SOURCES_UPDATE

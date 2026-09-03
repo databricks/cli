@@ -1,5 +1,12 @@
 # Value library for vector search indexes. See ../../README.md.
 
+# Every field of an index is immutable, so a transition recreates it -- and a real workspace deletes an
+# index asynchronously, so the create half waits on "still exists, waiting for deletion to complete"
+# until the transition times out. No field of this type can converge there, whichever one is picked, so
+# the catalog for it is the local one. That also spares the cloud run 70 recreates behind an endpoint
+# that takes five minutes to provision, which is what made this type a three-hour outlier.
+local_only: a recreate cannot converge, because a real workspace deletes an index asynchronously
+
 deps:
   vector_search_endpoints:
     name: test-vse-$UNIQUE_NAME
