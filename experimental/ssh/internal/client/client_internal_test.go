@@ -487,6 +487,15 @@ func TestBuildSshTunnelEvent(t *testing.T) {
 				HasBaseEnvironment: true,
 			},
 		},
+		{
+			name: "keeping detached processes records presence only",
+			opts: ClientOptions{ClusterID: "abc-123", KeepDetachedFor: 2 * time.Hour},
+			want: protos.SshTunnelEvent{
+				ComputeType:           protos.SshTunnelComputeTypeDedicated,
+				ClientMode:            protos.SshTunnelClientModeSSH,
+				KeepDetachedRequested: true,
+			},
+		},
 	}
 
 	for _, tt := range tests {

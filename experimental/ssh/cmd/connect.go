@@ -42,11 +42,13 @@ Connect to a dedicated cluster:
 	var baseEnvironment string
 	var autoApprove bool
 	var usagePolicyID string
+	var keepDetachedFor time.Duration
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks dedicated cluster ID")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster if it is not running")
+	cmd.Flags().DurationVar(&keepDetachedFor, "keep-detached-for", defaultKeepDetachedFor, "Keep processes detached from the SSH session (tmux, setsid, nohup) running for up to this long after the server shuts down, at the cost of holding the cluster up (dedicated clusters only)")
 
 	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name to reuse across sessions (serverless only)")
 	cmd.Flags().StringVar(&accelerator, "accelerator", "", "Serverless GPU accelerator type (GPU_1xA10 or GPU_8xH100)")
@@ -134,6 +136,7 @@ Connect to a dedicated cluster:
 			AdditionalArgs:       args,
 			AutoApprove:          autoApprove,
 			UsagePolicyID:        usagePolicyID,
+			KeepDetachedFor:      keepDetachedFor,
 		}
 		if err := opts.Validate(); err != nil {
 			return err

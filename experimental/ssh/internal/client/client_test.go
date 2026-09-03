@@ -121,6 +121,29 @@ func TestValidate(t *testing.T) {
 			name: "usage policy with connection name",
 			opts: client.ClientOptions{ConnectionName: "my-conn", UsagePolicyID: "pol-1"},
 		},
+		{
+			name:    "keep detached with serverless",
+			opts:    client.ClientOptions{ConnectionName: "my-conn", KeepDetachedFor: time.Hour, ServerTimeout: 24 * time.Hour},
+			wantErr: "--keep-detached-for flag can only be used with a dedicated cluster (--cluster flag)",
+		},
+		{
+			name: "keep detached with cluster ID",
+			opts: client.ClientOptions{ClusterID: "abc-123", KeepDetachedFor: time.Hour, ServerTimeout: 24 * time.Hour},
+		},
+		{
+			name:    "keep detached beyond the server timeout",
+			opts:    client.ClientOptions{ClusterID: "abc-123", KeepDetachedFor: 25 * time.Hour, ServerTimeout: 24 * time.Hour},
+			wantErr: "--keep-detached-for must not exceed 24h0m0s, the maximum lifetime of the SSH server job, got 25h0m0s",
+		},
+		{
+			name: "keep detached exactly at the server timeout",
+			opts: client.ClientOptions{ClusterID: "abc-123", KeepDetachedFor: 24 * time.Hour, ServerTimeout: 24 * time.Hour},
+		},
+		{
+			name:    "negative keep detached",
+			opts:    client.ClientOptions{ClusterID: "abc-123", KeepDetachedFor: -time.Minute, ServerTimeout: 24 * time.Hour},
+			wantErr: "--keep-detached-for must not be negative, got -1m0s",
+		},
 	}
 
 	for _, tt := range tests {
@@ -246,6 +269,13 @@ func TestToProxyCommand(t *testing.T) {
 			name: "serverless with usage policy",
 			opts: client.ClientOptions{ConnectionName: "my-conn", UsagePolicyID: "pol-1", ShutdownDelay: 2 * time.Minute},
 			want: quoted + " ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --usage-policy-id=pol-1",
+		},
+		{
+			// Carried into the ProxyCommand so a reconnect through ssh asks for the same
+			// linger, instead of starting a server that would sweep the detached work.
+			name: "dedicated cluster keeping detached processes",
+			opts: client.ClientOptions{ClusterID: "abc-123", KeepDetachedFor: 2 * time.Hour, ShutdownDelay: 5 * time.Minute},
+			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=5m0s --keep-detached-for=2h0m0s",
 		},
 		{
 			name: "with metadata",

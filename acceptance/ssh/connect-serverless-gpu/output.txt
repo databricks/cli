@@ -22,6 +22,7 @@
         "notebook_task": {
           "base_parameters": {
             "authorizedKeySecretName": "client-public-key",
+            "keepDetachedForSeconds": "0",
             "maxClients": "10",
             "secretScopeName": "[USERNAME]-serverless-gpu-test-ssh-tunnel-keys",
             "serverless": "true",

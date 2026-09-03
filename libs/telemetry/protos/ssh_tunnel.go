@@ -109,6 +109,12 @@ type SshTunnelEvent struct {
 	// Only the presence is recorded, not the policy ID itself.
 	HasUsagePolicy bool `json:"has_usage_policy"`
 
+	// Whether the connection asked for detached processes (tmux, setsid, nohup) to
+	// outlive the server via --keep-detached-for. Only the presence is recorded, not
+	// the duration. Whether any such process actually existed at teardown is reported
+	// separately by the server, in SshTunnelTeardownEvent.
+	KeepDetachedRequested bool `json:"keep_detached_requested"`
+
 	// Why the connection attempt failed, or TYPE_UNSPECIFIED on success. Deliberately
 	// without omitempty: the field is what identifies a failure's cause, so an empty value
 	// must not be silently dropped into an indistinguishable NULL. Every failure path sets
