@@ -59,9 +59,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		action := entry.Action
 		errorPrefix := fmt.Sprintf("cannot %s %s", action, resourceKey)
-		if action == deployplan.Skip && entry.PersistState {
-			errorPrefix = "cannot persist state for " + resourceKey
-		}
 
 		if action == deployplan.Undefined {
 			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s: unknown action %q", resourceKey, action))
@@ -117,8 +114,9 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return true
 		}
 
-		// Skip nodes carry no new state, unless the plan asked to persist it.
-		if action != deployplan.Skip || entry.PersistState {
+		// We don't keep NewState around for 'skip' nodes
+
+		if action != deployplan.Skip {
 			if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, false) {
 				return false
 			}
@@ -135,19 +133,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 
-			if action == deployplan.Skip {
-				// Persist-state skip: write the new state under the existing id
-				// without calling the resource API.
-				id := b.StateDB.GetResourceID(resourceKey)
-				if id == "" {
-					logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing entry in state", errorPrefix))
-					return false
-				}
-				err = b.StateDB.SaveState(resourceKey, id, sv.Value, entry.DependsOn)
-			} else {
-				// TODO: redo calcDiff to downgrade planned action if possible (?)
-				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
-			}
+			// TODO: redo calcDiff to downgrade planned action if possible (?)
+			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false

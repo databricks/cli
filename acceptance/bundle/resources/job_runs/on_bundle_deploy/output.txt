@@ -94,15 +94,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle": {
-    "action": "skip",
-    "reason": "trigger removed",
-    "old": {
-      "triggers_state": {
-        "on_bundle_deploy": "[UUID]"
-      }
-    }
-  },
   "result_state": {
     "action": "skip",
     "reason": "remote_already_set",
