@@ -178,7 +178,7 @@ func TestExecuteErrAlreadyPrintedNotEnriched(t *testing.T) {
 	assert.Empty(t, stderr.String())
 }
 
-func TestExecuteVerboseErrorTip(t *testing.T) {
+func TestExecuteDebugErrorTip(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    []string
@@ -189,11 +189,7 @@ func TestExecuteVerboseErrorTip(t *testing.T) {
 			name:    "default",
 			args:    []string{"experimental", "air", "fail", "secret-value"},
 			wantTip: true,
-			wantCmd: "databricks experimental air -v fail …",
-		},
-		{
-			name: "short verbose flag",
-			args: []string{"experimental", "air", "-v", "fail"},
+			wantCmd: "databricks --debug experimental air fail …",
 		},
 		{
 			name: "long debug flag",
@@ -212,7 +208,7 @@ func TestExecuteVerboseErrorTip(t *testing.T) {
 				},
 			}
 			airCommand := &cobra.Command{Use: "air"}
-			EnableVerboseErrorTip(airCommand)
+			EnableDebugErrorTip(airCommand)
 			airCommand.AddCommand(failCommand)
 			experimentalCommand := &cobra.Command{Use: "experimental"}
 			experimentalCommand.AddCommand(airCommand)
@@ -223,31 +219,19 @@ func TestExecuteVerboseErrorTip(t *testing.T) {
 			err := Execute(t.Context(), cmd)
 			require.Error(t, err)
 			if tt.wantTip {
-				assert.Contains(t, stderr.String(), "use the -v (verbose) flag")
+				assert.Contains(t, stderr.String(), "use the --debug flag")
 				assert.Contains(t, stderr.String(), tt.wantCmd)
 				assert.NotContains(t, stderr.String(), "secret-value")
 			} else {
-				assert.NotContains(t, stderr.String(), "use the -v (verbose) flag")
+				assert.NotContains(t, stderr.String(), "use the --debug flag")
 			}
 		})
 	}
 }
 
-func TestVersionShorthandUnaffectedByAirVerboseFlag(t *testing.T) {
-	stdout := &bytes.Buffer{}
-	cmd := New(t.Context())
-	cmd.SetArgs([]string{"-v"})
-	cmd.SetOut(stdout)
-
-	err := Execute(t.Context(), cmd)
-
-	require.NoError(t, err)
-	assert.Contains(t, stdout.String(), "Databricks CLI v")
-}
-
 func TestCommandArgsForLoggingRedactsAirOverrides(t *testing.T) {
 	airCommand := &cobra.Command{Use: "air"}
-	EnableVerboseErrorTip(airCommand)
+	EnableDebugErrorTip(airCommand)
 	runCommand := &cobra.Command{Use: "run"}
 	airCommand.AddCommand(runCommand)
 

@@ -58,10 +58,6 @@ func New(ctx context.Context) *cobra.Command {
 		var err error
 
 		ctx := cmd.Context()
-		if verboseCommand := verboseErrorTipCommand(cmd); verboseCommand != nil {
-			logFlags.debug = logFlags.debug || cmd.Flag("verbose").Value.String() == "true"
-		}
-
 		// Configure command IO
 		ctx, err = outputFlag.initializeIO(ctx, cmd)
 		if err != nil {
@@ -167,7 +163,7 @@ Stack Trace:
 			err = auth.AppendAccountHostHint(cmdctx.WorkspaceClient(cmd.Context()).Config, err)
 		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
-		printVerboseErrorTip(cmd)
+		printDebugErrorTip(cmd)
 	}
 
 	// Log exit status and error
@@ -213,29 +209,28 @@ Stack Trace:
 	return err
 }
 
-const verboseErrorTipAnnotation = "databricks.cli.verbose-error-tip"
+const debugErrorTipAnnotation = "databricks.cli.debug-error-tip"
 
-// EnableVerboseErrorTip adds an AIR-scoped verbose flag and opts the command
-// into rerun guidance when one of its descendants fails.
-func EnableVerboseErrorTip(cmd *cobra.Command) {
+// EnableDebugErrorTip opts the command into debug rerun guidance when one of
+// its descendants fails.
+func EnableDebugErrorTip(cmd *cobra.Command) {
 	if cmd.Annotations == nil {
 		cmd.Annotations = make(map[string]string)
 	}
-	cmd.Annotations[verboseErrorTipAnnotation] = "true"
-	cmd.PersistentFlags().BoolP("verbose", "v", false, "enable debug logging")
+	cmd.Annotations[debugErrorTipAnnotation] = "true"
 }
 
-func verboseErrorTipCommand(cmd *cobra.Command) *cobra.Command {
+func debugErrorTipEnabled(cmd *cobra.Command) bool {
 	for current := cmd; current != nil; current = current.Parent() {
-		if current.Annotations[verboseErrorTipAnnotation] == "true" {
-			return current
+		if current.Annotations[debugErrorTipAnnotation] == "true" {
+			return true
 		}
 	}
-	return nil
+	return false
 }
 
 func commandArgsForLogging(cmd *cobra.Command, args []string) []string {
-	if verboseErrorTipCommand(cmd) == nil {
+	if !debugErrorTipEnabled(cmd) {
 		return args
 	}
 
@@ -252,23 +247,21 @@ func commandArgsForLogging(cmd *cobra.Command, args []string) []string {
 	return redacted
 }
 
-func printVerboseErrorTip(cmd *cobra.Command) {
-	verboseCommand := verboseErrorTipCommand(cmd)
-	if verboseCommand == nil {
+func printDebugErrorTip(cmd *cobra.Command) {
+	if !debugErrorTipEnabled(cmd) {
 		return
 	}
 
 	debugFlag := cmd.Root().PersistentFlags().Lookup("debug")
-	verboseFlag := cmd.Flag("verbose")
-	if debugFlag.Value.String() == "true" || verboseFlag.Value.String() == "true" {
+	if debugFlag.Value.String() == "true" {
 		return
 	}
 
-	commandPrefix := verboseCommand.CommandPath()
-	command := commandPrefix + " -v" + strings.TrimPrefix(cmd.CommandPath(), commandPrefix)
+	commandPrefix := cmd.Root().CommandPath()
+	command := commandPrefix + " --debug" + strings.TrimPrefix(cmd.CommandPath(), commandPrefix)
 	fmt.Fprintf(
 		cmd.ErrOrStderr(),
-		"\nTip: use the -v (verbose) flag immediately after air to see more details and a trace of this error:\n  %s …\n",
+		"\nTip: use the --debug flag to see more details and a trace of this error:\n  %s …\n",
 		command,
 	)
 }

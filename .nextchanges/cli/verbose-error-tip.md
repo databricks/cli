@@ -1,1 +1,1 @@
-* Add an AIR-scoped `-v` alias for `--debug` and show failed AIR commands how to rerun with detailed diagnostics.
+* Show failed AIR commands how to rerun with `--debug` for detailed diagnostics.

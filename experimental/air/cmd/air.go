@@ -15,7 +15,7 @@ func New() *cobra.Command {
 This command set is the Go port of the standalone Python "air" CLI. It is
 experimental and may change in future versions.`,
 	}
-	root.EnableVerboseErrorTip(cmd)
+	root.EnableDebugErrorTip(cmd)
 
 	cmd.AddCommand(newRunCommand())
 	cmd.AddCommand(newGetCommand())
