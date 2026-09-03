@@ -66,7 +66,9 @@ title "bundle deploy\n"
 $CLI bundle deploy $(readplanarg tmp.plan.json)
 trace print_requests.py //jobs/run-now
 
-title "re-adding on_file_change re-fires"
+title "re-adding on_file_change does not re-fire an unchanged file"
+# Removing the trigger left the last hash in state, so re-adding it compares
+# against that and only re-fires when the file changed while disarmed.
 trace print_state.py | jq '.state["resources.job_runs.my_run"].state.lifecycle'
 update_file.py databricks.yml '      job_id: ${resources.jobs.my_job.id}
 ' '      job_id: ${resources.jobs.my_job.id}
@@ -74,6 +76,12 @@ update_file.py databricks.yml '      job_id: ${resources.jobs.my_job.id}
         triggers:
           - on_file_change: seed.txt
 '
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now
+
+title "editing the file while re-armed re-fires"
+update_file.py seed.txt "v2" "v3"
 trace $CLI bundle plan
 trace $CLI bundle deploy
 read_id.py my_run > /dev/null

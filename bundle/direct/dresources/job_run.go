@@ -375,43 +375,31 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // still going, so a run that may yet succeed is not recreated. A run that
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
-// Clearing a trigger skips the run but persists the cleared fingerprint, so
-// re-adding it later re-fires. All other trigger changes recreate the run.
+// Removing a trigger drops the change and leaves the last fingerprint in state,
+// so re-adding the trigger only re-fires when the watched files changed
+// meanwhile. All other trigger changes recreate the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
 	switch {
 	case path.Len() == jobRunLifecyclePath.Len() && path.HasPrefix(jobRunLifecyclePath):
-		if change.New == nil {
-			change.Action = deployplan.Skip
-			change.Reason = "trigger removed"
-			change.PersistState = true
-		} else if change.Old != nil {
-			// Trigger fields classify the change, including a removed pattern.
+		// Dropped when the trigger is removed (New nil) and when both sides are
+		// present, where the trigger fields below classify the change instead.
+		// Arming from no lifecycle at all keeps its recreate.
+		if change.New == nil || change.Old != nil {
 			change.Reason = deployplan.ReasonDrop
 		}
 	case path.Len() == jobRunOnBundleDeployPath.Len() && path.HasPrefix(jobRunOnBundleDeployPath):
 		if change.New == nil || change.New == "" {
-			change.Action = deployplan.Skip
-			change.Reason = "trigger removed"
-			change.PersistState = true
+			change.Reason = deployplan.ReasonDrop
 		}
 	case path.Len() == jobRunOnFileChangePath.Len() && path.HasPrefix(jobRunOnFileChangePath):
-		if isEmptyFileTriggerMap(change.New) {
-			if isEmptyFileTriggerMap(change.Old) {
-				change.Reason = deployplan.ReasonDrop
-			} else {
-				change.Action = deployplan.Skip
-				change.Reason = "trigger removed"
-				change.PersistState = true
-			}
-		} else if change.Old != nil {
-			// Pattern entries classify the change.
+		// As above: an emptied map is a removal, and pattern entries classify a map
+		// that still has both sides.
+		if isEmptyFileTriggerMap(change.New) || change.Old != nil {
 			change.Reason = deployplan.ReasonDrop
 		}
 	case path.Len() == jobRunOnFileChangePath.Len()+1 && path.HasPrefix(jobRunOnFileChangePath):
 		if change.New == nil {
-			change.Action = deployplan.Skip
-			change.Reason = "trigger removed"
-			change.PersistState = true
+			change.Reason = deployplan.ReasonDrop
 		}
 	case path.Len() == jobRunResultStatePath.Len() && path.HasPrefix(jobRunResultStatePath):
 		// The planner passes no remote state when the run could not be read.
