@@ -992,16 +992,19 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
-		// New nodes only: a node with state must stay in the plan, otherwise emptying it plans nothing.
-		// Apply drops the state entry once the node is empty, so it is skipped from then on.
-		if _, hasState := db.State[node]; !hasState {
-			empty, err := adapter.IsEmptyState(newStateConfig)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", prefix, err)
+		// An empty state describes no resource, so the node is not planned as one. A node with
+		// no state is simply left out: there is nothing to create. A node that has state goes
+		// back to existingKeys and is planned as a delete, which revokes and stops tracking it -
+		// emptying the list is the same request as removing the block.
+		empty, err := adapter.IsEmptyState(newStateConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+		if empty {
+			if stateEntry, hasState := db.State[node]; hasState {
+				existingKeys[node] = stateEntry
 			}
-			if empty {
-				continue
-			}
+			continue
 		}
 
 		// Note, we're extracting references in input config but resolving them in newState.Config which is PrepareState(inputConfig)

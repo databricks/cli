@@ -18,9 +18,9 @@ Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
 }
 json = {};
 === the grants list is empty
-update schemas.grants_schema.grants
+delete schemas.grants_schema.grants
 
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
 {
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_delete_semantics_[UNIQUE_NAME]",
