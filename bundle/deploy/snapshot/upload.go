@@ -2,28 +2,38 @@ package snapshot
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
-	"path"
+	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/snapshot"
 )
 
 // fileLimitWarning is the file count above which immutable folder deployments may fail.
 const fileLimitWarning = 1000
 
 type snapshotUpload struct {
-	// uploader allows test injection of a custom SnapshotUploader.
-	uploader SnapshotUploader
+	// clean discards zips staged by a previous run before staging the current one so
+	// content-addressed "<hash>.zip" files don't accumulate. It must be false when
+	// applying a pre-existing plan (deploy --plan): that plan's zip_path points at a
+	// file staged when the plan was produced, which cleaning would delete out from
+	// under DoCreate.
+	clean bool
 }
 
-// Upload returns a mutator that builds the bundle zip, uploads it via
-// /api/2.0/repos/snapshots, and updates workspace.file_path and
-// workspace.artifact_path to the content-addressed location returned by the API.
-func Upload() bundle.Mutator {
-	return &snapshotUpload{}
+// PlanUpload returns a mutator that registers the immutable snapshot as an internal
+// resource. It builds the bundle zip, stages it under the bundle's local state
+// directory as "<hash>.zip", and records the path on the resource; the staged file
+// is uploaded when the resource is created on apply. Pass clean=true to first discard
+// zips staged by a previous run; pass false when applying a pre-existing plan so its
+// staged zip is preserved.
+func PlanUpload(clean bool) bundle.Mutator {
+	return &snapshotUpload{clean: clean}
 }
 
 func (m *snapshotUpload) Name() string {
@@ -31,21 +41,49 @@ func (m *snapshotUpload) Name() string {
 }
 
 func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	uploader := m.uploader
-	if uploader == nil {
-		var err error
-		uploader, err = NewSnapshotUploader(b.WorkspaceClient(ctx))
-		if err != nil {
-			return diag.FromErr(err)
-		}
+	uploader, err := snapshot.NewSnapshotClient(b.WorkspaceClient(ctx))
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
-	cmdio.LogProgress(ctx, "Uploading immutable bundle snapshot...")
+	remoteRoot, err := uploader.GetSnapshotRootPath(ctx)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if b.Config.Resources.Snapshots == nil {
+		b.Config.Resources.Snapshots = make(map[string]*resources.Snapshot)
+	}
+	if _, ok := b.Config.Resources.Snapshots[resources.SnapshotResourceKey]; ok {
+		return nil
+	}
 
 	zipContent, fileCount, err := BundleZip(ctx, b)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("failed to build snapshot zip: %w", err))
 	}
+
+	if m.clean {
+		if err := os.RemoveAll(b.GetLocalStateDir(ctx, "snapshots")); err != nil {
+			return diag.FromErr(fmt.Errorf("failed to clean snapshot dir: %w", err))
+		}
+	}
+	dir, err := b.LocalStateDir(ctx, "snapshots")
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	zipPath := filepath.Join(dir, snapshot.HashFromContent(zipContent)+".zip")
+	if err := os.WriteFile(zipPath, zipContent, 0o600); err != nil {
+		return diag.FromErr(fmt.Errorf("failed to write snapshot zip: %w", err))
+	}
+
+	b.Config.Resources.Snapshots[resources.SnapshotResourceKey] = &resources.Snapshot{
+		BundleID:   BundleID(b),
+		ACL:        BuildACL(b),
+		RemoteRoot: remoteRoot,
+		ZipPath:    filepath.ToSlash(zipPath),
+	}
+
 	var diags diag.Diagnostics
 	if fileCount > fileLimitWarning {
 		diags = append(diags, diag.Warningf(
@@ -53,41 +91,30 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 			fileCount, fileLimitWarning,
 		)...)
 	}
-	snapshotID := IDFromContent(zipContent)
-	log.Debugf(ctx, "snapshot.Upload: snapshotID=%s zip=%d bytes", snapshotID, len(zipContent))
-
-	acl := BuildACL(b)
-	// Use the deployment lineage UUID as bundle_id so the snapshot directory is
-	// keyed to this specific deployment (not to the bundle name, which can be
-	// reused across unrelated deployments).
-	bundleID := b.DeploymentBundle.StateDB.GetOrInitLineage()
-	info, err := uploader.Upload(ctx, bundleID, snapshotID, acl, zipContent)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	log.Infof(ctx, "Snapshot uploaded to %s", info.Path)
-
-	b.Config.Workspace.SnapshotPath = info.Path
-	b.Config.Workspace.FilePath = path.Join(info.Path, "files")
-	// Only set artifact_path when artifacts are present; with no artifacts the
-	// zip has no "artifacts" directory and a get-status on it would 404.
-	if len(b.Config.Artifacts) > 0 {
-		b.Config.Workspace.ArtifactPath = path.Join(info.Path, "artifacts")
-	}
 
 	return diags
+}
+
+// BundleID returns a stable hash that identifies the bundle deployment.
+// It is derived deterministically from workspace.state_path, which is the
+// canonical unique identifier for a deployment (name, target, and workspace root
+// are all encoded in it). Two bundles with the same name and target but different
+// workspace.state_path values get distinct IDs.
+func BundleID(b *bundle.Bundle) string {
+	// Use normal sha256 without the namespace.
+	hash := sha256.Sum256([]byte(b.Config.Workspace.StatePath))
+	return hex.EncodeToString(hash[:])
 }
 
 // BuildACL constructs the access_control_list for the snapshot upload.
 // It grants CAN_READ to the current user and to every principal listed in the
 // top-level permissions section of the bundle config.
-func BuildACL(b *bundle.Bundle) []ACLEntry {
-	acl := []ACLEntry{
+func BuildACL(b *bundle.Bundle) []snapshot.ACLEntry {
+	acl := []snapshot.ACLEntry{
 		{UserName: b.Config.Workspace.CurrentUser.UserName, PermissionLevel: "CAN_READ"},
 	}
 	for _, p := range b.Config.Permissions {
-		acl = append(acl, ACLEntry{
+		acl = append(acl, snapshot.ACLEntry{
 			UserName:             p.UserName,
 			GroupName:            p.GroupName,
 			ServicePrincipalName: p.ServicePrincipalName,

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
@@ -63,6 +64,12 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 		}
 		ctx := cmd.Context()
 
+		if b.IsImmutableFolder() {
+			bundle.ApplyContext(ctx, b, snapshot.PlanUpload(true))
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
+		}
 		plan := phases.RunPlan(ctx, b, stateDesc.Engine)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted

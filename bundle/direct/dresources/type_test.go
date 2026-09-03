@@ -56,6 +56,11 @@ var knownMissingInRemoteType = map[string][]string{
 	"vector_search_endpoints": {
 		"usage_policy_id",
 	},
+	"internal_immutable_snapshots": {
+		"bundle_id",
+		"acl",
+		"zip_path",
+	},
 	"job_runs": {
 		// Local-only trigger fingerprints under lifecycle.
 		"lifecycle",
@@ -101,6 +106,11 @@ var knownMissingInStateType = map[string][]string{
 		"backend_type",
 		"keyvault_metadata",
 		"name",
+	},
+	"internal_immutable_snapshots": {
+		// RemoteRoot is only the input used to compose FullPath; the state persists
+		// the composed FullPath (and RelativePath), so it isn't kept in state.
+		"remote_root",
 	},
 }
 

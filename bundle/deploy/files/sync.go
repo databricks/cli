@@ -8,11 +8,14 @@ import (
 	"github.com/databricks/cli/libs/sync"
 )
 
+// GetSync returns a new sync instance for the given bundle.
+// The sync instance will be in no validate remote path mode because it's only used to validate files to sync.
 func GetSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
 	opts, err := GetSyncOptions(ctx, b)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
+	opts.NoValidateRemotePath = true
 	return sync.New(ctx, *opts)
 }
 

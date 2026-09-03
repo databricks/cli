@@ -12,9 +12,7 @@ import (
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -65,13 +63,6 @@ func setupBundleForFilesToSyncTest(t *testing.T) *bundle.Bundle {
 	m.WorkspaceClient.Config = &sdkconfig.Config{
 		Host: "https://foo.test",
 	}
-
-	// The initialization logic in [sync.New] performs a check on the destination path.
-	// Removing this check at initialization time is tbd...
-	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(mock.Anything, "/this/doesnt/matter").Return(&workspace.ObjectInfo{
-		ObjectType: workspace.ObjectTypeDirectory,
-	}, nil)
-
 	b.SetWorkpaceClient(m.WorkspaceClient)
 	return b
 }

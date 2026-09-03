@@ -24,6 +24,7 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 		"secrets",
 		"vector_search_endpoints",
 		"vector_search_indexes",
+		"internal_immutable_snapshots",
 	}
 
 	for resourceType := range supportedResources {
