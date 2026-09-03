@@ -164,22 +164,14 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 		// of where it is used. This also means that relative path resolution is done
 		// relative to where a variable is used, not where it is defined.
 		//
-		// Preserve sensitivity: NewValue strips the secretString wrapper, so use
-		// NewSensitiveValue when the resolved value is a sensitive string.
-		if resolved[0].IsSensitive() {
-			s, _ := resolved[0].AsString()
-			return dyn.NewSensitiveValue(s, ref.Value.Locations()), nil
-		}
 		return dyn.NewValue(resolved[0].Value(), ref.Value.Locations()), nil
 	}
 
 	// Not pure; perform string interpolation.
-	// Track whether any resolved value is sensitive; if so, the result is also sensitive.
 	//
 	// Substitute by byte offset rather than by searching for the match text: the same
 	// reference may also appear escaped ("$${foo} ${foo}"), and a search would replace
 	// that occurrence instead, corrupting the literal and leaving the real one unresolved.
-	anySensitive := false
 	var sb strings.Builder
 	consumed := 0
 	for j := range ref.Matches {
@@ -190,12 +182,7 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 			continue
 		}
 
-		if resolved[j].IsSensitive() {
-			anySensitive = true
-		}
-
 		// Try to turn the resolved value into a string.
-		// Use AsString (not AsAny) to get the real value even for sensitive strings.
 		s, ok := resolved[j].AsString()
 		if !ok {
 			// Only allow primitive types to be converted to string.
@@ -214,11 +201,7 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 	}
 	sb.WriteString(ref.Str[consumed:])
 
-	result := dyn.NewValue(sb.String(), ref.Value.Locations())
-	if anySensitive {
-		result = result.MarkSensitive()
-	}
-	return result, nil
+	return dyn.NewValue(sb.String(), ref.Value.Locations()), nil
 }
 
 func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
