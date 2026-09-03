@@ -1,0 +1,14 @@
+bundle:
+  name: job-permissions-revoke-$UNIQUE_NAME
+
+resources:
+  jobs:
+    foo:
+      name: job_revoke_semantics_$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: ./notebook.py
+      permissions: # PERMISSIONS
+        - level: CAN_VIEW # PERMISSIONS
+          user_name: deco-test-user@databricks.com # PERMISSIONS

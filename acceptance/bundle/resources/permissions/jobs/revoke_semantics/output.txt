@@ -1,0 +1,57 @@
+
+=== Deploy with one grant to a non-owner
+>>> [CLI] bundle deploy -qq
+
+>>> acl
+[
+  {
+    "levels": [
+      "CAN_VIEW"
+    ],
+    "name": "deco-test-user@databricks.com"
+  },
+  {
+    "levels": [
+      "IS_OWNER"
+    ],
+    "name": "[USERNAME]"
+  }
+]
+
+=== Empty the list: everything but the owner is revoked
+>>> [CLI] bundle plan
+delete jobs.foo.permissions
+
+Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy -qq
+
+>>> acl
+[
+  {
+    "levels": [
+      "IS_OWNER"
+    ],
+    "name": "[USERNAME]"
+  }
+]
+
+=== Put the grant back, then remove the block entirely: same outcome
+>>> [CLI] bundle deploy -qq
+
+>>> [CLI] bundle plan
+delete jobs.foo.permissions
+
+Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy -qq
+
+>>> acl
+[
+  {
+    "levels": [
+      "IS_OWNER"
+    ],
+    "name": "[USERNAME]"
+  }
+]

@@ -1,0 +1,39 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+cp databricks.yml databricks.yml.saved
+
+cleanup() {
+    errcode $CLI bundle destroy --auto-approve &> LOG.cleanup
+    rm -f out.requests.txt databricks.yml.saved tmp.yml
+}
+trap cleanup EXIT
+
+# The API rejects a Set without exactly one IS_OWNER, so an emptied list revokes down to the
+# owner rather than to nothing. The testserver does not enforce that, which is why this runs
+# on cloud: the read below is the assertion.
+acl() {
+    $CLI api get "/api/2.0/permissions/jobs/$JOB_ID" |
+        jq -S '[.access_control_list[]
+                | select(any(.all_permissions[]; .inherited == false))
+                | {name: (.user_name // .service_principal_name // .group_name),
+                   levels: [.all_permissions[] | select(.inherited == false) | .permission_level]}]'
+}
+
+title "Deploy with one grant to a non-owner"
+trace $CLI bundle deploy -qq
+JOB_ID=$(read_id.py foo)
+trace acl
+
+title "Empty the list: everything but the owner is revoked"
+update_file.py databricks.yml 'permissions: # PERMISSIONS' 'permissions: []'
+sed -i '/# PERMISSIONS/d' databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy -qq
+trace acl
+
+title "Put the grant back, then remove the block entirely: same outcome"
+cp databricks.yml.saved databricks.yml
+trace $CLI bundle deploy -qq
+sed -i '/# PERMISSIONS/d' databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy -qq
+trace acl

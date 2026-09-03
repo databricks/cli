@@ -1,0 +1,4 @@
+# The API requires exactly one IS_OWNER on every Set, so the revoke floor is owner-only.
+# The testserver does not enforce that, so this only means anything against a real workspace.
+Cloud = true
+EnvMatrix.DMS = [""]
