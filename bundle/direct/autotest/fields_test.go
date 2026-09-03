@@ -278,24 +278,37 @@ func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClie
 			rep.add(result{"(rebuild)", "", "", verdictBaseError, oneLine(broken.Error()), broken.Error()})
 			return
 		}
-		// Put the field back and see whether the resource came back with it. A field the API will not
-		// clear leaves it drifted for good, and that drift is then blamed on every field tested
-		// afterwards -- so a resource that will not return to base is replaced.
-		//
-		// A deploy that still succeeds is the cheap case, and the common one: the field is drifting but
-		// the resource works, so the drift goes into the baseline and the resource is kept. Rebuilding
-		// on drift alone cost an app per non-converging field -- 31 in one run, on a workspace that
-		// allows 100 and is shared -- and a rebuild is only worth it when the next deploy would fail.
+		// Put the field back, so the next field starts from a known state. Three things can happen,
+		// and only the last is worth a new resource.
+		reached := h.snapshot()
 		h.restore(base)
-		if _, diags := h.deploy(); diags.HasError() {
+		switch _, diags := h.deploy(); {
+		case !diags.HasError():
+			// Base came back. If the resource still drifts, that drift is real and belongs in the
+			// baseline, where every later field is measured against it -- not a reason to replace a
+			// resource that plainly works.
+			if !h.converged() {
+				baseline = remeasure(h, baseline, rep)
+			}
+
+		case h.deployFrom(reached):
+			// Base did not come back, but the state the transitions left did -- and the API had
+			// already accepted that one, so a deploy of it must succeed unless the resource itself is
+			// broken. It answered, so the resource is alive and updatable and only this field is
+			// stuck. Base advances to what is actually reachable, so later fields start from a state
+			// the API will accept rather than re-failing on this one field for the rest of the run.
+			base = h.snapshot()
+			baseline = remeasure(h, baseline, rep)
+
+		default:
+			// Neither state deploys, so the resource is past repair and every later field would be
+			// measuring that rather than itself.
 			rebuilt, err := rebuild(owner, ctx, client, user, resourceType, fv, h)
 			if err != nil {
 				rep.add(result{f.path, "", "", verdictBaseError, oneLine(err.Error()), err.Error()})
 				return
 			}
 			h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, rep)
-		} else if !h.converged() {
-			baseline = remeasure(h, baseline, rep)
 		}
 	}
 }
