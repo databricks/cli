@@ -247,5 +247,5 @@ fields:
   timeout_seconds: [600, 1200]
   git_source.git_provider: [gitHub, gitLab]
   # A repository URL and a TZ database zone id, neither free text.
-  git_source.git_url: [https://github.com/databricks/cli.test, https://github.com/databricks/dabs.test]
+  git_source.git_url: ['https://github.com/databricks/cli.test', 'https://github.com/databricks/dabs.test']
   git_source.git_commit: [abc123, def456]

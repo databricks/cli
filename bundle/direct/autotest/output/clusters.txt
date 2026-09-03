@@ -10,7 +10,7 @@
 
 
 === summary
-OK                 367
+OK                 349
 SUPPRESSED         18
 NOT_OBSERVABLE     7
-SKIPPED            13
+SKIPPED            14
