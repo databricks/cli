@@ -383,7 +383,25 @@ def parse_file(path, filter):
 
 
 def mark_known_failures(results, known_failures_config):
-    """Mark tests as KNOWN_FAILURE or RECOVERED based on known failures config."""
+    """Mark tests as KNOWN_FAILURE or RECOVERED based on known failures config.
+
+    A ``None`` config leaves every result unchanged:
+
+    >>> mark_known_failures({("pkg", "TestA"): FAIL}, None) == {("pkg", "TestA"): FAIL}
+    True
+
+    A matching rule remaps FAIL/PASS/SKIP to their known variants; non-matching
+    tests are left as-is:
+
+    >>> cfg = parse_known_failures("pkg TestA")
+    >>> mark_known_failures({("pkg", "TestA"): FAIL, ("pkg", "TestB"): FAIL}, cfg) == {
+    ...     ("pkg", "TestA"): KNOWN_FAILURE,
+    ...     ("pkg", "TestB"): FAIL,
+    ... }
+    True
+    >>> mark_known_failures({("pkg", "TestA"): PASS}, cfg) == {("pkg", "TestA"): RECOVERED}
+    True
+    """
     marked_results = {}
     for test_key, action in results.items():
         package_name, testname = test_key
@@ -689,6 +707,22 @@ def format_table(table, columns=None, markdown=False):
         table (list[dict]): the data rows
         columns (list[str]): header names & column order
         markdown (bool): whether to output in markdown format
+
+    Columns are padded to a common width (``.splitlines()`` keeps the alignment
+    padding out of this file's own trailing whitespace):
+
+    >>> format_table([{"a": "1", "b": "hello"}], columns=["a", "b"]).splitlines()
+    ['a    b  ', '1  hello']
+    >>> print(format_table([{"Env": "aws", "x": "1"}], columns=["Env", "x"], markdown=True))
+    | Env | x |
+    | --- | - |
+    | aws | 1 |
+    <BLANKLINE>
+
+    An empty table yields an empty list rather than a string:
+
+    >>> format_table([])
+    []
     """
     if not table:
         return []
@@ -782,6 +816,11 @@ def autojust(value, width):
 
 
 def wrap_in_details(txt, summary):
+    r"""Wrap ``txt`` in a collapsible GitHub-markdown ``<details>`` block.
+
+    >>> wrap_in_details("BODY", "3 interesting tests")
+    '<details><summary>3 interesting tests</summary>\n\nBODY\n\n</details>'
+    """
     return f"<details><summary>{summary}</summary>\n\n{txt}\n\n</details>"
 
 
