@@ -16,6 +16,7 @@ __all__ = [
     "VariableOrOptional",
     "alert_mutator",
     "catalog_mutator",
+    "dashboard_mutator",
     "job_mutator",
     "load_resources_from_current_package_module",
     "load_resources_from_module",
@@ -36,6 +37,7 @@ from databricks.bundles.core._diagnostics import (
 from databricks.bundles.core._generated import (
     alert_mutator,
     catalog_mutator,
+    dashboard_mutator,
     job_mutator,
     pipeline_mutator,
     schema_mutator,

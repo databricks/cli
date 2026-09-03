@@ -1,7 +1,7 @@
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 import pytest
 
@@ -32,6 +32,15 @@ class Color(Enum):
 @dataclass
 class MyDataclass:
     color: Optional[Color]
+
+
+@pytest.mark.parametrize("value", ["{}", {"pages": []}, [1], 1, True])
+def test_transform_any(value):
+    @dataclass
+    class Fake:
+        field: Any
+
+    assert _transform(Fake, {"field": value}) == Fake(field=value)
 
 
 def test_transform_int():

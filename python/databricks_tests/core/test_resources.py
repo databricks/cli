@@ -17,6 +17,7 @@ from databricks.bundles.core import (
     Severity,
     alert_mutator,
     catalog_mutator,
+    dashboard_mutator,
     job_mutator,
     pipeline_mutator,
     schema_mutator,
@@ -26,6 +27,7 @@ from databricks.bundles.core._bundle import Bundle
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._resource_mutator import ResourceMutator
 from databricks.bundles.core._resource_type import _ResourceType
+from databricks.bundles.dashboards._models.dashboard import Dashboard
 from databricks.bundles.jobs._models.job import Job
 from databricks.bundles.pipelines._models.pipeline import Pipeline
 from databricks.bundles.schemas._models.schema import Schema
@@ -127,6 +129,21 @@ test_cases = [
             mutator=catalog_mutator,
         ),
         resource_types[Catalog],
+    ),
+    (
+        TestCase(
+            add_resource=Resources.add_dashboard,
+            dict_example={
+                "display_name": "My Dashboard",
+                "serialized_dashboard": {"pages": []},
+            },
+            dataclass_example=Dashboard(
+                display_name="My Dashboard",
+                serialized_dashboard={"pages": []},
+            ),
+            mutator=dashboard_mutator,
+        ),
+        resource_types[Dashboard],
     ),
 ]
 test_case_ids = [tpe.plural_name for _, tpe in test_cases]

@@ -15,6 +15,7 @@ __all__ = [
     VariableOrOptional,
     alert_mutator,
     catalog_mutator,
+    dashboard_mutator,
     job_mutator,
     load_resources_from_current_package_module,
     load_resources_from_module,
@@ -67,6 +68,7 @@ class ResourceMutator(Generic):
 class Resources:
     def add_alert(self, resource_name: str, alert: AlertParam, *, location: Union[Location, None] = None) -> None
     def add_catalog(self, resource_name: str, catalog: CatalogParam, *, location: Union[Location, None] = None) -> None
+    def add_dashboard(self, resource_name: str, dashboard: DashboardParam, *, location: Union[Location, None] = None) -> None
     def add_diagnostic_error(self, msg: str, *, detail: Union[str, None] = None, path: Union[tuple[str, ...], None] = None, location: Union[Location, None] = None) -> None
     def add_diagnostic_warning(self, msg: str, *, detail: Union[str, None] = None, path: Union[tuple[str, ...], None] = None, location: Union[Location, None] = None) -> None
     def add_diagnostics(self, other: Diagnostics) -> None
@@ -79,6 +81,7 @@ class Resources:
     def add_volume(self, resource_name: str, volume: VolumeParam, *, location: Union[Location, None] = None) -> None
     @property alerts -> dict[str, Alert]
     @property catalogs -> dict[str, Catalog]
+    @property dashboards -> dict[str, Dashboard]
     @property diagnostics -> Diagnostics
     @property jobs -> dict[str, Job]
     @property pipelines -> dict[str, Pipeline]
@@ -110,6 +113,10 @@ def alert_mutator(function: Callable) -> ResourceMutator[Alert]
 @overload def catalog_mutator(function: Callable[[Catalog], Catalog]) -> ResourceMutator[Catalog]
 def catalog_mutator(function: Callable) -> ResourceMutator[Catalog]
 
+@overload def dashboard_mutator(function: Callable[[Bundle, Dashboard], Dashboard]) -> ResourceMutator[Dashboard]
+@overload def dashboard_mutator(function: Callable[[Dashboard], Dashboard]) -> ResourceMutator[Dashboard]
+def dashboard_mutator(function: Callable) -> ResourceMutator[Dashboard]
+
 @overload def job_mutator(function: Callable[[Bundle, Job], Job]) -> ResourceMutator[Job]
 @overload def job_mutator(function: Callable[[Job], Job]) -> ResourceMutator[Job]
 def job_mutator(function: Callable) -> ResourceMutator[Job]
@@ -139,6 +146,7 @@ def volume_mutator(function: Callable) -> ResourceMutator[Volume]
 == _ResourceType.all() registry ==
 singular_name=alert plural_name=alerts resource_type=Alert
 singular_name=catalog plural_name=catalogs resource_type=Catalog
+singular_name=dashboard plural_name=dashboards resource_type=Dashboard
 singular_name=job plural_name=jobs resource_type=Job
 singular_name=pipeline plural_name=pipelines resource_type=Pipeline
 singular_name=schema plural_name=schemas resource_type=Schema

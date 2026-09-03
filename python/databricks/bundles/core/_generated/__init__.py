@@ -7,6 +7,10 @@ from databricks.bundles.core._generated.catalogs import (
     _CatalogResources,
     catalog_mutator,
 )
+from databricks.bundles.core._generated.dashboards import (
+    _DashboardResources,
+    dashboard_mutator,
+)
 from databricks.bundles.core._generated.jobs import _JobResources, job_mutator
 from databricks.bundles.core._generated.pipelines import (
     _PipelineResources,
@@ -23,6 +27,7 @@ __all__ = [
     "_all_resource_types",
     "alert_mutator",
     "catalog_mutator",
+    "dashboard_mutator",
     "job_mutator",
     "pipeline_mutator",
     "schema_mutator",
@@ -33,6 +38,7 @@ __all__ = [
 class _GeneratedResources(
     _AlertResources,
     _CatalogResources,
+    _DashboardResources,
     _JobResources,
     _PipelineResources,
     _SchemaResources,
@@ -45,6 +51,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
     from databricks.bundles.core._generated import (
         alerts,
         catalogs,
+        dashboards,
         jobs,
         pipelines,
         schemas,
@@ -54,6 +61,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
     return (
         alerts._resource_type(),
         catalogs._resource_type(),
+        dashboards._resource_type(),
         jobs._resource_type(),
         pipelines._resource_type(),
         schemas._resource_type(),
