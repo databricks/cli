@@ -209,6 +209,13 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// misconfigurations are caught at validate time rather than mid-deploy.
 		aicode.Validate(),
 
+		// Turn any AI Runtime task code_source_path that points at a local directory
+		// into a `tgz` artifact and rewrite the field to the tarball that artifact
+		// builds, so the code is packaged and uploaded through the standard artifact
+		// path. Runs before artifacts.Prepare so the synthesized artifact is prepared
+		// and built like any other. Remote values and local files are left untouched.
+		aicode.PackageCodeSource(),
+
 		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Presets.SourceLinkedDeployment (checks Python wheel wrapper and deployment mode settings)
 		// Reads (dynamic): resources.jobs.*.tasks (checks for tasks with local libraries and incompatible DBR versions)
 		// Provides warnings when Python wheel tasks are used with DBR < 13.3 or when wheel wrapper is incompatible with source-linked deployment
@@ -218,13 +225,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Updates (typed): b.Config.Artifacts[].DynamicVersion (sets to true when preset is enabled)
 		// Applies the artifacts_dynamic_version preset to enable dynamic versioning on all artifacts
 		mutator.ApplyArtifactsDynamicVersion(),
-
-		// Turn any AI Runtime task code_source_path that points at a local directory
-		// into a `tgz` artifact and rewrite the field to the tarball that artifact
-		// builds, so the code is packaged and uploaded through the standard artifact
-		// path. Runs before artifacts.Prepare so the synthesized artifact is prepared
-		// and built like any other. Remote values and local files are left untouched.
-		aicode.PackageCodeSource(),
 
 		// Reads (typed): b.Config.Artifacts, b.BundleRootPath (checks artifact configurations and bundle path)
 		// Updates (typed): b.Config.Artifacts (auto-creates Python wheel artifact if none defined but setup.py exists)
