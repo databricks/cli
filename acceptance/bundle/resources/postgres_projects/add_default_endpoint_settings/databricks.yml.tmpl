@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Test Project"
+      pg_version: 16
