@@ -20,3 +20,11 @@ func TestNewRegistersAllSubcommands(t *testing.T) {
 	}
 	assert.Len(t, registered, len(want), "unexpected number of subcommands")
 }
+
+func TestNewRegistersVerboseFlag(t *testing.T) {
+	flag := New().PersistentFlags().Lookup("verbose")
+
+	if assert.NotNil(t, flag) {
+		assert.Equal(t, "v", flag.Shorthand)
+	}
+}

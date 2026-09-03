@@ -58,6 +58,9 @@ func New(ctx context.Context) *cobra.Command {
 		var err error
 
 		ctx := cmd.Context()
+		if verboseCommand := verboseErrorTipCommand(cmd); verboseCommand != nil {
+			logFlags.debug = logFlags.debug || cmd.Flag("verbose").Value.String() == "true"
+		}
 
 		// Configure command IO
 		ctx, err = outputFlag.initializeIO(ctx, cmd)
@@ -74,7 +77,7 @@ func New(ctx context.Context) *cobra.Command {
 		logger := log.GetLogger(ctx)
 		logger.Info("start",
 			slog.String("version", build.GetInfo().Version),
-			slog.String("args", strings.Join(os.Args, ", ")))
+			slog.String("args", strings.Join(commandArgsForLogging(cmd, os.Args), ", ")))
 
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
@@ -164,6 +167,7 @@ Stack Trace:
 			err = auth.AppendAccountHostHint(cmdctx.WorkspaceClient(cmd.Context()).Config, err)
 		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
+		printVerboseErrorTip(cmd)
 	}
 
 	// Log exit status and error
@@ -207,6 +211,66 @@ Stack Trace:
 	}
 
 	return err
+}
+
+const verboseErrorTipAnnotation = "databricks.cli.verbose-error-tip"
+
+// EnableVerboseErrorTip adds an AIR-scoped verbose flag and opts the command
+// into rerun guidance when one of its descendants fails.
+func EnableVerboseErrorTip(cmd *cobra.Command) {
+	if cmd.Annotations == nil {
+		cmd.Annotations = make(map[string]string)
+	}
+	cmd.Annotations[verboseErrorTipAnnotation] = "true"
+	cmd.PersistentFlags().BoolP("verbose", "v", false, "enable debug logging")
+}
+
+func verboseErrorTipCommand(cmd *cobra.Command) *cobra.Command {
+	for current := cmd; current != nil; current = current.Parent() {
+		if current.Annotations[verboseErrorTipAnnotation] == "true" {
+			return current
+		}
+	}
+	return nil
+}
+
+func commandArgsForLogging(cmd *cobra.Command, args []string) []string {
+	if verboseErrorTipCommand(cmd) == nil {
+		return args
+	}
+
+	redacted := append([]string(nil), args...)
+	for i := 0; i < len(redacted); i++ {
+		switch {
+		case redacted[i] == "--override" && i+1 < len(redacted):
+			redacted[i+1] = "<redacted>"
+			i++
+		case strings.HasPrefix(redacted[i], "--override="):
+			redacted[i] = "--override=<redacted>"
+		}
+	}
+	return redacted
+}
+
+func printVerboseErrorTip(cmd *cobra.Command) {
+	verboseCommand := verboseErrorTipCommand(cmd)
+	if verboseCommand == nil {
+		return
+	}
+
+	debugFlag := cmd.Root().PersistentFlags().Lookup("debug")
+	verboseFlag := cmd.Flag("verbose")
+	if debugFlag.Value.String() == "true" || verboseFlag.Value.String() == "true" {
+		return
+	}
+
+	commandPrefix := verboseCommand.CommandPath()
+	command := commandPrefix + " -v" + strings.TrimPrefix(cmd.CommandPath(), commandPrefix)
+	fmt.Fprintf(
+		cmd.ErrOrStderr(),
+		"\nTip: use the -v (verbose) flag immediately after air to see more details and a trace of this error:\n  %s …\n",
+		command,
+	)
 }
 
 // This function is used to report an unknown subcommand.

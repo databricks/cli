@@ -177,3 +177,83 @@ func TestExecuteErrAlreadyPrintedNotEnriched(t *testing.T) {
 	require.Error(t, err)
 	assert.Empty(t, stderr.String())
 }
+
+func TestExecuteVerboseErrorTip(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		wantTip bool
+		wantCmd string
+	}{
+		{
+			name:    "default",
+			args:    []string{"experimental", "air", "fail", "secret-value"},
+			wantTip: true,
+			wantCmd: "databricks experimental air -v fail …",
+		},
+		{
+			name: "short verbose flag",
+			args: []string{"experimental", "air", "-v", "fail"},
+		},
+		{
+			name: "long debug flag",
+			args: []string{"--debug", "experimental", "air", "fail"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stderr := &bytes.Buffer{}
+			cmd := New(t.Context())
+			failCommand := &cobra.Command{
+				Use: "fail [arg]",
+				RunE: func(cmd *cobra.Command, args []string) error {
+					return errors.New("failed")
+				},
+			}
+			airCommand := &cobra.Command{Use: "air"}
+			EnableVerboseErrorTip(airCommand)
+			airCommand.AddCommand(failCommand)
+			experimentalCommand := &cobra.Command{Use: "experimental"}
+			experimentalCommand.AddCommand(airCommand)
+			cmd.AddCommand(experimentalCommand)
+			cmd.SetArgs(tt.args)
+			cmd.SetErr(stderr)
+
+			err := Execute(t.Context(), cmd)
+			require.Error(t, err)
+			if tt.wantTip {
+				assert.Contains(t, stderr.String(), "use the -v (verbose) flag")
+				assert.Contains(t, stderr.String(), tt.wantCmd)
+				assert.NotContains(t, stderr.String(), "secret-value")
+			} else {
+				assert.NotContains(t, stderr.String(), "use the -v (verbose) flag")
+			}
+		})
+	}
+}
+
+func TestVersionShorthandUnaffectedByAirVerboseFlag(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	cmd := New(t.Context())
+	cmd.SetArgs([]string{"-v"})
+	cmd.SetOut(stdout)
+
+	err := Execute(t.Context(), cmd)
+
+	require.NoError(t, err)
+	assert.Contains(t, stdout.String(), "Databricks CLI v")
+}
+
+func TestCommandArgsForLoggingRedactsAirOverrides(t *testing.T) {
+	airCommand := &cobra.Command{Use: "air"}
+	EnableVerboseErrorTip(airCommand)
+	runCommand := &cobra.Command{Use: "run"}
+	airCommand.AddCommand(runCommand)
+
+	args := []string{"databricks", "experimental", "air", "run", "--override", "api_token=secret", "--override=other_secret=value"}
+	redacted := commandArgsForLogging(runCommand, args)
+
+	assert.Equal(t, []string{"databricks", "experimental", "air", "run", "--override", "<redacted>", "--override=<redacted>"}, redacted)
+	assert.Equal(t, "api_token=secret", args[5])
+}

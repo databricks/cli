@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
@@ -14,6 +15,7 @@ func New() *cobra.Command {
 This command set is the Go port of the standalone Python "air" CLI. It is
 experimental and may change in future versions.`,
 	}
+	root.EnableVerboseErrorTip(cmd)
 
 	cmd.AddCommand(newRunCommand())
 	cmd.AddCommand(newGetCommand())
