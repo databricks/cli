@@ -1,0 +1,54 @@
+SCHEMA_FULL_NAME=main.schema_delete_semantics_$UNIQUE_NAME
+GRANTS_LINE='grants: [{ principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] }] # GRANTS'
+
+# The plan, the requests and the leftover grants all go to one per-engine file: the engines
+# disagree on how a dropped grants node is classified and on what they send for it.
+ENGINE_OUT=out.$DATABRICKS_BUNDLE_ENGINE.txt
+
+envsubst < databricks.yml.tmpl > databricks.yml
+cp databricks.yml databricks.yml.saved
+
+cleanup() {
+    errcode $CLI bundle destroy --auto-approve &> LOG.cleanup
+    rm -f out.requests.txt databricks.yml.saved tmp.yml
+}
+trap cleanup EXIT
+
+record() {
+    echo "=== $1" >> $ENGINE_OUT
+    $CLI bundle plan >> $ENGINE_OUT
+    trace $CLI bundle deploy -qq
+    print_requests.py //unity-catalog --sort >> $ENGINE_OUT
+    $CLI grants get schema "$SCHEMA_FULL_NAME" | gron.py --noindex | sort_lines.py --repl >> $ENGINE_OUT
+}
+
+restore_grant() {
+    title "Put the grant back"
+    cp databricks.yml.saved databricks.yml
+    trace $CLI bundle deploy -qq
+    rm -f out.requests.txt
+}
+
+title "Deploy the schema with one grant"
+trace $CLI bundle deploy -qq
+rm -f out.requests.txt
+
+title "Case 1: the grants block is removed, the schema stays"
+grep -v GRANTS databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+record "only the grants node is deleted"
+
+restore_grant
+title "Case 2: the grants list is set to []"
+update_file.py databricks.yml "$GRANTS_LINE" 'grants: []'
+record "the grants list is empty"
+
+restore_grant
+title "Case 3: the schema and its grants are deleted together"
+echo "=== the parent is deleted too" >> $ENGINE_OUT
+# Planned against a config with the schema gone, so the plan names both nodes and the
+# action each one gets. `bundle destroy` applies the same shape but its banner hides
+# child nodes, so it never shows what happens to the grants.
+envsubst < databricks.empty.yml.tmpl > databricks.yml
+$CLI bundle plan >> $ENGINE_OUT
+trace $CLI bundle destroy --auto-approve
+print_requests.py //unity-catalog --sort >> $ENGINE_OUT

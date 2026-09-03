@@ -1,0 +1,64 @@
+=== only the grants node is deleted
+delete schemas.grants_schema.grants
+
+Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_delete_semantics_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "USE_SCHEMA"
+        ]
+      }
+    ]
+  }
+}
+json = {};
+=== the grants list is empty
+delete schemas.grants_schema.grants
+
+Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_delete_semantics_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "USE_SCHEMA"
+        ]
+      }
+    ]
+  }
+}
+json = {};
+=== the parent is deleted too
+delete schemas.grants_schema
+delete schemas.grants_schema.grants
+
+Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema_delete_semantics_[UNIQUE_NAME]",
+  "q": {
+    "force": "true"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_delete_semantics_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "USE_SCHEMA"
+        ]
+      }
+    ]
+  }
+}

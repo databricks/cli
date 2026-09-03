@@ -141,10 +141,38 @@ func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsSt
 	return nil, err
 }
 
+// DoDelete revokes every privilege currently assigned on the securable, including any
+// granted out of band: dropping the grants node means the empty list is what the bundle
+// enforces. Apply only reaches this when the securable itself stays — when the parent is
+// deleted too, deleting it takes the grants with it and the node is a state-only cleanup.
 func (r *ResourceGrants) DoDelete(ctx context.Context, id string, _ *GrantsState) error {
-	// Similar to permissions, we do nothing there.
-	// We could delete all grants there, but it would be confusing to explain wrt permissions.
-	return nil
+	securableType, fullName, err := parseGrantsID(id)
+	if err != nil {
+		return err
+	}
+
+	assignments, err := r.listGrants(ctx, securableType, fullName)
+	if err != nil {
+		return err
+	}
+	if len(assignments) == 0 {
+		return nil
+	}
+
+	principals := make([]string, 0, len(assignments))
+	for _, a := range assignments {
+		principals = append(principals, a.Principal)
+	}
+	slices.Sort(principals)
+
+	_, err = r.client.Grants.Update(ctx, catalog.UpdatePermissions{
+		SecurableType:             securableType,
+		FullName:                  fullName,
+		Changes:                   buildGrantChanges(nil, principals),
+		OmitPermissionsInResponse: false,
+		ForceSendFields:           nil,
+	})
+	return err
 }
 
 func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, removedPrincipals []string) []catalog.PermissionsChange {
