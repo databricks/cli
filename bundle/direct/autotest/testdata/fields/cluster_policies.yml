@@ -32,7 +32,7 @@ skip:
 fields:
   # A library path, not free text. Clearing it is still tried, and leaves the entry with no
   # artifact at all, which the API rejects.
-  libraries[*].jar: [dbfs:/FileStore/a.jar, dbfs:/FileStore/b.jar]
+  libraries[*].jar: ['dbfs:/FileStore/a.jar', 'dbfs:/FileStore/b.jar']
 
   # A policy definition is a JSON document the backend parses, and it is required: the API
   # rejects an update that does not carry one.

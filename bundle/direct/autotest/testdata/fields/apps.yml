@@ -51,7 +51,6 @@ skip:
   # skips below.
   git_repository.auto_deploy: validated as a set with the url and provider, which base does not declare
 
-
   # Both name an account-level policy: "Invalid resource: accounts/<id>/budgetPolicies/x". A
   # test workspace has none to reference, and creating one is an account-level operation.
   budget_policy_id: needs an account-level budget policy to exist

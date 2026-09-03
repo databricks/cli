@@ -26,6 +26,8 @@ fields:
   autotermination_minutes: [10, 20]
 
 skip:
+  # Custom containers is turned off on this workspace, so no value of the block is accepted there.
+  docker_image: needs custom containers enabled on the workspace
   # An init script has to name a file that exists: a real workspace fails the cluster with "Init
   # scripts failed ... Tree node with path ... does not exist". This suite deliberately uploads no
   # bundle files -- a sync per permutation would dominate the run -- so no destination it could name
