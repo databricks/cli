@@ -286,9 +286,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			// The service holds this deployment, so it has to keep being recorded: deploying
 			// without recording would leave it describing resources that have moved on.
 			if !b.RecordsDeploymentHistory(ctx) && b.DeploymentBundle.StateDB.RequiresDeploymentHistory() {
-				logdiag.LogError(ctx, errors.New(`this deployment was previously deployed with experimental.record_deployment_history, so the feature cannot be turned off now
+				logdiag.LogError(ctx, errors.New(`unsetting experimental.record_deployment_history is not supported
 
-Set it back to true to deploy or destroy this bundle`))
+This deployment's resources are recorded with the deployment metadata service. Set experimental.record_deployment_history: true to deploy or destroy this bundle`))
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 
@@ -490,12 +490,10 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 	return engine.EngineSetting{Type: engine.Default, Source: engine.SourceDefault, IsDefault: true}, nil
 }
 
-// Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json
-// DmsStateSource returns what dstate.Open needs in order to read a recorded bundle's resources
-// from the deployment metadata service: a client, and the deployment id resolved from the state
-// path. Both are zero when the bundle does not record deployment history. While recording, the
-// state file carries only the feature marker, so a command that reads state without these sees no
-// resources at all.
+// DmsStateSource returns the client and deployment id dstate.Open needs to read a recorded
+// bundle's resources from the deployment metadata service. Both are zero when the bundle does not
+// record: while recording the state file holds only the marker, so a command that opens state
+// without these sees no resources at all.
 func DmsStateSource(ctx context.Context, b *bundle.Bundle) (*dms.Client, string, error) {
 	if !b.RecordsDeploymentHistory(ctx) {
 		return nil, "", nil
@@ -513,6 +511,7 @@ func DmsStateSource(ctx context.Context, b *bundle.Bundle) (*dms.Client, string,
 	return client, deploymentID, nil
 }
 
+// Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json
 func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
 	nodePath := path.Join(statePath, dms.DeploymentNodeName)
 
