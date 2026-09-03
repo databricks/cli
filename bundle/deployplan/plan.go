@@ -16,11 +16,12 @@ import (
 const currentPlanVersion = 2
 
 type Plan struct {
-	PlanVersion int                   `json:"plan_version,omitempty"`
-	CLIVersion  string                `json:"cli_version,omitempty"`
-	Lineage     string                `json:"lineage,omitempty"`
-	Serial      int                   `json:"serial,omitempty"`
-	Plan        map[string]*PlanEntry `json:"plan,omitzero"`
+	PlanVersion int    `json:"plan_version,omitempty"`
+	CLIVersion  string `json:"cli_version,omitempty"`
+	Lineage     string `json:"lineage,omitempty"`
+	Serial      int    `json:"serial,omitempty"`
+
+	Plan map[string]*PlanEntry `json:"plan,omitzero"`
 
 	// NotSelected is the number of resources removed by FilterToSelected via the
 	// --select flag. Serialized so the summary survives a deploy from a plan file

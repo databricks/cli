@@ -2,5 +2,3 @@
 # stays off cloud.
 Badness = "An in-progress run is planned as skip, so a deploy after an interrupted wait does not resume waiting for it to finish."
 Ignore = ["tmp.plan.json"]
-# Uses deploy --plan, which is not yet supported with deployment history recording (followup).
-EnvMatrix.DMS = [""]

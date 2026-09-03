@@ -1,3 +1,4 @@
 EnvMatrix.READPLAN = ["", "1"]
-# Dumps raw state/plan that carries the DMS deployment stamp under recording, so opt out here.
+# Dumps raw state/plan, which carry the DMS deployment stamp under recording (applied at deploy,
+# not saved in the plan). deploy --plan recording is covered by bundle/dms, so opt out here.
 EnvMatrix.DMS = [""]

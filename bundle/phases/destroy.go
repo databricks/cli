@@ -167,7 +167,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	}
 	// A completed destroy's resources are gone, so its deployment record is deleted too.
 	if completed {
-		deploymentID, _ := recordedDeployment(b)
+		deploymentID, _ := deploymentAndNextVersion(b)
 		if err := b.DeploymentBundle.DmsApiClient.DeleteDeployment(ctx, deploymentID); err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
 			return
@@ -221,7 +221,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			logdiag.LogError(ctx, err)
 		} else if completed {
 			// A completed destroy's resources are gone, so its deployment record is deleted too.
-			deploymentID, _ := recordedDeployment(b)
+			deploymentID, _ := deploymentAndNextVersion(b)
 			if err := b.DeploymentBundle.DmsApiClient.DeleteDeployment(ctx, deploymentID); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
 			}
@@ -287,7 +287,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		// under a deployment that already exists: a missing one was already cleaned up (or the
 		// bundle does not record history). Destroy never creates or updates the deployment - it
 		// is about to be deleted.
-		deploymentID, _ := recordedDeployment(b)
+		deploymentID, _ := deploymentAndNextVersion(b)
 		if b.DeploymentBundle.DmsApiClient != nil && deploymentID != "" {
 			staged, err := stagedOperations(plan)
 			if err != nil {

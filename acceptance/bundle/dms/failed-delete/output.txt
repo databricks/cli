@@ -119,10 +119,13 @@ API message: Fault injected by test.
 
 >>> print_state.py
 {
- "state_version": 2,
+ "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
  "serial": 1,
+ "features": {
+  "record_deployment_history": {}
+ },
  "state": {
   "resources.jobs.stuck": {
    "__id__": "[NUMID]",

@@ -5,8 +5,6 @@ RecordRequests = false
 # This regression is in the direct engine only (the bug is in InitForApply
 # which is only called for bundle deploy --plan on the direct engine).
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-# Uses deploy --plan, which is not yet supported with deployment history recording (followup).
-EnvMatrix.DMS = [""]
 
 Ignore = [".databricks", "databricks.yml", "databricks.yml.bak", "plan.json", "LOG.*"]
 

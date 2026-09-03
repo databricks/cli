@@ -63,10 +63,10 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 	}
 }
 
-// recordedDeployment reads, from the history the recording set, the deployment id and the version
+// deploymentAndNextVersion reads, from the history the recording set, the deployment id and the version
 // this run will create (one past the deployment's most recent). Both zero when nothing is recorded
 // - the bundle records no history, so version 0 marks "no version" for logDeploymentVersion.
-func recordedDeployment(b *bundle.Bundle) (string, int64) {
+func deploymentAndNextVersion(b *bundle.Bundle) (string, int64) {
 	h := b.Config.Bundle.Deployment.History
 	if h == nil {
 		return "", 0
@@ -86,7 +86,7 @@ func recordedDeployment(b *bundle.Bundle) (string, int64) {
 func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bundledeployments.Deployment) {
 	db := &b.DeploymentBundle
 	metadata := deploymentMetadata(b)
-	deploymentID, _ := recordedDeployment(b)
+	deploymentID, _ := deploymentAndNextVersion(b)
 	switch mask := metadata.StaleFields(current); {
 	case deploymentID == "":
 		id, err := db.DmsApiClient.CreateDeployment(ctx, b.Config.Workspace.StatePath, metadata)
@@ -119,7 +119,7 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 	if db.DmsApiClient == nil {
 		return nil
 	}
-	deploymentID, versionID := recordedDeployment(b)
+	deploymentID, versionID := deploymentAndNextVersion(b)
 
 	// The version this run creates is one past the deployment's most recent, so the previous is
 	// one below it - empty for the first version.
@@ -178,7 +178,7 @@ func drainOperationsAndCompleteVersion(ctx context.Context, b *bundle.Bundle, su
 	if !success {
 		reason = bundledeployments.VersionCompleteVersionCompleteFailure
 	}
-	deploymentID, versionID := recordedDeployment(b)
+	deploymentID, versionID := deploymentAndNextVersion(b)
 	if err := db.DmsApiClient.CompleteVersion(ctx, deploymentID, versionID, reason); err != nil {
 		return false, err
 	}
