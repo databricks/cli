@@ -1,0 +1,11 @@
+bundle:
+  name: "run_as"
+
+run_as:
+  service_principal_name: "my_service_principal"
+
+resources:
+  dashboards:
+    my_dashboard:
+      display_name: "Dashboard with embed"
+      embed_credentials: true
