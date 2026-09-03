@@ -10,7 +10,7 @@ trace update_file.py databricks.yml "name: test-bundle" $'name: test-bundle\n  e
 
 title "Plan skips the direct-only resource, since this run still uses terraform"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | gron.py | grep instance_pools
+trace $CLI bundle plan -o json | nostamp.py | gron.py | grep instance_pools
 
 title "Deploy migrates the state, skipping the direct-only resource"
 trace $CLI bundle deploy

@@ -1,0 +1,126 @@
+
+=== Deploy job foo and pipeline bar; both are recorded at version 1
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Created pipelines.bar
+Files: 6 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.foo"
+  },
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "pipelines.bar"
+  }
+]
+
+=== Plan without touching anything: the deployment stamp must not show as drift
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Update only the pipeline (not the job), then redeploy: only the pipeline's recorded version bumps to 2
+>>> update_file.py databricks.yml serverless: true serverless: true
+      development: true
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files...
+Updated pipelines.bar
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py --dms //api/2.2/jobs //api/2.0/pipelines --sort
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+      "deployment_id": "[NUMID]",
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+      "version_id": "1"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files/transform.py"
+        }
+      }
+    ],
+    "name": "bar-[UNIQUE_NAME]",
+    "schema": "default",
+    "serverless": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "deployment_id": "[NUMID]",
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+      "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/pipelines/[UUID]",
+  "body": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+      "deployment_id": "[NUMID]",
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+      "version_id": "2"
+    },
+    "development": true,
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files/transform.py"
+        }
+      }
+    ],
+    "name": "bar-[UNIQUE_NAME]",
+    "schema": "default",
+    "serverless": true
+  }
+}
+
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.foo"
+  },
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_UPDATE",
+    "last_version_id": "2",
+    "resource_key": "pipelines.bar"
+  }
+]
+
+=== Plan again: no residual drift, and the version stamps are ignored
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged

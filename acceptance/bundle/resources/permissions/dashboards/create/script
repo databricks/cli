@@ -7,7 +7,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle validate -o json | jq .resources.dashboards.foo.permissions
 rm out.requests.txt
 
-$CLI bundle plan --output json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan --output json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm out.requests.txt
 trace $CLI bundle deploy

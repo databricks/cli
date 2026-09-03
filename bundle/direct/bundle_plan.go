@@ -8,6 +8,7 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
@@ -15,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
@@ -25,6 +27,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -58,8 +61,10 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 	return nil
 }
 
-// InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
-// StateDB must already be open for write before calling this function.
+// InitForApply initializes the DeploymentBundle for applying a pre-computed plan: it parses the
+// plan's entries (loaded as JSON when the plan came from a file) into the typed state cache the
+// apply reads. A first deployment's id does not exist until the deploy creates it after approval;
+// StampDeploymentID fills it in then. StateDB must already be open for write before calling this.
 func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
 	b.StateDB.AssertOpenedForWrite()
 
@@ -113,6 +118,41 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
+// StampDeploymentID fills deploymentID into the plan's jobs and pipelines that still lack one, in
+// both the state cache the apply reads and the plan JSON. It is called after approval creates the
+// deployment, for a first deploy whose id did not exist at plan time; the version and any
+// pre-existing id were stamped then.
+func (b *DeploymentBundle) StampDeploymentID(deploymentID string) error {
+	for resourceKey, entry := range b.Plan.Plan {
+		if entry.NewState == nil || len(entry.NewState.Value) == 0 {
+			continue
+		}
+		sv, ok := b.StateCache.Load(resourceKey)
+		if !ok {
+			continue
+		}
+		var stamped bool
+		switch v := sv.Value.(type) {
+		case *jobs.JobSettings:
+			if v.Deployment.DeploymentId == "" {
+				v.Deployment.DeploymentId = deploymentID
+				stamped = true
+			}
+		case *dresources.PipelineState:
+			if v.Deployment.DeploymentId == "" {
+				v.Deployment.DeploymentId = deploymentID
+				stamped = true
+			}
+		}
+		if stamped {
+			if err := sv.SyncToJSON(entry.NewState); err != nil {
+				return fmt.Errorf("%s: stamping deployment into plan: %w", resourceKey, err)
+			}
+		}
+	}
+	return nil
+}
+
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
 // StateDB must already be open for read before calling this function.
 func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
@@ -126,6 +166,21 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	plan, err := b.makePlan(ctx, configRoot, &b.StateDB.Data)
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
+	}
+
+	// Record the DMS deployment and version this plan targets. A saved plan carries them so
+	// deploy --plan can reject a plan the deployment has moved on from, and pass last_version_id
+	// as previous_version_id. History is set only while recording, so other plans leave these empty.
+	// configRoot is nil for destroy, which records its version separately.
+	if configRoot != nil && configRoot.Bundle.Deployment.History != nil {
+		h := configRoot.Bundle.Deployment.History
+		next, err := dms.NextVersion(h.LatestVersionID)
+		if err != nil {
+			return nil, fmt.Errorf("computing next deployment version: %w", err)
+		}
+		plan.DeploymentId = h.DeploymentID
+		plan.LastVersionId = h.LatestVersionID
+		plan.NextVersionId = strconv.FormatInt(next, 10)
 	}
 
 	b.Plan = plan

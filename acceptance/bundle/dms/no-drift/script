@@ -1,0 +1,26 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy job foo and pipeline bar; both are recorded at version 1"
+trace $CLI bundle deploy
+
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-no-drift-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+# Only deploy stamps deployment.deployment_id. Plan sees it in state but not in config,
+# so it must ignore it rather than report spurious changes.
+title "Plan without touching anything: the deployment stamp must not show as drift"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged"
+
+title "Update only the pipeline (not the job), then redeploy: only the pipeline's recorded version bumps to 2"
+trace update_file.py databricks.yml 'serverless: true' 'serverless: true
+      development: true'
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.2/jobs //api/2.0/pipelines --sort
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "Plan again: no residual drift, and the version stamps are ignored"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged"
+
+# The list-resources and final plan above record requests we do not assert on; drop them so
+# out.requests.txt does not become a nondeterministic golden.
+rm -f out.requests.txt

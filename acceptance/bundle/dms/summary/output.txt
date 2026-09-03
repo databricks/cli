@@ -1,0 +1,37 @@
+
+=== Summary reports the deployment recorded with the metadata service, so a caller can find the deployment and the version it is on
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-summary-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle summary -o json
+{
+  "deployment_id": "[NUMID]",
+  "latest_version_id": "1"
+}
+
+=== Redeploying advances the version the summary reports
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-summary-[UNIQUE_NAME]/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] bundle summary -o json
+{
+  "deployment_id": "[NUMID]",
+  "latest_version_id": "2"
+}
+
+=== After a destroy the deployment is gone, so the summary reports no history rather than a dangling ID
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-summary-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> [CLI] bundle summary -o json
+false

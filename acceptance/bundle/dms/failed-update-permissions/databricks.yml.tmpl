@@ -1,0 +1,12 @@
+bundle:
+  name: dms-failed-update-permissions-$UNIQUE_NAME
+experimental:
+  record_deployment_history: true
+
+resources:
+  jobs:
+    foo:
+      name: foo
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com

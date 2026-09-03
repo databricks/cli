@@ -22,7 +22,7 @@ trace update_file.py databricks.yml "      suspend_timeout_duration: 300s" ""
 # Terraform provider masks the whole spec, which the API accepts and then ignores. See
 # test.toml.
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
@@ -32,4 +32,4 @@ trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//po
 # fail again on every deploy, terraform applied it and is clean.
 trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 trace $CLI bundle plan &> out.plan.drift.$DATABRICKS_BUNDLE_ENGINE.txt
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.drift.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.drift.$DATABRICKS_BUNDLE_ENGINE.json

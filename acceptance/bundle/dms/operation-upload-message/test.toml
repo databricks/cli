@@ -1,0 +1,8 @@
+# Local only: this case needs an injected failure - DMS itself must reject the operation upload - and fault.py registers
+# its rule on the fake, which a cloud run does not have.
+Cloud = false
+
+# One resource, so which operation is refused is fixed and the error a user sees can be
+# asserted. operation-upload-fails covers a deploy of several resources, where which ones
+# were reached before the failure landed is not.
+RecordRequests = false

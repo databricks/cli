@@ -10,13 +10,17 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
 )
 
@@ -28,35 +32,48 @@ const (
 	maxWalEntrySize     = 10 * 1024 * 1024
 	walSuffix           = ".wal"
 
-	// featureStateVersion is the schema version a future CLI will write once it
-	// records deployment state "feature flags" (see Header.Features). This CLI does
-	// not write it and records no features; it exists now only so this CLI reads
-	// such states correctly (see migrateState):
-	//   - featureStateVersion with no features  -> accept and leave the version as-is
-	//   - featureStateVersion with any feature   -> refuse, tell the user to upgrade
-	//
-	// A featureStateVersion state with no features is equivalent to
-	// currentStateVersion, but we deliberately do not flip the on-disk version down
-	// to currentStateVersion: a state written at featureStateVersion stays at
-	// featureStateVersion. This is forward-compat scaffolding so that a later release
-	// can start writing featureStateVersion + features without older CLIs (with this
-	// change) either mishandling a feature they lack or rejecting a featureless state
-	// outright. featureStateVersion is always 3.
-	featureStateVersion = 3
-
-	// supportedStateVersion is the highest schema version this CLI can read. It is
-	// normally equal to currentStateVersion — the version this CLI reads is the
-	// version it writes — and exceeds it only during a two-phase version bump like
-	// the current feature-flag scaffolding, where this CLI reads (but does not
-	// write) featureStateVersion. A state newer than this is rejected as too new.
-	supportedStateVersion = featureStateVersion
+	// supportedStateVersion is the highest schema version this CLI can read: the
+	// version it writes. A state newer than this is rejected as too new.
+	supportedStateVersion = currentStateVersion
 )
 
-// featuresDocURL is the single documentation page describing deployment state
-// feature flags. It is shown when a state records a feature this CLI does not
-// support; it is a fixed link for all features. The #state-features anchor points
-// at the feature table; if it ever breaks, the user still lands on the page.
+// featureRecordDeploymentHistory marks a state whose resources are also recorded with the
+// deployment metadata service. Both stores are kept in step, so the marker is what tells a
+// reader the two already agree. A CLI that does not know the name refuses the state rather
+// than deploying over a deployment it would leave the service out of step with.
+//
+// The marker is sticky: once a deployment is recorded, the service holds resources that a
+// CLI which is not recording must not touch. So turning recording off does not clear it, and
+// deploying such a state without recording is refused (see RequiresDeploymentHistory).
+const featureRecordDeploymentHistory = "record_deployment_history"
+
+// featuresDocURL explains the state-features mechanism in the error shown when this CLI refuses a
+// state that depends on a feature it does not recognize.
 const featuresDocURL = "https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features"
+
+// recognizedFeatures is the set of state feature flags this CLI understands. A state depending on
+// any feature not listed here is refused (see checkStateFeatures), so a newer CLI's feature is not
+// silently clobbered by this one.
+var recognizedFeatures = map[string]struct{}{
+	featureRecordDeploymentHistory: {},
+}
+
+// checkStateFeatures refuses a state that depends on a feature this CLI does not recognize: keeping
+// the state and the service in step needs every reader to understand the features in play, so an
+// unknown one belongs to a newer CLI and this one refuses rather than clobber it.
+func checkStateFeatures(features map[string]struct{}) error {
+	var unsupported []string
+	for feature := range features {
+		if _, ok := recognizedFeatures[feature]; !ok {
+			unsupported = append(unsupported, feature)
+		}
+	}
+	if len(unsupported) == 0 {
+		return nil
+	}
+	slices.Sort(unsupported)
+	return fmt.Errorf("the deployment state requires features this CLI does not support: %s; upgrade to the latest CLI version and see %s for more information", strings.Join(unsupported, ", "), featuresDocURL)
+}
 
 // errStaleWAL is returned when the WAL serial is behind the expected serial.
 // The caller should delete the stale WAL and proceed normally.
@@ -70,6 +87,14 @@ type DeploymentState struct {
 
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
+
+	// operationBuffer records each state write with DMS. Nil unless the bundle records deployment
+	// history, in which case StartRecording installs it once the version exists.
+	operationBuffer *dms.OperationBuffer
+
+	// dmsClient talks to the deployment metadata service. Open builds it from the workspace
+	// client when the deployment records history; nil otherwise.
+	dmsClient *dms.Client
 }
 
 type Header struct {
@@ -84,10 +109,9 @@ type Header struct {
 	Serial  int    `json:"serial"`
 
 	// Features maps each feature flag this state depends on to a (currently empty)
-	// value. This CLI writes no features; it only reads the field to detect a state
-	// that depends on features it lacks and refuse it (see migrateState). It is a
-	// map so a future CLI can attach per-feature data without reshaping the state.
-	// Empty/omitted for states that use no features.
+	// value. It is read to detect a state that depends on features this CLI lacks and
+	// refuse it (see migrateState). It is a map so a future CLI can attach per-feature
+	// data without reshaping the state. Empty/omitted for states that use no features.
 	Features map[string]struct{} `json:"features,omitempty"`
 }
 
@@ -111,6 +135,52 @@ type WALEntry struct {
 	Value *ResourceEntry `json:"v,omitempty"` // nil means delete
 }
 
+// StartRecording opens the operation buffer that records each subsequent state write with DMS
+// under deploymentID and versionID, so what the service holds mirrors the WAL. It uses the client
+// Open built, so it is called only when the deployment records history, and once the version
+// exists (after approval) - which is why it is not an Open option. Returns the buffer so the
+// deploy can drain it.
+func (db *DeploymentState) StartRecording(ctx context.Context, deploymentID string, versionID int64) *dms.OperationBuffer {
+	buf := dms.StartOperationBuffer(ctx, db.dmsClient, deploymentID, versionID)
+
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.operationBuffer = buf
+	return buf
+}
+
+// RecordFailure records that a resource did not apply, so the history says why rather than
+// leaving the resource out. resourceID is the id it had before the failure.
+func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause error) {
+	r := db.recorder()
+	if r == nil {
+		return
+	}
+
+	// The service refuses a failure that leaves a live resource described by nothing, so re-state
+	// what it still has. An empty resourceID means there is nothing left: a create that never
+	// landed, or a recreate whose delete already went through.
+	var recorded json.RawMessage
+	if entry, ok := db.GetResourceEntry(resourceKey); resourceID != "" && ok && len(entry.State) > 0 {
+		var err error
+		recorded, err = json.Marshal(RecordedState{State: entry.State, DependsOn: entry.DependsOn})
+		if err != nil {
+			// Nothing the caller can act on, so record the failure without the state.
+			recorded = nil
+		}
+	}
+
+	r.RecordFailure(resourceKey, resourceID, recorded, cause)
+}
+
+// recorder reads the buffer under db.mu, which guards it, and returns nil when the bundle does
+// not record deployment history.
+func (db *DeploymentState) recorder() *dms.OperationBuffer {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.operationBuffer
+}
+
 func NewDatabase(lineage string, serial int) Database {
 	return Database{
 		Header: Header{
@@ -123,47 +193,81 @@ func NewDatabase(lineage string, serial int) Database {
 	}
 }
 
-func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
+// SaveState records the resource's state after an operation was applied to it.
+func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
 	db.AssertOpenedForWrite()
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
-	if db.Data.State == nil {
-		db.Data.State = make(map[string]ResourceEntry)
-	}
 
 	jsonMessage, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}
-
 	entry := ResourceEntry{
 		ID:        newID,
 		State:     json.RawMessage(jsonMessage),
 		DependsOn: dependsOn,
 	}
 
+	db.mu.Lock()
+	if db.Data.State == nil {
+		db.Data.State = make(map[string]ResourceEntry)
+	}
 	err = appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
 	if err == nil {
 		db.stateIDs[key] = newID
 	}
-	return err
-}
+	buf := db.operationBuffer
+	db.mu.Unlock()
 
-func (db *DeploymentState) DeleteState(key string) error {
-	db.AssertOpenedForWrite()
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
-	if db.Data.State == nil {
+	if err != nil {
+		return err
+	}
+	if buf == nil {
 		return nil
 	}
 
+	// Recorded after the WAL write, so DMS never reports state the deploy failed to persist,
+	// and outside db.mu because recording waits when the service is behind - waiting under the
+	// lock would hold up every other resource's write.
+	recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
+	if err != nil {
+		return err
+	}
+	buf.RecordOperation(ctx, key, false, newID, recorded)
+
+	return nil
+}
+
+// DeleteState drops the resource's state entry: the resource is gone. inProgress records the
+// operation as unfinished, which is what the first half of a recreate wants - an interrupted
+// deploy must not leave the resource described as finished.
+func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgress bool) error {
+	db.AssertOpenedForWrite()
+
+	db.mu.Lock()
+	if db.Data.State == nil {
+		db.mu.Unlock()
+		return nil
+	}
+	// Read before the delete: DMS needs the id to say which resource went away.
+	deletedID := db.stateIDs[key]
 	err := appendJSONLine(db.walFile, WALEntry{Key: key})
 	if err == nil {
 		delete(db.stateIDs, key)
 	}
-	return err
+	buf := db.operationBuffer
+	db.mu.Unlock()
+
+	if err != nil {
+		return err
+	}
+
+	// State is nil: the resource no longer exists. Recorded outside the lock for the
+	// same reason as SaveState.
+	if buf != nil {
+		buf.RecordOperation(ctx, key, inProgress, deletedID, nil)
+	}
+
+	return nil
 }
 
 func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
@@ -201,6 +305,24 @@ func (db *DeploymentState) StateCLIVersion() string {
 	return db.Data.CLIVersion
 }
 
+// RequiresDeploymentHistory reports whether the state depends on the deployment metadata
+// service recording it. Deploying such a state without recording would leave the service
+// holding a deployment that no longer matches, so the caller refuses instead.
+func (db *DeploymentState) RequiresDeploymentHistory() bool {
+	db.AssertOpenedForReadOrWrite()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	_, ok := db.Data.Features[featureRecordDeploymentHistory]
+	return ok
+}
+
+// DmsClient returns the deployment metadata service client Open built from the workspace client,
+// or nil when the deployment does not record history.
+func (db *DeploymentState) DmsClient() *dms.Client {
+	return db.dmsClient
+}
+
 // GetOrInitLineage returns the deployment lineage, generating and storing a new
 // one if the state does not have one yet. It is the single place the lineage is
 // initialized, shared so the direct deployment engine (when it writes state, via
@@ -228,9 +350,21 @@ type (
 	// If true, the state is opened in Write mode, which enables methods such as SaveState
 	// but disables GetResourceEntry (since writes go strictly into WAL and not in memory).
 	WithWrite bool
+
+	// If true, the deployment records history with the metadata service: Open builds a DMS
+	// client from the workspace client, reads resources from the service, and refuses a state
+	// that tracks resources without the recording marker. It forces WithRecovery off, since the
+	// service is the source of truth and a leftover WAL is discarded rather than replayed.
+	WithDeploymentHistory bool
 )
 
-func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite) error {
+// Open reads the deployment state from disk, recovering the WAL when withRecovery is set.
+// When withDeploymentHistory is set it builds a DMS client from wsClient and reads resources from
+// the service instead, with dmsDeploymentID the id the service holds (empty before the first
+// recorded deploy); lineage and serial still come from the file, since that is what the write path
+// increments. Open only reads through the client - StartRecording installs the write path once a
+// version exists.
+func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, wsClient *databricks.WorkspaceClient, withDeploymentHistory WithDeploymentHistory, dmsDeploymentID string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -238,7 +372,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		panic(fmt.Sprintf("state already opened: %v, cannot open %v", db.Path, path))
 	}
 
-	err := db.unlockedOpen(ctx, path, withRecovery, withWrite)
+	err := db.unlockedOpen(ctx, path, withRecovery, withWrite, wsClient, withDeploymentHistory, dmsDeploymentID)
 	if err != nil {
 		// A failed open must leave the receiver closed. unlockedOpen assigns
 		// db.Path before every fallible step, so without this the receiver stays
@@ -260,8 +394,20 @@ func (db *DeploymentState) reset() {
 	db.stateIDs = nil
 }
 
-func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite) error {
+func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, wsClient *databricks.WorkspaceClient, withDeploymentHistory WithDeploymentHistory, dmsDeploymentID string) error {
 	db.Path = path
+
+	if withDeploymentHistory {
+		// The service is the source of truth for a recorded deployment, so a leftover WAL is
+		// discarded below rather than replayed: force recovery off regardless of what was asked.
+		withRecovery = false
+		client, err := dms.NewClient(wsClient)
+		if err != nil {
+			return err
+		}
+		db.dmsClient = client
+	}
+
 	data, err := os.ReadFile(db.Path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -281,14 +427,22 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 	}
 
 	walPath := db.Path + walSuffix
-	_, err = os.Stat(walPath)
-	switch {
-	case errors.Is(err, fs.ErrNotExist):
-		// no WAL, nothing to do
-	case err != nil:
-		return fmt.Errorf("failed to stat WAL file %s: %w", walPath, err)
-	default: // WAL exists
-		if withRecovery {
+	_, statErr := os.Stat(walPath)
+	walExists := statErr == nil
+	if statErr != nil && !errors.Is(statErr, fs.ErrNotExist) {
+		return fmt.Errorf("failed to stat WAL file %s: %w", walPath, statErr)
+	}
+
+	// A recorded deployment gets its resources from the service (applyDMSState below), so the WAL -
+	// a local log of an uncommitted deploy - is not merged. A leftover from a crash or a declined
+	// deploy is removed so the next write's exclusive create of the WAL does not fail. Without
+	// recording, replay the WAL as usual.
+	if walExists {
+		if withDeploymentHistory {
+			if err := os.Remove(walPath); err != nil {
+				return fmt.Errorf("removing WAL file %s: %w", walPath, err)
+			}
+		} else if withRecovery {
 			if err := db.replayWAL(ctx); err != nil {
 				return fmt.Errorf("reading state from %s: %w", path, err)
 			}
@@ -299,6 +453,46 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 
 	if err := migrateState(&db.Data); err != nil {
 		return fmt.Errorf("migrating state %s: %w", path, err)
+	}
+
+	if err := checkStateFeatures(db.Data.Features); err != nil {
+		return err
+	}
+
+	if withDeploymentHistory {
+		// The service is the source of truth for a recorded deployment; local state is irrelevant.
+		// This state was pulled from the workspace, so it reflects the remote and not just a local
+		// cache, and a leftover WAL was discarded above rather than replayed. It records the feature
+		// once recording owns it, so a recorded deployment carries no resources here (a tombstone)
+		// and applyDMSState below loads the service's. A state that still tracks resources without
+		// the feature is a deployment made before recording: treating the service as authoritative
+		// would create those resources a second time, so refuse it (adopting one is a followup).
+		if _, recorded := db.Data.Features[featureRecordDeploymentHistory]; !recorded && len(db.Data.State) > 0 {
+			return errors.New(`this deployment already exists and is not recorded with the deployment metadata service, so it cannot be recorded without redeploying its resources
+
+To record this bundle's history, start it over as a new deployment:
+  1. remove experimental.record_deployment_history from your bundle configuration
+  2. run "databricks bundle destroy" to delete the existing resources
+  3. add experimental.record_deployment_history back and deploy again`)
+		}
+
+		// Mark the state as depending on the service so this CLI keeps recording it (see
+		// RequiresDeploymentHistory). unlockedSave then writes the header alone. Bumping the state
+		// version so older CLIs refuse a recorded state is a followup.
+		if db.Data.Features == nil {
+			db.Data.Features = make(map[string]struct{}, 1)
+		}
+		db.Data.Features[featureRecordDeploymentHistory] = struct{}{}
+
+		if dmsDeploymentID != "" {
+			resources, err := db.dmsClient.ListResources(ctx, dmsDeploymentID)
+			if err != nil {
+				return err
+			}
+			if err := db.applyDMSState(resources); err != nil {
+				return err
+			}
+		}
 	}
 
 	if withWrite {
@@ -405,6 +599,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 			if header.Serial > expectedSerial {
 				return false, fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expectedSerial)
 			}
+
 			newSerial = header.Serial
 			newCLIVersion = header.CLIVersion
 		} else {
@@ -604,7 +799,7 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 // the WAL. A torn write would therefore leave a state file that Open rejects
 // next to an intact WAL it never reads.
 func (db *DeploymentState) unlockedSave() error {
-	data, err := json.MarshalIndent(db.Data, "", " ")
+	data, err := json.MarshalIndent(db.dataToPersist(), "", " ")
 	if err != nil {
 		return err
 	}
@@ -638,6 +833,20 @@ func (db *DeploymentState) unlockedSave() error {
 	}
 
 	return nil
+}
+
+// dataToPersist returns what the state file should hold: db.Data itself, unless the deployment
+// records its history, in which case it is the header alone. The service holds those resources and
+// is where they are read back from, so writing them here too would be a second, never-read copy.
+// Returns a copy, leaving the in-memory state - what the rest of the deploy works from - untouched.
+func (db *DeploymentState) dataToPersist() Database {
+	data := db.Data
+	if _, recorded := data.Features[featureRecordDeploymentHistory]; !recorded {
+		return data
+	}
+
+	data.State = map[string]ResourceEntry{}
+	return data
 }
 
 func appendJSONLine(file *os.File, obj any) error {

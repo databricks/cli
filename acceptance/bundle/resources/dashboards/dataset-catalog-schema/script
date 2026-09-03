@@ -29,7 +29,7 @@ echo "$DASHBOARD" | jq '{lifecycle_state, parent_path, path}'
 echo "$DASHBOARD" | jq '.serialized_dashboard | fromjson | .datasets[] | {catalog, schema}'
 
 # Verify that there is no drift right after deploy.
-trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 # Modify the direct plan to replace "serialized_dashboard" with a fixture.
 # It is normalized on the backend so we cannot compare reliably across local and cloud.

@@ -1,6 +1,6 @@
 
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py --nostamp //jobs
 
@@ -8,7 +8,7 @@ foo_id=`read_id.py foo`
 bar_id=`read_id.py bar`
 
 cp empty.yml databricks.yml
-trace $CLI bundle plan -o json | nostamp > out.plan_delete.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan_delete.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py --nostamp //jobs
 

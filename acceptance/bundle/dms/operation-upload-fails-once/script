@@ -1,0 +1,15 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy so there is a recorded resource to recreate"
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "A recreate records twice, and the first one fails: the second must still carry the sequence id staging left, because a rejected update earned no new one"
+trace fault.py "PATCH /api/2.0/bundle/*" 500 0 1
+# Unity Catalog has no catalog called "other", so make one to move the schema into.
+other_catalog="dms_other_${UNIQUE_NAME}"
+$CLI catalogs create "$other_catalog" &> LOG.catalog
+trap '$CLI catalogs delete "$other_catalog" --force >> LOG.catalog 2>&1' EXIT
+trace update_file.py databricks.yml "catalog_name: main" "catalog_name: ${other_catalog}"
+trace musterr $CLI bundle deploy --auto-approve
+trace print_requests.py --dms //api/2.0/bundle

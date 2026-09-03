@@ -16,7 +16,7 @@ ETAG_1=$(echo "$DASHBOARD" | jq -r '.etag')
 add_repl "$ETAG_1" ETAG_1
 echo "$DASHBOARD" | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
-trace $CLI bundle plan -o json | gron.py | grep -E "etag|published"
+trace $CLI bundle plan -o json | nostamp.py | gron.py | grep -E "etag|published"
 rm out.requests.txt
 
 # Inject a single publish failure for the update below.
@@ -34,7 +34,7 @@ ETAG_2=$(retry --until-not "$ETAG_1" $CLI lakeview get $DASHBOARD_ID | jq -r '.e
 add_repl "$ETAG_2" ETAG_2
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
-trace $CLI bundle plan -o json | gron.py | grep -E "etag|published"
+trace $CLI bundle plan -o json | nostamp.py | gron.py | grep -E "etag|published"
 
 # Bug: re-running deploy fails with "modified remotely" because the stored etag
 # (pre-PATCH) no longer matches the remote etag (bumped by the PATCH above).

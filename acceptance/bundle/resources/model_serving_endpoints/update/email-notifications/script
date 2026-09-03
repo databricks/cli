@@ -16,7 +16,7 @@ trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '.email_notifications'
 # Update email_notifications - change the email address
 trace update_file.py databricks.yml "user1@example.com" "user2@example.com"
 
-trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 
 title "There a bug in TF where it does not actually update the email notifications for a serving endpoint."

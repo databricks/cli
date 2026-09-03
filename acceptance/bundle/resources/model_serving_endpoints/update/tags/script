@@ -15,7 +15,7 @@ trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '.tags'
 
 trace update_file.py databricks.yml "value: my-team-one" "value: my-team-two"
 
-trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 
 trace print_requests.py //serving-endpoints

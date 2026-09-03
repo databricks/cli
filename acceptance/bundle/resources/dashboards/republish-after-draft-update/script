@@ -16,7 +16,7 @@ DASHBOARD_ID=$(read_id.py dashboard1)
 
 # A clean re-plan is a no-op: the published content matches the draft.
 title "Plan right after deploy -- published is current, no change:"
-trace $CLI bundle plan -o json | jq '.plan["resources.dashboards.dashboard1"].changes.published'
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan["resources.dashboards.dashboard1"].changes.published'
 
 # Make an out-of-band DRAFT update without republishing. This advances the draft's
 # update_time past the published revision_create_time, so the published content is now
@@ -28,4 +28,4 @@ DASHBOARD_JSON="{\"serialized_dashboard\": \"{}\", \"warehouse_id\": \"$TEST_DEF
 $CLI lakeview update "$DASHBOARD_ID" --json "${DASHBOARD_JSON}" > /dev/null
 
 title "Plan after out-of-band draft update -- a republish is owed:"
-trace $CLI bundle plan -o json | jq '.plan["resources.dashboards.dashboard1"].changes.published'
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan["resources.dashboards.dashboard1"].changes.published'

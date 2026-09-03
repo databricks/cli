@@ -33,6 +33,11 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 	}()
 
 	if engine.IsDirect() {
+		if b.ConfiguresDeploymentHistory(ctx) {
+			logdiag.LogError(ctx, errors.New("bind is not supported for a bundle that records deployment history"))
+			return
+		}
+
 		// Direct engine: import into temp state, run plan, check for changes
 		// This follows the same pattern as terraform import
 		groupName, ok := terraform.TerraformToGroupName[opts.ResourceType]
@@ -94,7 +99,8 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 		}
 	} else {
 		// Terraform engine: use terraform import
-		bundle.ApplySeqContext(ctx, b,
+		bundle.ApplySeqContext(
+			ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Import(opts),
@@ -129,6 +135,11 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 	}()
 
 	if engine.IsDirect() {
+		if b.ConfiguresDeploymentHistory(ctx) {
+			logdiag.LogError(ctx, errors.New("unbind is not supported for a bundle that records deployment history"))
+			return
+		}
+
 		groupName, ok := terraform.TerraformToGroupName[tfResourceType]
 		if !ok {
 			groupName = tfResourceType
@@ -141,7 +152,8 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 			return
 		}
 	} else {
-		bundle.ApplySeqContext(ctx, b,
+		bundle.ApplySeqContext(
+			ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Unbind(bundleType, tfResourceType, resourceKey),

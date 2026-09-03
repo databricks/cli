@@ -1,0 +1,19 @@
+Cloud = true
+
+# Deployment Metadata Service (DMS) recording is only supported by the direct
+# engine; it is a no-op on terraform.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+
+RecordRequests = true
+
+Ignore = [
+    '.databricks',
+    'databricks.yml',
+]
+
+# These tests set experimental.record_deployment_history in databricks.yml; the DMS env var
+# both records and permits that otherwise-gated field. bundle/dms/not-supported covers the
+# rejection path. Pinned to "true" (not the suite's ["", "true"]) since the field already
+# records - the empty variant would just duplicate it.
+EnvMatrix.DMS = ["true"]

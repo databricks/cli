@@ -7,4 +7,4 @@ title "Plan is a no-op: config/source_code_path drift is skipped while the app h
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
 title "Both deploy-only fields are skipped with reason \"no active deployment\""
-trace $CLI bundle plan -o json | jq '.plan[].changes | {config, source_code_path}'
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan[].changes | {config, source_code_path}'

@@ -45,7 +45,7 @@ trace $CLI workspace get-status "${DEPLOYMENT_PATH}" | jq '{path, object_type}'
 
 title "Assert the pipeline is created"
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.bar.id')
-trace $CLI pipelines get "${PIPELINE_ID}" | nostamp | jq "{spec}"
+trace $CLI pipelines get "${PIPELINE_ID}" | nostamp.py | jq "{spec}"
 
 title "Assert the job is created:\n"
 JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.foo.id')

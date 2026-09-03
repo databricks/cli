@@ -1,3 +1,6 @@
 Ignore = [".databricks"]
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# State feature-flag handling, not DMS recording: opt out of the DMS variant so the deploy in the
+# empty-features case does not record (which would diverge from the non-recording variant).
+EnvMatrix.DMS = [""]

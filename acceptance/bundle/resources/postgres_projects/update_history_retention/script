@@ -16,7 +16,7 @@ trace $CLI postgres get-project "${project_name}" | project_fields
 title "Change history_retention_duration to 259200s and re-deploy"
 trace update_file.py databricks.yml "history_retention_duration: 604800s" "history_retention_duration: 259200s"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan."resources.postgres_projects.my_project" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 

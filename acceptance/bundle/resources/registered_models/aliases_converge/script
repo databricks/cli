@@ -15,7 +15,7 @@ title "Plan is a no-op: GET never echoes aliases, so they must not drift"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
 title "The config-set aliases are skipped as input_only (confirms the matched rule)"
-trace $CLI bundle plan --output json | jq '.plan[].changes.aliases'
+trace $CLI bundle plan --output json | nostamp.py | jq '.plan[].changes.aliases'
 
 title "Edit the comment: an in-place update, not a recreate"
 export COMMENT="updated comment"

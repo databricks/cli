@@ -1,3 +1,3 @@
-# Saved plans don't carry the deployment stamp. Applying one plans an update on the next run.
-# See dms_no_readplan in acceptance/bundle/test.toml.
+# Dumps post-deploy state/plan, which carry the DMS deployment stamp under recording (applied at
+# deploy, not saved in the plan). deploy --plan recording is covered by bundle/dms, so opt out here.
 EnvMatrix.DMS = [""]

@@ -15,7 +15,7 @@ trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '.config'
 
 trace update_file.py databricks.yml "name: gpt-4o-mini" "name: gpt-5o-mini"
 
-trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 
 trace print_requests.py //serving-endpoints

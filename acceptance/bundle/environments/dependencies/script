@@ -4,11 +4,11 @@ set -euo pipefail
 trace $CLI bundle validate
 
 trace $CLI bundle deploy
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' out.requests.txt | nostamp
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' out.requests.txt | nostamp.py
 
-trace jq -s '.[] | select(.path=="/api/2.0/pipelines")' out.requests.txt | nostamp
+trace jq -s '.[] | select(.path=="/api/2.0/pipelines")' out.requests.txt | nostamp.py
 
-trace $CLI bundle validate -o json | nostamp | jq '.resources.jobs.test_job.environments'
-trace $CLI bundle validate -o json | nostamp | jq '.resources.pipelines.test_pipeline.environment'
+trace $CLI bundle validate -o json | nostamp.py | jq '.resources.jobs.test_job.environments'
+trace $CLI bundle validate -o json | nostamp.py | jq '.resources.pipelines.test_pipeline.environment'
 
 rm out.requests.txt

@@ -1,0 +1,20 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy a schema with one grant: the grants node is recorded with its state"
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle
+
+title "Revoke the grant, so the grants node empties out"
+trace update_file.py databricks.yml 'grants: [{principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA]}]' 'grants: []'
+trace $CLI bundle deploy
+
+# The action type stays update: it is staged from the plan, before apply knows the state
+# comes back empty. What drops the resource from the deployment is the update naming state
+# with no value.
+trace print_requests.py --dms //api/2.0/bundle
+
+title "Plan again: reading state back from the service works and reports no work"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete" "!unexpected end of JSON input"
+
+trace $CLI bundle destroy --auto-approve
+rm -f out.requests.txt

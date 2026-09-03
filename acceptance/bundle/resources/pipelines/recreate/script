@@ -8,8 +8,8 @@ trap cleanup EXIT
 trace $CLI bundle deploy
 
 title "Assert the pipeline is created with catalog"
-PIPELINE_ID=$($CLI bundle summary -o json | nostamp | jq -r '.resources.pipelines.foo.id')
-trace $CLI pipelines get "${PIPELINE_ID}" | nostamp| jq "{spec}"
+PIPELINE_ID=$($CLI bundle summary -o json | nostamp.py | jq -r '.resources.pipelines.foo.id')
+trace $CLI pipelines get "${PIPELINE_ID}" | nostamp.py| jq "{spec}"
 
 # Note: In Terraform provider v1.98.0+, changing catalog no longer triggers recreation.
 # We switch to using storage location instead, which still triggers recreation.

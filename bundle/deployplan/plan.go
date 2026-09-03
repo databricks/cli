@@ -13,14 +13,23 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-const currentPlanVersion = 2
+const currentPlanVersion = 3
 
 type Plan struct {
-	PlanVersion int                   `json:"plan_version,omitempty"`
-	CLIVersion  string                `json:"cli_version,omitempty"`
-	Lineage     string                `json:"lineage,omitempty"`
-	Serial      int                   `json:"serial,omitempty"`
-	Plan        map[string]*PlanEntry `json:"plan,omitzero"`
+	PlanVersion int    `json:"plan_version,omitempty"`
+	CLIVersion  string `json:"cli_version,omitempty"`
+	Lineage     string `json:"lineage,omitempty"`
+	Serial      int    `json:"serial,omitempty"`
+
+	// DMS fields, set only when the bundle records deployment history. The plan targets DeploymentId
+	// and will create NextVersionId; LastVersionId is the deployment's most recent version at plan
+	// time. deploy --plan rejects the plan if the deployment moved on from these (see process.go),
+	// and passes LastVersionId as previous_version_id so the service rejects a stale version too.
+	DeploymentId  string `json:"deployment_id,omitempty"`
+	NextVersionId string `json:"next_version_id,omitempty"`
+	LastVersionId string `json:"last_version_id,omitempty"`
+
+	Plan map[string]*PlanEntry `json:"plan,omitzero"`
 
 	// NotSelected is the number of resources removed by FilterToSelected via the
 	// --select flag. Serialized so the summary survives a deploy from a plan file

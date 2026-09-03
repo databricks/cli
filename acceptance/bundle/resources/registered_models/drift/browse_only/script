@@ -7,7 +7,7 @@ title "Plan is a no-op despite the backend computing browse_only"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
 title "The remote-only browse_only is skipped as output_only (confirms the matched rule)"
-trace $CLI bundle plan --output json | jq '.plan[].changes.browse_only'
+trace $CLI bundle plan --output json | nostamp.py | jq '.plan[].changes.browse_only'
 
 title "Redeploy is a no-op (no UpdateRegisteredModel call)"
 trace $CLI bundle deploy

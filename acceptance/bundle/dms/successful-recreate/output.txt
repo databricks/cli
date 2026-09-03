@@ -1,0 +1,180 @@
+
+=== Deploy: the state write records the resource
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-successful-recreate-[UNIQUE_NAME]/default/files...
+Created schemas.foo
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments",
+  "body": {
+    "display_name": "dms-successful-recreate-[UNIQUE_NAME]",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-successful-recreate-[UNIQUE_NAME]/default/state",
+    "target_name": "default",
+    "workspace_info": {
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-successful-recreate-[UNIQUE_NAME]/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-successful-recreate-[UNIQUE_NAME]/default"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "operations": [
+      {
+        "resource_key": "schemas.foo",
+        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+      }
+    ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "error_message": "",
+    "resource_id": "main.dms_successful_recreate_schema_[UNIQUE_NAME]",
+    "sequence_id": "0",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_successful_recreate_schema_[UNIQUE_NAME]\"}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+=== Recreate writes state twice - the entry is dropped, then the new resource is saved
+>>> update_file.py databricks.yml catalog_name: main catalog_name: dms_other_[UNIQUE_NAME]
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-successful-recreate-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+  recreate resources.schemas.foo
+Recreated schemas.foo
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "2"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "previous_version_id": "1",
+    "operations": [
+      {
+        "resource_key": "schemas.foo",
+        "action_type": "OPERATION_ACTION_TYPE_RECREATE"
+      }
+    ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,status"
+  },
+  "body": {
+    "error_message": "",
+    "sequence_id": "0",
+    "status": "OPERATION_STATUS_PENDING"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "error_message": "",
+    "resource_id": "dms_other_[UNIQUE_NAME].dms_successful_recreate_schema_[UNIQUE_NAME]",
+    "sequence_id": "1",
+    "state": "{\"state\":{\"catalog_name\":\"dms_other_[UNIQUE_NAME]\",\"comment\":\"v1\",\"name\":\"dms_successful_recreate_schema_[UNIQUE_NAME]\"}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+=== Destroy: the delete is recorded with the id and no state
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.foo
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-successful-recreate-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py --dms //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "3"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DESTROY",
+    "previous_version_id": "2",
+    "operations": [
+      {
+        "resource_key": "schemas.foo",
+        "action_type": "OPERATION_ACTION_TYPE_DELETE"
+      }
+    ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,status"
+  },
+  "body": {
+    "error_message": "",
+    "sequence_id": "0",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/3/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
+}

@@ -15,6 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from add_repl import add_repl
+from dms_resources import get_resources, records_deployment_history
 from print_state import get_state_file
 
 
@@ -32,6 +33,15 @@ def get_id_terraform(filename, name):
                 return attribute_values.get("id") or attribute_values.get("name")
 
     print(f"Cannot find resource with {name=}. Available: {available}", file=sys.stderr)
+
+
+def get_id_recorded(target, name):
+    resources = get_resources(target)
+    for key, value in resources.items():
+        if key.split(".")[1] == name:
+            return value["id"]
+
+    print(f"Cannot find recorded resource with {name=}. Available: {list(resources)}", file=sys.stderr)
 
 
 def get_id_direct(filename, name):
@@ -53,11 +63,14 @@ def main():
     parser.add_argument("name")
     args = parser.parse_args()
 
-    filename = get_state_file(args.target, args.backup)
-    if filename.endswith(".tfstate"):
-        id = get_id_terraform(filename, args.name)
+    if records_deployment_history():
+        id = get_id_recorded(args.target, args.name)
     else:
-        id = get_id_direct(filename, args.name)
+        filename = get_state_file(args.target, args.backup)
+        if filename.endswith(".tfstate"):
+            id = get_id_terraform(filename, args.name)
+        else:
+            id = get_id_direct(filename, args.name)
 
     if id:
         print(id)

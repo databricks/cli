@@ -1,1 +1,1 @@
-$CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp.py > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json

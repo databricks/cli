@@ -22,7 +22,7 @@ trace $CLI bundle plan --select jobs.foo
 # JSON embeds remote state that differs between local and cloud), then deploy it:
 # inline, or via --plan (READPLAN=1). The deploy is not traced because readplanarg
 # varies the command line between READPLAN variants, which must produce identical output.
-$CLI bundle plan --select jobs.foo -o json | nostamp > plan.json
+$CLI bundle plan --select jobs.foo -o json > plan.json
 title "bundle deploy --select jobs.foo\n"
 $CLI bundle deploy --select jobs.foo $(readplanarg plan.json)
 # The deploy reports that --select was used via telemetry.
@@ -37,7 +37,7 @@ trace $CLI bundle summary
 # foo and bar are already deployed, so only baz remains to create.
 title "Full plan after partial deploy"
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp > plan-full.json
+$CLI bundle plan -o json > plan-full.json
 title "Full deploy\n"
 $CLI bundle deploy $(readplanarg plan-full.json)
 # Only baz is created this time.

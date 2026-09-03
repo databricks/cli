@@ -17,7 +17,7 @@ Table main.qm_test_[UNIQUE_NAME].test_table is now visible (catalog_name=main)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/quality-monitor-update-[UNIQUE_NAME]/default/files...
 Created quality_monitors.monitor1
-Files: 5 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan

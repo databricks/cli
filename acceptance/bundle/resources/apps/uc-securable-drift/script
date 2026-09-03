@@ -10,4 +10,4 @@ title "Re-plan is clean: the TABLE securable's server-computed securable_kind is
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
 title "securable_kind is classified output-only (skip); the VOLUME securable has none"
-trace $CLI bundle plan -o json | jq '.plan."resources.apps.myapp".changes // {} | with_entries(select(.key | test("uc_securable")))'
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan."resources.apps.myapp".changes // {} | with_entries(select(.key | test("uc_securable")))'

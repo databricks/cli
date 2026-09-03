@@ -1,4 +1,4 @@
-json.plan_version = 2;
+json.plan_version = 3;
 json.cli_version = "[CLI_VERSION]";
 json.lineage = "[UUID]";
 json.serial = 1;

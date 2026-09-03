@@ -1,0 +1,12 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy the job and its permissions"
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "A permissions update that fails records the failure with the permissions it still has. The resource ID here is a path rather than a number, and the state is the embedded permission list, so this covers a shape the resource tests do not"
+trace update_file.py databricks.yml "CAN_VIEW" "CAN_MANAGE"
+# A 403 is what the API returns when the caller cannot change a job's owner.
+trace fault.py "PUT /api/2.0/permissions/jobs/*" 403 0 1 PERMISSION_DENIED
+trace musterr $CLI bundle deploy --auto-approve
+trace print_requests.py --dms //api/2.0/bundle --oneline

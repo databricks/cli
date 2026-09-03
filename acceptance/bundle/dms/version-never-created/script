@@ -1,0 +1,8 @@
+title "The first version fails, so no deployment record exists - only the node naming its ID"
+trace musterr $CLI bundle deploy
+trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-version-never-created/default/state/resources.deployment.json" | jq '{object_type}'
+trace print_requests.py --dms //api/2.0/bundle --get --oneline
+
+title "The next deploy reuses the ID that node names and retries version 1, rather than creating a second deployment"
+trace musterr $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --get --oneline

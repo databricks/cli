@@ -1,0 +1,13 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Save a plan, then deploy it: records version 1"
+trace $CLI bundle plan -o json > tmp.plan.json
+trace $CLI bundle deploy --plan tmp.plan.json
+
+title "Replay: re-deploying the same plan is rejected - it predates the recorded version"
+trace musterr $CLI bundle deploy --plan tmp.plan.json
+
+title "Only the first deploy recorded a version; the rejected replay created none"
+trace print_requests.py --dms //api/2.0/bundle --oneline
+
+rm -f tmp.plan.json

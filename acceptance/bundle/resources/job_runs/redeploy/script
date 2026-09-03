@@ -17,7 +17,7 @@ trace print_requests.py //jobs/run-now
 
 title "change the run configuration and redeploy"
 trace update_file.py databricks.yml "env: dev" "env: prod"
-trace $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"]'
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan["resources.job_runs.my_run"]'
 trace $CLI bundle deploy
 read_id.py my_run > /dev/null
 trace $CLI bundle summary

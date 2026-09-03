@@ -1,0 +1,68 @@
+
+=== Deploying from a git repo records where the source came from: the version carries git_info, workspace_info and the target's deployment_mode
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-provenance-[UNIQUE_NAME]/dev/files...
+Created jobs.foo
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //versions
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "git_info": {
+      "branch": "main",
+      "commit": "[COMMIT]",
+      "origin_url": "https://github.com/databricks/bundle-examples.git"
+    },
+    "operations": [
+      {
+        "resource_key": "jobs.foo",
+        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+      }
+    ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "error_message": "",
+    "resource_id": "[NUMID]",
+    "sequence_id": "0",
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-provenance-[UNIQUE_NAME]/dev/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":4,\"name\":\"[dev [USERNAME]] foo\",\"queue\":{\"enabled\":true},\"tags\":{\"dev\":\"[USERNAME]\"}}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+=== The service denormalizes them onto the deployment, so a reader gets the provenance of the latest version
+>>> MSYS_NO_PATHCONV=1 [CLI] api get /api/2.0/bundle/deployments/[NUMID]
+{
+  "target_name": "dev",
+  "deployment_mode": "DEPLOYMENT_MODE_DEVELOPMENT",
+  "git_info": {
+    "branch": "main",
+    "commit": "[COMMIT]",
+    "origin_url": "https://github.com/databricks/bundle-examples.git"
+  },
+  "workspace_info": {
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-provenance-[UNIQUE_NAME]/dev/files",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-provenance-[UNIQUE_NAME]/dev"
+  }
+}

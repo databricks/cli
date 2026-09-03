@@ -322,7 +322,7 @@ func (g *genieSpace) runForResource(ctx context.Context, b *bundle.Bundle) {
 	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {
 		_, localPath := b.StateFilenameDirect(ctx)
-		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), nil, dstate.WithDeploymentHistory(false), ""); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}

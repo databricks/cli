@@ -8,7 +8,7 @@ if [ -n "$CLOUD_ENV" ]; then
 fi
 rm -f out.requests.txt
 
-trace $CLI bundle plan -o json | nostamp > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 
 cleanup() {
     trace errcode $CLI bundle destroy --auto-approve

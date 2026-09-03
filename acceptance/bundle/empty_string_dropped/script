@@ -8,7 +8,7 @@
 
 # Resolved config the engines see. Today every "" field is still present here; a
 # fix in the initialize phase would drop them, and this golden would show that.
-$CLI bundle validate -o json -t direct | nostamp | jq .resources > out.validate.json
+$CLI bundle validate -o json -t direct | nostamp.py | jq .resources > out.validate.json
 
 # Exclude non-create traffic: workspace file ops, telemetry (nondeterministic), and the
 # deployment history calls the DMS run adds.

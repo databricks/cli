@@ -7,4 +7,4 @@ title "Plan is a no-op: git_source drift is skipped while the app has no active 
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
 title "git_source is skipped with reason \"no active deployment\""
-trace $CLI bundle plan -o json | jq '.plan[].changes | {git_source}'
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan[].changes | {git_source}'

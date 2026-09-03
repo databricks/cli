@@ -4,13 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -21,11 +25,15 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"
 )
@@ -189,6 +197,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		return b, nil, err
 	}
 
+	// The current deployment read from the service (nil, id "" if there is none yet). Used for the
+	// metadata diff and to reject a saved plan that predates the deployment's recorded version.
+	var dmsDeployment *bundledeployments.Deployment
+	var dmsDeploymentID string
+
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
@@ -232,8 +245,62 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+
+			if b.ConfiguresDeploymentHistory(ctx) {
+				deploymentID, deployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+				if err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+
+				dmsDeploymentID = deploymentID
+				dmsDeployment = deployment
+
+				// Stamp the deployment and the version this run records onto every job and pipeline so
+				// the plan carries them. version_id is always known (last recorded + 1); deployment_id
+				// does not exist until a first deploy creates it, so it is left off here and the deploy
+				// phase stamps the created id.
+				lastVersionID := ""
+				if deployment != nil {
+					lastVersionID = deployment.LastVersionId
+				}
+				nextVersion, verr := dms.NextVersion(lastVersionID)
+				if verr != nil {
+					logdiag.LogError(ctx, verr)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+				muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
+				if deploymentID != "" {
+					bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
+						b.Config.Bundle.Deployment.History = &config.DeploymentHistory{
+							DeploymentID:    deploymentID,
+							LatestVersionID: deployment.LastVersionId,
+						}
+					})
+					muts = append(muts, metadata.AnnotateDeployment(deploymentID))
+				}
+				bundle.ApplySeqContext(ctx, b, muts...)
+				if logdiag.HasError(ctx) {
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+			}
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), b.WorkspaceClient(ctx), dstate.WithDeploymentHistory(b.ConfiguresDeploymentHistory(ctx)), dmsDeploymentID); err != nil {
 				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+
+			// Open built the DMS client from the workspace client when recording; hand it to the
+			// phases that create versions and deployments.
+			if b.ConfiguresDeploymentHistory(ctx) {
+				b.DeploymentBundle.DmsApiClient = b.DeploymentBundle.StateDB.DmsClient()
+			}
+
+			// The service holds this deployment, so it has to keep being recorded: deploying
+			// without recording would leave it describing resources that have moved on.
+			if !b.ConfiguresDeploymentHistory(ctx) && b.DeploymentBundle.StateDB.RequiresDeploymentHistory() {
+				logdiag.LogError(ctx, errors.New(`unsetting experimental.record_deployment_history is not supported
+
+This deployment's resources are recorded with the deployment metadata service. Set experimental.record_deployment_history: true to deploy or destroy this bundle`))
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 
@@ -277,6 +344,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
+
 	}
 
 	var plan *deployplan.Plan
@@ -300,8 +368,27 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
 		}
 
-		// Validate that the plan's lineage and serial match the current state
-		// This must happen before any file operations
+		// The plan records the DMS deployment and version it targeted. Reject it if the live
+		// deployment moved on - a newer version (someone deployed since, possibly from another
+		// machine) or a different id (deleted and recreated) - so a stale plan is never applied on
+		// top of newer state. This runs before the lineage/serial check and is the authoritative
+		// stale guard for recorded bundles, whose local state is only a tombstone (its serial does
+		// not catch a deploy from elsewhere). Both sides are empty when not recording, a no-op there.
+		remoteLastVersion := ""
+		if dmsDeployment != nil {
+			remoteLastVersion = dmsDeployment.LastVersionId
+		}
+		if plan.LastVersionId != remoteLastVersion {
+			logdiag.LogError(ctx, fmt.Errorf("this plan predates the deployment's current version %s; run 'bundle plan' again", remoteLastVersion))
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+		if plan.DeploymentId != dmsDeploymentID {
+			logdiag.LogError(ctx, errors.New("this plan targets a different deployment than the one now recorded for this bundle; run 'bundle plan' again"))
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+
+		// Validate that the plan's lineage and serial match the local state. This is the stale guard
+		// for non-recorded bundles (recorded ones are covered by the version check above).
 		err = direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
@@ -373,7 +460,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, requiredEngine, libs, plan)
+		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, requiredEngine, libs, plan, dmsDeployment)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),
@@ -425,6 +512,27 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 	}
 
 	return engine.EngineSetting{Type: engine.Default, Source: engine.SourceDefault, IsDefault: true}, nil
+}
+
+// Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json
+func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
+	nodePath := path.Join(statePath, dms.DeploymentNodeName)
+
+	obj, err := w.Workspace.GetStatusByPath(ctx, nodePath)
+	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		return "", nil, nil
+	}
+	if err != nil {
+		return "", nil, fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
+	}
+	deploymentID := strconv.FormatInt(obj.ObjectId, 10)
+	deployment, err := w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
+		Name: dms.DeploymentName(deploymentID),
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	return deploymentID, deployment, nil
 }
 
 // isNewerVersion reports whether the state's recorded CLI version is strictly

@@ -8,7 +8,7 @@ trace errcode $CLI bundle deploy
 
 trace assert_exists.py .databricks/bundle/default/resources.json.wal
 trace assert_not_exists.py .databricks/bundle/default/resources.json
-trace cat .databricks/bundle/default/resources.json.wal | jq | nostamp
+trace cat .databricks/bundle/default/resources.json.wal | jq | nostamp.py
 
 title "Any other command recovers state"
 $CLI bundle $COMMAND &> LOG.COMMAND.txt

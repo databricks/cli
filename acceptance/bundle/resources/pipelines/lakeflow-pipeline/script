@@ -8,5 +8,5 @@ cleanup() {
 trap cleanup EXIT
 trace $CLI bundle deploy
 
-trace jq -s '.[] | select(.path=="/api/2.0/pipelines" and .method == "POST") | .body' out.requests.txt | nostamp
+trace jq -s '.[] | select(.path=="/api/2.0/pipelines" and .method == "POST") | .body' out.requests.txt | nostamp.py
 rm out.requests.txt

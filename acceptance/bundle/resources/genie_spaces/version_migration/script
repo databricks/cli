@@ -19,7 +19,7 @@ trace $CLI bundle plan
 # (and the etag guarding it) is version 2. The serialized_space change is
 # recorded but skipped via the etag_based rule.
 title "serialized_space: local version 1, remote version 2, skipped (etag_based)"
-$CLI bundle plan -o json \
+$CLI bundle plan -o json | nostamp.py \
   | jq '.plan["resources.genie_spaces.foo"].changes.serialized_space
         | {action, reason,
            local_version: (.new | fromjson | .version),

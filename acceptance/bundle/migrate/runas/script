@@ -23,4 +23,4 @@ trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deployment migrate
 trace print_state.py > out.new_state.json
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json > out.plan.json
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json | nostamp.py > out.plan.json

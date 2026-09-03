@@ -1,0 +1,78 @@
+
+=== Deploy without recording: ordinary direct-engine state tracking one job, unknown to DMS
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
+Created jobs.one
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle --oneline
+
+>>> jq {state_version, features} .databricks/bundle/default/resources.json
+{
+  "state_version": 2,
+  "features": null
+}
+
+=== Enabling recording is refused: this deployment already exists but the service has no record of it, and treating the service as authoritative would create its resources a second time
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
+Error: this deployment already exists and is not recorded with the deployment metadata service, so it cannot be recorded without redeploying its resources
+
+To record this bundle's history, start it over as a new deployment:
+  1. remove experimental.record_deployment_history from your bundle configuration
+  2. run "databricks bundle destroy" to delete the existing resources
+  3. add experimental.record_deployment_history back and deploy again
+
+
+>>> print_requests.py --dms //api/2.0/bundle --oneline
+
+=== The check is against the remote state, not the local cache: wiping .databricks still refuses, because the deploy pulls the state back from the workspace
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
+Error: this deployment already exists and is not recorded with the deployment metadata service, so it cannot be recorded without redeploying its resources
+
+To record this bundle's history, start it over as a new deployment:
+  1. remove experimental.record_deployment_history from your bundle configuration
+  2. run "databricks bundle destroy" to delete the existing resources
+  3. add experimental.record_deployment_history back and deploy again
+
+
+=== A leftover local WAL is irrelevant too: under recording it is discarded rather than replayed, so the refusal stands
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
+Error: this deployment already exists and is not recorded with the deployment metadata service, so it cannot be recorded without redeploying its resources
+
+To record this bundle's history, start it over as a new deployment:
+  1. remove experimental.record_deployment_history from your bundle configuration
+  2. run "databricks bundle destroy" to delete the existing resources
+  3. add experimental.record_deployment_history back and deploy again
+
+
+=== Destroy clears the deployment. With nothing recorded remotely the bundle is treated as new, so recording can be enabled - and a leftover WAL is still discarded, not replayed
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.one
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
+Created jobs.one
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments", "body": {"display_name": "dms-existing-state-[UNIQUE_NAME]", "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state", "target_name": "default", "workspace_info": {"file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files", "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default"}}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "1"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY", "operations": [{"resource_key": "jobs.one", "action_type": "OPERATION_ACTION_TYPE_CREATE"}]}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"one\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
+
+>>> find.py resources[.]json[.]wal --expect 0
+
+>>> jq {state_version, features} .databricks/bundle/default/resources.json
+{
+  "state_version": 2,
+  "features": {
+    "record_deployment_history": {}
+  }
+}

@@ -24,7 +24,7 @@ trace update_file.py databricks.yml "ttl: 604800s" "ttl: 259200s"
 # creation_time + ttl and never echoes ttl, which the testserver does not model.
 # The update_mask each engine sends is what this test is about.
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_branches.dev_branch" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan."resources.postgres_branches.dev_branch" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 trace print_requests.py --del-body project_id,branch_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json

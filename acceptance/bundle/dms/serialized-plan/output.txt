@@ -1,0 +1,41 @@
+
+=== Deploy once to create the deployment (records version 1)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-serialized-plan-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A saved plan carries the deployment id and the versions it targets (last 1, next 2)
+>>> [CLI] bundle plan -o json
+
+>>> jq {deployment_id, last_version_id, next_version_id} tmp.plan.json
+{
+  "deployment_id": "[NUMID]",
+  "last_version_id": "1",
+  "next_version_id": "2"
+}
+
+=== Change the job and deploy again: advances the deployment to version 2
+>>> update_file.py databricks.yml name: foo name: foo-v2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-serialized-plan-[UNIQUE_NAME]/default/files...
+Updated jobs.foo
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+=== Replaying the earlier plan is rejected: it predates the deployment's current version
+>>> musterr [CLI] bundle deploy --plan tmp.plan.json
+Error: this plan predates the deployment's current version 2; run 'bundle plan' again
+
+
+=== Only versions 1 and 2 were recorded; the rejected replay created none
+>>> print_requests.py --dms //api/2.0/bundle --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments", "body": {"display_name": "dms-serialized-plan-[UNIQUE_NAME]", "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-serialized-plan-[UNIQUE_NAME]/default/state", "target_name": "default", "workspace_info": {"file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-serialized-plan-[UNIQUE_NAME]/default/files", "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-serialized-plan-[UNIQUE_NAME]/default"}}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "1"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY", "operations": [{"resource_key": "jobs.foo", "action_type": "OPERATION_ACTION_TYPE_CREATE"}]}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-serialized-plan-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "2"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY", "previous_version_id": "1", "operations": [{"resource_key": "jobs.foo", "action_type": "OPERATION_ACTION_TYPE_UPDATE"}]}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/jobs.foo", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-serialized-plan-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"2\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo-v2\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}

@@ -1,0 +1,47 @@
+
+=== Deploy a job that references another: depends_on is recorded alongside the config, since the reference is resolved to a literal in the config itself
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-depends-on-[UNIQUE_NAME]/default/files...
+Created jobs.child
+Created jobs.parent
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //versions/1/operations
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.parent",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "error_message": "",
+    "resource_id": "[NUMID]",
+    "sequence_id": "0",
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-depends-on-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"parent\",\"queue\":{\"enabled\":true}}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.child",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "error_message": "",
+    "resource_id": "[NUMID]",
+    "sequence_id": "0",
+    "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-depends-on-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"description\":\"depends on [NUMID]\",\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"child\",\"queue\":{\"enabled\":true}},\"depends_on\":[{\"node\":\"resources.jobs.parent\",\"label\":\"${resources.jobs.parent.id}\"}]}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.child
+  delete resources.jobs.parent
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-depends-on-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

@@ -1,7 +1,7 @@
 trace $CLI bundle validate -o json | jq .resources.genie_spaces.foo.permissions
 rm out.requests.txt
 
-$CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm out.requests.txt
 trace $CLI bundle deploy
