@@ -1,0 +1,232 @@
+
+=== Deploy: the service records all three resources, including the dependency edge
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-from-service-[UNIQUE_NAME]/default/files...
+Created jobs.dependent
+Created jobs.source
+Created secret_scopes.scope
+Created secret_scopes.scope.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_state.py
+{
+ "state_version": 3,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "serial": 1,
+ "features": {
+  "record_deployment_history": {}
+ },
+ "state": {
+  "resources.jobs.dependent": {
+   "__id__": "[NUMID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[NUMID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-state-from-service-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "dependent",
+    "queue": {
+     "enabled": true
+    },
+    "tags": {
+     "upstream": "[NUMID]"
+    }
+   },
+   "depends_on": [
+    {
+     "node": "resources.jobs.source",
+     "label": "${resources.jobs.source.id}"
+    }
+   ]
+  },
+  "resources.jobs.source": {
+   "__id__": "[NUMID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[NUMID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-state-from-service-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "source",
+    "queue": {
+     "enabled": true
+    },
+    "tags": {
+     "source_id": "placeholder"
+    }
+   }
+  },
+  "resources.secret_scopes.scope": {
+   "__id__": "scope-[UNIQUE_NAME]",
+   "state": {
+    "scope": "scope-[UNIQUE_NAME]",
+    "scope_backend_type": "DATABRICKS"
+   }
+  },
+  "resources.secret_scopes.scope.permissions": {
+   "__id__": "scope-[UNIQUE_NAME]",
+   "state": {
+    "scope_name": "scope-[UNIQUE_NAME]",
+    "acls": [
+     {
+      "permission": "MANAGE",
+      "principal": "[USERNAME]"
+     }
+    ]
+   },
+   "depends_on": [
+    {
+     "node": "resources.secret_scopes.scope",
+     "label": "${resources.secret_scopes.scope.name}"
+    }
+   ]
+  }
+ }
+}
+
+=== Throw away every local trace of the deployment. The state file the deploy left is only a header, so anything the next deploy knows has to come from the service
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-state-from-service-[UNIQUE_NAME]/default/state/resources.json
+{
+  "state_version": 3,
+  "features": {
+    "record_deployment_history": {}
+  },
+  "resources": []
+}
+
+=== Redeploy: nothing is created a second time, and nothing even reads as changed - what the service holds matches the config, stamp included
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-from-service-[UNIQUE_NAME]/default/files...
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 4 unchanged
+
+=== And the recovered state has the ids and the dependency edge back, from the service
+>>> print_state.py
+{
+ "state_version": 3,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "serial": 1,
+ "features": {
+  "record_deployment_history": {}
+ },
+ "state": {
+  "resources.jobs.dependent": {
+   "__id__": "[NUMID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[NUMID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-state-from-service-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "dependent",
+    "queue": {
+     "enabled": true
+    },
+    "tags": {
+     "upstream": "[NUMID]"
+    }
+   },
+   "depends_on": [
+    {
+     "node": "resources.jobs.source",
+     "label": "${resources.jobs.source.id}"
+    }
+   ]
+  },
+  "resources.jobs.source": {
+   "__id__": "[NUMID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[NUMID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-state-from-service-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "source",
+    "queue": {
+     "enabled": true
+    },
+    "tags": {
+     "source_id": "placeholder"
+    }
+   }
+  },
+  "resources.secret_scopes.scope": {
+   "__id__": "scope-[UNIQUE_NAME]",
+   "state": {
+    "scope": "scope-[UNIQUE_NAME]",
+    "scope_backend_type": "DATABRICKS"
+   }
+  },
+  "resources.secret_scopes.scope.permissions": {
+   "__id__": "scope-[UNIQUE_NAME]",
+   "state": {
+    "scope_name": "scope-[UNIQUE_NAME]",
+    "acls": [
+     {
+      "permission": "MANAGE",
+      "principal": "[USERNAME]"
+     }
+    ]
+   },
+   "depends_on": [
+    {
+     "node": "resources.secret_scopes.scope",
+     "label": "${resources.secret_scopes.scope.name}"
+    }
+   ]
+  }
+ }
+}
+
+=== Strip the marker from the local state, keeping its lineage. The resources still come from the service, so the deploy is a no-op - and because it writes nothing, the file keeps the stripped header until some later deploy does write
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-from-service-[UNIQUE_NAME]/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 4 unchanged
+
+>>> jq {state_version, features} .databricks/bundle/default/resources.json
+{
+  "state_version": 3,
+  "features": null
+}
+
+=== Now delete the remote state file too and wipe the local cache again. No state file exists anywhere, so the service is the only record of the deployment left
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace delete /Workspace/Users/[USERNAME]/.bundle/dms-state-from-service-[UNIQUE_NAME]/default/state/resources.json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-from-service-[UNIQUE_NAME]/default/files...
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 4 unchanged
+
+=== And no state file comes back: the deploy changed nothing, so it wrote nothing. Under recording the file is optional - the service is the state
+>>> find.py resources.json --expect 0
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.dependent
+  delete resources.jobs.source
+  delete resources.secret_scopes.scope
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-state-from-service-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted

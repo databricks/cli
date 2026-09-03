@@ -1,0 +1,35 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy with recording on: the state records the feature"
+trace $CLI bundle deploy
+trace jq '.features' .databricks/bundle/default/resources.json
+
+title "Turning recording off is refused: the service holds this deployment, so deploying without recording would leave it describing resources that have moved on"
+trace update_file.py databricks.yml "record_deployment_history: true" "record_deployment_history: false"
+musterr trace DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= $CLI bundle deploy
+
+title "Destroy is refused for the same reason, which is why the error says to put the setting back"
+musterr trace DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= $CLI bundle destroy --auto-approve
+
+title "With recording back on, deploy and destroy work again"
+trace update_file.py databricks.yml "record_deployment_history: false" "record_deployment_history: true"
+trace $CLI bundle deploy
+trace $CLI bundle destroy --auto-approve
+
+title "Destroy leaves the state file behind, but drops the marker: nothing is recorded any more, so it has nothing left to protect"
+trace jq '{state_version, features, resources: (.state | keys)}' .databricks/bundle/default/resources.json
+
+title "So recording can be turned off afterwards, rather than the destroyed bundle being stuck with it forever"
+trace update_file.py databricks.yml "record_deployment_history: true" "record_deployment_history: false"
+trace DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= $CLI bundle deploy
+trace DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= $CLI bundle destroy --auto-approve
+
+title "bind and unbind are refused on a recorded state even with the setting dropped: their writes would be discarded"
+trace update_file.py databricks.yml "record_deployment_history: false" "record_deployment_history: true"
+trace $CLI bundle deploy
+job_id=$(read_id.py one)
+trace update_file.py databricks.yml "record_deployment_history: true" "record_deployment_history: false"
+musterr trace DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= $CLI bundle deployment unbind one
+musterr trace DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= $CLI bundle deployment bind one "$job_id" --auto-approve
+trace update_file.py databricks.yml "record_deployment_history: false" "record_deployment_history: true"
+trace $CLI bundle destroy --auto-approve

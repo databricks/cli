@@ -10,3 +10,7 @@ trace fault.py "POST /api/2.2/jobs/delete" 400 0 1 INVALID_PARAMETER_VALUE
 trace musterr $CLI bundle destroy --auto-approve
 trace print_requests.py --dms //api/2.0/bundle
 trace print_state.py
+
+# print_state.py asks the service for the resources while recording, so drain those reads instead
+# of leaving them behind for the harness to diff.
+print_requests.py //api/2.0 > /dev/null

@@ -185,7 +185,7 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 // TestEmptyFeatureStateAcceptedWithoutFlippingVersion pins the special case that a
 // featureStateVersion state with no features is accepted as-is — the on-disk version
 // is left at featureStateVersion, not flipped down to currentStateVersion — and that
-// a featureStateVersion state recording any feature is refused. This is scaffolding
+// a featureStateVersion state recording an unrecognized feature is refused. This is scaffolding
 // for the deferred version bump, special-cased to featureStateVersion only (see the
 // featureStateVersion doc comment).
 //
@@ -201,7 +201,7 @@ func TestEmptyFeatureStateAcceptedWithoutFlippingVersion(t *testing.T) {
 	require.NoError(t, migrateState(empty))
 	assert.Equal(t, featureStateVersion, empty.StateVersion, "v3 + no features keeps its on-disk version, not flipped to v2")
 
-	// v3 that records a feature is refused: this CLI does not understand features.
+	// v3 that records an unrecognized feature is refused.
 	withFeature := &Database{Header: Header{
 		StateVersion: featureStateVersion,
 		Features:     map[string]struct{}{"future_feature": {}},
@@ -212,6 +212,68 @@ func TestEmptyFeatureStateAcceptedWithoutFlippingVersion(t *testing.T) {
 	assert.Contains(t, err.Error(), "future_feature")
 	assert.Contains(t, err.Error(), "upgrade to the latest CLI version")
 	assert.Contains(t, err.Error(), featuresDocURL)
+}
+
+// TestSupportedFeatureAcceptedUnknownOneNamed covers the features this CLI does write:
+// a state recording only those loads, and an unsupported feature alongside one of them
+// is still refused — naming only the feature the user has to upgrade for.
+func TestSupportedFeatureAcceptedUnknownOneNamed(t *testing.T) {
+	supported := &Database{Header: Header{
+		StateVersion: featureStateVersion,
+		Features:     map[string]struct{}{featureRecordDeploymentHistory: {}},
+	}}
+	require.NoError(t, migrateState(supported))
+	assert.Equal(t, featureStateVersion, supported.StateVersion)
+	assert.Contains(t, supported.Features, featureRecordDeploymentHistory, "a supported feature is left on the state, not stripped")
+
+	mixed := &Database{Header: Header{
+		StateVersion: featureStateVersion,
+		Features:     map[string]struct{}{featureRecordDeploymentHistory: {}, "future_feature": {}},
+	}}
+	err := migrateState(mixed)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "future_feature")
+	assert.NotContains(t, err.Error(), featureRecordDeploymentHistory)
+}
+
+// TestDataToPersistOnlyStripsRecordedState pins that the header-only write is scoped to a
+// recorded deployment: an ordinary one persists its resources untouched. It also pins that the
+// in-memory state survives, since the rest of the deploy reads from it.
+func TestDataToPersistOnlyStripsRecordedState(t *testing.T) {
+	entries := map[string]ResourceEntry{
+		"resources.jobs.my_job": {ID: "123", State: json.RawMessage(`{"name":"n"}`)},
+	}
+
+	var plain DeploymentState
+	plain.Data = NewDatabase("test-lineage", 1)
+	plain.Data.State = entries
+	assert.Equal(t, entries, plain.dataToPersist().State, "an unrecorded deployment persists its resources")
+
+	var recorded DeploymentState
+	recorded.Data = NewDatabase("test-lineage", 1)
+	recorded.Data.State = entries
+	recorded.Data.StateVersion = featureStateVersion
+	recorded.Data.Features = map[string]struct{}{featureRecordDeploymentHistory: {}}
+
+	persisted := recorded.dataToPersist()
+	assert.Empty(t, persisted.State, "a recorded deployment persists the header alone")
+	assert.Equal(t, featureStateVersion, persisted.StateVersion)
+	assert.Contains(t, persisted.Features, featureRecordDeploymentHistory)
+	assert.Equal(t, entries, recorded.Data.State, "the in-memory state is what the deploy reads, so it must not be cleared")
+}
+
+// TestDataToPersistDropsMarkerWhenNothingIsRecorded pins that a recorded state which has lost its
+// last resource - what a destroy leaves behind - stops recording the feature. Keeping it would
+// refuse every later deploy that does not record, with nothing left for the marker to protect.
+func TestDataToPersistDropsMarkerWhenNothingIsRecorded(t *testing.T) {
+	var db DeploymentState
+	db.Data = NewDatabase("test-lineage", 1)
+	db.Data.StateVersion = featureStateVersion
+	db.Data.Features = map[string]struct{}{featureRecordDeploymentHistory: {}}
+
+	persisted := db.dataToPersist()
+	assert.NotContains(t, persisted.Features, featureRecordDeploymentHistory)
+	assert.Contains(t, db.Data.Features, featureRecordDeploymentHistory, "the in-memory copy is untouched")
 }
 
 func TestDeleteState(t *testing.T) {

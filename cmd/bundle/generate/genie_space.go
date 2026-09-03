@@ -322,7 +322,13 @@ func (g *genieSpace) runForResource(ctx context.Context, b *bundle.Bundle) {
 	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {
 		_, localPath := b.StateFilenameDirect(ctx)
-		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), nil, ""); err != nil {
+		// While recording, the resources come from the service and not the state file.
+		dmsClient, dmsDeploymentID, err := utils.DmsStateSource(ctx, b)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dmsClient, dmsDeploymentID); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}

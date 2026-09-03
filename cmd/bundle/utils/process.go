@@ -283,6 +283,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 
+			// The service holds this deployment, so it has to keep being recorded: deploying
+			// without recording would leave it describing resources that have moved on.
+			if !b.RecordsDeploymentHistory(ctx) && b.DeploymentBundle.StateDB.RequiresDeploymentHistory() {
+				logdiag.LogError(ctx, errors.New(`unsetting experimental.record_deployment_history is not supported
+
+This deployment's resources are recorded with the deployment metadata service. Set experimental.record_deployment_history: true to deploy or destroy this bundle`))
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+
 			// Warn when the state was last written by a newer CLI than the one
 			// running now. The state schema version is a hard gate (dstate.Open
 			// rejects a too-new state_version), but a state can be written by a
@@ -479,6 +488,27 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 	}
 
 	return engine.EngineSetting{Type: engine.Default, Source: engine.SourceDefault, IsDefault: true}, nil
+}
+
+// DmsStateSource returns the client and deployment id dstate.Open needs to read a recorded
+// bundle's resources from the deployment metadata service. Both are zero when the bundle does not
+// record: while recording the state file holds only the marker, so a command that opens state
+// without these sees no resources at all.
+func DmsStateSource(ctx context.Context, b *bundle.Bundle) (*dms.Client, string, error) {
+	if !b.RecordsDeploymentHistory(ctx) {
+		return nil, "", nil
+	}
+
+	deploymentID, _, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	if err != nil {
+		return nil, "", err
+	}
+
+	client, err := dms.NewClient(b.WorkspaceClient(ctx))
+	if err != nil {
+		return nil, "", err
+	}
+	return client, deploymentID, nil
 }
 
 // Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json

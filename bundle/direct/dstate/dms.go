@@ -16,9 +16,10 @@ type RecordedState struct {
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
-// applyDMSState replaces the file-derived resource state with what DMS recorded. Recording is
-// only enabled for net-new deployments, so DMS owns the resource set outright: an empty set
-// means a successful deploy of nothing, not missing data. The caller holds db.mu.
+// applyDMSState replaces the file-derived resource state with what DMS recorded. DMS owns the
+// resource set outright, so this runs on every recorded open and the file's copy is never read
+// back as the truth: an empty set means the service tracks nothing, whether because the deploy
+// created nothing or because the deployment is gone. The caller holds db.mu.
 func (db *DeploymentState) applyDMSState(recorded []dms.Resource) error {
 	// Built first and assigned together, so a malformed envelope leaves the state as it was
 	// rather than half replaced.

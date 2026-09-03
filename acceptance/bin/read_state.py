@@ -9,6 +9,9 @@ import json
 import os
 import sys
 
+sys.path.insert(0, os.path.dirname(__file__))
+from dms_resources import get_resources, records_deployment_history
+
 
 def print_resource_terraform(group, name, *attrs):
     resource_type = "databricks_" + group[:-1]
@@ -50,7 +53,21 @@ def print_resource_direct(group, name, *attrs):
     print(group, name, " ".join(values))
 
 
-if os.environ.get("DATABRICKS_BUNDLE_ENGINE", "").startswith("direct"):
+def print_resource_recorded(group, name, *attrs):
+    result = get_resources(None).get(f"{group}.{name}")
+    if result is None:
+        print(f"State not found for {group}.{name}")
+        return
+
+    state = dict(result["state"])
+    state.setdefault("id", result["id"])
+    values = [f"{x}={state.get(x)!r}" for x in attrs]
+    print(group, name, " ".join(values))
+
+
+if records_deployment_history():
+    print_resource_recorded(*sys.argv[1:])
+elif os.environ.get("DATABRICKS_BUNDLE_ENGINE", "").startswith("direct"):
     print_resource_direct(*sys.argv[1:])
 else:
     print_resource_terraform(*sys.argv[1:])

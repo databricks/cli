@@ -1,8 +1,9 @@
-# Recording needs a bundle from the start. This test rewinds state and wipes the
-# deployment record path, so recording refuses it.
-EnvMatrix.DMS = [""]
-
 EnvMatrix.READPLAN = ["", "1"]
+
+# A 1000-task job serializes to ~110 KB, over the 64 KB per-operation state limit the
+# deployment metadata service accepts, so recording it fails the deploy. Raising the limit
+# or splitting the state is a service-side decision.
+EnvMatrixExclude.dms_state_too_large = ["DMS=true", "INPUT_CONFIG=job_pydabs_1000_tasks.yml.tmpl"]
 
 # Snapshot of pre-destroy state used to re-run destroy on state that still
 # references the (now-gone) resources; may linger if the test fails mid-run.

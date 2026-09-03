@@ -19,4 +19,4 @@ title "Third deploy (must recover and succeed, not blocked by the leftover WAL)"
 trace errcode $CLI bundle deploy --force-lock
 
 trace errcode assert_not_exists.py .databricks/bundle/default/resources.json.wal
-trace errcode cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys)}'
+trace errcode print_state.py | jq -S '{serial: .serial, state_keys: (.state | keys)}'

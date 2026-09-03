@@ -1,0 +1,26 @@
+bundle:
+  name: dms-state-from-service-$UNIQUE_NAME
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  jobs:
+    # source is stamped with the deployment (jobs and pipelines are), and dependent references
+    # its id, so the pair covers a dependency edge surviving the round trip through the service.
+    source:
+      name: source
+      tags:
+        source_id: placeholder
+    dependent:
+      name: dependent
+      tags:
+        upstream: ${resources.jobs.source.id}
+
+  # A secret scope carries no deployment stamp, so it is the case where nothing about the resource
+  # changes between deploys: after a cache wipe it can only come back as unchanged if the service
+  # is really the state.
+  secret_scopes:
+    scope:
+      name: scope-$UNIQUE_NAME
+      backend_type: DATABRICKS

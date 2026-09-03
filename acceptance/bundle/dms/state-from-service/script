@@ -1,0 +1,34 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy: the service records all three resources, including the dependency edge"
+trace $CLI bundle deploy
+trace print_state.py
+
+title "Throw away every local trace of the deployment. The state file the deploy left is only a header, so anything the next deploy knows has to come from the service"
+rm -rf .databricks
+trace MSYS_NO_PATHCONV=1 $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-state-from-service-${UNIQUE_NAME}/default/state/resources.json" | jq '{state_version, features, resources: (.state | keys)}'
+
+title "Redeploy: nothing is created a second time, and nothing even reads as changed - what the service holds matches the config, stamp included"
+trace $CLI bundle deploy
+
+title "And the recovered state has the ids and the dependency edge back, from the service"
+trace print_state.py
+
+title "Strip the marker from the local state, keeping its lineage. The resources still come from the service, so the deploy is a no-op - and because it writes nothing, the file keeps the stripped header until some later deploy does write"
+jq 'del(.features)' .databricks/bundle/default/resources.json > tmp.json && mv tmp.json .databricks/bundle/default/resources.json
+trace $CLI bundle deploy
+trace jq '{state_version, features}' .databricks/bundle/default/resources.json
+
+title "Now delete the remote state file too and wipe the local cache again. No state file exists anywhere, so the service is the only record of the deployment left"
+trace MSYS_NO_PATHCONV=1 $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-state-from-service-${UNIQUE_NAME}/default/state/resources.json"
+rm -rf .databricks
+trace $CLI bundle deploy
+
+title "And no state file comes back: the deploy changed nothing, so it wrote nothing. Under recording the file is optional - the service is the state"
+trace find.py 'resources.json' --expect 0

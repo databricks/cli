@@ -1,6 +1,8 @@
-# Recording needs a bundle it has seen from the start. This test seeds a state file,
-# so recording refuses it. TODO(DMS): drop this once existing state can be
-# handed over to the service (see the TODO in dstate.Open).
+# The out-of-band delete takes the whole bundle root, including the workspace node the
+# service registers the deployment under. The state file survives and is accepted (it records
+# record_deployment_history), so the redeploy re-stamps the job with the new deployment's id
+# and reports it as changed where the non-recording run reports it unchanged. Both are right,
+# but the two variants share one golden.
 EnvMatrix.DMS = [""]
 
 Badness = "After the remote bundle files are deleted out-of-band, the next deploy does not re-upload them until the local sync snapshot is removed."
