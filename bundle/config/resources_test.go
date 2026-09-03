@@ -243,6 +243,11 @@ func TestResourcesBindSupport(t *testing.T) {
 				CreateServingEndpoint: serving.CreateServingEndpoint{},
 			},
 		},
+		ModelServices: map[string]*resources.ModelService{
+			"my_model_service": {
+				ModelServiceConfig: resources.ModelServiceConfig{},
+			},
+		},
 		SecretScopes: map[string]*resources.SecretScope{
 			"my_secret_scope": {
 				Name: "0",
@@ -390,6 +395,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockAlertsV2API().EXPECT().GetAlertById(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockQualityMonitorsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockServingEndpointsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockAiGatewayAPI().EXPECT().GetModelService(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockSecretsAPI().EXPECT().ListScopesAll(mock.Anything).Return([]workspace.SecretScope{
 		{Name: "0"},
 	}, nil)

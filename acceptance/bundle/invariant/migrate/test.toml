@@ -21,6 +21,8 @@ EnvMatrixExclude.no_genie_space = ["INPUT_CONFIG=genie_space.yml.tmpl"]
 EnvMatrixExclude.no_instance_pool = ["INPUT_CONFIG=instance_pool.yml.tmpl"]
 # Cluster policies are direct-only; the terraform deploy that seeds the migration fails for them.
 EnvMatrixExclude.no_cluster_policy = ["INPUT_CONFIG=cluster_policy.yml.tmpl"]
+# AI Gateway securables are direct-only; the terraform deploy that seeds the migration fails for them.
+EnvMatrixExclude.no_model_service = ["INPUT_CONFIG=model_service.yml.tmpl"]
 
 # Cross-resource permission references (e.g. ${resources.jobs.job_b.permissions[0].level})
 # don't work in terraform mode: the terraform interpolator converts the path to
