@@ -52,7 +52,10 @@ def get_remote_state_path(target):
     target_dir = os.path.dirname(get_state_file(target, False))
     snapshots = glob.glob(f"{target_dir}/sync-snapshots/*.json")
     if snapshots:
-        remote_path = json.loads(open(snapshots[0]).read())["remote_path"]
+        # One snapshot per remote path, so a test that moved its root leaves several: the newest
+        # is the one the last deploy used.
+        newest = max(snapshots, key=os.path.getmtime)
+        remote_path = json.loads(open(newest).read())["remote_path"]
         # state and files are siblings under the bundle root.
         return posixpath.join(posixpath.dirname(remote_path), "state")
 
@@ -80,16 +83,23 @@ def get_resources(target):
         return {}
     deployment_id = node["object_id"]
 
-    listed = run_json([CLI, "api", "get", f"/api/2.0/bundle/deployments/{deployment_id}/resources"])
-
     result = {}
-    for resource in listed.get("resources") or []:
-        # The service stores state as the opaque envelope the CLI wrote (dstate.RecordedState), so
-        # unwrap it to the resource state itself.
-        envelope = json.loads(resource["state"]) if resource.get("state") else {}
-        result[resource["resource_key"]] = {
-            "id": resource.get("resource_id"),
-            "state": envelope.get("state") or {},
-            "depends_on": envelope.get("depends_on") or [],
-        }
-    return result
+    # The service pages at 50 resources; the local fake returns everything at once.
+    page_token = None
+    while True:
+        url = f"/api/2.0/bundle/deployments/{deployment_id}/resources"
+        if page_token:
+            url += f"?page_token={page_token}"
+        listed = run_json([CLI, "api", "get", url])
+        for resource in listed.get("resources") or []:
+            # The service stores state as the opaque envelope the CLI wrote (dstate.RecordedState),
+            # so unwrap it to the resource state itself.
+            envelope = json.loads(resource["state"]) if resource.get("state") else {}
+            result[resource["resource_key"]] = {
+                "id": resource.get("resource_id"),
+                "state": envelope.get("state") or {},
+                "depends_on": envelope.get("depends_on") or [],
+            }
+        page_token = listed.get("next_page_token")
+        if not page_token:
+            return result
