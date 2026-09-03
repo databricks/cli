@@ -24,3 +24,11 @@ title "Strip the marker from the local state, keeping its lineage. The resources
 jq 'del(.features)' .databricks/bundle/default/resources.json > tmp.json && mv tmp.json .databricks/bundle/default/resources.json
 trace $CLI bundle deploy
 trace jq '{state_version, features}' .databricks/bundle/default/resources.json
+
+title "Now delete the remote state file too and wipe the local cache again. No state file exists anywhere, so the service is the only record of the deployment left"
+trace MSYS_NO_PATHCONV=1 $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-state-from-service-${UNIQUE_NAME}/default/state/resources.json"
+rm -rf .databricks
+trace $CLI bundle deploy
+
+title "And no state file comes back: the deploy changed nothing, so it wrote nothing. Under recording the file is optional - the service is the state"
+trace find.py 'resources.json' --expect 0

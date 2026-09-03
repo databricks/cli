@@ -210,6 +210,17 @@ Resources: 0 created, 0 changed, 0 deleted, 4 unchanged
   "features": null
 }
 
+=== Now delete the remote state file too and wipe the local cache again. No state file exists anywhere, so the service is the only record of the deployment left
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace delete /Workspace/Users/[USERNAME]/.bundle/dms-state-from-service-[UNIQUE_NAME]/default/state/resources.json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-from-service-[UNIQUE_NAME]/default/files...
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 4 unchanged
+
+=== And no state file comes back: the deploy changed nothing, so it wrote nothing. Under recording the file is optional - the service is the state
+>>> find.py resources.json --expect 0
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.dependent
