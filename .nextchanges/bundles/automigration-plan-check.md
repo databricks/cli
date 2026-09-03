@@ -1,0 +1,1 @@
+* Before committing the automatic terraform→direct migration, run a deployment plan against the converted state; if the plan fails the migration is abandoned. ([#6486](https://github.com/databricks/cli/pull/6486))

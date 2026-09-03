@@ -284,17 +284,8 @@ tasks:
     cmds:
       - "./tools/validate_whitespace.py --fix"
 
-  links:
-    desc: Update GitHub links in CHANGELOG.md and .nextchanges/ fragments
-    sources:
-      - CHANGELOG.md
-      - ".nextchanges/**/*.md"
-      - tools/update_github_links.py
-    cmds:
-      - "./tools/update_github_links.py"
-
   check-changelog:
-    desc: Validate .nextchanges fragment placement
+    desc: Validate .nextchanges fragment placement and links
     cmds:
       - "./tools/validate_nextchanges.py"
 
@@ -326,13 +317,12 @@ tasks:
       - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
   checks:
-    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, lockfiles)
+    desc: Run quick checks (tidy, whitespace, deadcode, changelog, lockfiles)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
-    # touching more paths should not race with whitespace/link scanners.
+    # touching more paths should not race with the whitespace scanner.
     cmds:
       - task: tidy
       - task: ws
-      - task: links
       - task: deadcode
       - task: check-changelog
       - task: check-lockfiles

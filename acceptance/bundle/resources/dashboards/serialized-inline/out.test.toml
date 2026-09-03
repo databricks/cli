@@ -1,0 +1,4 @@
+Cloud = true
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.DMS = ["", "true"]
+EnvMatrix.READPLAN = ["", "1"]

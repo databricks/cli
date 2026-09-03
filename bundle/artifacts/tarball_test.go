@@ -1,0 +1,79 @@
+package artifacts
+
+import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// tarEntries reads a gzipped tarball and returns entry name -> content.
+func tarEntries(t *testing.T, b []byte) map[string]string {
+	t.Helper()
+	gzr, err := gzip.NewReader(bytes.NewReader(b))
+	require.NoError(t, err)
+	tr := tar.NewReader(gzr)
+	out := map[string]string{}
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+		body, err := io.ReadAll(tr)
+		require.NoError(t, err)
+		out[hdr.Name] = string(body)
+	}
+	return out
+}
+
+func runGit(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "git %v: %s", args, out)
+}
+
+// TestTarballFromGitArchivesRef verifies git mode archives the committed tree with
+// entries named relative to the artifact's path (here the repo root, so no prefix).
+func TestTarballFromGitArchivesRef(t *testing.T) {
+	repo := t.TempDir()
+	runGit(t, repo, "init", "-q")
+	runGit(t, repo, "config", "user.email", "t@example.com")
+	runGit(t, repo, "config", "user.name", "t")
+	// Keep line endings verbatim so the content check doesn't depend on the runner's
+	// core.autocrlf (true by default on the Windows CI image).
+	runGit(t, repo, "config", "core.autocrlf", "false")
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "train.py"), []byte("print('x')\n"), 0o644))
+	runGit(t, repo, "add", "-A")
+	runGit(t, repo, "commit", "-qm", "init")
+
+	b := &bundle.Bundle{SyncRootPath: repo}
+	a := &config.Artifact{Path: repo, Git: &config.ArtifactGit{Commit: "HEAD"}}
+
+	var buf bytes.Buffer
+	require.NoError(t, tarballFromGit(t.Context(), b, a, &buf))
+
+	// path == repo root, so the entry is relative to it (no injected prefix).
+	entries := tarEntries(t, buf.Bytes())
+	require.Contains(t, entries, "train.py")
+	assert.Equal(t, "print('x')", strings.TrimSpace(entries["train.py"]))
+}
+
+func TestTarballFromGitRequiresRef(t *testing.T) {
+	b := &bundle.Bundle{SyncRootPath: t.TempDir()}
+	a := &config.Artifact{Path: b.SyncRootPath, Git: &config.ArtifactGit{}}
+	err := tarballFromGit(t.Context(), b, a, io.Discard)
+	require.ErrorContains(t, err, "git.commit or git.branch")
+}

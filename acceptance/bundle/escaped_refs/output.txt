@@ -1,0 +1,58 @@
+
+=== Validate: escapes are still escaped in the config
+>>> [CLI] bundle validate -o json
+{
+  "generic_config": "{\"source\": {\"path\": \"landing/$${p_folder}/$${source_file}_*.csv\"}, \"schema\": {\"columns\": [{\"name\": \"w_batch_id\", \"expression\": \"$${batch_id}\"}, {\"name\": \"w_business_dt\", \"expression\": \"cast('$${business_date[0..9]}' as date)\"}]}, \"target\": {\"table\": \"main.$${p_env_stg}.$${target_table}\"}}",
+  "parameters_list": "[{\"source_file\": \"TableA\", \"target_table\": \"table_a\", \"p_env_stg\": \"stg_example\", \"p_folder\": \"foldera\"}, {\"source_file\": \"TableB\", \"target_table\": \"table_b\", \"p_env_stg\": \"stg_example\", \"p_folder\": \"folderb\"}]"
+}
+
+=== Plan (json)
+>>> [CLI] bundle plan -o json
+
+=== Deploy: payload sent to the jobs API
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.example_ingestion_job
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //jobs
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "test-job-[UNIQUE_NAME]",
+    "parameters": [
+      {
+        "default": "{{job.id}}",
+        "name": "batch_id"
+      },
+      {
+        "default": "{{job.start_time.iso_date}}",
+        "name": "business_date"
+      }
+    ],
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "notebook_task": {
+          "base_parameters": {
+            "generic_config": "{\"source\": {\"path\": \"landing/${p_folder}/${source_file}_*.csv\"}, \"schema\": {\"columns\": [{\"name\": \"w_batch_id\", \"expression\": \"${batch_id}\"}, {\"name\": \"w_business_dt\", \"expression\": \"cast('${business_date[0..9]}' as date)\"}]}, \"target\": {\"table\": \"main.${p_env_stg}.${target_table}\"}}",
+            "parameters_list": "[{\"source_file\": \"TableA\", \"target_table\": \"table_a\", \"p_env_stg\": \"stg_example\", \"p_folder\": \"foldera\"}, {\"source_file\": \"TableB\", \"target_table\": \"table_b\", \"p_env_stg\": \"stg_example\", \"p_folder\": \"folderb\"}]"
+          },
+          "notebook_path": "/Shared/notebook",
+          "source": "WORKSPACE"
+        },
+        "task_key": "run_generic_ingestion"
+      }
+    ]
+  }
+}
