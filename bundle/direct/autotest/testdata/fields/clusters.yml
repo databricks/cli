@@ -42,6 +42,9 @@ skip:
   # here. The mock server stores it either way, which is what made the field look testable.
   is_single_node: only allowed on a cluster with a kind, which this fixture does not set
 
+  # Same constraint, same reason: "use_ml_runtime is not allowed with unspecified kind."
+  use_ml_runtime: only allowed on a cluster with a kind, which this fixture does not set
+
   # A cluster policy has to exist: "'x' is not a valid cluster policy ID." The fake server takes any
   # string, so these rows only ever measured the fake.
   policy_id: needs a cluster policy to exist
