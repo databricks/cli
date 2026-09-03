@@ -14,14 +14,14 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === Turning recording off is refused: the service holds this deployment, so deploying without recording would leave it describing resources that have moved on
 >>> update_file.py databricks.yml record_deployment_history: true record_deployment_history: false
 
->>> musterr [CLI] bundle deploy
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= [CLI] bundle deploy
 Error: this deployment was previously deployed with experimental.record_deployment_history, so the feature cannot be turned off now
 
 Set it back to true to deploy or destroy this bundle
 
 
 === Destroy is refused for the same reason, which is why the error says to put the setting back
->>> musterr [CLI] bundle destroy --auto-approve
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= [CLI] bundle destroy --auto-approve
 Error: this deployment was previously deployed with experimental.record_deployment_history, so the feature cannot be turned off now
 
 Set it back to true to deploy or destroy this bundle

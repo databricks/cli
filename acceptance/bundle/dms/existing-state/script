@@ -26,5 +26,5 @@ trace jq '{state_version, features}' .databricks/bundle/default/resources.json
 
 title "So it is accepted even with the deployment gone. The file's state is a no-op while recording, so the service having nothing means the job is created again under a fresh deployment"
 trace MSYS_NO_PATHCONV=1 $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-existing-state-${UNIQUE_NAME}/default/state/resources.deployment.json"
-trace $CLI bundle deploy
+trace DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --oneline

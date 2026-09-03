@@ -6,10 +6,10 @@ trace jq '.features' .databricks/bundle/default/resources.json
 
 title "Turning recording off is refused: the service holds this deployment, so deploying without recording would leave it describing resources that have moved on"
 trace update_file.py databricks.yml "record_deployment_history: true" "record_deployment_history: false"
-trace musterr $CLI bundle deploy
+musterr trace DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= $CLI bundle deploy
 
 title "Destroy is refused for the same reason, which is why the error says to put the setting back"
-trace musterr $CLI bundle destroy --auto-approve
+musterr trace DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= $CLI bundle destroy --auto-approve
 
 title "With recording back on, deploy and destroy work again"
 trace update_file.py databricks.yml "record_deployment_history: false" "record_deployment_history: true"
