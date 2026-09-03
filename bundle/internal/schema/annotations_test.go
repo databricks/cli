@@ -151,7 +151,7 @@ func TestStalePlaceholderDoesNotShadowMergedDescription(t *testing.T) {
 }
 
 func TestAssignAnnotationLaunchStage(t *testing.T) {
-	t.Run("public preview prefixes description and stays suggestible", func(t *testing.T) {
+	t.Run("public preview prefixes description, emits stage, stays suggestible", func(t *testing.T) {
 		s := &jsonschema.Schema{}
 		assignAnnotation(s, annotation.Descriptor{
 			Description: "Target QPS for the endpoint.",
@@ -159,16 +159,35 @@ func TestAssignAnnotationLaunchStage(t *testing.T) {
 		})
 		assert.Equal(t, "[Public Preview] Target QPS for the endpoint.", s.Description)
 		assert.False(t, s.DoNotSuggest)
-		assert.Empty(t, s.LaunchStage)
+		assert.Equal(t, "PUBLIC_PREVIEW", s.LaunchStage)
 	})
 
-	t.Run("public beta prefixes description", func(t *testing.T) {
+	t.Run("public beta prefixes description and emits stage", func(t *testing.T) {
 		s := &jsonschema.Schema{}
 		assignAnnotation(s, annotation.Descriptor{
 			Description: "A field.",
 			LaunchStage: "PUBLIC_BETA",
 		})
 		assert.Equal(t, "[Beta] A field.", s.Description)
+		assert.Equal(t, "PUBLIC_BETA", s.LaunchStage)
+	})
+
+	t.Run("GA emits the stage without a description prefix", func(t *testing.T) {
+		s := &jsonschema.Schema{}
+		assignAnnotation(s, annotation.Descriptor{
+			Description: "A field.",
+			LaunchStage: "GA",
+		})
+		assert.Equal(t, "A field.", s.Description)
+		assert.False(t, s.DoNotSuggest)
+		assert.Equal(t, "GA", s.LaunchStage)
+	})
+
+	t.Run("unstamped field emits no stage", func(t *testing.T) {
+		s := &jsonschema.Schema{}
+		assignAnnotation(s, annotation.Descriptor{Description: "A field."})
+		assert.Equal(t, "A field.", s.Description)
+		assert.Empty(t, s.LaunchStage)
 	})
 
 	t.Run("private preview also hides from autocomplete", func(t *testing.T) {
