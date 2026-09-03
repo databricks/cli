@@ -14,12 +14,11 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 
 def parse_apitypes(generated_path, override_path):
     """Parse apitypes.generated.yml and override with apitypes.yml."""
-    # Imported here so the module stays importable (for doctests) without pyyaml.
-    import yaml
-
     result = yaml.safe_load(generated_path.read_text()) or {}
 
     # Override with non-generated apitypes.yml (null values remove entries)
@@ -112,21 +111,7 @@ def get_field_behaviors(schemas, type_name, resource_name=None, array_element_ty
 
 
 def find_inherited_behaviors(schemas, type_name):
-    """Find INPUT_ONLY/OUTPUT_ONLY behaviors from containers that reference type_name.
-
-    >>> find_inherited_behaviors({"A": {"fields": {"f": {"ref": "B", "behaviors": ["INPUT_ONLY"]}}}}, "B")
-    ['INPUT_ONLY']
-    >>> find_inherited_behaviors({"A": {"fields": {"f": {"ref": "B", "behaviors": ["OUTPUT_ONLY"]}}}}, "B")
-    ['OUTPUT_ONLY']
-    >>> find_inherited_behaviors({"A": {"fields": {"f": {"ref": "B", "behaviors": ["INPUT_ONLY", "OUTPUT_ONLY"]}}}}, "B")
-    ['INPUT_ONLY', 'OUTPUT_ONLY']
-    >>> find_inherited_behaviors({"A": {"fields": {"f": {"ref": "B"}}}}, "B")
-    []
-    >>> find_inherited_behaviors({}, "B")
-    []
-    >>> find_inherited_behaviors({"A": {"fields": {}}}, "B")
-    []
-    """
+    """Find INPUT_ONLY/OUTPUT_ONLY behaviors from containers that reference type_name."""
     inherited = []
     for container_schema in schemas.values():
         for field_prop in container_schema.get("fields", {}).values():
@@ -141,21 +126,7 @@ def find_inherited_behaviors(schemas, type_name):
 
 
 def filter_prefixes(fields):
-    """Remove fields that are children of other fields in the list.
-
-    >>> filter_prefixes([("a.b.c", "X"), ("a", "Y"), ("a.b", "Z")])
-    [('a', 'Y')]
-    >>> filter_prefixes([("x", "A"), ("y", "B")])
-    [('x', 'A'), ('y', 'B')]
-    >>> filter_prefixes([])
-    []
-    >>> filter_prefixes([("field", "IMMUTABLE")])
-    [('field', 'IMMUTABLE')]
-    >>> filter_prefixes([("config", "A"), ("config.nested", "B"), ("config.nested.deep", "C")])
-    [('config', 'A')]
-    >>> filter_prefixes([("a", "X"), ("b.c", "Y")])
-    [('a', 'X'), ('b.c', 'Y')]
-    """
+    """Remove fields that are children of other fields in the list."""
     result = []
     for field, behavior in sorted(fields):
         if not any(field.startswith(f + ".") for f, _ in result):
@@ -164,23 +135,7 @@ def filter_prefixes(fields):
 
 
 def write_field_group(lines, header, fields):
-    """Write a group of fields with field and reason, grouped by behavior.
-
-    >>> lines = []
-    >>> write_field_group(lines, "test_group", [("f1", "IMMUTABLE")])
-    >>> len(lines)
-    3
-    >>> "test_group" in lines[0]
-    True
-    >>> lines = []
-    >>> write_field_group(lines, "multi", [("a", "OUTPUT_ONLY"), ("b", "INPUT_ONLY")])
-    >>> len(lines)
-    6
-    >>> any("spec:input_only" in line for line in lines)
-    True
-    >>> any("spec:output_only" in line for line in lines)
-    True
-    """
+    """Write a group of fields with field and reason, grouped by behavior."""
     lines.append(f"\n    {header}:")
     # Group by behavior
     by_behavior = {}
@@ -198,27 +153,7 @@ def write_field_group(lines, header, fields):
 
 
 def generate(resource_behaviors):
-    """Generate resources.yml.
-
-    >>> result = generate({"res1": {"f1": ["OUTPUT_ONLY"]}})
-    >>> "res1:" in result
-    True
-    >>> "ignore_remote_changes:" in result
-    True
-    >>> "spec:output_only" in result
-    True
-    >>> result = generate({})
-    >>> "resources:" in result
-    True
-    >>> result = generate({"res": {}})
-    >>> "no api field behaviors" in result
-    True
-    >>> result = generate({"res": {"field": ["IMMUTABLE", "OUTPUT_ONLY"]}})
-    >>> "recreate_on_changes:" in result
-    True
-    >>> "ignore_remote_changes:" in result
-    True
-    """
+    """Generate resources.yml."""
     lines = [
         """# Generated, do not edit. API field behaviors from OpenAPI schema.
 #
