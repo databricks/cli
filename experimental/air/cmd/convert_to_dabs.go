@@ -34,6 +34,10 @@ import (
 // it — so convert never touches the code. Dependencies are folded into the job's
 // environments[] spec, which the runtime installs from directly; no requirements.yaml
 // is emitted.
+//
+// When the snapshot pins a git ref or narrows to include_paths, convert instead emits
+// a `tgz` artifact (the DABs artifact snapshotter): DABs builds the tarball from that
+// ref/subset at deploy, and code_source_path points at the built tarball.
 
 // dabsTargetName is the single default target emitted; a development-mode target
 // is the conventional starting point for a generated bundle.
@@ -44,6 +48,14 @@ const dabsTargetName = "dev"
 // The server derives the sidecar paths from command_path's parent, so they must
 // stay beside command.sh.
 const generatedArtifactsDir = "generated_artifacts"
+
+// codeSourceArtifactKey names the `tgz` artifact convert emits for a git/include
+// snapshot. codeSourceTgzArtifact is where DABs writes the built tarball — kept out of
+// sync.paths so it is uploaded once via the artifact path, not also synced.
+const (
+	codeSourceArtifactKey = "code_source"
+	codeSourceTgzArtifact = "dist/code_source.tgz"
+)
 
 func newConvertToDabsCommand() *cobra.Command {
 	var (
@@ -126,24 +138,23 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 		if snap.RemoteVolume != nil {
 			return nil, nil, errors.New("code_source.snapshot.remote_volume is not supported by convert-to-dabs; set workspace.artifact_path in the bundle instead")
 		}
-		// git pins to a committed revision, but convert packages nothing — the
-		// deploy-time mutator uploads the working tree as it is on disk. Deploying a
-		// specific revision therefore isn't supported; check it out before converting.
-		if snap.Git != nil {
-			return nil, nil, errors.New("code_source.snapshot.git is not supported by convert-to-dabs; deploy packages your working tree as-is, so check out the revision you want (git checkout <ref>) before converting")
-		}
-		// include_paths narrows the archive to a subset of root_path. The bundle has no
-		// per-code-source equivalent: deploy packages the whole directory, filtered by
-		// .gitignore and the bundle-wide sync.include/sync.exclude. Silently dropping it
-		// would upload files the user meant to leave out.
-		if len(snap.IncludePaths) > 0 {
-			return nil, nil, errors.New("code_source.snapshot.include_paths is not supported by convert-to-dabs; deploy packages the whole directory, so narrow it with sync.exclude in the bundle (or a .gitignore) instead")
-		}
 	}
 
-	codeSourcePath, err := bundleCodeSourcePath(ctx, cfg, configPath, bundleDir)
+	// The source dir relative to the bundle. It becomes code_source_path directly in
+	// the plain case, or the `tgz` artifact's `path` when a git ref / include_paths is
+	// pinned (see codeArtifactFor).
+	codeDirPath, err := bundleCodeSourcePath(ctx, cfg, configPath, bundleDir)
 	if err != nil {
 		return nil, nil, err
+	}
+	codeSourcePath := codeDirPath
+	art, err := codeArtifactFor(cfg, codeDirPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	if art != nil {
+		// The artifact snapshotter builds the tarball; code_source_path points at it.
+		codeSourcePath = art.tgzPath
 	}
 
 	// buildArtifacts emits command.sh plus the training_config / hyperparameters /
@@ -156,8 +167,69 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 		return nil, nil, err
 	}
 
-	root := buildBundleValue(ctx, cfg, configPath, codeSourcePath)
+	root := buildBundleValue(ctx, cfg, configPath, codeSourcePath, art)
 	return root, artifacts, nil
+}
+
+// runtimeCodeSourceRoot is where the launcher extracts an AI Runtime task's
+// code_source; the tarball's top-level dir lands directly under it, and the launcher
+// exports it (plus the component subdir) as $CODE_SOURCE_PATH. The user's command is
+// responsible for cd-ing there (every air command does), so convert copies the command
+// verbatim rather than injecting a cd.
+const runtimeCodeSourceRoot = "/databricks/code_source"
+
+// codeArtifact is the `tgz` artifact convert emits when a snapshot pins a git ref or
+// narrows to include_paths. path/include follow the artifact snapshotter's semantics
+// (entries relative to `path`); tgzPath is the built tarball code_source_path points at.
+type codeArtifact struct {
+	path      string // artifact `path`: the code dir's parent, relative to the bundle
+	include   []string
+	tgzPath   string
+	gitBranch *string
+	gitCommit *string
+}
+
+// codeArtifactFor returns the artifact to emit when the snapshot pins a git ref or
+// narrows to include_paths, else nil — the plain directory case, packaged by the
+// deploy-time aicode mutator. It errors when the code dir resolves to the bundle root
+// (no basename to nest under). codeDirPath is the source dir relative to the bundle
+// ("./"-prefixed).
+//
+// The artifact snapshotter names entries relative to `path`, and the runtime extracts
+// to /databricks/code_source/<dir>, so the code dir's basename must be the top-level
+// entry. To get that, emit path = the code dir's parent and include = basename-prefixed
+// subpaths, so entries come out as "<basename>/..." — the layout the air CLI produced.
+func codeArtifactFor(cfg *runConfig, codeDirPath string) (*codeArtifact, error) {
+	snap := codeSnapshot(cfg)
+	if snap == nil || (snap.Git == nil && len(snap.IncludePaths) == 0) {
+		return nil, nil
+	}
+	codeDirRel := strings.TrimPrefix(codeDirPath, "./")
+	// A code dir that resolves to the bundle root has no basename to nest under: the
+	// archive would sit directly at /databricks/code_source (no <dir>), and an include
+	// rooted at "." would also sweep the bundle's own generated files (databricks.yml,
+	// generated_artifacts/, the output tarball) into it. Reject rather than emit that;
+	// the user should point root_path at a subdirectory.
+	if codeDirRel == "." {
+		return nil, fmt.Errorf("code_source root_path %q resolves to the bundle root; convert-to-dabs cannot translate a git or include_paths snapshot there (no code directory to package under %s/<dir>). Point root_path at a subdirectory", snap.RootPath, runtimeCodeSourceRoot)
+	}
+	dirName := path.Base(codeDirRel)
+	art := &codeArtifact{
+		path:    path.Dir(codeDirRel),
+		tgzPath: localBundlePath(codeSourceTgzArtifact),
+	}
+	if len(snap.IncludePaths) > 0 {
+		for _, inc := range snap.IncludePaths {
+			art.include = append(art.include, path.Join(dirName, inc))
+		}
+	} else {
+		art.include = []string{dirName}
+	}
+	if snap.Git != nil {
+		art.gitBranch = snap.Git.Branch
+		art.gitCommit = snap.Git.Commit
+	}
+	return art, nil
 }
 
 // codeSnapshot returns the snapshot code source config, or nil if none.
@@ -211,7 +283,7 @@ func localBundlePath(p string) string {
 // buildBundleValue assembles the bundle root as an ordered map[string]dyn.Value.
 // codeSourcePath is the "./"-prefixed code_source dir relative to the bundle (empty
 // when the config has no code_source); command.sh is a bundle-local artifact.
-func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourcePath string) map[string]dyn.Value {
+func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourcePath string, art *codeArtifact) map[string]dyn.Value {
 	name := cfg.ExperimentName
 
 	// ai_runtime_task: experiment + one deployment (command_path + compute) +
@@ -316,14 +388,52 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 				"mode":    nv("development", 1),
 				"default": nv(true, 2),
 			}, 1),
-		}, 3),
+		}, 4),
 		"resources": nv(map[string]dyn.Value{
 			"jobs": nv(map[string]dyn.Value{
 				bundleResourceKey(name): nv(job, 1),
 			}, 1),
-		}, 4),
+		}, 5),
+	}
+	// The `tgz` artifact snapshotter, when the snapshot pins a git ref / include_paths.
+	if art != nil {
+		rootValue["artifacts"] = nv(buildArtifactsValue(art), 3)
 	}
 	return rootValue
+}
+
+// buildArtifactsValue builds the `artifacts` block for a git/include snapshot: a
+// single `tgz` artifact whose `path` is the code-source root, carrying the git ref
+// and/or include subpaths, and whose `files` output is the tarball code_source_path
+// points at.
+func buildArtifactsValue(art *codeArtifact) map[string]dyn.Value {
+	a := map[string]dyn.Value{
+		"type": nv("tgz", 1),
+		"path": nv(art.path, 2),
+	}
+	fileLine := 3
+	if art.gitCommit != nil || art.gitBranch != nil {
+		g := map[string]dyn.Value{}
+		// commit wins over branch, matching the artifact builder.
+		if art.gitCommit != nil {
+			g["commit"] = nv(*art.gitCommit, 1)
+		} else {
+			g["branch"] = nv(*art.gitBranch, 1)
+		}
+		a["git"] = nv(g, fileLine)
+		fileLine++
+	}
+	// include is always set: the basename (whole dir) or basename-prefixed subpaths.
+	vals := make([]dyn.Value, len(art.include))
+	for i, p := range art.include {
+		vals[i] = dyn.V(p)
+	}
+	a["include"] = nv(vals, fileLine)
+	fileLine++
+	a["files"] = nv([]dyn.Value{
+		dyn.V(map[string]dyn.Value{"source": nv(art.tgzPath, 1)}),
+	}, fileLine)
+	return map[string]dyn.Value{codeSourceArtifactKey: nv(a, 1)}
 }
 
 // bundleEnvironmentDeps resolves the runtime version and the inline dependency
@@ -502,7 +612,7 @@ func printConvertNextSteps(ctx context.Context, dir string, written []string, jo
 	steps = append(steps,
 		self+" bundle validate",
 		self+" bundle deploy",
-		self+" bundle run "+jobKey,
+		self+" bundle run "+jobKey+" --no-wait",
 	)
 
 	cmdio.LogString(ctx, "")
