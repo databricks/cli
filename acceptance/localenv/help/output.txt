@@ -22,6 +22,8 @@ Flags:
       --dry-run                     compute the plan without writing files or provisioning
   -h, --help                        help for setup-local
       --job-task string             job task to use as the compute target, as <job-id>.<task-key> (the task key is required)
+      --no-constraints              skip writing the remote Python version and dependency constraints
+      --no-dbconnect                skip adding the databricks-connect dependency
       --serverless-version string   serverless version to use as the compute target (e.g. 5)
 
 Global Flags:

@@ -1155,3 +1155,53 @@ constraint-dependencies = ["old~=1.0"]
 func countOccurrences(s, substr string) int {
 	return strings.Count(s, substr)
 }
+
+func TestMergeManagedSkipsRequiresPythonWhenEmpty(t *testing.T) {
+	// An empty RequiresPython is the --no-constraints signal: the merge must leave
+	// the user's requires-python untouched rather than overwrite it with "".
+	in := []byte(`[project]
+name = "demo"
+requires-python = ">=3.9"
+
+[dependency-groups]
+dev = []
+`)
+	c := testConstraints()
+	c.RequiresPython = ""
+	out, regions, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	assert.Contains(t, string(out), `requires-python = ">=3.9"`)
+	assert.NotContains(t, regions, regionRequiresPython)
+}
+
+func TestMergeManagedSkipsToolUvWhenNil(t *testing.T) {
+	// A nil ConstraintDeps is the --no-constraints signal: no managed [tool.uv]
+	// constraint block is written and the region is not reported.
+	in := []byte(`[project]
+name = "demo"
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = []
+`)
+	c := testConstraints()
+	c.ConstraintDeps = nil
+	out, regions, err := MergeManaged(in, c)
+	require.NoError(t, err)
+	assert.NotContains(t, string(out), "constraint-dependencies")
+	assert.NotContains(t, regions, regionToolUv)
+}
+
+func TestRenderFreshPyprojectOmitsConstraintsWhenEmpty(t *testing.T) {
+	// Greenfield --no-constraints: neither the Python pin nor the [tool.uv]
+	// constraint block is rendered, but databricks-connect (orthogonal) still is.
+	c := testConstraints()
+	c.RequiresPython = ""
+	c.ConstraintDeps = nil
+	out := RenderFreshPyproject("demo", c)
+	s := string(out)
+	assert.NotContains(t, s, "requires-python")
+	assert.NotContains(t, s, "constraint-dependencies")
+	assert.Contains(t, s, `"databricks-connect~=17.2.0",`)
+	requireValidTOML(t, out)
+}

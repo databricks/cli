@@ -1,0 +1,1 @@
+Added orthogonal `--no-constraints` and `--no-dbconnect` flags to `databricks environments setup-local`. The flags compose: `--no-constraints` skips writing the remote Python-version and dependency pins, and `--no-dbconnect` skips the databricks-connect dependency.

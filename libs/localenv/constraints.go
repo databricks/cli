@@ -284,7 +284,15 @@ func parseConstraints(data []byte) (requiresPython, dbconnect string, deps []str
 		}
 	}
 
+	// Normalize a missing [tool.uv].constraint-dependencies to a non-nil empty
+	// slice. A nil ConstraintDeps is reserved as the --no-constraints "leave the
+	// constraint block unmanaged" signal (mergeToolUv and RenderFreshPyproject skip
+	// on nil); without this, an artifact that simply omits the key would be
+	// indistinguishable from the flag and would silently stop being managed.
 	deps = p.Tool.UV.ConstraintDependencies
+	if deps == nil {
+		deps = []string{}
+	}
 	return requiresPython, dbconnect, deps, nil
 }
 

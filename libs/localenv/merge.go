@@ -217,6 +217,15 @@ func tableBounds(lines []string, name string) (header, end int, found bool) {
 // the line's leading whitespace. If the key is absent, it is inserted directly under the
 // [project] header. Returns whether the line slice changed.
 func mergeRequiresPython(lines []string, value string) ([]string, bool) {
+	// An empty value means requires-python is unmanaged (--no-constraints): leave
+	// the user's line untouched rather than overwrite it with a blank pin. This
+	// mirrors how an empty DatabricksConnect / EnvironmentVersion is a no-op; a
+	// real fetched artifact always carries a requires-python, so empty only ever
+	// reaches here when the caller deliberately cleared it.
+	if value == "" {
+		return lines, false
+	}
+
 	header, end, found := tableBounds(lines, "[project]")
 	if !found {
 		return lines, false
@@ -861,6 +870,15 @@ func arrayLineSpan(lines []string, start, limit int) (last int, multiline bool) 
 // marker-bracketed block already exists, its contents are replaced in place. Otherwise any
 // plain [tool.uv] table is removed and a fresh marker-bracketed block is appended at EOF.
 func mergeToolUv(lines, deps []string) ([]string, bool) {
+	// A nil deps slice means the [tool.uv] constraint region is unmanaged
+	// (--no-constraints): leave any existing block untouched and write none.
+	// Distinct from a non-nil empty slice, which still renders an empty managed
+	// block; a real fetched artifact always carries constraint-dependencies, so
+	// nil only reaches here when the caller deliberately cleared it.
+	if deps == nil {
+		return lines, false
+	}
+
 	start, stop, found := markerBounds(lines)
 	if found {
 		// Replace the existing managed region in place. Whether it owns a [tool.uv]
@@ -1232,7 +1250,11 @@ func RenderFreshPyproject(projectName string, c Constraints) []byte {
 	fmt.Fprintf(&b, "name = %q\n", projectName)
 	// uv requires project.version when a [project] table is present.
 	fmt.Fprintf(&b, "version = %q\n", freshProjectVersion)
-	fmt.Fprintf(&b, "requires-python = %q\n", c.RequiresPython)
+	// requires-python is omitted when unmanaged (--no-constraints); an empty pin
+	// would be invalid, and a fresh project without it lets uv pick the interpreter.
+	if c.RequiresPython != "" {
+		fmt.Fprintf(&b, "requires-python = %q\n", c.RequiresPython)
+	}
 	b.WriteString("\n")
 	b.WriteString("[dependency-groups]\n")
 	if c.DatabricksConnect != "" {
@@ -1250,9 +1272,13 @@ func RenderFreshPyproject(projectName string, c Constraints) []byte {
 		fmt.Fprintf(&b, "environment_version = %q\n", c.EnvironmentVersion)
 		b.WriteString("\n")
 	}
-	for _, line := range renderToolUvBlock(c.ConstraintDeps, true) {
-		b.WriteString(line)
-		b.WriteString("\n")
+	// The [tool.uv] constraint block is omitted when unmanaged (--no-constraints,
+	// signalled by a nil slice); a non-nil empty slice still renders an empty block.
+	if c.ConstraintDeps != nil {
+		for _, line := range renderToolUvBlock(c.ConstraintDeps, true) {
+			b.WriteString(line)
+			b.WriteString("\n")
+		}
 	}
 	return []byte(b.String())
 }

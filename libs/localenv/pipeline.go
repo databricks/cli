@@ -59,6 +59,12 @@ type Pipeline struct {
 	Compute           ComputeClient
 	PM                PackageManager
 
+	// SkipConstraints (--no-constraints) leaves the remote Python version and
+	// dependency pins unmanaged: the merge writes neither requires-python nor the
+	// [tool.uv] constraint block, and any existing values are left untouched. It is
+	// orthogonal to Mode (the databricks-connect axis).
+	SkipConstraints bool
+
 	// Progress, when non-nil, receives a PhaseStarted call as each phase begins.
 	// Left nil by callers that don't render progress (e.g. --output json).
 	Progress Reporter
@@ -384,13 +390,33 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	effective := *c
 	effective.DatabricksConnect = dbcPin
 	effective.EnvironmentVersion = envVersion
+	if p.SkipConstraints {
+		// --no-constraints: leave the remote Python version and dependency pins
+		// unmanaged. The empty/nil values signal both the merge (mergeRequiresPython,
+		// mergeToolUv) and the fresh render to skip those regions, leaving any
+		// existing values untouched.
+		//
+		// The flag governs only what is *written*. A provisioning run still installs
+		// and validates the resolved Python (pyMinor), so if the user's kept
+		// requires-python is disjoint from the target, uv surfaces it as a normal
+		// E_PROVISION rather than this command guessing an alternative.
+		effective.RequiresPython = ""
+		effective.ConstraintDeps = nil
+	}
 
 	var changedRegions []string
 	if greenfield {
 		// No existing pyproject.toml — render a fresh one. The project name comes
-		// from the directory name as a reasonable default.
+		// from the directory name as a reasonable default. Only the regions actually
+		// rendered are reported (requires-python and tool.uv are omitted under
+		// --no-constraints).
 		merged = RenderFreshPyproject(projectName(p.ProjectDir), effective)
-		changedRegions = []string{regionRequiresPython, regionToolUv}
+		if effective.RequiresPython != "" {
+			changedRegions = append(changedRegions, regionRequiresPython)
+		}
+		if effective.ConstraintDeps != nil {
+			changedRegions = append(changedRegions, regionToolUv)
+		}
 		if dbcPin != "" {
 			changedRegions = append(changedRegions, regionDatabricksConnect)
 		}
