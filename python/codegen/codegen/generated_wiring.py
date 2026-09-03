@@ -56,7 +56,7 @@ def _wired_resources() -> list[_WiredResource]:
         resources.append(
             _WiredResource(
                 class_name=class_name,
-                singular_name=class_name.lower(),
+                singular_name=packages.get_snake_case_name(ref),
                 plural_name=namespace,
                 model_module=packages.get_package(namespace, ref),
             )
