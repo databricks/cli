@@ -1059,9 +1059,11 @@ func sampleSize(t *testing.T) int {
 	if !isCloud() {
 		return 0
 	}
-	if subject := commitSubject(); strings.Contains(subject, autotestAllMarker) {
-		t.Logf("commit title contains %s, so every field runs against the workspace", autotestAllMarker)
-		return 0
+	for _, subject := range commitSubjects() {
+		if strings.Contains(subject, autotestAllMarker) {
+			t.Logf("commit title contains %s, so every field runs against the workspace", autotestAllMarker)
+			return 0
+		}
 	}
 	t.Logf("cloud run without %s in the commit title, so %d fields per type are sampled; "+
 		"put %s in a commit title to run them all", autotestAllMarker, defaultCloudSample, autotestAllMarker)
@@ -1076,14 +1078,40 @@ const autotestAllMarker = "AUTOTEST_ALL"
 // picked still behave as the goldens record.
 const defaultCloudSample = 2
 
-// commitSubject returns the subject line of HEAD, or "" when it cannot be read. A subprocess because
-// libs/git exposes the commit id but not its message, and this runs once per suite.
-func commitSubject() string {
-	out, err := exec.Command("git", "log", "-1", "--format=%s").Output()
+// commitSubjects returns the subject of HEAD and, when HEAD is a merge, of its parents. Both are
+// needed because CI may check out either the commit itself or the pull request's merge ref, and in
+// the second case HEAD is a synthetic "Merge <sha> into <base>" whose subject carries nothing the
+// author wrote. Only a merge's parents are consulted, not the branch's history, so a marker used
+// once does not keep triggering full runs on the commits after it.
+//
+// A subprocess because libs/git exposes the commit id but not its message; it runs once per run.
+func commitSubjects() []string {
+	subject, err := gitOutput("log", "-1", "--format=%s")
 	if err != nil {
-		return ""
+		return nil
 	}
-	return strings.TrimSpace(string(out))
+	subjects := []string{subject}
+
+	parents, err := gitOutput("log", "-1", "--format=%P")
+	if err != nil {
+		return subjects
+	}
+	fields := strings.Fields(parents)
+	if len(fields) < 2 {
+		// Not a merge: HEAD is the commit its author wrote, and its subject is the whole answer.
+		return subjects
+	}
+	for _, parent := range fields {
+		if parentSubject, err := gitOutput("log", "-1", "--format=%s", parent); err == nil {
+			subjects = append(subjects, parentSubject)
+		}
+	}
+	return subjects
+}
+
+func gitOutput(args ...string) (string, error) {
+	out, err := exec.Command("git", args...).Output()
+	return strings.TrimSpace(string(out)), err
 }
 
 // sampleSeed derives the sample's seed from HEAD. Unlike orderSeed it may move freely: a
