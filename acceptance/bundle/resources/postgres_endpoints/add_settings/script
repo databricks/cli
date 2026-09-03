@@ -11,9 +11,10 @@ trace $CLI bundle deploy
 rm -f out.requests.txt
 
 title "Add a settings block and re-deploy"
-# Going from absent to present leaves one change path, settings, with no children,
-# so the mask names the message itself. Verified against a real endpoint on
-# 2026-08-31 that update_mask=spec.settings is accepted.
+# Going from absent to present leaves one change path, settings, with no children.
+# The mask names the field the body carries rather than the message: masking a
+# message asks the API to replace it wholesale, which it accepts here but rejects
+# for a message holding a oneof or a required field.
 cat >> databricks.yml <<'YAML'
       settings:
         pg_settings:

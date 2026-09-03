@@ -145,8 +145,8 @@ func appendPopulatedLeaves(paths *[]string, prefix string, typ reflect.Type, bod
 
 // jsonFieldType returns the type of the field typ serializes under the given JSON name.
 func jsonFieldType(typ reflect.Type, name string) (reflect.Type, bool) {
-	for i := range typ.NumField() {
-		field := typ.Field(i)
+	for field := range typ.Fields() {
+		field := field
 		if field.Anonymous {
 			embedded := derefType(field.Type)
 			if embedded.Kind() != reflect.Struct {

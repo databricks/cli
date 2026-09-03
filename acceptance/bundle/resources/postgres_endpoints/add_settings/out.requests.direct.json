@@ -2,7 +2,7 @@
   "method": "PATCH",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint",
   "q": {
-    "update_mask": "spec.settings"
+    "update_mask": "spec.settings.pg_settings"
   },
   "body": {
     "spec": {
