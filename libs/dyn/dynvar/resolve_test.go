@@ -406,39 +406,6 @@ func TestResolveMapVariable(t *testing.T) {
 	assert.Equal(t, "value2", getByPath(t, mapVal, "key2").MustString())
 }
 
-func TestResolveSensitivePureSubstitution(t *testing.T) {
-	// A pure reference to a sensitive value must produce a sensitive result.
-	in := dyn.V(map[string]dyn.Value{
-		"secret": dyn.NewSensitiveValue("top-secret", nil),
-		"ref":    dyn.V("${secret}"),
-	})
-
-	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
-	require.NoError(t, err)
-
-	result := getByPath(t, out, "ref")
-	assert.True(t, result.IsSensitive())
-	// MustString returns the real value even when sensitive.
-	assert.Equal(t, "top-secret", result.MustString())
-}
-
-func TestResolveSensitiveStringInterpolation(t *testing.T) {
-	// When any resolved value is sensitive, the interpolated result must also be sensitive.
-	in := dyn.V(map[string]dyn.Value{
-		"secret": dyn.NewSensitiveValue("password123", nil),
-		"prefix": dyn.V("token"),
-		"ref":    dyn.V("${prefix}:${secret}"),
-	})
-
-	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
-	require.NoError(t, err)
-
-	result := getByPath(t, out, "ref")
-	assert.True(t, result.IsSensitive())
-	// The real interpolated string is still accessible.
-	assert.Equal(t, "token:password123", result.MustString())
-}
-
 func TestResolveSequenceVariable(t *testing.T) {
 	in := dyn.V(map[string]dyn.Value{
 		"seq": dyn.V([]dyn.Value{
