@@ -58,6 +58,7 @@ func New(ctx context.Context) *cobra.Command {
 		var err error
 
 		ctx := cmd.Context()
+
 		// Configure command IO
 		ctx, err = outputFlag.initializeIO(ctx, cmd)
 		if err != nil {
@@ -73,7 +74,7 @@ func New(ctx context.Context) *cobra.Command {
 		logger := log.GetLogger(ctx)
 		logger.Info("start",
 			slog.String("version", build.GetInfo().Version),
-			slog.String("args", strings.Join(commandArgsForLogging(cmd, os.Args), ", ")))
+			slog.String("args", strings.Join(os.Args, ", ")))
 
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
@@ -163,7 +164,6 @@ Stack Trace:
 			err = auth.AppendAccountHostHint(cmdctx.WorkspaceClient(cmd.Context()).Config, err)
 		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
-		printDebugErrorTip(cmd)
 	}
 
 	// Log exit status and error
@@ -207,63 +207,6 @@ Stack Trace:
 	}
 
 	return err
-}
-
-const debugErrorTipAnnotation = "databricks.cli.debug-error-tip"
-
-// EnableDebugErrorTip opts the command into debug rerun guidance when one of
-// its descendants fails.
-func EnableDebugErrorTip(cmd *cobra.Command) {
-	if cmd.Annotations == nil {
-		cmd.Annotations = make(map[string]string)
-	}
-	cmd.Annotations[debugErrorTipAnnotation] = "true"
-}
-
-func debugErrorTipEnabled(cmd *cobra.Command) bool {
-	for current := cmd; current != nil; current = current.Parent() {
-		if current.Annotations[debugErrorTipAnnotation] == "true" {
-			return true
-		}
-	}
-	return false
-}
-
-func commandArgsForLogging(cmd *cobra.Command, args []string) []string {
-	if !debugErrorTipEnabled(cmd) {
-		return args
-	}
-
-	redacted := append([]string(nil), args...)
-	for i := 0; i < len(redacted); i++ {
-		switch {
-		case redacted[i] == "--override" && i+1 < len(redacted):
-			redacted[i+1] = "<redacted>"
-			i++
-		case strings.HasPrefix(redacted[i], "--override="):
-			redacted[i] = "--override=<redacted>"
-		}
-	}
-	return redacted
-}
-
-func printDebugErrorTip(cmd *cobra.Command) {
-	if !debugErrorTipEnabled(cmd) {
-		return
-	}
-
-	debugFlag := cmd.Root().PersistentFlags().Lookup("debug")
-	if debugFlag.Value.String() == "true" {
-		return
-	}
-
-	commandPrefix := cmd.Root().CommandPath()
-	command := commandPrefix + " --debug" + strings.TrimPrefix(cmd.CommandPath(), commandPrefix)
-	fmt.Fprintf(
-		cmd.ErrOrStderr(),
-		"\nTip: use the --debug flag to see more details and a trace of this error:\n  %s …\n",
-		command,
-	)
 }
 
 // This function is used to report an unknown subcommand.
