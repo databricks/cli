@@ -2,6 +2,8 @@ package client
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,9 +14,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -26,14 +32,26 @@ const (
 	// shimDir holds the per-agent wrappers; must match remoteShimDir in client.go.
 	shimDir = agentDir + "/bin"
 
+	// ucodeRepo is the GitHub repo the shim installs ucode from (latest release).
+	ucodeRepo = "databricks/ucode"
+
 	// workspaceHomeEnv passes the user's workspace home to the shim for the agent context.
 	workspaceHomeEnv = "DATABRICKS_WORKSPACE_HOME"
+
+	// depsDir (home-relative) holds toolchain deps (Node/npm) fetched when the image ships none.
+	depsDir = agentDir + "/deps"
 
 	// contextFile is the scratch file holding the Databricks session context.
 	contextFile = "agent-system-context.md"
 
-	// readyFile marks that first-run toolchain setup completed.
-	readyFile = ".ready"
+	// setupLockName (under agentDir) serializes first-run toolchain setup across
+	// concurrent SSH clients sharing this driver's $HOME.
+	setupLockName = ".setup.lock"
+
+	// setupLockStaleAfter reclaims a setup lock left behind by a process that died
+	// mid-install. It is deliberately generous: a cold first run downloads uv,
+	// ucode, and Node, which can legitimately take minutes.
+	setupLockStaleAfter = 10 * time.Minute
 )
 
 type agentSpec struct {
@@ -150,12 +168,16 @@ func probeAIGateway(ctx context.Context, client *databricks.WorkspaceClient) err
 		return aiGatewayScopeError(host, modelSvc.detail)
 	case looksLikeScopeFailure(legacy.detail):
 		return aiGatewayScopeError(host, legacy.detail)
+	case looksLikeTransient(modelSvc.detail) || looksLikeTransient(legacy.detail):
+		// A rate-limit/5xx/network blip is not "disabled" — tell the user to retry
+		// rather than sending them to the enablement docs.
+		return fmt.Errorf("could not verify the Databricks Unity AI Gateway on %s: the probe hit a transient error (model services: %s; legacy endpoints: %s). Retry in a moment", host, modelSvc.detail, legacy.detail)
 	case looksLikePermissionFailure(modelSvc.detail):
-		return fmt.Errorf("Databricks Unity AI Gateway model service access could not be verified on %s (%s). The legacy endpoint fallback also failed (%s). The model service probe requires permission to list Unity Catalog model services. Verify USE CATALOG on `system`, and USE SCHEMA and EXECUTE on `system.ai`", host, modelSvc.detail, legacy.detail)
+		return fmt.Errorf("model service access could not be verified on %s (%s). The legacy endpoint fallback also failed (%s). The model service probe requires permission to list Unity Catalog model services. Verify USE CATALOG on `system`, and USE SCHEMA and EXECUTE on `system.ai`", host, modelSvc.detail, legacy.detail)
 	case looksLikePermissionFailure(legacy.detail):
-		return fmt.Errorf("Databricks Unity AI Gateway legacy endpoint access could not be verified on %s (%s). The model service probe also failed (%s). Verify the caller's workspace permissions for the legacy endpoints listing", host, legacy.detail, modelSvc.detail)
+		return fmt.Errorf("legacy endpoint access could not be verified on %s (%s). The model service probe also failed (%s). Verify the caller's workspace permissions for the legacy endpoints listing", host, legacy.detail, modelSvc.detail)
 	default:
-		return fmt.Errorf("Databricks Unity AI Gateway is not enabled on this workspace (%s): neither model services (%s) nor legacy endpoints (%s) are available. See %s", host, modelSvc.detail, legacy.detail, aiGatewayDocsURL)
+		return fmt.Errorf("the Databricks Unity AI Gateway is not enabled on this workspace (%s): neither model services (%s) nor legacy endpoints (%s) are available. See %s", host, modelSvc.detail, legacy.detail, aiGatewayDocsURL)
 	}
 }
 
@@ -211,6 +233,12 @@ func gatewayGetJSON(ctx context.Context, client *databricks.WorkspaceClient, req
 		return nil, fmt.Sprintf("network error: %v", err)
 	}
 	req.Header.Set("Accept", "application/json")
+	// Set X-Databricks-Workspace-Id (and suppress the legacy workspace_id=none
+	// sentinel) so these hand-written workspace-routed GETs reach the workspace
+	// plane on unified/SPOG hosts instead of the account plane.
+	for k, v := range auth.WorkspaceIDHeaders(client.Config) {
+		req.Header.Set(k, v)
+	}
 	if err := client.Config.Authenticate(req); err != nil {
 		return nil, fmt.Sprintf("network error: %v", err)
 	}
@@ -270,8 +298,18 @@ func looksLikePermissionFailure(reason string) bool {
 	return strings.Contains(reason, "HTTP 403")
 }
 
+// gatewayTransientStatus matches the HTTP statuses worth retrying (429 + any 5xx).
+var gatewayTransientStatus = regexp.MustCompile(`HTTP (429|5\d\d)`)
+
+// looksLikeTransient is true for a probe failure that is likely temporary (rate
+// limit, server error, or a network/transport error) rather than a stable
+// "disabled"/"unauthorized" verdict.
+func looksLikeTransient(reason string) bool {
+	return strings.HasPrefix(reason, "network error") || gatewayTransientStatus.MatchString(reason)
+}
+
 func aiGatewayAuthError(host, reason string) error {
-	return fmt.Errorf("Databricks rejected the access token for %s (%s). Try:\n  databricks auth logout --host %s\n  databricks auth login --host %s", host, reason, host, host)
+	return fmt.Errorf("the Databricks workspace %s rejected the access token (%s). Try:\n  databricks auth logout --host %s\n  databricks auth login --host %s", host, reason, host, host)
 }
 
 func aiGatewayScopeError(host, reason string) error {
@@ -301,51 +339,145 @@ func stringField(payload any, key string) string {
 }
 
 func bootstrapAndLaunchAgent(ctx context.Context, agent agentSpec, workspace string, agentArgs []string) error {
-	home, err := os.UserHomeDir()
+	home, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to resolve home directory: %w", err)
 	}
-	shimDir := filepath.Join(home, shimDir)
-	readyFile := filepath.Join(home, agentDir, readyFile)
 
-	// Fast path: first-run setup recorded the resolved PATH; restore it and launch.
-	if data, err := os.ReadFile(readyFile); err == nil {
-		_ = os.Setenv("PATH", strings.TrimSpace(string(data)))
-		return launchUcodeAgent(agent, workspace, agentArgs)
-	}
-
-	// Build the PATH tooling runs under. Drop the shim dir so ucode installs and
-	// execs the real agent rather than this wrapper; prepend ucode's install bin
-	// and the uploaded databricks CLI's dir (so ucode finds it and skips its own
-	// install).
-	removePath(shimDir)
-	prependPath(filepath.Join(home, ".local", "bin"))
+	// Reconstruct the PATH tooling runs under on every launch rather than caching
+	// it: every entry is a known location, so deriving it can't restore a stale
+	// path (e.g. a versioned CLI dir from an older session). Drop the shim dir so
+	// ucode execs the real agent rather than this wrapper, then prepend uv/ucode's
+	// bin, this databricks CLI's own dir (so ucode finds it and skips its own
+	// install), and the Node bin ensureNode installs into.
+	removePath(ctx, filepath.Join(home, shimDir))
+	prependPath(ctx, filepath.Join(home, ".local", "bin"))
 	if self, err := os.Executable(); err == nil {
-		prependPath(filepath.Dir(self))
+		prependPath(ctx, filepath.Dir(self))
+	}
+	prependPath(ctx, filepath.Join(home, depsDir, "node", "bin"))
+
+	if err := ensureToolchain(ctx, home); err != nil {
+		return err
 	}
 
-	// Record the resolved PATH so later launches take the fast path.
-	if err := os.MkdirAll(filepath.Dir(readyFile), 0o755); err != nil {
-		return fmt.Errorf("failed to create %s: %w", filepath.Dir(readyFile), err)
-	}
-	if err := os.WriteFile(readyFile, []byte(os.Getenv("PATH")), 0o644); err != nil {
-		return fmt.Errorf("failed to record setup completion: %w", err)
+	// npm is on PATH now (shipped or just installed); silence its update-notifier
+	// box so it doesn't clutter the agent session.
+	disableNpmUpdateNotifier(ctx)
+
+	// Put npm's global bin on PATH so an npm-installed agent binary resolves after
+	// ucode installs it.
+	if prefix := npmGlobalPrefix(ctx); prefix != "" {
+		prependPath(ctx, filepath.Join(prefix, "bin"))
 	}
 
-	return launchUcodeAgent(agent, workspace, agentArgs)
+	return launchUcodeAgent(ctx, home, agent, workspace, agentArgs)
+}
+
+// toolchainReady reports whether the agent toolchain is already installed, derived
+// purely from PATH (which the caller has already set up). ucode launches the agent
+// and npm provides the Node runtime agents like Claude Code need.
+func toolchainReady() bool {
+	_, ucodeErr := exec.LookPath("ucode")
+	_, npmErr := exec.LookPath("npm")
+	return ucodeErr == nil && npmErr == nil
+}
+
+// ensureToolchain installs uv, ucode, and Node/npm when missing. It is a no-op
+// once the toolchain is present, and holds a machine-local lock while installing
+// so two first-run SSH clients sharing this $HOME don't concurrently install into
+// (and corrupt) the same paths.
+func ensureToolchain(ctx context.Context, home string) error {
+	if toolchainReady() {
+		return nil
+	}
+	unlock, err := acquireSetupLock(ctx, home)
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	// Another client may have finished the install while we waited for the lock.
+	if toolchainReady() {
+		return nil
+	}
+	return installToolchain(ctx, home)
+}
+
+// installToolchain performs the actual installs. The caller holds the setup lock.
+func installToolchain(ctx context.Context, home string) error {
+	// 1. uv (installs into ~/.local/bin).
+	if _, err := exec.LookPath("uv"); err != nil {
+		cmdio.LogString(ctx, "Installing uv...")
+		if err := runShell(ctx, "curl -LsSf https://astral.sh/uv/install.sh | sh"); err != nil {
+			return fmt.Errorf("failed to install uv: %w", err)
+		}
+	}
+
+	// 2. ucode (latest stock upstream release).
+	if _, err := exec.LookPath("ucode"); err != nil {
+		cmdio.LogString(ctx, "Installing ucode...")
+		ref, err := latestUcodeRef(ctx, "https://api.github.com/repos/"+ucodeRepo+"/releases/latest")
+		if err != nil {
+			return err
+		}
+		if err := runCommand(ctx, "uv", "tool", "install", "git+https://github.com/"+ucodeRepo+"@"+ref); err != nil {
+			return fmt.Errorf("failed to install ucode: %w", err)
+		}
+	}
+
+	// 3. Node/npm. Some agents (e.g. Claude Code) need it and serverless images
+	// don't ship it. It installs into depsDir/node/bin, already prepended to PATH.
+	if _, err := exec.LookPath("npm"); err != nil {
+		cmdio.LogString(ctx, "Installing npm...")
+		if _, err := ensureNode(ctx, home); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// acquireSetupLock takes a machine-local lock (an O_EXCL sentinel file, matching
+// the pattern in libs/versioncheck) serializing first-run setup across SSH
+// clients. It blocks until the lock is free, reclaiming one left behind by a dead
+// process after setupLockStaleAfter. The returned func releases the lock.
+func acquireSetupLock(ctx context.Context, home string) (func(), error) {
+	lockPath := filepath.Join(home, agentDir, setupLockName)
+	if err := os.MkdirAll(filepath.Dir(lockPath), 0o755); err != nil {
+		return nil, fmt.Errorf("failed to create %s: %w", filepath.Dir(lockPath), err)
+	}
+	for {
+		f, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+		if err == nil {
+			_ = f.Close()
+			return func() { _ = os.Remove(lockPath) }, nil
+		}
+		if !errors.Is(err, os.ErrExist) {
+			return nil, fmt.Errorf("failed to acquire setup lock: %w", err)
+		}
+		// Held by another process: reclaim it if stale, otherwise wait and retry.
+		if info, statErr := os.Stat(lockPath); statErr == nil && time.Since(info.ModTime()) > setupLockStaleAfter {
+			log.Warnf(ctx, "reclaiming stale agent-shim setup lock at %s", lockPath)
+			_ = os.Remove(lockPath)
+			continue
+		}
+		log.Infof(ctx, "waiting for a concurrent agent-shim setup to finish")
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(time.Second):
+		}
+	}
 }
 
 // launchUcodeAgent launches the ucode-configured agent, replacing this process.
-func launchUcodeAgent(agent agentSpec, workspace string, agentArgs []string) error {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("failed to resolve home directory: %w", err)
-	}
+// home is the already-resolved user home directory.
+func launchUcodeAgent(ctx context.Context, home string, agent agentSpec, workspace string, agentArgs []string) error {
 	ucodePath, err := exec.LookPath("ucode")
 	if err != nil {
 		return fmt.Errorf("ucode not found on PATH after setup: %w", err)
 	}
-	contextArgs, err := injectAgentContext(home, agent)
+	contextArgs, err := injectAgentContext(ctx, home, agent)
 	if err != nil {
 		return err
 	}
@@ -357,8 +489,8 @@ func launchUcodeAgent(agent agentSpec, workspace string, agentArgs []string) err
 	argv = append(argv, contextArgs...)
 	argv = append(argv, agentArgs...)
 	// Pass the session token as DATABRICKS_BEARER so stock ucode authenticates headlessly.
-	if os.Getenv("DATABRICKS_BEARER") == "" {
-		if token := os.Getenv("DATABRICKS_TOKEN"); token != "" {
+	if env.Get(ctx, "DATABRICKS_BEARER") == "" {
+		if token := env.Get(ctx, "DATABRICKS_TOKEN"); token != "" {
 			_ = os.Setenv("DATABRICKS_BEARER", token)
 		}
 	}
@@ -366,12 +498,18 @@ func launchUcodeAgent(agent agentSpec, workspace string, agentArgs []string) err
 }
 
 // injectAgentContext puts the Databricks context where the agent reads it, returning any extra argv.
-func injectAgentContext(home string, agent agentSpec) ([]string, error) {
-	context := agentSystemContext(os.Getenv(workspaceHomeEnv))
+func injectAgentContext(ctx context.Context, home string, agent agentSpec) ([]string, error) {
+	systemContext := agentSystemContext(env.Get(ctx, workspaceHomeEnv))
 	switch {
 	case agent.contextFlag != "":
-		f := filepath.Join(home, contextFile)
-		if err := os.WriteFile(f, []byte(context), 0o644); err != nil {
+		// Keep the scratch context file under the shim's own directory so it never
+		// clobbers an unrelated file the user happens to have in their home.
+		dir := filepath.Join(home, agentDir)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return nil, fmt.Errorf("failed to create %s: %w", dir, err)
+		}
+		f := filepath.Join(dir, contextFile)
+		if err := os.WriteFile(f, []byte(systemContext), 0o644); err != nil {
 			return nil, fmt.Errorf("failed to write agent context file: %w", err)
 		}
 		return []string{agent.contextFlag, f}, nil
@@ -385,7 +523,7 @@ func injectAgentContext(home string, agent agentSpec) ([]string, error) {
 		if err := os.MkdirAll(filepath.Dir(f), 0o755); err != nil {
 			return nil, fmt.Errorf("failed to create %s: %w", filepath.Dir(f), err)
 		}
-		if err := os.WriteFile(f, []byte(context), 0o644); err != nil {
+		if err := os.WriteFile(f, []byte(systemContext), 0o644); err != nil {
 			return nil, fmt.Errorf("failed to write %s: %w", f, err)
 		}
 		return nil, nil
@@ -394,10 +532,199 @@ func injectAgentContext(home string, agent agentSpec) ([]string, error) {
 	}
 }
 
+// ensureNode downloads the latest Krypton LTS Node into deps/node once, returning
+// its bin. Linux-only by design: the shim runs on the serverless driver, so the
+// tarball name is hardcoded to linux while nodeDownloadArch guards the arch.
+func ensureNode(ctx context.Context, home string) (string, error) {
+	depsRoot := filepath.Join(home, depsDir)
+	nodeDir := filepath.Join(depsRoot, "node")
+	nodeBin := filepath.Join(nodeDir, "bin")
+	if _, err := os.Stat(filepath.Join(nodeBin, "npm")); err == nil {
+		return nodeBin, nil
+	}
+
+	arch := nodeDownloadArch(runtime.GOARCH)
+	if arch == "" {
+		return "", fmt.Errorf("unsupported architecture for Node download: %s", runtime.GOARCH)
+	}
+	const base = "https://nodejs.org/dist/latest-krypton"
+	tarName, wantSum, err := latestNodeTarball(ctx, base+"/SHASUMS256.txt", arch)
+	if err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(depsRoot, 0o755); err != nil {
+		return "", fmt.Errorf("failed to create %s: %w", depsRoot, err)
+	}
+	// Download to a temp file, verifying its SHA256 from SHASUMS256.txt before use.
+	tarball, err := downloadVerified(ctx, base+"/"+tarName, wantSum)
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(tarball)
+	// Extract into a sibling temp dir and atomically rename it into place, so an
+	// interrupted extraction never leaves a half-populated node dir that the
+	// os.Stat(npm) check above would then wrongly accept as a finished install.
+	tmpDir, err := os.MkdirTemp(depsRoot, "node-*")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tmpDir) // no-op once renamed; cleans up a failed extraction
+	// Node's .tar.xz is the smallest download; extract it with the system tar.
+	if err := runCommand(ctx, "tar", "-xJf", tarball, "--strip-components=1", "-C", tmpDir); err != nil {
+		return "", fmt.Errorf("failed to extract Node.js: %w", err)
+	}
+	// Clear any partial leftover from a previously-interrupted run, then publish
+	// atomically (same-filesystem rename, since tmpDir is a sibling of nodeDir).
+	if err := os.RemoveAll(nodeDir); err != nil {
+		return "", fmt.Errorf("failed to remove %s: %w", nodeDir, err)
+	}
+	if err := os.Rename(tmpDir, nodeDir); err != nil {
+		return "", fmt.Errorf("failed to install Node.js: %w", err)
+	}
+	return nodeBin, nil
+}
+
+// downloadVerified fetches url to a temp file, failing unless its SHA256 matches
+// wantSum. The caller is responsible for removing the returned file.
+func downloadVerified(ctx context.Context, url, wantSum string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to download %s: %w", url, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to download %s: HTTP %d", url, resp.StatusCode)
+	}
+
+	f, err := os.CreateTemp("", "node-*.tar.xz")
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.New()
+	if _, err := io.Copy(io.MultiWriter(f, sum), resp.Body); err != nil {
+		f.Close()
+		os.Remove(f.Name())
+		return "", fmt.Errorf("failed to download %s: %w", url, err)
+	}
+	if err := f.Close(); err != nil {
+		os.Remove(f.Name())
+		return "", err
+	}
+	if got := hex.EncodeToString(sum.Sum(nil)); !strings.EqualFold(got, wantSum) {
+		os.Remove(f.Name())
+		return "", fmt.Errorf("checksum mismatch for %s: got %s, want %s", url, got, wantSum)
+	}
+	return f.Name(), nil
+}
+
+// latestUcodeRef returns the tag of ucode's latest GitHub release.
+func latestUcodeRef(ctx context.Context, apiURL string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch latest ucode release: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to fetch latest ucode release: HTTP %d", resp.StatusCode)
+	}
+	var payload struct {
+		TagName string `json:"tag_name"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&payload); err != nil {
+		return "", fmt.Errorf("failed to parse latest ucode release: %w", err)
+	}
+	if tag := strings.TrimSpace(payload.TagName); tag != "" {
+		return tag, nil
+	}
+	return "", errors.New("latest ucode release has empty tag_name")
+}
+
+// nodeDownloadArch maps a Go arch to Node's release arch token, or "" if unsupported.
+func nodeDownloadArch(goarch string) string {
+	switch goarch {
+	case "amd64":
+		return "x64"
+	case "arm64":
+		return "arm64"
+	default:
+		return ""
+	}
+}
+
+// latestNodeTarball returns the linux tarball name and its SHA256 for arch from
+// the SHASUMS256.txt listing (lines of "<sha256>  <filename>").
+func latestNodeTarball(ctx context.Context, shasumsURL, arch string) (name, sum string, err error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, shasumsURL, nil)
+	if err != nil {
+		return "", "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to fetch Node checksums: %w", err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return "", "", fmt.Errorf("failed to read Node checksums: %w", err)
+	}
+	re := regexp.MustCompile(`^([0-9a-f]{64})\s+(node-v[0-9.]+-linux-` + regexp.QuoteMeta(arch) + `\.tar\.xz)$`)
+	for _, line := range strings.Split(string(body), "\n") {
+		if m := re.FindStringSubmatch(strings.TrimSpace(line)); m != nil {
+			return m[2], m[1], nil
+		}
+	}
+	return "", "", fmt.Errorf("no linux-%s Node tarball found in %s", arch, shasumsURL)
+}
+
+// disableNpmUpdateNotifier turns off npm's "new version available" box so it
+// doesn't clutter the agent session. Best-effort: it's cosmetic, so a failure
+// (e.g. npm not runnable) is logged and ignored rather than blocking the launch.
+func disableNpmUpdateNotifier(ctx context.Context) {
+	if err := exec.CommandContext(ctx, "npm", "config", "set", "update-notifier", "false").Run(); err != nil {
+		log.Debugf(ctx, "failed to disable npm update-notifier: %v", err)
+	}
+}
+
+// npmGlobalPrefix returns `npm prefix -g`, or "" if npm isn't runnable.
+func npmGlobalPrefix(ctx context.Context) string {
+	out, err := exec.CommandContext(ctx, "npm", "prefix", "-g").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// runCommand runs name with the given args, inheriting stdio and the process env.
+func runCommand(ctx context.Context, name string, args ...string) error {
+	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// runShell runs a shell snippet — for the curl|sh / curl|tar pipelines.
+func runShell(ctx context.Context, script string) error {
+	cmd := exec.CommandContext(ctx, "sh", "-c", script)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
 // prependPath puts dir at the front of $PATH, dropping any later duplicate.
-func prependPath(dir string) {
+func prependPath(ctx context.Context, dir string) {
 	dirs := []string{dir}
-	for _, d := range filepath.SplitList(os.Getenv("PATH")) {
+	for _, d := range filepath.SplitList(env.Get(ctx, "PATH")) {
 		if d != dir {
 			dirs = append(dirs, d)
 		}
@@ -406,9 +733,9 @@ func prependPath(dir string) {
 }
 
 // removePath drops every occurrence of dir from $PATH.
-func removePath(dir string) {
+func removePath(ctx context.Context, dir string) {
 	var dirs []string
-	for _, d := range filepath.SplitList(os.Getenv("PATH")) {
+	for _, d := range filepath.SplitList(env.Get(ctx, "PATH")) {
 		if d != dir {
 			dirs = append(dirs, d)
 		}
