@@ -1,5 +1,30 @@
 # Version changelog
 
+## Release v1.15.0 (2026-09-03)
+
+### CLI
+
+ * When `uv python install` fails, `databricks environments setup-local` now falls back to a compatible Python interpreter already installed on the machine. ([#6457](https://github.com/databricks/cli/pull/6457))
+ * Allow `databricks environments setup-local` to update `pyproject.toml` files containing TOML multi-line strings. ([#6445](https://github.com/databricks/cli/pull/6445))
+
+### Bundles
+
+ * Before committing the automatic terraform→direct migration, run a deployment plan against the converted state; if the plan fails the migration is abandoned. ([#6486](https://github.com/databricks/cli/pull/6486))
+ * The `dbt-sql` bundle template now uses Databricks Runtime 16.4 LTS (up from 15.4 LTS) for classic (non-serverless) compute. ([#6418](https://github.com/databricks/cli/pull/6418))
+ * Fixed the direct engine silently ignoring edits to duration and timestamp fields, such as a Lakebase endpoint's `suspend_timeout_duration`. Such a change planned `0 to change` and was never applied. ([#6377](https://github.com/databricks/cli/pull/6377))
+ * Fixed `$${...}` not escaping a literal `${...}` on the direct engine, which failed with an `invalid dependency` error. ([#6484](https://github.com/databricks/cli/pull/6484), [#6489](https://github.com/databricks/cli/pull/6489))
+ * direct: Fix deploying an update to `postgres_projects.default_endpoint_settings`. ([#6440](https://github.com/databricks/cli/pull/6440))
+ * direct: Fix deploying an update to `postgres_endpoints.settings.pg_settings`. ([#6441](https://github.com/databricks/cli/pull/6441))
+ * direct: Fix deploying an update to `expire_time`, `ttl` or `suspend_timeout_duration` on Lakebase resources. ([#6443](https://github.com/databricks/cli/pull/6443))
+ * Added PyDABs (Python) support for catalogs: `Resources.add_catalog` and the `catalog_mutator` decorator. ([#6408](https://github.com/databricks/cli/pull/6408))
+ * Bundle templates now use serverless [environment version 5](https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/five), which offers better performance, and `databricks-connect` 16.4. ([#6378](https://github.com/databricks/cli/pull/6378))
+ * Fixed a job with a `table_update` trigger never converging on the direct engine. ([#6442](https://github.com/databricks/cli/pull/6442))
+
+### Dependency Updates
+
+ * Bump Go toolchain to 1.26.8. ([#6476](https://github.com/databricks/cli/pull/6476))
+
+
 ## Release v1.14.1 (2026-08-28)
 
 ### Bundles
