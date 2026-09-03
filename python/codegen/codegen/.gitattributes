@@ -1,0 +1,3 @@
+# Render the wiring templates as Python on GitHub. The ${...} placeholders
+# won't resolve, but the bulk of the file highlights correctly.
+*.py.tmpl linguist-language=Python
