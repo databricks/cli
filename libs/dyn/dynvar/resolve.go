@@ -175,10 +175,17 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 
 	// Not pure; perform string interpolation.
 	// Track whether any resolved value is sensitive; if so, the result is also sensitive.
+	//
+	// Substitute by byte offset rather than by searching for the match text: the same
+	// reference may also appear escaped ("$${foo} ${foo}"), and a search would replace
+	// that occurrence instead, corrupting the literal and leaving the real one unresolved.
 	anySensitive := false
+	var sb strings.Builder
+	consumed := 0
 	for j := range ref.Matches {
 		// The value is invalid if resolution returned [ErrSkipResolution].
-		// We must skip those and leave the original variable reference in place.
+		// We must skip those and leave the original variable reference in place,
+		// which happens naturally by not advancing past its span.
 		if !resolved[j].IsValid() {
 			continue
 		}
@@ -200,10 +207,14 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 			}
 		}
 
-		ref.Str = strings.Replace(ref.Str, ref.Matches[j][0], s, 1)
+		start, end := ref.Spans[j][0], ref.Spans[j][1]
+		sb.WriteString(ref.Str[consumed:start])
+		sb.WriteString(s)
+		consumed = end
 	}
+	sb.WriteString(ref.Str[consumed:])
 
-	result := dyn.NewValue(ref.Str, ref.Value.Locations())
+	result := dyn.NewValue(sb.String(), ref.Value.Locations())
 	if anySensitive {
 		result = result.MarkSensitive()
 	}

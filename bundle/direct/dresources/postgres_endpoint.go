@@ -176,12 +176,19 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 	return remote.Name, remote, nil
 }
 
+// no_suspension and suspend_timeout_duration are two sides of one oneof, which the API
+// accepts in update_mask only under the group name; see branchOneofGroups.
+var endpointOneofGroups = map[string]string{
+	"no_suspension":            "suspension",
+	"suspend_timeout_duration": "suspension",
+}
+
 func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, config *PostgresEndpointState, entry *PlanEntry) (*PostgresEndpointRemote, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// This excludes immutable fields and fields that haven't changed.
 	// Prefix with "spec." because the API expects paths relative to the Endpoint object,
 	// not relative to our flattened state type.
-	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.")
+	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", endpointOneofGroups)
 
 	waiter, err := r.client.Postgres.UpdateEndpoint(ctx, postgres.UpdateEndpointRequest{
 		Endpoint: postgres.Endpoint{

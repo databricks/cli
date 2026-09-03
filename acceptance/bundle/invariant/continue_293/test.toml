@@ -1,3 +1,7 @@
+# The seed deploy runs an old CLI unaware of DMS, so resources aren't recorded.
+# Reading state from the service finds nothing; adopting pre-DMS resources is a separate story.
+EnvMatrix.DMS = [""]
+
 # $resources references to permissions and grants are not supported on v0.293.0
 EnvMatrixExclude.no_permission_ref = ["INPUT_CONFIG=job_permission_ref.yml.tmpl"]
 EnvMatrixExclude.no_cross_resource_ref = ["INPUT_CONFIG=job_cross_resource_ref.yml.tmpl"]
@@ -35,3 +39,7 @@ EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml
 
 # secret resource is not supported on v0.293.0
 EnvMatrixExclude.no_secret = ["INPUT_CONFIG=secret.yml.tmpl"]
+
+# $${...} escaping is not supported on v0.293.0: the seed deploy fails with
+# 'invalid dependency "${batch_id}", no such node ""' (issue #6480).
+EnvMatrixExclude.no_escaped_refs = ["INPUT_CONFIG=job_escaped_refs.yml.tmpl"]
