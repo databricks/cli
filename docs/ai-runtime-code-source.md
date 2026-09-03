@@ -49,7 +49,7 @@ Retries, timeouts, permissions, and dependencies are configured the same way as 
 
 ## Multi-step workflows
 
-Because an AI Runtime task is a Jobs task, it composes with everything Jobs offers: chain a prep step into a GPU training step with `depends_on`, mix GPU and CPU tasks in one job, and use different GPU types per task. For example, a prep notebook on serverless CPU that stages data, then a GPU training step that runs after it:
+Because an AI Runtime task is a Jobs task, it composes with everything Jobs offers: chain a prep step into a GPU training step with `depends_on`, mix GPU and CPU tasks in one job, and use different GPU types per task. For example, a prep notebook on serverless CPU that stages data, then a GPU training step that runs after it — on a daily schedule:
 
 ```yaml
 resources:
@@ -70,13 +70,17 @@ resources:
                 compute:
                   accelerator_type: GPU_1xA10
                   accelerator_count: 1
+      schedule:
+        quartz_cron_expression: "0 0 9 * * ?"  # daily at 09:00
+        timezone_id: UTC
+        pause_status: PAUSED                   # deploy without firing; unpause when ready
 ```
 
 > One capability to design around: an AI Runtime task can't pass values through the Jobs task-values mechanism. To hand data between steps, write it to a shared UC Volume or workspace file that both steps read.
 
 ## Scheduling and production
 
-Scheduling and Dev → Prod promotion are standard bundle features, and the AI Runtime task inherits them unchanged — add a schedule to run the job on a cadence, and a production target to promote it, exactly as you would for any bundle job.
+Scheduling and Dev → Prod promotion are standard bundle features, and the AI Runtime task inherits them unchanged. The example above adds a daily `schedule:` (shipped `PAUSED`, so deploying it never fires runs on its own — unpause it when you're ready); a production target promotes it, exactly as you would for any bundle job.
 
 ## Custom container images
 
