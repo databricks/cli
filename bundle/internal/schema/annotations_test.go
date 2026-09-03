@@ -151,7 +151,29 @@ func TestStalePlaceholderDoesNotShadowMergedDescription(t *testing.T) {
 }
 
 func TestAssignAnnotationLaunchStage(t *testing.T) {
-	t.Run("public preview prefixes description, emits stage, stays suggestible", func(t *testing.T) {
+	t.Run("private preview prefixes description, emits stage, and hides from autocomplete", func(t *testing.T) {
+		s := &jsonschema.Schema{}
+		assignAnnotation(s, annotation.Descriptor{
+			Description: "Internal field.",
+			LaunchStage: "PRIVATE_PREVIEW",
+		})
+		assert.Equal(t, "[Private Preview] Internal field.", s.Description)
+		assert.True(t, s.DoNotSuggest)
+		assert.Equal(t, "PRIVATE_PREVIEW", s.LaunchStage)
+	})
+
+	t.Run("public beta prefixes description, emits stage, and stays suggestible", func(t *testing.T) {
+		s := &jsonschema.Schema{}
+		assignAnnotation(s, annotation.Descriptor{
+			Description: "A field.",
+			LaunchStage: "PUBLIC_BETA",
+		})
+		assert.Equal(t, "[Beta] A field.", s.Description)
+		assert.False(t, s.DoNotSuggest)
+		assert.Equal(t, "PUBLIC_BETA", s.LaunchStage)
+	})
+
+	t.Run("public preview prefixes description, emits stage, and stays suggestible", func(t *testing.T) {
 		s := &jsonschema.Schema{}
 		assignAnnotation(s, annotation.Descriptor{
 			Description: "Target QPS for the endpoint.",
@@ -162,17 +184,7 @@ func TestAssignAnnotationLaunchStage(t *testing.T) {
 		assert.Equal(t, "PUBLIC_PREVIEW", s.LaunchStage)
 	})
 
-	t.Run("public beta prefixes description and emits stage", func(t *testing.T) {
-		s := &jsonschema.Schema{}
-		assignAnnotation(s, annotation.Descriptor{
-			Description: "A field.",
-			LaunchStage: "PUBLIC_BETA",
-		})
-		assert.Equal(t, "[Beta] A field.", s.Description)
-		assert.Equal(t, "PUBLIC_BETA", s.LaunchStage)
-	})
-
-	t.Run("GA emits the stage without a description prefix", func(t *testing.T) {
+	t.Run("GA emits the stage without a description prefix and stays suggestible", func(t *testing.T) {
 		s := &jsonschema.Schema{}
 		assignAnnotation(s, annotation.Descriptor{
 			Description: "A field.",
@@ -188,19 +200,6 @@ func TestAssignAnnotationLaunchStage(t *testing.T) {
 		assignAnnotation(s, annotation.Descriptor{Description: "A field."})
 		assert.Equal(t, "A field.", s.Description)
 		assert.Empty(t, s.LaunchStage)
-	})
-
-	t.Run("private preview also hides from autocomplete", func(t *testing.T) {
-		s := &jsonschema.Schema{}
-		// The private-preview stage both prefixes the description and hides the
-		// field; it is also emitted as x-databricks-launch-stage for pydabs.
-		assignAnnotation(s, annotation.Descriptor{
-			Description: "Internal field.",
-			LaunchStage: "PRIVATE_PREVIEW",
-		})
-		assert.Equal(t, "[Private Preview] Internal field.", s.Description)
-		assert.True(t, s.DoNotSuggest)
-		assert.Equal(t, "PRIVATE_PREVIEW", s.LaunchStage)
 	})
 
 	t.Run("per-enum-value launch stages do not leak into description", func(t *testing.T) {
@@ -241,7 +240,8 @@ func TestBuildEnumDescriptions(t *testing.T) {
 	enum := []any{"STORAGE_OPTIMIZED", "STANDARD"}
 
 	t.Run("combines launch stage and description per value", func(t *testing.T) {
-		got := buildEnumDescriptions(enum,
+		got := buildEnumDescriptions(
+			enum,
 			map[string]clijson.LaunchStage{"STORAGE_OPTIMIZED": "PUBLIC_PREVIEW"},
 			map[string]string{
 				"STORAGE_OPTIMIZED": "Storage-optimized endpoint.",
@@ -255,7 +255,8 @@ func TestBuildEnumDescriptions(t *testing.T) {
 	})
 
 	t.Run("launch stage only emits bracketed label", func(t *testing.T) {
-		got := buildEnumDescriptions(enum,
+		got := buildEnumDescriptions(
+			enum,
 			map[string]clijson.LaunchStage{"STORAGE_OPTIMIZED": "PUBLIC_BETA"},
 			nil,
 		)
@@ -263,7 +264,8 @@ func TestBuildEnumDescriptions(t *testing.T) {
 	})
 
 	t.Run("description only is preserved verbatim", func(t *testing.T) {
-		got := buildEnumDescriptions(enum,
+		got := buildEnumDescriptions(
+			enum,
 			nil,
 			map[string]string{"STORAGE_OPTIMIZED": "Storage-optimized endpoint."},
 		)
@@ -272,7 +274,8 @@ func TestBuildEnumDescriptions(t *testing.T) {
 
 	t.Run("returns nil when neither stage nor description has content", func(t *testing.T) {
 		assert.Nil(t, buildEnumDescriptions(enum, nil, nil))
-		assert.Nil(t, buildEnumDescriptions(enum,
+		assert.Nil(t, buildEnumDescriptions(
+			enum,
 			map[string]clijson.LaunchStage{"STORAGE_OPTIMIZED": "GA"},
 			nil,
 		))
