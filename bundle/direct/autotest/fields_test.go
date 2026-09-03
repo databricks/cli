@@ -1168,14 +1168,29 @@ func oneLine(s string) string {
 	// at 140 characters kept the host and dropped the cause. The URL identifies nothing a reader
 	// of the report can use: the resource is already the row's own field, and the id is redacted.
 	s = urlPattern.ReplaceAllString(s, `"…"`)
-	if len(s) > 140 {
-		// Elided in the middle, keeping both ends: the front says which resource and operation,
-		// the back says what the backend or the network answered. Cutting at the front dropped
-		// the answer, which is the half a reader needs.
-		s = s[:90] + "..." + s[len(s)-47:]
+	// The engine's own framing -- "cannot update resources.jobs.foo: updating id=...:" -- says only
+	// what the row already says: the resource is the report's own filename and the operation follows
+	// from the transition. Dropping it leaves the room for what only the backend can say, which was
+	// the half being cut: 49 rows were elided mid-sentence with the API's reason on the far side.
+	s = enginePrefixPattern.ReplaceAllString(s, "")
+	if len(s) > maxDetailLength {
+		// Elided in the middle, keeping both ends: the front says what failed, the back says what the
+		// backend or the network answered. Cutting at the front dropped the answer.
+		//
+		// By runes, not bytes: an API message can carry any character, and the ellipsis substituted
+		// for a URL above is itself multi-byte, so a byte index can split one and emit invalid UTF-8.
+		runes := []rune(s)
+		s = string(runes[:maxDetailLength-50]) + "..." + string(runes[len(runes)-47:])
 	}
 	return s
 }
+
+// maxDetailLength caps a row's detail: wide enough that the median backend message survives whole once
+// the engine's prefix is gone, narrow enough that a row still fits a terminal.
+const maxDetailLength = 200
+
+// enginePrefixPattern matches the engine's framing around a backend error.
+var enginePrefixPattern = regexp.MustCompile(`^cannot [a-z]+ resources\.[a-z_]+\.[a-zA-Z0-9_-]+: (?:(?:updating|creating|deleting old|waiting after [a-z]+) id=\S*: )?`)
 
 // urlPattern matches a quoted http(s) URL, which carries a workspace host and a long path and
 // crowds out the error that follows it.

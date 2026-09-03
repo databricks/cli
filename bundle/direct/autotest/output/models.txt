@@ -8,8 +8,8 @@
 #
 # Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
 
-description                                  x          absent     BACKEND_ERROR  cannot update resources.models.foo: updating id=test-model-[UNIQUE_NAME]: Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
-description                                  y          absent     BACKEND_ERROR  cannot update resources.models.foo: updating id=test-model-[UNIQUE_NAME]: Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
+description                                  x          absent     BACKEND_ERROR  Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
+description                                  y          absent     BACKEND_ERROR  Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
 
 === summary
 OK                 4

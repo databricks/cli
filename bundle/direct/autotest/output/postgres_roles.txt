@@ -8,8 +8,8 @@
 #
 # Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
 
-parent                                       x          y          BASE_ERROR  cannot recreate resources.postgres_roles.foo: No stub found for pattern: POST /api/2.0/postgres/x/roles (501 <nil>)
-parent                                       y          x          BASE_ERROR  cannot recreate resources.postgres_roles.foo: No stub found for pattern: POST /api/2.0/postgres/y/roles (501 <nil>)
+parent                                       x          y          BASE_ERROR  No stub found for pattern: POST /api/2.0/postgres/x/roles (501 <nil>)
+parent                                       y          x          BASE_ERROR  No stub found for pattern: POST /api/2.0/postgres/y/roles (501 <nil>)
 
 === summary
 OK                 22
