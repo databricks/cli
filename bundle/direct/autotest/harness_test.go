@@ -874,6 +874,14 @@ func uniqueName() string {
 }
 
 // converged deploys the current config and reports whether a following plan is clean.
+// deployFrom restores a config snapshot and deploys it, reporting whether the deploy succeeded. Used
+// to ask the API something it must be able to answer: a state it has already accepted.
+func (h *bundleHarness) deployFrom(snapshot []byte) bool {
+	h.restore(snapshot)
+	_, diags := h.deploy()
+	return !diags.HasError()
+}
+
 func (h *bundleHarness) converged() bool {
 	if _, diags := h.deploy(); diags.HasError() {
 		return false
