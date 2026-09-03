@@ -2113,6 +2113,7 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "[Beta]",
                     "properties": {
                       "branch_id": {
                         "description": "The ID to use for the branch; becomes the final component of the branch's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `development` becomes `projects/my-app/branches/development`.",
@@ -2174,7 +2175,8 @@
                     "required": [
                       "branch_id",
                       "parent"
-                    ]
+                    ],
+                    "x-databricks-launch-stage": "PUBLIC_BETA"
                   },
                   {
                     "type": "string",
@@ -2186,7 +2188,7 @@
                 "oneOf": [
                   {
                     "type": "object",
-                    "description": "The desired state of the Catalog.",
+                    "description": "[Beta] The desired state of the Catalog.",
                     "properties": {
                       "branch": {
                         "description": "[Beta] The resource path of the branch associated with the catalog.\n\nFormat: projects/{project_id}/branches/{branch_id}.",
@@ -2216,7 +2218,8 @@
                     "required": [
                       "catalog_id",
                       "postgres_database"
-                    ]
+                    ],
+                    "x-databricks-launch-stage": "PUBLIC_BETA"
                   },
                   {
                     "type": "string",
@@ -2228,6 +2231,7 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "[Beta]",
                     "properties": {
                       "database_id": {
                         "description": "The ID to use for the database; becomes the final component of the database's resource name and the database name in Postgres. Must be 4-63 characters and use only characters available in DNS names, as defined by RFC 1123. If not specified, it is generated automatically.",
@@ -2261,7 +2265,8 @@
                       "database_id",
                       "parent",
                       "role"
-                    ]
+                    ],
+                    "x-databricks-launch-stage": "PUBLIC_BETA"
                   },
                   {
                     "type": "string",
@@ -2273,6 +2278,7 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "[Beta]",
                     "properties": {
                       "autoscaling_limit_max_cu": {
                         "description": "[Beta] The maximum number of Compute Units. The maximum value is 64.\nThe difference between the minimum and maximum Compute Units (max - min) must not exceed 16.",
@@ -2336,7 +2342,8 @@
                       "endpoint_id",
                       "parent",
                       "endpoint_type"
-                    ]
+                    ],
+                    "x-databricks-launch-stage": "PUBLIC_BETA"
                   },
                   {
                     "type": "string",
@@ -2348,6 +2355,7 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "[Beta]",
                     "properties": {
                       "budget_policy_id": {
                         "description": "[Beta] The desired budget policy to associate with the project.\nSee status.budget_policy_id for the policy that is actually applied to the project.",
@@ -2410,7 +2418,8 @@
                     "additionalProperties": false,
                     "required": [
                       "project_id"
-                    ]
+                    ],
+                    "x-databricks-launch-stage": "PUBLIC_BETA"
                   },
                   {
                     "type": "string",
@@ -2422,6 +2431,7 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "[Beta]",
                     "properties": {
                       "attributes": {
                         "description": "[Beta] The desired API-exposed Postgres role attributes to associate with the role.",
@@ -2469,7 +2479,8 @@
                     "required": [
                       "role_id",
                       "parent"
-                    ]
+                    ],
+                    "x-databricks-launch-stage": "PUBLIC_BETA"
                   },
                   {
                     "type": "string",
@@ -2481,6 +2492,7 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "[Beta]",
                     "properties": {
                       "accelerated_sync": {
                         "description": "[Private Preview] When true, enables accelerated sync mode for the initial data load.\nThis significantly improves performance for large tables.\nRequires workspace-level enablement through Lakebase Accelerated Sync preview.",
@@ -2556,7 +2568,8 @@
                     "additionalProperties": false,
                     "required": [
                       "synced_table_id"
-                    ]
+                    ],
+                    "x-databricks-launch-stage": "PUBLIC_BETA"
                   },
                   {
                     "type": "string",
