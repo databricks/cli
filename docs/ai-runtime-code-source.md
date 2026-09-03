@@ -1,9 +1,15 @@
 # AI Runtime - DABs Integration
 
-An AI Runtime task (`ai_runtime_task`) runs a command on serverless GPU compute. Put one in a
-Databricks Asset Bundle and it deploys, versions, schedules, and composes with the rest of Jobs
-like any other task — no `air` CLI required. This page covers the task itself, how your code
-reaches it, multi-task workflows, scheduling, and converting an existing `air run` config.
+[**AI Runtime**](https://docs.databricks.com/aws/en/machine-learning/ai-runtime/) is serverless
+GPU compute for training and fine-tuning models — give it a command and a GPU spec, no cluster to
+set up. [**Databricks Asset Bundles**](https://docs.databricks.com/aws/en/dev-tools/bundles/)
+package Databricks resources (jobs, code, pipelines) as one version-controlled, deployable unit.
+
+This page is about running an AI Runtime workload *as* a bundle: an `ai_runtime_task` inside a job,
+so it deploys, versions, schedules, and composes with the rest of Jobs like any other task — no
+`air` CLI required. It covers the task itself, how your code reaches it, multi-task workflows,
+scheduling, and converting an existing `air run` config. See the linked docs above for AI Runtime
+and bundles on their own.
 
 ## The task
 
