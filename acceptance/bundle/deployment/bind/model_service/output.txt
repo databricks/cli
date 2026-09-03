@@ -1,0 +1,30 @@
+
+>>> [CLI] bundle deployment bind ms1 main.myschema.mysvc --auto-approve
+Successfully bound model_service with an id 'main.myschema.mysvc'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Model services:
+    ms1:
+      Name: mysvc
+      URL:  (not deployed)
+
+>>> [CLI] bundle deployment unbind ms1
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Model services:
+    ms1:
+      Name: mysvc
+      URL:  (not deployed)
