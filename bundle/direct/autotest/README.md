@@ -220,6 +220,18 @@ problem verdict:
 go test ./bundle/direct/autotest -run TestFields/pipelines/.*/dry_run/absent_to_true -v
 ```
 
+### Run one resource type at a time on cloud
+
+The workspace is shared, and driving several types at once makes it push back in ways that look exactly
+like findings. Three parallel runs produced `504 DEADLINE_EXCEEDED`, an expired token mid-sweep, and
+three types "diverging" that were clean on a serial re-run -- `catalogs` took 5024s and failed, then 19s
+and passed; `registered_models` 7094s then 14s; `experiments` 166s then 17s. The runtime is the tell: a
+type that normally takes under a minute and takes an hour is queueing, not disagreeing.
+
+So sweep serially, and read a failure's runtime before believing it. The same applies to the resources
+the workspace pools: a full secrets schema, an instance pool at capacity, and a 100-app limit each
+produce an error that names the quota rather than the field.
+
 ### Checking one field against a real workspace
 
 A whole resource type on cloud is slow (jobs is half an hour) and the interesting question is

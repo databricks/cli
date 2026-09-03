@@ -26,6 +26,10 @@ fields:
   autotermination_minutes: [10, 20]
 
 skip:
+  # "The field 'aws_attributes.availability' cannot be supplied when an instance pool ID is provided",
+  # and base sets one -- the pool decides availability for the instances it hands out. The same reason
+  # node_type_flexibility is skipped below.
+  aws_attributes.availability: cannot be set on a cluster that names an instance pool, which base does
   # Custom containers is turned off on this workspace, so no value of the block is accepted there.
   docker_image: needs custom containers enabled on the workspace
   # An init script has to name a file that exists: a real workspace fails the cluster with "Init
