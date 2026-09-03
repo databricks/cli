@@ -12,14 +12,7 @@
           "embed_credentials": false,
           "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources",
           "published": true,
-          "serialized_dashboard": {
-            "pages": [
-              {
-                "displayName": "Page One",
-                "name": "page1"
-              }
-            ]
-          },
+          "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Page One\",\"name\":\"page1\"}]}",
           "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }
       },
@@ -66,22 +59,8 @@
         },
         "serialized_dashboard": {
           "action": "update",
-          "old": {
-            "pages": [
-              {
-                "displayName": "Page 1",
-                "name": "page1"
-              }
-            ]
-          },
-          "new": {
-            "pages": [
-              {
-                "displayName": "Page One",
-                "name": "page1"
-              }
-            ]
-          },
+          "old": "{\"pages\":[{\"displayName\":\"Page 1\",\"name\":\"page1\"}]}",
+          "new": "{\"pages\":[{\"displayName\":\"Page One\",\"name\":\"page1\"}]}",
           "remote": "{\"pages\":[{\"displayName\":\"Page 1\",\"name\":\"page1\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n"
         },
         "update_time": {
