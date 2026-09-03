@@ -1,11 +1,12 @@
 # AI Runtime task code source
 
-An `ai_runtime_task` runs your command against a directory of code. Set `code_source_path`
-and `databricks bundle deploy` packages that code into a tarball, uploads it, and rewrites
-the path to where it landed in the workspace. At runtime the tarball is extracted to
-`/databricks/code_source/<dir>` and that path is exported as `$CODE_SOURCE_PATH`.
+An AI Runtime task runs a command against a directory of your code. `code_source_path`
+tells the bundle where that code is. On `databricks bundle deploy` the CLI packages it into
+a tarball, uploads it, and rewrites the path to its workspace location. At runtime the
+tarball is extracted to `/databricks/code_source/<dir>`, and that path is exported as
+`$CODE_SOURCE_PATH`.
 
-`code_source_path` takes one of three things.
+`code_source_path` takes one of three things, depending on how much control you need.
 
 ## A local directory
 
