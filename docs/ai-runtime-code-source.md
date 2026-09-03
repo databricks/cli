@@ -1,13 +1,15 @@
 # AI Runtime - DABs Integration
 
-[**AI Runtime**](https://docs.databricks.com/aws/en/machine-learning/ai-runtime/) is serverless
-GPU compute for training and fine-tuning models — give it a command and a GPU spec, no cluster to
-set up. [**Databricks Asset Bundles**](https://docs.databricks.com/aws/en/dev-tools/bundles/)
-package Databricks resources (jobs, code, pipelines) as one version-controlled, deployable unit.
+[**AI Runtime**](https://docs.databricks.com/aws/en/machine-learning/ai-runtime/) is a way to
+access Databricks serverless GPU compute for training and fine-tuning models — give it a command
+and a GPU spec and launch your workload, no compute setup necessary!
+[**Databricks Asset Bundles**](https://docs.databricks.com/aws/en/dev-tools/bundles/) package
+Databricks resources (jobs, code, pipelines) as one version-controlled, deployable unit. DABs is
+most commonly used as an orchestrator of multiple tasks.
 
-Together they let you manage a GPU training workload the way you manage any production job: define
-it once, deploy it across environments, schedule it, and compose it into larger workflows — instead
-of ad-hoc, one-off submissions. No `air` CLI required.
+Integrated together AI Runtime x DABs lets you manage a GPU training workload the way you manage
+any other production job: define it once, deploy it across environments, schedule it, and compose
+it into larger workflows.
 
 ## Why run AI Runtime in a bundle
 
@@ -17,12 +19,11 @@ of ad-hoc, one-off submissions. No `air` CLI required.
   production.
 - **Composable** — the GPU task sits in a job next to notebooks, SQL, and pipelines, chained by
   dependencies and gated by schedules like any other Jobs task.
-- **Migratable** — an existing `air run` config converts to a bundle with one command.
 
 ## What it looks like
 
-An AI Runtime workload is a task (`ai_runtime_task`) in a job: you point it at your code, name the
-GPU it needs, and give it a command to run.
+An AI Runtime workload is a BYOT (Bring Your Own Training) task (`ai_runtime_task`) in a job: you
+point it at your code, name the GPU it needs, and give it a command to run.
 
 ```yaml
 resources:
@@ -74,7 +75,7 @@ different GPU types per task.
 
 ## Scheduling and production
 
-Scheduling and dev→prod promotion are standard bundle features, and the AI Runtime task inherits
+Scheduling and Dev → Prod promotion are standard bundle features, and the AI Runtime task inherits
 them unchanged — add a schedule to run the job on a cadence, and a production target to promote it,
 exactly as you would for any bundle job.
 
@@ -82,14 +83,6 @@ exactly as you would for any bundle job.
 
 To run inside your own Docker image instead of the default AI Runtime image, register the image
 with AI Compute once, then reference it — useful when you need specific system libraries or a
-locked-down environment. See the [AI Runtime docs](https://docs.databricks.com/aws/en/machine-learning/ai-runtime/)
+locked-down environment. See the
+[AI Runtime Custom Image docs](https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/docker-images)
 for details.
-
-## Migrating from `air run`
-
-`databricks experimental air convert-to-dabs <config>.yaml` turns an existing `air run` config into
-a bundle — mapping the code source, dependencies, and command across — so teams already using the
-`air` CLI can adopt bundles without rewriting their workload by hand.
-
-Unlike an `air run` submission (which the platform cleans up automatically), a deployed bundle
-creates a persistent job; remove it with `databricks bundle destroy` when you're done.
