@@ -49,6 +49,8 @@ type SyncOptions struct {
 	OutputHandler OutputHandler
 
 	DryRun bool
+
+	NoValidateRemotePath bool
 }
 
 type Sync struct {
