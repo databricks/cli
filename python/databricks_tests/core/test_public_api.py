@@ -216,7 +216,8 @@ def dump_core_public_api() -> str:
 
     render_registry(out)
 
-    return "\n".join(out) + "\n"
+    # Single trailing newline, no blank last line (the whitespace linter strips it).
+    return "\n".join(out).rstrip("\n") + "\n"
 
 
 @pytest.mark.skipif(

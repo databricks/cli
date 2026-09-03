@@ -143,4 +143,3 @@ singular_name=job plural_name=jobs resource_type=Job
 singular_name=pipeline plural_name=pipelines resource_type=Pipeline
 singular_name=schema plural_name=schemas resource_type=Schema
 singular_name=volume plural_name=volumes resource_type=Volume
-
