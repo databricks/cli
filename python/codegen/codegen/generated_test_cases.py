@@ -34,6 +34,16 @@ _TEST_CASE_TEMPLATE = Template(
     (Path(__file__).parent / "test_case.py.tmpl").read_text()
 )
 
+# Launch-stage maturity, mirroring internal/clijson/launchstage.go:
+# GA < PUBLIC_PREVIEW < PUBLIC_BETA < PRIVATE_PREVIEW; absent stage = GA.
+_STAGE_RANK = {
+    None: 0,
+    openapi.LaunchStage.GA: 0,
+    openapi.LaunchStage.PUBLIC_PREVIEW: 1,
+    openapi.LaunchStage.PUBLIC_BETA: 2,
+    openapi.LaunchStage.PRIVATE_PREVIEW: 3,
+}
+
 
 # Synthesized value tree. Each node renders both as a dict literal (dict_example)
 # and as a constructor expression (dataclass_example).
@@ -190,7 +200,11 @@ def _synth_object(
                 continue
             if not _is_composite(prop.ref):
                 continue
-            if prop.deprecated or prop.stage == openapi.LaunchStage.PRIVATE_PREVIEW:
+            if (
+                prop.deprecated
+                or _STAGE_RANK[prop.stage]
+                > _STAGE_RANK[openapi.LaunchStage.PUBLIC_PREVIEW]
+            ):
                 continue
 
         value = _synth_ref(namespace, prop.ref, field_name, schemas, visiting)
