@@ -1,0 +1,95 @@
+{
+  "plan_version": 2,
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.dashboards.inline_dash": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "display_name": "Inline Dash",
+          "embed_credentials": false,
+          "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources",
+          "published": true,
+          "serialized_dashboard": {
+            "pages": [
+              {
+                "displayName": "Page One",
+                "name": "page1"
+              }
+            ]
+          },
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        }
+      },
+      "remote_state": {
+        "create_time": "[TIMESTAMP]",
+        "dashboard_id": "[DASHBOARD_ID]",
+        "display_name": "Inline Dash",
+        "embed_credentials": false,
+        "etag": "[NUMID]",
+        "lifecycle_state": "ACTIVE",
+        "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources",
+        "path": "/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources/Inline Dash.lvdash.json",
+        "published": true,
+        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Page 1\",\"name\":\"page1\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
+        "update_time": "[TIMESTAMP]",
+        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+      },
+      "changes": {
+        "create_time": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[TIMESTAMP]"
+        },
+        "dashboard_id": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[DASHBOARD_ID]"
+        },
+        "etag": {
+          "action": "skip",
+          "reason": "custom",
+          "old": "[NUMID]",
+          "remote": "[NUMID]"
+        },
+        "lifecycle_state": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "ACTIVE"
+        },
+        "path": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "/Users/[USERNAME]/.bundle/change-serialized-inline-[UNIQUE_NAME]/default/resources/Inline Dash.lvdash.json"
+        },
+        "serialized_dashboard": {
+          "action": "update",
+          "old": {
+            "pages": [
+              {
+                "displayName": "Page 1",
+                "name": "page1"
+              }
+            ]
+          },
+          "new": {
+            "pages": [
+              {
+                "displayName": "Page One",
+                "name": "page1"
+              }
+            ]
+          },
+          "remote": "{\"pages\":[{\"displayName\":\"Page 1\",\"name\":\"page1\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n"
+        },
+        "update_time": {
+          "action": "skip",
+          "reason": "spec:output_only",
+          "remote": "[TIMESTAMP]"
+        }
+      }
+    }
+  }
+}

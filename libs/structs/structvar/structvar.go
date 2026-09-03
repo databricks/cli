@@ -102,15 +102,18 @@ func (sv *StructVar) ResolveRef(reference string, value any) error {
 			if err != nil {
 				return fmt.Errorf("cannot set %s to %T (%#v): %w", pathNode.String(), value, value, err)
 			}
-			newValue := strings.ReplaceAll(refValue, reference, valueStr)
 
-			// Set the updated string value
-			err = structaccess.Set(sv.Value, pathNode, newValue)
+			newValue := dynvar.ReplaceRef(refValue, reference, valueStr)
+
+			// The struct gets the unescaped form ("$${x}" -> "${x}"), since that is what
+			// is sent to the API. sv.Refs keeps the escaped form so the still-pending
+			// check below can tell a literal apart from a real reference.
+			err = structaccess.Set(sv.Value, pathNode, dynvar.Unescape(newValue))
 			if err != nil {
 				return fmt.Errorf("cannot update %s to string: %w", pathNode.String(), err)
 			}
 
-			// Check if fully resolved (no more ${} patterns)
+			// Check if fully resolved (no unescaped ${} patterns left)
 			if !dynvar.ContainsVariableReference(newValue) {
 				delete(sv.Refs, pathKey)
 			} else {

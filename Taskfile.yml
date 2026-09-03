@@ -281,17 +281,8 @@ tasks:
     cmds:
       - "./tools/validate_whitespace.py --fix"
 
-  links:
-    desc: Update GitHub links in CHANGELOG.md and .nextchanges/ fragments
-    sources:
-      - CHANGELOG.md
-      - ".nextchanges/**/*.md"
-      - tools/update_github_links.py
-    cmds:
-      - "./tools/update_github_links.py"
-
   check-changelog:
-    desc: Validate .nextchanges fragment placement
+    desc: Validate .nextchanges fragment placement and links
     cmds:
       - "./tools/validate_nextchanges.py"
 
@@ -323,13 +314,12 @@ tasks:
       - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
   checks:
-    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, lockfiles)
+    desc: Run quick checks (tidy, whitespace, deadcode, changelog, lockfiles)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
-    # touching more paths should not race with whitespace/link scanners.
+    # touching more paths should not race with the whitespace scanner.
     cmds:
       - task: tidy
       - task: ws
-      - task: links
       - task: deadcode
       - task: check-changelog
       - task: check-lockfiles
@@ -405,7 +395,7 @@ tasks:
   # --- Testing ---
 
   test:
-    desc: Run unit and acceptance tests
+    desc: Run unit, acceptance, and doctests
     # Run the legs as sequential cmds (not parallel deps) so the concatenating
     # cat can be a `defer`, which runs even when a leg fails. When the legs are
     # deps, the cat in cmds is skipped on failure, so test-output.json is never
@@ -417,10 +407,18 @@ tasks:
       - test-output.json
     cmds:
       - defer: cat test-output-unit.json test-output-acc.json > test-output.json
+      - task: doctest
       - task: test-unit
       - task: test-acc
         vars:
           ACCEPTANCE_TEST_FILTER: "{{.ACCEPTANCE_TEST_FILTER}}"
+
+  doctest:
+    desc: Run doctests for all Python files in the repo
+    sources:
+      - "**/*.py"
+    cmds:
+      - 'uv run -p ">=3.11" --no-project python tools/run_doctests.py'
 
   test-unit:
     desc: Run unit tests across all Go modules (root, tools, codegen)

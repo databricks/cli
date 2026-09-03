@@ -28,10 +28,6 @@ type structInfo struct {
 	// Maps JSON-name of the field to Golang struct name
 	GolangNames map[string]string
 
-	// Sensitive tracks fields tagged `bundle:"sensitive"` by their JSON name.
-	// Values for these fields should be masked in display output.
-	Sensitive map[string]bool
-
 	// ForceSendFieldsIndex maps the JSON-name of the field to the index path (for
 	// use with [reflect.Value.FieldByIndex]) of the ForceSendFields slice that
 	// governs it: the one declared by the struct that also declares the field.
@@ -72,7 +68,6 @@ func buildStructInfo(typ reflect.Type) structInfo {
 		ForceEmpty:           make(map[string]bool),
 		GolangNames:          make(map[string]string),
 		ForceSendFieldsIndex: make(map[string][]int),
-		Sensitive:            make(map[string]bool),
 	}
 
 	// Queue holds the indexes of the structs to visit.
@@ -139,11 +134,6 @@ func buildStructInfo(typ reflect.Type) structInfo {
 			}
 			out.GolangNames[name] = sf.Name
 
-			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
-			if btag.Sensitive() {
-				out.Sensitive[name] = true
-			}
-
 			// The field is declared directly in this struct, so it is governed by
 			// this struct's ForceSendFields (if it has one).
 			if forceSendFieldsIndex != nil {
@@ -184,25 +174,6 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 	}
 
 	return out
-}
-
-// SensitiveFieldNames returns the JSON field names of typ that carry the
-// `bundle:"sensitive"` tag. A pointer type is dereferenced before inspection.
-// Returns nil for non-struct types. Callers use this to identify fields that
-// must be masked in display output (validate -o json, plan -o json) without
-// touching the typed values used by the actual deployment pipeline.
-func SensitiveFieldNames(typ reflect.Type) map[string]bool {
-	for typ.Kind() == reflect.Pointer {
-		typ = typ.Elem()
-	}
-	if typ.Kind() != reflect.Struct {
-		return nil
-	}
-	si := getStructInfo(typ)
-	if len(si.Sensitive) == 0 {
-		return nil
-	}
-	return si.Sensitive
 }
 
 // isForceSend reports whether the field named k is listed in the ForceSendFields

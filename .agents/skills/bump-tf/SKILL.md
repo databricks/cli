@@ -72,10 +72,10 @@ Regenerate the affected test's `out*` files with `go test ./acceptance -run 'Tes
 Add a `dependency-updates` entry per the `pr-checklist` skill's "Changelog entry" section:
 
 ```
-Bump Terraform provider from v{old_version} to v{version} (#{pr_number}).
+* Bump Terraform provider from v{old_version} to v{version}. ([#{pr_number}](https://github.com/databricks/cli/pull/{pr_number}))
 ```
 
-Add it without `(#NNNN)` now; backfill the number after the PR exists, then run `./task links` to expand it into the full markdown link in place and commit the result.
+Omit the trailing PR link now (you don't have the number yet); after the PR exists, append `([#NNNN](https://github.com/databricks/cli/pull/NNNN))` after the period and commit the result.
 
 **7. Commit, push, PR.**
 Run `./task fmt` and `./task lint-q` (if either touches `acceptance/`, a fixture is wrong, so fix the source rather than editing output).

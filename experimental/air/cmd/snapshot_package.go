@@ -39,7 +39,7 @@ func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outpu
 // top-level entry. When includePaths is set, only those paths (nested under the
 // directory name) are archived. .git and macOS AppleDouble files are always
 // excluded; a .gitignore at repoPath is honored.
-func createPlainTarball(ctx context.Context, repoPath, outputTarball string, includePaths []string) error {
+func createPlainTarball(ctx context.Context, repoPath, outputTarball string, includePaths []string, isGitRepo bool) error {
 	dirName := filepath.Base(repoPath)
 	// Absolute so it resolves correctly regardless of tar's working dir (set below).
 	parent, err := filepath.Abs(filepath.Dir(repoPath))
@@ -58,7 +58,7 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, inc
 	}
 	outName := filepath.Base(outputTarball)
 
-	files, err := snapshotFiles(ctx, repoPath, includePaths)
+	files, err := snapshotFiles(ctx, repoPath, includePaths, isGitRepo)
 	if err != nil {
 		return err
 	}
@@ -84,9 +84,9 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, inc
 	return nil
 }
 
-func snapshotFiles(ctx context.Context, repoPath string, includePaths []string) ([]string, error) {
+func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, isGitRepo bool) ([]string, error) {
 	args := []string{"-C", repoPath, "ls-files", "-z", "--cached", "--others", "--exclude-standard"}
-	if !newGitRepo(repoPath).isRepository(ctx) {
+	if !isGitRepo {
 		gitDir, err := os.MkdirTemp("", "air-snapshot-git-")
 		if err != nil {
 			return nil, fmt.Errorf("failed to create temporary git metadata: %w", err)

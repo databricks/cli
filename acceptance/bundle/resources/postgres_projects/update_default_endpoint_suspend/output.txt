@@ -29,7 +29,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "uid": "[UUID]"
 }
 
-=== Change default_endpoint_settings.suspend_timeout_duration: both engines plan it, only terraform applies it
+=== Change default_endpoint_settings.suspend_timeout_duration and re-deploy
 >>> update_file.py databricks.yml suspend_timeout_duration: 300s suspend_timeout_duration: 600s
 
 >>> [CLI] bundle plan
@@ -39,9 +39,36 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-project-default-suspend-[UNIQUE_NAME]/default/files...
+Updated postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
 >>> print_requests.py --del-body project_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "project_id": "test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
+      "suspend_timeout_duration": "600s"
+    },
+    "display_name": "Test Project for Default Endpoint Suspend Update",
+    "enable_pg_native_login": false,
+    "history_retention_duration": "604800s",
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "project_id": "test-pg-proj-[UNIQUE_NAME]",
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

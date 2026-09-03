@@ -1,1 +1,0 @@
-Fixed the direct engine silently ignoring edits to duration and timestamp fields, such as a Lakebase endpoint's `suspend_timeout_duration`. Such a change planned `0 to change` and was never applied.
