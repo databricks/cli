@@ -1,38 +1,44 @@
-#!/usr/bin/env python3
-"""Snapshot the typed public API surface of databricks.bundles.core, for regression-guarding.
+"""Regression guard for the typed public API surface of databricks.bundles.core.
 
-Usage (from the acceptance script in this directory, inside the databricks-bundles uv env):
+The core wiring — Resources, the *_mutator functions, the _ResourceType registry,
+__all__ — is hand-written (the resource namespaces are pydabs-codegen output, already
+guarded by generate-check). This snapshots the core public surface to a golden file so a
+refactor can't silently drop a type hint, move a `*` marker, rename a method, or change
+the export set.
 
-    uv run --python 3.11 $UV_ARGS python dump_public_api.py
+Regenerate the golden after an intended public-API change:
 
-Why only core: the resource model namespaces (jobs, pipelines, ...) are entirely
-pydabs-codegen output, already guarded byte-for-byte by CI's `generate-check`. The core
-wiring — Resources, the *_mutator functions, the _ResourceType registry, __all__ — is
-HAND-WRITTEN and is exactly what the codegen/wiring refactor converts to generated code.
-This dumps that surface to a golden `output.txt` so the refactor (and future ones) can't
-silently drop a type hint, move a `*` marker, rename a method, or change the export set.
+    UPDATE_SNAPSHOTS=1 uv run pytest databricks_tests/core/test_public_api.py
 
-Determinism notes:
+Determinism / version notes:
   * Types are rendered by their PUBLIC SHORT NAME (`Variable[str]`, `Location`, `None`)
-    rather than `inspect`/`repr`'s fully-qualified internal module path
-    (`databricks.bundles.core._variable.Variable`). This is deliberate: the refactor moves
-    internal modules around, and a golden keyed on internal paths would fail even when the
-    public API is unchanged. Short names change only when the public type actually changes.
-  * Signatures are reconstructed from `inspect.Signature` (not its string form) so
-    positional-only `/`, keyword-only `*`, `*args` and `**kwargs` markers render explicitly.
-  * Module symbols, methods and properties are sorted; declaration order is preserved only
-    where it is part of the contract (dataclass fields, enum members).
-  * The uv invocation pins `--python 3.11` so the golden generated locally with `-update`
-    matches CI, since resolved type reprs can differ across versions.
+    rather than repr's fully-qualified internal module path — so moving an internal
+    `_`-module doesn't perturb the golden; only a real public-API change does.
+  * Signatures are reconstructed from inspect.Signature so `/`, `*`, `*args`, `**kwargs`
+    markers render explicitly and stably.
+  * Requires Python >= 3.11 for typing.get_overloads (the *_mutator overloads). Output is
+    identical on 3.11/3.12/3.13, so the single golden holds across those versions.
 """
 
 import collections.abc
 import dataclasses
 import enum
 import inspect
+import os
 import sys
 import types
 import typing
+from pathlib import Path
+
+import pytest
+
+import databricks.bundles.core as core
+
+_GOLDEN = Path(__file__).parent / "public_api.txt"
+
+
+def _short_name(t) -> str:
+    return getattr(t, "__name__", None) or getattr(t, "_name", None) or str(t)
 
 
 def render_type(t) -> str:
@@ -62,7 +68,11 @@ def render_type(t) -> str:
                 return "Callable"
             # get_args(Callable[[int], str]) == ([int], str); [0] is the arg list.
             params, ret = args[0], args[-1]
-            params_str = "..." if params is Ellipsis else "[" + ", ".join(render_type(a) for a in params) + "]"
+            params_str = (
+                "..."
+                if params is Ellipsis
+                else "[" + ", ".join(render_type(a) for a in params) + "]"
+            )
             return "Callable[" + params_str + ", " + render_type(ret) + "]"
         name = _short_name(origin)
         if args:
@@ -72,10 +82,6 @@ def render_type(t) -> str:
     return _short_name(t)
 
 
-def _short_name(t) -> str:
-    return getattr(t, "__name__", None) or getattr(t, "_name", None) or str(t)
-
-
 def render_signature(func) -> str:
     """Reconstruct a signature string with explicit / * ** markers and short types."""
     sig = inspect.signature(func)
@@ -83,7 +89,10 @@ def render_signature(func) -> str:
     last_kind = None
     emitted_star = False
     for p in sig.parameters.values():
-        if last_kind == inspect.Parameter.POSITIONAL_ONLY and p.kind != inspect.Parameter.POSITIONAL_ONLY:
+        if (
+            last_kind == inspect.Parameter.POSITIONAL_ONLY
+            and p.kind != inspect.Parameter.POSITIONAL_ONLY
+        ):
             parts.append("/")
         if p.kind == inspect.Parameter.KEYWORD_ONLY and not emitted_star:
             parts.append("*")
@@ -116,15 +125,23 @@ def render_signature(func) -> str:
 def _bases(cls) -> str:
     # Skip object and private (underscore) bases, mirroring _members(): a generated private
     # base like _GeneratedResources is an implementation detail, not the public contract.
-    names = [b.__name__ for b in cls.__bases__ if b is not object and not b.__name__.startswith("_")]
+    names = [
+        b.__name__
+        for b in cls.__bases__
+        if b is not object and not b.__name__.startswith("_")
+    ]
     return "(" + ", ".join(names) + ")" if names else ""
 
 
 def _members(cls, predicate):
-    return sorted((name, obj) for name, obj in inspect.getmembers(cls, predicate) if not name.startswith("_"))
+    return sorted(
+        (name, obj)
+        for name, obj in inspect.getmembers(cls, predicate)
+        if not name.startswith("_")
+    )
 
 
-def render_class(name, cls, out):
+def render_class(name, cls, out: list[str]) -> None:
     if isinstance(cls, type) and issubclass(cls, enum.Enum):
         out.append(f"class {name}(Enum):")
         for member in cls:
@@ -157,11 +174,12 @@ def render_class(name, cls, out):
     out.append("")
 
 
-def render_symbol(name, obj, out):
+def render_symbol(name, obj, out: list[str]) -> None:
     if inspect.isclass(obj):
         render_class(name, obj, out)
     elif inspect.isfunction(obj):
-        overloads = typing.get_overloads(obj)
+        # typing.get_overloads is 3.11+; the test is skipped below on older versions.
+        overloads = typing.get_overloads(obj) if sys.version_info >= (3, 11) else []
         for ov in overloads:
             out.append(f"@overload def {name}{render_signature(ov)}")
         out.append(f"def {name}{render_signature(obj)}")
@@ -172,9 +190,9 @@ def render_symbol(name, obj, out):
         out.append("")
 
 
-def render_registry(out):
+def render_registry(out: list[str]) -> None:
     # _ResourceType is intentionally not exported from core, but the registry it builds is
-    # part of the wiring the refactor regenerates, so snapshot it too.
+    # part of the wiring a refactor regenerates, so snapshot it too.
     from databricks.bundles.core._resource_type import _ResourceType
 
     out.append("== _ResourceType.all() registry ==")
@@ -185,9 +203,7 @@ def render_registry(out):
     out.append("")
 
 
-def main():
-    import databricks.bundles.core as core
-
+def dump_core_public_api() -> str:
     out = ["== module databricks.bundles.core =="]
     out.append("__all__ = [")
     for name in sorted(core.__all__):
@@ -200,8 +216,17 @@ def main():
 
     render_registry(out)
 
-    sys.stdout.write("\n".join(out) + "\n")
+    return "\n".join(out) + "\n"
 
 
-if __name__ == "__main__":
-    main()
+@pytest.mark.skipif(
+    sys.version_info < (3, 11), reason="typing.get_overloads requires Python 3.11+"
+)
+def test_core_public_api():
+    actual = dump_core_public_api()
+    if os.environ.get("UPDATE_SNAPSHOTS"):
+        _GOLDEN.write_text(actual)
+    assert actual == _GOLDEN.read_text(), (
+        "databricks.bundles.core public API changed. If intended, regenerate with "
+        "UPDATE_SNAPSHOTS=1 uv run pytest databricks_tests/core/test_public_api.py"
+    )
