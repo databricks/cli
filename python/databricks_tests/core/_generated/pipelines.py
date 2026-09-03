@@ -37,7 +37,6 @@ def _test_case():
                 "libraries": [{}],
                 "lifecycle": {},
                 "notifications": [{}],
-                "parameters": {"key": "value"},
                 "permissions": [{"level": "CAN_MANAGE"}],
                 "run_as": {},
                 "tags": {"key": "value"},
@@ -52,7 +51,6 @@ def _test_case():
                 libraries=[PipelineLibrary()],
                 lifecycle=Lifecycle(),
                 notifications=[Notifications()],
-                parameters={"key": "value"},
                 permissions=[
                     PipelinePermission(level=PipelinePermissionLevel.CAN_MANAGE)
                 ],

@@ -26,7 +26,6 @@ from databricks.bundles.jobs._models.lifecycle import Lifecycle
 from databricks.bundles.jobs._models.performance_target import PerformanceTarget
 from databricks.bundles.jobs._models.queue_settings import QueueSettings
 from databricks.bundles.jobs._models.task import Task
-from databricks.bundles.jobs._models.trigger_configuration import TriggerConfiguration
 from databricks.bundles.jobs._models.trigger_settings import TriggerSettings
 from databricks.bundles.jobs._models.webhook_notifications import WebhookNotifications
 from databricks_tests.core._resource_test_case import TestCase
@@ -57,7 +56,6 @@ def _test_case():
                 "tags": {"key": "value"},
                 "tasks": [{"task_key": "task_key"}],
                 "trigger": {},
-                "triggers": [{}],
                 "webhook_notifications": {},
             },
             dataclass_example=Job(
@@ -83,7 +81,6 @@ def _test_case():
                 tags={"key": "value"},
                 tasks=[Task(task_key="task_key")],
                 trigger=TriggerSettings(),
-                triggers=[TriggerConfiguration()],
                 webhook_notifications=WebhookNotifications(),
             ),
             mutator=job_mutator,
