@@ -8,18 +8,18 @@
 #
 # Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
 
-definition                                   absent     v1         BASE_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: 'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
-definition                                   absent     v2         BASE_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: 'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
-definition                                   v1         absent     BACKEND_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: 'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
-definition                                   v2         absent     BACKEND_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: 'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
-libraries[0].jar                             absent     dbfs:/FileStore/a.jar BASE_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: Unknown library (400 INVALID_PARAMETER_VALUE)
-libraries[0].jar                             absent     dbfs:/FileStore/b.jar BASE_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: Unknown library (400 INVALID_PARAMETER_VALUE)
-libraries[0].jar                             dbfs:/FileStore/a.jar absent     BACKEND_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: Unknown library (400 INVALID_PARAMETER_VALUE)
-libraries[0].jar                             dbfs:/FileStore/b.jar absent     BACKEND_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: Unknown library (400 INVALID_PARAMETER_VALUE)
-name                                         absent     x-UNIQUE   BASE_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: 'name' must be supplied. (400 INVALID_PARAMETER_VALUE)
-name                                         absent     y-UNIQUE   BASE_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: 'name' must be supplied. (400 INVALID_PARAMETER_VALUE)
-name                                         x-UNIQUE   absent     BACKEND_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: 'name' must be supplied. (400 INVALID_PARAMETER_VALUE)
-name                                         y-UNIQUE   absent     BACKEND_ERROR  cannot update resources.cluster_policies.foo: updating id=[ID]: 'name' must be supplied. (400 INVALID_PARAMETER_VALUE)
+definition                                   absent     v1         BASE_ERROR  'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
+definition                                   absent     v2         BASE_ERROR  'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
+definition                                   v1         absent     BACKEND_ERROR  'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
+definition                                   v2         absent     BACKEND_ERROR  'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
+libraries[0].jar                             absent     dbfs:/FileStore/a.jar BASE_ERROR  Unknown library (400 INVALID_PARAMETER_VALUE)
+libraries[0].jar                             absent     dbfs:/FileStore/b.jar BASE_ERROR  Unknown library (400 INVALID_PARAMETER_VALUE)
+libraries[0].jar                             dbfs:/FileStore/a.jar absent     BACKEND_ERROR  Unknown library (400 INVALID_PARAMETER_VALUE)
+libraries[0].jar                             dbfs:/FileStore/b.jar absent     BACKEND_ERROR  Unknown library (400 INVALID_PARAMETER_VALUE)
+name                                         absent     x-UNIQUE   BASE_ERROR  'name' must be supplied. (400 INVALID_PARAMETER_VALUE)
+name                                         absent     y-UNIQUE   BASE_ERROR  'name' must be supplied. (400 INVALID_PARAMETER_VALUE)
+name                                         x-UNIQUE   absent     BACKEND_ERROR  'name' must be supplied. (400 INVALID_PARAMETER_VALUE)
+name                                         y-UNIQUE   absent     BACKEND_ERROR  'name' must be supplied. (400 INVALID_PARAMETER_VALUE)
 
 === summary
 OK                 22
