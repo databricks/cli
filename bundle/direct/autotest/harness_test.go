@@ -394,16 +394,6 @@ func nodeAction(plan *deployplan.Plan, node string) deployplan.ActionType {
 	return entry.Action
 }
 
-// hasDrift reports whether any node still has work planned.
-func hasDrift(plan *deployplan.Plan) bool {
-	for _, entry := range plan.Plan {
-		if entry.Action != deployplan.Skip {
-			return true
-		}
-	}
-	return false
-}
-
 // edit runs fn over the typed resource under test and syncs the result back into the
 // dynamic tree, which is what the planner reads (config.Root.GetResourceConfig). Enter
 // and exit around a typed edit is the same contract every bundle mutator follows.
@@ -880,14 +870,6 @@ func (h *bundleHarness) deployFrom(snapshot []byte) bool {
 	h.restore(snapshot)
 	_, diags := h.deploy()
 	return !diags.HasError()
-}
-
-func (h *bundleHarness) converged() bool {
-	if _, diags := h.deploy(); diags.HasError() {
-		return false
-	}
-	plan, diags := h.readPlan()
-	return !diags.HasError() && plan != nil && !hasDrift(plan)
 }
 
 // tolerantT wraps a *testing.T for the fake server. This suite deliberately drives the
