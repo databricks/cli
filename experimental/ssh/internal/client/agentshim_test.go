@@ -1,12 +1,15 @@
 package client
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -16,16 +19,88 @@ import (
 
 func TestPrependPath(t *testing.T) {
 	t.Setenv("PATH", strings.Join([]string{"/a", "/b"}, string(os.PathListSeparator)))
-	prependPath("/b") // existing entry moves to the front (deduped)
+	prependPath(t.Context(), "/b") // existing entry moves to the front (deduped)
 	assert.Equal(t, []string{"/b", "/a"}, filepath.SplitList(os.Getenv("PATH")))
-	prependPath("/new")
+	prependPath(t.Context(), "/new")
 	assert.Equal(t, []string{"/new", "/b", "/a"}, filepath.SplitList(os.Getenv("PATH")))
 }
 
 func TestRemovePath(t *testing.T) {
 	t.Setenv("PATH", strings.Join([]string{"/a", "/b", "/a"}, string(os.PathListSeparator)))
-	removePath("/a")
+	removePath(t.Context(), "/a")
 	assert.Equal(t, []string{"/b"}, filepath.SplitList(os.Getenv("PATH")))
+}
+
+func TestAcquireSetupLock(t *testing.T) {
+	home := t.TempDir()
+	lockPath := filepath.Join(home, agentDir, setupLockName)
+
+	// Acquire creates the sentinel; release removes it.
+	unlock, err := acquireSetupLock(t.Context(), home)
+	require.NoError(t, err)
+	_, statErr := os.Stat(lockPath)
+	require.NoError(t, statErr, "lock sentinel should exist while held")
+	unlock()
+	_, statErr = os.Stat(lockPath)
+	assert.True(t, os.IsNotExist(statErr), "lock sentinel should be gone after release")
+
+	// A lock left behind by a dead process is reclaimed once stale, not waited on
+	// forever.
+	require.NoError(t, os.WriteFile(lockPath, nil, 0o644))
+	stale := time.Now().Add(-2 * setupLockStaleAfter)
+	require.NoError(t, os.Chtimes(lockPath, stale, stale))
+	unlock2, err := acquireSetupLock(t.Context(), home)
+	require.NoError(t, err)
+	unlock2()
+}
+
+func TestNodeDownloadArch(t *testing.T) {
+	assert.Equal(t, "x64", nodeDownloadArch("amd64"))
+	assert.Equal(t, "arm64", nodeDownloadArch("arm64"))
+	assert.Empty(t, nodeDownloadArch("mips"))
+}
+
+func TestLatestNodeTarball(t *testing.T) {
+	gzSum, x64Sum, armSum := strings.Repeat("0", 64), strings.Repeat("a", 64), strings.Repeat("b", 64)
+	body := gzSum + "  node-v24.1.0-linux-x64.tar.gz\n" + // .gz is skipped (want .xz)
+		x64Sum + "  node-v24.1.0-linux-x64.tar.xz\n" +
+		armSum + "  node-v24.1.0-linux-arm64.tar.xz\n"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(body))
+	}))
+	defer srv.Close()
+
+	name, sum, err := latestNodeTarball(t.Context(), srv.URL, "x64")
+	require.NoError(t, err)
+	assert.Equal(t, "node-v24.1.0-linux-x64.tar.xz", name)
+	assert.Equal(t, x64Sum, sum)
+
+	_, _, err = latestNodeTarball(t.Context(), srv.URL, "ppc64le")
+	assert.Error(t, err)
+}
+
+func TestDownloadVerified(t *testing.T) {
+	payload := []byte("fake node tarball")
+	sum := sha256.Sum256(payload)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write(payload)
+	}))
+	defer srv.Close()
+
+	t.Run("matching checksum writes the file", func(t *testing.T) {
+		path, err := downloadVerified(t.Context(), srv.URL, hex.EncodeToString(sum[:]))
+		require.NoError(t, err)
+		defer os.Remove(path)
+		got, err := os.ReadFile(path)
+		require.NoError(t, err)
+		assert.Equal(t, payload, got)
+	})
+
+	t.Run("mismatched checksum errors and leaves no file", func(t *testing.T) {
+		_, err := downloadVerified(t.Context(), srv.URL, strings.Repeat("0", 64))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "checksum mismatch")
+	})
 }
 
 func TestSupportedAgents(t *testing.T) {
@@ -57,7 +132,7 @@ func TestInjectAgentContext(t *testing.T) {
 
 	t.Run("flag agent writes a scratch file and returns the flag", func(t *testing.T) {
 		home := t.TempDir()
-		args, err := injectAgentContext(home, claude)
+		args, err := injectAgentContext(t.Context(), home, claude)
 		require.NoError(t, err)
 		require.Len(t, args, 2)
 		assert.Equal(t, "--append-system-prompt-file", args[0])
@@ -68,7 +143,7 @@ func TestInjectAgentContext(t *testing.T) {
 
 	t.Run("home-file agent writes the global instructions file, no args", func(t *testing.T) {
 		home := t.TempDir()
-		args, err := injectAgentContext(home, codex)
+		args, err := injectAgentContext(t.Context(), home, codex)
 		require.NoError(t, err)
 		assert.Nil(t, args)
 		data, err := os.ReadFile(filepath.Join(home, ".codex", "AGENTS.md"))
@@ -81,7 +156,7 @@ func TestInjectAgentContext(t *testing.T) {
 		target := filepath.Join(home, ".codex", "AGENTS.md")
 		require.NoError(t, os.MkdirAll(filepath.Dir(target), 0o755))
 		require.NoError(t, os.WriteFile(target, []byte("user's own instructions"), 0o644))
-		args, err := injectAgentContext(home, codex)
+		args, err := injectAgentContext(t.Context(), home, codex)
 		require.NoError(t, err)
 		assert.Nil(t, args)
 		data, err := os.ReadFile(target)
@@ -91,7 +166,7 @@ func TestInjectAgentContext(t *testing.T) {
 
 	t.Run("agent without a mechanism writes nothing", func(t *testing.T) {
 		home := t.TempDir()
-		args, err := injectAgentContext(home, noContext)
+		args, err := injectAgentContext(t.Context(), home, noContext)
 		require.NoError(t, err)
 		assert.Nil(t, args)
 		entries, err := os.ReadDir(home)
@@ -233,6 +308,16 @@ func TestProbeAIGateway(t *testing.T) {
 		err := probeAIGateway(t.Context(), newProbeClient(t, srv.URL))
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "not enabled on this workspace")
+	})
+
+	t.Run("transient failure (5xx both) is retryable, not disabled", func(t *testing.T) {
+		unavailable := jsonHandler(http.StatusServiceUnavailable, `{"message":"try later"}`)
+		srv := newGatewayServer(t, unavailable, unavailable)
+		defer srv.Close()
+		err := probeAIGateway(t.Context(), newProbeClient(t, srv.URL))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "transient error")
+		assert.NotContains(t, err.Error(), "not enabled")
 	})
 }
 
