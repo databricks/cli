@@ -14,11 +14,12 @@ import re
 import sys
 from pathlib import Path
 
-import yaml
-
 
 def parse_apitypes(generated_path, override_path):
     """Parse apitypes.generated.yml and override with apitypes.yml."""
+    # Imported here so the module stays importable (for doctests) without pyyaml.
+    import yaml
+
     result = yaml.safe_load(generated_path.read_text()) or {}
 
     # Override with non-generated apitypes.yml (null values remove entries)
