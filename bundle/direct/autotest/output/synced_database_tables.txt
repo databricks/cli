@@ -8,12 +8,12 @@
 #
 # Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
 
-database_instance_name                       absent     x          DEPLOY_ERROR  cannot recreate resources.synced_database_tables.foo: database instance with name 'x' not found (404 UNKNOWN)
-database_instance_name                       absent     y          DEPLOY_ERROR  cannot recreate resources.synced_database_tables.foo: database instance with name 'y' not found (404 UNKNOWN)
-database_instance_name                       x          absent     BASE_ERROR  cannot recreate resources.synced_database_tables.foo: database instance with name 'x' not found (404 UNKNOWN)
-database_instance_name                       x          y          BASE_ERROR  cannot recreate resources.synced_database_tables.foo: database instance with name 'x' not found (404 UNKNOWN)
-database_instance_name                       y          absent     BASE_ERROR  cannot recreate resources.synced_database_tables.foo: database instance with name 'y' not found (404 UNKNOWN)
-database_instance_name                       y          x          BASE_ERROR  cannot recreate resources.synced_database_tables.foo: database instance with name 'y' not found (404 UNKNOWN)
+database_instance_name                       absent     x          DEPLOY_ERROR  database instance with name 'x' not found (404 UNKNOWN)
+database_instance_name                       absent     y          DEPLOY_ERROR  database instance with name 'y' not found (404 UNKNOWN)
+database_instance_name                       x          absent     BASE_ERROR  database instance with name 'x' not found (404 UNKNOWN)
+database_instance_name                       x          y          BASE_ERROR  database instance with name 'x' not found (404 UNKNOWN)
+database_instance_name                       y          absent     BASE_ERROR  database instance with name 'y' not found (404 UNKNOWN)
+database_instance_name                       y          x          BASE_ERROR  database instance with name 'y' not found (404 UNKNOWN)
 
 === summary
 OK_RECREATE        68
