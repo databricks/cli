@@ -7,48 +7,12 @@ Created jobs.my_job
 Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //jobs //artifacts/.internal --sort --del-field raw_body
+>>> print_requests.py //artifacts/.internal --del-field raw_body
 {
   "method": "POST",
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-not-uploaded/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl",
   "q": {
     "overwrite": "true"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/create",
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/whl-not-uploaded/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "whl-not-uploaded-job",
-    "queue": {
-      "enabled": true
-    },
-    "tasks": [
-      {
-        "libraries": [
-          {
-            "whl": "/Workspace/Users/[USERNAME]/.bundle/whl-not-uploaded/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
-          }
-        ],
-        "new_cluster": {
-          "node_type_id": "Standard_DS3_v2",
-          "num_workers": 1,
-          "spark_version": "15.4.x-scala2.12"
-        },
-        "python_wheel_task": {
-          "entry_point": "run",
-          "package_name": "my_test_code"
-        },
-        "task_key": "main"
-      }
-    ]
   }
 }
 
@@ -69,43 +33,7 @@ Created jobs.my_job
 Files: 7 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //jobs //artifacts/.internal --sort --del-field raw_body
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/create",
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/whl-not-uploaded/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "whl-not-uploaded-job",
-    "queue": {
-      "enabled": true
-    },
-    "tasks": [
-      {
-        "libraries": [
-          {
-            "whl": "/Workspace/Users/[USERNAME]/.bundle/whl-not-uploaded/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
-          }
-        ],
-        "new_cluster": {
-          "node_type_id": "Standard_DS3_v2",
-          "num_workers": 1,
-          "spark_version": "15.4.x-scala2.12"
-        },
-        "python_wheel_task": {
-          "entry_point": "run",
-          "package_name": "my_test_code"
-        },
-        "task_key": "main"
-      }
-    ]
-  }
-}
+>>> print_requests.py //artifacts/.internal --del-field raw_body
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

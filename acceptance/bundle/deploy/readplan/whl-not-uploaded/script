@@ -6,9 +6,9 @@
 
 title "bundle deploy uploads the wheel"
 trace $CLI bundle deploy
-# The job references the wheel path, and an import-file request uploaded it there.
+# An import-file request uploaded the wheel to its .../artifacts/.internal/ workspace path.
 # raw_body is the wheel's binary payload; drop it to keep the golden readable.
-trace print_requests.py //jobs //artifacts/.internal --sort --del-field raw_body
+trace print_requests.py //artifacts/.internal --del-field raw_body
 
 trace $CLI bundle destroy --auto-approve
 # Discard destroy's requests so the saved-plan deploy below starts from a clean recording.
@@ -17,9 +17,9 @@ rm out.requests.txt
 title "bundle deploy --plan does NOT upload the wheel (bug)"
 trace $CLI bundle plan -o json > out.plan.json
 trace $CLI bundle deploy --plan out.plan.json
-# BUG: the same .../artifacts/.internal/*.whl upload is missing here. Only jobs/create
-# appears, still pointing the task at a wheel path that was never uploaded.
-trace print_requests.py //jobs //artifacts/.internal --sort --del-field raw_body
+# BUG: no import-file request for the wheel here (output below is empty), yet the job was
+# created pointing the task at the same .../artifacts/.internal/ path that was never uploaded.
+trace print_requests.py //artifacts/.internal --del-field raw_body
 
 trace $CLI bundle destroy --auto-approve
 rm out.requests.txt

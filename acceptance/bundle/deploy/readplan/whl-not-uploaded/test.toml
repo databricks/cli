@@ -1,3 +1,5 @@
+Badness = "bundle deploy --plan skips the build phase, so a local wheel referenced by a job is never uploaded and the job fails at runtime."
+
 # --plan is direct-engine only.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 RecordRequests = true
