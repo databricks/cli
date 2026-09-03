@@ -30,6 +30,12 @@ fields:
   compute_size: [MEDIUM, LARGE]
 
 skip:
+  # A rename recreates the app, and a real workspace holds a deleted app's name for up to twenty
+  # minutes while it sits in DELETING -- so the chain of transitions hits "An app with the same name
+  # already exists" as soon as it returns to a name an earlier transition used. The mock server deletes
+  # outright when the suite asks it to, which is why the chain works locally.
+  name: a deleted app keeps its name reserved, so a rename cannot reuse an earlier one
+
   # Starting an app deploys its source, and "Invalid source code path: .../files/app. Path does not
   # exist": this suite uploads no bundle files -- a sync per permutation would dominate the run -- so
   # the directory the app points at is never there. The mock server does not check, which is the only
