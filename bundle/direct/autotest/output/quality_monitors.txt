@@ -16,7 +16,7 @@ latest_monitor_failure_msg                   y          x          POST_DEPLOY_D
 === summary
 OK                 100
 OK_RECREATE        4
-SUPPRESSED         6
-NOT_OBSERVABLE     4
+SUPPRESSED         7
+NOT_OBSERVABLE     3
 POST_DEPLOY_DRIFT  4
 SKIPPED            1
