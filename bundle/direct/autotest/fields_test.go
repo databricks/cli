@@ -278,18 +278,24 @@ func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClie
 			rep.add(result{"(rebuild)", "", "", verdictBaseError, oneLine(broken.Error()), broken.Error()})
 			return
 		}
-		// Put the field back and confirm the resource converged. A field the API cannot
-		// clear leaves it drifted for good, which would otherwise be blamed on every
-		// field tested afterwards -- so start over on a fresh resource. A new name is
-		// what makes that cheap: reusing the old one waits out an asynchronous delete.
+		// Put the field back and see whether the resource came back with it. A field the API will not
+		// clear leaves it drifted for good, and that drift is then blamed on every field tested
+		// afterwards -- so a resource that will not return to base is replaced.
+		//
+		// A deploy that still succeeds is the cheap case, and the common one: the field is drifting but
+		// the resource works, so the drift goes into the baseline and the resource is kept. Rebuilding
+		// on drift alone cost an app per non-converging field -- 31 in one run, on a workspace that
+		// allows 100 and is shared -- and a rebuild is only worth it when the next deploy would fail.
 		h.restore(base)
-		if !h.converged() {
+		if _, diags := h.deploy(); diags.HasError() {
 			rebuilt, err := rebuild(owner, ctx, client, user, resourceType, fv, h)
 			if err != nil {
 				rep.add(result{f.path, "", "", verdictBaseError, oneLine(err.Error()), err.Error()})
 				return
 			}
 			h, base, baseline = rebuilt, rebuilt.snapshot(), remeasure(rebuilt, baseline, rep)
+		} else if !h.converged() {
+			baseline = remeasure(h, baseline, rep)
 		}
 	}
 }
