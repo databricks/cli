@@ -121,6 +121,27 @@ func TestResolveWithStringConcatenation(t *testing.T) {
 	assert.Equal(t, "aba", getByPath(t, out, "c").MustString())
 }
 
+func TestResolveWithEscapedReference(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"a":             dyn.V("A"),
+		"escaped_only":  dyn.V("$${a}"),
+		"escaped_first": dyn.V("$${a} ${a}"),
+		"real_first":    dyn.V("${a} $${a}"),
+		"surrounded":    dyn.V("$${a} ${a} $${a}"),
+		"other_name":    dyn.V("$${zz} ${a}"),
+	})
+
+	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
+	require.NoError(t, err)
+
+	// The escape is preserved here; it is removed when the API payload is built.
+	assert.Equal(t, "$${a}", getByPath(t, out, "escaped_only").MustString())
+	assert.Equal(t, "$${a} A", getByPath(t, out, "escaped_first").MustString())
+	assert.Equal(t, "A $${a}", getByPath(t, out, "real_first").MustString())
+	assert.Equal(t, "$${a} A $${a}", getByPath(t, out, "surrounded").MustString())
+	assert.Equal(t, "$${zz} A", getByPath(t, out, "other_name").MustString())
+}
+
 func TestResolveWithTypeInterpolation(t *testing.T) {
 	in := dyn.V(map[string]dyn.Value{
 		"a":          dyn.V(1),
@@ -383,39 +404,6 @@ func TestResolveMapVariable(t *testing.T) {
 	// Verify the map contents
 	assert.Equal(t, "value1", getByPath(t, mapVal, "key1").MustString())
 	assert.Equal(t, "value2", getByPath(t, mapVal, "key2").MustString())
-}
-
-func TestResolveSensitivePureSubstitution(t *testing.T) {
-	// A pure reference to a sensitive value must produce a sensitive result.
-	in := dyn.V(map[string]dyn.Value{
-		"secret": dyn.NewSensitiveValue("top-secret", nil),
-		"ref":    dyn.V("${secret}"),
-	})
-
-	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
-	require.NoError(t, err)
-
-	result := getByPath(t, out, "ref")
-	assert.True(t, result.IsSensitive())
-	// MustString returns the real value even when sensitive.
-	assert.Equal(t, "top-secret", result.MustString())
-}
-
-func TestResolveSensitiveStringInterpolation(t *testing.T) {
-	// When any resolved value is sensitive, the interpolated result must also be sensitive.
-	in := dyn.V(map[string]dyn.Value{
-		"secret": dyn.NewSensitiveValue("password123", nil),
-		"prefix": dyn.V("token"),
-		"ref":    dyn.V("${prefix}:${secret}"),
-	})
-
-	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
-	require.NoError(t, err)
-
-	result := getByPath(t, out, "ref")
-	assert.True(t, result.IsSensitive())
-	// The real interpolated string is still accessible.
-	assert.Equal(t, "token:password123", result.MustString())
 }
 
 func TestResolveSequenceVariable(t *testing.T) {

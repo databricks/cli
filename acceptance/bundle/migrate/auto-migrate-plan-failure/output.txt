@@ -1,0 +1,55 @@
+
+=== Initial deploy on terraform
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.test_job
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_migration_telemetry
+direct_drymigrate_success true
+direct_drymigrate_warnings false
+
+=== Inject GET failure so the plan check blocks the migration
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Warn: Direct engine selected via DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Warn: post-deploy dry-run migration to direct: cannot plan resources.jobs.test_job: reading id="[NUMID]": Fault injected by test. (403 INJECTED): Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[NUMID]
+HTTP Status: 403 Forbidden
+API error_code: INJECTED
+API message: Fault injected by test.
+Warn: post-deploy dry-run migration to direct: planning failed
+Warn: The warnings above are from a dry-run migration to the direct deployment engine (https://docs.databricks.com/aws/en/dev-tools/bundles/direct).
+Your deployment is not affected and works normally, but you may experience these issues when migrating to the direct deployment engine.
+Please forward these warnings to dabs-feedback@databricks.com
+Warn: Direct engine was selected but the migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.
+
+>>> print_migration_telemetry
+direct_migrate_plan_error true
+
+=== Local state was NOT rewritten (still terraform)
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate
+
+=== Retry: plan check passes this time, migration succeeds
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Warn: Direct engine selected via DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Migrating state to direct deployment engine (selected via DATABRICKS_BUNDLE_ENGINE environment variable)...
+Migrated 1 resource to direct deployment engine.
+
+>>> print_migration_telemetry
+direct_migrated_via_env true
+
+=== Local state is now direct
+>>> find .databricks/bundle -name resources.json -type f
+.databricks/bundle/default/resources.json
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate.backup
