@@ -416,17 +416,17 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 		action deployplan.ActionType
 		reason string
 	}{
-		{"cleared lifecycle", "lifecycle", lifecycle, nil, deployplan.Skip, "trigger removed"},
+		{"cleared lifecycle", "lifecycle", lifecycle, nil, deployplan.Recreate, deployplan.ReasonDrop},
 		{"added lifecycle", "lifecycle", nil, lifecycle, deployplan.Recreate, ""},
 		{"changed lifecycle", "lifecycle", lifecycle, lifecycle, deployplan.Recreate, deployplan.ReasonDrop},
-		{"cleared on_bundle_deploy string", "lifecycle.triggers_state.on_bundle_deploy", "uuid", "", deployplan.Skip, "trigger removed"},
-		{"nil on_bundle_deploy", "lifecycle.triggers_state.on_bundle_deploy", "uuid", nil, deployplan.Skip, "trigger removed"},
+		{"cleared on_bundle_deploy string", "lifecycle.triggers_state.on_bundle_deploy", "uuid", "", deployplan.Recreate, deployplan.ReasonDrop},
+		{"nil on_bundle_deploy", "lifecycle.triggers_state.on_bundle_deploy", "uuid", nil, deployplan.Recreate, deployplan.ReasonDrop},
 		{"rotated on_bundle_deploy", "lifecycle.triggers_state.on_bundle_deploy", "old-uuid", "new-uuid", deployplan.Recreate, ""},
-		{"cleared on_file_change", "lifecycle.triggers_state.on_file_change", map[string]string{"*.txt": "hash"}, nil, deployplan.Skip, "trigger removed"},
+		{"cleared on_file_change", "lifecycle.triggers_state.on_file_change", map[string]string{"*.txt": "hash"}, nil, deployplan.Recreate, deployplan.ReasonDrop},
 		{"empty on_file_change maps", "lifecycle.triggers_state.on_file_change", map[string]string{}, map[string]string{}, deployplan.Recreate, deployplan.ReasonDrop},
 		{"added on_file_change map", "lifecycle.triggers_state.on_file_change", nil, map[string]string{"*.txt": "hash"}, deployplan.Recreate, ""},
 		{"changed on_file_change map", "lifecycle.triggers_state.on_file_change", map[string]string{"*.txt": "old"}, map[string]string{"*.txt": "new"}, deployplan.Recreate, deployplan.ReasonDrop},
-		{"cleared on_file_change pattern", "lifecycle.triggers_state.on_file_change['*.txt']", "hash", nil, deployplan.Skip, "trigger removed"},
+		{"cleared on_file_change pattern", "lifecycle.triggers_state.on_file_change['*.txt']", "hash", nil, deployplan.Recreate, deployplan.ReasonDrop},
 		{"changed on_file_change pattern", "lifecycle.triggers_state.on_file_change['*.txt']", "old", "new", deployplan.Recreate, ""},
 		{"result_state with unreadable remote", "result_state", jobs.RunResultStateSuccess, nil, deployplan.Recreate, ""},
 	} {
@@ -435,7 +435,6 @@ func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 			require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath(tt.path), change, nil))
 			assert.Equal(t, tt.action, change.Action)
 			assert.Equal(t, tt.reason, change.Reason)
-			assert.Equal(t, tt.reason == "trigger removed", change.PersistState)
 		})
 	}
 }

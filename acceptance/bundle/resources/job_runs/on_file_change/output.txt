@@ -177,10 +177,27 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //jobs/run-now
 
-=== re-adding on_file_change re-fires
+=== re-adding on_file_change does not re-fire an unchanged file
 >>> print_state.py
-null
+{
+  "triggers_state": {
+    "on_file_change": {
+      "seed.txt": "[FILE_HASH][1]"
+    }
+  }
+}
 
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //jobs/run-now
+
+=== editing the file while re-armed re-fires
 >>> [CLI] bundle plan
 recreate job_runs.my_run
 
