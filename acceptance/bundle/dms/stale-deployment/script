@@ -1,0 +1,24 @@
+envsubst < empty.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Record a bundle that has no resources yet. The deployment is registered before anything is planned, so it exists even though nothing was deployed and no state file was written"
+trace DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --oneline
+trace find.py 'resources.json' --expect 0
+
+title "Add a job and deploy with recording off. The job is tracked in an ordinary state file the service knows nothing about, while the deployment from the first step is still there"
+envsubst < with-job.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+trace jq '{state_version, features, resources: (.state | keys)}' .databricks/bundle/default/resources.json
+
+title "Turning recording back on is refused. The deployment does resolve, but this state was never recorded, so letting the service be authoritative would create the job a second time"
+musterr trace DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true $CLI bundle deploy
+
+title "The job is still tracked by the state file, and nothing was recorded against the stale deployment"
+trace jq '{state_version, features, resources: (.state | keys)}' .databricks/bundle/default/resources.json
+trace print_requests.py --dms //api/2.0/bundle --oneline

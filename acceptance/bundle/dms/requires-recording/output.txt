@@ -15,16 +15,16 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> update_file.py databricks.yml record_deployment_history: true record_deployment_history: false
 
 >>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= [CLI] bundle deploy
-Error: this deployment was previously deployed with experimental.record_deployment_history, so the feature cannot be turned off now
+Error: unsetting experimental.record_deployment_history is not supported
 
-Set it back to true to deploy or destroy this bundle
+This deployment's resources are recorded with the deployment metadata service. Set experimental.record_deployment_history: true to deploy or destroy this bundle
 
 
 === Destroy is refused for the same reason, which is why the error says to put the setting back
 >>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= [CLI] bundle destroy --auto-approve
-Error: this deployment was previously deployed with experimental.record_deployment_history, so the feature cannot be turned off now
+Error: unsetting experimental.record_deployment_history is not supported
 
-Set it back to true to deploy or destroy this bundle
+This deployment's resources are recorded with the deployment metadata service. Set experimental.record_deployment_history: true to deploy or destroy this bundle
 
 
 === With recording back on, deploy and destroy work again
@@ -34,6 +34,60 @@ Set it back to true to deploy or destroy this bundle
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-requires-recording-[UNIQUE_NAME]/default/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.one
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-requires-recording-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+=== Destroy leaves the state file behind, but drops the marker: nothing is recorded any more, so it has nothing left to protect
+>>> jq {state_version, features, resources: (.state | keys)} .databricks/bundle/default/resources.json
+{
+  "state_version": 3,
+  "features": null,
+  "resources": []
+}
+
+=== So recording can be turned off afterwards, rather than the destroyed bundle being stuck with it forever
+>>> update_file.py databricks.yml record_deployment_history: true record_deployment_history: false
+
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-requires-recording-[UNIQUE_NAME]/default/files...
+Created jobs.one
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.one
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-requires-recording-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+=== bind and unbind are refused on a recorded state even with the setting dropped: their writes would be discarded
+>>> update_file.py databricks.yml record_deployment_history: false record_deployment_history: true
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-requires-recording-[UNIQUE_NAME]/default/files...
+Created jobs.one
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> update_file.py databricks.yml record_deployment_history: true record_deployment_history: false
+
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= [CLI] bundle deployment unbind one
+Error: unbind is not supported for a bundle that records deployment history
+
+
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY= [CLI] bundle deployment bind one [ONE_ID] --auto-approve
+Error: bind is not supported for a bundle that records deployment history
+
+
+>>> update_file.py databricks.yml record_deployment_history: false record_deployment_history: true
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

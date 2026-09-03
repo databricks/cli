@@ -2,6 +2,7 @@ package direct
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -65,9 +66,16 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	// phases.Bind and phases.Unbind refuse to run at all when recording is enabled.
 	var checkStateDB dstate.DeploymentState
 	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false), nil, ""); err == nil {
+		// The setting can be dropped from the config while the state still records the feature,
+		// which the phases-level refusal misses. The writes below would then be discarded and
+		// the command would report a bind that did not happen.
+		recorded := checkStateDB.RequiresDeploymentHistory()
 		existingID := checkStateDB.GetResourceID(resourceKey)
 		if _, err := checkStateDB.Finalize(ctx); err != nil {
 			log.Warnf(ctx, "failed to finalize state: %v", err)
+		}
+		if recorded {
+			return nil, errors.New("bind is not supported for a bundle that records deployment history")
 		}
 		if existingID != "" {
 			return nil, ErrResourceAlreadyBound{
@@ -220,6 +228,12 @@ func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey st
 	err := b.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(true), nil, "")
 	if err != nil {
 		return err
+	}
+
+	// See the note in Bind: the state's marker outlives the config setting the phases-level
+	// refusal reads, and the deletes below would be discarded.
+	if b.StateDB.RequiresDeploymentHistory() {
+		return errors.New("unbind is not supported for a bundle that records deployment history")
 	}
 
 	// Delete the main resource

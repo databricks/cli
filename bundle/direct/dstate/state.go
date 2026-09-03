@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"sync"
@@ -397,6 +398,12 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		db.stateIDs[key] = entry.ID
 	}
 
+	// Read off the committed file, before the WAL replay below changes it. Resources the WAL adds
+	// come from a deploy that was already recording, so they are not resources the service never
+	// saw; see the guard in the dmsClient block below.
+	_, fileRecorded := db.Data.Features[featureRecordDeploymentHistory]
+	fileHasResources := len(db.Data.State) > 0
+
 	walPath := db.Path + walSuffix
 	_, err = os.Stat(walPath)
 	switch {
@@ -422,7 +429,13 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		// Only empty bundles can be recorded. Once DMS owns the deployment, pre-existing
 		// resources it never saw would be created again. TODO: support migration via state
 		// upgrade with feature flag and per-resource tombstones.
-		if dmsDeploymentID == "" && len(db.Data.State) > 0 {
+		//
+		// The resources have to be ones the committed file tracked without recording them, and
+		// still tracks after recovery: a WAL that deletes them leaves nothing to clash with. The
+		// check cannot key off the deployment resolving instead - a deployment can exist while
+		// the file tracks resources it never recorded (an empty first recorded deploy creates one
+		// and writes no state), and applyDMSState below would then silently drop them.
+		if !fileRecorded && fileHasResources && len(db.Data.State) > 0 {
 			// The remedy is ordered deliberately: this error also blocks destroy, so the
 			// setting has to come out first or there is no way to tear the bundle down.
 			return fmt.Errorf(`cannot record deployment history for a bundle that already has deployed resources tracked in %s: only new deployments can be recorded
@@ -759,15 +772,7 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 // the WAL. A torn write would therefore leave a state file that Open rejects
 // next to an intact WAL it never reads.
 func (db *DeploymentState) unlockedSave() error {
-	saved := db.Data
-	if _, recorded := saved.Features[featureRecordDeploymentHistory]; recorded {
-		// The service holds the resources and is what they are read back from, so the file keeps
-		// only its header - above all the feature, which is what an unaware CLI refuses. Writing
-		// the resources too would be a second, never-read copy of the service's records.
-		saved.State = map[string]ResourceEntry{}
-	}
-
-	data, err := json.MarshalIndent(saved, "", " ")
+	data, err := json.MarshalIndent(db.dataToPersist(), "", " ")
 	if err != nil {
 		return err
 	}
@@ -801,6 +806,28 @@ func (db *DeploymentState) unlockedSave() error {
 	}
 
 	return nil
+}
+
+// dataToPersist returns what the state file should hold: db.Data itself, unless the deployment
+// records its history, in which case it is the header alone. The service holds those resources and
+// is where they are read back from, so writing them here too would be a second, never-read copy.
+// Returns a copy, leaving the in-memory state - what the rest of the deploy works from - untouched.
+func (db *DeploymentState) dataToPersist() Database {
+	data := db.Data
+	if _, recorded := data.Features[featureRecordDeploymentHistory]; !recorded {
+		return data
+	}
+
+	// A destroy leaves nothing recorded, so the marker has nothing left to protect. Keeping it
+	// would refuse every later deploy that does not record, with no way back.
+	if len(data.State) == 0 {
+		data.Features = maps.Clone(data.Features)
+		delete(data.Features, featureRecordDeploymentHistory)
+		return data
+	}
+
+	data.State = map[string]ResourceEntry{}
+	return data
 }
 
 func appendJSONLine(file *os.File, obj any) error {

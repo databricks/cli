@@ -1,0 +1,61 @@
+
+=== Record a bundle that has no resources yet. The deployment is registered before anything is planned, so it exists even though nothing was deployed and no state file was written
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-stale-deployment-[UNIQUE_NAME]/default/files...
+Files: 7 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments", "body": {"display_name": "dms-stale-deployment-[UNIQUE_NAME]", "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-stale-deployment-[UNIQUE_NAME]/default/state", "target_name": "default", "workspace_info": {"file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-stale-deployment-[UNIQUE_NAME]/default/files", "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-stale-deployment-[UNIQUE_NAME]/default"}}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "1"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
+
+>>> find.py resources.json --expect 0
+
+=== Add a job and deploy with recording off. The job is tracked in an ordinary state file the service knows nothing about, while the deployment from the first step is still there
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-stale-deployment-[UNIQUE_NAME]/default/files...
+Created jobs.one
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> jq {state_version, features, resources: (.state | keys)} .databricks/bundle/default/resources.json
+{
+  "state_version": 2,
+  "features": null,
+  "resources": [
+    "resources.jobs.one"
+  ]
+}
+
+=== Turning recording back on is refused. The deployment does resolve, but this state was never recorded, so letting the service be authoritative would create the job a second time
+>>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
+Error: cannot record deployment history for a bundle that already has deployed resources tracked in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: only new deployments can be recorded
+
+To record this bundle's history, start it over as a new deployment:
+  1. remove experimental.record_deployment_history from your bundle configuration
+  2. run "databricks bundle destroy" to delete the existing resources
+  3. add experimental.record_deployment_history back and deploy again
+
+To keep the existing resources instead, unset experimental.record_deployment_history
+
+
+=== The job is still tracked by the state file, and nothing was recorded against the stale deployment
+>>> jq {state_version, features, resources: (.state | keys)} .databricks/bundle/default/resources.json
+{
+  "state_version": 2,
+  "features": null,
+  "resources": [
+    "resources.jobs.one"
+  ]
+}
+
+>>> print_requests.py --dms //api/2.0/bundle --oneline
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.one
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-stale-deployment-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

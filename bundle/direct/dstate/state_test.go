@@ -236,6 +236,46 @@ func TestSupportedFeatureAcceptedUnknownOneNamed(t *testing.T) {
 	assert.NotContains(t, err.Error(), featureRecordDeploymentHistory)
 }
 
+// TestDataToPersistOnlyStripsRecordedState pins that the header-only write is scoped to a
+// recorded deployment: an ordinary one persists its resources untouched. It also pins that the
+// in-memory state survives, since the rest of the deploy reads from it.
+func TestDataToPersistOnlyStripsRecordedState(t *testing.T) {
+	entries := map[string]ResourceEntry{
+		"resources.jobs.my_job": {ID: "123", State: json.RawMessage(`{"name":"n"}`)},
+	}
+
+	var plain DeploymentState
+	plain.Data = NewDatabase("test-lineage", 1)
+	plain.Data.State = entries
+	assert.Equal(t, entries, plain.dataToPersist().State, "an unrecorded deployment persists its resources")
+
+	var recorded DeploymentState
+	recorded.Data = NewDatabase("test-lineage", 1)
+	recorded.Data.State = entries
+	recorded.Data.StateVersion = featureStateVersion
+	recorded.Data.Features = map[string]struct{}{featureRecordDeploymentHistory: {}}
+
+	persisted := recorded.dataToPersist()
+	assert.Empty(t, persisted.State, "a recorded deployment persists the header alone")
+	assert.Equal(t, featureStateVersion, persisted.StateVersion)
+	assert.Contains(t, persisted.Features, featureRecordDeploymentHistory)
+	assert.Equal(t, entries, recorded.Data.State, "the in-memory state is what the deploy reads, so it must not be cleared")
+}
+
+// TestDataToPersistDropsMarkerWhenNothingIsRecorded pins that a recorded state which has lost its
+// last resource - what a destroy leaves behind - stops recording the feature. Keeping it would
+// refuse every later deploy that does not record, with nothing left for the marker to protect.
+func TestDataToPersistDropsMarkerWhenNothingIsRecorded(t *testing.T) {
+	var db DeploymentState
+	db.Data = NewDatabase("test-lineage", 1)
+	db.Data.StateVersion = featureStateVersion
+	db.Data.Features = map[string]struct{}{featureRecordDeploymentHistory: {}}
+
+	persisted := db.dataToPersist()
+	assert.NotContains(t, persisted.Features, featureRecordDeploymentHistory)
+	assert.Contains(t, db.Data.Features, featureRecordDeploymentHistory, "the in-memory copy is untouched")
+}
+
 func TestDeleteState(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
