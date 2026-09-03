@@ -30,14 +30,33 @@ func (*resolveJobRunFileTriggers) Name() string {
 }
 
 func (*resolveJobRunFileTriggers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	syncable, diags := syncableRelPaths(ctx, b)
-	if diags.HasError() {
+	var diags diag.Diagnostics
+
+	// Sorted so diagnostics from several job_runs come out in a stable order.
+	names := make([]string, 0, len(b.Config.Resources.JobRuns))
+	for name, jr := range b.Config.Resources.JobRuns {
+		// A job_run declared with an empty YAML body is a nil entry here.
+		if jr != nil && jr.HasOnFileChange() {
+			names = append(names, name)
+		}
+	}
+	if len(names) == 0 {
 		return diags
 	}
-	for name, jr := range b.Config.Resources.JobRuns {
-		if jr == nil || !jr.HasOnFileChange() {
-			continue
-		}
+	slices.Sort(names)
+
+	// Listing the sync files walks the tree, so only do it once the loop above
+	// found a pattern that needs matching against it.
+	syncable, err := listSyncableRelPaths(ctx, b)
+	if err != nil {
+		return diags.Append(diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("lifecycle.triggers.on_file_change: list sync files: %s", err),
+		})
+	}
+
+	for _, name := range names {
+		jr := b.Config.Resources.JobRuns[name]
 		out := make(map[string]string)
 		for i, t := range jr.Lifecycle.Triggers {
 			if t.OnFileChange == nil {
@@ -53,30 +72,6 @@ func (*resolveJobRunFileTriggers) Apply(ctx context.Context, b *bundle.Bundle) d
 		jr.Lifecycle.TriggersState = &resources.JobRunTriggersState{OnFileChange: out}
 	}
 	return diags
-}
-
-// syncableRelPaths lists the relative paths sync would upload.
-func syncableRelPaths(ctx context.Context, b *bundle.Bundle) ([]string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	needs := false
-	for _, jr := range b.Config.Resources.JobRuns {
-		if jr != nil && jr.HasOnFileChange() {
-			needs = true
-			break
-		}
-	}
-	if !needs {
-		return nil, diags
-	}
-
-	out, err := listSyncableRelPaths(ctx, b)
-	if err != nil {
-		return nil, diags.Append(diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  fmt.Sprintf("lifecycle.triggers.on_file_change: list sync files: %s", err),
-		})
-	}
-	return out, diags
 }
 
 func listSyncableRelPaths(ctx context.Context, b *bundle.Bundle) ([]string, error) {
