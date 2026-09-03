@@ -1,0 +1,1 @@
+* Fixed `$${...}` not escaping a literal `${...}` on the direct engine, which failed with an `invalid dependency` error. ([#6484](https://github.com/databricks/cli/pull/6484), [#6489](https://github.com/databricks/cli/pull/6489))
