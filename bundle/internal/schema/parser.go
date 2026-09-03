@@ -109,6 +109,18 @@ func normalizeLaunchStage(launchStage string) (clijson.LaunchStage, error) {
 	return stage, nil
 }
 
+// parseFieldLaunchStage validates a field's contract launch stage, keeping every
+// explicit stage (GA included) so the generated schema records each field's
+// stability, not just previews. An empty stage means the contract assigns none;
+// it stays empty (unmarked) instead of defaulting to GA, so only fields the
+// contract actually stamps carry a stage.
+func parseFieldLaunchStage(launchStage string) (clijson.LaunchStage, error) {
+	if launchStage == "" {
+		return "", nil
+	}
+	return clijson.ParseLaunchStage(launchStage)
+}
+
 // notableEnumLaunchStages keeps only the enum values whose launch stage is
 // worth surfacing (i.e. not GA), so the annotation file isn't polluted with a
 // stage for every value of a GA enum. Returns nil when nothing remains.
@@ -199,7 +211,7 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type) (annotation.File
 
 			for k := range s.Properties {
 				if refProp, ok := ref.Fields[k]; ok {
-					launchStage, fieldErr := normalizeLaunchStage(refProp.LaunchStage)
+					launchStage, fieldErr := parseFieldLaunchStage(refProp.LaunchStage)
 					if fieldErr != nil {
 						stageErr = errors.Join(stageErr, fmt.Errorf("%s.%s: %w", basePath, k, fieldErr))
 					}
