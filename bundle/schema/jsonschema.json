@@ -1594,6 +1594,39 @@
                   }
                 ]
               },
+              "resources.ModelService": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "comment": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "config": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelServiceConfig"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "model_service_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "parent": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "parent",
+                      "model_service_id"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.ModelServingEndpoint": {
                 "oneOf": [
                   {
@@ -3564,6 +3597,9 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job",
                       "markdownDescription": "The job definitions for the bundle, where each key is the name of the job. See [jobs](https://docs.databricks.com/dev-tools/bundles/resources.html#jobs)."
                     },
+                    "model_services": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelService"
+                    },
                     "model_serving_endpoints": {
                       "description": "The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint",
@@ -4896,6 +4932,288 @@
                 }
               ]
             },
+            "catalog.InferenceTableConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Inference table configuration for payload logging on a model service.\n\n`parent` is always REQUIRED when the sub-message is set; the destination\nUC schema is needed to construct or rebind the payload TABLE regardless of\nwhether payload logging is currently active. Payload logging is active by\ndefault; set `disabled = true` to pause runtime logging without dropping the\ntable or the binding.",
+                  "properties": {
+                    "disabled": {
+                      "description": "[Beta] Indicates whether payload logging is disabled (opt-out). Unset means that\npayload logging is active (the on-by-default state coincides with the proto\nzero-value, so the server never fills this field for a client that leaves it\nunset). Set `disabled = true` to pause runtime logging while keeping the\nsub-message attached (preserving `parent` and `table_name_prefix` for a\nlater flip back to active). `parent` remains required either way.",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "parent": {
+                      "description": "[Beta] Parent UC schema where the inference table is created.\nFormat: `schemas/{catalog}.{schema}`. Set at create time and immutable\nthereafter; changing it on an existing service is rejected.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "table_name_prefix": {
+                      "description": "[Beta] Prefix for the inference-table's UC-registered name. The actual leaf name UC\nstores is `\u003ctable_name_prefix\u003e_payload`; the `_payload` suffix is appended\nautomatically. To find the actual UC table after Create, read the `table`\nfield on the response. Defaults to `\u003cmodel_service_name\u003e_payload` when unset.\nSet at create time and immutable thereafter; changing it on an existing\nservice is rejected.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "parent"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigModelTargetConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Model target configuration for an external model destination.",
+                  "properties": {
+                    "model": {
+                      "description": "[Beta] Provider-side model identifier (e.g. \"gpt-5\", \"claude-opus-4-7\"). This is\na string on the LLM provider's side, not a UC entity. The UC governance\nhook for external destinations is the ModelProviderService referenced by\n`ExternalModelConfig.model_provider_service`, not the model itself.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "native_api_types": {
+                      "description": "[Beta] Provider-native API types the model supports (e.g.\n\"openai/v1/chat/completions\"). Used by the platform for request/response\ntranslation from the unified API type. At most 64 entries of at most 256\ncharacters each; the list is persisted into the destination binding's\nbounded storage envelope.",
+                      "$ref": "#/$defs/slice/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "model"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelServiceConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Operational configuration wrapped around the ModelService resource.",
+                  "properties": {
+                    "inference_table": {
+                      "description": "[Beta] Inference table config for payload logging.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.InferenceTableConfig"
+                    },
+                    "rate_limits": {
+                      "description": "[Beta] Rate limits applied to requests routed through this model service.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.RateLimit"
+                    },
+                    "routing": {
+                      "description": "[Beta] Routing configuration: destinations, routing strategy, and fallback.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelServiceConfigRoutingConfig"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelServiceConfigDestinationConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A destination the model service can route traffic to. Exactly one of the\nper-type configs inside `type_config` must be set, and it must match\n`destination_type`.",
+                  "properties": {
+                    "destination_type": {
+                      "description": "[Beta] Backing-model category. Determines which oneof variant is populated.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelServiceConfigDestinationConfigDestinationType"
+                    },
+                    "external_model_config": {
+                      "description": "[Beta] Configuration for an external-foundation-model destination. Provider auth\nand provider-specific cloud configuration are owned by a separate, governed\nModelProviderService entity referenced via `model_provider_service`; the\nplatform resolves the provider at invocation time.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelServiceConfigExternalModelConfig"
+                    },
+                    "name": {
+                      "description": "[Beta] User-facing label for this destination, used in routing references.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "pay_per_token_config": {
+                      "description": "[Beta] Configuration for a pay-per-token foundation-model destination. Identifies\nthe foundation model by its UC resource name; the platform resolves it to a\nModel Serving endpoint at request time.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelServiceConfigPayPerTokenConfig"
+                    },
+                    "provisioned_throughput_config": {
+                      "description": "[Beta] Configuration for a provisioned-throughput foundation-model destination.\nReferences a pre-existing Model Serving endpoint that serves the model;\nsizing (provisioned throughput, burst scaling, model version) is owned by\nthe Model Serving endpoint itself, not by this message.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelServiceConfigProvisionedThroughputConfig"
+                    },
+                    "traffic_percentage": {
+                      "description": "[Beta] Share of traffic sent to this destination, 0-100. Optional on fallback\ndestinations; see FallbackConfig.",
+                      "$ref": "#/$defs/int"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "destination_type",
+                    "name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelServiceConfigDestinationConfigDestinationType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Backing-model category for a model service destination.",
+                  "enum": [
+                    "DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL",
+                    "DESTINATION_TYPE_PROVISIONED_THROUGHPUT_FOUNDATION_MODEL",
+                    "DESTINATION_TYPE_EXTERNAL_FOUNDATION_MODEL"
+                  ],
+                  "enumDescriptions": [
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelServiceConfigExternalModelConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Configuration for an external-foundation-model destination. Provider auth\nand provider-specific cloud configuration are owned by a separate, governed\nModelProviderService entity referenced via `model_provider_service`; the\nplatform resolves the provider at invocation time.",
+                  "properties": {
+                    "model_provider_service": {
+                      "description": "[Beta] Resource name of the governed ModelProviderService that owns provider\nauth and provider-specific configuration. The referenced\nModelProviderService also carries the provider type, so this message\ndoes not surface it directly.\nFormat: `model-provider-services/{catalog}.{schema}.{model_provider_service}`.\nEach `{...}` component is capped at 255 characters individually.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "target": {
+                      "description": "[Beta] Routing target for the destination: the provider-side model selected from\nthe referenced ModelProviderService's `targets` catalog, plus the unified\nAPI types the platform should translate to/from at request time.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigModelTargetConfig"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "model_provider_service",
+                    "target"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelServiceConfigFallbackConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Fallback routing, applied after the primary destination returns a retryable\nerror. Traversal is in list order; the attempt count is the length of the\nlist.",
+                  "properties": {
+                    "destinations": {
+                      "description": "[Beta] Ordered list of fallback destinations. Traversal is in list order; the\nattempt count is the length of the list. At most 5 are allowed.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.ModelServiceConfigDestinationConfig"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelServiceConfigPayPerTokenConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Configuration for a pay-per-token foundation-model destination. Identifies\nthe foundation model by its UC resource name; the platform resolves it to a\nModel Serving endpoint at request time.",
+                  "properties": {
+                    "model": {
+                      "description": "[Beta] Resource name of the UC model.\nFormat: `models/{catalog}.{schema}.{model}`.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "model"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelServiceConfigProvisionedThroughputConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Configuration for a provisioned-throughput foundation-model destination.\nReferences a pre-existing Model Serving endpoint that serves the model;\nsizing (provisioned throughput, burst scaling, model version) is owned by\nthe Model Serving endpoint itself, not by this message.",
+                  "properties": {
+                    "model_serving_endpoint": {
+                      "description": "[Beta] Name of the backing Model Serving endpoint serving the provisioned-\nthroughput foundation model, as the AIP-122 typed resource name\n`serving-endpoints/{name}`. The same UC model can be served on multiple\nModel Serving endpoints (different throughput / region / config); the\ncaller picks which one this destination routes to. The endpoint must\nexist at create time.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "model_serving_endpoint"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelServiceConfigRoutingConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Routing configuration for a model service, nesting destinations, routing\nstrategy, and fallback under a single sub-message.",
+                  "properties": {
+                    "destinations": {
+                      "description": "[Beta] Primary routing destinations. At most 10 are allowed. At least one is\nrequired on CreateModelService; on UpdateModelService it is required only\nwhen `config.routing` (or a `config.routing.*` subpath) appears in\n`update_mask`.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.ModelServiceConfigDestinationConfig"
+                    },
+                    "fallback": {
+                      "description": "[Beta] Fallback routing config, applied after primary destinations fail.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelServiceConfigFallbackConfig"
+                    },
+                    "first_token_timeout": {
+                      "description": "[Beta] Timeout for the first token of a streaming response. If a destination does\nnot return its first token within this duration, AI Gateway aborts the\nattempt and fails over to the next destination. Applies to streaming\nrequests only. Leave unset for no first-token timeout.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
+                    },
+                    "traffic_splitting": {
+                      "description": "[Beta] Marker message selecting request-based traffic splitting. Traffic is\ndistributed according to each destination's traffic_percentage value;\nno configuration lives on this message itself.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelServiceConfigRoutingConfigTrafficSplitting"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelServiceConfigRoutingConfigTrafficSplitting": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Marker message selecting request-based traffic splitting across primary\ndestinations. Split weights are read from each DestinationConfig.traffic_percentage.",
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "catalog.MonitorCronSchedule": {
               "oneOf": [
                 {
@@ -5248,6 +5566,101 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.RateLimit": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A rate limit applied to service requests. Leave `requests` or `tokens`\nunset to impose no limit on that dimension; set a value to cap that dimension\nwithin the renewal period.",
+                  "properties": {
+                    "key": {
+                      "description": "[Beta] Scope key. Determines whether `principal` is required.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.RateLimitRateLimitKey"
+                    },
+                    "principal": {
+                      "description": "[Beta] Principal this limit applies to: user email, group name, or service\nprincipal application ID. Required unless `key` is\n`RATE_LIMIT_KEY_SERVICE`, `RATE_LIMIT_KEY_USER_DEFAULT`, or\n`RATE_LIMIT_KEY_REQUEST_TAG` (which must not set a principal).",
+                      "$ref": "#/$defs/string"
+                    },
+                    "renewal_period": {
+                      "description": "[Beta] Renewal period.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.RateLimitRateLimitRenewalPeriod"
+                    },
+                    "request_tag_key": {
+                      "description": "[Beta] Request tag key this limit applies to. Required when `key` is\n`RATE_LIMIT_KEY_REQUEST_TAG`, forbidden otherwise.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "request_tag_value": {
+                      "description": "[Beta] Request tag value this limit applies to. Only valid when `key` is\n`RATE_LIMIT_KEY_REQUEST_TAG`. Leave unset to apply the limit to every\nvalue of `request_tag_key` (an any-value default); a set value is a\nspecific override for that value.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "requests": {
+                      "description": "[Beta] Max requests allowed within a renewal period. Leave unset for no request limit.",
+                      "$ref": "#/$defs/int64"
+                    },
+                    "tokens": {
+                      "description": "[Beta] Max tokens allowed within a renewal period. Leave unset for no token limit.",
+                      "$ref": "#/$defs/int64"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "renewal_period"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.RateLimitRateLimitKey": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Scope key for a rate limit.",
+                  "enum": [
+                    "RATE_LIMIT_KEY_USER",
+                    "RATE_LIMIT_KEY_USER_GROUP",
+                    "RATE_LIMIT_KEY_SERVICE_PRINCIPAL",
+                    "RATE_LIMIT_KEY_SERVICE",
+                    "RATE_LIMIT_KEY_USER_DEFAULT",
+                    "RATE_LIMIT_KEY_REQUEST_TAG"
+                  ],
+                  "enumDescriptions": [
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.RateLimitRateLimitRenewalPeriod": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Renewal period for a rate limit.",
+                  "enum": [
+                    "RATE_LIMIT_RENEWAL_PERIOD_MINUTE",
+                    "RATE_LIMIT_RENEWAL_PERIOD_HOUR"
+                  ],
+                  "enumDescriptions": [
+                    "[Beta]",
+                    "[Beta]"
+                  ]
                 },
                 {
                   "type": "string",
@@ -15298,6 +15711,20 @@
                     }
                   ]
                 },
+                "resources.ModelService": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ModelService"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.ModelServingEndpoint": {
                   "oneOf": [
                     {
@@ -15945,6 +16372,20 @@
                   }
                 ]
               },
+              "catalog.ModelServiceConfigDestinationConfig": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelServiceConfigDestinationConfig"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "catalog.MonitorMetric": {
                 "oneOf": [
                   {
@@ -15979,6 +16420,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "catalog.RateLimit": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.RateLimit"
                     }
                   },
                   {
