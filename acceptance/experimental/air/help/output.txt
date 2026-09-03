@@ -10,13 +10,12 @@ Usage:
   databricks experimental air [command]
 
 Available Commands:
-  cancel          Cancel one or more runs
-  convert-to-dabs Convert an AIR run YAML into a Databricks Asset Bundle
-  get             Show status, configuration, and timing details for a specific run
-  list            List your active runs for the current profile (use --all-status for finished runs)
-  logs            Stream or fetch logs for a run
-  register-image  Mirror a Docker image into the workspace registry
-  run             Submit a training workload from a YAML config
+  cancel         Cancel one or more runs
+  get            Show status, configuration, and timing details for a specific run
+  list           List your active runs for the current profile (use --all-status for finished runs)
+  logs           Stream or fetch logs for a run
+  register-image Mirror a Docker image into the workspace registry
+  run            Submit a training workload from a YAML config
 
 Flags:
   -h, --help   help for air
