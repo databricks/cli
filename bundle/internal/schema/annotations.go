@@ -158,7 +158,7 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.DeprecationMessage = a.DeprecationMessage
 	}
 
-	// Private-preview fields are also hidden from editor completions.
+	// Private-preview fields are hidden from completions.
 	if a.LaunchStage == clijson.LaunchStagePrivatePreview {
 		s.DoNotSuggest = true
 	}
