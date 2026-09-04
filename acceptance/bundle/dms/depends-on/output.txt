@@ -37,6 +37,21 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
+=== The service lists both jobs, each recorded at version 1
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.child"
+  },
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.parent"
+  }
+]
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.child

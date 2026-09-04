@@ -4,5 +4,9 @@ title "Deploy a job that references another: depends_on is recorded alongside th
 trace $CLI bundle deploy
 trace print_requests.py --dms //versions/1/operations
 
+title "The service lists both jobs, each recorded at version 1"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-depends-on-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
 trace $CLI bundle destroy --auto-approve
 rm -f out.requests.txt
