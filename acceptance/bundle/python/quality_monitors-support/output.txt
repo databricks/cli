@@ -1,0 +1,28 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_quality_monitor"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "quality_monitors": {
+      "my_monitor_1": {
+        "assets_dir": "/Workspace/monitoring",
+        "output_schema_name": "default.monitoring (updated)",
+        "table_name": "default.test_table"
+      },
+      "my_monitor_2": {
+        "assets_dir": "/Workspace/monitoring",
+        "output_schema_name": "default.monitoring (updated)",
+        "table_name": "default.test_table"
+      }
+    }
+  }
+}

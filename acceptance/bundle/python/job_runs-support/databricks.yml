@@ -1,0 +1,17 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_job_run"
+
+resources:
+  job_runs:
+    my_run_1:
+      job_id: 1
+      job_parameters:
+        description: "test"

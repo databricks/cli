@@ -1,0 +1,26 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_registered_model"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "registered_models": {
+      "my_registered_model_1": {
+        "comment": "My model (updated)",
+        "name": "my_registered_model_1"
+      },
+      "my_registered_model_2": {
+        "comment": "My model (2) (updated)",
+        "name": "my_registered_model_2"
+      }
+    }
+  }
+}
