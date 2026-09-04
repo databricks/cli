@@ -87,6 +87,8 @@ class Job(Resource):
     continuous: VariableOrOptional[Continuous] = None
     """
     An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.
+    
+    Pipelines started by a continuous job also run continuously, regardless of their own pipeline mode setting.
     """
 
     description: VariableOrOptional[str] = None
@@ -256,6 +258,8 @@ class JobDict(TypedDict, total=False):
     continuous: VariableOrOptional[ContinuousParam]
     """
     An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.
+    
+    Pipelines started by a continuous job also run continuously, regardless of their own pipeline mode setting.
     """
 
     description: VariableOrOptional[str]

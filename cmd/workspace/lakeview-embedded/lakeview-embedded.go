@@ -64,6 +64,9 @@ Read information of a published dashboard to mint an OAuth token.
   Get a required authorization details and scopes of a published dashboard to
   mint an OAuth token.
 
+  Requires one of the following entitlements: Workspace access, Databricks SQL
+  access, or Consumer access.
+
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`
 
