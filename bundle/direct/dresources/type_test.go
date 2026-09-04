@@ -1,14 +1,17 @@
 package dresources
 
 import (
+	"path"
 	"reflect"
 	"slices"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -102,6 +105,79 @@ var knownMissingInStateType = map[string][]string{
 		"keyvault_metadata",
 		"name",
 	},
+}
+
+// knownEmptyMessages are proto messages that carry nothing: they have no exported
+// fields, but no hidden payload either, so comparing every value of them as equal
+// is correct. Anything else with no exported fields must be opaque, or diffing is
+// blind to it.
+var knownEmptyMessages = []string{
+	"catalog.MonitorSnapshot",
+	"jobs.ModelTriggerState",
+	"jobs.ScheduleTriggerState",
+	"pipelines.ManualTrigger",
+}
+
+// TestNoBlindStructs validates that structdiff can see a value change in every
+// struct reachable from a resource's state or remote type.
+//
+// diffStruct walks exported fields, so a struct that has none compares equal for
+// every value and the direct engine silently ignores edits to it.
+// structdiff.IsOpaqueStruct rescues the ones that hold a payload behind an
+// unexported field and marshal themselves (the SDK's duration.Duration and
+// types/time.Time). A type that is neither exported-walkable nor opaque is a hole:
+// it needs either an entry in knownEmptyMessages, if it genuinely holds nothing, or
+// a fix in structdiff.
+func TestNoBlindStructs(t *testing.T) {
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
+		require.NoError(t, err)
+
+		t.Run(resourceType, func(t *testing.T) {
+			for _, root := range []reflect.Type{adapter.StateType(), adapter.RemoteType()} {
+				for _, typ := range blindStructs(root, map[reflect.Type]bool{}) {
+					name := path.Base(typ.PkgPath()) + "." + typ.Name()
+					assert.Contains(t, knownEmptyMessages, name,
+						"%s has no exported fields and is not opaque, so structdiff cannot see a change to it", typ)
+				}
+			}
+		})
+	}
+}
+
+// blindStructs returns the structs reachable from typ that structdiff cannot see
+// into: no exported fields to walk, and not recognized as opaque.
+func blindStructs(typ reflect.Type, seen map[reflect.Type]bool) []reflect.Type {
+	if typ == nil || seen[typ] {
+		return nil
+	}
+	seen[typ] = true
+
+	switch typ.Kind() {
+	case reflect.Pointer, reflect.Slice, reflect.Array, reflect.Map:
+		return blindStructs(typ.Elem(), seen)
+	case reflect.Struct:
+		if structdiff.IsOpaqueStruct(typ) {
+			// Compared through its JSON form, so what it holds does not matter.
+			return nil
+		}
+		var found []reflect.Type
+		exported := false
+		for sf := range typ.Fields() {
+			// diffStruct walks neither, so nothing underneath is reachable either.
+			if !sf.IsExported() || sf.Name == "ForceSendFields" {
+				continue
+			}
+			exported = true
+			found = append(found, blindStructs(sf.Type, seen)...)
+		}
+		if !exported {
+			found = append(found, typ)
+		}
+		return found
+	default:
+		return nil
+	}
 }
 
 // TestInputSubset validates that all fields in InputType exist in StateType.
