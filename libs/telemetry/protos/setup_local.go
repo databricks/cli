@@ -41,6 +41,7 @@ const (
 	SetupLocalErrorCodeMerge              SetupLocalErrorCode = "E_MERGE"
 	SetupLocalErrorCodePythonInstall      SetupLocalErrorCode = "E_PYTHON_INSTALL"
 	SetupLocalErrorCodeProvision          SetupLocalErrorCode = "E_PROVISION"
+	SetupLocalErrorCodeProvisionConflict  SetupLocalErrorCode = "E_PROVISION_CONFLICT"
 	SetupLocalErrorCodeValidate           SetupLocalErrorCode = "E_VALIDATE"
 	SetupLocalErrorCodeCanceled           SetupLocalErrorCode = "E_CANCELED"
 )

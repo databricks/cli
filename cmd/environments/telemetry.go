@@ -106,6 +106,8 @@ func errorCodeType(code libslocalenv.ErrorCode) protos.SetupLocalErrorCode {
 		return protos.SetupLocalErrorCodePythonInstall
 	case libslocalenv.ErrProvision:
 		return protos.SetupLocalErrorCodeProvision
+	case libslocalenv.ErrProvisionConflict:
+		return protos.SetupLocalErrorCodeProvisionConflict
 	case libslocalenv.ErrValidate:
 		return protos.SetupLocalErrorCodeValidate
 	case libslocalenv.ErrCanceled:

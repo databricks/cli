@@ -496,6 +496,103 @@ func TestPipelineProvisionsAndValidatesExisting(t *testing.T) {
 	assert.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 }
 
+func TestPipelineFailsFastOnConstraintConflict(t *testing.T) {
+	// The user pins pip==24.0 while the environment's constraint-dependencies pin
+	// pip<24 — a provably disjoint range — so the merge records
+	// W_USER_CONSTRAINT_CONFLICT. uv sync would deterministically fail to resolve
+	// that, so the run reports E_PROVISION_CONFLICT right after the merge, at the
+	// provision phase, with disk already mutated — and never spends a Python install
+	// or sync (recordingPM records neither call).
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(`[project]
+name = "demo"
+requires-python = ">=3.12"
+dependencies = ["pip==24.0"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`), 0o644))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`[project]
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = ["databricks-connect~=17.2.0"]
+
+[tool.uv]
+constraint-dependencies = ["pip<24"]
+`))
+	}))
+	defer srv.Close()
+
+	pm := &recordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}}
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: pm,
+	}
+	res, err := p.Run(t.Context())
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrProvisionConflict, pe.Code)
+	assert.Equal(t, PhaseProvision, pe.FailurePhase)
+	assert.True(t, pe.DiskMutated, "the merge wrote the pins before the conflict was reported")
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrProvisionConflict, res.Error.Code)
+	// The merge conflict warning that gates the code must be present.
+	assert.Contains(t, codes(res.Warnings), WarnUserConstraintConflict)
+	// Fail-fast: neither Python install nor sync was attempted.
+	assert.Empty(t, pm.minor, "EnsurePython must not run when the conflict is already proven")
+	assert.Empty(t, pm.provisionPython, "uv sync must not run when the conflict is already proven")
+}
+
+func TestPipelineCheckReportsConflictAsWarningNotError(t *testing.T) {
+	// --dry-run computes a plan and never evaluates provisioning, so the same
+	// provably-disjoint pins surface only as the W_USER_CONSTRAINT_CONFLICT warning
+	// with ok=true and no error — the conflict becomes E_PROVISION_CONFLICT only on a
+	// real run, which is the phase that attempts (and here would fail) provisioning.
+	// This pins that intended divergence so it cannot regress silently.
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(`[project]
+name = "demo"
+requires-python = ">=3.12"
+dependencies = ["pip==24.0"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`), 0o644))
+	before, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`[project]
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = ["databricks-connect~=17.2.0"]
+
+[tool.uv]
+constraint-dependencies = ["pip<24"]
+`))
+	}))
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.OK)
+	assert.Nil(t, res.Error, "a dry run reports the conflict as a warning, not an error")
+	assert.Contains(t, codes(res.Warnings), WarnUserConstraintConflict)
+	// A dry run mutates nothing.
+	after, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	assert.Equal(t, string(before), string(after))
+	assert.NoFileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
+}
+
 func TestPipelineDryRunOmitsFabricatedDBConnectVersion(t *testing.T) {
 	// A major-only pin like ~=17.0 (serverless, environments#15) is not a concrete
 	// version. Under --dry-run validate never corrects the reported value, so it
