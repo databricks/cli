@@ -106,6 +106,12 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			jsonMode := installOutputIsJSON(cmd)
+			if jsonMode {
+				// JSON mode emits only the structured result on stdout; silence all
+				// human-readable progress (via cmdio.LogProgress) so nothing but the
+				// JSON document is written.
+				ctx = cmdio.WithQuiet(ctx)
+			}
 
 			if skillsOnly && pathFlag != "" {
 				return errors.New("cannot use --skills-only with --path; --path always writes raw skill files")

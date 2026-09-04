@@ -1,10 +1,6 @@
 
-=== install --output json emits parseable JSON on stdout; progress stays on stderr
->>> [CLI] experimental aitools install --skills-only --scope=global --agents=claude-code --output json
-Command "install" is deprecated, use "databricks aitools install" instead.
-Using skills version test-ref
-Fetching skills manifest...
-Installed 1 skill.
+=== install --output json emits only the JSON document; progress is silenced
+>>> [CLI] aitools install --skills-only --scope=global --agents=claude-code --output json
 {
   "scope": "global",
   "agents": [
