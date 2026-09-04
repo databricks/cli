@@ -1,3 +1,3 @@
-state version 999 is newer than supported version 2; upgrade the CLI
+state version 999 is newer than supported version 3; upgrade the CLI
 
 Exit code: 1

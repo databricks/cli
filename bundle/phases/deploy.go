@@ -331,7 +331,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
 	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
 	// then - so stamp the one just created into the plan the apply reads.
-	if b.DeploymentBundle.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
+	// IsDirect first: StorageBackend asserts the state is open, and only the direct engine opens it.
+	if stateEngine.IsDirect() && b.DeploymentBundle.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
 		existingID, _ := deploymentAndNextVersion(b)
 		createOrUpdateDeployment(ctx, b, dmsDeployment)
 		if logdiag.HasError(ctx) {
