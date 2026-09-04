@@ -540,9 +540,18 @@ func (h *bundleHarness) setField(path string, value any) error {
 	if err != nil {
 		return err
 	}
-	return h.edit(func(resource any) error {
+	// Restore on failure: setNode allocates the parents on the way to the leaf before it can find out
+	// the leaf will not take the value, so a rejected edit still leaves the containers it built behind.
+	// The caller treats a failed edit as "nothing happened" and moves to the next transition, which
+	// would then run against a config carrying a half-built block nobody asked for.
+	before := h.snapshot()
+	err = h.edit(func(resource any) error {
 		return setNode(resource, node, substituteUnique(value, h.unique))
 	})
+	if err != nil {
+		h.restore(before)
+	}
+	return err
 }
 
 // substituteUnique resolves the placeholder in an identity field's value against the suffix

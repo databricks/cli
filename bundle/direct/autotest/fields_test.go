@@ -295,6 +295,11 @@ func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClie
 				return
 			}
 			h = rebuilt
+		} else if !bytes.Equal(h.snapshot(), base) {
+			// Recorded rather than left implicit: the base moved, and a reader comparing two types'
+			// reports needs to know that everything after this field ran from a different starting
+			// resource than the fixture describes.
+			rep.add(result{"(base)", f.path, "", verdictBaseShifted, "kept the value the API would not undo", ""})
 		}
 		base, baseline = h.snapshot(), remeasure(h, baseline, rep)
 	}

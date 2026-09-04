@@ -8,6 +8,7 @@
 #
 # Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
 
+(base)                                       description            BASE_SHIFTED  kept the value the API would not undo
 description                                  absent     x          CANNOT_DELETE_NOT_REQUIRED  Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
 description                                  absent     y          CANNOT_DELETE_NOT_REQUIRED  Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
 description                                  x          absent     CANNOT_DELETE_NOT_REQUIRED  Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
@@ -18,5 +19,6 @@ OK                 2
 OK_RECREATE        2
 OK_ID_FIELD_REQUIRED 4
 CANNOT_DELETE_NOT_REQUIRED 4
+BASE_SHIFTED       1
 OK_INERT           18
 SKIPPED            1
