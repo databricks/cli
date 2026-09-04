@@ -41,6 +41,11 @@ def get_class_name(ref: str) -> str:
     return RENAMES.get(name, name)
 
 
+def to_snake_case(name: str) -> str:
+    # "VectorSearchIndex" -> "vector_search_index"
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
+
+
 def is_resource(ref: str) -> bool:
     return ref in RESOURCE_TYPES
 
