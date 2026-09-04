@@ -1,8 +1,8 @@
 """Coverage guard: every PyDABs resource must have an acceptance fixture.
 
 Asserts each resource in the _ResourceType registry has an
-acceptance/bundle/python/<plural>-support/ fixture. New resources get one via the
-pydabs-acceptance-test skill; this fails CI until it exists.
+acceptance/bundle/python/<plural>-support/ fixture (see that directory's README.md for
+how to author one); this fails CI until it exists.
 """
 
 from pathlib import Path
@@ -32,5 +32,5 @@ def test_python_support_coverage(plural: str):
     else:
         assert covered, (
             f"no acceptance/bundle/python/{plural}-support/ fixture for {plural!r}; "
-            "author one with the pydabs-acceptance-test skill or add it to _LACKING"
+            "add one (see acceptance/bundle/python/README.md) or add it to _LACKING"
         )
