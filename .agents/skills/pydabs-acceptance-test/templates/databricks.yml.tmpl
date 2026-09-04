@@ -1,0 +1,15 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_SINGULAR"
+
+resources:
+  PLURAL:
+    my_NAME_1:
+      # required fields, realistic literal values (see SKILL.md steps 2-3)

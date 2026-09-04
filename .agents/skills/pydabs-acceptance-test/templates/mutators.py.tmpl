@@ -1,0 +1,11 @@
+from dataclasses import replace
+
+from databricks.bundles.PLURAL import CLASS
+from databricks.bundles.core import SINGULAR_mutator
+
+
+@SINGULAR_mutator
+def update_SINGULAR(SINGULAR: CLASS) -> CLASS:
+    assert isinstance(SINGULAR.FIELD, str)
+
+    return replace(SINGULAR, FIELD=f"{SINGULAR.FIELD} (updated)")
