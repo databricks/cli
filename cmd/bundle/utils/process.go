@@ -284,8 +284,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				if logdiag.HasError(ctx) {
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
-				// StateDB.Open builds the DMS client from the workspace client on the context. A bundle
-				// command resolves that client lazily through b, so it is not otherwise on the context.
+				// StateDB.Open builds the DMS client from the workspace client on the context.
 				if !cmdctx.HasWorkspaceClient(ctx) {
 					ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 				}
