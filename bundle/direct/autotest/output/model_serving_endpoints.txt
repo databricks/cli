@@ -8,10 +8,10 @@
 #
 # Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
 
-name                                         absent     x-UNIQUE   BASE_ERROR  Serving endpoint with name already exists (409 RESOURCE_ALREADY_EXISTS)
-name                                         absent     y-UNIQUE   BASE_ERROR  Serving endpoint with name already exists (409 RESOURCE_ALREADY_EXISTS)
-name                                         x-UNIQUE   absent     BACKEND_ERROR  Serving endpoint with name already exists (409 RESOURCE_ALREADY_EXISTS)
-name                                         y-UNIQUE   absent     DEPLOY_ERROR  No stub found for pattern: GET /api/2.0/serving-endpoints/ (501 <nil>)
+name                                         absent     x-UNIQUE   BASE_ERROR  Endpoint name must be maximum 63 characters, and alphanumeric with hyphens and underscores allowed in between. (400 INVALID_PARAMETER_VALUE)
+name                                         absent     y-UNIQUE   BASE_ERROR  Endpoint name must be maximum 63 characters, and alphanumeric with hyphens and underscores allowed in between. (400 INVALID_PARAMETER_VALUE)
+name                                         x-UNIQUE   absent     BACKEND_ERROR  Endpoint name must be maximum 63 characters, and alphanumeric with hyphens and underscores allowed in between. (400 INVALID_PARAMETER_VALUE)
+name                                         y-UNIQUE   absent     BACKEND_ERROR  Endpoint name must be maximum 63 characters, and alphanumeric with hyphens and underscores allowed in between. (400 INVALID_PARAMETER_VALUE)
 
 === summary
 OK                         28
@@ -19,7 +19,6 @@ OK_RECREATE                12
 OK_INERT                   6
 SUPPRESSED                 3
 NOT_OBSERVABLE             1
-BACKEND_ERROR              1
-DEPLOY_ERROR               1
+BACKEND_ERROR              2
 SKIPPED                    4
 BASE_ERROR                 2
