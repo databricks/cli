@@ -1,0 +1,37 @@
+title "Set up the parent project"
+$CLI postgres create-project acc-proj > LOG.setup 2>&1
+
+title "create-branch --ttl: API (604800s), Go (168h) and day (7d) forms all go on the wire as seconds"
+$CLI postgres create-branch projects/acc-proj branch-ttl-api --ttl 604800s > LOG.ttl-api 2>&1
+$CLI postgres create-branch projects/acc-proj branch-ttl-go --ttl 168h > LOG.ttl-go 2>&1
+$CLI postgres create-branch projects/acc-proj branch-ttl-days --ttl 7d > LOG.ttl-days 2>&1
+
+title "create-branch --no-expiry"
+$CLI postgres create-branch projects/acc-proj branch-noexp --no-expiry > LOG.noexp 2>&1
+
+title "create-branch --ttl combined with a --json spec: the flag's ttl survives the json merge"
+$CLI postgres create-branch projects/acc-proj branch-mix --ttl 604800s --json '{"spec":{"source_branch":"projects/acc-proj/branches/production"}}' > LOG.mix 2>&1
+
+title "the pre-existing flags still work alongside --ttl: --name (body), --replace-existing (query), --timeout (wait)"
+$CLI postgres create-branch projects/acc-proj branch-flags --ttl 168h --name display-name --replace-existing --timeout 60s > LOG.flags 2>&1
+
+title "the --no-wait path still works alongside --no-expiry"
+$CLI postgres create-branch projects/acc-proj branch-nowait --no-expiry --no-wait > LOG.nowait 2>&1
+
+title "An expiration is required: no flag fails before any API call (no request recorded)"
+musterr $CLI postgres create-branch projects/acc-proj branch-none &> LOG.required
+
+title "Conflicting flags fail before any API call (no request recorded)"
+musterr $CLI postgres create-branch projects/acc-proj branch-conflict --ttl 1h --no-expiry &> LOG.conflict
+
+title "--no-expiry with a --json that also sets spec.no_expiry is a conflict, not a silent override"
+musterr $CLI postgres create-branch projects/acc-proj branch-both --no-expiry --json '{"spec":{"no_expiry":false}}' &> LOG.both
+
+title "Malformed --json fails client-side"
+musterr $CLI postgres create-branch projects/acc-proj branch-badjson --json 'not json' &> LOG.badjson
+
+title "An empty spec.ttl in --json fails client-side"
+musterr $CLI postgres create-branch projects/acc-proj branch-emptyttl --json '{"spec":{"ttl":""}}' &> LOG.emptyttl
+
+title "Recorded create-branch request bodies"
+print_requests.py //branches
