@@ -857,6 +857,10 @@ func TestSet_ShallowerEmbedWinsAcrossMembers(t *testing.T) {
 	assert.Equal(t, "set", target.Value)
 	assert.Empty(t, target.deeperEmbed.Value)
 
+	got, err := structaccess.GetByString(target, "value")
+	require.NoError(t, err)
+	assert.Equal(t, "set", got)
+
 	require.NoError(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
 
 	blob, err := json.Marshal(target)
@@ -879,4 +883,395 @@ func TestSet_ShallowerEmbedWins(t *testing.T) {
 	blob, err := json.Marshal(target)
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"value":"set"}`, string(blob))
+}
+
+// Two embedded structs declaring one name at the same depth: encoding/json calls that
+// ambiguous and omits the field, so there is nothing to read or write either.
+type ambiguousA struct {
+	Value string `json:"value"`
+}
+
+type ambiguousB struct {
+	Value string `json:"value"`
+}
+
+type ambiguousEmbeds struct {
+	ambiguousA
+	ambiguousB //nolint:govet // the repeated json tag is the point: both embeds declare "value"
+}
+
+func TestSet_AmbiguousEmbedIsNotFound(t *testing.T) {
+	target := &ambiguousEmbeds{}
+
+	require.Error(t, structaccess.SetByString(target, "value", "set"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
+
+	// Which is what json does with it: the name resolves to no field at all.
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{}`, string(blob))
+}
+
+// A struct embedding a pointer to itself: the search must not walk the same type twice, or a
+// key it never finds sends it round forever.
+type cyclicEmbed struct {
+	*cyclicEmbed
+	Name string `json:"name"`
+}
+
+func TestGet_CyclicEmbedTerminates(t *testing.T) {
+	target := &cyclicEmbed{Name: "n"} //exhaustruct:ignore
+	target.cyclicEmbed = target
+
+	got, err := structaccess.GetByString(target, "name")
+	require.NoError(t, err)
+	assert.Equal(t, "n", got)
+
+	_, err = structaccess.GetByString(target, "nope")
+	require.Error(t, err)
+	require.Error(t, structaccess.ValidateByString(reflect.TypeOf(target), "nope"))
+}
+
+// A diamond: two embeds reaching one type, so the name sits at the same depth twice.
+// encoding/json omits it, and the search has to see both paths to notice.
+type diamondLeaf struct {
+	Value string `json:"value"`
+}
+
+type diamondLeft struct {
+	diamondLeaf
+}
+
+type diamondRight struct {
+	diamondLeaf
+}
+
+type diamondEmbeds struct {
+	diamondLeft
+	diamondRight
+}
+
+func TestSet_DiamondEmbedIsAmbiguous(t *testing.T) {
+	target := &diamondEmbeds{}
+
+	require.Error(t, structaccess.SetByString(target, "value", "set"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{}`, string(blob))
+}
+
+// Whether a name is ambiguous is a property of the type: two embedded pointers declaring it at
+// the same depth make it one encoding/json omits, and that must not change with whether one of
+// them happens to be nil right now.
+type ambiguousPtrEmbeds struct {
+	*ambiguousA
+	*ambiguousB //nolint:govet // the repeated json tag is the point: both embeds declare "value"
+}
+
+func TestSet_AmbiguousPointerEmbedsIgnoreNilness(t *testing.T) {
+	// One embed present, the other nil: the name is still ambiguous.
+	target := &ambiguousPtrEmbeds{ambiguousA: &ambiguousA{}} //exhaustruct:ignore
+	require.Error(t, structaccess.SetByString(target, "value", "set"))
+	_, err := structaccess.GetByString(target, "value")
+	require.Error(t, err)
+
+	// And with both present, unchanged.
+	target = &ambiguousPtrEmbeds{ambiguousA: &ambiguousA{}, ambiguousB: &ambiguousB{}}
+	require.Error(t, structaccess.SetByString(target, "value", "set"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{}`, string(blob))
+}
+
+// A name declared behind a nil embedded pointer and again deeper down. encoding/json resolves
+// it to the shallower declaration and then serializes nothing, because the pointer is nil --
+// so the deeper field, which the wire format never carries, is not the answer either.
+type shallowLeaf struct {
+	Value string `json:"value,omitempty"`
+}
+
+type deepHolder struct {
+	shallowLeaf
+}
+
+type shallowBehindNil struct {
+	*shallowLeaf
+	deepHolder
+}
+
+func TestGet_ShallowFieldBehindNilPointerIsAbsent(t *testing.T) {
+	target := &shallowBehindNil{deepHolder: deepHolder{shallowLeaf: shallowLeaf{Value: "deep"}}} //exhaustruct:ignore
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{}`, string(blob))
+
+	_, err = structaccess.GetByString(target, "value")
+	require.Error(t, err, "the field encoding/json resolves to is absent, so there is nothing to read")
+}
+
+// An anonymous field carrying a json name is a named field to encoding/json: it serializes as
+// a nested object under that name rather than being flattened into the outer one.
+type TaggedEmbedLeaf struct {
+	Value string `json:"value,omitempty"`
+}
+
+type taggedEmbed struct {
+	TaggedEmbedLeaf `json:"leaf"`
+
+	Own string `json:"own,omitempty"`
+}
+
+func TestGetSet_TaggedEmbedIsANamedField(t *testing.T) {
+	target := &taggedEmbed{TaggedEmbedLeaf: TaggedEmbedLeaf{Value: "v"}, Own: "o"}
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"leaf":{"value":"v"},"own":"o"}`, string(blob))
+
+	// Not flattened: the outer object has no "value" member.
+	_, err = structaccess.GetByString(target, "value")
+	require.Error(t, err)
+
+	value, err := structaccess.GetByString(target, "leaf.value")
+	require.NoError(t, err)
+	assert.Equal(t, "v", value)
+
+	require.NoError(t, structaccess.SetByString(target, "leaf.value", "set"))
+	blob, err = json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"leaf":{"value":"set"},"own":"o"}`, string(blob))
+}
+
+// At one depth, encoding/json prefers a field whose json tag names it over one that only has
+// the matching Go field name, instead of calling the pair ambiguous.
+type untaggedX struct {
+	X string
+}
+
+type taggedAsX struct {
+	Y string `json:"X"`
+}
+
+type taggedBeatsUntagged struct {
+	untaggedX
+	taggedAsX
+}
+
+func TestGet_TaggedNameBeatsUntaggedAtTheSameDepth(t *testing.T) {
+	target := &taggedBeatsUntagged{untaggedX: untaggedX{X: "untagged"}, taggedAsX: taggedAsX{Y: "tagged"}}
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"X":"tagged"}`, string(blob))
+
+	value, err := structaccess.GetByString(target, "X")
+	require.NoError(t, err)
+	assert.Equal(t, "tagged", value, "must resolve to the field encoding/json serializes")
+}
+
+// A field whose tag sets only an option has no json name, so encoding/json serializes it under
+// its Go field name and that is the name it has to be reachable by.
+type optionOnlyTag struct {
+	Count int `json:"count,omitempty"`
+	Total int `json:",omitempty"`
+}
+
+func TestGetSet_FieldWithoutATagNameUsesItsGoName(t *testing.T) {
+	target := &optionOnlyTag{Count: 1, Total: 2}
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"count":1,"Total":2}`, string(blob))
+
+	value, err := structaccess.GetByString(target, "Total")
+	require.NoError(t, err)
+	assert.Equal(t, 2, value)
+
+	require.NoError(t, structaccess.SetByString(target, "Total", 7))
+	assert.Equal(t, 7, target.Total)
+}
+
+// An anonymous field that is not a struct is not promoted: encoding/json serializes it as a
+// member named after its type.
+type EmbeddedName string
+
+type embeddedScalar struct {
+	EmbeddedName
+
+	Own string `json:"own,omitempty"`
+}
+
+func TestGet_AnonymousNonStructIsANamedMember(t *testing.T) {
+	target := &embeddedScalar{EmbeddedName: "n", Own: "o"}
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"EmbeddedName":"n","own":"o"}`, string(blob))
+
+	value, err := structaccess.GetByString(target, "EmbeddedName")
+	require.NoError(t, err)
+	assert.Equal(t, EmbeddedName("n"), value)
+}
+
+// The same embedded type reached by two routes: encoding/json descends into it once, so a name
+// declared *below* it is not ambiguous, while a name the duplicated type declares itself is.
+type repeatedLeaf struct {
+	Value string `json:"value,omitempty"`
+}
+
+type repeatedMiddle struct {
+	repeatedLeaf
+}
+
+type repeatedLeft struct {
+	repeatedMiddle
+}
+
+type repeatedRight struct {
+	repeatedMiddle
+}
+
+type repeatedEmbed struct {
+	repeatedLeft
+	repeatedRight
+}
+
+func TestGet_TypeReachedTwiceIsNotAmbiguousBelowIt(t *testing.T) {
+	target := &repeatedEmbed{
+		repeatedLeft:  repeatedLeft{repeatedMiddle: repeatedMiddle{repeatedLeaf: repeatedLeaf{Value: "left"}}},
+		repeatedRight: repeatedRight{repeatedMiddle: repeatedMiddle{repeatedLeaf: repeatedLeaf{Value: "right"}}},
+	}
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"value":"left"}`, string(blob), "encoding/json takes the first route")
+
+	value, err := structaccess.GetByString(target, "value")
+	require.NoError(t, err)
+	assert.Equal(t, "left", value)
+}
+
+// Combinations of a repeated embedded type with tagged and untagged declarations of one name.
+// encoding/json is the oracle for each: the assertion compares what it serializes under the
+// name with what Get resolves, so the pair cannot drift.
+type matrixTagged struct {
+	Y string `json:"x"`
+}
+
+type matrixUntagged struct {
+	X string
+}
+
+type (
+	matrixLeftTagged    struct{ matrixTagged }
+	matrixRightTagged   struct{ matrixTagged }
+	matrixLeftUntagged  struct{ matrixUntagged }
+	matrixRightUntagged struct{ matrixUntagged }
+)
+
+// The repeated type declares the name itself: two routes, so encoding/json annihilates it.
+type matrixRepeatDeclares struct {
+	matrixLeftTagged
+	matrixRightTagged
+}
+
+// The repeated type's tagged name is annihilated, leaving a sibling's untagged X under "X".
+type matrixRepeatTaggedPlusUntagged struct {
+	matrixLeftTagged
+	matrixRightTagged
+	matrixUntagged
+}
+
+// The repeated type's untagged name never collides with "x"; the sibling's tagged one wins.
+type matrixRepeatUntaggedPlusTagged struct {
+	matrixLeftUntagged
+	matrixRightUntagged
+	matrixTagged
+}
+
+type (
+	matrixDeepHolder  struct{ matrixTagged }
+	matrixDeeperRoute struct{ matrixDeepHolder }
+)
+
+// One route reaches the declaring type a level earlier than the other: the shallower wins.
+type matrixMixedDepth struct {
+	matrixTagged
+	matrixDeeperRoute
+}
+
+func TestGet_RepeatedEmbedMatrixMatchesEncodingJSON(t *testing.T) {
+	repeatDeclares := &matrixRepeatDeclares{}
+	repeatDeclares.matrixLeftTagged.Y = "L"
+	repeatDeclares.matrixRightTagged.Y = "R"
+
+	taggedPlusUntagged := &matrixRepeatTaggedPlusUntagged{}
+	taggedPlusUntagged.matrixLeftTagged.Y = "L"
+	taggedPlusUntagged.matrixRightTagged.Y = "R"
+	taggedPlusUntagged.X = "U"
+
+	untaggedPlusTagged := &matrixRepeatUntaggedPlusTagged{}
+	untaggedPlusTagged.matrixLeftUntagged.X = "L"
+	untaggedPlusTagged.matrixRightUntagged.X = "R"
+	untaggedPlusTagged.Y = "T"
+
+	mixedDepth := &matrixMixedDepth{}
+	mixedDepth.Y = "shallow"
+	mixedDepth.Y = "deep"
+
+	for _, tc := range []struct {
+		name  string
+		value any
+	}{
+		{"repeated type declares the name", repeatDeclares},
+		{"repeated tagged plus untagged sibling", taggedPlusUntagged},
+		{"repeated untagged plus tagged sibling", untaggedPlusTagged},
+		{"one route shallower than the other", mixedDepth},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			blob, err := json.Marshal(tc.value)
+			require.NoError(t, err)
+			var emitted map[string]any
+			require.NoError(t, json.Unmarshal(blob, &emitted))
+
+			want, onTheWire := emitted["x"]
+			got, err := structaccess.GetByString(tc.value, "x")
+
+			if !onTheWire {
+				require.Error(t, err, "encoding/json emitted %s, so there is no x to read", blob)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, want, got, "encoding/json emitted %s", blob)
+		})
+	}
+}
+
+// Only the exact tag json:"-" omits a field. A tag whose name part is "-" followed by options
+// names the field "-", which encoding/json serializes like any other name.
+type dashNamed struct {
+	Skipped string `json:"-"`
+	Named   string `json:"-,omitempty"` //nolint:staticcheck // the odd tag is the point
+	Kept    string `json:"kept,omitempty"`
+}
+
+func TestGetSet_DashIsAFieldNameWhenTheTagHasOptions(t *testing.T) {
+	target := &dashNamed{Skipped: "s", Named: "n", Kept: "k"}
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"-":"n","kept":"k"}`, string(blob))
+
+	value, err := structaccess.GetByString(target, "-")
+	require.NoError(t, err)
+	assert.Equal(t, "n", value)
+
+	require.NoError(t, structaccess.SetByString(target, "-", "set"))
+	assert.Equal(t, "set", target.Named)
+	assert.Equal(t, "s", target.Skipped, "the json:\"-\" field stays out of reach")
 }

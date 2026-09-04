@@ -1,7 +1,9 @@
 package structwalk
 
 import (
+	"encoding/json"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -275,4 +277,55 @@ func TestEmbeddedStructWithJSONTagDash(t *testing.T) {
 		"included":     "should_appear",
 		"parent_field": "parent",
 	}, flatten(t, parent))
+}
+
+// An anonymous field carrying a json name is a named field to encoding/json: it serializes as
+// a nested object under that name rather than being flattened into the outer one. A field whose
+// tag sets only an option, leaving the name empty, is still flattened.
+type WalkEmbedLeaf struct {
+	Value string `json:"value,omitempty"`
+}
+
+type walkTaggedEmbed struct {
+	WalkEmbedLeaf `json:"leaf"`
+
+	Own string `json:"own,omitempty"`
+}
+
+type walkOptionOnlyEmbed struct {
+	WalkEmbedLeaf `json:",omitempty"`
+
+	Own string `json:"own,omitempty"`
+}
+
+func TestWalkTaggedEmbedIsANamedField(t *testing.T) {
+	value := &walkTaggedEmbed{WalkEmbedLeaf: WalkEmbedLeaf{Value: "v"}, Own: "o"}
+
+	blob, err := json.Marshal(value)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"leaf":{"value":"v"},"own":"o"}`, string(blob))
+
+	assert.Equal(t, []string{"leaf.value", "own"}, walkPaths(t, value))
+}
+
+func TestWalkOptionOnlyEmbedIsStillFlattened(t *testing.T) {
+	value := &walkOptionOnlyEmbed{WalkEmbedLeaf: WalkEmbedLeaf{Value: "v"}, Own: "o"}
+
+	blob, err := json.Marshal(value)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"value":"v","own":"o"}`, string(blob))
+
+	assert.Equal(t, []string{"own", "value"}, walkPaths(t, value))
+}
+
+// walkPaths returns the paths Walk visits, sorted.
+func walkPaths(t *testing.T, value any) []string {
+	t.Helper()
+
+	var paths []string
+	require.NoError(t, Walk(value, func(path *structpath.PathNode, _ any, _ *reflect.StructField) {
+		paths = append(paths, path.String())
+	}))
+	slices.Sort(paths)
+	return paths
 }

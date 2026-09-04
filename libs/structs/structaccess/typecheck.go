@@ -142,70 +142,237 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 // It also searches embedded anonymous structs (pointer or value) recursively.
 // Returns the StructField, the declaring owner type, and whether it was found.
 func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, reflect.Type, bool) {
-	if t.Kind() != reflect.Struct {
+	index, sf, ok := findFieldIndexByKeyType(t, key)
+	if !ok {
 		return reflect.StructField{}, reflect.TypeOf(nil), false
 	}
+	return sf, ownerTypeAt(t, index), true
+}
 
-	// First pass: direct fields
-	if sf, ok := findDirectFieldByKeyType(t, key); ok {
-		return sf, t, true
+// findFieldIndexByKeyType resolves key to a field of t and returns the chain of field indices
+// leading to it, the way reflect.Type.FieldByName does.
+//
+// Embedded structs are searched breadth-first, mirroring encoding/json: a name declared at
+// two embedding depths resolves to the shallower one, so a depth-first search could pick a
+// field the wire format does not use. A name declared twice at one depth is ambiguous, which
+// encoding/json resolves by serializing neither, so it resolves to nothing here too.
+//
+// Returning the index chain rather than a type matters: the same struct type can be reachable
+// by more than one path, so a caller navigating a value needs the path json would take, not
+// merely the type at the end of it.
+func findFieldIndexByKeyType(t reflect.Type, key string) ([]int, reflect.StructField, bool) {
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return nil, reflect.StructField{}, false
 	}
 
-	// Second pass: search embedded anonymous structs breadth-first, mirroring findStructFieldByKey
-	// (get.go) so a path validates against the same field Get and Set resolve it to, which is
-	// the one encoding/json serializes: the shallower of two same-named fields.
-	level := embeddedStructTypes(t)
+	if c, ok := pickCandidate(directCandidates(t, key, nil)); ok {
+		return c.index, c.field, true
+	}
+
+	// A cycle must not be walked twice, or a key the type never declares sends the search
+	// round forever.
+	seen := map[reflect.Type]bool{t: true}
+	level := dedupeByType(embeddedIndexPaths(t, nil))
 	for len(level) > 0 {
-		var next []reflect.Type
-		for _, ft := range level {
-			if sf, ok := findDirectFieldByKeyType(ft, key); ok {
-				return sf, ft, true
+		var next []embeddedPath
+		var found []candidate
+		for _, embed := range level {
+			matches := directCandidates(embed.typ, key, embed.index)
+			if len(matches) > 0 {
+				found = append(found, matches...)
+				if embed.reached > 1 {
+					// Several members of the previous level reach this type, so encoding/json sees
+					// the names it declares once per route and annihilates them. One extra match is
+					// enough to make the name ambiguous below.
+					found = append(found, matches[0])
+				}
+				continue
 			}
-			next = append(next, embeddedStructTypes(ft)...)
+			for _, deeper := range embeddedIndexPaths(embed.typ, embed.index) {
+				if seen[deeper.typ] {
+					continue
+				}
+				next = append(next, deeper)
+			}
 		}
-		level = next
+		level = dedupeByType(next)
+		for _, embed := range level {
+			seen[embed.typ] = true
+		}
+		if len(found) > 0 {
+			if c, ok := pickCandidate(found); ok {
+				return c.index, c.field, true
+			}
+			return nil, reflect.StructField{}, false
+		}
 	}
 
-	return reflect.StructField{}, reflect.TypeOf(nil), false
+	return nil, reflect.StructField{}, false
 }
 
-// findDirectFieldByKeyType matches key against the struct's own fields, by json tag name.
-func findDirectFieldByKeyType(t reflect.Type, key string) (reflect.StructField, bool) {
-	for sf := range t.Fields() {
-		if sf.PkgPath != "" { // unexported
+// embeddedPath is an embedded struct type together with the index chain that reaches it, and
+// how many members of the previous level reach it.
+type embeddedPath struct {
+	typ     reflect.Type
+	index   []int
+	reached int
+}
+
+// dedupeByType collapses repeated embeds of one type into a single entry, counting how many
+// routes reached it. encoding/json descends into a type once per level however many members
+// embed it, so a name declared *below* a type reached twice is not ambiguous; a name the
+// duplicated type declares itself is, and the count records that.
+func dedupeByType(paths []embeddedPath) []embeddedPath {
+	var out []embeddedPath
+	index := map[reflect.Type]int{}
+	for _, path := range paths {
+		if at, ok := index[path.typ]; ok {
+			out[at].reached++
 			continue
 		}
-		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-		if name == "-" || sf.Name == EmbeddedSliceFieldName {
-			continue
-		}
-		if name != key {
-			continue
-		}
-		// Skip fields marked as internal/readonly
-		btag := structtag.BundleTag(sf.Tag.Get("bundle"))
-		if btag.Internal() || btag.ReadOnly() {
-			continue
-		}
-		return sf, true
+		index[path.typ] = len(out)
+		path.reached = 1
+		out = append(out, path)
 	}
-	return reflect.StructField{}, false
+	return out
 }
 
-// embeddedStructTypes returns the anonymous struct fields of t, dereferenced.
-func embeddedStructTypes(t reflect.Type) []reflect.Type {
-	var out []reflect.Type
-	for sf := range t.Fields() {
-		if !sf.Anonymous {
+// embeddedIndexPaths returns the embeds of t that encoding/json flattens, each with the index
+// chain from the root that reaches it.
+func embeddedIndexPaths(t reflect.Type, prefix []int) []embeddedPath {
+	var out []embeddedPath
+	for i := range t.NumField() {
+		sf := t.Field(i)
+		if !IsFlattenedEmbed(sf) {
 			continue
 		}
 		ft := sf.Type
 		for ft.Kind() == reflect.Pointer {
 			ft = ft.Elem()
 		}
-		if ft.Kind() == reflect.Struct {
-			out = append(out, ft)
+		if ft.Kind() != reflect.Struct {
+			continue
 		}
+		out = append(out, embeddedPath{typ: ft, index: append(append([]int{}, prefix...), i)})
 	}
 	return out
+}
+
+// ownerTypeAt returns the struct type that declares the field the index chain ends at.
+func ownerTypeAt(t reflect.Type, index []int) reflect.Type {
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	for _, i := range index[:len(index)-1] {
+		t = t.Field(i).Type
+		for t.Kind() == reflect.Pointer {
+			t = t.Elem()
+		}
+	}
+	return t
+}
+
+// candidate is a field that matches a json name, with the index chain reaching it and whether
+// the name came from a json tag. encoding/json prefers a tagged name over an untagged one at
+// the same depth, so the distinction has to survive the search.
+type candidate struct {
+	index  []int
+	field  reflect.StructField
+	tagged bool
+}
+
+// directCandidates returns the struct's own fields that key can name. A field with a json tag
+// name is matched on that; a field without one is matched on its Go field name, which is what
+// encoding/json serializes it under. An embed that encoding/json flattens is not addressable by
+// name at all, so it is not a candidate.
+func directCandidates(t reflect.Type, key string, prefix []int) []candidate {
+	var out []candidate
+	for i := range t.NumField() {
+		sf := t.Field(i)
+		if sf.PkgPath != "" { // unexported
+			continue
+		}
+		if sf.Name == EmbeddedSliceFieldName || IsFlattenedEmbed(sf) {
+			continue
+		}
+		if IsSkippedField(sf) {
+			continue
+		}
+		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
+		tagged := name != ""
+		if !tagged {
+			name = sf.Name
+		}
+		if name != key {
+			continue
+		}
+		// Skip fields marked as internal/readonly.
+		//
+		// Known divergence from encoding/json: such a field still shadows a same-named field
+		// further down, so dropping it here lets the deeper one win and a caller can reach a
+		// field the wire format does not carry. resources.App is the live example -- its
+		// BaseResource.URL is internal and shadows the SDK's url, which json serializes as the
+		// internal one. Rejecting the name outright instead would make
+		// ${resources.apps.*.url} unresolvable, so which of the two is right is a decision
+		// about what internal means, not a detail of the search.
+		btag := structtag.BundleTag(sf.Tag.Get("bundle"))
+		if btag.Internal() || btag.ReadOnly() {
+			continue
+		}
+		out = append(out, candidate{
+			index:  append(append([]int{}, prefix...), i),
+			field:  sf,
+			tagged: tagged,
+		})
+	}
+	return out
+}
+
+// pickCandidate applies encoding/json's precedence among fields that share a name at one
+// depth: a single tagged name wins over untagged ones, a single match of either kind wins, and
+// anything else is ambiguous and serialized as nothing.
+func pickCandidate(candidates []candidate) (candidate, bool) {
+	if len(candidates) == 1 {
+		return candidates[0], true
+	}
+	var tagged []candidate
+	for _, c := range candidates {
+		if c.tagged {
+			tagged = append(tagged, c)
+		}
+	}
+	if len(tagged) == 1 {
+		return tagged[0], true
+	}
+	return candidate{}, false
+}
+
+// IsSkippedField reports whether encoding/json omits the field entirely. Only the exact tag
+// `json:"-"` does that: `json:"-,"` and `json:"-,omitempty"` name the field "-", which is a
+// distinction structtag's parsed name alone cannot carry, since it reports "-" for both.
+func IsSkippedField(sf reflect.StructField) bool {
+	return sf.Tag.Get("json") == "-"
+}
+
+// IsFlattenedEmbed reports whether the field is an embed encoding/json flattens into the
+// outer object. An anonymous field that carries a json *name* is a named field instead: it
+// serializes as a nested object under that name. The name is what matters, not the presence
+// of a tag: `json:",omitempty"` leaves the name empty, so such a field is still flattened.
+func IsFlattenedEmbed(sf reflect.StructField) bool {
+	if !sf.Anonymous {
+		return false
+	}
+	if structtag.JSONTag(sf.Tag.Get("json")).Name() != "" {
+		return false
+	}
+	// Only an anonymous *struct* is promoted. An embedded scalar, slice or interface is a member
+	// named after its type, so it belongs at its own path rather than the parent's.
+	ft := sf.Type
+	for ft.Kind() == reflect.Pointer {
+		ft = ft.Elem()
+	}
+	return ft.Kind() == reflect.Struct
 }

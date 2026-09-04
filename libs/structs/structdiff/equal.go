@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"slices"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
 
@@ -107,8 +108,9 @@ func equalStruct(s1, s2 reflect.Value) bool {
 			continue
 		}
 
-		// Continue traversing embedded structs.
-		if sf.Anonymous {
+		// Continue traversing embedded structs. A tagged one is a named field to encoding/json,
+		// so it goes through the path below, which also honours json:"-".
+		if structaccess.IsFlattenedEmbed(sf) {
 			if !equalValues(s1.Field(i), s2.Field(i)) {
 				return false
 			}
@@ -118,7 +120,7 @@ func equalStruct(s1, s2 reflect.Value) bool {
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
 
 		// Skip fields with json:"-"
-		if jsonTag.Name() == "-" {
+		if structaccess.IsSkippedField(sf) {
 			continue
 		}
 

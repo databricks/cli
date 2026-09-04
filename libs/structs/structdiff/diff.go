@@ -209,8 +209,11 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 			continue
 		}
 
-		// Continue traversing embedded structs. Do not add the key to the path though.
-		if sf.Anonymous {
+		// Continue traversing embedded structs. Do not add the key to the path though. An
+		// anonymous field carrying a json name is not one of these: encoding/json serializes it
+		// as a nested object, so it is handled as a named field below and its changes are
+		// reported under that name.
+		if structaccess.IsFlattenedEmbed(sf) {
 			if err := diffValues(ctx, path, s1.Field(i), s2.Field(i), changes); err != nil {
 				return err
 			}
@@ -221,7 +224,7 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 
 		// Resolve field name from JSON tag or fall back to Go field name
 		fieldName := jsonTag.Name()
-		if fieldName == "-" {
+		if structaccess.IsSkippedField(sf) {
 			continue
 		}
 

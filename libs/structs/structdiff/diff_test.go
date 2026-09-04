@@ -1,6 +1,7 @@
 package structdiff
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 	"time"
@@ -9,6 +10,7 @@ import (
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type B struct{ S string }
@@ -922,4 +924,30 @@ func TestGetStructDiffSliceKeysDuplicates(t *testing.T) {
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})
 	}
+}
+
+// An anonymous field carrying a json name is a named field to encoding/json: it serializes as
+// a nested object, so a change inside it belongs at that nested path, not at the outer level.
+type DiffEmbedLeaf struct {
+	Value string `json:"value,omitempty"`
+}
+
+type diffTaggedEmbed struct {
+	DiffEmbedLeaf `json:"leaf"`
+
+	Own string `json:"own,omitempty"`
+}
+
+func TestDiffTaggedEmbedIsReportedUnderItsName(t *testing.T) {
+	before := &diffTaggedEmbed{DiffEmbedLeaf: DiffEmbedLeaf{Value: "before"}, Own: "o"}
+	after := &diffTaggedEmbed{DiffEmbedLeaf: DiffEmbedLeaf{Value: "after"}, Own: "o"}
+
+	blob, err := json.Marshal(after)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"leaf":{"value":"after"},"own":"o"}`, string(blob))
+
+	changes, err := GetStructDiff(before, after, nil)
+	require.NoError(t, err)
+	require.Len(t, changes, 1)
+	assert.Equal(t, "leaf.value", changes[0].Path.String())
 }
