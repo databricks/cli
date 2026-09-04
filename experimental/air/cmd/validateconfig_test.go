@@ -110,6 +110,23 @@ func TestValidateConfigRequestShape(t *testing.T) {
 	assert.Equal(t, map[string]any{"HF_HOME": "/tmp/hf"}, runOptions["env_variables"])
 }
 
+func TestValidateConfigRequestCarriesPriorityClass(t *testing.T) {
+	var gotReq map[string]any
+	srv := validateServer(t, http.StatusOK, `{}`, &gotReq)
+
+	cfg := baseRunConfig()
+	cfg.Compute.ProvisionedCapacityID = new("cap-8xh100-res")
+	cfg.Compute.PriorityClass = new("CRITICAL")
+	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh")
+	require.NoError(t, err)
+
+	task := gotReq["task"].(map[string]any)
+	// priority_class is task-level; provisioned_capacity_id stays on the compute spec.
+	assert.Equal(t, "CRITICAL", task["priority_class"])
+	compute := task["deployments"].([]any)[0].(map[string]any)["compute"].(map[string]any)
+	assert.Equal(t, "cap-8xh100-res", compute["provisioned_capacity_id"])
+}
+
 func TestValidateConfigRequestOmitsUnsetOptions(t *testing.T) {
 	// A minimal config carries no run_options and only the fields it set, so the
 	// server never validates values the user didn't provide.
