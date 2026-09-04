@@ -371,6 +371,88 @@ resources:
       # and the remote diverges, normal drift detection still applies.
       - field: config.traffic_config
 
+  model_services:
+    provided_id_fields:
+      # parent + model_service_id compose the server-derived resource name
+      # (model-services/{catalog}.{schema}.{model_service}), which is the ID the
+      # resource is fetched by. Both are immutable; a local change recreates.
+      # DoRead reconstructs them from the returned name, so a remote-only
+      # difference can only be normalization and is skipped.
+      - field: parent
+        reason: id_field
+      - field: model_service_id
+        reason: id_field
+    ignore_remote_changes:
+      # Server-resolved / tombstone fields returned on read, not user-authored.
+      # The generator maps model_services to the create-request type (config
+      # nested under model_service.*) so it can't emit these config.* paths;
+      # classify them by hand to avoid phantom drift.
+      - field: config.inference_table.table
+        reason: output_only
+      - field: config.inference_table.is_deleted
+        reason: output_only
+
+  mcp_services:
+    provided_id_fields:
+      # parent + mcp_service_id compose the server-derived resource name
+      # (mcp-services/{catalog}.{schema}.{mcp_service}), which is the ID the
+      # resource is fetched by. Both are immutable; a local change recreates.
+      # DoRead reconstructs them from the returned name, so a remote-only
+      # difference can only be normalization and is skipped.
+      - field: parent
+        reason: id_field
+      - field: mcp_service_id
+        reason: id_field
+    ignore_remote_changes:
+      # Tombstone marker returned on read when the bound UC connection is
+      # deleted; server-populated, not user-authored (see model_services note).
+      - field: config.source_connection.is_deleted
+        reason: output_only
+
+  model_provider_services:
+    provided_id_fields:
+      # parent + model_provider_service_id compose the server-derived resource
+      # name (model-provider-services/{catalog}.{schema}.{model_provider_service}),
+      # which is the ID the resource is fetched by. Both immutable; a local
+      # change recreates. DoRead reconstructs them from the returned name.
+      - field: parent
+        reason: id_field
+      - field: model_provider_service_id
+        reason: id_field
+    recreate_on_changes:
+      # provider_type is required at create and immutable thereafter; the API
+      # rejects changing it via Update, so a local change must recreate.
+      - field: config.provider_type
+        reason: immutable
+    ignore_remote_changes:
+      # Server-resolved / tombstone fields returned on read (see model_services
+      # note on why the generator can't emit these config.* paths).
+      - field: config.inference_table.table
+        reason: output_only
+      - field: config.inference_table.is_deleted
+        reason: output_only
+      # Write-only provider credentials: accepted on create/update, never
+      # returned by GET, so remote always reports empty. Suppress to avoid
+      # phantom drift on every deploy.
+      - field: config.amazon_bedrock.direct.aws_access_key.secret_access_key.plaintext
+        reason: input_only
+      - field: config.anthropic.direct.api_key.plaintext
+        reason: input_only
+      - field: config.azure_openai.direct.api_key.plaintext
+        reason: input_only
+      - field: config.azure_openai.direct.entra_service_principal.client_secret.plaintext
+        reason: input_only
+      - field: config.custom.direct.api_key.plaintext
+        reason: input_only
+      - field: config.gemini_enterprise.direct.api_key.plaintext
+        reason: input_only
+      - field: config.microsoft_foundry.direct.api_key.plaintext
+        reason: input_only
+      - field: config.microsoft_foundry.direct.entra_service_principal.client_secret.plaintext
+        reason: input_only
+      - field: config.openai.direct.api_key.plaintext
+        reason: input_only
+
   registered_models:
     ignore_remote_changes:
       # Output-only timestamp/user fields populated by the backend on read.

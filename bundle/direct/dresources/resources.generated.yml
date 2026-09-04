@@ -209,6 +209,12 @@ resources:
 
   # jobs: no api field behaviors
 
+  # mcp_services: no api field behaviors
+
+  # model_provider_services: no api field behaviors
+
+  # model_services: no api field behaviors
+
   model_serving_endpoints:
 
     ignore_remote_changes:

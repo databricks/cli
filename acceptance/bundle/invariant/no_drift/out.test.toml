@@ -60,6 +60,9 @@ EnvMatrix.INPUT_CONFIG = [
   "volume.yml.tmpl",
   "volume_external.yml.tmpl",
   "volume_path_job_ref.yml.tmpl",
-  "volume_uppercase_name.yml.tmpl"
+  "volume_uppercase_name.yml.tmpl",
+  "model_service.yml.tmpl",
+  "mcp_service.yml.tmpl",
+  "model_provider_service.yml.tmpl"
 ]
 EnvMatrix.READPLAN = ["", "1"]

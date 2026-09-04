@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  mcp_services:
+    mcp1:
+      parent: schemas/main.myschema
+      mcp_service_id: myservice
+      comment: COMMENT1
+
