@@ -21,6 +21,10 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		}
 	}
 
+	if experiment.Name == "" {
+		return experimentNameRequired()
+	}
+
 	testUser := s.CurrentUser()
 
 	// Server appends these tags automatically to experiments.
@@ -105,22 +109,35 @@ func (s *FakeWorkspace) ExperimentUpdate(req Request) Response {
 		}
 	}
 
-	// Update the experiment
-	if updateReq.NewName != "" {
-		experiment.Experiment.Name = updateReq.NewName
+	// An experiment cannot be left nameless, so clearing the name is refused rather than ignored --
+	// the backend rejects the update outright.
+	if updateReq.NewName == "" {
+		return experimentNameRequired()
+	}
+	experiment.Experiment.Name = updateReq.NewName
 
-		// The server modifies the value of the tag as well. Mimic that behaviour
-		// in the test server as well.
-		for i := range experiment.Experiment.Tags {
-			if experiment.Experiment.Tags[i].Key == "mlflow.experiment.sourceName" {
-				experiment.Experiment.Tags[i].Value = updateReq.NewName
-			}
+	// The server modifies the value of the tag as well. Mimic that behaviour
+	// in the test server as well.
+	for i := range experiment.Experiment.Tags {
+		if experiment.Experiment.Tags[i].Key == "mlflow.experiment.sourceName" {
+			experiment.Experiment.Tags[i].Value = updateReq.NewName
 		}
 	}
 
 	s.Experiments[updateReq.ExperimentId] = experiment
 
 	return Response{}
+}
+
+// experimentNameRequired mirrors the backend's refusal of a create or update with no name.
+func experimentNameRequired() Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    "An experiment name must be provided",
+		},
+	}
 }
 
 func (s *FakeWorkspace) ExperimentDelete(req Request) Response {
