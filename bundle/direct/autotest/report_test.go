@@ -99,6 +99,10 @@ const (
 	// two is wrong: either the schema is missing a required annotation, or the API is stricter than it
 	// means to be. Worth a look, which is why it is a separate word from the one above.
 	verdictCannotDeleteNotRequired verdict = "CANNOT_DELETE_NOT_REQUIRED"
+	// The run could not put a field back, so it kept the state the API had taken and every later field
+	// of this type was measured from there. The baseline keeps the verdicts honest, but the config the
+	// later fields deploy still carries this field, so it rides along in their update masks too.
+	verdictBaseShifted verdict = "BASE_SHIFTED"
 	// The engine named the field in update_mask and then left it out of the body, so the backend
 	// refused a request the engine built wrong. Nothing to do with whether the field is required, and
 	// the only verdict here that is a defect of ours rather than a fact about the API.
@@ -364,7 +368,7 @@ func (r *report) render(problemsOnly bool) string {
 	sb.WriteString("\n=== summary\n")
 	for _, v := range []verdict{
 		verdictOK, verdictRecreate, verdictIDFieldRequired, verdictCannotDeleteRequired,
-		verdictCannotDeleteNotRequired, verdictUpdateMaskOmitted, verdictInertConfirmed, verdictSuppressed,
+		verdictCannotDeleteNotRequired, verdictUpdateMaskOmitted, verdictBaseShifted, verdictInertConfirmed, verdictSuppressed,
 		verdictNotObservable, verdictNoPlan, verdictInertViolated,
 		verdictBaselineDrift, verdictStaleRead, verdictUpdateIgnored, verdictDrift,
 		verdictCollateral, verdictDriftChild,
