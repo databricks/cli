@@ -8,6 +8,4 @@ from databricks.bundles.quality_monitors import QualityMonitor
 def update_quality_monitor(monitor: QualityMonitor) -> QualityMonitor:
     assert isinstance(monitor.output_schema_name, str)
 
-    return replace(
-        monitor, output_schema_name=f"{monitor.output_schema_name} (updated)"
-    )
+    return replace(monitor, output_schema_name=f"{monitor.output_schema_name} (updated)")
