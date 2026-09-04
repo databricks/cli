@@ -33,18 +33,27 @@ const (
 	maxWalEntrySize     = 10 * 1024 * 1024
 	walSuffix           = ".wal"
 
-	// featureStateVersion is the schema version a future CLI will write once it records feature flags
-	// in the state version itself. This CLI does not write it, but reads such states (see
-	// migrateState): featureStateVersion with no features is equivalent to currentStateVersion and is
-	// accepted as-is (the on-disk version is left at featureStateVersion, not flipped down);
-	// featureStateVersion with any feature depends on capabilities this CLI lacks, so it is refused.
-	// Forward-compat scaffolding so a later release can write featureStateVersion + features without
-	// this CLI rejecting them outright. Always 3.
+	// featureStateVersion is the schema version a future CLI will write once it
+	// records deployment state "feature flags" (see Header.Features). This CLI does
+	// not write it and records no features; it exists now only so this CLI reads
+	// such states correctly (see migrateState):
+	//   - featureStateVersion with no features  -> accept and leave the version as-is
+	//   - featureStateVersion with any feature   -> refuse, tell the user to upgrade
+	//
+	// A featureStateVersion state with no features is equivalent to
+	// currentStateVersion, but we deliberately do not flip the on-disk version down
+	// to currentStateVersion: a state written at featureStateVersion stays at
+	// featureStateVersion. This is forward-compat scaffolding so that a later release
+	// can start writing featureStateVersion + features without older CLIs (with this
+	// change) either mishandling a feature they lack or rejecting a featureless state
+	// outright. featureStateVersion is always 3.
 	featureStateVersion = 3
 
-	// supportedStateVersion is the highest schema version this CLI can read. Normally equal to
-	// currentStateVersion - the version it reads is the version it writes - but this CLI can also
-	// read (never write) featureStateVersion. A state newer than this is rejected as too new.
+	// supportedStateVersion is the highest schema version this CLI can read. It is
+	// normally equal to currentStateVersion — the version this CLI reads is the
+	// version it writes — and exceeds it only during a two-phase version bump like
+	// the current feature-flag scaffolding, where this CLI reads (but does not
+	// write) featureStateVersion. A state newer than this is rejected as too new.
 	supportedStateVersion = featureStateVersion
 )
 
@@ -105,7 +114,7 @@ var errStaleWAL = errors.New("stale WAL")
 // present an operation-appropriate message via errors.Is.
 var ErrUnsettingRecording = errors.New(`unsetting experimental.record_deployment_history is not supported
 
-This deployment's resources are recorded with the deployment metadata service. Set experimental.record_deployment_history: true to deploy or destroy this bundle`)
+This deployment's resources are recorded with the deployment history feature enabled. Set experimental.record_deployment_history: true to deploy or destroy this bundle`)
 
 type DeploymentState struct {
 	Path    string
@@ -117,7 +126,7 @@ type DeploymentState struct {
 	stateIDs map[string]string
 
 	// operationBuffer records each state write with DMS. Nil unless the bundle records deployment
-	// history, in which case StartRecording installs it once the version exists.
+	// history, in which case InitializeOperationBuffer installs it once the version exists.
 	operationBuffer *dms.OperationBuffer
 
 	// dmsClient talks to the deployment metadata service. Open builds it from the workspace
@@ -125,22 +134,18 @@ type DeploymentState struct {
 	dmsClient *dms.Client
 
 	// storageBackend is where this deployment's state lives, set by Open from the feature marker.
-	// It is the source of truth for gating DMS behavior after Open, in place of nil client checks.
+	// It is the source of truth for gating DMS behavior after Open.
 	storageBackend StorageBackend
-
-	// deploymentID and versionID identify the recorded deployment and the version this run writes,
-	// stored by StartRecording. CompleteVersion reads them after Finalize's reset has cleared Path,
-	// Data and stateIDs, so - like operationBuffer and dmsClient - they must survive reset.
-	deploymentID string
-	versionID    int64
 
 	// versionCompleted makes CompleteVersion a no-op after the first call, so a deferred safety-net
 	// completion after an explicit one does nothing.
 	versionCompleted bool
 
-	// DeploymentID and LatestVersionID are the recorded deployment's id and its most recent version
-	// at Open time, from the service. CalculatePlan reads them (rather than the bundle config tree)
-	// to stamp the plan's lineage. Both empty for a first deploy, whose id the deploy phase creates.
+	// DeploymentID and LatestVersionID are the recorded deployment's id and its most recent version,
+	// from the service at Open (InitializeOperationBuffer updates DeploymentID to the id a first
+	// deploy creates, which Open cannot know). CalculatePlan reads them to stamp the plan's lineage;
+	// CompleteVersion reads them after Finalize's reset - so, like operationBuffer and dmsClient, they
+	// must survive reset.
 	DeploymentID    string
 	LatestVersionID string
 }
@@ -183,24 +188,27 @@ type WALEntry struct {
 	Value *ResourceEntry `json:"v,omitempty"` // nil means delete
 }
 
-// StartRecording opens the operation buffer that records each subsequent state write with DMS
-// under deploymentID and versionID, so what the service holds mirrors the WAL. It uses the client
-// Open built, so it is called only when the deployment records history, and once the version
-// exists (after approval) - which is why it is not an Open option.
-func (db *DeploymentState) StartRecording(ctx context.Context, deploymentID string, versionID int64) {
+// InitializeOperationBuffer opens the operation buffer that records each subsequent state write with
+// DMS under deploymentID and versionID, so what the service holds mirrors the WAL. It uses the client
+// Open built, so it is called only when the deployment records history, and once the version exists
+// (after approval) - which is why it is not an Open option. It also records the id a first deploy
+// just created, which Open could not know, so CompleteVersion later has it.
+func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploymentID string, versionID int64) {
 	buf := dms.StartOperationBuffer(ctx, db.dmsClient, deploymentID, versionID)
 
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.operationBuffer = buf
-	db.deploymentID = deploymentID
-	db.versionID = versionID
+	db.DeploymentID = deploymentID
 }
 
 // RecordingError reports whether recording state writes to the service has failed, so the apply
 // stops touching resources once the service is no longer keeping up. Nil when the bundle does not
 // record deployment history or recording is healthy.
 func (db *DeploymentState) RecordingError() error {
+	if db.StorageBackend() != StorageBackendDeploymentMetadataService {
+		return nil
+	}
 	db.mu.Lock()
 	buf := db.operationBuffer
 	db.mu.Unlock()
@@ -223,8 +231,13 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 		return false, nil
 	}
 	db.versionCompleted = true
-	deploymentID, versionID, client := db.deploymentID, db.versionID, db.dmsClient
+	deploymentID, latestVersionID, client := db.DeploymentID, db.LatestVersionID, db.dmsClient
 	db.mu.Unlock()
+
+	versionID, err := dms.NextVersion(latestVersionID)
+	if err != nil {
+		return false, err
+	}
 
 	// A recording failure fails the version even when the caller counted the deploy a success: the
 	// service does not then hold everything the WAL does. Finalize already drained and surfaced it;
@@ -266,7 +279,7 @@ func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause e
 		}
 	}
 
-	// A failure is recorded only while a version is open (after StartRecording), so the buffer is set.
+	// A failure is recorded only while a version is open (after InitializeOperationBuffer), so the buffer is set.
 	db.mu.Lock()
 	buf := db.operationBuffer
 	db.mu.Unlock()
@@ -463,7 +476,7 @@ type (
 // When withDeploymentHistory is set it builds a DMS client from wsClient and reads resources from
 // the service instead, with dmsDeploymentID the id the service holds (empty before the first
 // recorded deploy); lineage and serial still come from the file, since that is what the write path
-// increments. Open only reads through the client - StartRecording installs the write path once a
+// increments. Open only reads through the client - InitializeOperationBuffer installs the write path once a
 // version exists.
 func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeploymentID string) error {
 	db.mu.Lock()
@@ -566,7 +579,7 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		db.Data.Features[featureRecordDeploymentHistory] = struct{}{}
 		recorded = true
 	case recording && !recorded:
-		return errors.New(`this deployment already exists and is not recorded with the deployment metadata service, so it cannot be recorded without redeploying its resources
+		return errors.New(`this deployment already exists and is not recorded with the deployment history feature enabled, so it cannot be recorded without redeploying its resources
 
 To record this bundle's history, start it over as a new deployment:
   1. remove experimental.record_deployment_history from your bundle configuration

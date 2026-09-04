@@ -43,7 +43,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
-	// The state DB records every write with DMS from here on (via the buffer StartRecording opened
+	// The state DB records every write with DMS from here on (via the buffer InitializeOperationBuffer opened
 	// in the deploy phase), so the service mirrors the WAL. Writes go out on one background
 	// goroutine, off the apply path, and are drained below once every worker has finished recording.
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {

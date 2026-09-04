@@ -66,7 +66,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Enabling recording is refused: this deployment already exists but the service has no record of it, and treating the service as authoritative would create its resources a second time
 >>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Error: this deployment already exists and is not recorded with the deployment metadata service, so it cannot be recorded without redeploying its resources
+Error: this deployment already exists and is not recorded with the deployment history feature enabled, so it cannot be recorded without redeploying its resources
 
 To record this bundle's history, start it over as a new deployment:
   1. remove experimental.record_deployment_history from your bundle configuration
@@ -78,7 +78,7 @@ To record this bundle's history, start it over as a new deployment:
 
 === The check is against the remote state, not the local cache: wiping .databricks still refuses, because the deploy pulls the state back from the workspace
 >>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Error: this deployment already exists and is not recorded with the deployment metadata service, so it cannot be recorded without redeploying its resources
+Error: this deployment already exists and is not recorded with the deployment history feature enabled, so it cannot be recorded without redeploying its resources
 
 To record this bundle's history, start it over as a new deployment:
   1. remove experimental.record_deployment_history from your bundle configuration
@@ -88,7 +88,7 @@ To record this bundle's history, start it over as a new deployment:
 
 === A leftover local WAL is irrelevant too: under recording it is discarded rather than replayed, so the refusal stands
 >>> DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Error: this deployment already exists and is not recorded with the deployment metadata service, so it cannot be recorded without redeploying its resources
+Error: this deployment already exists and is not recorded with the deployment history feature enabled, so it cannot be recorded without redeploying its resources
 
 To record this bundle's history, start it over as a new deployment:
   1. remove experimental.record_deployment_history from your bundle configuration

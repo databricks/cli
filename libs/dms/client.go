@@ -105,7 +105,7 @@ func (c *Client) UpdateOperation(ctx context.Context, deploymentID string, versi
 func deploymentIDFromName(name string) (string, error) {
 	id, ok := strings.CutPrefix(name, DeploymentName(""))
 	if !ok || id == "" {
-		return "", fmt.Errorf("unexpected deployment name %q from deployment metadata service", name)
+		return "", fmt.Errorf("unexpected deployment name %q from the deployment history service", name)
 	}
 	return id, nil
 }

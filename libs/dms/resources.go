@@ -29,7 +29,7 @@ func (c *Client) ListResources(ctx context.Context, deploymentID string) ([]Reso
 	for it.HasNext(ctx) {
 		res, err := it.Next(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("listing resources from deployment metadata service: %w", err)
+			return nil, fmt.Errorf("listing resources from the deployment history service: %w", err)
 		}
 		out = append(out, Resource{
 			Key:   statePrefix + res.ResourceKey,

@@ -153,7 +153,7 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 	}
 	log.Infof(ctx, "Created deployment version: deployment=%s version=%s", deploymentID, version.VersionId)
 
-	db.StateDB.StartRecording(ctx, deploymentID, versionID)
+	db.StateDB.InitializeOperationBuffer(ctx, deploymentID, versionID)
 	return nil
 }
 
