@@ -13,13 +13,16 @@ import (
 )
 
 var grantResourceToSecurableType = map[string]string{
-	"catalogs":              "catalog",
-	"schemas":               "schema",
-	"external_locations":    "external_location",
-	"volumes":               "volume",
-	"registered_models":     "function",
-	"secrets":               "secret",
-	"vector_search_indexes": "table",
+	"catalogs":                "catalog",
+	"schemas":                 "schema",
+	"external_locations":      "external_location",
+	"volumes":                 "volume",
+	"registered_models":       "function",
+	"secrets":                 "secret",
+	"vector_search_indexes":   "table",
+	"model_services":          "model_service",
+	"mcp_services":            "mcp_service",
+	"model_provider_services": "model_provider_service",
 }
 
 type GrantsState struct {

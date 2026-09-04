@@ -1,0 +1,42 @@
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "plan": {
+    "resources.mcp_services.my_mcp_service": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "comment": "mycomment",
+          "mcp_service_id": "myservice",
+          "parent": "schemas/main.myschema"
+        }
+      }
+    },
+    "resources.mcp_services.my_mcp_service.grants": {
+      "depends_on": [
+        {
+          "node": "resources.mcp_services.my_mcp_service",
+          "label": "${resources.mcp_services.my_mcp_service.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "securable_type": "mcp_service",
+          "full_name": "",
+          "__embed__": [
+            {
+              "principal": "deco-test-user@databricks.com",
+              "privileges": [
+                "APPLY_TAG"
+              ]
+            }
+          ]
+        },
+        "vars": {
+          "full_name": "${resources.mcp_services.my_mcp_service.id}"
+        }
+      }
+    }
+  }
+}
