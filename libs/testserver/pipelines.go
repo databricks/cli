@@ -23,6 +23,21 @@ func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
 	}
 }
 
+// validatePipelineDeployment mirrors the backend's refusal of a deployment block with no kind: the
+// block is optional, but one that is there has to say what kind it is.
+func validatePipelineDeployment(deployment *pipelines.PipelineDeployment) *Response {
+	if deployment == nil || deployment.Kind != "" {
+		return nil
+	}
+	return &Response{
+		StatusCode: 400,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    "Missing required field: spec.deployment.kind",
+		},
+	}
+}
+
 func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -33,6 +48,10 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
 			StatusCode: 400,
 		}
+	}
+
+	if response := validatePipelineDeployment(spec.Deployment); response != nil {
+		return *response
 	}
 
 	// Unity Catalog requires target_schema_name to be a single schema segment, so a
@@ -108,6 +127,10 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 			Body:       fmt.Sprintf("internal error: %s", err),
 			StatusCode: 400,
 		}
+	}
+
+	if response := validatePipelineDeployment(spec.Deployment); response != nil {
+		return *response
 	}
 
 	item, exists := s.Pipelines[pipelineId]

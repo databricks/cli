@@ -17,6 +17,19 @@ const testMetastoreName = "deco-uc-prod-isolated-aws-us-east-1"
 // report as drift on redeploy.
 const schemaNameManagedDefaults = "schema_managed_defaults"
 
+// ucInvalidNameResponse mirrors Unity Catalog's rejection of a name it will not accept, naming the RPC
+// and the fully-qualified field the way the backend does.
+func ucInvalidNameResponse(rpc, field, name string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message": fmt.Sprintf("Invalid input: RPC %s Field %s: name %q is not a valid name. "+
+				"Valid names cannot contain spaces, periods, forward slashes, or control characters.", rpc, field, name),
+		},
+	}
+}
+
 func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -26,6 +39,15 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
 			StatusCode: http.StatusInternalServerError,
+		}
+	}
+
+	// Unity Catalog validates both name parts before anything else, so an empty one is refused rather
+	// than stored -- the fake server accepting it is what let a cleared name read OK locally while a
+	// workspace refused it.
+	for field, value := range map[string]string{"catalog_name": schema.CatalogName, "name": schema.Name} {
+		if value == "" {
+			return ucInvalidNameResponse("CreateSchema", "managedcatalog.SchemaInfo."+field, value)
 		}
 	}
 
