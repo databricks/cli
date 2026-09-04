@@ -27,6 +27,143 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "latest_version_id": "1"
 }
 
+=== The plan is a no-op now and records DEPLOYMENT_METADATA_SERVICE as its backend
+>>> [CLI] bundle plan -o json
+{
+  "plan_version": 3,
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "skip",
+      "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS][0],
+        "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "email_notifications": {},
+        "format": "MULTI_TASK",
+        "job_id": [NUMID],
+        "max_concurrent_runs": 1,
+        "name": "foo",
+        "queue": {
+          "enabled": true
+        },
+        "run_as_user_name": "[USERNAME]",
+        "timeout_seconds": 0,
+        "webhook_notifications": {}
+      },
+      "changes": {
+        "email_notifications": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": {}
+        }
+      }
+    },
+    "resources.pipelines.bar": {
+      "action": "skip",
+      "remote_state": {
+        "catalog": "main",
+        "channel": "CURRENT",
+        "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+        "id": "[UUID]",
+        "last_modified": [UNIX_TIME_MILLIS][1],
+        "libraries": [
+          {
+            "file": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files/transform.py"
+            }
+          }
+        ],
+        "name": "bar-[UNIQUE_NAME]",
+        "pipeline_id": "[UUID]",
+        "run_as_user_name": "[USERNAME]",
+        "schema": "default",
+        "serverless": true,
+        "state": "IDLE"
+      }
+    }
+  }
+}
+
+=== The raw recorded state the service holds for this deployment
+>>> print_state.py
+{
+ "state_version": 2,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "serial": 1,
+ "features": {
+  "record_deployment_history": {}
+ },
+ "state": {
+  "resources.jobs.foo": {
+   "__id__": "[NUMID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[NUMID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.pipelines.bar": {
+   "__id__": "[UUID]",
+   "state": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+     "deployment_id": "[NUMID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+     {
+      "file": {
+       "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files/transform.py"
+      }
+     }
+    ],
+    "name": "bar-[UNIQUE_NAME]",
+    "schema": "default",
+    "serverless": true
+   }
+  }
+ }
+}
+
 === Plan without touching anything: the deployment stamp must not show as drift
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -131,6 +268,145 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 {
   "deployment_id": "[NUMID]",
   "latest_version_id": "2"
+}
+
+=== The plan shows version 2 for the updated pipeline and DEPLOYMENT_METADATA_SERVICE as backend
+>>> [CLI] bundle plan -o json
+{
+  "plan_version": 3,
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 2,
+  "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "skip",
+      "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS][0],
+        "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "email_notifications": {},
+        "format": "MULTI_TASK",
+        "job_id": [NUMID],
+        "max_concurrent_runs": 1,
+        "name": "foo",
+        "queue": {
+          "enabled": true
+        },
+        "run_as_user_name": "[USERNAME]",
+        "timeout_seconds": 0,
+        "webhook_notifications": {}
+      },
+      "changes": {
+        "email_notifications": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": {}
+        }
+      }
+    },
+    "resources.pipelines.bar": {
+      "action": "skip",
+      "remote_state": {
+        "catalog": "main",
+        "channel": "CURRENT",
+        "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json"
+        },
+        "development": true,
+        "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+        "id": "[UUID]",
+        "last_modified": [UNIX_TIME_MILLIS][1],
+        "libraries": [
+          {
+            "file": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files/transform.py"
+            }
+          }
+        ],
+        "name": "bar-[UNIQUE_NAME]",
+        "pipeline_id": "[UUID]",
+        "run_as_user_name": "[USERNAME]",
+        "schema": "default",
+        "serverless": true,
+        "state": "IDLE"
+      }
+    }
+  }
+}
+
+=== The raw recorded state the service holds after the update
+>>> print_state.py
+{
+ "state_version": 2,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "serial": 2,
+ "features": {
+  "record_deployment_history": {}
+ },
+ "state": {
+  "resources.jobs.foo": {
+   "__id__": "[NUMID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[NUMID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.pipelines.bar": {
+   "__id__": "[UUID]",
+   "state": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+     "deployment_id": "[NUMID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "2"
+    },
+    "development": true,
+    "edition": "ADVANCED",
+    "libraries": [
+     {
+      "file": {
+       "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files/transform.py"
+      }
+     }
+    ],
+    "name": "bar-[UNIQUE_NAME]",
+    "schema": "default",
+    "serverless": true
+   }
+  }
+ }
 }
 
 === Plan again: no residual drift, and the version stamps are ignored

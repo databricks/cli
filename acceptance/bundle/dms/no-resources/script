@@ -5,12 +5,28 @@ trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --get
 trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-no-resources-${UNIQUE_NAME}/default/state/resources.deployment.json" | jq '{object_type,path}'
 
+title "The plan records DEPLOYMENT_METADATA_SERVICE as its backend"
+trace $CLI bundle plan -o json | nostamp.py
+
+title "The service lists no resources for the deployment"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-no-resources-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw recorded state the service holds for this deployment"
+trace print_state.py
+
 title "Redeploy: the deployment is resolved from that node, so no second deployment is created"
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --get
 
-title "The service lists no resources for the deployment: nothing was recorded beyond the deployment itself"
+title "The plan records DEPLOYMENT_METADATA_SERVICE as its backend"
+trace $CLI bundle plan -o json | nostamp.py
+
+title "The service still lists no resources"
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-no-resources-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
-trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json
-# Discard the get-status + list-resources reads above so out.requests.txt is not a golden.
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw recorded state after redeploy"
+trace print_state.py
+
 rm -f out.requests.txt

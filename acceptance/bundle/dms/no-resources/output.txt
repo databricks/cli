@@ -44,6 +44,22 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-resources-[UNIQUE_NAME]/default/state/resources.deployment.json"
 }
 
+=== The plan records DEPLOYMENT_METADATA_SERVICE as its backend
+>>> [CLI] bundle plan -o json
+{
+  "plan_version": 3,
+  "cli_version": "[CLI_VERSION]",
+  "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
+  "plan": {}
+}
+
+=== The service lists no resources for the deployment
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[]
+
+=== The raw recorded state the service holds for this deployment
+>>> print_state.py
+
 === Redeploy: the deployment is resolved from that node, so no second deployment is created
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources-[UNIQUE_NAME]/default/files...
@@ -51,6 +67,18 @@ Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle --get
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+}
 {
   "method": "GET",
   "path": "/api/2.0/bundle/deployments/[NUMID]"
@@ -79,8 +107,18 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== The service lists no resources for the deployment: nothing was recorded beyond the deployment itself
+=== The plan records DEPLOYMENT_METADATA_SERVICE as its backend
+>>> [CLI] bundle plan -o json
+{
+  "plan_version": 3,
+  "cli_version": "[CLI_VERSION]",
+  "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
+  "plan": {}
+}
+
+=== The service still lists no resources
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
-[
-  
-]
+[]
+
+=== The raw recorded state after redeploy
+>>> print_state.py

@@ -7,6 +7,12 @@ deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/$
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 trace $CLI bundle summary -o json | jq .bundle.deployment.history
 
+title "The plan is a no-op now and records DEPLOYMENT_METADATA_SERVICE as its backend"
+trace $CLI bundle plan -o json | nostamp.py
+
+title "The raw recorded state the service holds for this deployment"
+trace print_state.py
+
 # Only deploy stamps deployment.deployment_id. Plan sees it in state but not in config,
 # so it must ignore it rather than report spurious changes.
 title "Plan without touching anything: the deployment stamp must not show as drift"
@@ -20,9 +26,15 @@ trace print_requests.py --dms //api/2.2/jobs //api/2.0/pipelines --sort
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 trace $CLI bundle summary -o json | jq .bundle.deployment.history
 
+title "The plan shows version 2 for the updated pipeline and DEPLOYMENT_METADATA_SERVICE as backend"
+trace $CLI bundle plan -o json | nostamp.py
+
+title "The raw recorded state the service holds after the update"
+trace print_state.py
+
 title "Plan again: no residual drift, and the version stamps are ignored"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged"
 
-# The list-resources and final plan above record requests we do not assert on; drop them so
+# The list-resources and plan/state captures above record requests we do not assert on; drop them so
 # out.requests.txt does not become a nondeterministic golden.
 rm -f out.requests.txt

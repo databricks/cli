@@ -1,12 +1,78 @@
 
 === Save a plan, then deploy it: records version 1
 >>> [CLI] bundle plan -o json
+{
+  "plan_version": 3,
+  "cli_version": "[CLI_VERSION]",
+  "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-stale-plan-[UNIQUE_NAME]/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "foo",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    }
+  }
+}
 
 >>> [CLI] bundle deploy --plan tmp.plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-stale-plan-[UNIQUE_NAME]/default/files...
 Created jobs.foo
 Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.foo"
+  }
+]
+
+=== The raw recorded state the service holds for this deployment
+>>> print_state.py
+{
+ "state_version": 2,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "serial": 1,
+ "features": {
+  "record_deployment_history": {}
+ },
+ "state": {
+  "resources.jobs.foo": {
+   "__id__": "[NUMID]",
+   "state": {
+    "deployment": {
+     "deployment_id": "[NUMID]",
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-stale-plan-[UNIQUE_NAME]/default/state/metadata.json",
+     "version_id": "1"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "foo",
+    "queue": {
+     "enabled": true
+    }
+   }
+  }
+ }
+}
 
 === A saved plan carries the deployment id and the versions it targets (last 1, next 2)
 >>> [CLI] bundle plan -o json

@@ -16,9 +16,15 @@ trace print_requests.py --dms //api/2.0/bundle
 title "Plan again: reading state back from the service works and reports no work"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete" "!unexpected end of JSON input"
 
+title "The plan is a no-op and records DEPLOYMENT_METADATA_SERVICE as its backend"
+trace $CLI bundle plan -o json | nostamp.py
+
 title "The grants node emptied out, so the service no longer lists it - only the schema remains"
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-emptied-resource-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw recorded state the service holds for this deployment"
+trace print_state.py
 
 trace $CLI bundle destroy --auto-approve
 rm -f out.requests.txt

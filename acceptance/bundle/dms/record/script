@@ -14,3 +14,14 @@ trace MSYS_NO_PATHCONV=1 musterr $CLI workspace get-status "/Workspace/Users/${C
 trace $CLI bundle deploy
 trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record-${UNIQUE_NAME}/default/state/resources.deployment.json" | jq '{object_type,path}'
 trace print_requests.py --get --dms //api/2.0/bundle
+
+title "The plan is a no-op now and records DEPLOYMENT_METADATA_SERVICE as its backend"
+trace $CLI bundle plan -o json | nostamp.py
+
+title "The service lists the job, recorded at version 1"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-record-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw recorded state the service holds for this deployment"
+trace print_state.py
+rm -f out.requests.txt
