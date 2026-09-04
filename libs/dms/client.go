@@ -165,6 +165,7 @@ type operationResponse struct {
 //     its operations through it.
 //   - UpdateOperation: the SDK types sequence_id as int64, but the service sends and expects it
 //     as a JSON string.
+//
 // CreateDeployment, DeleteDeployment, CompleteVersion and ListResources go through the SDK (see Client).
 type rawClient struct {
 	client *client.DatabricksClient
