@@ -103,7 +103,13 @@ func planDBConnect(target []byte, c Constraints) dbconnectPlan {
 // byte (comments, ordering, whitespace). It returns the merged bytes and the list of
 // regions that actually changed. The operation is idempotent: feeding its own output
 // back in produces identical bytes.
-func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string, err error) {
+// skipConstraints (--no-constraints) leaves the requires-python and [tool.uv]
+// constraint regions unmanaged: any existing values are preserved and none are
+// written. It is threaded explicitly rather than inferred from empty/nil values in
+// c, so the caller's intent is unambiguous and c always carries the real artifact
+// values. The databricks-connect and environment regions are orthogonal and are
+// always reconciled.
+func MergeManaged(target []byte, c Constraints, skipConstraints bool) (merged []byte, regions []string, err error) {
 	s := string(target)
 
 	// Detect and normalize line endings. We process on "\n" and restore "\r\n" on
@@ -131,9 +137,12 @@ func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string
 		return nil, nil, errNoProjectTable
 	}
 
-	lines, rpChanged := mergeRequiresPython(lines, c.RequiresPython)
-	if rpChanged {
-		regions = append(regions, regionRequiresPython)
+	if !skipConstraints {
+		var rpChanged bool
+		lines, rpChanged = mergeRequiresPython(lines, c.RequiresPython)
+		if rpChanged {
+			regions = append(regions, regionRequiresPython)
+		}
 	}
 
 	lines, _, dbcChanged := mergeDatabricksConnect(lines, c.DatabricksConnect)
@@ -154,9 +163,12 @@ func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string
 		regions = append(regions, regionDatabricksEnvironment)
 	}
 
-	lines, uvChanged := mergeToolUv(lines, c.ConstraintDeps)
-	if uvChanged {
-		regions = append(regions, regionToolUv)
+	if !skipConstraints {
+		var uvChanged bool
+		lines, uvChanged = mergeToolUv(lines, c.ConstraintDeps)
+		if uvChanged {
+			regions = append(regions, regionToolUv)
+		}
 	}
 
 	out := restore(strings.Join(lines, "\n"))
@@ -217,15 +229,8 @@ func tableBounds(lines []string, name string) (header, end int, found bool) {
 // the line's leading whitespace. If the key is absent, it is inserted directly under the
 // [project] header. Returns whether the line slice changed.
 func mergeRequiresPython(lines []string, value string) ([]string, bool) {
-	// An empty value means requires-python is unmanaged (--no-constraints): leave
-	// the user's line untouched rather than overwrite it with a blank pin. This
-	// mirrors how an empty DatabricksConnect / EnvironmentVersion is a no-op; a
-	// real fetched artifact always carries a requires-python, so empty only ever
-	// reaches here when the caller deliberately cleared it.
-	if value == "" {
-		return lines, false
-	}
-
+	// Only reached when constraints are managed (MergeManaged gates on
+	// skipConstraints), where a fetched artifact always carries a requires-python.
 	header, end, found := tableBounds(lines, "[project]")
 	if !found {
 		return lines, false
@@ -870,15 +875,9 @@ func arrayLineSpan(lines []string, start, limit int) (last int, multiline bool) 
 // marker-bracketed block already exists, its contents are replaced in place. Otherwise any
 // plain [tool.uv] table is removed and a fresh marker-bracketed block is appended at EOF.
 func mergeToolUv(lines, deps []string) ([]string, bool) {
-	// A nil deps slice means the [tool.uv] constraint region is unmanaged
-	// (--no-constraints): leave any existing block untouched and write none.
-	// Distinct from a non-nil empty slice, which still renders an empty managed
-	// block; a real fetched artifact always carries constraint-dependencies, so
-	// nil only reaches here when the caller deliberately cleared it.
-	if deps == nil {
-		return lines, false
-	}
-
+	// Only reached when constraints are managed (MergeManaged gates on
+	// skipConstraints). A nil deps slice is treated identically to an empty one:
+	// both render an empty managed block.
 	start, stop, found := markerBounds(lines)
 	if found {
 		// Replace the existing managed region in place. Whether it owns a [tool.uv]
@@ -1244,15 +1243,15 @@ const freshProjectVersion = "0.0.0"
 // [tool.databricks.environment] section (serverless targets only), and the marker-bracketed
 // [tool.uv] constraint block. When c.DatabricksConnect is empty (constraints-only mode) the
 // dev group is emitted empty rather than with a blank entry.
-func RenderFreshPyproject(projectName string, c Constraints) []byte {
+func RenderFreshPyproject(projectName string, c Constraints, skipConstraints bool) []byte {
 	var b strings.Builder
 	b.WriteString("[project]\n")
 	fmt.Fprintf(&b, "name = %q\n", projectName)
 	// uv requires project.version when a [project] table is present.
 	fmt.Fprintf(&b, "version = %q\n", freshProjectVersion)
-	// requires-python is omitted when unmanaged (--no-constraints); an empty pin
-	// would be invalid, and a fresh project without it lets uv pick the interpreter.
-	if c.RequiresPython != "" {
+	// requires-python is omitted when constraints are skipped (--no-constraints),
+	// which lets uv pick the interpreter for the fresh project.
+	if !skipConstraints {
 		fmt.Fprintf(&b, "requires-python = %q\n", c.RequiresPython)
 	}
 	b.WriteString("\n")
@@ -1272,9 +1271,10 @@ func RenderFreshPyproject(projectName string, c Constraints) []byte {
 		fmt.Fprintf(&b, "environment_version = %q\n", c.EnvironmentVersion)
 		b.WriteString("\n")
 	}
-	// The [tool.uv] constraint block is omitted when unmanaged (--no-constraints,
-	// signalled by a nil slice); a non-nil empty slice still renders an empty block.
-	if c.ConstraintDeps != nil {
+	// The [tool.uv] constraint block is omitted when constraints are skipped
+	// (--no-constraints); otherwise it is always written (an empty block when the
+	// artifact carries no constraint-dependencies).
+	if !skipConstraints {
 		for _, line := range renderToolUvBlock(c.ConstraintDeps, true) {
 			b.WriteString(line)
 			b.WriteString("\n")

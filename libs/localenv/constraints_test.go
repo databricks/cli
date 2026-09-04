@@ -260,12 +260,11 @@ func TestFetchConstraintsUnusableBodyDoesNotPoisonCache(t *testing.T) {
 	assert.Equal(t, "==3.12.*", c.RequiresPython)
 }
 
-func TestParseConstraintsNormalizesMissingConstraintDepsToEmpty(t *testing.T) {
-	// An artifact without [tool.uv].constraint-dependencies yields a non-nil empty
-	// slice, not nil, so a nil ConstraintDeps is reserved as the --no-constraints
-	// "leave the constraint block unmanaged" signal (mergeToolUv / RenderFreshPyproject
-	// treat nil as skip). Without this, a normal artifact that simply omits the key
-	// would be indistinguishable from the flag.
+func TestParseConstraintsMissingConstraintDepsIsValid(t *testing.T) {
+	// An artifact without [tool.uv].constraint-dependencies is valid; the parsed
+	// slice is empty. Its nil-vs-empty shape carries no meaning — whether the
+	// constraint region is managed is decided by the --no-constraints flag, threaded
+	// explicitly, so the merge treats nil and empty identically.
 	_, _, deps, err := parseConstraints([]byte(`[project]
 requires-python = ">=3.12"
 
@@ -273,6 +272,5 @@ requires-python = ">=3.12"
 dev = ["databricks-connect~=17.2.0"]
 `))
 	require.NoError(t, err)
-	require.NotNil(t, deps)
 	assert.Empty(t, deps)
 }

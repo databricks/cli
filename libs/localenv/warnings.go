@@ -173,7 +173,12 @@ func resolutionRequirements(p userPyprojectTOML) []string {
 // deterministic and ordered (requires-python, then databricks-connect, then the
 // standalone-pyspark collision, then constraint conflicts in the order uv would
 // encounter them) so goldens are stable.
-func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan) []Warning {
+// skipConstraints (--no-constraints) suppresses the requires-python and
+// constraint-dependency warnings: when those regions are left unmanaged the merge
+// neither overrides the user's requires-python nor imposes constraints, so there is
+// nothing to warn about. It is threaded explicitly for the same reason MergeManaged
+// takes it — the intent is not inferred from empty/nil values in c.
+func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan, skipConstraints bool) []Warning {
 	if len(userPyproject) == 0 {
 		return nil
 	}
@@ -188,8 +193,9 @@ func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan
 	var warnings []Warning
 
 	// The user pinned a requires-python that differs from the env's pin; the merge
-	// replaces it with the managed value.
-	if up := strings.TrimSpace(p.Project.RequiresPython); up != "" && c.RequiresPython != "" && up != strings.TrimSpace(c.RequiresPython) {
+	// replaces it with the managed value. Skipped under --no-constraints, where the
+	// merge leaves the user's requires-python untouched.
+	if up := strings.TrimSpace(p.Project.RequiresPython); !skipConstraints && up != "" && c.RequiresPython != "" && up != strings.TrimSpace(c.RequiresPython) {
 		warnings = append(warnings, Warning{
 			Code:    WarnRequiresPythonOverridden,
 			Message: fmt.Sprintf("requires-python %q is replaced by the environment's %q", up, c.RequiresPython),
@@ -219,7 +225,11 @@ func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan
 		warnings = append(warnings, standalonePysparkWarnings(survivors)...)
 	}
 
-	warnings = append(warnings, constraintConflicts(survivors, c.ConstraintDeps)...)
+	// Skipped under --no-constraints: no constraint block is written, so the user's
+	// requirements cannot conflict with a managed one.
+	if !skipConstraints {
+		warnings = append(warnings, constraintConflicts(survivors, c.ConstraintDeps)...)
+	}
 
 	// A cluster target leaves c.EnvironmentVersion empty and does not manage the
 	// serverless environment section, so an environment_version left over from an

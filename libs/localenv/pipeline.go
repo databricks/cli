@@ -390,19 +390,16 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	effective := *c
 	effective.DatabricksConnect = dbcPin
 	effective.EnvironmentVersion = envVersion
-	if p.SkipConstraints {
-		// --no-constraints: leave the remote Python version and dependency pins
-		// unmanaged. The empty/nil values signal both the merge (mergeRequiresPython,
-		// mergeToolUv) and the fresh render to skip those regions, leaving any
-		// existing values untouched.
-		//
-		// The flag governs only what is *written*. A provisioning run still installs
-		// and validates the resolved Python (pyMinor), so if the user's kept
-		// requires-python is disjoint from the target, uv surfaces it as a normal
-		// E_PROVISION rather than this command guessing an alternative.
-		effective.RequiresPython = ""
-		effective.ConstraintDeps = nil
-	}
+	// --no-constraints (p.SkipConstraints) leaves the remote Python version and
+	// dependency pins unmanaged. It is threaded explicitly into the merge, fresh
+	// render, and warning detector below rather than encoded by clearing
+	// effective's values, so those functions see the real artifact values and the
+	// intent is unambiguous.
+	//
+	// The flag governs only what is *written*. A provisioning run still installs
+	// and validates the resolved Python (pyMinor), so if the user's kept
+	// requires-python is disjoint from the target, uv surfaces it as a normal
+	// E_PROVISION rather than this command guessing an alternative.
 
 	var changedRegions []string
 	if greenfield {
@@ -410,12 +407,9 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		// from the directory name as a reasonable default. Only the regions actually
 		// rendered are reported (requires-python and tool.uv are omitted under
 		// --no-constraints).
-		merged = RenderFreshPyproject(projectName(p.ProjectDir), effective)
-		if effective.RequiresPython != "" {
-			changedRegions = append(changedRegions, regionRequiresPython)
-		}
-		if effective.ConstraintDeps != nil {
-			changedRegions = append(changedRegions, regionToolUv)
+		merged = RenderFreshPyproject(projectName(p.ProjectDir), effective, p.SkipConstraints)
+		if !p.SkipConstraints {
+			changedRegions = append(changedRegions, regionRequiresPython, regionToolUv)
 		}
 		if dbcPin != "" {
 			changedRegions = append(changedRegions, regionDatabricksConnect)
@@ -424,7 +418,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 			changedRegions = append(changedRegions, regionDatabricksEnvironment)
 		}
 	} else {
-		merged, changedRegions, err = MergeManaged(baseBytes, effective)
+		merged, changedRegions, err = MergeManaged(baseBytes, effective, p.SkipConstraints)
 		if err != nil {
 			return nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
 		}
@@ -435,7 +429,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		// edits come from the merge itself (planDBConnect), so a warning can never claim a
 		// rewrite or removal that did not happen.
 		p.res.Warnings = append(p.res.Warnings,
-			detectMergeWarnings(baseBytes, effective, planDBConnect(baseBytes, effective))...)
+			detectMergeWarnings(baseBytes, effective, planDBConnect(baseBytes, effective), p.SkipConstraints)...)
 	}
 
 	// Under --dry-run, build the plan (with a diff) for reporting. A real run does

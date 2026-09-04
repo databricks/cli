@@ -39,7 +39,7 @@ dev = [
     "pytest~=8.0",
 ]
 `)
-	out, regions, err := MergeManaged(in, testConstraints())
+	out, regions, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Contains(t, string(out), `requires-python = "==3.12.*"`)
 	assert.Contains(t, string(out), "# keep this comment")
@@ -60,9 +60,9 @@ dev = [
     "databricks-connect~=16.0.0",
 ]
 `)
-	once, _, err := MergeManaged(in, testConstraints())
+	once, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
-	twice, _, err := MergeManaged(once, testConstraints())
+	twice, _, err := MergeManaged(once, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, string(once), string(twice))
 }
@@ -74,7 +74,7 @@ name = "demo"
 [dependency-groups]
 dev = ["databricks-connect~=16.0.0"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Contains(t, string(out), `requires-python = "==3.12.*"`)
 }
@@ -93,7 +93,7 @@ constraint-dependencies = [
 ]
 ` + managedMarkerEnd + `
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	assert.NotContains(t, string(out), "stale~=1.0.0")
 	assert.Contains(t, string(out), "pydantic~=2.10.6")
@@ -103,12 +103,12 @@ constraint-dependencies = [
 
 func TestMergePreservesCRLF(t *testing.T) {
 	in := []byte("[project]\r\nrequires-python = \">=3.10\"\r\n\r\n[dependency-groups]\r\ndev = [\"databricks-connect~=16.0.0\"]\r\n")
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Contains(t, string(out), "\r\n")
 	assert.Contains(t, string(out), `requires-python = "==3.12.*"`)
 	// Merging the CRLF output again must be byte-identical (idempotent under \r\n).
-	twice, _, err := MergeManaged(out, testConstraints())
+	twice, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, string(out), string(twice))
 }
@@ -124,7 +124,7 @@ dev = ["databricks-connect~=16.0.0"]
 package = true
 dev-dependencies = ["ruff"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, "[tool.uv]")
@@ -142,7 +142,7 @@ dev-dependencies = ["ruff"]
 	requireValidTOML(t, out)
 	assert.Equal(t, 1, countOccurrences(s, "[tool.uv]"))
 	// Merge-twice is byte-identical (header-less managed region stays header-less).
-	twice, _, err := MergeManaged(out, testConstraints())
+	twice, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, s, string(twice))
 	requireValidTOML(t, twice)
@@ -159,7 +159,7 @@ dev = ["databricks-connect~=16.0.0"]
 package = true
 constraint-dependencies = ["old~=1.0"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, "package = true")
@@ -170,7 +170,7 @@ constraint-dependencies = ["old~=1.0"]
 	requireValidTOML(t, out)
 	assert.Equal(t, 1, countOccurrences(s, "[tool.uv]"))
 	// Merge-twice is byte-identical.
-	twice, _, err := MergeManaged(out, testConstraints())
+	twice, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, string(out), string(twice))
 }
@@ -185,7 +185,7 @@ dev = ["databricks-connect~=16.0.0"]
 [tool.uv]
 constraint-dependencies = ["old~=1.0"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.NotContains(t, s, "old~=1.0")
@@ -208,7 +208,7 @@ constraint-dependencies = [
     "old~=1.0",
 ]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.NotContains(t, s, "old~=1.0")
@@ -219,7 +219,7 @@ constraint-dependencies = [
 	assert.Equal(t, 1, countOccurrences(s, managedMarkerStart))
 	requireValidTOML(t, out)
 	// Merge-twice is byte-identical.
-	twice, _, err := MergeManaged(out, testConstraints())
+	twice, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, string(out), string(twice))
 }
@@ -231,7 +231,7 @@ requires-python = ">=3.10"
 [dependency-groups]
 dev = ["databricks-connect~=16.0.0", "pytest~=8.0"]
 `)
-	out, regions, err := MergeManaged(in, testConstraints())
+	out, regions, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	// Sibling element and single-line array layout are preserved.
 	assert.Contains(t, string(out), `dev = ["databricks-connect~=17.2.0", "pytest~=8.0"]`)
@@ -247,7 +247,7 @@ dev = [
     "databricks-connect~=16.0.0",
 ]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	// The trailing comma on the managed element is preserved.
 	assert.Contains(t, string(out), `    "databricks-connect~=17.2.0",`)
@@ -264,14 +264,14 @@ dev = [
     "pytest~=8.0",
 ]
 `)
-	out, regions, err := MergeManaged(in, testConstraints())
+	out, regions, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, `"databricks-connect~=17.2.0",`)
 	assert.Contains(t, s, `"pytest~=8.0",`, "existing element preserved")
 	assert.Contains(t, regions, "databricks-connect")
 	// Idempotent: a second merge finds the element and rewrites in place.
-	out2, _, err := MergeManaged(out, testConstraints())
+	out2, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, s, string(out2))
 }
@@ -283,10 +283,10 @@ requires-python = ">=3.10"
 [dependency-groups]
 dev = ["pytest~=8.0"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Contains(t, string(out), `dev = ["databricks-connect~=17.2.0", "pytest~=8.0"]`)
-	out2, _, err := MergeManaged(out, testConstraints())
+	out2, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, string(out), string(out2))
 }
@@ -298,7 +298,7 @@ requires-python = ">=3.10"
 [dependency-groups]
 dev = []
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Contains(t, string(out), `dev = ["databricks-connect~=17.2.0"]`)
 }
@@ -310,12 +310,12 @@ requires-python = ">=3.10"
 [dependency-groups]
 test = ["pytest~=8.0"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, `"databricks-connect~=17.2.0",`)
 	assert.Contains(t, s, `test = ["pytest~=8.0"]`, "sibling group untouched")
-	out2, _, err := MergeManaged(out, testConstraints())
+	out2, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, s, string(out2))
 }
@@ -324,12 +324,12 @@ func TestMergeInsertsDependencyGroupsWhenAbsent(t *testing.T) {
 	in := []byte(`[project]
 requires-python = ">=3.10"
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, "[dependency-groups]")
 	assert.Contains(t, s, `"databricks-connect~=17.2.0",`)
-	out2, _, err := MergeManaged(out, testConstraints())
+	out2, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, s, string(out2))
 }
@@ -345,7 +345,7 @@ dev = ["databricks-connect~=16.0.0",
     "pytest~=8.0",
 ]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Equal(t, 1, strings.Count(s, "databricks-connect"), "must not duplicate the pin")
@@ -365,7 +365,7 @@ dev = [
     "pytest~=8.0",
 ]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Equal(t, 1, strings.Count(s, "databricks-connect"), "must not duplicate the pin")
@@ -384,7 +384,7 @@ dev = [
     "pytest~=8.0",
 ]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	// Code element is rewritten; the comment mention is left verbatim.
@@ -397,7 +397,7 @@ func TestMergeRewritesNonCanonicalDatabricksConnectSpelling(t *testing.T) {
 	// place, not left undetected so the insert path adds a conflicting second pin.
 	for _, spelling := range []string{"databricks_connect", "Databricks-Connect", "databricks.connect"} {
 		in := []byte("[project]\nrequires-python = \">=3.10\"\n\n[dependency-groups]\ndev = [\n    \"" + spelling + "~=16.0.0\",\n]\n")
-		out, _, err := MergeManaged(in, testConstraints())
+		out, _, err := MergeManaged(in, testConstraints(), false)
 		require.NoError(t, err, spelling)
 		s := string(out)
 		assert.Equal(t, 1, strings.Count(s, `"databricks-connect~=17.2.0"`), "spelling %q must be rewritten in place, not duplicated:\n%s", spelling, s)
@@ -416,13 +416,13 @@ dev = [
     "pytest~=8.0"
 ]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, `"pytest~=8.0",`, "previous last element gains a separating comma")
 	assert.Contains(t, s, `"databricks-connect~=17.2.0",`)
 	// Round-trips as valid TOML.
-	out2, _, err := MergeManaged(out, testConstraints())
+	out2, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, s, string(out2))
 }
@@ -437,14 +437,14 @@ dev = ["pytest~=8.0"]
 `)
 	c := testConstraints()
 	c.DatabricksConnect = ""
-	out, regions, err := MergeManaged(in, c)
+	out, regions, err := MergeManaged(in, c, false)
 	require.NoError(t, err)
 	assert.NotContains(t, string(out), "databricks-connect")
 	assert.NotContains(t, regions, "databricks-connect")
 }
 
 func TestRenderFreshPyproject(t *testing.T) {
-	out := RenderFreshPyproject("demo", testConstraints())
+	out := RenderFreshPyproject("demo", testConstraints(), false)
 	s := string(out)
 	assert.Contains(t, s, `name = "demo"`)
 	assert.Contains(t, s, `requires-python = "==3.12.*"`)
@@ -455,7 +455,7 @@ func TestRenderFreshPyproject(t *testing.T) {
 	// A cluster target (no EnvironmentVersion) writes no [tool.databricks.environment].
 	assert.NotContains(t, s, "[tool.databricks.environment]")
 	// A fresh render is itself a no-op under MergeManaged (already fully managed).
-	merged, _, err := MergeManaged(out, testConstraints())
+	merged, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, s, string(merged))
 }
@@ -463,13 +463,13 @@ func TestRenderFreshPyproject(t *testing.T) {
 func TestRenderFreshPyprojectServerlessWritesEnvironment(t *testing.T) {
 	c := testConstraints()
 	c.EnvironmentVersion = "5"
-	out := RenderFreshPyproject("demo", c)
+	out := RenderFreshPyproject("demo", c, false)
 	s := string(out)
 	assert.Contains(t, s, "[tool.databricks.environment]")
 	assert.Contains(t, s, `environment_version = "5"`)
 	requireValidTOML(t, out)
 	// A fresh render is itself a no-op under MergeManaged (already fully managed).
-	merged, _, err := MergeManaged(out, c)
+	merged, _, err := MergeManaged(out, c, false)
 	require.NoError(t, err)
 	assert.Equal(t, s, string(merged))
 }
@@ -483,7 +483,7 @@ dev = ["databricks-connect~=16.0.0"]
 `)
 	c := testConstraints()
 	c.EnvironmentVersion = "5"
-	out, regions, err := MergeManaged(in, c)
+	out, regions, err := MergeManaged(in, c, false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, "[tool.databricks.environment]")
@@ -491,7 +491,7 @@ dev = ["databricks-connect~=16.0.0"]
 	assert.Contains(t, regions, regionDatabricksEnvironment)
 	requireValidTOML(t, out)
 	// Idempotent.
-	twice, _, err := MergeManaged(out, c)
+	twice, _, err := MergeManaged(out, c, false)
 	require.NoError(t, err)
 	assert.Equal(t, s, string(twice))
 }
@@ -508,7 +508,7 @@ environment_version = "4"  # pinned
 `)
 	c := testConstraints()
 	c.EnvironmentVersion = "5"
-	out, regions, err := MergeManaged(in, c)
+	out, regions, err := MergeManaged(in, c, false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, `environment_version = "5"  # pinned`)
@@ -531,7 +531,7 @@ dev = ["databricks-connect~=16.0.0"]
 `)
 	c := testConstraints()
 	c.EnvironmentVersion = "5"
-	out, _, err := MergeManaged(in, c)
+	out, _, err := MergeManaged(in, c, false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, `environment_version = "5"`)
@@ -553,7 +553,7 @@ dev = ["databricks-connect~=16.0.0"]
 environment_version = "4"
 `)
 	c := testConstraints() // EnvironmentVersion == "": cluster target.
-	out, regions, err := MergeManaged(in, c)
+	out, regions, err := MergeManaged(in, c, false)
 	require.NoError(t, err)
 	assert.Contains(t, string(out), `environment_version = "4"`)
 	assert.NotContains(t, regions, regionDatabricksEnvironment)
@@ -584,7 +584,7 @@ constraint-dependencies = [
 `)
 	c := testConstraints()
 	c.EnvironmentVersion = "5"
-	out, regions, err := MergeManaged(in, c)
+	out, regions, err := MergeManaged(in, c, false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, "[tool.databricks.environment]")
@@ -595,7 +595,7 @@ constraint-dependencies = [
 	assert.Equal(t, 1, countOccurrences(s, "[tool.databricks.environment]"))
 	requireValidTOML(t, out)
 	// Idempotent on the upgraded file.
-	twice, _, err := MergeManaged(out, c)
+	twice, _, err := MergeManaged(out, c, false)
 	require.NoError(t, err)
 	assert.Equal(t, s, string(twice))
 }
@@ -617,7 +617,7 @@ constraint-dependencies = ["requests[security]~=2.0",
     "old-dep~=1.0",
 ]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	// The whole stale array is gone (both the bracket-bearing first element and
@@ -629,7 +629,7 @@ constraint-dependencies = ["requests[security]~=2.0",
 	requireValidTOML(t, out)
 	assert.Equal(t, 1, countOccurrences(s, "[tool.uv]"))
 	// Idempotent.
-	twice, _, err := MergeManaged(out, testConstraints())
+	twice, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, s, string(twice))
 }
@@ -663,7 +663,7 @@ dev = [
     "databricks-connect~=16.0.0",
 ]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	// docs consolidated (its db-connect removed); dev updated to the managed pin.
@@ -690,7 +690,7 @@ dev = [
     "databricks-connect~=16.0",
 ]
 `)
-	out, regions, err := MergeManaged(in, testConstraints())
+	out, regions, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.NotContains(t, s, "databricks-connect==15.1.*", "the stray project.dependencies pin is removed")
@@ -701,7 +701,7 @@ dev = [
 	requireValidTOML(t, out)
 
 	// Idempotent: a second merge finds nothing to remove and produces identical bytes.
-	out2, _, err := MergeManaged(out, testConstraints())
+	out2, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, string(out), string(out2))
 }
@@ -718,7 +718,7 @@ spark = ["databricks-connect==15.0.0"]
 [dependency-groups]
 dev = ["databricks-connect~=16.0"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, "spark = []", "the optional-dependency extra is emptied")
@@ -736,7 +736,7 @@ dependencies = ["numpy", "databricks-connect==15.1.*", "pytest"]
 [dependency-groups]
 dev = ["databricks-connect~=16.0"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, `dependencies = ["numpy", "pytest"]`)
@@ -764,7 +764,7 @@ extra = ["databricks-connect"]
 dev = ["databricks-connect~=16.0"]
 test = ["databricks-connect>=15,<20"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, `"databricks-connect>=15",`, "an overlapping pin co-resolves and is kept")
@@ -783,7 +783,7 @@ func TestMergeKeepsEnvEqualPinInProjectDeps(t *testing.T) {
 requires-python = ">=3.10"
 dependencies = ["databricks-connect~=17.2.0"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Contains(t, string(out), `dependencies = ["databricks-connect~=17.2.0"]`, "the env-equal pin is kept")
 	requireValidTOML(t, out)
@@ -803,7 +803,7 @@ dependencies = [
 [dependency-groups]
 dev = ["databricks-connect~=16.0"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.NotContains(t, s, "databricks-connect==15.1.*")
@@ -824,7 +824,7 @@ dev = ["databricks-connect~=16.0"]
 docs = ["databricks-connect~=14.3"]
 `)
 	c := Constraints{RequiresPython: "==3.12.*", ConstraintDeps: []string{"pydantic~=2.10.6"}}
-	out, regions, err := MergeManaged(in, c)
+	out, regions, err := MergeManaged(in, c, false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, "databricks-connect==15.1.*", "project.dependencies pin left untouched")
@@ -868,7 +868,7 @@ dev = ["databricks-connect~=16.0"]
 		"comment on the opening bracket line":  "# runtime deps",
 	}
 	for name, in := range cases {
-		out, _, err := MergeManaged([]byte(in), testConstraints())
+		out, _, err := MergeManaged([]byte(in), testConstraints(), false)
 		require.NoError(t, err, name)
 		s := string(out)
 		assert.NotContains(t, s, "databricks-connect==15.1.*", name)
@@ -892,7 +892,7 @@ dev = [
     "databricks-connect==15.0.0",
 ]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, `"databricks-connect~=17.2.0",`, "the managed pin is kept and updated")
@@ -911,7 +911,7 @@ requires-python = ">=3.10"
 dev = [{include-group = "spark"}]
 spark = ['databricks-connect==15.0.0']
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, `{include-group = "spark"}`, "the include-group reference is preserved")
@@ -928,7 +928,7 @@ requires-python = ">=3.10"
 [dependency-groups]
 dev = ["pytest"] # keep "databricks-connect~=14.3" for docs
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	// The comment's databricks-connect~=14.3 is preserved verbatim.
@@ -943,7 +943,7 @@ requires-python = ">=3.10" # maintained by platform team
 [dependency-groups]
 dev = ["databricks-connect~=16.0.0"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	assert.Contains(t, s, `requires-python = "==3.12.*" # maintained by platform team`)
@@ -963,7 +963,7 @@ dev = ["databricks-connect~=16.0.0"]
 [tool.custom] # user table
 dev = ["databricks-connect==1.0.0"] # must not be managed
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	// [project].requires-python was found and updated despite the header comment.
@@ -1002,7 +1002,7 @@ dev = ["databricks-connect~=16.0.0"]
 name = "internal"
 url = "https://packages.example/simple"
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	s := string(out)
 	requireValidTOML(t, out)
@@ -1011,7 +1011,7 @@ url = "https://packages.example/simple"
 	assert.Contains(t, s, `name = "internal"`)
 	assert.Contains(t, s, "pydantic~=2.10.6")
 	// Merge-twice is byte-identical.
-	twice, _, err := MergeManaged(out, testConstraints())
+	twice, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, s, string(twice))
 }
@@ -1030,13 +1030,13 @@ constraint-dependencies = []
 [dependency-groups]
 dev = ["databricks-connect~=16.0.0"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	requireValidTOML(t, out)
 	assert.Contains(t, string(out), "description = \"\"\"\nA multi-line project description.\n\"\"\"")
 	assert.Contains(t, string(out), `requires-python = "==3.12.*"`)
 
-	twice, _, err := MergeManaged(out, testConstraints())
+	twice, _, err := MergeManaged(out, testConstraints(), false)
 	require.NoError(t, err)
 	assert.Equal(t, out, twice)
 }
@@ -1060,7 +1060,7 @@ dev = ["databricks-connect~=16.0.0"]
 [tool.uv]
 constraint-dependencies = []
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	requireValidTOML(t, out)
 	s := string(out)
@@ -1080,7 +1080,7 @@ description = """same-line value"""
 [dependency-groups]
 dev = ["databricks-connect~=16.0.0"]
 `)
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	requireValidTOML(t, out)
 	s := string(out)
@@ -1092,7 +1092,7 @@ dev = ["databricks-connect~=16.0.0"]
 
 func TestMergePreservesCRLFInsideMultilineString(t *testing.T) {
 	in := []byte("[project]\r\nrequires-python = \">=3.10\"\r\ndescription = \"\"\"\r\ncontinued\r\n\"\"\"\r\n\r\n[dependency-groups]\r\ndev = [\"databricks-connect~=16.0.0\"]\r\n")
-	out, _, err := MergeManaged(in, testConstraints())
+	out, _, err := MergeManaged(in, testConstraints(), false)
 	require.NoError(t, err)
 	requireValidTOML(t, out)
 	assert.NotContains(t, strings.ReplaceAll(string(out), "\r\n", ""), "\n")
@@ -1105,7 +1105,7 @@ requires-python = ">=3.10"
 description = """
 unterminated
 `)
-	_, _, err := MergeManaged(in, testConstraints())
+	_, _, err := MergeManaged(in, testConstraints(), false)
 	require.ErrorIs(t, err, errMultilineString)
 }
 
@@ -1126,12 +1126,12 @@ func TestMergePreservesMultilineStringDelimiterEdgeCases(t *testing.T) {
 			in := []byte("[project]\nrequires-python = \">=3.10\"\ndescription = " + tt.value + "\n\n[dependency-groups]\ndev = [\"databricks-connect~=16.0.0\"]\n")
 			requireValidTOML(t, in)
 
-			out, _, err := MergeManaged(in, testConstraints())
+			out, _, err := MergeManaged(in, testConstraints(), false)
 			require.NoError(t, err)
 			requireValidTOML(t, out)
 			assert.Contains(t, string(out), "description = "+tt.value)
 
-			twice, _, err := MergeManaged(out, testConstraints())
+			twice, _, err := MergeManaged(out, testConstraints(), false)
 			require.NoError(t, err)
 			assert.Equal(t, out, twice)
 		})
@@ -1147,7 +1147,7 @@ dev = ["databricks-connect~=16.0.0"]
 [tool.uv]
 constraint-dependencies = ["old~=1.0"]
 `)
-	_, _, err := MergeManaged(in, testConstraints())
+	_, _, err := MergeManaged(in, testConstraints(), false)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, errNoProjectTable)
 }
@@ -1156,9 +1156,9 @@ func countOccurrences(s, substr string) int {
 	return strings.Count(s, substr)
 }
 
-func TestMergeManagedSkipsRequiresPythonWhenEmpty(t *testing.T) {
-	// An empty RequiresPython is the --no-constraints signal: the merge must leave
-	// the user's requires-python untouched rather than overwrite it with "".
+func TestMergeManagedSkipConstraintsLeavesRequiresPythonUntouched(t *testing.T) {
+	// skipConstraints=true leaves the user's requires-python untouched even though
+	// the Constraints carry a real pin: the flag, not an empty value, drives the skip.
 	in := []byte(`[project]
 name = "demo"
 requires-python = ">=3.9"
@@ -1166,17 +1166,34 @@ requires-python = ">=3.9"
 [dependency-groups]
 dev = []
 `)
-	c := testConstraints()
-	c.RequiresPython = ""
-	out, regions, err := MergeManaged(in, c)
+	c := testConstraints() // carries requires-python = "==3.12.*"
+	out, regions, err := MergeManaged(in, c, true)
 	require.NoError(t, err)
 	assert.Contains(t, string(out), `requires-python = ">=3.9"`)
 	assert.NotContains(t, regions, regionRequiresPython)
 }
 
-func TestMergeManagedSkipsToolUvWhenNil(t *testing.T) {
-	// A nil ConstraintDeps is the --no-constraints signal: no managed [tool.uv]
-	// constraint block is written and the region is not reported.
+func TestMergeManagedSkipConstraintsLeavesToolUvUntouched(t *testing.T) {
+	// skipConstraints=true writes no managed [tool.uv] constraint block even though
+	// the Constraints carry constraint-dependencies.
+	in := []byte(`[project]
+name = "demo"
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = []
+`)
+	c := testConstraints() // carries constraint-dependencies
+	out, regions, err := MergeManaged(in, c, true)
+	require.NoError(t, err)
+	assert.NotContains(t, string(out), "constraint-dependencies")
+	assert.NotContains(t, regions, regionToolUv)
+}
+
+func TestMergeManagedNilConstraintDepsWritesEmptyManagedBlock(t *testing.T) {
+	// With constraints managed, a nil ConstraintDeps (an artifact that simply omits
+	// constraint-dependencies) is treated identically to an empty slice: an empty
+	// managed [tool.uv] block is written. nil no longer signals "skip".
 	in := []byte(`[project]
 name = "demo"
 requires-python = "==3.12.*"
@@ -1186,19 +1203,19 @@ dev = []
 `)
 	c := testConstraints()
 	c.ConstraintDeps = nil
-	out, regions, err := MergeManaged(in, c)
+	out, regions, err := MergeManaged(in, c, false)
 	require.NoError(t, err)
-	assert.NotContains(t, string(out), "constraint-dependencies")
-	assert.NotContains(t, regions, regionToolUv)
+	assert.Contains(t, regions, regionToolUv)
+	assert.Contains(t, string(out), "constraint-dependencies = [")
+	requireValidTOML(t, out)
 }
 
-func TestRenderFreshPyprojectOmitsConstraintsWhenEmpty(t *testing.T) {
-	// Greenfield --no-constraints: neither the Python pin nor the [tool.uv]
-	// constraint block is rendered, but databricks-connect (orthogonal) still is.
-	c := testConstraints()
-	c.RequiresPython = ""
-	c.ConstraintDeps = nil
-	out := RenderFreshPyproject("demo", c)
+func TestRenderFreshPyprojectSkipConstraintsOmitsConstraints(t *testing.T) {
+	// Greenfield with skipConstraints=true: neither the Python pin nor the [tool.uv]
+	// constraint block is rendered even though the Constraints carry them, but
+	// databricks-connect (orthogonal) still is.
+	c := testConstraints() // carries requires-python and constraint-dependencies
+	out := RenderFreshPyproject("demo", c, true)
 	s := string(out)
 	assert.NotContains(t, s, "requires-python")
 	assert.NotContains(t, s, "constraint-dependencies")
