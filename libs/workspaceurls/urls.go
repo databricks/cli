@@ -20,7 +20,7 @@ var resourceURLPatterns = map[string]string{
 	"jobs":                    "jobs/%s",
 	"models":                  "ml/models/%s",
 	"model_serving_endpoints": "ml/endpoints/%s",
-	"notebooks":               "#notebook/%s",
+	"notebooks":               "editor/notebooks/%s",
 	"pipelines":               "pipelines/%s",
 	"postgres_catalogs":       "explore/data/%s",
 	"postgres_synced_tables":  "explore/data/%s",
@@ -90,6 +90,21 @@ func JobRunPath(jobID, runID string) string {
 func JobRunURL(baseURL url.URL, jobID, runID string) string {
 	baseURL.Path = JobRunPath(jobID, runID)
 	return baseURL.String()
+}
+
+// PipelineUpdatePath returns the modern workspace URL for a pipeline update, of
+// the form
+//
+//	<host>/pipelines/<pipelineID>/updates/<updateID>
+//
+// It replaces the legacy fragment form
+// (<host>/#joblist/pipelines/<pipelineID>/updates/<updateID>) that only resolves
+// for workspace admins, mirroring the job run change in
+// https://github.com/databricks/cli/issues/5142. It takes the raw host string
+// because that is what the caller has; switch to a url.URL first argument (like
+// JobRunURL) once a parsed base URL is available.
+func PipelineUpdatePath(host, pipelineID, updateID string) string {
+	return fmt.Sprintf("%s/pipelines/%s/updates/%s", host, pipelineID, updateID)
 }
 
 // ModernizeJobRunPageURL converts the legacy run URL returned by the Jobs API

@@ -5,7 +5,7 @@
 
 === print URL for a notebook
 >>> [CLI] experimental open --url notebooks 12345
-[DATABRICKS_URL]/?w=[NUMID]#notebook/12345
+[DATABRICKS_URL]/editor/notebooks/12345?w=[NUMID]
 
 === unknown resource type
 >>> [CLI] experimental open --url unknown 123

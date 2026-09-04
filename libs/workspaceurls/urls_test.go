@@ -43,6 +43,10 @@ func TestJobRunURL(t *testing.T) {
 	assert.Equal(t, "https://host.com/jobs/123/runs/456?w=789", JobRunURL(withWorkspace, "123", "456"))
 }
 
+func TestPipelineUpdatePath(t *testing.T) {
+	assert.Equal(t, "https://host.com/pipelines/abc/updates/def", PipelineUpdatePath("https://host.com", "abc", "def"))
+}
+
 func TestResourceTypes(t *testing.T) {
 	types := ResourceTypes()
 	assert.NotEmpty(t, types)
@@ -94,8 +98,8 @@ func TestBuildResourceURL(t *testing.T) {
 	}{
 		{"simple path", "https://host.com", "jobs", "123", "", "https://host.com/jobs/123"},
 		{"path with workspace ID", "https://host.com", "jobs", "123", "456", "https://host.com/jobs/123?w=456"},
-		{"fragment pattern", "https://host.com", "notebooks", "12345", "", "https://host.com/#notebook/12345"},
-		{"fragment with workspace ID", "https://host.com", "notebooks", "12345", "789", "https://host.com/?w=789#notebook/12345"},
+		{"notebook path", "https://host.com", "notebooks", "12345", "", "https://host.com/editor/notebooks/12345"},
+		{"notebook path with workspace ID", "https://host.com", "notebooks", "12345", "789", "https://host.com/editor/notebooks/12345?w=789"},
 		{"registered model normalizes dots", "https://host.com", "registered_models", "catalog.schema.model", "", "https://host.com/explore/data/models/catalog/schema/model"},
 	}
 
@@ -124,8 +128,8 @@ func TestResourceURL(t *testing.T) {
 		{"experiments", "experiments", "exp-1", "https://host.com/ml/experiments/exp-1"},
 		{"dashboards", "dashboards", "d-1", "https://host.com/dashboardsv3/d-1/published"},
 		{"genie_spaces", "genie_spaces", "space-1", "https://host.com/genie/rooms/space-1"},
-		{"notebooks", "notebooks", "12345", "https://host.com/#notebook/12345"},
-		{"notebooks with path", "notebooks", "/Users/u/nb", "https://host.com/#notebook//Users/u/nb"},
+		{"notebooks", "notebooks", "12345", "https://host.com/editor/notebooks/12345"},
+		{"notebooks with path", "notebooks", "/Users/u/nb", "https://host.com/editor/notebooks//Users/u/nb"},
 		{"registered_models normalizes dots", "registered_models", "cat.sch.model", "https://host.com/explore/data/models/cat/sch/model"},
 		{"sql_warehouses alias resolves to warehouses", "sql_warehouses", "wh-1", "https://host.com/sql/warehouses/wh-1"},
 		{"warehouses canonical still works", "warehouses", "wh-1", "https://host.com/sql/warehouses/wh-1"},

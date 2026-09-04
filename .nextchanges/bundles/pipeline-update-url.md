@@ -1,0 +1,1 @@
+`bundle run` now prints the modern pipeline update URL (`/pipelines/<id>/updates/<id>`) instead of the legacy `#joblist/...` hash-fragment form, so users permitted to view the update are no longer redirected to the workspace homepage.
