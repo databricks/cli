@@ -2,12 +2,12 @@
 === A resource that fails to apply is recorded as a failed operation carrying the error, so the deployment history says why rather than omitting the resource
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record-failure-[UNIQUE_NAME]/default/files...
-Error: cannot create resources.jobs.doomed: Cluster validation failed: node type nonexistent-node-type is not supported (400 INVALID_PARAMETER_VALUE)
+Error: cannot create resources.jobs.doomed: Node type nonexistent-node-type is not supported. Supported node types: [NODE_TYPES] (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/create
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
-API message: Cluster validation failed: node type nonexistent-node-type is not supported
+API message: Node type nonexistent-node-type is not supported. Supported node types: [NODE_TYPES]
 
 Files: 6 uploaded, 0 deleted
 
@@ -49,7 +49,7 @@ Files: 6 uploaded, 0 deleted
     "update_mask": "error_message,status"
   },
   "body": {
-    "error_message": "Cluster validation failed: node type nonexistent-node-type is not supported (400 INVALID_PARAMETER_VALUE)",
+    "error_message": "Node type nonexistent-node-type is not supported. Supported node types: [NODE_TYPES] (400 INVALID_PARAMETER_VALUE)",
     "sequence_id": "0",
     "status": "OPERATION_STATUS_FAILED"
   }

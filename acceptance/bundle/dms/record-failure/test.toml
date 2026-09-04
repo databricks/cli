@@ -3,7 +3,12 @@
 # create to return the same error - scoped here, not the shared fake, so no other test is affected.
 Cloud = true
 
+# The Jobs API error lists every supported node type, and the set grows over time; mask it.
+[[Repls]]
+Old = 'Supported node types: [^(\n]*[^ (\n]'
+New = 'Supported node types: [NODE_TYPES]'
+
 [[Server]]
 Pattern = "POST /api/2.2/jobs/create"
 Response.StatusCode = 400
-Response.Body = '''{"error_code": "INVALID_PARAMETER_VALUE", "message": "Cluster validation failed: node type nonexistent-node-type is not supported"}'''
+Response.Body = '''{"error_code": "INVALID_PARAMETER_VALUE", "message": "Node type nonexistent-node-type is not supported. Supported node types: r3.xlarge, m5.large"}'''

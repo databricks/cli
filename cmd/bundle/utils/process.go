@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dms"
@@ -283,25 +284,24 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				if logdiag.HasError(ctx) {
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
-			}
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), b.WorkspaceClient(ctx), dstate.WithDeploymentHistory(b.ConfiguresDeploymentHistory(ctx)), dmsDeploymentID); err != nil {
-				logdiag.LogError(ctx, err)
-				return b, stateDesc, root.ErrAlreadyPrinted
-			}
+				// StateDB.Open builds the DMS client from the workspace client on the context. A bundle
+				// command resolves that client lazily through b, so it is not otherwise on the context.
+				if !cmdctx.HasWorkspaceClient(ctx) {
+					ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+				}
+				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dmsDeploymentID); err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
 
-			// Open built the DMS client from the workspace client when recording; hand it to the
-			// phases that create versions and deployments.
-			if b.ConfiguresDeploymentHistory(ctx) {
+				// Open built the DMS client from the workspace client on the context; hand it to the
+				// phases that create versions and deployments.
 				b.DeploymentBundle.DmsApiClient = b.DeploymentBundle.StateDB.DmsClient()
-			}
-
-			// The service holds this deployment, so it has to keep being recorded: deploying
-			// without recording would leave it describing resources that have moved on.
-			if !b.ConfiguresDeploymentHistory(ctx) && b.DeploymentBundle.StateDB.RequiresDeploymentHistory() {
-				logdiag.LogError(ctx, errors.New(`unsetting experimental.record_deployment_history is not supported
-
-This deployment's resources are recorded with the deployment metadata service. Set experimental.record_deployment_history: true to deploy or destroy this bundle`))
-				return b, stateDesc, root.ErrAlreadyPrinted
+			} else {
+				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), ""); err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
 			}
 
 			// Warn when the state was last written by a newer CLI than the one

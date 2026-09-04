@@ -173,7 +173,7 @@ func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath s
 
 	var planBundle direct.DeploymentBundle
 	// This plan check does not record deployment history, so no DMS client or deployment id.
-	if err := planBundle.StateDB.Open(planCtx, tempStatePath, false, false, nil, dstate.WithDeploymentHistory(false), ""); err != nil {
+	if err := planBundle.StateDB.Open(planCtx, tempStatePath, false, false, dstate.WithDeploymentHistory(false), ""); err != nil {
 		return fmt.Errorf("opening migrated state for plan check: %w", err)
 	}
 

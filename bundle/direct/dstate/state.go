@@ -18,9 +18,9 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
 )
 
@@ -364,7 +364,7 @@ type (
 // recorded deploy); lineage and serial still come from the file, since that is what the write path
 // increments. Open only reads through the client - StartRecording installs the write path once a
 // version exists.
-func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, wsClient *databricks.WorkspaceClient, withDeploymentHistory WithDeploymentHistory, dmsDeploymentID string) error {
+func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeploymentID string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -372,7 +372,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		panic(fmt.Sprintf("state already opened: %v, cannot open %v", db.Path, path))
 	}
 
-	err := db.unlockedOpen(ctx, path, withRecovery, withWrite, wsClient, withDeploymentHistory, dmsDeploymentID)
+	err := db.unlockedOpen(ctx, path, withRecovery, withWrite, withDeploymentHistory, dmsDeploymentID)
 	if err != nil {
 		// A failed open must leave the receiver closed. unlockedOpen assigns
 		// db.Path before every fallible step, so without this the receiver stays
@@ -394,20 +394,11 @@ func (db *DeploymentState) reset() {
 	db.stateIDs = nil
 }
 
-func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, wsClient *databricks.WorkspaceClient, withDeploymentHistory WithDeploymentHistory, dmsDeploymentID string) error {
+func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeploymentID string) error {
 	db.Path = path
 
-	if withDeploymentHistory {
-		// The service is the source of truth for a recorded deployment, so a leftover WAL is
-		// discarded below rather than replayed: force recovery off regardless of what was asked.
-		withRecovery = false
-		client, err := dms.NewClient(wsClient)
-		if err != nil {
-			return err
-		}
-		db.dmsClient = client
-	}
-
+	// The state file is the source of truth for whether this deployment records history: read it
+	// first, then reconcile the config against the marker it carries.
 	data, err := os.ReadFile(db.Path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -421,6 +412,16 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		}
 	}
 
+	if err := migrateState(&db.Data); err != nil {
+		return fmt.Errorf("migrating state %s: %w", path, err)
+	}
+
+	if err := checkStateFeatures(db.Data.Features); err != nil {
+		return err
+	}
+
+	recording := bool(withDeploymentHistory)
+
 	db.stateIDs = make(map[string]string)
 	for key, entry := range db.Data.State {
 		db.stateIDs[key] = entry.ID
@@ -433,56 +434,57 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		return fmt.Errorf("failed to stat WAL file %s: %w", walPath, statErr)
 	}
 
-	// A recorded deployment gets its resources from the service (applyDMSState below), so the WAL -
-	// a local log of an uncommitted deploy - is not merged. A leftover from a crash or a declined
-	// deploy is removed so the next write's exclusive create of the WAL does not fail. Without
+	// A recording open discards a leftover WAL - the service owns the resources, so a local log from
+	// a crash or a declined deploy is irrelevant, even when recording is refused below. Without
 	// recording, replay the WAL as usual.
 	if walExists {
-		if withDeploymentHistory {
+		switch {
+		case recording:
 			if err := os.Remove(walPath); err != nil {
 				return fmt.Errorf("removing WAL file %s: %w", walPath, err)
 			}
-		} else if withRecovery {
+		case bool(withRecovery):
 			if err := db.replayWAL(ctx); err != nil {
 				return fmt.Errorf("reading state from %s: %w", path, err)
 			}
-		} else {
+		default:
 			return fmt.Errorf("unexpected WAL file found at %s", walPath)
 		}
 	}
 
-	if err := migrateState(&db.Data); err != nil {
-		return fmt.Errorf("migrating state %s: %w", path, err)
-	}
-
-	if err := checkStateFeatures(db.Data.Features); err != nil {
-		return err
-	}
-
-	if withDeploymentHistory {
-		// The service is the source of truth for a recorded deployment; local state is irrelevant.
-		// This state was pulled from the workspace, so it reflects the remote and not just a local
-		// cache, and a leftover WAL was discarded above rather than replayed. It records the feature
-		// once recording owns it, so a recorded deployment carries no resources here (a tombstone)
-		// and applyDMSState below loads the service's. A state that still tracks resources without
-		// the feature is a deployment made before recording: treating the service as authoritative
-		// would create those resources a second time, so refuse it (adopting one is a followup).
-		if _, recorded := db.Data.Features[featureRecordDeploymentHistory]; !recorded && len(db.Data.State) > 0 {
-			return errors.New(`this deployment already exists and is not recorded with the deployment metadata service, so it cannot be recorded without redeploying its resources
+	// Reconcile the config against the state. A brand-new deployment is where recording begins, so
+	// the config bootstraps the marker there. On an existing deployment the state is authoritative:
+	// the config can neither start recording one that was not (its resources would be created a
+	// second time) nor stop recording one that is (the service still holds it).
+	_, recorded := db.Data.Features[featureRecordDeploymentHistory]
+	switch {
+	case recording && !recorded && len(db.Data.State) == 0:
+		if db.Data.Features == nil {
+			db.Data.Features = make(map[string]struct{}, 1)
+		}
+		db.Data.Features[featureRecordDeploymentHistory] = struct{}{}
+		recorded = true
+	case recording && !recorded:
+		return errors.New(`this deployment already exists and is not recorded with the deployment metadata service, so it cannot be recorded without redeploying its resources
 
 To record this bundle's history, start it over as a new deployment:
   1. remove experimental.record_deployment_history from your bundle configuration
   2. run "databricks bundle destroy" to delete the existing resources
   3. add experimental.record_deployment_history back and deploy again`)
-		}
+	case !recording && recorded:
+		return errors.New(`unsetting experimental.record_deployment_history is not supported
 
-		// Mark the state as depending on the service so this CLI keeps recording it (see
-		// RequiresDeploymentHistory). unlockedSave then writes the header alone. Bumping the state
-		// version so older CLIs refuse a recorded state is a followup.
-		if db.Data.Features == nil {
-			db.Data.Features = make(map[string]struct{}, 1)
+This deployment's resources are recorded with the deployment metadata service. Set experimental.record_deployment_history: true to deploy or destroy this bundle`)
+	}
+
+	if recorded {
+		// The service is the source of truth for a recorded deployment; the file is a tombstone
+		// carrying only the marker, and applyDMSState loads the resources the service holds.
+		client, err := dms.NewClient(cmdctx.WorkspaceClient(ctx))
+		if err != nil {
+			return err
 		}
-		db.Data.Features[featureRecordDeploymentHistory] = struct{}{}
+		db.dmsClient = client
 
 		if dmsDeploymentID != "" {
 			resources, err := db.dmsClient.ListResources(ctx, dmsDeploymentID)
