@@ -19,11 +19,6 @@ var knownMissingInRemoteType = map[string][]string{
 	"external_locations": {
 		"skip_validation",
 	},
-	"job_runs": {
-		// Deliberate omission: the trigger fingerprints are client-side only, so
-		// GetRun has nothing to report them under.
-		"lifecycle",
-	},
 	"model_serving_endpoints": {
 		"rate_limits",
 	},
@@ -60,6 +55,10 @@ var knownMissingInRemoteType = map[string][]string{
 	},
 	"vector_search_endpoints": {
 		"usage_policy_id",
+	},
+	"job_runs": {
+		// Local-only trigger fingerprints under lifecycle.
+		"lifecycle",
 	},
 }
 
